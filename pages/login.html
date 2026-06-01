@@ -14,12 +14,17 @@
     <main class="auth-layout">
       <div class="auth-card">
         <div id="auth-message" class="auth-message hidden"></div>
-        <div class="auth-inputs">
-          <input id="correo" type="email" placeholder="Correo electrónico" autocomplete="email" class="auth-input" />
-          <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" class="auth-input" />
-        </div>
-        
-        <button id="local-login-btn" class="auth-btn auth-btn-primary" type="button">Iniciar sesión</button>
+        <form id="login-form">
+          <div class="auth-inputs">
+            <label for="correo" class="sr-only">Correo electrónico</label>
+            <input id="correo" type="email" placeholder="Correo electrónico" autocomplete="email" class="auth-input" required />
+            
+            <label for="password" class="sr-only">Contraseña</label>
+            <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" class="auth-input" required />
+          </div>
+          
+          <button id="local-login-btn" class="auth-btn auth-btn-primary" type="submit">Iniciar sesión</button>
+        </form>
         
         <div class="auth-forgot">
           <a href="#">¿Olvidaste tu contraseña?</a>

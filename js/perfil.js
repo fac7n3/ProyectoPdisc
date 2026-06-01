@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabase-config.js";
 
 const sessionStatus = document.getElementById("session-status");
@@ -13,9 +13,9 @@ async function renderSession() {
   let profileData;
 
   try {
-    const { data, error } = await supabase.auth.getSession();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !data?.session) {
+    if (error || !user) {
       window.location.href = "../pages/login.html";
       return;
     }

@@ -19,39 +19,46 @@
 
       <div class="auth-card">
         <div id="auth-message" class="auth-message hidden"></div>
-        <div class="auth-inputs">
-          <input id="register-email" type="email" placeholder="Correo electrónico" autocomplete="email" class="auth-input" />
-          <input id="register-name" type="text" placeholder="Nombre y apellido" autocomplete="name" class="auth-input" />
-          <input id="register-password" type="password" placeholder="Contraseña" autocomplete="new-password" class="auth-input" />
-        </div>
+        <form id="register-form">
+          <div class="auth-inputs">
+            <label for="register-email" class="sr-only">Correo electrónico</label>
+            <input id="register-email" type="email" placeholder="Correo electrónico" autocomplete="email" class="auth-input" required />
+            
+            <label for="register-name" class="sr-only">Nombre y apellido</label>
+            <input id="register-name" type="text" placeholder="Nombre y apellido" autocomplete="name" class="auth-input" required />
+            
+            <label for="register-password" class="sr-only">Contraseña</label>
+            <input id="register-password" type="password" placeholder="Contraseña" autocomplete="new-password" class="auth-input" required />
+          </div>
 
-        <div class="account-type-section">
-          <label class="account-type-label">Tipo de Cuenta</label>
-          
-          <label class="account-type-card" for="type-user">
-            <input type="radio" name="account_type" id="type-user" value="cliente" checked>
-            <div class="account-type-content">
-              <i class="fa-regular fa-user account-icon"></i>
-              <div class="account-text">
-                <span class="account-title">Cliente</span>
-                <span class="account-desc">Descubre los productos y horarios de comercios locales!</span>
+          <div class="account-type-section">
+            <label class="account-type-label">Tipo de Cuenta</label>
+            
+            <label class="account-type-card" for="type-user">
+              <input type="radio" name="account_type" id="type-user" value="cliente" checked>
+              <div class="account-type-content">
+                <i class="fa-regular fa-user account-icon"></i>
+                <div class="account-text">
+                  <span class="account-title">Cliente</span>
+                  <span class="account-desc">Descubre los productos y horarios de comercios locales!</span>
+                </div>
               </div>
-            </div>
-          </label>
+            </label>
 
-          <label class="account-type-card" for="type-shop">
-            <input type="radio" name="account_type" id="type-shop" value="vendedor">
-            <div class="account-type-content">
-              <i class="fa-solid fa-bag-shopping account-icon"></i>
-              <div class="account-text">
-                <span class="account-title">Vendedor</span>
-                <span class="account-desc">Registra tu negocio</span>
+            <label class="account-type-card" for="type-shop">
+              <input type="radio" name="account_type" id="type-shop" value="vendedor">
+              <div class="account-type-content">
+                <i class="fa-solid fa-bag-shopping account-icon"></i>
+                <div class="account-text">
+                  <span class="account-title">Vendedor</span>
+                  <span class="account-desc">Registra tu negocio</span>
+                </div>
               </div>
-            </div>
-          </label>
-        </div>
+            </label>
+          </div>
 
-        <button id="register-btn" class="auth-btn auth-btn-primary" type="button">Crear cuenta</button>
+          <button id="register-btn" class="auth-btn auth-btn-primary" type="submit">Crear cuenta</button>
+        </form>
         <button id="google-register-btn" class="auth-btn auth-btn-outline" style="margin-top: 16px;" type="button">
           <i class="fa-brands fa-google" style="margin-right: 8px;"></i>Crear cuenta con Google
         </button>

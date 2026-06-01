@@ -260,3 +260,22 @@ begin
       with check (auth.uid() = id);
   end if;
 end $$;
+
+-- Proteger la columna 'role' para que no sea modificada directamente por el cliente
+create or replace function public.prevent_role_update_on_profile()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  if old.role <> new.role and auth.role() = 'authenticated' then
+    raise exception 'No esta permitido modificar el rol del usuario directamente.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trigger_prevent_role_update on public.profiles;
+create trigger trigger_prevent_role_update
+before update on public.profiles
+for each row execute procedure public.prevent_role_update_on_profile();

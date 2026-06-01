@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabase-config.js";
 
 const emailInput = document.getElementById("correo");
@@ -75,16 +75,42 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// --- Auto-redirect if already logged in ---
+// --- Auto-redirect si ya tiene sesión iniciada ---
 
 async function checkExistingSession() {
   try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
       window.location.href = "../pages/perfil.html";
     }
   } catch (_) {
-    // silently ignore
+    // ignorar silenciosamente
+  }
+}
+
+// --- Capturar errores desde la URL (redirecciones OAuth fallidas) ---
+
+function checkUrlErrors() {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+  const error = params.get("error") || hashParams.get("error");
+  const errorDesc = params.get("error_description") || hashParams.get("error_description");
+
+  if (error) {
+    console.error("Auth redirect error:", error, errorDesc);
+    let userMsg = "Hubo un problema al autenticar con Google. Intentá de nuevo.";
+    if (errorDesc) {
+      const decodedDesc = decodeURIComponent(errorDesc).replace(/\+/g, " ");
+      if (decodedDesc.includes("Database error")) {
+        userMsg = "Error de base de datos al guardar tu perfil. Por favor, intentá de nuevo.";
+      } else {
+        userMsg = `Error de autenticación: ${decodedDesc}`;
+      }
+    }
+    showMessage(userMsg, "error");
+    // Limpiar hash de la URL sin recargar la página para evitar repetir el mensaje
+    history.replaceState(null, null, window.location.pathname);
   }
 }
 
@@ -167,16 +193,14 @@ async function loginWithGoogle() {
 
 // --- Event Listeners ---
 
-localLoginBtn?.addEventListener("click", loginLocal);
+const loginForm = document.getElementById("login-form");
+loginForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  loginLocal();
+});
+
 googleLoginBtn?.addEventListener("click", loginWithGoogle);
 
-// Submit on Enter key
-emailInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") passwordInput?.focus();
-});
-passwordInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") loginLocal();
-});
-
-// Check if already logged in
+// Inicialización de la página
 checkExistingSession();
+checkUrlErrors();

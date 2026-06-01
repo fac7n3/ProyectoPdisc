@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./supabase-config.js";
 
 const registerEmailInput = document.getElementById("register-email");
@@ -69,7 +69,6 @@ function mapRegisterError(error) {
     return "Ya existe una cuenta con ese correo electrónico. Intentá iniciar sesión.";
   }
   if (msg.includes("password") && msg.includes("at least")) {
-    // Extract the minimum length from the message if possible
     const match = error.message.match(/at least (\d+)/);
     const minLen = match ? match[1] : "6";
     return `La contraseña debe tener al menos ${minLen} caracteres.`;
@@ -104,16 +103,41 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// --- Auto-redirect if already logged in ---
+// --- Auto-redirect si ya tiene sesión iniciada ---
 
 async function checkExistingSession() {
   try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
       window.location.href = "../pages/perfil.html";
     }
   } catch (_) {
-    // silently ignore
+    // ignorar silenciosamente
+  }
+}
+
+// --- Capturar errores desde la URL (redirecciones OAuth fallidas) ---
+
+function checkUrlErrors() {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+  const error = params.get("error") || hashParams.get("error");
+  const errorDesc = params.get("error_description") || hashParams.get("error_description");
+
+  if (error) {
+    console.error("Auth redirect error:", error, errorDesc);
+    let userMsg = "Hubo un problema al registrar con Google. Intentá de nuevo.";
+    if (errorDesc) {
+      const decodedDesc = decodeURIComponent(errorDesc).replace(/\+/g, " ");
+      if (decodedDesc.includes("Database error")) {
+        userMsg = "Error de base de datos al guardar tu perfil. Por favor, intentá de nuevo.";
+      } else {
+        userMsg = `Error de registro: ${decodedDesc}`;
+      }
+    }
+    showMessage(userMsg, "error");
+    history.replaceState(null, null, window.location.pathname);
   }
 }
 
@@ -179,14 +203,13 @@ async function registerWithEmail() {
       return;
     }
 
-    // Supabase may return a user with identities=[] if email already exists and confirmation is required
     if (data?.user && data.user.identities && data.user.identities.length === 0) {
       showMessage("Ya existe una cuenta con ese correo. Intentá iniciar sesión.", "error");
       setLoading(registerBtn, false, "Crear cuenta");
       return;
     }
 
-    // Success
+    // Éxito
     disableAllInputs();
     showMessage("¡Cuenta creada con éxito! Revisá tu correo para confirmar el registro.", "success");
 
@@ -227,19 +250,14 @@ async function registerWithGoogle() {
 
 // --- Event Listeners ---
 
-registerBtn?.addEventListener("click", registerWithEmail);
+const registerForm = document.getElementById("register-form");
+registerForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  registerWithEmail();
+});
+
 googleRegisterBtn?.addEventListener("click", registerWithGoogle);
 
-// Submit on Enter key
-registerEmailInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") registerNameInput?.focus();
-});
-registerNameInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") registerPasswordInput?.focus();
-});
-registerPasswordInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") registerWithEmail();
-});
-
-// Check if already logged in
+// Inicialización de la página
 checkExistingSession();
+checkUrlErrors();
