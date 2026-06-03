@@ -1,7 +1,7 @@
-// Home page interactions
-// No Supabase dependency for static demo — products are hardcoded in HTML.
+// Interacciones de la página principal
+// Sin dependencia de Supabase para demo estática — los productos están en el HTML.
 
-/** Toast notification */
+/** Notificación toast */
 function showToast(message, type = 'default') {
   const toast = document.getElementById('toast');
   if (!toast) return;
@@ -16,18 +16,18 @@ function showToast(message, type = 'default') {
   }, 2500);
 }
 
-/** Add-to-cart buttons */
+/** Botones de agregar al carrito */
 function initCartButtons() {
   document.querySelectorAll('.product-card__add').forEach((btn) => {
     btn.addEventListener('click', () => {
       const card = btn.closest('.product-card');
       const name = card?.querySelector('.product-card__name')?.textContent || 'Producto';
 
-      // Quick scale animation
+      // Animación rápida de escala
       btn.style.transform = 'scale(0.93)';
       setTimeout(() => { btn.style.transform = ''; }, 120);
 
-      // Update cart badge count
+      // Actualizar contador del carrito
       const cartBadge = document.querySelector('#nav-cart .badge');
       if (cartBadge) {
         const current = parseInt(cartBadge.textContent, 10) || 0;
@@ -39,7 +39,7 @@ function initCartButtons() {
   });
 }
 
-/** Wishlist toggle */
+/** Alternar favoritos */
 function initWishlist() {
   document.querySelectorAll('.product-card__wishlist').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -59,7 +59,7 @@ function initWishlist() {
   });
 }
 
-/** Search input — basic filter */
+/** Búsqueda — filtro básico */
 function initSearch() {
   const input = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
@@ -86,7 +86,7 @@ function initSearch() {
     }
   });
 
-  // Reset on empty
+  // Reiniciar al vaciar
   input?.addEventListener('input', () => {
     if (!input.value.trim()) {
       document.querySelectorAll('.product-card').forEach((card) => {
@@ -96,7 +96,7 @@ function initSearch() {
   });
 }
 
-/** Scroll to top button */
+/** Botón volver arriba */
 function initScrollTop() {
   const btn = document.getElementById('scroll-top-btn');
   if (!btn) return;
@@ -110,7 +110,7 @@ function initScrollTop() {
   });
 }
 
-/** Navbar shrink on scroll */
+/** Navbar se compacta al hacer scroll */
 function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
@@ -124,18 +124,18 @@ function initNavbarScroll() {
   }, { passive: true });
 }
 
-/** Category filtering */
+/** Filtrado por categorías */
 function initCategories() {
   const categoryItems = document.querySelectorAll('.category-bar__item:not(#cat-mas), .category-bar__dropdown-item');
   const products = document.querySelectorAll('.product-card');
 
   categoryItems.forEach(item => {
-    if(item.id === 'cat-mas' || item.getAttribute('href') === './vender.html') return; // Skip dropdown toggle and Vender link
+    if(item.id === 'cat-mas' || item.getAttribute('href') === './vender.html') return; // Saltar el toggle del dropdown y el enlace de Vender
 
     item.addEventListener('click', (e) => {
       e.preventDefault();
       
-      // Update active state for top bar items
+      // Actualizar estado activo de los ítems de la barra superior
       if (item.classList.contains('category-bar__item')) {
         document.querySelectorAll('.category-bar__item').forEach(i => i.classList.remove('category-bar__item--active'));
         item.classList.add('category-bar__item--active');
@@ -162,7 +162,7 @@ function initCategories() {
   });
 }
 
-// Init all
+// Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
   initCartButtons();
   initWishlist();

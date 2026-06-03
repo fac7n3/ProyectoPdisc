@@ -13,7 +13,7 @@
   </head>
   <body>
 
-    <!-- ====== NAVBAR ====== -->
+    <!-- ====== BARRA DE NAVEGACIÓN ====== -->
     <nav class="navbar" role="navigation" aria-label="Navegación principal">
       <div class="navbar__top">
         <!-- Logo -->
@@ -25,14 +25,14 @@
           </div>
         </a>
 
-        <!-- Actions -->
+        <!-- Acciones -->
         <div class="navbar__actions">
           <a href="./perfil.html" class="navbar__action-circle" id="nav-profile" aria-label="Mi cuenta">u</a>
           <a href="#" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">c</a>
         </div>
       </div>
 
-      <!-- Search -->
+      <!-- Búsqueda -->
       <div class="navbar__search-wrapper">
         <div class="navbar__search">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -42,7 +42,7 @@
       </div>
     </nav>
 
-    <!-- ====== CATEGORY BAR ====== -->
+    <!-- ====== BARRA DE CATEGORÍAS ====== -->
     <div class="category-bar" role="navigation" aria-label="Categorías">
       <div class="category-bar__inner">
         <a href="#" class="category-bar__item category-bar__item--active" id="cat-inicio">Inicio</a>
@@ -52,7 +52,7 @@
         <a href="#" class="category-bar__item" id="cat-lacteos">Lácteos</a>
         <a href="#" class="category-bar__item" id="cat-farmacias">Farmacias</a>
         
-        <!-- Dropdown -->
+        <!-- Menú Desplegable -->
         <div class="category-bar__dropdown">
           <a href="#" class="category-bar__item" id="cat-mas">
             Más <i class="fa-solid fa-chevron-down" style="font-size:0.625rem; opacity:0.5; margin-left:0.25rem;"></i>
@@ -69,10 +69,10 @@
       </div>
     </div>
 
-    <!-- ====== MAIN CONTENT ====== -->
+    <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <main>
 
-      <!-- Hero Banner -->
+      <!-- Banner Principal -->
       <section class="hero" aria-label="Banner promocional">
         <div class="hero__banner">
           <img src="../Assets/images/banners/hero_banner.png" alt="Productos frescos de Baradero" loading="eager" />
@@ -91,7 +91,7 @@
         <strong>Farmacia de turno hoy:</strong> nombre de la farmac | direccion ahse 123 | Hasta las 20:00
       </div>
 
-      <!-- Products Section -->
+      <!-- Sección de Productos -->
       <section class="products" id="productos" aria-label="Productos recomendados">
         <div class="section-header">
           <h2 class="section-header__title">Productos recomendados</h2>
@@ -100,7 +100,7 @@
 
         <div class="products__grid" id="products-grid">
 
-          <!-- Product 1 -->
+          <!-- Producto 1 -->
           <article class="product-card" id="product-yerba" data-category="supermercado ofertas">
             <span class="product-card__badge product-card__badge--envio">Envío gratis</span>
             <div class="product-card__image">
@@ -126,7 +126,7 @@
             </div>
           </article>
 
-          <!-- Product 2 -->
+          <!-- Producto 2 -->
           <article class="product-card" id="product-pan" data-category="carnes">
             <div class="product-card__image">
               <img src="../Assets/images/products/bread.png" alt="Pan Artesanal Casero" loading="lazy" />
@@ -149,7 +149,7 @@
             </div>
           </article>
 
-          <!-- Product 3 -->
+          <!-- Producto 3 -->
           <article class="product-card" id="product-cafe" data-category="supermercado ofertas">
             <span class="product-card__badge product-card__badge--oferta">-20%</span>
             <div class="product-card__image">
@@ -175,7 +175,7 @@
             </div>
           </article>
 
-          <!-- Product 4 -->
+          <!-- Producto 4 -->
           <article class="product-card" id="product-dulce" data-category="supermercado">
             <div class="product-card__image">
               <img src="../Assets/images/products/dulce.png" alt="Dulce de Leche 1kg" loading="lazy" />
@@ -198,7 +198,7 @@
             </div>
           </article>
 
-          <!-- Product 5 -->
+          <!-- Producto 5 -->
           <article class="product-card" id="product-leche" data-category="lacteos">
             <span class="product-card__badge product-card__badge--envio">Envío gratis</span>
             <div class="product-card__image">
@@ -222,7 +222,7 @@
             </div>
           </article>
 
-          <!-- Product 6 -->
+          <!-- Producto 6 -->
           <article class="product-card" id="product-galletitas" data-category="supermercado ofertas">
             <span class="product-card__badge product-card__badge--oferta">-15%</span>
             <div class="product-card__image">
@@ -248,7 +248,7 @@
             </div>
           </article>
 
-          <!-- Product 7 -->
+          <!-- Producto 7 -->
           <article class="product-card" id="product-limpieza" data-category="limpieza supermercado">
             <div class="product-card__image">
               <img src="../Assets/images/products/cleaning.png" alt="Limpiador Multiuso" loading="lazy" />
@@ -271,7 +271,7 @@
             </div>
           </article>
 
-          <!-- Product 8 (duplicate of yerba as variant) -->
+          <!-- Producto 8 (duplicado de yerba como variante) -->
           <article class="product-card" id="product-yerba-2" data-category="supermercado ofertas">
             <div class="product-card__image">
               <img src="../Assets/images/products/yerba.png" alt="Yerba Mate Suave 500g" loading="lazy" />
@@ -299,7 +299,7 @@
 
     </main>
 
-    <!-- ====== FOOTER ====== -->
+    <!-- ====== PIE DE PÁGINA ====== -->
     <footer class="footer">
       <div class="footer__inner">
         <div class="footer__brand-container">
@@ -346,15 +346,15 @@
       </div>
     </footer>
 
-    <!-- Scroll to top -->
+    <!-- Volver arriba -->
     <button class="scroll-top" id="scroll-top-btn" aria-label="Volver arriba">
       <i class="fa-solid fa-chevron-up"></i>
     </button>
 
-    <!-- Toast notification -->
+    <!-- Notificación Toast -->
     <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
-    <!-- Accessibility helper -->
+    <!-- Asistente de accesibilidad -->
     <style>
       .sr-only {
         position: absolute;

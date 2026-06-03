@@ -162,7 +162,7 @@ async function registerWithGoogle() {
   }
 }
 
-// --- Event Listeners ---
+// --- Manejadores de Eventos ---
 const registerForm = document.getElementById("register-form");
 registerForm?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -171,7 +171,7 @@ registerForm?.addEventListener("submit", (e) => {
 
 googleRegisterBtn?.addEventListener("click", registerWithGoogle);
 
-// Toggle password visibility
+// Alternar visibilidad de contraseña
 const toggleRegisterPasswordBtn = document.getElementById("toggle-register-password");
 toggleRegisterPasswordBtn?.addEventListener("click", () => {
   const type = registerPasswordInput.getAttribute("type") === "password" ? "text" : "password";

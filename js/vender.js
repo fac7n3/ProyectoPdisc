@@ -1,4 +1,4 @@
-// Vender logic - Mock Seller Dashboard
+// Lógica de vendedor - Panel de vendedor (demo)
 
 function showToast(message) {
   const toast = document.getElementById('toast');
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const shopNameLabel = document.getElementById('dash-shop-name');
   const logoutBtn = document.getElementById('btn-logout-seller');
 
-  // Check if seller
+  // Verificar si es vendedor
   function checkSellerState() {
     const isSeller = localStorage.getItem('is_seller') === 'true';
     const shopName = localStorage.getItem('seller_shop_name');
@@ -35,15 +35,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initial check
+  // Verificación inicial
   checkSellerState();
 
-  // Handle registration
+  // Manejar registro
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
     const nameInput = document.getElementById('shop-name').value;
     
-    // Save to local storage
+    // Guardar en almacenamiento local
     localStorage.setItem('is_seller', 'true');
     localStorage.setItem('seller_shop_name', nameInput);
     
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSellerState();
   });
 
-  // Handle logout
+  // Manejar cierre de sesión
   logoutBtn?.addEventListener('click', () => {
     localStorage.removeItem('is_seller');
     localStorage.removeItem('seller_shop_name');

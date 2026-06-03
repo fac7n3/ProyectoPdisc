@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
 
-// Initialize Supabase
+// Inicializar Supabase
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// --- Toast System ---
+// --- Sistema de Notificaciones ---
 function initToastContainer() {
   let container = document.getElementById("toast-container");
   if (!container) {
@@ -53,13 +53,13 @@ export function showToast(message, type = "error") {
   toast.innerHTML = `${icon} <span>${message}</span>`;
   container.appendChild(toast);
 
-  // Animate in
+  // Animar entrada
   requestAnimationFrame(() => {
     toast.style.opacity = "1";
     toast.style.transform = "translateY(0)";
   });
 
-  // Remove after 4 seconds
+  // Eliminar después de 4 segundos
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateY(-10px)";
@@ -69,7 +69,7 @@ export function showToast(message, type = "error") {
   }, 4000);
 }
 
-// --- UI Helpers ---
+// --- Utilidades de Interfaz ---
 export function setLoading(btn, loading, originalText = "Enviar") {
   if (!btn) return;
   btn.disabled = loading;
@@ -85,12 +85,12 @@ export function setLoading(btn, loading, originalText = "Enviar") {
   }
 }
 
-// --- Validations ---
+// --- Validaciones ---
 export function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// --- OAuth Error Checking ---
+// --- Verificación de Errores OAuth ---
 export function checkUrlErrors() {
   const params = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -114,11 +114,11 @@ export function checkUrlErrors() {
   }
 }
 
-// --- Global Session Listener ---
+// --- Listener Global de Sesión ---
 let isHandlingRedirect = false;
 
 export function setupGlobalSessionListener(redirectIfNoSession = false, redirectIfSession = false) {
-  // Listen to auth state changes
+  // Escuchar cambios de estado de autenticación
   supabase.auth.onAuthStateChange((event, session) => {
     if (isHandlingRedirect) return;
 
@@ -131,7 +131,7 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
     }
   });
 
-  // Check initial session
+  // Verificar sesión inicial
   supabase.auth.getUser().then(({ data: { user } }) => {
     if (!user && redirectIfNoSession) {
       window.location.replace("../pages/login.html");
@@ -139,6 +139,6 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
       window.location.replace("../pages/perfil.html");
     }
   }).catch(() => {
-    // Ignore error
+    // Ignorar error
   });
 }

@@ -288,7 +288,7 @@ body {
   text-decoration: underline;
 }
 
-/* Profile specific styles */
+/* Estilos específicos del perfil */
 .profile-avatar-section {
   display: flex;
   flex-direction: column;

@@ -102,7 +102,7 @@ async function loginWithGoogle() {
   }
 }
 
-// --- Event Listeners ---
+// --- Manejadores de Eventos ---
 const loginForm = document.getElementById("login-form");
 loginForm?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -111,7 +111,7 @@ loginForm?.addEventListener("submit", (e) => {
 
 googleLoginBtn?.addEventListener("click", loginWithGoogle);
 
-// Toggle password visibility
+// Alternar visibilidad de contraseña
 const togglePasswordBtn = document.getElementById("toggle-password");
 togglePasswordBtn?.addEventListener("click", () => {
   const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
