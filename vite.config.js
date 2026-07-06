@@ -33,6 +33,7 @@ export default defineConfig({
         admin: resolve(__dirname, 'pages/admin.html'),
         producto: resolve(__dirname, 'pages/producto.html'),
         comercio: resolve(__dirname, 'pages/comercio.html'),
+        terminos: resolve(__dirname, 'pages/terminos.html'),
       }
     }
   }

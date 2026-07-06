@@ -10,13 +10,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/home-D69-ewdu.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/auth-utils-C2XCX4Fn.js">
+    <script type="module" crossorigin src="/assets/home-UZ0-A7z7.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/auth-utils-CEC6VUul.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-Cg7pFG_6.js">
     <link rel="modulepreload" crossorigin href="/assets/product-modal-Dvx9hCCP.js">
     <link rel="stylesheet" crossorigin href="/assets/cart-utils-C756JBN-.css">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-CoeBkmyF.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BX-nhA4Z.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
   </head>
   <body>
 
@@ -97,8 +97,23 @@
 
       <!-- Farmacia de turno -->
       <div class="farmacia-turno">
-        <strong>Farmacia de turno hoy:</strong> Consultá la farmacia de turno de Baradero | <a href="#" style="color: inherit; text-decoration: underline;">Ver más info</a>
+        <strong>Farmacia de turno hoy:</strong> Consultá la farmacia de turno de Baradero | <a href="#" id="farmacia-link" style="color: inherit; text-decoration: underline;">Ver más info</a>
       </div>
+
+      <!-- Locales Destacados (Carrusel Horizontal) -->
+      <section class="stores-carousel-section" aria-label="Locales destacados">
+        <div class="stores-carousel" id="stores-carousel">
+          <!-- Skeletons mientras carga JS -->
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+          <div class="store-logo-skeleton skeleton"></div>
+        </div>
+      </section>
 
       <!-- Sección de Productos -->
       <section class="products" id="productos" aria-label="Catálogo de productos">
@@ -159,36 +174,39 @@
         <div>
           <div class="footer__col-title">Comprá</div>
           <nav class="footer__links">
-            <a href="#" class="footer__link">Ofertas del día</a>
-            <a href="#" class="footer__link">Supermercado</a>
-            <a href="#" class="footer__link">Categorías</a>
-            <a href="#" class="footer__link">Comercios</a>
+            <a href="./search.html?cat=ofertas" class="footer__link">Ofertas del día</a>
+            <a href="./search.html?cat=almacen" class="footer__link">Supermercado</a>
+            <a href="./search.html" class="footer__link">Categorías</a>
+            <a href="./search.html" class="footer__link">Comercios</a>
           </nav>
         </div>
         <div>
           <div class="footer__col-title">Vendé</div>
           <nav class="footer__links">
-            <a href="#" class="footer__link">Registrar comercio</a>
-            <a href="#" class="footer__link">Cómo vender</a>
-            <a href="#" class="footer__link">Costos y comisiones</a>
+            <a href="./vender.html" class="footer__link">Registrar comercio</a>
+            <a href="./info.html" class="footer__link">Cómo vender</a>
+            <a href="./info.html" class="footer__link">Costos y comisiones</a>
           </nav>
         </div>
         <div>
           <div class="footer__col-title">Ayuda</div>
           <nav class="footer__links">
-            <a href="#" class="footer__link">Contacto</a>
-            <a href="#" class="footer__link">Preguntas frecuentes</a>
-            <a href="#" class="footer__link">Devoluciones</a>
-            <a href="#" class="footer__link">Términos</a>
+            <a href="./info.html" class="footer__link">Contacto</a>
+            <a href="./info.html" class="footer__link">Preguntas frecuentes</a>
+            <a href="./info.html" class="footer__link">Devoluciones</a>
+            <a href="./info.html" class="footer__link">Términos</a>
           </nav>
         </div>
       </div>
       <div class="footer__bottom">
-        <span>&copy; 2026 Baradero Local. Todos los derechos reservados.</span>
+        <div class="footer__copyright-container">
+          <span>&copy; 2026 Baradero Local. Todos los derechos reservados.</span>
+          <a href="./terminos.html" class="footer__terms-link">Términos y condiciones</a>
+        </div>
         <div class="footer__socials">
-          <a href="#" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="#" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="#" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
       </div>
     </footer>

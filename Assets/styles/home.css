@@ -1126,6 +1126,25 @@ ul, ol {
   color: #fff;
 }
 
+.footer__copyright-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.footer__terms-link {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.65);
+  transition: color 0.12s;
+  text-decoration: underline;
+  width: fit-content;
+}
+
+.footer__terms-link:hover {
+  color: #fff;
+}
+
 .footer__bottom {
   max-width: 1320px;
   margin: 1.5rem auto 0;
@@ -1265,6 +1284,10 @@ ul, ol {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
+  }
+
+  .footer__copyright-container {
+    align-items: center;
   }
 }
 
