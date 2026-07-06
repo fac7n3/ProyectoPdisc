@@ -8,5 +8,12 @@ Resolver problemática envios.
 Ver el tema de los medios de pago.
  le falta escencia, le falta dopamina, pareece inmobiliaria o de viajes
 
+ Al pasar a la pestaña "carrito" el icono de "perfil" se vuelve una "u"
 
+ Crear y poner en funcionamineto los botones de "ver tienda"
+
+ Inicio de sesion defectuso.
+
+ Optimizar la informacion del product model, y sus pestañas.
+ 
 

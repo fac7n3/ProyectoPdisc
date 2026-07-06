@@ -309,10 +309,54 @@ function initCartEvents() {
     showCartToast('Carrito vaciado');
   });
 
-  // Botón iniciar pago (demo)
+  // Botón iniciar pago seguro (Validación en servidor)
   const checkoutBtn = document.getElementById('cart-checkout-btn');
-  checkoutBtn?.addEventListener('click', () => {
-    showCartToast('Función de pago en desarrollo. ¡Próximamente!');
+  checkoutBtn?.addEventListener('click', async () => {
+    const currentCart = getCart();
+    if (currentCart.length === 0) return;
+
+    // 1. Requerir autenticación
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      showCartToast('Debes iniciar sesión para comprar');
+      setTimeout(() => window.location.href = './login.html', 1500);
+      return;
+    }
+
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validando...';
+
+    try {
+      // 2. Construir payload ligero para validar precios y stock
+      const payload = currentCart.map(item => ({ 
+        id: item.id, 
+        qty: item.qty, 
+        price: item.price 
+      }));
+
+      // 3. Ejecutar función segura en el backend
+      const { data, error } = await supabase.rpc('validate_cart_prices', { cart_payload: payload });
+
+      if (error) {
+        console.error('Error del servidor:', error);
+        showCartToast('Error al procesar el carrito');
+        return;
+      }
+
+      // 4. Analizar respuesta de seguridad
+      if (!data.valid) {
+        showCartToast('Algunos precios cambiaron o no hay stock', 'error');
+        // En un caso real, actualizaríamos el localStorage con los precios de data.items
+      } else {
+        showCartToast(`Precios validados ($${data.total}). ¡Iniciando pasarela de pago!`, 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showCartToast('Error de conexión');
+    } finally {
+      checkoutBtn.disabled = false;
+      checkoutBtn.textContent = 'Proceder al Pago';
+    }
   });
 }
 
