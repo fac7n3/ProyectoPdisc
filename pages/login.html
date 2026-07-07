@@ -39,6 +39,15 @@
                 </button>
               </div>
             </div>
+
+            <!-- Checkbox Términos y Condiciones -->
+            <label class="auth-terms" for="terms-checkbox" id="terms-label">
+              <input type="checkbox" id="terms-checkbox" name="terms" />
+              <span class="auth-terms__custom-check"></span>
+              <span class="auth-terms__text">
+                Acepto los <a href="./terminos.html" class="auth-terms__link" target="_blank">Términos y Condiciones</a> de uso de Baradero Local.
+              </span>
+            </label>
             
             <button id="local-login-btn" class="auth-btn auth-btn-primary" type="submit">Iniciar sesión</button>
           </form>
@@ -47,6 +56,7 @@
             <a href="#" id="forgot-password-link">¿Olvidaste tu contraseña?</a>
           </div>
           
+          <!-- Checkbox duplicado eliminado: se usa el mismo #terms-checkbox para ambas acciones -->
           <button id="google-login-btn" class="auth-btn auth-btn-outline" type="button">
             <i class="fa-brands fa-google" style="margin-right: 8px;"></i>Iniciar sesión con Google
           </button>

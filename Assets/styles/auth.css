@@ -458,3 +458,96 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* ---- Checkbox de Términos y Condiciones ---- */
+.auth-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+  margin-bottom: 0.25rem;
+}
+
+.auth-terms:has(#terms-checkbox:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.auth-terms:has(#terms-checkbox:checked) .auth-terms__custom-check {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.auth-terms:has(#terms-checkbox:checked) .auth-terms__custom-check::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+
+.auth-terms--error {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  animation: auth-shake 0.35s ease;
+}
+
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.auth-terms input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.auth-terms__custom-check {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  position: relative;
+  transition: all 0.2s;
+  margin-top: 1px;
+}
+
+.auth-terms__custom-check::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  opacity: 0;
+  transform: rotate(45deg) scale(0.5);
+  transition: all 0.15s ease;
+}
+
+.auth-terms__text {
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.auth-terms__link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  transition: color 0.15s;
+}
+
+.auth-terms__link:hover {
+  color: #1d4ed8;
+}

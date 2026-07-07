@@ -5,6 +5,20 @@ const registerPasswordInput = document.getElementById("register-password");
 const registerNameInput = document.getElementById("register-name");
 const registerBtn = document.getElementById("register-btn");
 const googleRegisterBtn = document.getElementById("google-register-btn");
+const termsCheckbox = document.getElementById("terms-checkbox");
+// Un solo checkbox para ambas acciones (email y Google)
+
+// --- Valida y resalta el checkbox de términos ---
+function checkTermsAccepted(checkboxEl, labelId) {
+  const label = document.getElementById(labelId);
+  if (!checkboxEl?.checked) {
+    label?.classList.add("auth-terms--error");
+    setTimeout(() => label?.classList.remove("auth-terms--error"), 500);
+    showToast("Debés aceptar los Términos y Condiciones para continuar.", "error");
+    return false;
+  }
+  return true;
+}
 
 function disableAllInputs() {
   if (registerEmailInput) registerEmailInput.disabled = true;
@@ -61,6 +75,9 @@ function mapRegisterError(error) {
 
 // --- Registro con email/contraseña ---
 async function registerWithEmail() {
+  // Validar aceptación de términos
+  if (!checkTermsAccepted(termsCheckbox, "terms-label")) return;
+
   const email = registerEmailInput?.value?.trim() ?? "";
   const password = registerPasswordInput?.value ?? "";
   const name = registerNameInput?.value?.trim() ?? "";
@@ -141,6 +158,9 @@ async function registerWithEmail() {
 
 // --- Registro con Google ---
 async function registerWithGoogle() {
+  // Validar aceptación de términos (mismo checkbox que email)
+  if (!checkTermsAccepted(termsCheckbox, "terms-label")) return;
+
   setLoading(googleRegisterBtn, true, "Crear cuenta con Google");
 
   try {

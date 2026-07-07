@@ -55,25 +55,45 @@
     .terms-container li {
       margin-bottom: 0.5rem;
     }
+    .btn-outline {
+      padding: 0.5rem 1rem;
+      border: 1.5px solid var(--bl-primary);
+      color: var(--bl-primary);
+      border-radius: var(--bl-radius-md);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .btn-outline:hover {
+      background: var(--bl-primary);
+      color: white;
+    }
   </style>
   <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
 </head>
 <body class="bl-bg">
 
   <!-- Navbar Simple -->
-  <header class="navbar" style="position: static; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-    <div class="navbar__container">
-      <div class="navbar__left">
-        <a href="./home.html" class="navbar__logo">
-          <img src="/assets/logoazulpng-BmcneNO6.png" alt="Logo Baradero Local" class="navbar__logo-img" />
-          <span class="navbar__logo-text">Baradero<br><small>Local</small></span>
-        </a>
-      </div>
-      <div class="navbar__right">
+  <nav class="navbar" style="position: static; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div class="navbar__top">
+      <a href="./home.html" class="navbar__logo">
+        <img src="/assets/logoazulpng-BmcneNO6.png" alt="Logo Baradero Local" class="navbar__logo-img" />
+        <div class="navbar__logo-text">
+          <span class="navbar__logo-title">Baradero Local</span>
+          <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+        </div>
+      </a>
+      <div class="navbar__actions">
         <a href="./home.html" class="btn-outline">Volver al Inicio</a>
       </div>
     </div>
-  </header>
+  </nav>
 
   <main class="terms-container">
     <h1>Términos y Condiciones de Uso</h1>

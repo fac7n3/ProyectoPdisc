@@ -4,6 +4,20 @@ const emailInput = document.getElementById("correo");
 const passwordInput = document.getElementById("password");
 const localLoginBtn = document.getElementById("local-login-btn");
 const googleLoginBtn = document.getElementById("google-login-btn");
+const termsCheckbox = document.getElementById("terms-checkbox");
+// Un solo checkbox para ambas acciones (email y Google)
+
+// --- Valida y resalta el checkbox de términos ---
+function checkTermsAccepted(checkboxEl, labelId) {
+  const label = document.getElementById(labelId);
+  if (!checkboxEl?.checked) {
+    label?.classList.add("auth-terms--error");
+    setTimeout(() => label?.classList.remove("auth-terms--error"), 500);
+    showToast("Debés aceptar los Términos y Condiciones para continuar.", "error");
+    return false;
+  }
+  return true;
+}
 
 // --- Mapeo de errores de Supabase a mensajes claros en español ---
 function mapLoginError(error) {
@@ -33,6 +47,9 @@ function mapLoginError(error) {
 
 // --- Login con email/contraseña ---
 async function loginLocal() {
+  // Validar aceptación de términos
+  if (!checkTermsAccepted(termsCheckbox, "terms-label")) return;
+
   const email = emailInput?.value?.trim() ?? "";
   const password = passwordInput?.value ?? "";
 
@@ -81,6 +98,9 @@ async function loginLocal() {
 
 // --- Login con Google ---
 async function loginWithGoogle() {
+  // Validar aceptación de términos (mismo checkbox que email)
+  if (!checkTermsAccepted(termsCheckbox, "terms-label")) return;
+
   setLoading(googleLoginBtn, true, "Iniciar sesión con Google");
 
   try {
