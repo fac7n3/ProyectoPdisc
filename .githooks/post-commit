@@ -1,0 +1,18 @@
+#!/bin/sh
+# Registro académico: crea una Tarea en Jira por cada commit.
+# Carga credenciales desde .jira.env (no versionado) y ejecuta el script Node.
+# Con "|| true" garantizamos que un fallo en Jira nunca rompa el commit.
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+if [ -f "$ROOT/.jira.env" ]; then
+  set -a
+  . "$ROOT/.jira.env"
+  set +a
+fi
+
+if command -v node >/dev/null 2>&1; then
+  node "$ROOT/scripts/jira-commit-log.mjs" || true
+else
+  echo "[jira-commit-log] node no está en PATH — se omite el registro en Jira." >&2
+fi
