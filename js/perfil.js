@@ -140,7 +140,7 @@ async function loadFavoritos() {
 
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, title, price_cents, image_url')
+      .select('id, title, price, image_url')
       .in('id', wishlist)
       .eq('is_active', true);
 
@@ -153,7 +153,7 @@ async function loadFavoritos() {
 
     favoritosContainer.innerHTML = "";
     products.forEach(p => {
-      const priceFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p.price_cents / 100);
+      const priceFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p.price);
       const img = p.image_url || '../Assets/images/placeholder.png';
       
       const card = document.createElement('a');
@@ -181,7 +181,7 @@ async function loadCompras(userId) {
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('id, status, created_at, total_price_cents')
+      .select('id, status, created_at, total_price')
       .eq('client_id', userId)
       .order('created_at', { ascending: false });
 
@@ -195,7 +195,7 @@ async function loadCompras(userId) {
     comprasContainer.innerHTML = "";
     orders.forEach(order => {
       const date = new Date(order.created_at).toLocaleDateString('es-AR');
-      const total = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(order.total_price_cents / 100);
+      const total = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(order.total_price);
       const shortId = order.id.split('-')[0].toUpperCase();
       
       const item = document.createElement('div');

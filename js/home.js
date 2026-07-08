@@ -173,7 +173,7 @@ async function loadProducts() {
       .select(`
         id,
         title,
-        price_cents,
+        price,
         image_url,
         stock,
         stores ( name )
@@ -194,7 +194,7 @@ async function loadProducts() {
     }
 
     products.forEach(product => {
-      const priceStr = (product.price_cents / 100).toLocaleString('es-AR');
+      const priceStr = product.price.toLocaleString('es-AR');
       const storeName = product.stores ? product.stores.name : 'Tienda';
       
       const article = document.createElement('article');

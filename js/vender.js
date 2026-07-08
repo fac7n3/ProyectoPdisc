@@ -201,7 +201,7 @@ async function fetchProducts() {
     // Price cell
     const tdPrice = document.createElement('td');
     tdPrice.style.cssText = 'padding: 1rem; color: var(--bl-primary); font-weight: 600;';
-    tdPrice.textContent = `$${p.price_cents}`;
+    tdPrice.textContent = `$${p.price}`;
     tr.appendChild(tdPrice);
 
     // Actions cell
@@ -262,7 +262,7 @@ function setupDashboardEvents() {
     const newProduct = {
       store_id: currentStoreId,
       title: document.getElementById('prod-name').value.trim(),
-      price_cents: parseInt(document.getElementById('prod-price').value),
+      price: parseInt(document.getElementById('prod-price').value),
       category_id: null, // Asumimos que los values del select son UUID o hay que convertirlos. Wait, el select tiene `slug`, necesito el id
       description: document.getElementById('prod-desc').value.trim(),
       image_url: document.getElementById('prod-image').value.trim()

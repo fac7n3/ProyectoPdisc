@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.title = `${product.title} — Baradero Local`;
     
-    const priceStr = (product.price_cents / 100).toLocaleString('es-AR');
+    const priceStr = product.price.toLocaleString('es-AR');
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';
     const imgUrl = product.image_url || '../Assets/images/default-product.png';
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           id: product.id, 
           name: product.title, 
           shop: storeName, 
-          price: product.price_cents / 100, 
+          price: product.price,
           priceOld: null, 
           image: imgUrl, 
           qty: 1 

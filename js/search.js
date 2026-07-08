@@ -45,9 +45,9 @@ async function applyFilters() {
     if (filterState.sortBy === 'nombre') {
       query = query.order('title', { ascending: true });
     } else if (filterState.sortBy === 'precio-asc') {
-      query = query.order('price_cents', { ascending: true });
+      query = query.order('price', { ascending: true });
     } else if (filterState.sortBy === 'precio-desc') {
-      query = query.order('price_cents', { ascending: false });
+      query = query.order('price', { ascending: false });
     } else {
       query = query.order('created_at', { ascending: false });
     }
@@ -71,7 +71,7 @@ async function applyFilters() {
     }
 
     products.forEach(product => {
-      const priceStr = (product.price_cents / 100).toLocaleString('es-AR');
+      const priceStr = product.price.toLocaleString('es-AR');
       const storeName = product.stores ? product.stores.name : 'Tienda';
       
       const article = document.createElement('article');

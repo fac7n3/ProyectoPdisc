@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       productsHtml = '<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;">Este comercio aún no tiene productos publicados.</div>';
     } else {
       productsHtml = products.map(product => {
-        const priceStr = (product.price_cents / 100).toLocaleString('es-AR');
+        const priceStr = product.price.toLocaleString('es-AR');
         return `
           <article class="product-card" id="${product.id}">
             <div class="product-card__image">
