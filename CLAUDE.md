@@ -13,6 +13,7 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **Vite 8** multipágina + **Supabase** (Postgres/Auth/Google OAuth/Storage/RLS) + **JS vanilla ES6**.
 - `dist/` **se versiona** en git. El rol se lee del **JWT** (`app_metadata.role`). Precios: ver "Decisiones".
 - **Supabase project_id:** `otzhdwuaffcplrveuadc`. Idioma del proyecto: **español**.
+- **Hosting:** Vercel, proyecto `proyectopdisc` (team `baradero-local`), conectado a este repo (`fac7n3/ProyectoPdisc`, rama `main`). Cada push a `main` dispara deploy automático a producción.
 
 ## Decisiones de producto (definidas)
 - **Pagos:** simulado ahora (testing) → después MercadoPago real + transferencia con envío de comprobante.
