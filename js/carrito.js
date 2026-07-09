@@ -3,10 +3,11 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, updateCartBadge, MAX_QTY, formatPrice } from './cart-utils.js';
+import { getCart, saveCart, clearCart, updateCartBadge, MAX_QTY, formatPrice } from './cart-utils.js';
 
 // --- Estado del Carrito ---
 let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
+let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
 
 /** Renderizar todo el carrito */
 function renderCart() {
@@ -198,6 +199,7 @@ function initCouponEvents() {
     
     if (!code) {
       currentDiscount = 0;
+      appliedCouponCode = null;
       message.textContent = '';
       renderCart();
       return;
@@ -216,16 +218,19 @@ function initCouponEvents() {
 
       if (error || !data) {
         currentDiscount = 0;
+        appliedCouponCode = null;
         message.textContent = 'Código inválido o expirado.';
         message.classList.add('is-error');
       } else {
         currentDiscount = data.discount_percentage / 100;
+        appliedCouponCode = code;
         message.textContent = `¡Cupón aplicado! Tenés ${data.discount_percentage}% de descuento.`;
         message.classList.add('is-success');
       }
     } catch (err) {
       console.error('Error validando cupón:', err);
       currentDiscount = 0;
+      appliedCouponCode = null;
       message.textContent = 'Error al validar cupón.';
       message.classList.add('is-error');
     } finally {
@@ -293,7 +298,9 @@ function initCartEvents() {
     showCartToast('Carrito vaciado');
   });
 
-  // Botón iniciar pago seguro (Validación en servidor)
+  // Botón iniciar pago: crea la(s) orden(es) de verdad vía el RPC create_order.
+  // El método de entrega queda fijo en "pickup" sin dirección por ahora —
+  // elegir retiro/envío + calcular delivery_fee es F2-05, todavía no tiene UI.
   const checkoutBtn = document.getElementById('cart-checkout-btn');
   checkoutBtn?.addEventListener('click', async () => {
     const currentCart = getCart();
@@ -308,38 +315,42 @@ function initCartEvents() {
     }
 
     checkoutBtn.disabled = true;
-    checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validando...';
+    checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
 
     try {
-      // 2. Construir payload ligero para validar precios y stock
-      const payload = currentCart.map(item => ({ 
-        id: item.id, 
-        qty: item.qty, 
-        price: item.price 
-      }));
+      // create_order vuelve a leer el precio real de cada producto en el
+      // servidor — no hace falta (ni conviene) mandarle el precio del carrito.
+      const payload = currentCart.map(item => ({ id: item.id, qty: item.qty }));
 
-      // 3. Ejecutar función segura en el backend
-      const { data, error } = await supabase.rpc('validate_cart_prices', { cart_payload: payload });
+      const { data, error } = await supabase.rpc('create_order', {
+        cart_payload: payload,
+        coupon_code: appliedCouponCode,
+        p_delivery_method: 'pickup',
+        p_payment_method: 'simulado',
+        p_shipping_address: null,
+      });
 
       if (error) {
-        console.error('Error del servidor:', error);
-        showCartToast('Error al procesar el carrito');
+        console.error('Error al crear la orden:', error);
+        showCartToast(error.message || 'No se pudo procesar tu pedido.', 'error');
         return;
       }
 
-      // 4. Analizar respuesta de seguridad
-      if (!data.valid) {
-        showCartToast('Algunos precios cambiaron o no hay stock', 'error');
-        // En un caso real, actualizaríamos el localStorage con los precios de data.items
-      } else {
-        showCartToast(`Precios validados (${formatPrice(data.total)}). ¡Iniciando pasarela de pago!`, 'success');
-      }
+      const orderCount = data?.orders?.length || 0;
+      const total = (data?.orders || []).reduce((acc, o) => acc + o.total_price, 0);
+      const mensaje = orderCount > 1
+        ? `¡${orderCount} pedidos creados! Total: ${formatPrice(total)}`
+        : `¡Pedido creado! Total: ${formatPrice(total)}`;
+
+      clearCart();
+      showCartToast(mensaje, 'success');
+      setTimeout(() => window.location.href = './home.html', 2000);
     } catch (err) {
       console.error(err);
-      showCartToast('Error de conexión');
+      showCartToast('Error de conexión al procesar el pedido.', 'error');
     } finally {
       checkoutBtn.disabled = false;
-      checkoutBtn.textContent = 'Proceder al Pago';
+      checkoutBtn.innerHTML = 'Iniciar pago <i class="fa-solid fa-arrow-right"></i>';
     }
   });
 }
