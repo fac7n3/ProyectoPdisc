@@ -64,6 +64,8 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 21. `21_order_items_title_snapshot.sql` — `order_items.title` (snapshot) para el historial de pedidos (F2-06, ver nota abajo).
 22. `22_transfer_payment_proofs.sql` — bucket `payment-proofs` + RPC `confirm_transfer_payment` (F2-04, ver nota abajo).
 23. `23_fix_handle_new_user_role_escalation.sql` — **CRÍTICO**, corrige escalación de rol en signup (A113-238, ver nota abajo).
+24. `24_fix_role_approval_trigger_block.sql` — **CRÍTICO**, corrige `prevent_role_update_on_profile` que bloqueaba también las aprobaciones legítimas del admin (A113-239, ver nota abajo).
+25. `25_delivery_requests.sql` — tabla `delivery_requests` + RPC `approve_delivery_request` (F3-01, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -327,6 +329,64 @@ para vendedor; el de repartidor es F3-01, con el mismo patrón). Verificado
 con `pg_get_functiondef` tras aplicar: la función ya no referencia
 `account_type` en ninguna parte. `get_advisors` después: sin hallazgos
 nuevos.
+
+### 24_fix_role_approval_trigger_block.sql (CRÍTICO / A113-239) — aplicado
+
+Hallazgo funcional crítico encontrado construyendo F3-01: `prevent_role_update_on_profile`
+(trigger BEFORE UPDATE en `profiles`) chequeaba `auth.role() IN ('authenticated', 'anon')`
+para bloquear que un cliente se cambie el rol — pero esa función lee
+`request.jwt.claim.role` (GUC de sesión que setea PostgREST), que vale
+`'authenticated'` para CUALQUIER llamada de un usuario logueado, **incluida**
+una a un RPC `SECURITY DEFINER` como `approve_seller_request` (`SECURITY
+DEFINER` cambia el rol de Postgres efectivo para permisos, pero no toca esa
+GUC). Resultado: `approve_seller_request` nunca pudo actualizar
+`profiles.role` — ningún admin pudo aprobar un vendedor real jamás.
+
+Verificado contra la base real, en `BEGIN;...ROLLBACK;`: llamar
+`approve_seller_request` sobre la única solicitud pendiente real ("Test
+Bakery", `3de4c235-0414-44e5-ab56-dec53ec0ca74`) con un JWT de admin
+simulado fallaba con "No está permitido modificar el rol...". Coincide con
+que esa solicitud sigue `pending` desde 2026-06-19.
+
+Fix: el trigger ahora chequea una bandera de transacción explícita
+(`current_setting('app.role_change_authorized', true)`) en vez de la GUC de
+sesión. `approve_seller_request` (recreada acá) hace
+`set_config('app.role_change_authorized', 'true', true)` justo antes de
+tocar `profiles.role` — el `is_local=true` la resetea sola al terminar la
+transacción, y un cliente normal no tiene forma de setearla (no hay ningún
+RPC de `set_config` expuesto), así que la protección contra que un cliente
+se cambie el rol directo sigue intacta (verificado en el mismo test:
+intentar `UPDATE profiles SET role='admin'` como cliente normal sigue
+rechazado). Re-testeado con `BEGIN;...ROLLBACK;`: `approve_seller_request`
+sobre "Test Bakery" ahora sí crea la tienda con `status: 'approved'`.
+
+### 25_delivery_requests.sql (F3-01 / A113-181) — aplicado
+
+Onboarding del repartidor, mismo patrón que `seller_requests`/
+`approve_seller_request` (D6): tabla `delivery_requests` (`full_name`,
+`phone`, `vehicle_type` en `bicicleta`/`moto`/`auto`, `vehicle_plate`
+opcional, `status`) con RLS (insertar/ver la propia, admin ve y actualiza
+todas) + RPC `approve_delivery_request(req_id)` (`SECURITY DEFINER`, solo
+admin, mismo patrón de bandera de transacción que `approve_seller_request`
+tras el fix de A113-239). Rechazar sigue siendo un `UPDATE` directo desde
+`admin.js` vía la policy de admin — no hace falta RPC para eso.
+
+Subir a `'repartidor'` es SOLO a través de este RPC, nunca al signup (ver
+A113-238, el bug que este mismo patrón evita repetir). Testeado con
+`BEGIN;...ROLLBACK;`: el propio usuario intentando auto-aprobarse su
+solicitud → rechazado; un admin real aprobándola → `profiles.role` pasa a
+`'repartidor'`, `raw_app_meta_data` se actualiza, la solicitud queda
+`approved`. `get_advisors` después: solo la advertencia esperada
+("`authenticated` puede ejecutarla", intencional).
+
+Frontend: `pages/repartidor.html` + `js/repartidor.js` (nuevo) — formulario
+de alta (nombre, teléfono, vehículo, patente si no es bicicleta) y una
+vista de estado (pendiente/rechazada/ya aprobado — el panel de pedidos en
+sí es F3-02, todavía no existe). `admin.js`/`admin.html` — nueva tabla
+"Solicitudes de Repartidores" en el panel de admin, mismo patrón que la de
+comercios (aprobar llama al RPC, rechazar es un update directo). Agregado
+`repartidor` a `vite.config.js` (`rollupOptions.input`) y enlaces en
+`home.html` (dropdown de categorías + footer "Vendé").
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

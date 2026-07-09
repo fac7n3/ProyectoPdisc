@@ -35,6 +35,7 @@ export default defineConfig({
         comercio: resolve(__dirname, 'pages/comercio.html'),
         terminos: resolve(__dirname, 'pages/terminos.html'),
         info: resolve(__dirname, 'pages/info.html'),
+        repartidor: resolve(__dirname, 'pages/repartidor.html'),
       }
     }
   }

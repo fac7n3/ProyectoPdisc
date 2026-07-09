@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <title>Repartidor - Baradero Local</title>
+    <link rel="stylesheet" href="../Assets/styles/home.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      .vender-container {
+        max-width: 800px;
+        margin: 3rem auto;
+        padding: 2rem;
+        background: var(--bl-surface);
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-xl);
+        box-shadow: var(--bl-shadow-lg);
+      }
+      .vender-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .vender-header h1 {
+        font-size: 2rem;
+        color: var(--bl-primary-deeper);
+        margin-bottom: 0.5rem;
+      }
+      .vender-header p {
+        color: var(--bl-text-secondary);
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--bl-text);
+      }
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-md);
+        font-family: inherit;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+      }
+      .form-input:focus {
+        outline: none;
+        border-color: var(--bl-primary);
+        box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+      }
+      .form-btn {
+        width: 100%;
+        padding: 1rem;
+        background: var(--bl-primary);
+        color: white;
+        border: none;
+        border-radius: var(--bl-radius-md);
+        font-weight: 700;
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .form-btn:hover {
+        background: var(--bl-primary-dark);
+      }
+      #status-view {
+        display: none;
+        text-align: center;
+      }
+      #status-view i {
+        font-size: 3rem;
+        color: var(--bl-primary);
+        margin-bottom: 1rem;
+      }
+      .btn-outline {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid var(--bl-primary);
+        color: var(--bl-primary);
+        border-radius: var(--bl-radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        background: transparent;
+        transition: all 0.2s;
+        margin-top: 1.5rem;
+      }
+      .btn-outline:hover {
+        background: var(--bl-primary);
+        color: white;
+      }
+    </style>
+    <link rel="stylesheet" href="../Assets/styles/auth.css" />
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div id="loading-screen" class="auth-loading-screen">
+      <div class="auth-loading-spinner"></div>
+      <span class="auth-loading-text">Verificando sesión...</span>
+    </div>
+
+    <!-- Contenido principal -->
+    <div id="main-content">
+      <nav class="navbar">
+        <div class="navbar__top">
+          <a href="./home.html" class="navbar__logo">
+            <span class="navbar__logo-icon">
+              <svg viewBox="0 0 100 100" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0 C 22.4 0 0 22.4 0 50 C 0 75 50 100 50 100 C 50 100 100 75 100 50 C 100 22.4 77.6 0 50 0 Z" fill="#2d4a7c"/>
+                <rect x="23" y="25" width="9" height="30" fill="#ffffff"/>
+                <path d="M 6 65 L 50 33 L 94 65" stroke="#ffffff" stroke-width="11" stroke-linecap="butt" stroke-linejoin="miter"/>
+              </svg>
+            </span>
+            <div class="navbar__logo-text">
+              <span class="navbar__logo-title">Baradero Local</span>
+              <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+            </div>
+          </a>
+          <div class="navbar__actions">
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+          </div>
+        </div>
+      </nav>
+
+      <main>
+        <div class="vender-container">
+
+          <!-- Vista de Registro -->
+          <div id="register-view">
+            <div class="vender-header">
+              <h1>Sumate como repartidor</h1>
+              <p>Completá tus datos de contacto y vehículo. El equipo de Baradero Local revisa cada solicitud.</p>
+            </div>
+            <form id="delivery-form">
+              <div class="form-group">
+                <label class="form-label" for="delivery-name">Nombre completo</label>
+                <input type="text" id="delivery-name" class="form-input" placeholder="Nombre y apellido" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="delivery-phone">Teléfono de Contacto</label>
+                <input type="text" id="delivery-phone" class="form-input" placeholder="Código de área + Número" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="delivery-vehicle-type">Vehículo</label>
+                <select id="delivery-vehicle-type" class="form-input" required>
+                  <option value="bicicleta">Bicicleta</option>
+                  <option value="moto">Moto</option>
+                  <option value="auto">Auto</option>
+                </select>
+              </div>
+              <div class="form-group" id="delivery-plate-group">
+                <label class="form-label" for="delivery-plate">Patente</label>
+                <input type="text" id="delivery-plate" class="form-input" placeholder="Ej: AB123CD" />
+              </div>
+              <button type="submit" class="form-btn">Enviar solicitud</button>
+            </form>
+          </div>
+
+          <!-- Vista de estado (pendiente / rechazada / ya aprobado) -->
+          <div id="status-view">
+            <i class="fa-regular fa-clock" id="status-icon"></i>
+            <div class="vender-header">
+              <h1 id="status-title">Solicitud en revisión</h1>
+              <p id="status-text">Te avisamos apenas el equipo la revise.</p>
+            </div>
+            <button type="button" class="btn-outline" id="btn-back-home">Volver al inicio</button>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- Notificación Toast -->
+      <div class="toast" id="toast" aria-live="polite" role="status"></div>
+    </div>
+
+    <script type="module" src="../js/repartidor.js"></script>
+  </body>
+</html>

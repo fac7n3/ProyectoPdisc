@@ -77,7 +77,7 @@
       
       #admin-content { display: none; }
     </style>
-    <script type="module" crossorigin src="/assets/admin-Dpicv16-.js"></script>
+    <script type="module" crossorigin src="/assets/admin-BLWke6gt.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dh1CyNcg.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-C9N5n64s.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
@@ -132,6 +132,29 @@
                 </tr>
               </thead>
               <tbody id="requests-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-header" style="margin-top: 3rem;">
+            <h1>Solicitudes de Repartidores</h1>
+            <button class="action-btn" id="btn-refresh-delivery" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Nombre</th>
+                  <th>Teléfono</th>
+                  <th>Vehículo</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="delivery-requests-tbody">
                 <!-- Se llenará con JS -->
               </tbody>
             </table>
