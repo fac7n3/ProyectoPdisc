@@ -97,6 +97,35 @@ no sumarle tablas vacías sin uso a la superficie que audita F1-02
 `comercio.js` sin existir en la tabla real (bug silencioso, caía siempre al
 fallback "Sin descripción disponible.") — se resuelve al aplicar este bloque.
 
+### 15_security_advisors_fixes.sql (F1-02 / A113-158, A113-159) — aplicado
+
+Hallazgos de `get_advisors` (security) y su fix. El más serio: **`approve_seller_request`
+no validaba que quien la llama sea admin** — al ser `SECURITY DEFINER` y quedar expuesta
+como RPC pública (PostgREST expone toda función de `public` salvo que se revoque el
+`EXECUTE`), cualquier usuario autenticado podía llamar
+`supabase.rpc('approve_seller_request', { req_id: '<pendiente>' })` directo y aprobarse
+a sí mismo como vendedor, saltando la aprobación manual del admin (D6). Se agregó el
+chequeo de rol + se revocó `EXECUTE` de `anon` (verificado: un `cliente` ahora recibe
+"Solo un admin puede aprobar solicitudes de vendedor.").
+
+También: `search_path` fijo en 4 funciones que lo tenían mutable (`handle_new_user` lo
+había perdido al redefinirse en el archivo 10), se revocó el `EXECUTE` público de
+`handle_new_user`/`rls_auto_enable` (son solo para triggers, no RPCs de verdad), y se
+sacaron las policies de listado público de los buckets de storage (los buckets ya son
+`public=true`, así que el acceso a un objeto por su URL sigue andando — solo se pierde
+la posibilidad de listar todo el contenido del bucket vía API; confirmado que el
+frontend no usa esa función todavía).
+
+**Quedan 2 hallazgos de `get_advisors` sin tocar, a propósito:**
+- `error_logs_insert_anyone` con `WITH CHECK (true)` — intencional, es telemetría de
+  diagnóstico (ver A113-171).
+- `validate_cart_prices` callable por `anon`/`authenticated` — intencional, es el RPC
+  de checkout que llama cualquier cliente.
+
+**Pendiente manual (no se puede por SQL):** "Leaked Password Protection" está
+deshabilitado — es un toggle en el dashboard de Supabase (Authentication → Settings),
+no una migración.
+
 ### 14_error_logs.sql (A113-171) — aplicado
 
 Tabla `error_logs` para capturar errores no manejados del cliente
