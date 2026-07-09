@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (F0-05/F0-06).
+> Última actualización: 2026-07-09 (F0-07/F0-08).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -40,11 +40,11 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F0-04** (`A113-141..144`) — Alta de producto: `vender.js` no seteaba `seller_id` (NOT NULL + RLS `seller_id = auth.uid()`) → todo alta real fallaba con "new row violates row-level security policy". Fix: obtener `user.id` vía `supabase.auth.getUser()` y setearlo. También faltaba el campo `stock` en el form (quedaba en 0 = invendible) → agregado input `prod-stock` en `pages/vender.html`. `category_id` por slug ya estaba bien resuelto (comentario viejo engañoso, limpiado). Verificado con simulación RLS real en transacción con rollback (cuenta de test existente): reproduje el bug sin el fix y confirmé el insert exitoso con el fix (seller_id/price/category_id/stock correctos). No probado por UI en navegador (no hay credenciales de una cuenta vendedor real).
 - **F0-05** (`A113-145`, `A113-146`) — Helper `formatPrice()` central en `cart-utils.js` (pesos AR, separador de miles), unificado en home/search/producto/comercio/carrito/perfil/vender. Antes había 4 formatos distintos conviviendo (`toLocaleString` suelto, `Intl.NumberFormat` con `style:'currency'` en perfil.js que agregaba un espacio, y un caso en vender.js sin separador de miles).
 - **F0-06** (`A113-147..149`) — Integridad del carrito: se quitó `PRODUCTO_PRUEBA`/`seedCartIfEmpty` de `carrito.js` (ya no se precarga un producto falso); `initCartButtons` (cart-utils.js) ahora usa `data-product-id`/`dataset.price` en vez de parsear el texto ya renderizado del DOM. Verificado en navegador: id agregado al carrito es el UUID real de Supabase, carrito vacío no se auto-siembra.
+- **F0-07** (`A113-150`, `A113-151`) — Idempotencia en `db/schema/01-12`: faltaban `DROP POLICY/TRIGGER IF EXISTS` en 02/03/08/09 (re-correrlos fallaba con "already exists"); `09_user_carts.sql` creaba la tabla sin `IF NOT EXISTS`; `12_price_cents_to_price.sql` ahora guarda cada rename con un chequeo de `information_schema.columns` (si no, re-ejecutarlo dividiría los precios por 100 dos veces); seeds `04`/`06` detectan si ya corrieron. Orden completo documentado en `docs/RUN_LOCAL.md`. **Verificado corriendo los 12 archivos en orden contra la base real**: 0 errores, 0 duplicados (14 stores/64 products/14 categories antes y después), `validate_cart_prices` funcionando.
+- **F0-08** (`A113-152`) — Diseñado `db/schema/13_target_data_model.sql`: modelo de datos objetivo (roadmap sección 5) — `product_variants`, `product_images`, `products.compare_at_price`, `stores.description/zone/hours`, `orders.delivery_method/payment_method/payment_status/delivery_fee`, `payment_proofs`, `deliveries`, `reviews`, `conversations`/`messages`, `notifications`, `favorites`, todo con RLS. Validado con `BEGIN;...ROLLBACK;` contra la base real (corre sin errores). **A propósito NO aplicado todavía** — son tablas de fases que no arrancaron (Fase 2/3/5/7/8); aplicar cuando arranque cada una. Nota: `stores.description` ya se leía desde `comercio.js` sin existir en la tabla (bug silencioso, siempre caía al fallback) — se resuelve al aplicar este archivo.
 
 ### ⏳ Próximo (en orden)
-- **F0-07** (`A113-150`, `A113-151`) — Ordenar/idempotencia de migraciones SQL + documentar en `docs/RUN_LOCAL.md`.
-- **F0-08** (`A113-152`) — Diseñar migraciones del modelo de datos objetivo (variantes, imágenes, etc.) con RLS.
-- **Fase 1** (`A113-154..163`) — Seguridad (XSS, advisors, CUIT, headers).
+- **Fase 1** (`A113-154..163`) — Seguridad (XSS, advisors, CUIT, headers). Empezar por F1-01 (XSS) o F1-02 (`get_advisors`).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

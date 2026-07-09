@@ -79,3 +79,20 @@ uno y te quedás parado justo después del 09, vas a ver ese bug hasta que corra
 En un proyecto de Supabase nuevo: corré 01→12 en orden. Los seeds (04, 06) van a insertar
 los datos de prueba porque la guarda no encuentra nada todavía. Si no querés los datos de
 prueba, salteá 04, 06 y 07.
+
+### 13_target_data_model.sql (F0-08 / A113-152) — diseñado, NO aplicado todavía
+
+Modelo de datos objetivo de `docs/ROADMAP.md` sección 5: `product_variants`,
+`product_images`, `products.compare_at_price`, `stores.description/zone/hours`,
+`orders.delivery_method/payment_method/payment_status/delivery_fee`,
+`payment_proofs`, `deliveries`, `reviews`, `conversations`/`messages`,
+`notifications`, `favorites` — cada tabla nueva con RLS. Verificado con
+`BEGIN; ...; ROLLBACK;` contra la base real (corre sin errores, no queda nada
+creado), pero **no se aplicó a producción a propósito**: son tablas para
+funcionalidad de fases que todavía no arrancaron (Fase 2 checkout, Fase 3
+delivery, Fase 5 perfil de vendedor, Fase 7 reseñas/chat, Fase 8
+notificaciones). Aplicar recién cuando arranque la fase correspondiente, para
+no sumarle tablas vacías sin uso a la superficie que audita F1-02
+(`get_advisors`). Nota: `stores.description` estaba siendo leída por
+`comercio.js` sin existir en la tabla real (bug silencioso, caía siempre al
+fallback "Sin descripción disponible.") — se resuelve al aplicar este bloque.
