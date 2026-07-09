@@ -1,3 +1,5 @@
+import { supabase } from './auth-utils.js';
+
 export const CART_KEY = 'bl_cart';
 
 /**
@@ -16,11 +18,78 @@ export function getCart() {
 }
 
 /**
- * Guardar el carrito en localStorage
- * @param {Array} cart 
+ * Guardar el carrito en localStorage y, si hay sesión, sincronizarlo a la nube
+ * (F4-01). El push a la nube es "fire and forget" — no bloquea al llamador
+ * ni rompe el guardado local si falla la red.
+ * @param {Array} cart
  */
 export function saveCart(cart) {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  pushCartToCloud(cart).catch((err) => console.error('Error al sincronizar el carrito:', err));
+}
+
+/** Sube el carrito actual a user_carts (upsert). No hace nada si no hay sesión. */
+export async function pushCartToCloud(cart) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  await supabase
+    .from('user_carts')
+    .upsert({ user_id: session.user.id, items: cart }, { onConflict: 'user_id' });
+}
+
+/**
+ * Combina el carrito local con el de la nube: suma cantidades de productos
+ * repetidos (tope MAX_QTY) y usa los datos de display (nombre/precio/imagen)
+ * de la versión local, que es la más reciente en este navegador.
+ */
+function mergeCarts(localCart, cloudCart) {
+  const merged = new Map();
+  (cloudCart || []).forEach((item) => {
+    if (item?.id) merged.set(item.id, { ...item });
+  });
+  (localCart || []).forEach((item) => {
+    if (!item?.id) return;
+    const existing = merged.get(item.id);
+    merged.set(item.id, {
+      ...item,
+      qty: existing ? Math.min(MAX_QTY, existing.qty + item.qty) : item.qty,
+    });
+  });
+  return Array.from(merged.values());
+}
+
+const CART_SYNCED_FLAG = 'bl_cart_synced';
+
+/**
+ * Al loguearse (o al abrir cualquier página con sesión activa), trae el
+ * carrito de la nube y lo mezcla con el local — así no se pierde lo
+ * agregado antes de loguearse ni lo que ya estaba guardado en otro
+ * dispositivo. Se ejecuta una sola vez por pestaña (sessionStorage) para no
+ * repetir el merge en cada navegación entre páginas.
+ */
+export async function initCartSync() {
+  if (sessionStorage.getItem(CART_SYNCED_FLAG)) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  sessionStorage.setItem(CART_SYNCED_FLAG, '1');
+
+  const { data: cloudRow, error } = await supabase
+    .from('user_carts')
+    .select('items')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error al traer el carrito de la nube:', error);
+    return;
+  }
+
+  const merged = mergeCarts(getCart(), cloudRow?.items || []);
+  saveCart(merged);
+  updateCartBadge();
 }
 
 /**
@@ -185,3 +254,7 @@ export function initWishlist() {
     });
   });
 }
+
+// Se ejecuta al importar este módulo (todas las páginas que usan el
+// carrito lo importan) — no bloquea el render, solo mezcla en segundo plano.
+initCartSync();

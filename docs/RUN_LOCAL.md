@@ -82,6 +82,34 @@ proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
 acá para no meter un patrón de suscripción/limpieza nuevo sin poder
 verificarlo en un navegador con sesión real.
 
+### F4-01 (A113-187) — sincronizar carrito en la nube — sin migración nueva
+
+`user_carts` ya existía desde `09_user_carts.sql` (tabla + RLS `select`/
+`insert`/`update` propias) — solo hacía falta usarla. `js/cart-utils.js`:
+
+- `saveCart(cart)` ahora también llama a `pushCartToCloud(cart)` (upsert en
+  `user_carts` por `user_id`, "fire and forget" — si falla la red, el
+  carrito local se guarda igual, no se rompe la UI). Como `saveCart` ya era
+  el único punto de guardado del carrito (usado por `initCartButtons` y por
+  `carrito.js`), no hizo falta tocar los call sites.
+- `initCartSync()`: al importar `cart-utils.js` (todas las páginas que usan
+  el carrito lo importan) trae el carrito de `user_carts` si hay sesión, lo
+  mezcla con el local (`mergeCarts`: suma cantidades de productos repetidos
+  con tope `MAX_QTY`, usa los datos de display —nombre/precio/imagen— de la
+  versión local por ser la más reciente en ese navegador) y guarda el
+  resultado combinado. Se ejecuta una sola vez por pestaña
+  (`sessionStorage`, flag `bl_cart_synced`) para no repetir el merge en cada
+  navegación entre páginas de la misma sesión.
+
+Verificado: `mergeCarts` probado en el navegador con casos de producto solo
+local, solo en la nube, y repetido en ambos (cantidades sumadas
+correctamente, nombre de display tomado del local). El camino de escritura
+(upsert con `on conflict (user_id)`) probado contra la base real en
+`BEGIN;...ROLLBACK;`: dos upserts sucesivos actualizan la misma fila (no
+duplican), y un usuario no puede leer el `user_carts` de otro (RLS). Sin
+sesión real de navegador para probar el flujo end-to-end del merge al
+loguearse — mismo límite que F0-04.
+
 ### Idempotencia (F0-07 / A113-150)
 
 Todos los archivos son seguros de re-ejecutar sobre una base que ya los tiene aplicados

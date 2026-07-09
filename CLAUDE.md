@@ -84,8 +84,13 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 3 (Delivery y rol repartidor) completa** — F3-01 a F3-04. Queda **F3-05** (`A113-185`, ubicación/seguimiento del repartidor + tarifas por distancia) marcado "Futuro" en el roadmap, no bloquea nada.
 
+## Progreso (Fase 4 — Carrito robusto y favoritos)
+### ✅ Hecho
+- **F4-01** (`A113-187`) — Sincronizar carrito en la nube. `user_carts` ya existía (`09_user_carts.sql`) sin usar — sin migración nueva. `cart-utils.js`: `saveCart()` ahora también hace `pushCartToCloud()` (upsert por `user_id`, fire-and-forget); `initCartSync()` (se ejecuta al importar el módulo, una vez por pestaña vía `sessionStorage`) trae el carrito de la nube si hay sesión y lo mezcla con el local (`mergeCarts`: suma cantidades con tope `MAX_QTY`, usa los datos de display del local por ser el más reciente). Verificado: lógica de merge probada en el navegador (casos solo-local/solo-nube/repetido en ambos); upsert + RLS (un usuario no lee el `user_carts` de otro) probado contra la base real con `BEGIN;...ROLLBACK;`.
+
 ### ⏳ Próximo
-- **Fase 4** (carrito en la nube + favoritos persistentes) o **Fase 5** (experiencia del vendedor) — evaluar cuál conviene arrancar primero.
+- **F4-02** (`A113-188`) — Manejo de producto/variante inactivo, eliminado o sin stock dentro del carrito.
+- **F4-03** (`A113-189`) — Favoritos persistentes en DB (`favorites`); unificar las 2 implementaciones actuales de wishlist.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
