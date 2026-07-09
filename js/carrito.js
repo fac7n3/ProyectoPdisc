@@ -3,27 +3,10 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, updateCartBadge, MAX_QTY } from './cart-utils.js';
-
-// --- Producto de prueba (pre-cargado si el carrito está vacío) ---
-const PRODUCTO_PRUEBA = {
-  id: 'product-yerba',
-  name: 'Yerba Mate Premium 1kg',
-  shop: 'Almacén Don José',
-  price: 2850,
-  priceOld: 3200,
-  image: '../Assets/images/products/yerba.png',
-  qty: 1
-};
+import { getCart, saveCart, updateCartBadge, MAX_QTY, formatPrice } from './cart-utils.js';
 
 // --- Estado del Carrito ---
 let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
-
-
-/** Formatear precio en pesos argentinos */
-function formatPrice(value) {
-  return '$' + value.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
 
 /** Renderizar todo el carrito */
 function renderCart() {
@@ -349,7 +332,7 @@ function initCartEvents() {
         showCartToast('Algunos precios cambiaron o no hay stock', 'error');
         // En un caso real, actualizaríamos el localStorage con los precios de data.items
       } else {
-        showCartToast(`Precios validados ($${data.total}). ¡Iniciando pasarela de pago!`, 'success');
+        showCartToast(`Precios validados (${formatPrice(data.total)}). ¡Iniciando pasarela de pago!`, 'success');
       }
     } catch (err) {
       console.error(err);
@@ -376,17 +359,8 @@ function showCartToast(message, type = 'default') {
   }, 2500);
 }
 
-// --- Pre-cargar producto de prueba si el carrito está vacío ---
-function seedCartIfEmpty() {
-  const cart = getCart();
-  if (cart.length === 0) {
-    saveCart([PRODUCTO_PRUEBA]);
-  }
-}
-
 // --- Inicialización ---
 document.addEventListener('DOMContentLoaded', () => {
-  seedCartIfEmpty();
   renderCart();
   initCartEvents();
   initCouponEvents();

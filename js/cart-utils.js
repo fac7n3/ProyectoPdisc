@@ -41,6 +41,15 @@ export function parsePrice(text) {
 }
 
 /**
+ * Formatear un precio en pesos argentinos (sin centavos)
+ * @param {number} price - Ej: 1500
+ * @returns {string} Ej: "$1.500"
+ */
+export function formatPrice(price) {
+  return '$' + Number(price || 0).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+}
+
+/**
  * Actualizar el badge del carrito en el navbar
  */
 export function updateCartBadge() {
@@ -78,16 +87,20 @@ export function initCartButtons() {
   document.querySelectorAll('.product-card__add').forEach((btn) => {
     btn.addEventListener('click', () => {
       const card = btn.closest('.product-card');
-      if (!card) return;
+      const id = btn.dataset.productId || card?.id;
+      if (!id) {
+        console.error('product-card__add sin id de producto real (data-product-id / card.id)');
+        return;
+      }
 
-      const id = card.id || `product-${Date.now()}`;
-      const name = card.querySelector('.product-card__name')?.textContent || 'Producto';
-      const shop = card.querySelector('.product-card__shop')?.textContent?.replace(/^\s*/, '') || 'Tienda';
-      const priceText = card.querySelector('.product-card__price')?.textContent || '0';
-      const priceOldText = card.querySelector('.product-card__price-old')?.textContent || '';
-      const imgSrc = card.querySelector('.product-card__image img')?.getAttribute('src') || '';
+      const name = card?.querySelector('.product-card__name')?.textContent || 'Producto';
+      const shop = card?.querySelector('.product-card__shop')?.textContent?.replace(/^\s*/, '') || 'Tienda';
+      const priceOldText = card?.querySelector('.product-card__price-old')?.textContent || '';
+      const imgSrc = card?.querySelector('.product-card__image img')?.getAttribute('src') || '';
 
-      const price = parsePrice(priceText);
+      const price = card?.dataset.price !== undefined
+        ? Number(card.dataset.price)
+        : parsePrice(card?.querySelector('.product-card__price')?.textContent || '0');
       const priceOld = parsePrice(priceOldText);
 
       const cart = getCart();

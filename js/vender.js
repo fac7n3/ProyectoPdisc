@@ -1,4 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
+import { formatPrice } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -202,7 +203,7 @@ async function fetchProducts() {
     // Price cell
     const tdPrice = document.createElement('td');
     tdPrice.style.cssText = 'padding: 1rem; color: var(--bl-primary); font-weight: 600;';
-    tdPrice.textContent = `$${p.price}`;
+    tdPrice.textContent = formatPrice(p.price);
     tr.appendChild(tdPrice);
 
     // Actions cell

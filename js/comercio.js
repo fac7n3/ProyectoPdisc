@@ -1,72 +1,6 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
-
-function initCartButtons() {
-  document.querySelectorAll('.product-card__add').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const card = btn.closest('.product-card');
-      if (!card) return;
-
-      const productId = card.id;
-      const title = card.querySelector('.product-card__name')?.textContent || 'Producto';
-      const storeName = card.querySelector('.product-card__shop')?.textContent?.replace(' Tienda', '') || '';
-      
-      const priceText = card.querySelector('.product-card__price')?.textContent || '$0';
-      const priceVal = parseFloat(priceText.replace(/[^0-9]/g, '')) || 0;
-
-      const imgUrl = card.querySelector('.product-card__image img')?.getAttribute('src') || '';
-
-      const cart = getCart();
-      const existing = cart.find(item => item.id === productId);
-
-      if (existing) {
-        existing.qty++;
-      } else {
-        cart.push({
-          id: productId,
-          name: title,
-          shop: storeName,
-          price: priceVal,
-          priceOld: null,
-          image: imgUrl,
-          qty: 1
-        });
-      }
-
-      saveCart(cart);
-
-      // Button animation
-      btn.style.transform = 'scale(0.95)';
-      setTimeout(() => { btn.style.transform = ''; }, 100);
-
-      updateCartBadge();
-      showToast(`${title} agregado al carrito`, 'success');
-    });
-  });
-}
-
-function initWishlist() {
-  document.querySelectorAll('.product-card__wishlist').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const icon = btn.querySelector('i');
-      if (icon.classList.contains('fa-regular')) {
-        icon.classList.remove('fa-regular');
-        icon.classList.add('fa-solid');
-        icon.style.color = '#ef4444';
-        showToast('Agregado a favoritos', 'success');
-      } else {
-        icon.classList.remove('fa-solid');
-        icon.classList.add('fa-regular');
-        icon.style.color = '';
-        showToast('Eliminado de favoritos');
-      }
-    });
-  });
-}
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateCartBadge();
@@ -121,9 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       productsHtml = '<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;">Este comercio aún no tiene productos publicados.</div>';
     } else {
       productsHtml = products.map(product => {
-        const priceStr = product.price.toLocaleString('es-AR');
         return `
-          <article class="product-card" id="${product.id}">
+          <article class="product-card" id="${product.id}" data-price="${product.price}">
             <div class="product-card__image">
               <img src="${product.image_url || '../Assets/images/default-product.png'}" alt="${product.title}" loading="lazy" />
               <button class="product-card__wishlist" aria-label="Agregar a favoritos"><i class="fa-regular fa-heart"></i></button>
@@ -132,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span class="product-card__shop"><i class="fa-solid fa-store"></i> ${store.name}</span>
               <h3 class="product-card__name">${product.title}</h3>
               <div class="product-card__price-row">
-                <span class="product-card__price">$${priceStr}</span>
+                <span class="product-card__price">${formatPrice(product.price)}</span>
               </div>
               <button class="product-card__add" data-product-id="${product.id}"><i class="fa-solid fa-cart-plus"></i> Agregar</button>
             </div>

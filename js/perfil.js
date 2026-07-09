@@ -1,4 +1,5 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
+import { formatPrice } from "./cart-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -154,7 +155,7 @@ async function loadFavoritos() {
 
     favoritosContainer.innerHTML = "";
     products.forEach(p => {
-      const priceFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p.price);
+      const priceFmt = formatPrice(p.price);
       const img = p.image_url || '../Assets/images/placeholder.png';
       
       const card = document.createElement('a');
@@ -196,7 +197,7 @@ async function loadCompras(userId) {
     comprasContainer.innerHTML = "";
     orders.forEach(order => {
       const date = new Date(order.created_at).toLocaleDateString('es-AR');
-      const total = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(order.total_price);
+      const total = formatPrice(order.total_price);
       const shortId = order.id.split('-')[0].toUpperCase();
       
       const item = document.createElement('div');

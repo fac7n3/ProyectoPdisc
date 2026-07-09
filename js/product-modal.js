@@ -22,7 +22,8 @@ function escapeHTML(str) {
 
 // ── Datos del producto ──────────────────────────────────────
 function extractProductData(card) {
-  const id = card.id || `product-${Date.now()}`;
+  const id = card.id;
+  const price = card.dataset.price !== undefined ? Number(card.dataset.price) : _parsePrice(card.querySelector('.product-card__price')?.textContent || '0');
   const name = escapeHTML(card.querySelector('.product-card__name')?.textContent?.trim() || 'Producto');
   const shopEl = card.querySelector('.product-card__shop');
   const shop = escapeHTML(shopEl?.textContent?.trim()?.replace(/^\s*/, '') || 'Tienda');
@@ -50,11 +51,11 @@ function extractProductData(card) {
     : badgeEl?.classList.contains('product-card__badge--oferta') ? 'descuento' : '';
 
   // Stock simulado (aleatorio consistente basado en ID)
-  const stockSeed = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const stockSeed = (id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const stock = (stockSeed % 40) + 5;
 
   return {
-    id, name, shop, priceText, priceOldText, discountText,
+    id, price, name, shop, priceText, priceOldText, discountText,
     imgSrc, imgAlt, shippingText,
     fullStars, halfStars, emptyStars, ratingCount,
     categories, badgeText, badgeType, stock
@@ -321,6 +322,11 @@ let currentProductData = null;
 
 // ── Abrir modal ────────────────────────────────────────────
 function openProductModal(card) {
+  if (!card.id) {
+    console.error('Se intentó abrir el modal de un producto sin id real (UUID)');
+    return;
+  }
+
   // Si ya hay uno abierto, cerrarlo primero
   if (currentOverlay) closeProductModal();
 
@@ -463,7 +469,6 @@ function bindModalEvents(overlay, data) {
   const addCartBtn = overlay.querySelector('#pm-add-cart');
   addCartBtn?.addEventListener('click', () => {
     const qty = parseInt(qtyInput?.value, 10) || 1;
-    const price = _parsePrice(data.priceText);
     const priceOld = _parsePrice(data.priceOldText);
 
     const cart = _getCart();
@@ -476,7 +481,7 @@ function bindModalEvents(overlay, data) {
         id: data.id,
         name: data.name,
         shop: data.shop,
-        price,
+        price: data.price,
         priceOld: priceOld || null,
         image: data.imgSrc,
         qty
@@ -503,7 +508,6 @@ function bindModalEvents(overlay, data) {
   const buyBtn = overlay.querySelector('#pm-buy-now');
   buyBtn?.addEventListener('click', () => {
     const qty = parseInt(qtyInput?.value, 10) || 1;
-    const price = _parsePrice(data.priceText);
     const priceOld = _parsePrice(data.priceOldText);
 
     const cart = _getCart();
@@ -516,7 +520,7 @@ function bindModalEvents(overlay, data) {
         id: data.id,
         name: data.name,
         shop: data.shop,
-        price,
+        price: data.price,
         priceOld: priceOld || null,
         image: data.imgSrc,
         qty

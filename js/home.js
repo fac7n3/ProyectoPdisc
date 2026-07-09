@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -195,12 +195,12 @@ async function loadProducts() {
     }
 
     products.forEach(product => {
-      const priceStr = product.price.toLocaleString('es-AR');
       const storeName = product.stores ? product.stores.name : 'Tienda';
       
       const article = document.createElement('article');
       article.className = 'product-card';
       article.id = product.id;
+      article.dataset.price = product.price;
 
       // --- Image container ---
       const imageDiv = document.createElement('div');
@@ -243,7 +243,7 @@ async function loadProducts() {
       priceRow.className = 'product-card__price-row';
       const priceSpan = document.createElement('span');
       priceSpan.className = 'product-card__price';
-      priceSpan.textContent = `$${priceStr}`;
+      priceSpan.textContent = formatPrice(product.price);
       priceRow.appendChild(priceSpan);
       body.appendChild(priceRow);
 

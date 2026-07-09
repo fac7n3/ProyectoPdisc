@@ -2,7 +2,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, parsePrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
 
 
 
@@ -72,12 +72,12 @@ async function applyFilters() {
     }
 
     products.forEach(product => {
-      const priceStr = product.price.toLocaleString('es-AR');
       const storeName = product.stores ? product.stores.name : 'Tienda';
       
       const article = document.createElement('article');
       article.className = 'product-card';
       article.id = product.id;
+      article.dataset.price = product.price;
 
       // --- Image container ---
       const imageDiv = document.createElement('div');
@@ -128,7 +128,7 @@ async function applyFilters() {
       priceRow.className = 'product-card__price-row';
       const priceSpan = document.createElement('span');
       priceSpan.className = 'product-card__price';
-      priceSpan.textContent = `$${priceStr}`;
+      priceSpan.textContent = formatPrice(product.price);
       priceRow.appendChild(priceSpan);
       body.appendChild(priceRow);
 

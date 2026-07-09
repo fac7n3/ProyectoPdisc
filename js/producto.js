@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast } from './cart-utils.js';
+import { getCart, saveCart, formatPrice, updateCartBadge, showToast } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.title = `${product.title} — Baradero Local`;
     
-    const priceStr = product.price.toLocaleString('es-AR');
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';
     const imgUrl = product.image_url || '../Assets/images/default-product.png';
@@ -53,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <i class="fa-solid fa-store"></i> <a href="./comercio.html?id=${storeId}" style="color: inherit; text-decoration: none;">${storeName}</a>
         </div>
         <h1 class="product-title">${product.title}</h1>
-        <div class="product-price">$${priceStr}</div>
+        <div class="product-price">${formatPrice(product.price)}</div>
         <div class="product-description">${product.description || 'Sin descripción disponible.'}</div>
         
         <div class="product-actions">
