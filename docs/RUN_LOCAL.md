@@ -97,6 +97,19 @@ no sumarle tablas vacías sin uso a la superficie que audita F1-02
 `comercio.js` sin existir en la tabla real (bug silencioso, caía siempre al
 fallback "Sin descripción disponible.") — se resuelve al aplicar este bloque.
 
+### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
+
+Validación de CUIT (dígito verificador, módulo 11) y de los campos de
+`seller_requests` (shop_name, phone), del lado cliente (`js/validation-utils.js`,
+usado en `vender.js` en los dos formularios: alta de comercio y alta de
+producto) **y** del lado servidor (`public.is_valid_cuit()` + `CHECK`
+constraints — nunca confiar solo en la validación del cliente, cualquiera
+puede pegarle directo al endpoint de Supabase). Verificado que el algoritmo
+da el mismo resultado en JS y en SQL para los mismos CUITs de prueba.
+
+Los `CHECK` permiten `NULL` a propósito: hay una fila vieja de prueba
+("Test Bakery") con `cuit`/`address`/`phone` en `null` que no se tocó.
+
 ### 15_security_advisors_fixes.sql (F1-02 / A113-158, A113-159) — aplicado
 
 Hallazgos de `get_advisors` (security) y su fix. El más serio: **`approve_seller_request`

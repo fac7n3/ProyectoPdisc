@@ -1,5 +1,6 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
+import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -96,7 +97,24 @@ function initVenderPage(user) {
     const categoryInput = document.getElementById('shop-category').value;
     const addressInput = document.getElementById('shop-address').value.trim();
     const phoneInput = document.getElementById('shop-phone').value.trim();
-    
+
+    if (!isValidShopName(nameInput)) {
+      showToast("El nombre del comercio debe tener entre 3 y 100 caracteres.", "error");
+      return;
+    }
+    if (!isValidCuit(cuitInput)) {
+      showToast("El CUIT ingresado no es válido. Verificá el formato (11 dígitos) y el dígito verificador.", "error");
+      return;
+    }
+    if (!addressInput) {
+      showToast("Ingresá la dirección de tu comercio.", "error");
+      return;
+    }
+    if (!isValidPhone(phoneInput)) {
+      showToast("El teléfono ingresado no es válido.", "error");
+      return;
+    }
+
     if (submitBtn) setLoading(submitBtn, true, "Registrarme");
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -269,6 +287,24 @@ function setupDashboardEvents() {
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnSubmit = addForm.querySelector('button[type="submit"]');
+
+    const titleValue = document.getElementById('prod-name').value.trim();
+    const priceValue = document.getElementById('prod-price').value;
+    const stockValue = document.getElementById('prod-stock').value;
+
+    if (!isValidProductTitle(titleValue)) {
+      showToast("El nombre del producto debe tener entre 3 y 150 caracteres.", "error");
+      return;
+    }
+    if (!isValidPrice(priceValue)) {
+      showToast("El precio debe ser un número entero mayor a 0.", "error");
+      return;
+    }
+    if (!isValidStock(stockValue)) {
+      showToast("El stock debe ser un número entero mayor o igual a 0.", "error");
+      return;
+    }
+
     setLoading(btnSubmit, true, "Guardar Producto");
 
     const { data: { user } } = await supabase.auth.getUser();
