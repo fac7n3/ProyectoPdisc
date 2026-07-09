@@ -62,8 +62,10 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F2-05** (`A113-177`) — `create_order` (migración 20) calcula `delivery_fee` real: gratis en `pickup`; en `delivery`, $350 por tienda salvo que el subtotal de esa tienda (con cupón aplicado) supere $5000. `pages/carrito.html`: la sección "Calcular costos de envío" era un stub sin lógica — ahora tiene radios Retiro/Envío + input de dirección (aparece solo con envío). `carrito.js` agrupa por `item.shop` para mostrar el mismo envío que cobra el servidor (un carrito con productos de varias tiendas genera una orden por tienda, F2-01). Verificado con `BEGIN;...ROLLBACK;` (tienda con subtotal ≥$5000 → gratis, tienda <$5000 → $350) y en el navegador (elegir envío muestra la dirección y el total sube de $1.350 a $1.700, igual que en la prueba SQL).
 
+- **F2-06** (`A113-178`) — Historial de pedidos real en `perfil.html`. Agregado `order_items.title` (migración 21, snapshot igual que `price`) porque un join en vivo a `products(title)` se rompe por RLS si el vendedor desactiva/borra el producto después (`products_select_public_active` solo deja ver `is_active=true`) — un recibo no debería perder el nombre del producto. `js/perfil.js` (`loadCompras`/`buildCompraItem`) reconstruida con DOM API (nunca innerHTML, mismo criterio de F1-01: nombre de tienda y título de producto los define el vendedor) mostrando tienda, fecha, método de envío/pago, lista de productos y estado con badge.
+
 ### ⏳ Próximo
-- Resto de Fase 2: F2-04 (`A113-176`, transferencia + comprobante), F2-06 (`A113-178`, historial de pedidos), F2-07 (`A113-179`, MercadoPago, futuro).
+- Resto de Fase 2: F2-04 (`A113-176`, transferencia + comprobante), F2-07 (`A113-179`, MercadoPago, futuro).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

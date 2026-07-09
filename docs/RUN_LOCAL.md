@@ -61,6 +61,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 18. `18_create_order_rpc.sql` — RPC `create_order` (F2-01, ver nota abajo).
 19. `19_confirm_simulated_payment_rpc.sql` — RPC `confirm_simulated_payment` (F2-03, ver nota abajo).
 20. `20_create_order_delivery_fee.sql` — `create_order` calcula `delivery_fee` real (F2-05, ver nota abajo).
+21. `21_order_items_title_snapshot.sql` — `order_items.title` (snapshot) para el historial de pedidos (F2-06, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -213,6 +214,27 @@ Testeado con `BEGIN;...ROLLBACK;` contra la base real: carrito con Tienda A
 "Envío a domicilio" muestra el input de dirección, cambia la etiqueta y el
 total pasa de $1.350 a $1.700 — coincide exacto con lo que calculó el RPC
 en la prueba SQL.
+
+### 21_order_items_title_snapshot.sql (F2-06 / A113-178) — aplicado
+
+Agrega `order_items.title` (texto, snapshot igual que `price`) y actualiza
+`create_order` para completarlo desde `_order_cart_items` (ya trae el título
+leído de `products` al momento del checkout, no hace falta una query extra).
+Motivo: el historial de pedidos en `perfil.html` necesitaba mostrar qué
+productos tenía cada orden, y un join en vivo a `products(title)` se rompe
+por RLS si el vendedor después desactiva o borra el producto
+(`products_select_public_active` solo permite `is_active = true`) — un
+recibo de compra no debería "perder" el nombre del producto así. Testeado
+con `BEGIN;...ROLLBACK;`: crear una orden real guarda el `title` correcto en
+`order_items`.
+
+`js/perfil.js` (`loadCompras`/`buildCompraItem`): reconstruida para mostrar,
+por orden, la tienda, fecha, método de envío/pago, la lista de productos
+comprados (desde `order_items.title`, ya no un join a `products`) y el
+estado con badge de color (reutiliza `.compra-status--*` ya definido en
+`perfil-custom.css`). Reconstruida con DOM API (`createElement`/`textContent`,
+nunca `innerHTML`) porque el nombre de la tienda y el título de cada
+producto los define el vendedor — mismo criterio anti-XSS de F1-01.
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

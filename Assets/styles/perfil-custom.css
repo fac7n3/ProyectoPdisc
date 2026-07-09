@@ -392,6 +392,14 @@ body {
   color: var(--bl-perfil-primary);
 }
 
+.compra-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--bl-perfil-text-sec);
+}
+
 /* === Favoritos Grid === */
 .favoritos-grid {
   display: grid;

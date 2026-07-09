@@ -192,52 +192,124 @@ async function loadFavoritos() {
 }
 
 // --- Compras: Cargar desde DB ---
+
+const ORDER_STATUS_LABELS = {
+  pending: 'Pendiente',
+  paid: 'Pagado',
+  shipped: 'Enviado',
+  ready_for_pickup: 'Listo para retirar',
+  completed: 'Completado',
+  cancelled: 'Cancelado',
+};
+
+const PAYMENT_METHOD_LABELS = {
+  simulado: 'Pago simulado',
+  transferencia: 'Transferencia',
+  mercadopago: 'Mercado Pago',
+};
+
+const DELIVERY_METHOD_LABELS = {
+  pickup: 'Retiro en el local',
+  delivery: 'Envío a domicilio',
+};
+
+/**
+ * Construye la card de una orden con DOM API (nunca innerHTML): el nombre
+ * de la tienda y el título de cada producto los define el vendedor, así que
+ * se tratan como no confiables — mismo criterio que F1-01 en comercio.js/
+ * producto.js.
+ */
+function buildCompraItem(order) {
+  const date = new Date(order.created_at).toLocaleDateString('es-AR');
+  const shortId = order.id.split('-')[0].toUpperCase();
+  const statusText = ORDER_STATUS_LABELS[order.status] || order.status;
+  const storeName = order.stores?.name || 'Comercio';
+
+  const item = document.createElement('div');
+  item.className = 'compra-item';
+
+  const info = document.createElement('div');
+  info.className = 'compra-info';
+
+  const idSpan = document.createElement('span');
+  idSpan.className = 'compra-id';
+  idSpan.textContent = `Orden #${shortId} — ${storeName}`;
+  info.appendChild(idSpan);
+
+  const dateSpan = document.createElement('span');
+  dateSpan.className = 'compra-date';
+  const methodLabel = DELIVERY_METHOD_LABELS[order.delivery_method] || 'Retiro en el local';
+  const paymentLabel = PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || '';
+  dateSpan.textContent = `${date} · ${methodLabel} · ${paymentLabel}`;
+  info.appendChild(dateSpan);
+
+  if (order.order_items?.length) {
+    const itemsList = document.createElement('ul');
+    itemsList.className = 'compra-items-list';
+    order.order_items.forEach((oi) => {
+      const li = document.createElement('li');
+      // Título "congelado" al momento de la compra (order_items.title), no
+      // un join en vivo a products: si el vendedor lo desactiva o lo borra
+      // después, el recibo del cliente no debe desaparecer (F2-06).
+      const title = oi.title || 'Producto';
+      li.textContent = `${oi.quantity}x ${title} — ${formatPrice(oi.price * oi.quantity)}`;
+      itemsList.appendChild(li);
+    });
+    info.appendChild(itemsList);
+  }
+
+  const statusDiv = document.createElement('div');
+  const statusSpan = document.createElement('span');
+  statusSpan.className = `compra-status compra-status--${order.status}`;
+  statusSpan.textContent = statusText;
+  statusDiv.appendChild(statusSpan);
+  info.appendChild(statusDiv);
+
+  item.appendChild(info);
+
+  const totalDiv = document.createElement('div');
+  totalDiv.className = 'compra-total';
+  totalDiv.textContent = formatPrice(order.total_price);
+  item.appendChild(totalDiv);
+
+  return item;
+}
+
 async function loadCompras(userId) {
   if (!comprasContainer) return;
   try {
     const { data: orders, error } = await supabase
       .from('orders')
-      .select('id, status, created_at, total_price')
+      .select(`
+        id, status, payment_method, delivery_method, created_at, total_price,
+        stores ( name ),
+        order_items ( quantity, price, title )
+      `)
       .eq('client_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
+    comprasContainer.textContent = '';
+
     if (!orders || orders.length === 0) {
-      comprasContainer.innerHTML = `<p style="color: var(--bl-perfil-text-sec);">Aún no realizaste ninguna compra.</p>`;
+      const emptyMsg = document.createElement('p');
+      emptyMsg.style.color = 'var(--bl-perfil-text-sec)';
+      emptyMsg.textContent = 'Aún no realizaste ninguna compra.';
+      comprasContainer.appendChild(emptyMsg);
       return;
     }
 
-    comprasContainer.innerHTML = "";
-    orders.forEach(order => {
-      const date = new Date(order.created_at).toLocaleDateString('es-AR');
-      const total = formatPrice(order.total_price);
-      const shortId = order.id.split('-')[0].toUpperCase();
-      
-      const item = document.createElement('div');
-      item.className = "compra-item";
-      
-      // Traducción de estado
-      let statusText = "Pendiente";
-      if (order.status === 'paid') statusText = "Pagado";
-      else if (order.status === 'shipped') statusText = "Enviado";
-      else if (order.status === 'completed') statusText = "Completado";
-      else if (order.status === 'cancelled') statusText = "Cancelado";
-
-      item.innerHTML = `
-        <div class="compra-info">
-          <span class="compra-id">Orden #${shortId}</span>
-          <span class="compra-date">${date}</span>
-          <div><span class="compra-status compra-status--${order.status}">${statusText}</span></div>
-        </div>
-        <div class="compra-total">${total}</div>
-      `;
-      comprasContainer.appendChild(item);
+    orders.forEach((order) => {
+      comprasContainer.appendChild(buildCompraItem(order));
     });
-
   } catch (err) {
     console.error("Error loading orders", err);
-    comprasContainer.innerHTML = `<p style="color: #ef4444;">Error al cargar tus compras.</p>`;
+    comprasContainer.textContent = '';
+    const errorMsg = document.createElement('p');
+    errorMsg.style.color = '#ef4444';
+    errorMsg.textContent = 'Error al cargar tus compras.';
+    comprasContainer.appendChild(errorMsg);
   }
 }
 
