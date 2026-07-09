@@ -94,8 +94,19 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 4 (Carrito robusto y favoritos) completa** — F4-01 a F4-03 (no tiene ítems "Futuro" a diferencia de otras fases).
 
+## Progreso (Fase 5 — Experiencia del vendedor)
+### ✅ Hecho
+- **F5-01** (`A113-191`) — Ya estaba hecho en F1-04 (mismo alcance duplicado en el roadmap). Cerrado sin trabajo nuevo.
+- **F5-02** (`A113-192`) — CRUD completo de productos en `vender.js`: el form de alta ("Publicar nuevo producto") ahora también sirve para editar (`editingProductId`, `openEditProductForm`, botón lápiz por fila precarga título/precio/stock/descripción/imagen/rubro y cambia el submit a UPDATE). Botón activar/desactivar por fila (ícono ojo, togglea `is_active`; filas inactivas se ven atenuadas con badge "(Inactivo)"). Sin migración nueva.
+
 ### ⏳ Próximo
-- **Fase 5** (experiencia del vendedor) — CRUD completo de productos, variantes, fotos múltiples, ofertas, gestión de pedidos, estadísticas reales, perfil de tienda.
+- **F5-03** (`A113-193`) — Variantes de producto (talle/color/peso) con stock por variante.
+- **F5-04** (`A113-194`) — Varias fotos por producto + subida a Storage.
+- **F5-05** (`A113-195`) — Ofertas (`compare_at_price`).
+- **F5-06** (`A113-196`) — Gestión de pedidos del vendedor.
+- **F5-07** (`A113-197`) — Estadísticas reales del dashboard.
+- **F5-08** (`A113-198`) — Edición del perfil de la tienda.
+- **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

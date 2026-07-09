@@ -180,6 +180,19 @@ guarda el ID en `localStorage.bl_wishlist` correctamente. Sin sesión real
 para probar el merge al loguearse ni el botón del modal con sesión — mismo
 límite que F0-04.
 
+### F5-02 (A113-192) — CRUD completo de productos — sin migración nueva
+
+`js/vender.js`: el form de alta ("Publicar nuevo producto") pasa a servir
+también para editar. `openEditProductForm(id)` trae el producto (con
+`categories(slug)` embebido para el `<select>`), precarga los inputs y
+setea `editingProductId`; el submit del form rama a `UPDATE` en vez de
+`INSERT` cuando `editingProductId` no es null (y no toca `seller_id`, así
+que la policy RLS de update sigue cumpliéndose igual que antes). Botón
+activar/desactivar por fila (`is_active`, RLS ya lo permitía, solo faltaba
+el botón). Verificado: import sin errores de consola; sin sesión de
+vendedor real para probar el flujo completo en el navegador — mismo límite
+que F0-04.
+
 ### Idempotencia (F0-07 / A113-150)
 
 Todos los archivos son seguros de re-ejecutar sobre una base que ya los tiene aplicados

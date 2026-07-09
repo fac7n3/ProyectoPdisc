@@ -155,6 +155,7 @@ function initVenderPage(user) {
 
 // --- Vista y Lógica de Vendedor (Dashboard) ---
 let currentStoreId = null;
+let editingProductId = null; // F5-02: null = alta nueva, id = editando ese producto
 
 async function loadDashboard(user) {
   // Obtener la tienda del usuario
@@ -386,6 +387,7 @@ async function fetchProducts() {
 
   products.forEach(p => {
     const tr = document.createElement('tr');
+    if (!p.is_active) tr.style.opacity = '0.55';
 
     // Image cell
     const tdImg = document.createElement('td');
@@ -403,6 +405,12 @@ async function fetchProducts() {
     const strong = document.createElement('strong');
     strong.textContent = p.title;
     tdName.appendChild(strong);
+    if (!p.is_active) {
+      const badge = document.createElement('span');
+      badge.style.cssText = 'margin-left: 0.5rem; font-size: 0.75rem; color: #ef4444; font-weight: 600;';
+      badge.textContent = '(Inactivo)';
+      tdName.appendChild(badge);
+    }
     if (p.description) {
       tdName.appendChild(document.createElement('br'));
       const small = document.createElement('small');
@@ -421,20 +429,44 @@ async function fetchProducts() {
     // Actions cell
     const tdActions = document.createElement('td');
     tdActions.style.padding = '1rem';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-edit-product';
+    editBtn.dataset.id = p.id;
+    editBtn.title = 'Editar';
+    editBtn.style.cssText = 'background: transparent; border: none; color: var(--bl-primary); cursor: pointer; padding: 0.5rem;';
+    const editIcon = document.createElement('i');
+    editIcon.className = 'fa-solid fa-pen';
+    editBtn.appendChild(editIcon);
+    tdActions.appendChild(editBtn);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'btn-toggle-product';
+    toggleBtn.dataset.id = p.id;
+    toggleBtn.dataset.active = p.is_active;
+    toggleBtn.title = p.is_active ? 'Desactivar' : 'Activar';
+    toggleBtn.style.cssText = 'background: transparent; border: none; color: var(--bl-text-secondary); cursor: pointer; padding: 0.5rem;';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = p.is_active ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    toggleBtn.appendChild(toggleIcon);
+    tdActions.appendChild(toggleBtn);
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn-delete-product';
     deleteBtn.dataset.id = p.id;
+    deleteBtn.title = 'Eliminar';
     deleteBtn.style.cssText = 'background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.5rem;';
     const trashIcon = document.createElement('i');
     trashIcon.className = 'fa-solid fa-trash';
     deleteBtn.appendChild(trashIcon);
     tdActions.appendChild(deleteBtn);
+
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
   });
 
-  // Bind delete actions
+  // Bind acciones
   document.querySelectorAll('.btn-delete-product').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.dataset.id;
@@ -444,6 +476,60 @@ async function fetchProducts() {
       }
     });
   });
+
+  document.querySelectorAll('.btn-toggle-product').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.dataset.id;
+      const isActive = e.currentTarget.dataset.active === 'true';
+      const { error } = await supabase.from('products').update({ is_active: !isActive }).eq('id', id);
+      if (error) {
+        showToast('No se pudo actualizar el producto.', 'error');
+        console.error(error);
+        return;
+      }
+      showToast(isActive ? 'Producto desactivado' : 'Producto activado', 'success');
+      fetchProducts();
+    });
+  });
+
+  document.querySelectorAll('.btn-edit-product').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.dataset.id;
+      await openEditProductForm(id);
+    });
+  });
+}
+
+/** F5-02: trae el producto y precarga el form de alta como form de edición. */
+async function openEditProductForm(productId) {
+  const { data: product, error } = await supabase
+    .from('products')
+    .select('*, categories ( slug )')
+    .eq('id', productId)
+    .single();
+
+  if (error || !product) {
+    showToast('No se pudo cargar el producto para editar.', 'error');
+    console.error(error);
+    return;
+  }
+
+  editingProductId = productId;
+
+  document.getElementById('prod-name').value = product.title || '';
+  document.getElementById('prod-price').value = product.price ?? '';
+  document.getElementById('prod-stock').value = product.stock ?? '';
+  document.getElementById('prod-desc').value = product.description || '';
+  document.getElementById('prod-image').value = product.image_url || '';
+  document.getElementById('prod-category').value = product.categories?.slug || '';
+
+  const formTitle = document.getElementById('add-product-form-title');
+  if (formTitle) formTitle.textContent = 'Editar producto';
+  const submitBtn = document.querySelector('#add-product-form button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Guardar cambios';
+
+  document.getElementById('add-product-form-container').style.display = 'block';
+  document.getElementById('add-product-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function setupDashboardEvents() {
@@ -459,18 +545,30 @@ function setupDashboardEvents() {
     categorySelect.innerHTML = baseCategorySelect.innerHTML;
   }
 
+  function resetProductForm() {
+    editingProductId = null;
+    addForm.reset();
+    const formTitle = document.getElementById('add-product-form-title');
+    if (formTitle) formTitle.textContent = 'Publicar nuevo producto';
+    const submitBtn = addForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = 'Guardar Producto';
+  }
+
   btnShowAdd.addEventListener('click', () => {
+    resetProductForm();
     addFormContainer.style.display = 'block';
   });
 
   btnCancelAdd.addEventListener('click', () => {
     addFormContainer.style.display = 'none';
-    addForm.reset();
+    resetProductForm();
   });
 
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnSubmit = addForm.querySelector('button[type="submit"]');
+    const isEditing = Boolean(editingProductId);
+    const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar Producto';
 
     const titleValue = document.getElementById('prod-name').value.trim();
     const priceValue = document.getElementById('prod-price').value;
@@ -489,21 +587,19 @@ function setupDashboardEvents() {
       return;
     }
 
-    setLoading(btnSubmit, true, "Guardar Producto");
+    setLoading(btnSubmit, true, submitLabel);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       showToast("Sesión inválida.", "error");
-      setLoading(btnSubmit, false, "Guardar Producto");
+      setLoading(btnSubmit, false, submitLabel);
       return;
     }
 
-    const newProduct = {
-      seller_id: user.id,
-      store_id: currentStoreId,
-      title: document.getElementById('prod-name').value.trim(),
-      price: parseInt(document.getElementById('prod-price').value),
-      stock: parseInt(document.getElementById('prod-stock').value),
+    const productData = {
+      title: titleValue,
+      price: parseInt(priceValue),
+      stock: parseInt(stockValue),
       category_id: null,
       description: document.getElementById('prod-desc').value.trim(),
       image_url: document.getElementById('prod-image').value.trim()
@@ -512,20 +608,27 @@ function setupDashboardEvents() {
     // El select guarda el slug de la categoría; hay que resolver el UUID real
     const slug = document.getElementById('prod-category').value;
     const { data: catData } = await supabase.from('categories').select('id').eq('slug', slug).single();
-    if (catData) newProduct.category_id = catData.id;
+    if (catData) productData.category_id = catData.id;
 
-    const { error } = await supabase.from('products').insert([newProduct]);
+    let error;
+    if (isEditing) {
+      ({ error } = await supabase.from('products').update(productData).eq('id', editingProductId));
+    } else {
+      productData.seller_id = user.id;
+      productData.store_id = currentStoreId;
+      ({ error } = await supabase.from('products').insert([productData]));
+    }
 
     if (error) {
-      showToast("Error al guardar el producto", "error");
+      showToast(isEditing ? "Error al guardar los cambios" : "Error al guardar el producto", "error");
       console.error(error);
     } else {
-      showToast("Producto creado", "success");
-      addForm.reset();
+      showToast(isEditing ? "Producto actualizado" : "Producto creado", "success");
       addFormContainer.style.display = 'none';
+      resetProductForm();
       fetchProducts();
     }
-    setLoading(btnSubmit, false, "Guardar Producto");
+    setLoading(btnSubmit, false, submitLabel);
   });
 }
 
