@@ -1,4 +1,5 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
   const tbody = document.getElementById('requests-tbody');

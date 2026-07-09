@@ -1,5 +1,6 @@
 // Lógica para la página de búsqueda (search.html)
 import { supabase } from './auth-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, parsePrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
 
