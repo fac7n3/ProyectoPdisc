@@ -51,6 +51,14 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 11. `11_add_repartidor_role.sql` — agrega `'repartidor'` al enum `app_role`.
 12. `12_price_cents_to_price.sql` — migra `price_cents`/`total_price_cents` → `price`/`total_price`
     (pesos enteros) y recrea `validate_cart_prices` con las columnas reales (`title`, `price`).
+13. `13_target_data_model.sql` — **diseñado, NO aplicado completo** (ver nota abajo): modelo de
+    datos objetivo de fases futuras. Se va aplicando por partes a medida que arranca cada fase.
+14. `14_error_logs.sql` — tabla `error_logs` (telemetría de errores del cliente).
+15. `15_security_advisors_fixes.sql` — fixes de `get_advisors` (F1-02).
+16. `16_input_validation_constraints.sql` — validación de CUIT/inputs también en la DB (F1-04).
+17. `17_fase2_order_payment_columns.sql` — arranca Fase 2: columnas de `orders`
+    (`delivery_method`/`payment_method`/`payment_status`/`delivery_fee`) + tabla `payment_proofs`.
+18. `18_create_order_rpc.sql` — RPC `create_order` (F2-01, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -80,7 +88,7 @@ En un proyecto de Supabase nuevo: corré 01→12 en orden. Los seeds (04, 06) va
 los datos de prueba porque la guarda no encuentra nada todavía. Si no querés los datos de
 prueba, salteá 04, 06 y 07.
 
-### 13_target_data_model.sql (F0-08 / A113-152) — diseñado, NO aplicado todavía
+### 13_target_data_model.sql (F0-08 / A113-152) — diseñado, se aplica por partes
 
 Modelo de datos objetivo de `docs/ROADMAP.md` sección 5: `product_variants`,
 `product_images`, `products.compare_at_price`, `stores.description/zone/hours`,
@@ -88,14 +96,69 @@ Modelo de datos objetivo de `docs/ROADMAP.md` sección 5: `product_variants`,
 `payment_proofs`, `deliveries`, `reviews`, `conversations`/`messages`,
 `notifications`, `favorites` — cada tabla nueva con RLS. Verificado con
 `BEGIN; ...; ROLLBACK;` contra la base real (corre sin errores, no queda nada
-creado), pero **no se aplicó a producción a propósito**: son tablas para
-funcionalidad de fases que todavía no arrancaron (Fase 2 checkout, Fase 3
-delivery, Fase 5 perfil de vendedor, Fase 7 reseñas/chat, Fase 8
-notificaciones). Aplicar recién cuando arranque la fase correspondiente, para
-no sumarle tablas vacías sin uso a la superficie que audita F1-02
-(`get_advisors`). Nota: `stores.description` estaba siendo leída por
-`comercio.js` sin existir en la tabla real (bug silencioso, caía siempre al
-fallback "Sin descripción disponible.") — se resuelve al aplicar este bloque.
+creado). **A propósito no se aplicó entero de una vez**: son tablas para
+funcionalidad de fases distintas (Fase 2 checkout, Fase 3 delivery, Fase 5
+perfil de vendedor, Fase 7 reseñas/chat, Fase 8 notificaciones). Se va
+aplicando bloque por bloque cuando arranca cada fase, para no sumarle tablas
+vacías sin uso a la superficie que audita F1-02 (`get_advisors`).
+
+El primer bloque (`orders` columns + `payment_proofs`) ya se extrajo y aplicó
+en `17_fase2_order_payment_columns.sql` al arrancar Fase 2 (ver abajo). El
+resto (`product_variants`, `product_images`, `compare_at_price`,
+`stores.description/zone/hours`, `deliveries`, `reviews`,
+`conversations`/`messages`, `notifications`, `favorites`) sigue sin aplicar,
+pendiente de Fases 3/4/5/7/8. Nota: `stores.description` estaba siendo leída
+por `comercio.js` sin existir en la tabla real (bug silencioso, caía siempre
+al fallback "Sin descripción disponible.") — se resuelve recién cuando se
+aplique el bloque de `stores` en Fase 5.
+
+### 17_fase2_order_payment_columns.sql (F2-01 / A113-173) — aplicado
+
+Arranca Fase 2: agrega a `orders` las columnas `delivery_method`
+(`pickup`/`delivery`), `payment_method` (`simulado`/`mercadopago`/`transferencia`),
+`payment_status` (`pending`/`paid`/`rejected`, default `pending`) y
+`delivery_fee` (nullable — se calcula en F2-05); crea `payment_proofs` con RLS
+(cliente dueño de la orden sube el comprobante, vendedor de la tienda o admin
+lo confirma/rechaza — usado recién en F2-04). Testeado con `BEGIN;...ROLLBACK;`
+contra la base real antes de aplicar.
+
+### 18_create_order_rpc.sql (F2-01 / A113-173) — aplicado
+
+RPC `create_order(cart_payload, coupon_code, p_delivery_method,
+p_payment_method, p_shipping_address)`, `SECURITY DEFINER`, revocado de
+`anon`/`public` (solo `authenticated`, mismo patrón que
+`approve_seller_request`). Reemplaza la validación de solo-lectura de
+`validate_cart_prices` por la creación real de la orden:
+
+- Vuelve a leer `store_id`/`title`/`price`/`stock` de `products` en el momento
+  del checkout — **ni siquiera recibe el precio del cliente** (a diferencia de
+  `validate_cart_prices`, que sí lo recibe para compararlo). Bloquea cada fila
+  de producto con `for update` para serializar contra checkouts concurrentes
+  sobre el mismo stock.
+- Divide el carrito en **una orden por tienda**: `orders.store_id` es
+  `not null`, así que un carrito con productos de varios comercios genera
+  varias órdenes (una por `store_id`), cada una con su propio `order_items` y
+  su propio total (con el mismo cupón aplicado a cada una).
+- Descuenta el stock real y guarda `delivery_method`/`payment_method`;
+  `payment_status`/`status` quedan en `pending` — marcarlos como pagados es
+  F2-03 (simulado) / F2-04 (transferencia). `delivery_fee` queda sin calcular
+  a propósito (F2-05).
+- Al ser una función `plpgsql`, toda la lógica corre en una única transacción
+  implícita: cualquier `raise exception` revierte todo lo hecho hasta ese
+  punto (sin necesitar `BEGIN`/`COMMIT` manual, que tampoco se puede usar
+  dentro de una función).
+
+Testeado con `BEGIN;...ROLLBACK;` + sesión simulada (`request.jwt.claims` con
+un usuario real existente): carrito de 2 productos de 2 tiendas distintas +
+cupón `BIENVENIDO10` (10%) creó 2 órdenes con los totales correctos y
+descontó el stock exacto de cada producto (verificado leyendo `products.stock`
+dentro de la misma transacción antes del rollback); intentar comprar una
+cantidad mayor al stock disponible, un cupón inexistente, o "envío a
+domicilio" sin dirección, los 3 casos fueron rechazados con
+`raise exception` sin alterar nada. `get_advisors` después de aplicar: sin
+hallazgos críticos nuevos (la única advertencia nueva es "puede ejecutarla
+`authenticated`", esperada e intencional — mismo patrón que
+`validate_cart_prices`).
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

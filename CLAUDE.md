@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (M1 completo: Fase 0 + Fase 1).
+> Última actualización: 2026-07-09 (M1 completo; Fase 2 en curso: F2-01 listo).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -52,8 +52,13 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Nota operativa:** el repo debe quedar **público** en GitHub — Vercel dejó de poder deployar (`BLOCKED`, sin build logs) apenas se puso privado esta noche; volver a público lo destrabó al toque. Si se vuelve a poner privado, hay que revisar los permisos del GitHub App de Vercel.
 
+## Progreso (Fase 2 — Compra: checkout, órdenes y pagos)
+### ✅ Hecho
+- **F2-01** (`A113-173`) — RPC `create_order` (SECURITY DEFINER, migración 18): revalida `store_id`/precio/stock leyendo `products` en el momento del checkout (ni siquiera recibe el precio del cliente), bloquea filas con `for update`, divide el carrito en **una orden por tienda** (orders.store_id es not null), aplica cupón, descuenta stock real, guarda `delivery_method`/`payment_method` (agregados a `orders` en migración 17 junto con `payment_proofs`, extraídos de `13_target_data_model.sql` — el resto de ese archivo sigue sin aplicar, es de Fases 3/4/5/7/8). Revocado `EXECUTE` de anon/public, solo `authenticated`. Verificado con `BEGIN;...ROLLBACK;` + sesión simulada: carrito de 2 tiendas + cupón `BIENVENIDO10` creó 2 órdenes con totales y stock correctos; stock insuficiente/cupón inválido/envío sin dirección rechazados sin dejar rastro. `get_advisors`: sin hallazgos críticos nuevos.
+
 ### ⏳ Próximo
-- **Fase 2** (`A113-172..179`) — Checkout, órdenes y pagos. Es lo que más bloquea un lanzamiento real (sin esto no se puede comprar).
+- **F2-02** (`A113-174`) — Conectar el checkout real en `carrito.js` (hoy solo llama `validate_cart_prices` y nunca crea la orden) para que use `create_order`.
+- Resto de Fase 2: F2-03 (pago simulado), F2-04 (transferencia + comprobante), F2-05 (delivery_fee), F2-06 (historial de pedidos), F2-07 (MercadoPago, futuro).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
