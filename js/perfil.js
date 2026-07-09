@@ -1,4 +1,5 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
 const sidebarName = document.getElementById("sidebar-name");

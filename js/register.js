@@ -1,4 +1,5 @@
 import { supabase, showToast, setLoading, isValidEmail, checkUrlErrors, guardPage } from "./auth-utils.js";
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerEmailInput = document.getElementById("register-email");
 const registerPasswordInput = document.getElementById("register-password");

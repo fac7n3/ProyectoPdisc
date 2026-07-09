@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, updateCartBadge, showToast } from './cart-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 function initCartButtons() {
   document.querySelectorAll('.product-card__add').forEach(btn => {

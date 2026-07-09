@@ -1,6 +1,7 @@
 // Lógica del carrito de compras — Baradero Local
 // Usa localStorage para persistir los productos entre páginas.
 import { supabase } from './auth-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, updateCartBadge, MAX_QTY } from './cart-utils.js';
 
