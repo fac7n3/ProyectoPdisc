@@ -96,3 +96,34 @@ no sumarle tablas vacías sin uso a la superficie que audita F1-02
 (`get_advisors`). Nota: `stores.description` estaba siendo leída por
 `comercio.js` sin existir en la tabla real (bug silencioso, caía siempre al
 fallback "Sin descripción disponible.") — se resuelve al aplicar este bloque.
+
+### 14_error_logs.sql (A113-171) — aplicado
+
+Tabla `error_logs` para capturar errores no manejados del cliente
+(`window.onerror`/`unhandledrejection`, ver `js/error-logger.js`, enganchado
+en `auth-utils.js`). RLS: cualquiera puede insertar su propio error, solo
+`admin` puede leerlos. Mientras no exista un panel propio en el admin, se
+consulta con el SQL Editor de Supabase: `select * from error_logs order by
+created_at desc;`.
+
+## 6) Ambiente local con Supabase CLI (A113-170)
+
+Solo hay un proyecto de Supabase (producción, plan Free) — no hay branching
+disponible (`create_branch` devuelve "Branching is supported only on the Pro
+plan or above"). Para no seguir probando cosas directo contra producción, el
+repo ya trae el **Supabase CLI** como devDependency (`supabase/config.toml`
+generado con `npx supabase init`):
+
+- `npm run db:start` — levanta un stack local completo (Postgres + Auth +
+  Storage + Studio) en Docker.
+- `npm run db:stop` — lo apaga.
+
+**Requiere [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+instalado y corriendo** — el CLI no lo trae, y no se puede instalar
+automáticamente (hay que aceptar la licencia y es una instalación pesada a
+nivel sistema). Es una decisión manual pendiente del dueño de la máquina.
+
+El stack local arranca con un schema **vacío** (no usamos el sistema de
+migraciones de Supabase, ver sección 5) — después de `db:start`, correr los
+archivos de `db/schema/` en orden contra `localhost:54322` (Studio local en
+`http://localhost:54323`) igual que se hace contra producción.

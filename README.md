@@ -83,7 +83,7 @@ Proyecto-Pdisc/
     ```
 
 4.  **Configurar la Base de Datos:**
-    Copia y ejecuta el contenido del script SQL ubicado en [db/schema/01_auth_profiles.sql](file:///c:/Proyecto/Proyecto-Pdisc/db/schema/01_auth_profiles.sql) en el SQL Editor de tu panel de Supabase para configurar la tabla de perfiles y triggers de usuario.
+    Hay que correr **los 13 archivos** de [db/schema/](file:///c:/Proyecto/Proyecto-Pdisc/db/schema/) en orden (`01` a `13`) en el SQL Editor de Supabase — no alcanza con uno solo. El orden completo, qué hace cada archivo y notas de idempotencia están en [docs/RUN_LOCAL.md](file:///c:/Proyecto/Proyecto-Pdisc/docs/RUN_LOCAL.md).
 
 5.  **Iniciar Servidor Local:**
     ```bash

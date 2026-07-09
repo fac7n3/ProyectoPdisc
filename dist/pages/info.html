@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+  <title>Información — Baradero Local</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    .info-container {
+      max-width: 800px;
+      margin: 4rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .info-container h1 {
+      color: var(--bl-primary);
+      margin-bottom: 1rem;
+    }
+    .info-container h2 {
+      color: var(--bl-text);
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .info-container p {
+      color: var(--bl-text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .btn-outline {
+      padding: 0.5rem 1rem;
+      border: 1.5px solid var(--bl-primary);
+      color: var(--bl-primary);
+      border-radius: var(--bl-radius-md);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .btn-outline:hover {
+      background: var(--bl-primary);
+      color: white;
+    }
+  </style>
+  <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
+</head>
+<body class="bl-bg">
+
+  <!-- Navbar Simple -->
+  <nav class="navbar" style="position: static; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div class="navbar__top">
+      <a href="./home.html" class="navbar__logo">
+        <img src="/assets/logoazulpng-BmcneNO6.png" alt="Logo Baradero Local" class="navbar__logo-img" />
+        <div class="navbar__logo-text">
+          <span class="navbar__logo-title">Baradero Local</span>
+          <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+        </div>
+      </a>
+      <div class="navbar__actions">
+        <a href="./home.html" class="btn-outline">Volver al Inicio</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="info-container">
+    <h1>Información Útil</h1>
+    <p>Bienvenido al centro de ayuda e información legal de Baradero Local. Seleccioná una sección para conocer más.</p>
+
+    <h2>Preguntas Frecuentes (FAQ)</h2>
+    <p><strong>¿Cómo compro en Baradero Local?</strong><br>
+    Buscá el producto que necesitás, agregalo al carrito y seguí los pasos. Cada comercio maneja sus propios envíos y retiros.</p>
+    <p><strong>¿Cómo vendo mis productos?</strong><br>
+    Podés registrar tu comercio desde la sección <a href="./vender.html">Vender</a>. Validaremos tus datos y podrás cargar tu catálogo.</p>
+
+    <h2>Políticas de Devolución</h2>
+    <p>Cada comercio adherido a Baradero Local es responsable de sus políticas de devolución y garantía. Te recomendamos consultar directamente con el vendedor a través de los canales de contacto en la página de su tienda antes de realizar la compra.</p>
+
+    <h2>Términos y Condiciones</h2>
+    <p>Baradero Local actúa como intermediario tecnológico conectando comercios locales con compradores. No nos hacemos responsables por defectos de fabricación o conflictos comerciales entre las partes, aunque intervenimos como mediadores en caso de disputas.</p>
+
+    <h2>Contacto</h2>
+    <p>Si necesitás ayuda técnica con la plataforma, escribinos a: <strong>soporte@baraderolocal.com.ar</strong></p>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__container" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+      <p style="text-align:center; color:white; width:100%; opacity:0.8; margin: 0;">&copy; 2026 Baradero Local. Todos los derechos reservados.</p>
+      <a href="./terminos.html" class="footer__terms-link" style="margin-top: 0;">Términos y condiciones</a>
+    </div>
+  </footer>
+
+</body>
+</html>

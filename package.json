@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop"
   },
   "devDependencies": {
+    "supabase": "^2.109.1",
     "vite": "^8.0.16"
   },
   "dependencies": {

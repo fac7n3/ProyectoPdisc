@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
+import { initErrorLogging } from "./error-logger.js";
 
 // Inicializar Supabase
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+initErrorLogging(supabase);
 
 // --- Sistema de Notificaciones ---
 function initToastContainer() {
