@@ -68,8 +68,11 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 2 (Compra: checkout, órdenes y pagos) completa** — F2-01 a F2-06. Queda **F2-07** (`A113-179`, provider MercadoPago sandbox→real) marcado explícitamente "Futuro" en el roadmap, no bloquea nada hoy (el pago simulado + transferencia ya permiten comprar de verdad).
 
+## Hallazgo crítico corregido (2026-07-09): escalación de rol en signup
+- **A113-238** (migración 23) — Encontrado investigando F3-01: `handle_new_user()` (desde `10_fix_auth_triggers.sql`) leía `raw_user_meta_data->>'account_type'` (100% controlado por el cliente en `options.data` de `signUp()`) y asignaba directamente `profiles.role = 'vendedor'/'repartidor'/'admin'` sin ninguna aprobación — cualquiera con la anon key pública podía autoasignarse admin. Mitigación parcial que ya existía: la función nunca tocaba `raw_app_meta_data`, así que el JWT seguía dando `'cliente'` y las policies RLS/RPCs sensibles (que chequean el JWT, no `profiles.role`) seguían bloqueando escrituras — pero `guardPage({requireRole})` y `vender.js` sí leen `profiles.role` directo, así que un admin/vendedor autoasignado vería esas pantallas protegidas, y el bug rompía por completo el flujo D6 (aprobación manual + CUIT). Auditado antes de aplicar: 0 profiles con `role != 'cliente'` en producción, no hubo explotación. Fix: `handle_new_user()` ahora siempre asigna `'cliente'`; subir de rol es solo vía RPC de aprobación explícito.
+
 ### ⏳ Próximo
-- **Fase 5** (experiencia del vendedor) o **Fase 3** (delivery/repartidor) — evaluar cuál conviene arrancar primero. Fase 2 ya deja comprar de verdad (simulado + transferencia), que era el bloqueante más grande para un lanzamiento real.
+- **Fase 3** (delivery/repartidor) — arrancando ahora. F3-01 (onboarding repartidor) va a seguir el mismo patrón que `approve_seller_request` (tabla de solicitud + RPC de aprobación admin), evitando repetir el bug de A113-238.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

@@ -63,6 +63,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 20. `20_create_order_delivery_fee.sql` — `create_order` calcula `delivery_fee` real (F2-05, ver nota abajo).
 21. `21_order_items_title_snapshot.sql` — `order_items.title` (snapshot) para el historial de pedidos (F2-06, ver nota abajo).
 22. `22_transfer_payment_proofs.sql` — bucket `payment-proofs` + RPC `confirm_transfer_payment` (F2-04, ver nota abajo).
+23. `23_fix_handle_new_user_role_escalation.sql` — **CRÍTICO**, corrige escalación de rol en signup (A113-238, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -293,6 +294,39 @@ cliente (`profiles_select_own` en `profiles` solo deja ver la fila propia —
 ampliar eso es una decisión de privacidad aparte, no se tomó acá); alcanza
 con el ID corto de la orden y el comprobante para poder confirmar o
 rechazar.
+
+### 23_fix_handle_new_user_role_escalation.sql (CRÍTICO / A113-238) — aplicado
+
+Hallazgo de seguridad encontrado investigando F3-01 (onboarding de
+repartidor). `handle_new_user()` (redefinida en `10_fix_auth_triggers.sql`)
+leía `raw_user_meta_data ->> 'account_type'` y asignaba directamente
+`profiles.role = 'vendedor'/'repartidor'/'admin'` según lo que mandara el
+cliente — `raw_user_meta_data` es 100% controlado por quien llama a
+`supabase.auth.signUp()` (`options.data`), así que cualquiera con la anon
+key pública podía autoasignarse cualquier rol, sin pasar por
+`approve_seller_request` ni ningún control.
+
+Por qué no era explotable para escrituras (mitigación parcial que ya
+existía): esta función nunca actualizaba `raw_app_meta_data`, así que el
+JWT (`auth.jwt() -> 'app_metadata' ->> 'role'`) seguía dando `'cliente'` —
+todas las policies RLS de escritura sensible y los RPCs `SECURITY DEFINER`
+chequean el JWT, no `profiles.role`. Pero `profiles.role` sí es lo que lee
+`guardPage({requireRole})` (gate client-side de `admin.html`) y
+`vender.js`/`checkSellerState` — un admin/vendedor autoasignado vería esas
+pantallas protegidas igual, y rompía por completo el flujo D6 (aprobación
+manual + CUIT) para vendedores.
+
+Auditado antes de aplicar: `select * from profiles where role != 'cliente'`
+devolvió 0 filas — el bug no había sido explotado en producción, no hizo
+falta limpiar datos.
+
+Fix: `handle_new_user()` ahora asigna siempre `role = 'cliente'`, sin leer
+`account_type` en ningún lado. Subir a vendedor/repartidor/admin es
+exclusivamente vía un RPC de aprobación explícito (`approve_seller_request`
+para vendedor; el de repartidor es F3-01, con el mismo patrón). Verificado
+con `pg_get_functiondef` tras aplicar: la función ya no referencia
+`account_type` en ninguna parte. `get_advisors` después: sin hallazgos
+nuevos.
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 
