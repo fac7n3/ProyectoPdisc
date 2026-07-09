@@ -1,6 +1,7 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
@@ -372,4 +373,3 @@ document.addEventListener('DOMContentLoaded', () => {
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();
 });
-

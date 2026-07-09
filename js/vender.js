@@ -1,4 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
+import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
 async function checkSellerState(user) {
