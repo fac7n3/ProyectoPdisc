@@ -72,6 +72,14 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 29. `29_favorites.sql` — tabla `favorites` (F4-03, ver nota abajo).
 30. `30_compare_at_price.sql` — `products.compare_at_price` (F5-05, ver nota abajo).
 
+No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
+sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
+Hoy" (cantidad de órdenes `payment_status='paid'` creadas hoy) e "Ingresos
+del Mes" (suma de `total_price` de las pagadas del mes en curso), ambas
+filtradas por `store_id`. De paso corregido un bug menor: "Productos
+Activos" contaba TODOS los productos de la tienda (`products.length`),
+sin filtrar por `is_active` — ahora sí filtra.
+
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
 nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`

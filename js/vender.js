@@ -176,7 +176,37 @@ async function loadDashboard(user) {
   await fetchProducts();
   await renderPendingPayments();
   await renderShipmentsInProgress();
+  await loadDashboardStats();
   setupDashboardEvents();
+}
+
+/** F5-07: ventas de hoy + ingresos del mes, ambos desde orders pagadas. */
+async function loadDashboardStats() {
+  if (!currentStoreId) return;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const { data: paidOrders, error } = await supabase
+    .from('orders')
+    .select('total_price, created_at')
+    .eq('store_id', currentStoreId)
+    .eq('payment_status', 'paid')
+    .gte('created_at', startOfMonth.toISOString());
+
+  if (error) {
+    console.error('Error al cargar estadísticas:', error);
+    return;
+  }
+
+  const salesToday = (paidOrders || []).filter((o) => new Date(o.created_at) >= startOfToday).length;
+  const revenueMonth = (paidOrders || []).reduce((sum, o) => sum + o.total_price, 0);
+
+  const salesTodayEl = document.getElementById('stat-sales-today');
+  const revenueMonthEl = document.getElementById('stat-revenue-month');
+  if (salesTodayEl) salesTodayEl.textContent = salesToday;
+  if (revenueMonthEl) revenueMonthEl.textContent = formatPrice(revenueMonth);
 }
 
 // --- F2-04: comprobantes de transferencia por confirmar ---
@@ -375,7 +405,8 @@ async function fetchProducts() {
     return;
   }
 
-  document.getElementById('stat-products-count').textContent = products.length;
+  // F5-07: la tarjeta dice "Productos Activos" -- antes contaba todos (incluidos inactivos).
+  document.getElementById('stat-products-count').textContent = products.filter((p) => p.is_active).length;
 
   const tbody = document.getElementById('seller-products-tbody');
   tbody.innerHTML = '';
