@@ -11,6 +11,7 @@ let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
 let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
 let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEvents()
 let shippingAddress = '';
+let paymentMethod = 'simulado'; // 'simulado' | 'transferencia' — ver initPaymentMethodEvents()
 
 // Política de envío unificada (F2-05): igual que en create_order (migración 20)
 // para que lo que se muestra en el resumen coincida con lo que se cobra.
@@ -236,6 +237,29 @@ function initDeliveryEvents() {
   });
 }
 
+/** Inicializar selector de método de pago (simulado / transferencia) */
+function initPaymentMethodEvents() {
+  const header = document.getElementById('payment-header');
+  const content = document.getElementById('payment-content');
+  const simuladoRadio = document.getElementById('payment-simulado');
+  const transferenciaRadio = document.getElementById('payment-transferencia');
+
+  if (!header || !content || !simuladoRadio || !transferenciaRadio) return;
+
+  header.addEventListener('click', () => {
+    const isHidden = content.style.display === 'none';
+    content.style.display = isHidden ? 'block' : 'none';
+    header.classList.toggle('is-open', isHidden);
+  });
+
+  function updateMethod() {
+    paymentMethod = transferenciaRadio.checked ? 'transferencia' : 'simulado';
+  }
+
+  simuladoRadio.addEventListener('change', updateMethod);
+  transferenciaRadio.addEventListener('change', updateMethod);
+}
+
 /** Inicializar lógica del cupón de descuento */
 function initCouponEvents() {
   const header = document.getElementById('coupon-header');
@@ -389,8 +413,6 @@ function initCartEvents() {
       // servidor — no hace falta (ni conviene) mandarle el precio del carrito.
       const payload = currentCart.map(item => ({ id: item.id, qty: item.qty }));
 
-      const paymentMethod = 'simulado';
-
       const { data, error } = await supabase.rpc('create_order', {
         cart_payload: payload,
         coupon_code: appliedCouponCode,
@@ -410,7 +432,7 @@ function initCartEvents() {
       const total = orders.reduce((acc, o) => acc + o.total_price, 0);
 
       // La orden ya existe (pending); "pagarla" es un paso aparte a través
-      // del provider correspondiente al método elegido — hoy solo simulado.
+      // del provider correspondiente al método elegido.
       const provider = getPaymentProvider(paymentMethod);
       const paymentResult = await provider.pay(orderIds);
 
@@ -424,13 +446,17 @@ function initCartEvents() {
         return;
       }
 
-      const mensaje = orders.length > 1
-        ? `¡${orders.length} pedidos pagados! Total: ${formatPrice(total)}`
-        : `¡Pedido pagado! Total: ${formatPrice(total)}`;
+      // "transferencia" no confirma nada en el momento — queda pending hasta
+      // que el cliente suba el comprobante (F2-04, ver perfil.js).
+      const mensaje = paymentResult.pending
+        ? `Pedido creado (Total: ${formatPrice(total)}). Subí el comprobante desde "Mis compras" para confirmar el pago.`
+        : orders.length > 1
+          ? `¡${orders.length} pedidos pagados! Total: ${formatPrice(total)}`
+          : `¡Pedido pagado! Total: ${formatPrice(total)}`;
 
       clearCart();
       showCartToast(mensaje, 'success');
-      setTimeout(() => window.location.href = './home.html', 2000);
+      setTimeout(() => window.location.href = paymentResult.pending ? './perfil.html' : './home.html', 2500);
     } catch (err) {
       console.error(err);
       showCartToast('Error de conexión al procesar el pedido.', 'error');
@@ -462,4 +488,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initCartEvents();
   initCouponEvents();
   initDeliveryEvents();
+  initPaymentMethodEvents();
 });

@@ -62,6 +62,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 19. `19_confirm_simulated_payment_rpc.sql` — RPC `confirm_simulated_payment` (F2-03, ver nota abajo).
 20. `20_create_order_delivery_fee.sql` — `create_order` calcula `delivery_fee` real (F2-05, ver nota abajo).
 21. `21_order_items_title_snapshot.sql` — `order_items.title` (snapshot) para el historial de pedidos (F2-06, ver nota abajo).
+22. `22_transfer_payment_proofs.sql` — bucket `payment-proofs` + RPC `confirm_transfer_payment` (F2-04, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -235,6 +236,63 @@ estado con badge de color (reutiliza `.compra-status--*` ya definido en
 `perfil-custom.css`). Reconstruida con DOM API (`createElement`/`textContent`,
 nunca `innerHTML`) porque el nombre de la tienda y el título de cada
 producto los define el vendedor — mismo criterio anti-XSS de F1-01.
+
+### 22_transfer_payment_proofs.sql (F2-04 / A113-176) — aplicado
+
+`payment_proofs` (tabla + RLS) ya existía desde
+`17_fase2_order_payment_columns.sql`, sin usarse todavía. Acá se agrega lo
+que faltaba:
+
+- **Bucket de storage `payment-proofs`, privado** (a diferencia de
+  `products`/`stores`, que son públicos) — un comprobante de transferencia
+  es información sensible, se accede con signed URLs, no por URL directa.
+  Convención de paths: `{order_id}/{archivo}`; las policies de
+  `storage.objects` resuelven a qué orden pertenece un objeto con
+  `storage.foldername(name)[1]`, sin necesitar una tabla intermedia. Insert:
+  solo el cliente dueño de esa orden, y solo si `payment_method='transferencia'`.
+  Select: el cliente dueño, el vendedor de la tienda, o admin.
+- **Trigger `payment_proofs_validate_order`**: un `payment_proof` solo puede
+  insertarse para una orden `transferencia` que siga `pending` (la policy de
+  insert de la tabla ya exige que sea del cliente, pero no chequeaba
+  `payment_method`/`payment_status` — más simple un trigger que reescribir
+  esa policy). La función del trigger quedó marcada por `get_advisors` como
+  ejecutable vía RPC pública (no debería, es solo para el trigger) — se le
+  revocó `EXECUTE` de `anon`/`authenticated`/`public`, mismo criterio que
+  `handle_new_user` en F1-02.
+- **RPC `confirm_transfer_payment(p_proof_id, p_approve)`**, `SECURITY
+  DEFINER`, revocado de `anon`/`public`: solo el vendedor de la tienda del
+  pedido (o admin) puede confirmar/rechazar. Al confirmar, la orden pasa a
+  `paid` (mismo destino final que el pago simulado, F2-03). Al rechazar, la
+  orden queda `pending` para que el cliente pueda subir un comprobante nuevo
+  (el proof rechazado no se borra, queda de auditoría).
+
+Testeado con `BEGIN;...ROLLBACK;` contra la base real: crear una orden
+`transferencia` + subir un comprobante como el cliente → OK; el mismo
+intento sobre una orden `simulado` → rechazado por el trigger; el propio
+cliente intentando confirmar su comprobante → rechazado por el RPC (no es
+vendedor); el vendedor dueño de la tienda confirmando → orden pasa a
+`payment_status: paid, status: paid, proof_status: confirmed`.
+
+Frontend: `pages/carrito.html`/`js/carrito.js` — nueva sección "Método de
+pago" (simulado/transferencia, antes estaba fijo en simulado);
+`js/payment-providers.js` — nuevo provider `transferencia` cuyo `pay()` no
+confirma nada en el momento (a diferencia de `simulado`), solo le avisa al
+checkout que quedó `pending` para mostrar el mensaje correcto y redirigir a
+"Mis compras" en vez de a `home.html`. `js/perfil.js`
+(`buildPaymentProofSection`) — para una orden `transferencia` todavía
+`pending`, muestra el estado del último comprobante (enviado/rechazado) y un
+`<input type="file">` para subir uno nuevo a `payment-proofs/{order_id}/...`
+(nombre de archivo saneado contra `/`/`..` antes de armar el path). `js/vender.js`
+(`renderPendingPayments`/`buildPendingPaymentRow`) — nueva sección "Pagos por
+confirmar" en el dashboard del vendedor: lista las órdenes de su tienda con
+un comprobante sin revisar, con "Ver comprobante" (signed URL, 60s de
+validez) y botones Confirmar/Rechazar que llaman `confirm_transfer_payment`.
+
+Nota de alcance: el panel del vendedor no muestra el email/nombre del
+cliente (`profiles_select_own` en `profiles` solo deja ver la fila propia —
+ampliar eso es una decisión de privacidad aparte, no se tomó acá); alcanza
+con el ID corto de la orden y el comprobante para poder confirmar o
+rechazar.
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

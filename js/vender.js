@@ -173,7 +173,123 @@ async function loadDashboard(user) {
   document.getElementById('dash-shop-name').textContent = store.name;
 
   await fetchProducts();
+  await renderPendingPayments();
   setupDashboardEvents();
+}
+
+// --- F2-04: comprobantes de transferencia por confirmar ---
+
+async function renderPendingPayments() {
+  const container = document.getElementById('pending-payments-container');
+  if (!container || !currentStoreId) return;
+
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(`
+      id, total_price, created_at,
+      payment_proofs ( id, status, receipt_url, created_at )
+    `)
+    .eq('store_id', currentStoreId)
+    .eq('payment_method', 'transferencia')
+    .eq('payment_status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar pagos pendientes', error);
+    return;
+  }
+
+  // Solo órdenes con un comprobante todavía sin revisar
+  const withPendingProof = (orders || [])
+    .map((order) => {
+      const proof = (order.payment_proofs || [])
+        .filter((p) => p.status === 'pending')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+      return proof ? { order, proof } : null;
+    })
+    .filter(Boolean);
+
+  container.textContent = '';
+
+  if (withPendingProof.length === 0) {
+    const msg = document.createElement('p');
+    msg.style.color = 'var(--bl-text-secondary)';
+    msg.textContent = 'No hay comprobantes pendientes de revisión.';
+    container.appendChild(msg);
+    return;
+  }
+
+  withPendingProof.forEach(({ order, proof }) => {
+    container.appendChild(buildPendingPaymentRow(order, proof));
+  });
+}
+
+function buildPendingPaymentRow(order, proof) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white;';
+
+  const info = document.createElement('div');
+  const idStrong = document.createElement('strong');
+  idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+  info.appendChild(idStrong);
+  const totalSpan = document.createElement('span');
+  totalSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
+  totalSpan.textContent = formatPrice(order.total_price);
+  info.appendChild(totalSpan);
+  row.appendChild(info);
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display: flex; gap: 0.5rem;';
+
+  const viewBtn = document.createElement('button');
+  viewBtn.type = 'button';
+  viewBtn.className = 'btn-outline';
+  viewBtn.textContent = 'Ver comprobante';
+  viewBtn.addEventListener('click', async () => {
+    const { data, error } = await supabase.storage
+      .from('payment-proofs')
+      .createSignedUrl(proof.receipt_url, 60);
+    if (error || !data?.signedUrl) {
+      showToast('No se pudo abrir el comprobante.', 'error');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  });
+  actions.appendChild(viewBtn);
+
+  const approveBtn = document.createElement('button');
+  approveBtn.type = 'button';
+  approveBtn.className = 'form-btn';
+  approveBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
+  approveBtn.textContent = 'Confirmar pago';
+  approveBtn.addEventListener('click', () => handlePaymentDecision(proof.id, true));
+  actions.appendChild(approveBtn);
+
+  const rejectBtn = document.createElement('button');
+  rejectBtn.type = 'button';
+  rejectBtn.className = 'btn-outline';
+  rejectBtn.style.cssText = 'border-color: #ef4444; color: #ef4444;';
+  rejectBtn.textContent = 'Rechazar';
+  rejectBtn.addEventListener('click', () => handlePaymentDecision(proof.id, false));
+  actions.appendChild(rejectBtn);
+
+  row.appendChild(actions);
+  return row;
+}
+
+async function handlePaymentDecision(proofId, approve) {
+  const { error } = await supabase.rpc('confirm_transfer_payment', {
+    p_proof_id: proofId,
+    p_approve: approve,
+  });
+
+  if (error) {
+    showToast(error.message || 'No se pudo procesar el comprobante.', 'error');
+    return;
+  }
+
+  showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
+  await renderPendingPayments();
 }
 
 async function fetchProducts() {

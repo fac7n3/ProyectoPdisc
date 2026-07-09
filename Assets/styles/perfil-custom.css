@@ -400,6 +400,34 @@ body {
   color: var(--bl-perfil-text-sec);
 }
 
+/* === Comprobante de transferencia (F2-04) === */
+.compra-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.compra-proof__message {
+  font-size: 0.8125rem;
+  color: var(--bl-perfil-text-sec);
+  margin: 0;
+}
+
+.compra-proof__message--error {
+  color: #991b1b;
+}
+
+.compra-proof__file {
+  font-size: 0.8125rem;
+}
+
+.compra-proof__btn {
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
 /* === Favoritos Grid === */
 .favoritos-grid {
   display: grid;

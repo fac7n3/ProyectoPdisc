@@ -265,6 +265,9 @@ function buildCompraItem(order) {
   statusDiv.appendChild(statusSpan);
   info.appendChild(statusDiv);
 
+  const proofSection = buildPaymentProofSection(order);
+  if (proofSection) info.appendChild(proofSection);
+
   item.appendChild(info);
 
   const totalDiv = document.createElement('div');
@@ -275,15 +278,99 @@ function buildCompraItem(order) {
   return item;
 }
 
+/**
+ * F2-04: si la orden es por transferencia y sigue pendiente, muestra el
+ * estado del último comprobante (si hay uno) y un input para subir uno
+ * nuevo. El vendedor lo confirma/rechaza desde vender.js.
+ */
+function buildPaymentProofSection(order) {
+  if (order.payment_method !== 'transferencia' || order.payment_status !== 'pending') {
+    return null;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'compra-proof';
+
+  const proofs = order.payment_proofs || [];
+  const latestProof = [...proofs].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  )[0];
+
+  if (latestProof?.status === 'pending') {
+    const msg = document.createElement('p');
+    msg.className = 'compra-proof__message';
+    msg.textContent = 'Comprobante enviado — esperando confirmación del comercio.';
+    wrap.appendChild(msg);
+    return wrap;
+  }
+
+  if (latestProof?.status === 'rejected') {
+    const msg = document.createElement('p');
+    msg.className = 'compra-proof__message compra-proof__message--error';
+    msg.textContent = 'El comprobante anterior fue rechazado. Subí uno nuevo.';
+    wrap.appendChild(msg);
+  }
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*,application/pdf';
+  fileInput.className = 'compra-proof__file';
+  wrap.appendChild(fileInput);
+
+  const uploadBtn = document.createElement('button');
+  uploadBtn.type = 'button';
+  uploadBtn.className = 'bl-btn bl-btn-primary compra-proof__btn';
+  uploadBtn.textContent = 'Subir comprobante';
+  wrap.appendChild(uploadBtn);
+
+  uploadBtn.addEventListener('click', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) {
+      showToast('Elegí un archivo primero.', 'error');
+      return;
+    }
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Subiendo...';
+
+    try {
+      // Sanea el nombre de archivo: nada de "/" ni ".." que intente escapar
+      // de la carpeta {order.id}/ que usan las policies de storage.
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
+      const path = `${order.id}/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { error: insertError } = await supabase
+        .from('payment_proofs')
+        .insert({ order_id: order.id, receipt_url: path });
+      if (insertError) throw insertError;
+
+      showToast('Comprobante enviado. Esperá la confirmación del comercio.', 'success');
+      await loadCompras(order.client_id);
+    } catch (err) {
+      console.error('Error al subir comprobante', err);
+      showToast('No se pudo subir el comprobante.', 'error');
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Subir comprobante';
+    }
+  });
+
+  return wrap;
+}
+
 async function loadCompras(userId) {
   if (!comprasContainer) return;
   try {
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
-        id, status, payment_method, delivery_method, created_at, total_price,
+        id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price,
         stores ( name ),
-        order_items ( quantity, price, title )
+        order_items ( quantity, price, title ),
+        payment_proofs ( status, created_at )
       `)
       .eq('client_id', userId)
       .order('created_at', { ascending: false });

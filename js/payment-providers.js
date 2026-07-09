@@ -27,14 +27,32 @@ const simuladoProvider = {
   },
 };
 
+const transferenciaProvider = {
+  name: 'transferencia',
+  /**
+   * A diferencia de "simulado", acá no hay nada que confirmar en el momento:
+   * la orden queda pending hasta que el cliente sube el comprobante (desde
+   * "Mis compras", perfil.js) y el vendedor lo confirma
+   * (confirm_transfer_payment, F2-04). pay() no llama a nada — solo le avisa
+   * a carrito.js que el pago quedó pendiente para que muestre el mensaje
+   * correcto en vez de "¡pagado!".
+   * @returns {Promise<{success: boolean, pending: boolean}>}
+   */
+  async pay() {
+    return { success: true, pending: true };
+  },
+};
+
 /**
  * @param {string} method - 'simulado' | 'transferencia' | 'mercadopago'
- * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, message?: string}>}}
+ * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, message?: string}>}}
  */
 export function getPaymentProvider(method) {
   switch (method) {
     case 'simulado':
       return simuladoProvider;
+    case 'transferencia':
+      return transferenciaProvider;
     default:
       throw new Error(`Método de pago no soportado todavía: ${method}`);
   }

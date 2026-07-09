@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (M1 completo; Fase 2 en curso: F2-01 listo).
+> Última actualización: 2026-07-09 (M1 completo; Fase 2 completa: F2-01 a F2-06).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -64,8 +64,12 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F2-06** (`A113-178`) — Historial de pedidos real en `perfil.html`. Agregado `order_items.title` (migración 21, snapshot igual que `price`) porque un join en vivo a `products(title)` se rompe por RLS si el vendedor desactiva/borra el producto después (`products_select_public_active` solo deja ver `is_active=true`) — un recibo no debería perder el nombre del producto. `js/perfil.js` (`loadCompras`/`buildCompraItem`) reconstruida con DOM API (nunca innerHTML, mismo criterio de F1-01: nombre de tienda y título de producto los define el vendedor) mostrando tienda, fecha, método de envío/pago, lista de productos y estado con badge.
 
+- **F2-04** (`A113-176`) — Transferencia + comprobante. Bucket **privado** `payment-proofs` (migración 22, a diferencia de `products`/`stores` que son públicos) con RLS por `storage.foldername(name)[1]` = order_id; trigger `payment_proofs_validate_order` (solo ordenes `transferencia`+`pending`, `EXECUTE` revocado tras aparecer en `get_advisors` — mismo criterio que `handle_new_user` en F1-02); RPC `confirm_transfer_payment` (SECURITY DEFINER, solo el vendedor de la tienda o admin) que marca `paid` al aprobar y deja `pending` (para reintentar) al rechazar. Frontend: `carrito.html`/`carrito.js` con selector de método de pago (antes fijo en simulado); `payment-providers.js` con provider `transferencia` (no confirma nada al momento, solo avisa `pending`); `perfil.js` (`buildPaymentProofSection`) con input de archivo para subir el comprobante desde "Mis compras"; `vender.js` (`renderPendingPayments`) con panel nuevo "Pagos por confirmar" en el dashboard (ver comprobante vía signed URL + Confirmar/Rechazar). Verificado con `BEGIN;...ROLLBACK;`: flujo completo cliente-sube→vendedor-confirma probado de punta a punta contra la base real. Nota de alcance: el panel del vendedor no muestra email/nombre del cliente (RLS de `profiles` solo deja ver la fila propia; ampliarlo es una decisión de privacidad aparte).
+
+**Fase 2 (Compra: checkout, órdenes y pagos) completa** — F2-01 a F2-06. Queda **F2-07** (`A113-179`, provider MercadoPago sandbox→real) marcado explícitamente "Futuro" en el roadmap, no bloquea nada hoy (el pago simulado + transferencia ya permiten comprar de verdad).
+
 ### ⏳ Próximo
-- Resto de Fase 2: F2-04 (`A113-176`, transferencia + comprobante), F2-07 (`A113-179`, MercadoPago, futuro).
+- **Fase 5** (experiencia del vendedor) o **Fase 3** (delivery/repartidor) — evaluar cuál conviene arrancar primero. Fase 2 ya deja comprar de verdad (simulado + transferencia), que era el bloqueante más grande para un lanzamiento real.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
