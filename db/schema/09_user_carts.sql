@@ -1,6 +1,6 @@
 -- 1. Tabla de carritos de usuario (Sincronización en la nube)
-CREATE TABLE public.user_carts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS public.user_carts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
     items JSONB DEFAULT '[]'::jsonb NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -9,8 +9,11 @@ CREATE TABLE public.user_carts (
 
 ALTER TABLE public.user_carts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own cart" ON public.user_carts;
 CREATE POLICY "Users can view own cart" ON public.user_carts FOR SELECT TO authenticated USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own cart" ON public.user_carts;
 CREATE POLICY "Users can insert own cart" ON public.user_carts FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own cart" ON public.user_carts;
 CREATE POLICY "Users can update own cart" ON public.user_carts FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
 -- Actualizar timestamp automáticamente
@@ -22,6 +25,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_user_carts_modtime ON public.user_carts;
 CREATE TRIGGER update_user_carts_modtime
 BEFORE UPDATE ON public.user_carts
 FOR EACH ROW EXECUTE PROCEDURE public.update_user_carts_modtime();

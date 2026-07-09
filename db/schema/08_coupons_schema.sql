@@ -12,11 +12,13 @@ create table if not exists public.coupons (
 alter table public.coupons enable row level security;
 
 -- Public can read active coupons to validate them at checkout
+drop policy if exists coupons_select_public on public.coupons;
 create policy coupons_select_public on public.coupons
   for select to anon, authenticated
   using (is_active = true and (expires_at is null or expires_at > now()));
 
 -- Admins can manage coupons
+drop policy if exists coupons_all_admin on public.coupons;
 create policy coupons_all_admin on public.coupons
   for all to authenticated
   using (coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');

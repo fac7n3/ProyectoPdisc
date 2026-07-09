@@ -5,20 +5,49 @@
 -- 2) Arreglar validate_cart_prices: antes leía products.name / products.price
 --    (columnas inexistentes: la tabla tiene title / price_cents) -> fallaba en runtime.
 
+-- Guardas por columna: si ya se corrió esta migración (price_cents ya no existe),
+-- cada bloque se saltea. Sin esto, re-ejecutar el script fallaría al intentar
+-- renombrar una columna inexistente, o peor, dividiría por 100 una segunda vez
+-- sobre datos que ya están en pesos.
+
 -- === 1) products.price_cents -> price ===
-ALTER TABLE public.products RENAME COLUMN price_cents TO price;
-ALTER TABLE public.products RENAME CONSTRAINT products_price_cents_check TO products_price_check;
-UPDATE public.products SET price = price / 100;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'price_cents'
+  ) THEN
+    ALTER TABLE public.products RENAME COLUMN price_cents TO price;
+    ALTER TABLE public.products RENAME CONSTRAINT products_price_cents_check TO products_price_check;
+    UPDATE public.products SET price = price / 100;
+  END IF;
+END $$;
 
 -- === 2) order_items.price_cents -> price ===
-ALTER TABLE public.order_items RENAME COLUMN price_cents TO price;
-ALTER TABLE public.order_items RENAME CONSTRAINT order_items_price_cents_check TO order_items_price_check;
-UPDATE public.order_items SET price = price / 100;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'order_items' AND column_name = 'price_cents'
+  ) THEN
+    ALTER TABLE public.order_items RENAME COLUMN price_cents TO price;
+    ALTER TABLE public.order_items RENAME CONSTRAINT order_items_price_cents_check TO order_items_price_check;
+    UPDATE public.order_items SET price = price / 100;
+  END IF;
+END $$;
 
 -- === 3) orders.total_price_cents -> total_price ===
-ALTER TABLE public.orders RENAME COLUMN total_price_cents TO total_price;
-ALTER TABLE public.orders RENAME CONSTRAINT orders_total_price_cents_check TO orders_total_price_check;
-UPDATE public.orders SET total_price = total_price / 100;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'total_price_cents'
+  ) THEN
+    ALTER TABLE public.orders RENAME COLUMN total_price_cents TO total_price;
+    ALTER TABLE public.orders RENAME CONSTRAINT orders_total_price_cents_check TO orders_total_price_check;
+    UPDATE public.orders SET total_price = total_price / 100;
+  END IF;
+END $$;
 
 -- === 4) Recrear validate_cart_prices con columnas reales (title, price) ===
 -- Recibe [{ "id": "<uuid>", "qty": 2, "price": 2850 }]

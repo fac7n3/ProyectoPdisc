@@ -37,6 +37,13 @@ BEGIN
     RAISE EXCEPTION 'No se encontró ningún usuario en auth.users. Registrate en la app antes de correr este script.';
   END IF;
 
+  -- Guard: este seed es de un solo uso (ya se aplicó a la base real). Si la primera
+  -- tienda ya existe, no reinsertamos (evita duplicar stores/products en cada re-run).
+  IF EXISTS (SELECT 1 FROM public.stores WHERE name = 'Ferretería El Clavo') THEN
+    RAISE NOTICE 'Seed 06 ya aplicado (Ferretería El Clavo existe). Nada para hacer.';
+    RETURN;
+  END IF;
+
   -- 2. Insertar 10 Categorías Nuevas
   INSERT INTO public.categories (name, slug, icon) VALUES 
     ('Ferretería', 'ferreteria', 'fa-solid fa-hammer'),

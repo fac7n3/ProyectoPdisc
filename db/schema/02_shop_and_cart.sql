@@ -11,6 +11,7 @@ create table if not exists public.seller_requests (
 
 alter table public.seller_requests enable row level security;
 
+drop trigger if exists seller_requests_set_updated_at on public.seller_requests;
 create trigger seller_requests_set_updated_at
 before update on public.seller_requests
 for each row execute procedure public.set_updated_at();

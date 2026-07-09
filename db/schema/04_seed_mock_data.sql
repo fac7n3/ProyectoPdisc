@@ -21,6 +21,13 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Guard: este seed es de un solo uso (ya se aplicó a la base real). Si la primera
+  -- tienda ya existe, no reinsertamos (evita duplicar stores/products en cada re-run).
+  IF EXISTS (SELECT 1 FROM public.stores WHERE name = 'Almacén Don José') THEN
+    RAISE NOTICE 'Seed 04 ya aplicado (Almacén Don José existe). Nada para hacer.';
+    RETURN;
+  END IF;
+
   -- 1. Insert Categories
   INSERT INTO public.categories (name, slug, icon) VALUES 
     ('Almacén', 'almacen', 'fa-solid fa-box'),
