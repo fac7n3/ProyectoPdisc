@@ -213,6 +213,12 @@ const DELIVERY_METHOD_LABELS = {
   delivery: 'Envío a domicilio',
 };
 
+const DELIVERY_STATUS_LABELS = {
+  assigned: 'Un repartidor tomó tu pedido',
+  picked_up: 'El repartidor está en camino',
+  delivered: 'Entregado',
+};
+
 /**
  * Construye la card de una orden con DOM API (nunca innerHTML): el nombre
  * de la tienda y el título de cada producto los define el vendedor, así que
@@ -264,6 +270,19 @@ function buildCompraItem(order) {
   statusSpan.textContent = statusText;
   statusDiv.appendChild(statusSpan);
   info.appendChild(statusDiv);
+
+  // F3-04: estado del envío (si el pedido es delivery y ya tiene repartidor).
+  // Sin push en tiempo real todavía — se actualiza al recargar "Mis compras",
+  // igual que el resto de los paneles de este proyecto.
+  // deliveries.order_id es UNIQUE -> PostgREST lo embebe como objeto único,
+  // no como array (relación 1:1, no 1:N).
+  const deliveryStatus = order.deliveries?.status;
+  if (order.delivery_method === 'delivery' && deliveryStatus && DELIVERY_STATUS_LABELS[deliveryStatus]) {
+    const deliverySpan = document.createElement('span');
+    deliverySpan.className = 'compra-date';
+    deliverySpan.textContent = DELIVERY_STATUS_LABELS[deliveryStatus];
+    info.appendChild(deliverySpan);
+  }
 
   const proofSection = buildPaymentProofSection(order);
   if (proofSection) info.appendChild(proofSection);
@@ -370,7 +389,8 @@ async function loadCompras(userId) {
         id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price,
         stores ( name ),
         order_items ( quantity, price, title ),
-        payment_proofs ( status, created_at )
+        payment_proofs ( status, created_at ),
+        deliveries ( status )
       `)
       .eq('client_id', userId)
       .order('created_at', { ascending: false });

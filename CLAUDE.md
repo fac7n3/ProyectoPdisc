@@ -80,8 +80,12 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F3-03** (`A113-183`) — RPC `update_delivery_status` (migración 28, SECURITY DEFINER): transiciones solo hacia adelante y de a una (`assigned→picked_up→delivered`), solo el repartidor asignado; sincroniza `orders.status` (`picked_up→'shipped'`, `delivered→'completed'`). `'cancelled'` queda en el CHECK constraint pero a propósito sin wireear — qué pasa con el pedido al cancelar (¿vuelve a estar disponible? ¿interviene vendedor/admin?) es una decisión de producto fuera de alcance. `repartidor.js`: botones "Marcar en camino"/"Marcar entregado" en cada tarjeta de "Mis entregas". Verificado con `BEGIN;...ROLLBACK;`: flujo completo hasta `completed`, saltar `picked_up` se rechaza.
 
+- **F3-04** (`A113-184`) — Sin migración nueva, solo consultas sobre tablas ya existentes. `perfil.js`: "Mis compras" muestra el estado del envío (`DELIVERY_STATUS_LABELS`) cuando el pedido es `delivery` y ya tiene un `deliveries` asociado. `vender.js`: sección nueva "Envíos en curso" en el dashboard (`renderShipmentsInProgress`) con los pedidos `delivery` de la tienda en estado `paid`/`shipped` y su estado de entrega. **"En tiempo real" NO implementado como push** (Supabase Realtime) — se actualiza al recargar, igual que el resto de los paneles del proyecto; implementar `postgres_changes` sobre `deliveries` queda como mejora futura, decisión explícita para no meter un patrón de suscripción sin poder probarlo con una sesión real en el navegador.
+
+**Fase 3 (Delivery y rol repartidor) completa** — F3-01 a F3-04. Queda **F3-05** (`A113-185`, ubicación/seguimiento del repartidor + tarifas por distancia) marcado "Futuro" en el roadmap, no bloquea nada.
+
 ### ⏳ Próximo
-- **F3-04** (`A113-184`) — Vista del cliente y del vendedor del estado del envío en tiempo real (mostrar el estado de `deliveries`/`orders` en `perfil.html`/`vender.js`). F3-05 (ubicación/tarifas por distancia) es "Futuro", no bloquea nada.
+- **Fase 4** (carrito en la nube + favoritos persistentes) o **Fase 5** (experiencia del vendedor) — evaluar cuál conviene arrancar primero.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

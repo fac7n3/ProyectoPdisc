@@ -174,6 +174,7 @@ async function loadDashboard(user) {
 
   await fetchProducts();
   await renderPendingPayments();
+  await renderShipmentsInProgress();
   setupDashboardEvents();
 }
 
@@ -290,6 +291,73 @@ async function handlePaymentDecision(proofId, approve) {
 
   showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
   await renderPendingPayments();
+}
+
+// --- F3-04: estado de envío de los pedidos con delivery ---
+// Sin push en tiempo real todavía (se actualiza al recargar el dashboard,
+// igual que el resto de los paneles de este proyecto) — F3-05/mejoras futuras.
+
+const SHIPMENT_STATUS_LABELS = {
+  assigned: 'Repartidor asignado',
+  picked_up: 'En camino',
+  delivered: 'Entregado',
+};
+
+async function renderShipmentsInProgress() {
+  const container = document.getElementById('shipments-container');
+  if (!container || !currentStoreId) return;
+
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('id, total_price, shipping_address, created_at, deliveries ( status )')
+    .eq('store_id', currentStoreId)
+    .eq('delivery_method', 'delivery')
+    .in('status', ['paid', 'shipped'])
+    .order('created_at', { ascending: false });
+
+  container.textContent = '';
+
+  if (error) {
+    console.error('Error al cargar envíos en curso:', error);
+    const errorMsg = document.createElement('p');
+    errorMsg.style.color = 'var(--bl-text-secondary)';
+    errorMsg.textContent = 'Error al cargar los envíos.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  if (!orders || orders.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-text-secondary)';
+    emptyMsg.textContent = 'No hay envíos en curso.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  orders.forEach((order) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white;';
+
+    const info = document.createElement('div');
+    const idStrong = document.createElement('strong');
+    idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+    info.appendChild(idStrong);
+    const addressSpan = document.createElement('span');
+    addressSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
+    addressSpan.textContent = order.shipping_address || '';
+    info.appendChild(addressSpan);
+    row.appendChild(info);
+
+    const statusSpan = document.createElement('span');
+    // deliveries.order_id es UNIQUE -> PostgREST lo embebe como objeto único.
+    const deliveryStatus = order.deliveries?.status;
+    statusSpan.textContent = deliveryStatus
+      ? (SHIPMENT_STATUS_LABELS[deliveryStatus] || deliveryStatus)
+      : 'Esperando repartidor';
+    row.appendChild(statusSpan);
+
+    container.appendChild(row);
+  });
 }
 
 async function fetchProducts() {

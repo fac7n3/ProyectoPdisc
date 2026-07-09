@@ -70,6 +70,18 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 27. `27_deliveries_visibility_fix.sql` — cualquier repartidor puede ver cualquier fila de `deliveries` (F3-02, ver nota abajo).
 28. `28_delivery_status_flow.sql` — RPC `update_delivery_status` (F3-03, ver nota abajo).
 
+No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
+frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
+nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`
+(`renderShipmentsInProgress`, sección "Envíos en curso"): el cliente ve el
+estado de su envío en "Mis compras", el vendedor ve una lista de envíos en
+curso de su tienda en el dashboard. **Sin push en tiempo real todavía** — se
+actualiza al recargar la página, igual que el resto de los paneles de este
+proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
+(`postgres_changes` sobre `deliveries`) queda como mejora futura, no se hizo
+acá para no meter un patrón de suscripción/limpieza nuevo sin poder
+verificarlo en un navegador con sesión real.
+
 ### Idempotencia (F0-07 / A113-150)
 
 Todos los archivos son seguros de re-ejecutar sobre una base que ya los tiene aplicados
