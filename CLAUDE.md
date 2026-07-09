@@ -14,6 +14,7 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - `dist/` **se versiona** en git. El rol se lee del **JWT** (`app_metadata.role`). Precios: ver "Decisiones".
 - **Supabase project_id:** `otzhdwuaffcplrveuadc`. Idioma del proyecto: **español**.
 - **Hosting:** Vercel, proyecto `proyectopdisc` (team `baradero-local`), conectado a este repo (`fac7n3/ProyectoPdisc`, rama `main`). Cada push a `main` dispara deploy automático a producción.
+- **`.env` se versiona en git** (decisión intencional, no descuido): solo tiene `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, que son públicas por diseño de Supabase (protegidas por RLS, no por secreto) — terminan igual embebidas en el JS que se sirve al navegador en cada build. Vite las inyecta en build-time; Vercel también necesita estas mismas variables cargadas en su propio panel (Project Settings → Environment Variables) porque construye el sitio desde cero en cada deploy, no sirve el `dist/` commiteado. Nunca versionar acá una service role key ni tokens de Jira (esos sí quedan en `.jira.env`, gitignoreado).
 
 ## Decisiones de producto (definidas)
 - **Pagos:** simulado ahora (testing) → después MercadoPago real + transferencia con envío de comprobante.

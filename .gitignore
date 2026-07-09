@@ -1,7 +1,6 @@
 node_modules/
 .env.local
 .svelte-kit/
-.env
 context.md
 .mcp.json
 # Credenciales Jira (registro de commits)
