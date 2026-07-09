@@ -207,6 +207,42 @@
               </div>
             </div>
 
+            <!-- Perfil del comercio (F5-08) -->
+            <div style="margin-top: 3rem;">
+              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Perfil de mi comercio</h2>
+              <form id="store-profile-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
+                <div class="form-group">
+                  <label class="form-label" for="store-logo">URL del logo</label>
+                  <input type="url" id="store-logo" class="form-input" placeholder="https://..." />
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div>
+                    <label class="form-label" for="store-address">Dirección</label>
+                    <input type="text" id="store-address" class="form-input" />
+                  </div>
+                  <div>
+                    <label class="form-label" for="store-phone">Teléfono</label>
+                    <input type="text" id="store-phone" class="form-input" />
+                  </div>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div>
+                    <label class="form-label" for="store-zone">Zona / Barrio</label>
+                    <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
+                  </div>
+                  <div>
+                    <label class="form-label" for="store-hours">Horarios de atención</label>
+                    <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="store-description">Descripción</label>
+                  <textarea id="store-description" class="form-input" rows="3" placeholder="Contales a tus clientes sobre tu comercio"></textarea>
+                </div>
+                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Guardar perfil</button>
+              </form>
+            </div>
+
             <!-- Pagos por transferencia pendientes de confirmar (F2-04) -->
             <div style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Pagos por confirmar</h2>

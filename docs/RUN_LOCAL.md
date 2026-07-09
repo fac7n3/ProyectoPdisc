@@ -80,6 +80,30 @@ filtradas por `store_id`. De paso corregido un bug menor: "Productos
 Activos" contaba TODOS los productos de la tienda (`products.length`),
 sin filtrar por `is_active` — ahora sí filtra.
 
+### 31_store_profile_columns.sql (F5-08 / A113-198) — aplicado
+
+`stores.description`/`zone`/`hours` (extraída de `13_target_data_model.sql`
+sección 4). Resuelve de paso un bug histórico ya documentado (F0-08):
+`comercio.js` leía `store.description` sin que la columna existiera nunca,
+así que siempre caía al fallback "Sin descripción disponible." — ahora
+existe la columna y ese código (sin cambios) ya funciona bien.
+
+Nueva sección "Perfil de mi comercio" en el dashboard de `vender.js`: logo
+(URL), dirección, teléfono, zona, horarios (texto libre) y descripción —
+`fillStoreProfileForm`/`setupStoreProfileForm`, un simple `UPDATE` sobre
+`stores` filtrado por `id` (la policy `stores_update_own` ya lo permitía,
+no hizo falta ninguna policy nueva). `hours` se guarda como un string
+simple dentro de la columna `jsonb` (ej. `"Lunes a viernes 9 a 18hs"`) en
+vez de una estructura por día — más simple para esta primera versión, sin
+cerrarle la puerta a un formato estructurado más adelante. Deliberadamente
+no se puede editar `name`/`cuit`/`status` desde acá — son datos que ya
+pasaron por la aprobación del admin (D6), cambiarlos sin re-validación
+sería otra decisión de producto.
+
+Verificado: import sin errores de consola; `get_advisors` sin hallazgos
+nuevos. Sin sesión de vendedor real para probar el guardado end-to-end en
+el navegador — mismo límite que F0-04.
+
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
 nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`

@@ -102,11 +102,12 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F5-07** (`A113-197`) — Estadísticas reales del dashboard, sin migración nueva. `vender.js` (`loadDashboardStats`): "Ventas Hoy" y "Ingresos del Mes" desde `orders` (`payment_status='paid'`, filtradas por `store_id` y fecha). De paso, corregido bug menor: "Productos Activos" contaba TODOS los productos (no filtraba `is_active`).
 
+- **F5-08** (`A113-198`) — `stores.description`/`zone`/`hours` (migración 31). Resuelve de paso un bug histórico: `comercio.js` leía `store.description` sin que la columna existiera, siempre caía al fallback. Sección nueva "Perfil de mi comercio" en `vender.js`: logo, dirección, teléfono, zona, horarios (texto libre) y descripción — `UPDATE` simple sobre `stores`, la policy ya lo permitía. `name`/`cuit`/`status` no editables desde acá a propósito (ya pasaron por aprobación del admin, D6).
+
 ### ⏳ Próximo
 - **F5-03** (`A113-193`) — Variantes de producto (talle/color/peso) con stock por variante.
 - **F5-04** (`A113-194`) — Varias fotos por producto + subida a Storage.
 - **F5-06** (`A113-196`) — Gestión de pedidos del vendedor.
-- **F5-08** (`A113-198`) — Edición del perfil de la tienda.
 - **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)

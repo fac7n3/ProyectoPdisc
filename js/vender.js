@@ -161,7 +161,7 @@ async function loadDashboard(user) {
   // Obtener la tienda del usuario
   const { data: store, error } = await supabase
     .from('stores')
-    .select('id, name')
+    .select('id, name, logo_url, address, phone, description, zone, hours')
     .eq('owner_id', user.id)
     .single();
 
@@ -172,12 +172,64 @@ async function loadDashboard(user) {
 
   currentStoreId = store.id;
   document.getElementById('dash-shop-name').textContent = store.name;
+  fillStoreProfileForm(store);
 
   await fetchProducts();
   await renderPendingPayments();
   await renderShipmentsInProgress();
   await loadDashboardStats();
   setupDashboardEvents();
+}
+
+/** F5-08: precarga el form de perfil del comercio con los datos actuales. */
+function fillStoreProfileForm(store) {
+  const logoInput = document.getElementById('store-logo');
+  const addressInput = document.getElementById('store-address');
+  const phoneInput = document.getElementById('store-phone');
+  const zoneInput = document.getElementById('store-zone');
+  const hoursInput = document.getElementById('store-hours');
+  const descInput = document.getElementById('store-description');
+
+  if (logoInput) logoInput.value = store.logo_url || '';
+  if (addressInput) addressInput.value = store.address || '';
+  if (phoneInput) phoneInput.value = store.phone || '';
+  if (zoneInput) zoneInput.value = store.zone || '';
+  // hours se guarda como un string JSON simple (ej: '"Lunes a viernes 9 a 18hs"')
+  if (hoursInput) hoursInput.value = typeof store.hours === 'string' ? store.hours : '';
+  if (descInput) descInput.value = store.description || '';
+}
+
+function setupStoreProfileForm() {
+  const form = document.getElementById('store-profile-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setLoading(submitBtn, true, 'Guardar perfil');
+
+    const hoursValue = document.getElementById('store-hours').value.trim();
+
+    const { error } = await supabase
+      .from('stores')
+      .update({
+        logo_url: document.getElementById('store-logo').value.trim() || null,
+        address: document.getElementById('store-address').value.trim() || null,
+        phone: document.getElementById('store-phone').value.trim() || null,
+        zone: document.getElementById('store-zone').value.trim() || null,
+        hours: hoursValue || null,
+        description: document.getElementById('store-description').value.trim() || null,
+      })
+      .eq('id', currentStoreId);
+
+    if (error) {
+      console.error('Error al guardar el perfil del comercio:', error);
+      showToast('No se pudo guardar el perfil.', 'error');
+    } else {
+      showToast('Perfil del comercio actualizado.', 'success');
+    }
+    setLoading(submitBtn, false, 'Guardar perfil');
+  });
 }
 
 /** F5-07: ventas de hoy + ingresos del mes, ambos desde orders pagadas. */
@@ -565,6 +617,8 @@ async function openEditProductForm(productId) {
 }
 
 function setupDashboardEvents() {
+  setupStoreProfileForm();
+
   const btnShowAdd = document.getElementById('btn-show-add-product');
   const btnCancelAdd = document.getElementById('btn-cancel-add-product');
   const addFormContainer = document.getElementById('add-product-form-container');
