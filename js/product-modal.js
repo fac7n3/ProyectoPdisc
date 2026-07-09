@@ -6,7 +6,7 @@
  * construye el modal dinámicamente, y maneja todas las interacciones.
  */
 
-import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, updateCartBadge as _updateBadge, showToast as _showToast } from './cart-utils.js';
+import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite } from './cart-utils.js';
 
 // ── Seguridad ───────────────────────────────────────────────
 function escapeHTML(str) {
@@ -422,22 +422,37 @@ function bindModalEvents(overlay, data) {
     gallery.classList.toggle('is-zoomed');
   });
 
-  // Favoritos
+  // Favoritos (F4-03): misma fuente de verdad que las grillas de producto
+  // (cart-utils.js) — antes este botón solo togglaba una clase CSS, sin
+  // persistir nada, y se reseteaba cada vez que se reabría el modal.
   const favBtn = overlay.querySelector('#pm-fav-btn');
-  favBtn?.addEventListener('click', () => {
+  if (favBtn && data.id) {
     const icon = favBtn.querySelector('i');
-    const isActive = favBtn.classList.contains('is-active');
+    let isActive = false;
 
-    if (isActive) {
-      favBtn.classList.remove('is-active');
-      icon.classList.replace('fa-solid', 'fa-regular');
-      _showToast('Eliminado de favoritos');
-    } else {
-      favBtn.classList.add('is-active');
-      icon.classList.replace('fa-regular', 'fa-solid');
-      _showToast('Agregado a favoritos', 'success');
-    }
-  });
+    _getFavoriteIds().then((favoriteIds) => {
+      isActive = favoriteIds.includes(data.id);
+      favBtn.classList.toggle('is-active', isActive);
+      icon.classList.toggle('fa-solid', isActive);
+      icon.classList.toggle('fa-regular', !isActive);
+    });
+
+    favBtn.addEventListener('click', async () => {
+      const wasActive = isActive;
+      isActive = !wasActive;
+
+      favBtn.classList.toggle('is-active', isActive);
+      icon.classList.toggle('fa-solid', isActive);
+      icon.classList.toggle('fa-regular', !isActive);
+      _showToast(isActive ? 'Agregado a favoritos' : 'Eliminado de favoritos', isActive ? 'success' : 'default');
+
+      try {
+        await _toggleFavorite(data.id, wasActive);
+      } catch (err) {
+        console.error('Error al actualizar favoritos:', err);
+      }
+    });
+  }
 
   // Cantidad
   const qtyInput = overlay.querySelector('#pm-qty-value');

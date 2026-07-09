@@ -128,12 +128,18 @@ if (formDirecciones) {
   });
 }
 
-// --- Favoritos: Cargar desde LocalStorage + DB ---
-async function loadFavoritos() {
+// --- Favoritos: Cargar desde la tabla favorites (F4-03) ---
+async function loadFavoritos(userId) {
   if (!favoritosContainer) return;
   try {
-    const raw = localStorage.getItem('bl_wishlist');
-    const wishlist = raw ? JSON.parse(raw) : [];
+    const { data: favRows, error: favError } = await supabase
+      .from('favorites')
+      .select('product_id')
+      .eq('user_id', userId);
+
+    if (favError) throw favError;
+
+    const wishlist = (favRows || []).map((f) => f.product_id);
 
     if (wishlist.length === 0) {
       favoritosContainer.innerHTML = `<p style="color: var(--bl-perfil-text-sec);">Aún no agregaste productos a tus favoritos.</p>`;
@@ -473,7 +479,7 @@ async function renderFullProfile(user) {
   }
   
   // Cargar las colecciones asíncronamente
-  loadFavoritos();
+  loadFavoritos(user.id);
   loadCompras(user.id);
 }
 

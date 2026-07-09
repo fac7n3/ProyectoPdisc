@@ -90,6 +90,8 @@ export async function initCartSync() {
   const merged = mergeCarts(getCart(), cloudRow?.items || []);
   saveCart(merged);
   updateCartBadge();
+
+  await mergeLocalWishlistIntoFavorites(session.user.id);
 }
 
 /**
@@ -198,12 +200,16 @@ export function initCartButtons() {
 }
 
 /**
- * Inicializar botones de favoritos en product-cards del DOM.
- * Persiste los favoritos en localStorage.
+ * Favoritos (F4-03): fuente única para toda la app — antes había 2
+ * implementaciones sin relación entre sí (esta, en localStorage, usada en
+ * las grillas de home/search/comercio; y un botón en product-modal.js que
+ * solo togglea una clase CSS sin persistir nada). Ahora ambas usan estas
+ * mismas funciones: si hay sesión, la fuente de verdad es la tabla
+ * `favorites`; si no, localStorage sigue como fallback para invitados.
  */
 const WISHLIST_KEY = 'bl_wishlist';
 
-function getWishlist() {
+function getLocalWishlist() {
   try {
     const raw = localStorage.getItem(WISHLIST_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -213,44 +219,115 @@ function getWishlist() {
   }
 }
 
-function saveWishlist(list) {
+function saveLocalWishlist(list) {
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(list));
 }
 
-export function initWishlist() {
-  const wishlist = getWishlist();
+/** IDs de producto favoritos del usuario actual (DB si hay sesión, si no localStorage). */
+export async function getFavoriteIds() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return getLocalWishlist();
+
+  const { data, error } = await supabase
+    .from('favorites')
+    .select('product_id')
+    .eq('user_id', session.user.id);
+
+  if (error) {
+    console.error('Error al traer favoritos:', error);
+    return [];
+  }
+
+  return (data || []).map((f) => f.product_id);
+}
+
+/**
+ * Agrega o quita un producto de favoritos.
+ * @param {string} productId
+ * @param {boolean} isCurrentlyFavorite - estado ANTES del toggle
+ */
+export async function toggleFavorite(productId, isCurrentlyFavorite) {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    const list = getLocalWishlist();
+    if (isCurrentlyFavorite) {
+      const idx = list.indexOf(productId);
+      if (idx > -1) list.splice(idx, 1);
+    } else if (!list.includes(productId)) {
+      list.push(productId);
+    }
+    saveLocalWishlist(list);
+    return;
+  }
+
+  if (isCurrentlyFavorite) {
+    await supabase.from('favorites').delete().eq('user_id', session.user.id).eq('product_id', productId);
+  } else {
+    await supabase.from('favorites').insert({ user_id: session.user.id, product_id: productId });
+  }
+}
+
+/**
+ * Al loguearse, sube los favoritos que se hayan marcado como invitado
+ * (localStorage) a la tabla `favorites` y limpia el localStorage — la DB
+ * pasa a ser la única fuente de verdad para ese usuario de acá en más.
+ * Llamada desde initCartSync (mismo punto de entrada "sincronizar todo al
+ * loguearse", una vez por pestaña).
+ */
+async function mergeLocalWishlistIntoFavorites(userId) {
+  const localWishlist = getLocalWishlist();
+  if (localWishlist.length === 0) return;
+
+  const rows = localWishlist.map((productId) => ({ user_id: userId, product_id: productId }));
+  const { error } = await supabase.from('favorites').upsert(rows, { onConflict: 'user_id,product_id' });
+
+  if (error) {
+    console.error('Error al migrar favoritos locales:', error);
+    return;
+  }
+
+  localStorage.removeItem(WISHLIST_KEY);
+}
+
+/**
+ * Inicializar botones de favoritos en product-cards del DOM.
+ * @param {string[]} [knownFavoriteIds] - si ya se tienen (ej. desde initWishlistFor
+ *   llamado por varias grillas en la misma página), evita repetir la query.
+ */
+export async function initWishlist(knownFavoriteIds) {
+  const favoriteIds = knownFavoriteIds || (await getFavoriteIds());
 
   document.querySelectorAll('.product-card__wishlist').forEach((btn) => {
     const card = btn.closest('.product-card');
     const productId = card?.id || '';
     const icon = btn.querySelector('i');
+    let isActive = Boolean(productId && favoriteIds.includes(productId));
 
-    // Restaurar estado desde localStorage
-    if (productId && wishlist.includes(productId)) {
+    if (isActive) {
       icon.classList.replace('fa-regular', 'fa-solid');
       btn.style.color = '#ef4444';
     }
 
-    btn.addEventListener('click', () => {
-      const isActive = icon.classList.contains('fa-solid');
-      const currentWishlist = getWishlist();
+    btn.addEventListener('click', async () => {
+      const wasActive = isActive;
+      isActive = !wasActive;
 
       if (isActive) {
-        icon.classList.replace('fa-solid', 'fa-regular');
-        btn.style.color = '';
-        const idx = currentWishlist.indexOf(productId);
-        if (idx > -1) currentWishlist.splice(idx, 1);
-        showToast('Eliminado de favoritos');
-      } else {
         icon.classList.replace('fa-regular', 'fa-solid');
         btn.style.color = '#ef4444';
-        if (productId && !currentWishlist.includes(productId)) {
-          currentWishlist.push(productId);
-        }
         showToast('Agregado a favoritos', 'success');
+      } else {
+        icon.classList.replace('fa-solid', 'fa-regular');
+        btn.style.color = '';
+        showToast('Eliminado de favoritos');
       }
 
-      saveWishlist(currentWishlist);
+      try {
+        await toggleFavorite(productId, wasActive);
+      } catch (err) {
+        console.error('Error al actualizar favoritos:', err);
+      }
     });
   });
 }

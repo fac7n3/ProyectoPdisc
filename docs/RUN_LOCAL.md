@@ -69,6 +69,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 26. `26_deliveries_and_claim.sql` — tabla `deliveries` + RPC `claim_delivery` + policy de `orders` para repartidor (F3-02, ver nota abajo).
 27. `27_deliveries_visibility_fix.sql` — cualquier repartidor puede ver cualquier fila de `deliveries` (F3-02, ver nota abajo).
 28. `28_delivery_status_flow.sql` — RPC `update_delivery_status` (F3-03, ver nota abajo).
+29. `29_favorites.sql` — tabla `favorites` (F4-03, ver nota abajo).
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
@@ -134,6 +135,50 @@ Verificado en el navegador: carrito sembrado con un producto inexistente +
 uno con cantidad muy superior al stock real → el inexistente se quita
 ("Ya no están disponibles: ..."), el otro se ajusta a la cantidad real de
 stock.
+
+### 29_favorites.sql (F4-03 / A113-189) — aplicado
+
+Extraída de `13_target_data_model.sql` (sección 11) al arrancar esta tarea
+de Fase 4. Antes había **dos implementaciones de wishlist sin relación
+entre sí**: `cart-utils.js` (localStorage `bl_wishlist`, usado en las
+grillas de home/search/comercio) y `product-modal.js` (un botón que solo
+togglaba una clase CSS, sin persistir nada — se reseteaba cada vez que se
+reabría el modal, ni siquiera compartía estado con el corazón de la
+grilla).
+
+`js/cart-utils.js` ahora tiene la única fuente de verdad para toda la app:
+
+- `getFavoriteIds()` — devuelve los IDs favoritos: de la tabla `favorites`
+  si hay sesión, de `localStorage` si no (invitados pueden seguir marcando
+  favoritos sin cuenta).
+- `toggleFavorite(productId, isCurrentlyFavorite)` — agrega/saca de
+  `favorites` (con sesión) o del array local (sin sesión).
+- `mergeLocalWishlistIntoFavorites(userId)` — al loguearse, sube los
+  favoritos marcados como invitado a la tabla (`upsert` con
+  `onConflict: 'user_id,product_id'`, no duplica si ya estaban) y limpia el
+  localStorage; la DB pasa a ser la única fuente para ese usuario de ahí en
+  más. Se llama desde `initCartSync` (mismo punto de entrada de F4-01,
+  "sincronizar todo al loguearse", una vez por pestaña).
+- `initWishlist()` (ya existía, ahora async): en vez de leer/escribir
+  `localStorage` directo, usa las dos funciones de arriba.
+
+`js/product-modal.js`: el botón de favorito del modal ahora usa las mismas
+`getFavoriteIds`/`toggleFavorite` — muestra el estado real al abrir el
+modal (antes siempre arrancaba "no favorito") y persiste el toggle.
+
+`js/perfil.js` (`loadFavoritos`): leía `localStorage.bl_wishlist` directo
+—inconsistente con que la pestaña "Mis favoritos" solo existe logueado—,
+ahora lee de la tabla `favorites` por `user_id`.
+
+Verificado: RLS + unique constraint (`user_id`, `product_id`) probados
+contra la base real con `BEGIN;...ROLLBACK;` (insertar duplicado rechazado,
+un usuario no ve los favoritos de otro); el patrón de upsert compuesto +
+delete que usa `mergeLocalWishlistIntoFavorites`/`toggleFavorite` probado
+igual (upsert repetido no duplica, delete saca exactamente la fila
+correcta). En el navegador: como invitado, tocar el corazón de una card
+guarda el ID en `localStorage.bl_wishlist` correctamente. Sin sesión real
+para probar el merge al loguearse ni el botón del modal con sesión — mismo
+límite que F0-04.
 
 ### Idempotencia (F0-07 / A113-150)
 

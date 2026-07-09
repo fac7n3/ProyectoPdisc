@@ -90,8 +90,12 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F4-02** (`A113-188`) — `carrito.js` (`validateCartFreshness`, corre al cargar la página, sin migración nueva): consulta `is_active`/`stock`/`price` reales de los productos del carrito — quita los inactivos/sin stock, ajusta cantidades al stock disponible, actualiza precios desactualizados. Mismo criterio que `create_order` (nunca confiar en lo guardado en el cliente) pero mostrado en el carrito, antes de llegar a pagar. Verificado en el navegador: producto inexistente se quita, cantidad excesiva se ajusta al stock real.
 
+- **F4-03** (`A113-189`) — Favoritos persistentes. Tabla `favorites` (migración 29, extraída de `13_target_data_model.sql`). Antes había **2 implementaciones sin relación entre sí**: `cart-utils.js` (localStorage, grillas de home/search/comercio) y `product-modal.js` (un botón que solo togglaba una clase CSS, sin persistir nada — se reseteaba al reabrir el modal). Ahora `cart-utils.js` es la única fuente: `getFavoriteIds()`/`toggleFavorite()` (DB si hay sesión, `localStorage` si no — invitados pueden seguir marcando favoritos) y `mergeLocalWishlistIntoFavorites()` (al loguearse, sube lo marcado como invitado y limpia el local — llamado desde `initCartSync`, mismo punto de entrada de F4-01). `product-modal.js` y `perfil.js` (`loadFavoritos`, antes leía `localStorage` directo pese a ser una pantalla que solo existe logueado) reescritos para usar lo mismo. Verificado: RLS + unique constraint probados con `BEGIN;...ROLLBACK;`; patrón upsert-compuesto+delete probado igual; en el navegador, marcar favorito como invitado guarda bien en `localStorage`.
+
+**Fase 4 (Carrito robusto y favoritos) completa** — F4-01 a F4-03 (no tiene ítems "Futuro" a diferencia de otras fases).
+
 ### ⏳ Próximo
-- **F4-03** (`A113-189`) — Favoritos persistentes en DB (`favorites`); unificar las 2 implementaciones actuales de wishlist.
+- **Fase 5** (experiencia del vendedor) — CRUD completo de productos, variantes, fotos múltiples, ofertas, gestión de pedidos, estadísticas reales, perfil de tienda.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
