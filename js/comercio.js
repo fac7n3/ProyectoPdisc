@@ -50,46 +50,120 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (productsError) throw productsError;
 
-    let productsHtml = '';
+    // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
+    mainContent.innerHTML = '';
+
+    const header = document.createElement('header');
+    header.className = 'store-header';
+
+    const title = document.createElement('h1');
+    title.className = 'store-header__title';
+    title.textContent = store.name;
+    header.appendChild(title);
+
+    const description = document.createElement('p');
+    description.className = 'store-header__description';
+    description.textContent = store.description || 'Sin descripción disponible.';
+    header.appendChild(description);
+
+    const meta = document.createElement('div');
+    meta.className = 'store-header__meta';
+
+    const locationSpan = document.createElement('span');
+    const locationIcon = document.createElement('i');
+    locationIcon.className = 'fa-solid fa-location-dot';
+    locationSpan.appendChild(locationIcon);
+    locationSpan.append(' Baradero');
+    meta.appendChild(locationSpan);
+
+    const productCountSpan = document.createElement('span');
+    const boxIcon = document.createElement('i');
+    boxIcon.className = 'fa-solid fa-box';
+    productCountSpan.appendChild(boxIcon);
+    productCountSpan.append(` ${products?.length || 0} productos`);
+    meta.appendChild(productCountSpan);
+
+    header.appendChild(meta);
+    mainContent.appendChild(header);
+
+    const section = document.createElement('section');
+    section.className = 'store-products';
+
+    const grid = document.createElement('div');
+    grid.className = 'products__grid';
+    grid.id = 'store-products-grid';
+
     if (!products || products.length === 0) {
-      productsHtml = '<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;">Este comercio aún no tiene productos publicados.</div>';
+      const emptyMsg = document.createElement('div');
+      emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;';
+      emptyMsg.textContent = 'Este comercio aún no tiene productos publicados.';
+      grid.appendChild(emptyMsg);
     } else {
-      productsHtml = products.map(product => {
-        return `
-          <article class="product-card" id="${product.id}" data-price="${product.price}">
-            <div class="product-card__image">
-              <img src="${product.image_url || '../Assets/images/default-product.png'}" alt="${product.title}" loading="lazy" />
-              <button class="product-card__wishlist" aria-label="Agregar a favoritos"><i class="fa-regular fa-heart"></i></button>
-            </div>
-            <div class="product-card__body">
-              <span class="product-card__shop"><i class="fa-solid fa-store"></i> ${store.name}</span>
-              <h3 class="product-card__name">${product.title}</h3>
-              <div class="product-card__price-row">
-                <span class="product-card__price">${formatPrice(product.price)}</span>
-              </div>
-              <button class="product-card__add" data-product-id="${product.id}"><i class="fa-solid fa-cart-plus"></i> Agregar</button>
-            </div>
-          </article>
-        `;
-      }).join('');
+      products.forEach(product => {
+        const article = document.createElement('article');
+        article.className = 'product-card';
+        article.id = product.id;
+        article.dataset.price = product.price;
+
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'product-card__image';
+
+        const img = document.createElement('img');
+        img.src = product.image_url || '../Assets/images/default-product.png';
+        img.alt = product.title;
+        img.loading = 'lazy';
+        imageDiv.appendChild(img);
+
+        const wishBtn = document.createElement('button');
+        wishBtn.className = 'product-card__wishlist';
+        wishBtn.setAttribute('aria-label', 'Agregar a favoritos');
+        const heartIcon = document.createElement('i');
+        heartIcon.className = 'fa-regular fa-heart';
+        wishBtn.appendChild(heartIcon);
+        imageDiv.appendChild(wishBtn);
+
+        article.appendChild(imageDiv);
+
+        const body = document.createElement('div');
+        body.className = 'product-card__body';
+
+        const shopSpan = document.createElement('span');
+        shopSpan.className = 'product-card__shop';
+        const storeIcon = document.createElement('i');
+        storeIcon.className = 'fa-solid fa-store';
+        shopSpan.appendChild(storeIcon);
+        shopSpan.append(` ${store.name}`);
+        body.appendChild(shopSpan);
+
+        const nameH3 = document.createElement('h3');
+        nameH3.className = 'product-card__name';
+        nameH3.textContent = product.title;
+        body.appendChild(nameH3);
+
+        const priceRow = document.createElement('div');
+        priceRow.className = 'product-card__price-row';
+        const priceSpan = document.createElement('span');
+        priceSpan.className = 'product-card__price';
+        priceSpan.textContent = formatPrice(product.price);
+        priceRow.appendChild(priceSpan);
+        body.appendChild(priceRow);
+
+        const addBtn = document.createElement('button');
+        addBtn.className = 'product-card__add';
+        addBtn.dataset.productId = product.id;
+        const cartIcon = document.createElement('i');
+        cartIcon.className = 'fa-solid fa-cart-plus';
+        addBtn.appendChild(cartIcon);
+        addBtn.append(' Agregar');
+        body.appendChild(addBtn);
+
+        article.appendChild(body);
+        grid.appendChild(article);
+      });
     }
 
-    mainContent.innerHTML = `
-      <header class="store-header">
-        <h1 class="store-header__title">${store.name}</h1>
-        <p class="store-header__description">${store.description || 'Sin descripción disponible.'}</p>
-        <div class="store-header__meta">
-          <span><i class="fa-solid fa-location-dot"></i> Baradero</span>
-          <span><i class="fa-solid fa-box"></i> ${products?.length || 0} productos</span>
-        </div>
-      </header>
-      
-      <section class="store-products">
-        <div class="products__grid" id="store-products-grid">
-          ${productsHtml}
-        </div>
-      </section>
-    `;
+    section.appendChild(grid);
+    mainContent.appendChild(section);
 
     initCartButtons();
     initWishlist();

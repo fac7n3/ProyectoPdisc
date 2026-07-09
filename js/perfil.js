@@ -156,18 +156,32 @@ async function loadFavoritos() {
     favoritosContainer.innerHTML = "";
     products.forEach(p => {
       const priceFmt = formatPrice(p.price);
-      const img = p.image_url || '../Assets/images/placeholder.png';
-      
+      const imgSrc = p.image_url || '../Assets/images/placeholder.png';
+
       const card = document.createElement('a');
       card.className = "fav-card";
-      card.href = `./producto.html?id=${p.id}`;
-      card.innerHTML = `
-        <img src="${img}" alt="${p.title}" loading="lazy" />
-        <div class="fav-card-info">
-          <span class="fav-price">${priceFmt}</span>
-          <span class="fav-title">${p.title}</span>
-        </div>
-      `;
+      card.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
+
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = p.title;
+      img.loading = 'lazy';
+      card.appendChild(img);
+
+      const info = document.createElement('div');
+      info.className = 'fav-card-info';
+
+      const priceSpan = document.createElement('span');
+      priceSpan.className = 'fav-price';
+      priceSpan.textContent = priceFmt;
+      info.appendChild(priceSpan);
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'fav-title';
+      titleSpan.textContent = p.title;
+      info.appendChild(titleSpan);
+
+      card.appendChild(info);
       favoritosContainer.appendChild(card);
     });
 

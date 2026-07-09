@@ -64,8 +64,18 @@ async function loadCategories() {
     return;
   }
 
-  select.innerHTML = '<option value="">Seleccioná un rubro...</option>' + 
-    categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+  select.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Seleccioná un rubro...';
+  select.appendChild(placeholder);
+
+  categories.forEach(c => {
+    const option = document.createElement('option');
+    option.value = c.slug;
+    option.textContent = c.name;
+    select.appendChild(option);
+  });
 }
 
 function initVenderPage(user) {

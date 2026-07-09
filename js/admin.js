@@ -39,19 +39,60 @@ async function fetchRequests() {
     }
 
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${date}</td>
-      <td><strong>${req.shop_name}</strong><br><small>${req.address || ''}</small></td>
-      <td>${req.cuit || '-'}</td>
-      <td>${req.category_slug || '-'}</td>
-      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-      <td>
-        ${req.status === 'pending' ? `
-          <button class="action-btn btn-approve" data-id="${req.id}" title="Aprobar"><i class="fa-solid fa-check"></i></button>
-          <button class="action-btn btn-reject" data-id="${req.id}" title="Rechazar"><i class="fa-solid fa-xmark"></i></button>
-        ` : '-'}
-      </td>
-    `;
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = date;
+    tr.appendChild(tdDate);
+
+    const tdShop = document.createElement('td');
+    const shopStrong = document.createElement('strong');
+    shopStrong.textContent = req.shop_name;
+    tdShop.appendChild(shopStrong);
+    tdShop.appendChild(document.createElement('br'));
+    const addressSmall = document.createElement('small');
+    addressSmall.textContent = req.address || '';
+    tdShop.appendChild(addressSmall);
+    tr.appendChild(tdShop);
+
+    const tdCuit = document.createElement('td');
+    tdCuit.textContent = req.cuit || '-';
+    tr.appendChild(tdCuit);
+
+    const tdCategory = document.createElement('td');
+    tdCategory.textContent = req.category_slug || '-';
+    tr.appendChild(tdCategory);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge ${statusClass}`;
+    statusBadge.textContent = statusText;
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+    if (req.status === 'pending') {
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'action-btn btn-approve';
+      approveBtn.dataset.id = req.id;
+      approveBtn.title = 'Aprobar';
+      const checkIcon = document.createElement('i');
+      checkIcon.className = 'fa-solid fa-check';
+      approveBtn.appendChild(checkIcon);
+      tdActions.appendChild(approveBtn);
+
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'action-btn btn-reject';
+      rejectBtn.dataset.id = req.id;
+      rejectBtn.title = 'Rechazar';
+      const xIcon = document.createElement('i');
+      xIcon.className = 'fa-solid fa-xmark';
+      rejectBtn.appendChild(xIcon);
+      tdActions.appendChild(rejectBtn);
+    } else {
+      tdActions.textContent = '-';
+    }
+    tr.appendChild(tdActions);
+
     tbody.appendChild(tr);
   });
 

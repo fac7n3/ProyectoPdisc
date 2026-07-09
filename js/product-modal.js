@@ -39,14 +39,14 @@ function extractProductData(card) {
   const fullStars = starsContainer?.querySelectorAll('.fa-star:not(.empty)').length || 0;
   const halfStars = starsContainer?.querySelectorAll('.fa-star-half-stroke').length || 0;
   const emptyStars = starsContainer?.querySelectorAll('.fa-star.empty, .fa-regular.fa-star.empty').length || 0;
-  const ratingCount = card.querySelector('.product-card__rating-count')?.textContent?.replace(/[()]/g, '') || '0';
+  const ratingCount = escapeHTML(card.querySelector('.product-card__rating-count')?.textContent?.replace(/[()]/g, '') || '0');
 
   // Categorías
   const categories = (card.dataset.category || '').split(' ');
 
   // Badge
   const badgeEl = card.querySelector('.product-card__badge');
-  const badgeText = badgeEl?.textContent?.trim() || '';
+  const badgeText = escapeHTML(badgeEl?.textContent?.trim() || '');
   const badgeType = badgeEl?.classList.contains('product-card__badge--envio') ? 'envio'
     : badgeEl?.classList.contains('product-card__badge--oferta') ? 'descuento' : '';
 
@@ -117,10 +117,14 @@ function buildModalHTML(data) {
   const relatedCards = getRelatedProducts(data.id, data.categories);
   let relatedHTML = '';
   relatedCards.forEach(card => {
-    const rName = card.querySelector('.product-card__name')?.textContent?.trim() || '';
-    const rPrice = card.querySelector('.product-card__price')?.textContent || '';
-    const rImg = card.querySelector('.product-card__image img')?.getAttribute('src') || '';
-    const rId = card.id || '';
+    // escapeHTML: rName/rPrice se leen vía textContent de otra tarjeta ya
+    // renderizada (p. ej. un título de producto con "<img onerror=...>"
+    // como texto plano no ejecuta ahí, pero re-inyectarlo tal cual en este
+    // innerHTML sí lo ejecutaría — hay que volver a escapar en el punto de uso.
+    const rName = escapeHTML(card.querySelector('.product-card__name')?.textContent?.trim() || '');
+    const rPrice = escapeHTML(card.querySelector('.product-card__price')?.textContent || '');
+    const rImg = encodeURI(card.querySelector('.product-card__image img')?.getAttribute('src') || '');
+    const rId = escapeHTML(card.id || '');
     relatedHTML += `
       <div class="pm-related-card" data-related-id="${rId}" tabindex="0" role="button" aria-label="Ver ${rName}">
         <div class="pm-related-card__img">

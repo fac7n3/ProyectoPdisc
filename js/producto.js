@@ -43,25 +43,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     const storeId = product.stores ? product.stores.id : '';
     const imgUrl = product.image_url || '../Assets/images/default-product.png';
 
-    container.innerHTML = `
-      <div class="product-gallery">
-        <img src="${imgUrl}" alt="${product.title}" />
-      </div>
-      <div class="product-info">
-        <div class="product-shop">
-          <i class="fa-solid fa-store"></i> <a href="./comercio.html?id=${storeId}" style="color: inherit; text-decoration: none;">${storeName}</a>
-        </div>
-        <h1 class="product-title">${product.title}</h1>
-        <div class="product-price">${formatPrice(product.price)}</div>
-        <div class="product-description">${product.description || 'Sin descripción disponible.'}</div>
-        
-        <div class="product-actions">
-          <button class="btn-add-cart" id="btn-add-cart">
-            <i class="fa-solid fa-cart-plus"></i> Agregar al carrito
-          </button>
-        </div>
-      </div>
-    `;
+    // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
+    container.innerHTML = '';
+
+    const gallery = document.createElement('div');
+    gallery.className = 'product-gallery';
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = product.title;
+    gallery.appendChild(img);
+    container.appendChild(gallery);
+
+    const info = document.createElement('div');
+    info.className = 'product-info';
+
+    const shopDiv = document.createElement('div');
+    shopDiv.className = 'product-shop';
+    const storeIcon = document.createElement('i');
+    storeIcon.className = 'fa-solid fa-store';
+    shopDiv.appendChild(storeIcon);
+    shopDiv.append(' ');
+    const storeLink = document.createElement('a');
+    storeLink.href = `./comercio.html?id=${encodeURIComponent(storeId)}`;
+    storeLink.style.cssText = 'color: inherit; text-decoration: none;';
+    storeLink.textContent = storeName;
+    shopDiv.appendChild(storeLink);
+    info.appendChild(shopDiv);
+
+    const titleH1 = document.createElement('h1');
+    titleH1.className = 'product-title';
+    titleH1.textContent = product.title;
+    info.appendChild(titleH1);
+
+    const priceDiv = document.createElement('div');
+    priceDiv.className = 'product-price';
+    priceDiv.textContent = formatPrice(product.price);
+    info.appendChild(priceDiv);
+
+    const descDiv = document.createElement('div');
+    descDiv.className = 'product-description';
+    descDiv.textContent = product.description || 'Sin descripción disponible.';
+    info.appendChild(descDiv);
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'product-actions';
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-add-cart';
+    addBtn.id = 'btn-add-cart';
+    const cartIcon = document.createElement('i');
+    cartIcon.className = 'fa-solid fa-cart-plus';
+    addBtn.appendChild(cartIcon);
+    addBtn.append(' Agregar al carrito');
+    actionsDiv.appendChild(addBtn);
+    info.appendChild(actionsDiv);
+
+    container.appendChild(info);
 
     // Bind Add to Cart
     const btnAdd = document.getElementById('btn-add-cart');
