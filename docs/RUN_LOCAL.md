@@ -110,6 +110,31 @@ duplican), y un usuario no puede leer el `user_carts` de otro (RLS). Sin
 sesión real de navegador para probar el flujo end-to-end del merge al
 loguearse — mismo límite que F0-04.
 
+### F4-02 (A113-188) — producto inactivo/eliminado/sin stock en el carrito — sin migración nueva
+
+`js/carrito.js` (`validateCartFreshness`, corre al cargar `carrito.html`,
+antes solo confiaba ciegamente en lo guardado en `localStorage`): consulta
+`is_active`/`stock`/`price` reales de todos los productos del carrito y:
+
+- Si un producto ya no existe, está desactivado, o tiene `stock <= 0` →
+  se quita del carrito.
+- Si la cantidad pedida supera el stock disponible → se ajusta al stock
+  real (no se quita, se achica).
+- Si el precio cambió desde que se agregó → se actualiza al precio actual.
+
+Si hubo algún cambio, guarda el carrito corregido (`saveCart`, que también
+sincroniza a la nube vía F4-01) y vuelve a renderizar, avisando con un
+toast (prioriza el mensaje de "ya no disponible" sobre el de "precio/
+cantidad actualizados" si pasaron ambas cosas). Mismo criterio que
+`create_order` en el checkout (nunca confiar en el precio/stock que ya
+estaba guardado en el cliente), pero mostrado antes, en la vista del
+carrito, no recién al pagar.
+
+Verificado en el navegador: carrito sembrado con un producto inexistente +
+uno con cantidad muy superior al stock real → el inexistente se quita
+("Ya no están disponibles: ..."), el otro se ajusta a la cantidad real de
+stock.
+
 ### Idempotencia (F0-07 / A113-150)
 
 Todos los archivos son seguros de re-ejecutar sobre una base que ya los tiene aplicados

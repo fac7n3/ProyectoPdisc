@@ -88,8 +88,9 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 ### ✅ Hecho
 - **F4-01** (`A113-187`) — Sincronizar carrito en la nube. `user_carts` ya existía (`09_user_carts.sql`) sin usar — sin migración nueva. `cart-utils.js`: `saveCart()` ahora también hace `pushCartToCloud()` (upsert por `user_id`, fire-and-forget); `initCartSync()` (se ejecuta al importar el módulo, una vez por pestaña vía `sessionStorage`) trae el carrito de la nube si hay sesión y lo mezcla con el local (`mergeCarts`: suma cantidades con tope `MAX_QTY`, usa los datos de display del local por ser el más reciente). Verificado: lógica de merge probada en el navegador (casos solo-local/solo-nube/repetido en ambos); upsert + RLS (un usuario no lee el `user_carts` de otro) probado contra la base real con `BEGIN;...ROLLBACK;`.
 
+- **F4-02** (`A113-188`) — `carrito.js` (`validateCartFreshness`, corre al cargar la página, sin migración nueva): consulta `is_active`/`stock`/`price` reales de los productos del carrito — quita los inactivos/sin stock, ajusta cantidades al stock disponible, actualiza precios desactualizados. Mismo criterio que `create_order` (nunca confiar en lo guardado en el cliente) pero mostrado en el carrito, antes de llegar a pagar. Verificado en el navegador: producto inexistente se quita, cantidad excesiva se ajusta al stock real.
+
 ### ⏳ Próximo
-- **F4-02** (`A113-188`) — Manejo de producto/variante inactivo, eliminado o sin stock dentro del carrito.
 - **F4-03** (`A113-189`) — Favoritos persistentes en DB (`favorites`); unificar las 2 implementaciones actuales de wishlist.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)

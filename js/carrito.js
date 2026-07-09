@@ -482,6 +482,61 @@ function showCartToast(message, type = 'default') {
   }, 2500);
 }
 
+/**
+ * F4-02: revalida el carrito contra el catálogo real (el localStorage puede
+ * tener productos que el vendedor desactivó, borró, o les bajó el stock
+ * desde la última vez que se abrió el carrito). Quita lo que ya no está
+ * disponible, ajusta cantidades al stock real y actualiza precios
+ * desactualizados — igual que hace create_order en el checkout, pero acá
+ * mostrado ANTES de llegar a pagar.
+ */
+async function validateCartFreshness() {
+  const cart = getCart();
+  if (cart.length === 0) return;
+
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('id, price, stock, is_active')
+    .in('id', cart.map((item) => item.id));
+
+  if (error) {
+    console.error('Error al revalidar el carrito:', error);
+    return;
+  }
+
+  const byId = new Map((products || []).map((p) => [p.id, p]));
+  const removedNames = [];
+  const adjustedNames = [];
+
+  const validatedCart = cart.reduce((acc, item) => {
+    const product = byId.get(item.id);
+
+    if (!product || !product.is_active || product.stock <= 0) {
+      removedNames.push(item.name);
+      return acc;
+    }
+
+    const clampedQty = Math.min(item.qty, product.stock);
+    if (clampedQty !== item.qty || product.price !== item.price) {
+      adjustedNames.push(item.name);
+    }
+
+    acc.push({ ...item, qty: clampedQty, price: product.price });
+    return acc;
+  }, []);
+
+  if (removedNames.length === 0 && adjustedNames.length === 0) return;
+
+  saveCart(validatedCart);
+  renderCart();
+
+  if (removedNames.length > 0) {
+    showCartToast(`Ya no están disponibles: ${removedNames.join(', ')}`, 'error');
+  } else {
+    showCartToast('Actualizamos precios o cantidades de tu carrito según disponibilidad actual.', 'default');
+  }
+}
+
 // --- Inicialización ---
 document.addEventListener('DOMContentLoaded', () => {
   renderCart();
@@ -489,4 +544,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initCouponEvents();
   initDeliveryEvents();
   initPaymentMethodEvents();
+  validateCartFreshness();
 });
