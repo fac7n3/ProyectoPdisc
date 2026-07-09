@@ -68,6 +68,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 25. `25_delivery_requests.sql` — tabla `delivery_requests` + RPC `approve_delivery_request` (F3-01, ver nota abajo).
 26. `26_deliveries_and_claim.sql` — tabla `deliveries` + RPC `claim_delivery` + policy de `orders` para repartidor (F3-02, ver nota abajo).
 27. `27_deliveries_visibility_fix.sql` — cualquier repartidor puede ver cualquier fila de `deliveries` (F3-02, ver nota abajo).
+28. `28_delivery_status_flow.sql` — RPC `update_delivery_status` (F3-03, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -437,6 +438,31 @@ no filtra eso por sí sola. Verificado sin errores de consola en el
 navegador (sin sesión de repartidor real para probar el flujo completo de
 "tomar pedido" en UI — mismo límite que F0-04; la lógica del RPC ya se
 probó a fondo contra la base real).
+
+### 28_delivery_status_flow.sql (F3-03 / A113-183) — aplicado
+
+RPC `update_delivery_status(p_delivery_id, p_new_status)` (`SECURITY
+DEFINER`, revocado de anon/public): transiciones válidas, solo hacia
+adelante y de a una — `assigned → picked_up` ("en camino") y `picked_up →
+delivered` ("entregado"); solo el repartidor asignado a esa entrega puede
+avanzarla (nadie más). Al avanzar, sincroniza `orders.status`:
+`picked_up → 'shipped'`, `delivered → 'completed'`.
+
+`'cancelled'` sigue en el `CHECK` de `deliveries.status` (modelo futuro)
+pero a propósito sin wireear: qué pasa con el pedido al cancelar una
+entrega (¿vuelve a estar disponible para otro repartidor? ¿interviene el
+vendedor o el admin?) es una decisión de producto fuera del alcance de
+esta tarea — no se inventó ese flujo.
+
+Testeado con `BEGIN;...ROLLBACK;` contra la base real: cliente crea y paga
+un pedido con envío → repartidor lo toma → intentar saltar directo a
+`delivered` sin pasar por `picked_up` se rechaza → avanzar en orden
+(`picked_up` → `delivered`) funciona y deja `orders.status = 'completed'`.
+
+Frontend (`js/repartidor.js`): en "Mis entregas", cada tarjeta muestra un
+botón para avanzar al siguiente estado ("Marcar en camino" / "Marcar
+entregado") según el estado actual; al llegar a `delivered` no queda
+ningún botón (estado final).
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

@@ -130,10 +130,56 @@ function buildMyDeliveryCard(delivery) {
 
   const statusSpan = document.createElement('span');
   statusSpan.className = 'delivery-card__address';
-  statusSpan.textContent = delivery.status === 'assigned' ? 'Asignado' : delivery.status;
+  statusSpan.textContent = DELIVERY_STATUS_LABELS[delivery.status] || delivery.status;
   card.appendChild(statusSpan);
 
+  const nextStatus = DELIVERY_NEXT_STATUS[delivery.status];
+  if (nextStatus) {
+    const advanceBtn = document.createElement('button');
+    advanceBtn.type = 'button';
+    advanceBtn.className = 'form-btn';
+    advanceBtn.style.cssText = 'width: auto; padding: 0.5rem 1.25rem;';
+    advanceBtn.textContent = nextStatus.label;
+    advanceBtn.addEventListener('click', () => handleAdvanceStatus(delivery.id, nextStatus.value, advanceBtn));
+    card.appendChild(advanceBtn);
+  }
+
   return card;
+}
+
+const DELIVERY_STATUS_LABELS = {
+  assigned: 'Asignado',
+  picked_up: 'En camino',
+  delivered: 'Entregado',
+};
+
+// Qué botón mostrar según el estado actual (assigned -> picked_up -> delivered)
+const DELIVERY_NEXT_STATUS = {
+  assigned: { value: 'picked_up', label: 'Marcar en camino' },
+  picked_up: { value: 'delivered', label: 'Marcar entregado' },
+};
+
+async function handleAdvanceStatus(deliveryId, newStatus, btn) {
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Actualizando...';
+
+  const { error } = await supabase.rpc('update_delivery_status', {
+    p_delivery_id: deliveryId,
+    p_new_status: newStatus,
+  });
+
+  if (error) {
+    console.error('Error al actualizar el estado de la entrega:', error);
+    showToast(error.message || 'No se pudo actualizar el estado.', 'error');
+    btn.disabled = false;
+    btn.textContent = originalText;
+    return;
+  }
+
+  showToast('Estado actualizado.', 'success');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) loadMyDeliveries(user.id);
 }
 
 async function loadAvailableOrders() {
