@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (F0-07/F0-08).
+> Última actualización: 2026-07-09 (M1 completo: Fase 0 + Fase 1).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -23,7 +23,7 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
 
 ## Flujo de trabajo y tracking (IMPORTANTE)
-- **Jira A113** (baraderolocal.atlassian.net) es el tablero de progreso. **M1** = Fase 0 (padre `A113-134`) + Fase 1 (padre `A113-153`). Subtareas `A113-135`…`A113-163`, con prefijo del roadmap (`F0-01a`…).
+- **Jira A113** (baraderolocal.atlassian.net) es el tablero de progreso. **M1** = Fase 0 (padre `A113-134`) + Fase 1 (padre `A113-153`), subtareas `A113-135`…`A113-163` — **completo**. **M2 en adelante** (Fases 2-11) ya tiene tablero creado: `A113-172`…`A113-237`, con prefijo del roadmap (`F2-01a`…).
 - Estados: `Tareas por hacer` → `En curso` → `Finalizada`.
   - **Empezar** una tarea: `node scripts/jira-move.mjs A113-XXX progress`
   - **Terminar**: incluir la clave `A113-XXX` en el **mensaje del commit** → el hook `post-commit` la pasa a Finalizada.
@@ -42,9 +42,18 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F0-06** (`A113-147..149`) — Integridad del carrito: se quitó `PRODUCTO_PRUEBA`/`seedCartIfEmpty` de `carrito.js` (ya no se precarga un producto falso); `initCartButtons` (cart-utils.js) ahora usa `data-product-id`/`dataset.price` en vez de parsear el texto ya renderizado del DOM. Verificado en navegador: id agregado al carrito es el UUID real de Supabase, carrito vacío no se auto-siembra.
 - **F0-07** (`A113-150`, `A113-151`) — Idempotencia en `db/schema/01-12`: faltaban `DROP POLICY/TRIGGER IF EXISTS` en 02/03/08/09 (re-correrlos fallaba con "already exists"); `09_user_carts.sql` creaba la tabla sin `IF NOT EXISTS`; `12_price_cents_to_price.sql` ahora guarda cada rename con un chequeo de `information_schema.columns` (si no, re-ejecutarlo dividiría los precios por 100 dos veces); seeds `04`/`06` detectan si ya corrieron. Orden completo documentado en `docs/RUN_LOCAL.md`. **Verificado corriendo los 12 archivos en orden contra la base real**: 0 errores, 0 duplicados (14 stores/64 products/14 categories antes y después), `validate_cart_prices` funcionando.
 - **F0-08** (`A113-152`) — Diseñado `db/schema/13_target_data_model.sql`: modelo de datos objetivo (roadmap sección 5) — `product_variants`, `product_images`, `products.compare_at_price`, `stores.description/zone/hours`, `orders.delivery_method/payment_method/payment_status/delivery_fee`, `payment_proofs`, `deliveries`, `reviews`, `conversations`/`messages`, `notifications`, `favorites`, todo con RLS. Validado con `BEGIN;...ROLLBACK;` contra la base real (corre sin errores). **A propósito NO aplicado todavía** — son tablas de fases que no arrancaron (Fase 2/3/5/7/8); aplicar cuando arranque cada una. Nota: `stores.description` ya se leía desde `comercio.js` sin existir en la tabla (bug silencioso, siempre caía al fallback) — se resuelve al aplicar este archivo.
+- **F1-01** (`A113-154..157`) — Anti-XSS: `comercio.js`/`producto.js` reconstruidos con DOM API (interpolaban `store.name`/`description`/`product.title` crudos); `admin.js` (shop_name/address/cuit/category_slug del registro de vendedor sin escapar); `perfil.js` (favoritos); `product-modal.js` ya tenía `escapeHTML()` pero el bloque de "productos relacionados" no lo aplicaba (un título con `<img onerror=...>` no ejecutaba en la grilla pero sí al aparecer como relacionado en otro modal — corregido y probado con payload real en el navegador, `xssFired: false`).
+- **F1-02** (`A113-158`, `A113-159`) — `get_advisors`: 15→6 hallazgos. **Crítico resuelto**: `approve_seller_request` no validaba rol admin → cualquier autenticado podía aprobarse a sí mismo como vendedor vía RPC directo (D6 bypaseada). Agregado chequeo + revocado `EXECUTE` de `anon`. También: `search_path` fijo en 4 funciones, revocado `EXECUTE` público de `handle_new_user`/`rls_auto_enable` (solo triggers), sacadas policies de listado público de storage. Quedan 2 hallazgos intencionales documentados en RUN_LOCAL.md + "Leaked Password Protection" pendiente (toggle manual en dashboard de Supabase).
+- **F1-03** (`A113-160`) — Verificado con sesión simulada: `prevent_role_update_on_profile` rechaza que un cliente se cambie el rol. Sin cambios de código.
+- **F1-04** (`A113-161`, `A113-162`) — `js/validation-utils.js`: CUIT (dígito verificador módulo 11) + shop_name/phone/producto, usado en los 2 formularios de `vender.js`. Espejo en SQL (`is_valid_cuit()` + `CHECK` en `seller_requests`) — verificado que JS y SQL dan el mismo resultado.
+- **F1-05** (`A113-163`) — `vercel.json` con los mismos 4 headers de seguridad que el dev server de Vite (antes no llegaban a producción). Verificado con fetch real a producción tras el deploy: los 4 headers presentes.
 
-### ⏳ Próximo (en orden)
-- **Fase 1** (`A113-154..163`) — Seguridad (XSS, advisors, CUIT, headers). Empezar por F1-01 (XSS) o F1-02 (`get_advisors`).
+**M1 (Fase 0 + Fase 1) completo.** Bonus de esta sesión: 7 hallazgos de auditoría fuera del roadmap corregidos (`info.html` 404 en build, README desactualizado, CI de build, logging de errores a `error_logs`, Supabase CLI local) — ver claves `A113-165` a `A113-171`. Tablero completo de Jira para Fases 2-11 creado (`A113-172..237`, script `scripts/jira-create-subtasks-m2-m11.mjs`).
+
+**Nota operativa:** el repo debe quedar **público** en GitHub — Vercel dejó de poder deployar (`BLOCKED`, sin build logs) apenas se puso privado esta noche; volver a público lo destrabó al toque. Si se vuelve a poner privado, hay que revisar los permisos del GitHub App de Vercel.
+
+### ⏳ Próximo
+- **Fase 2** (`A113-172..179`) — Checkout, órdenes y pagos. Es lo que más bloquea un lanzamiento real (sin esto no se puede comprar).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
@@ -57,5 +66,6 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 ## Scripts de tooling
 - `scripts/jira-move.mjs <KEY> <progress|done|todo>` — cambia estado de subtareas.
-- `scripts/jira-create-subtasks.mjs` — crea el tablero de un milestone en Jira.
-- `scripts/jira-commit-log.mjs` — hook `post-commit`: cierra las subtareas referenciadas en el commit.
+- `scripts/jira-create-subtasks.mjs` — creó el tablero de M1 (Fase 0+1) en Jira.
+- `scripts/jira-create-subtasks-m2-m11.mjs` — creó el tablero de M2 en adelante (Fases 2-11) en Jira.
+- `scripts/jira-commit-log.mjs` — hook `post-commit`: cierra las subtareas referenciadas en el commit. **Ojo:** el regex busca `A113-\d+` en TODO el mensaje — no escribas un rango tipo "A113-172 a A113-237" en el cuerpo del commit, cierra esas claves literalmente aunque no sea la intención (pasó en esta sesión, hubo que reabrirlas a mano).
