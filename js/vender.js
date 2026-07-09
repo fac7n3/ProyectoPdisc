@@ -259,16 +259,25 @@ function setupDashboardEvents() {
     const btnSubmit = addForm.querySelector('button[type="submit"]');
     setLoading(btnSubmit, true, "Guardar Producto");
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      showToast("Sesión inválida.", "error");
+      setLoading(btnSubmit, false, "Guardar Producto");
+      return;
+    }
+
     const newProduct = {
+      seller_id: user.id,
       store_id: currentStoreId,
       title: document.getElementById('prod-name').value.trim(),
       price: parseInt(document.getElementById('prod-price').value),
-      category_id: null, // Asumimos que los values del select son UUID o hay que convertirlos. Wait, el select tiene `slug`, necesito el id
+      stock: parseInt(document.getElementById('prod-stock').value),
+      category_id: null,
       description: document.getElementById('prod-desc').value.trim(),
       image_url: document.getElementById('prod-image').value.trim()
     };
 
-    // Necesito el UUID de la categoría
+    // El select guarda el slug de la categoría; hay que resolver el UUID real
     const slug = document.getElementById('prod-category').value;
     const { data: catData } = await supabase.from('categories').select('id').eq('slug', slug).single();
     if (catData) newProduct.category_id = catData.id;
