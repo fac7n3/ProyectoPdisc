@@ -60,6 +60,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
     (`delivery_method`/`payment_method`/`payment_status`/`delivery_fee`) + tabla `payment_proofs`.
 18. `18_create_order_rpc.sql` — RPC `create_order` (F2-01, ver nota abajo).
 19. `19_confirm_simulated_payment_rpc.sql` — RPC `confirm_simulated_payment` (F2-03, ver nota abajo).
+20. `20_create_order_delivery_fee.sql` — `create_order` calcula `delivery_fee` real (F2-05, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -183,6 +184,35 @@ orden propia la deja `paid` con un `payment_id` generado; confirmar dos veces
 es idempotente; confirmar una orden inexistente o ajena se rechaza. Wireado
 en `carrito.js`: tras `create_order`, llama al provider del método elegido
 (hoy siempre `'simulado'`) antes de vaciar el carrito y mostrar el total.
+
+### 20_create_order_delivery_fee.sql (F2-05 / A113-177) — aplicado
+
+`create_order` dejaba `delivery_fee` en `null` (pendiente, ver nota en
+`18_create_order_rpc.sql`). Esta migración reemplaza la función completa
+(mismo cuerpo + el cálculo real de `delivery_fee`): política unificada de
+envío — gratis en `'pickup'`; en `'delivery'`, $350 por tienda salvo que el
+subtotal de esa tienda (ya con el cupón aplicado) supere $5000, en cuyo caso
+es gratis. Los mismos números viven espejados en `js/carrito.js`
+(`FREE_SHIPPING_THRESHOLD`/`FLAT_SHIPPING_FEE`) para que el resumen del
+carrito muestre exactamente lo que se cobra en el servidor.
+
+`pages/carrito.html`: la sección "Calcular costos de envío" era un stub
+visual sin lógica — ahora tiene radio buttons Retiro/Envío + un input de
+dirección que aparece solo con envío. `carrito.js` (`calculateShippingByStore`)
+agrupa el carrito por tienda (campo `item.shop`) para mostrar el mismo
+envío que va a cobrar el RPC, ya que un carrito puede tener productos de
+varios comercios (cada uno se factura en una orden separada, ver F2-01).
+Validación client-side de dirección antes del checkout (el servidor también
+la exige — nunca confiar solo en el cliente).
+
+Testeado con `BEGIN;...ROLLBACK;` contra la base real: carrito con Tienda A
+(subtotal $17.000, ≥ $5000) + Tienda B (subtotal $1.350, < $5000) en
+`'delivery'` → Tienda A con `delivery_fee: 0`, Tienda B con
+`delivery_fee: 350` (total $1.700); el mismo carrito en `'pickup'` →
+`delivery_fee: 0` siempre. Verificado también en el navegador: elegir
+"Envío a domicilio" muestra el input de dirección, cambia la etiqueta y el
+total pasa de $1.350 a $1.700 — coincide exacto con lo que calculó el RPC
+en la prueba SQL.
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

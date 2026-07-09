@@ -103,10 +103,21 @@
             </div>
           </div>
 
-          <div class="cart-summary__section">
-            <div class="cart-summary__section-header">
-              <span>Calcular costos de envío</span>
+          <div class="cart-summary__section" id="delivery-section">
+            <div class="cart-summary__section-header" id="delivery-header">
+              <span>Retiro o envío</span>
               <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="cart-summary__section-content" id="delivery-content">
+              <label class="delivery-option">
+                <input type="radio" name="delivery-method" id="delivery-pickup" value="pickup" checked />
+                Retiro en el local
+              </label>
+              <label class="delivery-option">
+                <input type="radio" name="delivery-method" id="delivery-shipping" value="delivery" />
+                Envío a domicilio
+              </label>
+              <input type="text" id="delivery-address" class="coupon-input" placeholder="Dirección de entrega" style="display: none; text-transform: none; margin-top: 0.5rem;" autocomplete="street-address" />
             </div>
           </div>
 
@@ -127,7 +138,7 @@
             </div>
 
             <div class="cart-summary__row cart-summary__row--shipping">
-              <span class="cart-summary__row-label">Envío (Envío a Domicilio)</span>
+              <span class="cart-summary__row-label" id="summary-shipping-label">Envío (Retiro en el local)</span>
               <span class="cart-summary__row-value" id="summary-shipping">$0</span>
             </div>
 

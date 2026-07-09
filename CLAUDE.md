@@ -60,8 +60,10 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F2-03** (`A113-175`) — RPC `confirm_simulated_payment` (migración 19, SECURITY DEFINER, revocado de anon/public): marca `paid` una orden propia con `payment_method='simulado'` y `payment_status='pending'`; idempotente (`already_paid: true` en vez de fallar si ya está pagada). Separado a propósito de `create_order` — crear y pagar son pasos distintos, como en una pasarela real. `js/payment-providers.js` (nuevo): interfaz `getPaymentProvider(method) → { name, pay(orderIds) }`; hoy solo `'simulado'`, los próximos (F2-04 transferencia, F2-07 MercadoPago) se agregan ahí sin tocar `carrito.js` ni `create_order`. `carrito.js` ahora llama al provider después de `create_order`, antes de vaciar el carrito. Verificado con `BEGIN;...ROLLBACK;` (creando una orden real con `create_order` en la misma transacción): pago propio → `paid` + `payment_id`; doble confirmación → idempotente; orden inexistente/ajena → rechazada.
 
+- **F2-05** (`A113-177`) — `create_order` (migración 20) calcula `delivery_fee` real: gratis en `pickup`; en `delivery`, $350 por tienda salvo que el subtotal de esa tienda (con cupón aplicado) supere $5000. `pages/carrito.html`: la sección "Calcular costos de envío" era un stub sin lógica — ahora tiene radios Retiro/Envío + input de dirección (aparece solo con envío). `carrito.js` agrupa por `item.shop` para mostrar el mismo envío que cobra el servidor (un carrito con productos de varias tiendas genera una orden por tienda, F2-01). Verificado con `BEGIN;...ROLLBACK;` (tienda con subtotal ≥$5000 → gratis, tienda <$5000 → $350) y en el navegador (elegir envío muestra la dirección y el total sube de $1.350 a $1.700, igual que en la prueba SQL).
+
 ### ⏳ Próximo
-- Resto de Fase 2: F2-04 (`A113-176`, transferencia + comprobante), F2-05 (`A113-177`, elegir retiro/envío + delivery_fee), F2-06 (`A113-178`, historial de pedidos), F2-07 (`A113-179`, MercadoPago, futuro).
+- Resto de Fase 2: F2-04 (`A113-176`, transferencia + comprobante), F2-06 (`A113-178`, historial de pedidos), F2-07 (`A113-179`, MercadoPago, futuro).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

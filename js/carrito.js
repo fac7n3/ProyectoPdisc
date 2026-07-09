@@ -9,6 +9,29 @@ import { getPaymentProvider } from './payment-providers.js';
 // --- Estado del Carrito ---
 let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
 let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
+let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEvents()
+let shippingAddress = '';
+
+// Política de envío unificada (F2-05): igual que en create_order (migración 20)
+// para que lo que se muestra en el resumen coincida con lo que se cobra.
+const FREE_SHIPPING_THRESHOLD = 5000;
+const FLAT_SHIPPING_FEE = 350;
+
+/** Agrupa el carrito por tienda y calcula el envío de cada una (post-descuento). */
+function calculateShippingByStore(cart, discount) {
+  if (deliveryMethod === 'pickup') return 0;
+
+  const subtotalByStore = cart.reduce((acc, item) => {
+    const shop = item.shop || 'Tienda';
+    acc[shop] = (acc[shop] || 0) + item.price * item.qty;
+    return acc;
+  }, {});
+
+  return Object.values(subtotalByStore).reduce((total, storeSubtotal) => {
+    const discounted = storeSubtotal * (1 - discount);
+    return total + (discounted >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE);
+  }, 0);
+}
 
 /** Renderizar todo el carrito */
 function renderCart() {
@@ -155,13 +178,14 @@ function renderCart() {
   const discountAmount = subtotal * currentDiscount;
   const subtotalWithDiscount = subtotal - discountAmount;
 
-  // Calcular envío (gratis si el subtotal con descuento supera $5000)
-  const shipping = subtotalWithDiscount >= 5000 ? 0 : 350;
+  // Envío: gratis en "retiro"; en "envío a domicilio" se calcula por tienda
+  // (mismo criterio que create_order, ver calculateShippingByStore arriba).
+  const shipping = calculateShippingByStore(cart, currentDiscount);
   const total = subtotalWithDiscount + shipping;
 
   // Actualizar resumen
   if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
-  
+
   if (summaryDiscountRow && currentDiscount > 0) {
     summaryDiscountRow.style.display = 'flex';
     if (discountPercent) discountPercent.textContent = `${currentDiscount * 100}%`;
@@ -176,6 +200,41 @@ function renderCart() {
 }
 
 // --- Manejadores de Eventos ---
+
+/** Inicializar selector de retiro/envío a domicilio */
+function initDeliveryEvents() {
+  const header = document.getElementById('delivery-header');
+  const content = document.getElementById('delivery-content');
+  const pickupRadio = document.getElementById('delivery-pickup');
+  const shippingRadio = document.getElementById('delivery-shipping');
+  const addressInput = document.getElementById('delivery-address');
+  const shippingLabel = document.getElementById('summary-shipping-label');
+
+  if (!header || !content || !pickupRadio || !shippingRadio || !addressInput) return;
+
+  header.addEventListener('click', () => {
+    const isHidden = content.style.display === 'none';
+    content.style.display = isHidden ? 'block' : 'none';
+    header.classList.toggle('is-open', isHidden);
+  });
+
+  function updateMethod() {
+    deliveryMethod = shippingRadio.checked ? 'delivery' : 'pickup';
+    addressInput.style.display = deliveryMethod === 'delivery' ? 'block' : 'none';
+    if (shippingLabel) {
+      shippingLabel.textContent = deliveryMethod === 'delivery'
+        ? 'Envío (Envío a domicilio)'
+        : 'Envío (Retiro en el local)';
+    }
+    renderCart();
+  }
+
+  pickupRadio.addEventListener('change', updateMethod);
+  shippingRadio.addEventListener('change', updateMethod);
+  addressInput.addEventListener('input', () => {
+    shippingAddress = addressInput.value.trim();
+  });
+}
 
 /** Inicializar lógica del cupón de descuento */
 function initCouponEvents() {
@@ -315,6 +374,13 @@ function initCartEvents() {
       return;
     }
 
+    // 2. Si eligió envío a domicilio, necesita una dirección (el servidor
+    // también lo valida, pero avisar acá evita el viaje de red al pedo).
+    if (deliveryMethod === 'delivery' && !shippingAddress) {
+      showCartToast('Ingresá una dirección de envío.', 'error');
+      return;
+    }
+
     checkoutBtn.disabled = true;
     checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
 
@@ -328,9 +394,9 @@ function initCartEvents() {
       const { data, error } = await supabase.rpc('create_order', {
         cart_payload: payload,
         coupon_code: appliedCouponCode,
-        p_delivery_method: 'pickup',
+        p_delivery_method: deliveryMethod,
         p_payment_method: paymentMethod,
-        p_shipping_address: null,
+        p_shipping_address: deliveryMethod === 'delivery' ? shippingAddress : null,
       });
 
       if (error) {
@@ -395,4 +461,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCart();
   initCartEvents();
   initCouponEvents();
+  initDeliveryEvents();
 });

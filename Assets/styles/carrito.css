@@ -399,6 +399,16 @@
   box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
 }
 
+.delivery-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--bl-text);
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
 .coupon-btn {
   padding: 0 1rem;
   background: var(--bl-primary-deeper);
