@@ -1,5 +1,6 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { isValidPhone } from './validation-utils.js';
+import { formatPrice } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerView = document.getElementById('register-view');
@@ -7,13 +8,21 @@ const statusView = document.getElementById('status-view');
 const statusIcon = document.getElementById('status-icon');
 const statusTitle = document.getElementById('status-title');
 const statusText = document.getElementById('status-text');
+const dashboardView = document.getElementById('dashboard-view');
 
 function showStatus({ icon, title, text }) {
   registerView.style.display = 'none';
+  dashboardView.style.display = 'none';
   statusView.style.display = 'block';
   statusIcon.className = icon;
   statusTitle.textContent = title;
   statusText.textContent = text;
+}
+
+function showDashboard() {
+  registerView.style.display = 'none';
+  statusView.style.display = 'none';
+  dashboardView.style.display = 'block';
 }
 
 /** Repartidor ya aprobado, solicitud pendiente, o nada todavía (mostrar form) */
@@ -25,11 +34,9 @@ async function checkDeliveryState(user) {
     .single();
 
   if (profile?.role === 'repartidor') {
-    showStatus({
-      icon: 'fa-solid fa-circle-check',
-      title: '¡Ya sos repartidor!',
-      text: 'El panel de pedidos disponibles está en construcción — pronto vas a poder tomar entregas desde acá.',
-    });
+    showDashboard();
+    loadAvailableOrders();
+    loadMyDeliveries(user.id);
     return;
   }
 
@@ -61,6 +68,168 @@ async function checkDeliveryState(user) {
   // Sin solicitud todavía: mostrar el formulario
   registerView.style.display = 'block';
   statusView.style.display = 'none';
+  dashboardView.style.display = 'none';
+}
+
+/** Construye una tarjeta de pedido disponible con botón "Tomar pedido" */
+function buildAvailableOrderCard(order, onClaim) {
+  const card = document.createElement('div');
+  card.className = 'delivery-card';
+
+  const info = document.createElement('div');
+  info.className = 'delivery-card__info';
+
+  const storeSpan = document.createElement('span');
+  storeSpan.className = 'delivery-card__store';
+  storeSpan.textContent = order.stores?.name || 'Comercio';
+  info.appendChild(storeSpan);
+
+  const addressSpan = document.createElement('span');
+  addressSpan.className = 'delivery-card__address';
+  addressSpan.textContent = order.shipping_address || 'Sin dirección';
+  info.appendChild(addressSpan);
+
+  const totalSpan = document.createElement('span');
+  totalSpan.className = 'delivery-card__address';
+  totalSpan.textContent = formatPrice(order.total_price);
+  info.appendChild(totalSpan);
+
+  card.appendChild(info);
+
+  const claimBtn = document.createElement('button');
+  claimBtn.type = 'button';
+  claimBtn.className = 'form-btn';
+  claimBtn.style.cssText = 'width: auto; padding: 0.5rem 1.25rem;';
+  claimBtn.textContent = 'Tomar pedido';
+  claimBtn.addEventListener('click', () => onClaim(order.id, claimBtn));
+  card.appendChild(claimBtn);
+
+  return card;
+}
+
+/** Construye una tarjeta de "mis entregas" (ya tomadas) */
+function buildMyDeliveryCard(delivery) {
+  const order = delivery.orders;
+  const card = document.createElement('div');
+  card.className = 'delivery-card';
+
+  const info = document.createElement('div');
+  info.className = 'delivery-card__info';
+
+  const storeSpan = document.createElement('span');
+  storeSpan.className = 'delivery-card__store';
+  storeSpan.textContent = order?.stores?.name || 'Comercio';
+  info.appendChild(storeSpan);
+
+  const addressSpan = document.createElement('span');
+  addressSpan.className = 'delivery-card__address';
+  addressSpan.textContent = order?.shipping_address || 'Sin dirección';
+  info.appendChild(addressSpan);
+
+  card.appendChild(info);
+
+  const statusSpan = document.createElement('span');
+  statusSpan.className = 'delivery-card__address';
+  statusSpan.textContent = delivery.status === 'assigned' ? 'Asignado' : delivery.status;
+  card.appendChild(statusSpan);
+
+  return card;
+}
+
+async function loadAvailableOrders() {
+  const container = document.getElementById('available-orders-container');
+  if (!container) return;
+
+  const [{ data: orders, error: ordersError }, { data: takenDeliveries, error: deliveriesError }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('id, store_id, total_price, shipping_address, created_at, stores ( name )')
+      .eq('delivery_method', 'delivery')
+      .eq('payment_status', 'paid')
+      .order('created_at', { ascending: true }),
+    supabase.from('deliveries').select('order_id'),
+  ]);
+
+  container.textContent = '';
+
+  if (ordersError || deliveriesError) {
+    console.error('Error al cargar pedidos disponibles:', ordersError || deliveriesError);
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'delivery-empty';
+    errorMsg.textContent = 'Error al cargar los pedidos disponibles.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  const takenOrderIds = new Set((takenDeliveries || []).map((d) => d.order_id));
+  const available = (orders || []).filter((o) => !takenOrderIds.has(o.id));
+
+  if (available.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'delivery-empty';
+    emptyMsg.textContent = 'No hay pedidos disponibles por ahora.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  available.forEach((order) => {
+    container.appendChild(buildAvailableOrderCard(order, handleClaim));
+  });
+}
+
+async function handleClaim(orderId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Tomando...';
+
+  const { error } = await supabase.rpc('claim_delivery', { p_order_id: orderId });
+
+  if (error) {
+    console.error('Error al tomar el pedido:', error);
+    showToast(error.message || 'No se pudo tomar el pedido.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Tomar pedido';
+    loadAvailableOrders();
+    return;
+  }
+
+  showToast('¡Pedido tomado! Ya aparece en "Mis entregas".', 'success');
+  const { data: { user } } = await supabase.auth.getUser();
+  loadAvailableOrders();
+  if (user) loadMyDeliveries(user.id);
+}
+
+async function loadMyDeliveries(userId) {
+  const container = document.getElementById('my-deliveries-container');
+  if (!container) return;
+
+  const { data, error } = await supabase
+    .from('deliveries')
+    .select('id, status, orders ( shipping_address, stores ( name ) )')
+    .eq('repartidor_id', userId)
+    .order('created_at', { ascending: false });
+
+  container.textContent = '';
+
+  if (error) {
+    console.error('Error al cargar mis entregas:', error);
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'delivery-empty';
+    errorMsg.textContent = 'Error al cargar tus entregas.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.className = 'delivery-empty';
+    emptyMsg.textContent = 'Todavía no tomaste ningún pedido.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  data.forEach((delivery) => {
+    container.appendChild(buildMyDeliveryCard(delivery));
+  });
 }
 
 function initRepartidorPage(user) {

@@ -90,9 +90,49 @@
         background: var(--bl-primary);
         color: white;
       }
+      #dashboard-view {
+        display: none;
+      }
+      .delivery-section-title {
+        font-size: 1.25rem;
+        color: var(--bl-text);
+        margin-bottom: 1rem;
+      }
+      .delivery-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .delivery-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-md);
+        background: var(--bl-surface-alt);
+      }
+      .delivery-card__info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .delivery-card__store {
+        font-weight: 600;
+      }
+      .delivery-card__address {
+        font-size: 0.875rem;
+        color: var(--bl-text-secondary);
+      }
+      .delivery-empty {
+        color: var(--bl-text-secondary);
+        font-size: 0.9375rem;
+      }
     </style>
-    <script type="module" crossorigin src="/assets/repartidor-BlBknIT3.js"></script>
+    <script type="module" crossorigin src="/assets/repartidor-BgskIL_Q.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dh1CyNcg.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-BTBApjf5.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-C9N5n64s.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
@@ -161,7 +201,7 @@
             </form>
           </div>
 
-          <!-- Vista de estado (pendiente / rechazada / ya aprobado) -->
+          <!-- Vista de estado (pendiente / rechazada) -->
           <div id="status-view">
             <i class="fa-regular fa-clock" id="status-icon"></i>
             <div class="vender-header">
@@ -169,6 +209,24 @@
               <p id="status-text">Te avisamos apenas el equipo la revise.</p>
             </div>
             <button type="button" class="btn-outline" id="btn-back-home">Volver al inicio</button>
+          </div>
+
+          <!-- Panel del repartidor ya aprobado -->
+          <div id="dashboard-view">
+            <div class="vender-header">
+              <h1>Panel de Repartidor</h1>
+              <p>Elegí un pedido disponible para repartir.</p>
+            </div>
+
+            <h2 class="delivery-section-title">Pedidos disponibles</h2>
+            <div id="available-orders-container" class="delivery-list">
+              <!-- Cargado con JS -->
+            </div>
+
+            <h2 class="delivery-section-title" style="margin-top: 2rem;">Mis entregas</h2>
+            <div id="my-deliveries-container" class="delivery-list">
+              <!-- Cargado con JS -->
+            </div>
           </div>
 
         </div>

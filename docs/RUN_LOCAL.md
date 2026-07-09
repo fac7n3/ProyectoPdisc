@@ -66,6 +66,8 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 23. `23_fix_handle_new_user_role_escalation.sql` — **CRÍTICO**, corrige escalación de rol en signup (A113-238, ver nota abajo).
 24. `24_fix_role_approval_trigger_block.sql` — **CRÍTICO**, corrige `prevent_role_update_on_profile` que bloqueaba también las aprobaciones legítimas del admin (A113-239, ver nota abajo).
 25. `25_delivery_requests.sql` — tabla `delivery_requests` + RPC `approve_delivery_request` (F3-01, ver nota abajo).
+26. `26_deliveries_and_claim.sql` — tabla `deliveries` + RPC `claim_delivery` + policy de `orders` para repartidor (F3-02, ver nota abajo).
+27. `27_deliveries_visibility_fix.sql` — cualquier repartidor puede ver cualquier fila de `deliveries` (F3-02, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -382,11 +384,59 @@ solicitud → rechazado; un admin real aprobándola → `profiles.role` pasa a
 Frontend: `pages/repartidor.html` + `js/repartidor.js` (nuevo) — formulario
 de alta (nombre, teléfono, vehículo, patente si no es bicicleta) y una
 vista de estado (pendiente/rechazada/ya aprobado — el panel de pedidos en
-sí es F3-02, todavía no existe). `admin.js`/`admin.html` — nueva tabla
-"Solicitudes de Repartidores" en el panel de admin, mismo patrón que la de
-comercios (aprobar llama al RPC, rechazar es un update directo). Agregado
+sí es F3-02). `admin.js`/`admin.html` — nueva tabla "Solicitudes de
+Repartidores" en el panel de admin, mismo patrón que la de comercios
+(aprobar llama al RPC, rechazar es un update directo). Agregado
 `repartidor` a `vite.config.js` (`rollupOptions.input`) y enlaces en
 `home.html` (dropdown de categorías + footer "Vendé").
+
+### 26_deliveries_and_claim.sql (F3-02 / A113-182) — aplicado
+
+Tabla `deliveries` extraída de `13_target_data_model.sql` (sección 7), con
+el `insert` cambiado a propósito: el diseño original la pensaba para que la
+tienda/admin **asigne** un repartidor; acá el repartidor se **auto-asigna**
+("toma" el pedido), así que el insert lo hace un RPC (`claim_delivery`) en
+vez de una policy directa — necesita lógica (chequear que el pedido esté
+disponible, serializar contra otro repartidor tomándolo al mismo tiempo)
+que una policy sola no expresa bien.
+
+`orders` no tenía ninguna policy que dejara a un repartidor ver órdenes
+ajenas — se agregó `orders_select_repartidor`: ve órdenes `delivery_method
+= 'delivery'` y `payment_status = 'paid'` (nunca antes de que el pago esté
+confirmado). `claim_delivery(p_order_id)` (`SECURITY DEFINER`, solo
+`repartidor`): bloquea la fila de la orden con `for update`, valida que sea
+`delivery`+`paid`, chequea que no exista ya un `deliveries` para esa orden
+(y además atrapa el `unique_violation` por si dos repartidores lo intentan
+al mismo tiempo — la constraint `unique` en `order_id` es la que realmente
+serializa la carrera, el chequeo previo es solo para el mensaje de error
+lindo), inserta la fila con `status: 'assigned'`.
+
+Testeado con `BEGIN;...ROLLBACK;` contra la base real: cliente crea y paga
+(simulado) un pedido con envío → un repartidor lo ve como disponible →
+`claim_delivery` lo toma con éxito → tomarlo de nuevo falla ("ya fue
+tomado") → un cliente común (no repartidor) intentando tomarlo también
+falla.
+
+### 27_deliveries_visibility_fix.sql (F3-02 / A113-182) — aplicado
+
+Ajuste encontrado armando el panel: `deliveries_select_participants` solo
+dejaba ver una fila al repartidor asignado a **ella**, no a repartidores en
+general — así que al armar la lista de "pedidos disponibles", ningún
+repartidor podía ver si un pedido YA estaba tomado por otro (esa fila de
+`deliveries` le quedaba oculta por RLS), y el pedido seguía apareciendo
+como disponible para todos. Fix: cualquier repartidor puede ver cualquier
+fila de `deliveries` (no es información sensible — `order_id`/
+`repartidor_id`/`status` — y es operativamente necesaria).
+
+Frontend (`js/repartidor.js`): agregado el panel real para repartidores ya
+aprobados (antes mostraba un placeholder "en construcción") — "Pedidos
+disponibles" (con botón "Tomar pedido") y "Mis entregas" (lo ya tomado).
+`loadAvailableOrders()` cruza `orders` (delivery+paid) contra todas las
+filas de `deliveries` para excluir lo ya tomado, ya que `orders_select_repartidor`
+no filtra eso por sí sola. Verificado sin errores de consola en el
+navegador (sin sesión de repartidor real para probar el flujo completo de
+"tomar pedido" en UI — mismo límite que F0-04; la lógica del RPC ya se
+probó a fondo contra la base real).
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 
