@@ -98,11 +98,11 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 ### ✅ Hecho
 - **F5-01** (`A113-191`) — Ya estaba hecho en F1-04 (mismo alcance duplicado en el roadmap). Cerrado sin trabajo nuevo.
 - **F5-02** (`A113-192`) — CRUD completo de productos en `vender.js`: el form de alta ("Publicar nuevo producto") ahora también sirve para editar (`editingProductId`, `openEditProductForm`, botón lápiz por fila precarga título/precio/stock/descripción/imagen/rubro y cambia el submit a UPDATE). Botón activar/desactivar por fila (ícono ojo, togglea `is_active`; filas inactivas se ven atenuadas con badge "(Inactivo)"). Sin migración nueva.
+- **F5-05** (`A113-195`) — Ofertas. `products.compare_at_price` (migración 30). `cart-utils.js` (`buildPriceRow`, compartido): precio tachado + badge `-N%` cuando `compare_at_price > price`; reemplaza 3 copias casi idénticas del mismo bloque en `home.js`/`search.js`/`comercio.js`. `vender.js`: campo "Precio anterior (opcional)" en el form, validado. `producto.js` (detalle) queda sin tocar a propósito — usa un markup propio sin CSS de tachado, fuera de alcance contenido. Sin regresión: productos sin oferta se ven igual que antes.
 
 ### ⏳ Próximo
 - **F5-03** (`A113-193`) — Variantes de producto (talle/color/peso) con stock por variante.
 - **F5-04** (`A113-194`) — Varias fotos por producto + subida a Storage.
-- **F5-05** (`A113-195`) — Ofertas (`compare_at_price`).
 - **F5-06** (`A113-196`) — Gestión de pedidos del vendedor.
 - **F5-07** (`A113-197`) — Estadísticas reales del dashboard.
 - **F5-08** (`A113-198`) — Edición del perfil de la tienda.

@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -239,13 +239,7 @@ async function loadProducts() {
       nameH3.textContent = product.title;
       body.appendChild(nameH3);
 
-      const priceRow = document.createElement('div');
-      priceRow.className = 'product-card__price-row';
-      const priceSpan = document.createElement('span');
-      priceSpan.className = 'product-card__price';
-      priceSpan.textContent = formatPrice(product.price);
-      priceRow.appendChild(priceSpan);
-      body.appendChild(priceRow);
+      body.appendChild(buildPriceRow(product));
 
       const shippingSpan = document.createElement('span');
       shippingSpan.className = 'product-card__shipping';

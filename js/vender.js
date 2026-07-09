@@ -519,6 +519,7 @@ async function openEditProductForm(productId) {
   document.getElementById('prod-name').value = product.title || '';
   document.getElementById('prod-price').value = product.price ?? '';
   document.getElementById('prod-stock').value = product.stock ?? '';
+  document.getElementById('prod-compare-price').value = product.compare_at_price ?? '';
   document.getElementById('prod-desc').value = product.description || '';
   document.getElementById('prod-image').value = product.image_url || '';
   document.getElementById('prod-category').value = product.categories?.slug || '';
@@ -573,6 +574,7 @@ function setupDashboardEvents() {
     const titleValue = document.getElementById('prod-name').value.trim();
     const priceValue = document.getElementById('prod-price').value;
     const stockValue = document.getElementById('prod-stock').value;
+    const comparePriceValue = document.getElementById('prod-compare-price').value.trim();
 
     if (!isValidProductTitle(titleValue)) {
       showToast("El nombre del producto debe tener entre 3 y 150 caracteres.", "error");
@@ -584,6 +586,10 @@ function setupDashboardEvents() {
     }
     if (!isValidStock(stockValue)) {
       showToast("El stock debe ser un número entero mayor o igual a 0.", "error");
+      return;
+    }
+    if (comparePriceValue && (!isValidPrice(comparePriceValue) || parseInt(comparePriceValue) <= parseInt(priceValue))) {
+      showToast("El precio de oferta debe ser un número entero mayor al precio actual.", "error");
       return;
     }
 
@@ -600,6 +606,7 @@ function setupDashboardEvents() {
       title: titleValue,
       price: parseInt(priceValue),
       stock: parseInt(stockValue),
+      compare_at_price: comparePriceValue ? parseInt(comparePriceValue) : null,
       category_id: null,
       description: document.getElementById('prod-desc').value.trim(),
       image_url: document.getElementById('prod-image').value.trim()

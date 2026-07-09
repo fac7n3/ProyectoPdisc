@@ -121,6 +121,37 @@ export function formatPrice(price) {
 }
 
 /**
+ * F5-05: fila de precio de una product-card, con precio tachado + % de
+ * descuento si el producto tiene `compare_at_price`. Compartida entre
+ * home.js/search.js/comercio.js para no repetir el mismo bloque 3 veces.
+ * @param {{price: number, compare_at_price?: number|null}} product
+ */
+export function buildPriceRow(product) {
+  const priceRow = document.createElement('div');
+  priceRow.className = 'product-card__price-row';
+
+  const priceSpan = document.createElement('span');
+  priceSpan.className = 'product-card__price';
+  priceSpan.textContent = formatPrice(product.price);
+  priceRow.appendChild(priceSpan);
+
+  if (product.compare_at_price && product.compare_at_price > product.price) {
+    const oldSpan = document.createElement('span');
+    oldSpan.className = 'product-card__price-old';
+    oldSpan.textContent = formatPrice(product.compare_at_price);
+    priceRow.appendChild(oldSpan);
+
+    const discountPct = Math.round((1 - product.price / product.compare_at_price) * 100);
+    const discountSpan = document.createElement('span');
+    discountSpan.className = 'product-card__discount';
+    discountSpan.textContent = `-${discountPct}%`;
+    priceRow.appendChild(discountSpan);
+  }
+
+  return priceRow;
+}
+
+/**
  * Actualizar el badge del carrito en el navbar
  */
 export function updateCartBadge() {

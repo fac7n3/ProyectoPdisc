@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -140,13 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         nameH3.textContent = product.title;
         body.appendChild(nameH3);
 
-        const priceRow = document.createElement('div');
-        priceRow.className = 'product-card__price-row';
-        const priceSpan = document.createElement('span');
-        priceSpan.className = 'product-card__price';
-        priceSpan.textContent = formatPrice(product.price);
-        priceRow.appendChild(priceSpan);
-        body.appendChild(priceRow);
+        body.appendChild(buildPriceRow(product));
 
         const addBtn = document.createElement('button');
         addBtn.className = 'product-card__add';

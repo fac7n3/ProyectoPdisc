@@ -70,6 +70,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 27. `27_deliveries_visibility_fix.sql` — cualquier repartidor puede ver cualquier fila de `deliveries` (F3-02, ver nota abajo).
 28. `28_delivery_status_flow.sql` — RPC `update_delivery_status` (F3-03, ver nota abajo).
 29. `29_favorites.sql` — tabla `favorites` (F4-03, ver nota abajo).
+30. `30_compare_at_price.sql` — `products.compare_at_price` (F5-05, ver nota abajo).
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
@@ -192,6 +193,30 @@ activar/desactivar por fila (`is_active`, RLS ya lo permitía, solo faltaba
 el botón). Verificado: import sin errores de consola; sin sesión de
 vendedor real para probar el flujo completo en el navegador — mismo límite
 que F0-04.
+
+### 30_compare_at_price.sql (F5-05 / A113-195) — aplicado
+
+`products.compare_at_price` (extraída de `13_target_data_model.sql` sección
+3), nullable, `check (compare_at_price is null or compare_at_price > 0)`.
+`js/cart-utils.js` (`buildPriceRow`, nuevo, compartido): arma la fila de
+precio de una product-card — si `compare_at_price > price`, agrega el
+precio tachado (clase `.product-card__price-old`, ya existía en el CSS sin
+usarse) y un badge de `-N%` (clase `.product-card__discount`, ídem). Antes
+había 3 copias casi idénticas de este bloque en `home.js`/`search.js`/
+`comercio.js` — ahora las 3 llaman a la misma función. `vender.js`: campo
+"Precio anterior (opcional)" en el form de alta/edición de producto,
+validado (entero, mayor al precio actual) y guardado como
+`compare_at_price` (o `null` si se deja vacío).
+
+`producto.js` (detalle de producto) queda **sin tocar a propósito**: usa su
+propio markup (`.product-price`, sin CSS de "tachado" definido en ningún
+lado) — agregarle la oferta ahí necesitaría diseño nuevo, fuera del
+alcance contenido de esta tarea; los 3 lugares donde se navega/compra
+(home, search, comercio) ya muestran la oferta.
+
+Verificado en el navegador: sin errores de consola en las 4 páginas
+tocadas; productos existentes (sin `compare_at_price`, todos `NULL`) se ven
+igual que antes — sin regresión.
 
 ### Idempotencia (F0-07 / A113-150)
 
