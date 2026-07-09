@@ -59,6 +59,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 17. `17_fase2_order_payment_columns.sql` — arranca Fase 2: columnas de `orders`
     (`delivery_method`/`payment_method`/`payment_status`/`delivery_fee`) + tabla `payment_proofs`.
 18. `18_create_order_rpc.sql` — RPC `create_order` (F2-01, ver nota abajo).
+19. `19_confirm_simulated_payment_rpc.sql` — RPC `confirm_simulated_payment` (F2-03, ver nota abajo).
 
 ### Idempotencia (F0-07 / A113-150)
 
@@ -159,6 +160,29 @@ domicilio" sin dirección, los 3 casos fueron rechazados con
 hallazgos críticos nuevos (la única advertencia nueva es "puede ejecutarla
 `authenticated`", esperada e intencional — mismo patrón que
 `validate_cart_prices`).
+
+### 19_confirm_simulated_payment_rpc.sql (F2-03 / A113-175) — aplicado
+
+RPC `confirm_simulated_payment(p_order_id)`, `SECURITY DEFINER`, revocado de
+`anon`/`public` (solo `authenticated`). Deliberadamente separado de
+`create_order`: crear la orden y "pagarla" son pasos distintos, igual que en
+un checkout real contra una pasarela — así el frontend los orquesta detrás
+de una interfaz común (`js/payment-providers.js`, `getPaymentProvider(method)
+→ { name, pay(orderIds) }`) sin que `create_order` necesite saber nada de
+métodos de pago. Providers futuros (F2-04 transferencia, F2-07 MercadoPago)
+se agregan ahí sin tocar `create_order` ni este RPC.
+
+Solo marca como pagada una orden que sea del cliente que la llama
+(`auth.uid() = orders.client_id`), con `payment_method = 'simulado'` (nunca
+`'transferencia'`/`'mercadopago'`, que necesitan confirmación del vendedor o
+de la pasarela) y todavía `pending`; es idempotente (si ya está `paid`,
+devuelve `already_paid: true` en vez de fallar, para que un doble-click no
+rompa nada). Testeado con `BEGIN;...ROLLBACK;` contra la base real, creando
+una orden real con `create_order` dentro de la misma transacción: pagar la
+orden propia la deja `paid` con un `payment_id` generado; confirmar dos veces
+es idempotente; confirmar una orden inexistente o ajena se rechaza. Wireado
+en `carrito.js`: tras `create_order`, llama al provider del método elegido
+(hoy siempre `'simulado'`) antes de vaciar el carrito y mostrar el total.
 
 ### 16_input_validation_constraints.sql (F1-04 / A113-161, A113-162) — aplicado
 

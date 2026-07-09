@@ -4,6 +4,7 @@ import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, clearCart, updateCartBadge, MAX_QTY, formatPrice } from './cart-utils.js';
+import { getPaymentProvider } from './payment-providers.js';
 
 // --- Estado del Carrito ---
 let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
@@ -322,11 +323,13 @@ function initCartEvents() {
       // servidor — no hace falta (ni conviene) mandarle el precio del carrito.
       const payload = currentCart.map(item => ({ id: item.id, qty: item.qty }));
 
+      const paymentMethod = 'simulado';
+
       const { data, error } = await supabase.rpc('create_order', {
         cart_payload: payload,
         coupon_code: appliedCouponCode,
         p_delivery_method: 'pickup',
-        p_payment_method: 'simulado',
+        p_payment_method: paymentMethod,
         p_shipping_address: null,
       });
 
@@ -336,11 +339,28 @@ function initCartEvents() {
         return;
       }
 
-      const orderCount = data?.orders?.length || 0;
-      const total = (data?.orders || []).reduce((acc, o) => acc + o.total_price, 0);
-      const mensaje = orderCount > 1
-        ? `¡${orderCount} pedidos creados! Total: ${formatPrice(total)}`
-        : `¡Pedido creado! Total: ${formatPrice(total)}`;
+      const orders = data?.orders || [];
+      const orderIds = orders.map((o) => o.order_id);
+      const total = orders.reduce((acc, o) => acc + o.total_price, 0);
+
+      // La orden ya existe (pending); "pagarla" es un paso aparte a través
+      // del provider correspondiente al método elegido — hoy solo simulado.
+      const provider = getPaymentProvider(paymentMethod);
+      const paymentResult = await provider.pay(orderIds);
+
+      if (!paymentResult.success) {
+        // La orden quedó creada (pending) aunque el pago haya fallado; el
+        // cliente la puede reintentar después (ver historial, F2-06).
+        console.error('Error al confirmar el pago:', paymentResult.message);
+        showCartToast('Pedido creado, pero hubo un problema al confirmar el pago.', 'error');
+        clearCart();
+        setTimeout(() => window.location.href = './home.html', 2000);
+        return;
+      }
+
+      const mensaje = orders.length > 1
+        ? `¡${orders.length} pedidos pagados! Total: ${formatPrice(total)}`
+        : `¡Pedido pagado! Total: ${formatPrice(total)}`;
 
       clearCart();
       showCartToast(mensaje, 'success');
