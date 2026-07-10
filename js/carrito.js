@@ -437,6 +437,14 @@ function initCartEvents() {
       const provider = getPaymentProvider(paymentMethod);
       const paymentResult = await provider.pay(orderIds);
 
+      // mercadopago ya disparó la redirección al checkout hospedado dentro de
+      // pay() — el navegador está por salir de la página, no hay nada más
+      // para mostrar acá (el pago real se confirma después vía webhook).
+      if (paymentResult.redirecting) {
+        clearCart();
+        return;
+      }
+
       if (!paymentResult.success) {
         // La orden quedó creada (pending) aunque el pago haya fallado; el
         // cliente la puede reintentar después (ver historial, F2-06).

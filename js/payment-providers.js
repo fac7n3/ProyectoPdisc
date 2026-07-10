@@ -27,6 +27,36 @@ const simuladoProvider = {
   },
 };
 
+const mercadopagoProvider = {
+  name: 'mercadopago',
+  /**
+   * A diferencia de simulado/transferencia, acá no hay nada que confirmar en
+   * el cliente: mp-create-preference (Edge Function) arma el checkout
+   * hospedado de Mercado Pago y esta función redirige el navegador ahí. La
+   * confirmación real llega después por webhook (mp-webhook, server-side)
+   * cuando Mercado Pago efectivamente acredita el pago — carrito.js no debe
+   * mostrar "¡pagado!", la orden queda pending hasta que llegue el webhook.
+   * @returns {Promise<{success: boolean, message?: string, redirecting?: boolean}>}
+   */
+  async pay(orderIds) {
+    const { data, error } = await supabase.functions.invoke('mp-create-preference', {
+      body: { order_ids: orderIds },
+    });
+    if (error || !data || data.error) {
+      return { success: false, message: data?.error || error?.message || 'No se pudo iniciar el pago con Mercado Pago.' };
+    }
+    // Con el modelo actual de MP (credenciales de prueba + usuario comprador
+    // de prueba, no el viejo sandbox separado) el link correcto es init_point;
+    // sandbox_init_point queda de respaldo por si la cuenta todavía lo usa.
+    const redirectUrl = data.init_point || data.sandbox_init_point;
+    if (!redirectUrl) {
+      return { success: false, message: 'Mercado Pago no devolvió un link de pago.' };
+    }
+    window.location.href = redirectUrl;
+    return { success: true, redirecting: true };
+  },
+};
+
 const transferenciaProvider = {
   name: 'transferencia',
   /**
@@ -45,7 +75,7 @@ const transferenciaProvider = {
 
 /**
  * @param {string} method - 'simulado' | 'transferencia' | 'mercadopago'
- * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, message?: string}>}}
+ * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, redirecting?: boolean, message?: string}>}}
  */
 export function getPaymentProvider(method) {
   switch (method) {
@@ -53,6 +83,8 @@ export function getPaymentProvider(method) {
       return simuladoProvider;
     case 'transferencia':
       return transferenciaProvider;
+    case 'mercadopago':
+      return mercadopagoProvider;
     default:
       throw new Error(`Método de pago no soportado todavía: ${method}`);
   }
