@@ -105,10 +105,10 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F5-08** (`A113-198`) — `stores.description`/`zone`/`hours` (migración 31). Resuelve de paso un bug histórico: `comercio.js` leía `store.description` sin que la columna existiera, siempre caía al fallback. Sección nueva "Perfil de mi comercio" en `vender.js`: logo, dirección, teléfono, zona, horarios (texto libre) y descripción — `UPDATE` simple sobre `stores`, la policy ya lo permitía. `name`/`cuit`/`status` no editables desde acá a propósito (ya pasaron por aprobación del admin, D6).
 
 - **F5-06** (`A113-196`) — Gestión de pedidos, sin migración nueva. Sección "Mis pedidos" en `vender.js`: lista las últimas 50 órdenes de la tienda (antes solo había vistas parciales: pagos por confirmar F2-04, envíos en curso F3-04). El flujo `delivery` lo maneja el repartidor (F3-02/F3-03) — acá solo se ve. Para `pickup`, el vendedor gestiona directo (`UPDATE` simple, la RLS ya lo permitía): "Listo para retirar" y "Marcar entregado"; cancelar disponible para pending/paid. Verificado con `BEGIN;...ROLLBACK;` contra la base real.
+- **F5-04** (`A113-194`) — Tabla `product_images` (migración 32). Bucket `products` ya existía (público, policy de upload vendedor/admin) — no se tocó storage, solo la tabla de URLs. `vender.js`: input de archivos múltiple en el form de producto; al guardar sube a `{productId}/{timestamp}-{nombre saneado}` (mismo criterio anti path-traversal que F2-04) e inserta filas con `getPublicUrl()`; al editar, miniaturas con botón de borrado. `producto.js`: fila de miniaturas debajo de la imagen principal (la primera siempre `image_url`, portada ya usada en toda la app) — clic cambia la imagen grande. Verificado con `BEGIN;...ROLLBACK;`: dueño del producto puede insertar, otro vendedor rechazado por RLS; sin regresión en productos sin fotos extra.
 
 ### ⏳ Próximo
 - **F5-03** (`A113-193`) — Variantes de producto (talle/color/peso) con stock por variante.
-- **F5-04** (`A113-194`) — Varias fotos por producto + subida a Storage.
 - **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
 - **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
 

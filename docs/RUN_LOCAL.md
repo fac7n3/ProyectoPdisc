@@ -71,6 +71,8 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 28. `28_delivery_status_flow.sql` — RPC `update_delivery_status` (F3-03, ver nota abajo).
 29. `29_favorites.sql` — tabla `favorites` (F4-03, ver nota abajo).
 30. `30_compare_at_price.sql` — `products.compare_at_price` (F5-05, ver nota abajo).
+31. `31_store_profile_columns.sql` — `stores.description`/`zone`/`hours` (F5-08, ver nota abajo).
+32. `32_product_images.sql` — tabla `product_images` (F5-04, ver nota abajo).
 
 No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
 sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
@@ -123,6 +125,37 @@ también se puede cancelar (con confirmación).
 Verificado contra la base real con `BEGIN;...ROLLBACK;`: cliente crea y
 paga un pedido pickup → el vendedor dueño de la tienda lo marca
 `ready_for_pickup` → el `UPDATE` pasa la RLS sin problema.
+
+### 32_product_images.sql (F5-04 / A113-194) — aplicado
+
+Tabla `product_images` (extraída de `13_target_data_model.sql` sección 2).
+El bucket de storage `products` ya existía, público, con policy de upload
+para `vendedor`/`admin` desde `03_ecommerce_schema.sql` — no hizo falta
+tocar storage, solo la tabla que guarda las URLs subidas. RLS: select
+público si el producto padre está activo (o siempre para su dueño/admin);
+insert/update/delete solo el dueño del producto padre o admin (mismo
+patrón que `product_variants`/`product_images` ya diseñado en F0-08).
+
+`js/vender.js`: el form de producto ahora tiene un
+`<input type="file" multiple>` para fotos adicionales. Al guardar
+(alta o edición), si hay archivos elegidos, se suben al bucket `products`
+bajo `{productId}/{timestamp}-{nombre saneado}` (mismo criterio anti
+path-traversal que en el comprobante de transferencia, F2-04) y se
+inserta una fila en `product_images` por cada una con `getPublicUrl()`
+(el bucket es público). Al editar un producto, se listan sus fotos ya
+subidas como miniaturas con botón de borrado (`renderExistingProductImages`).
+
+`js/producto.js` (detalle de producto): si el producto tiene
+`product_images`, se muestra una fila de miniaturas debajo de la imagen
+principal — click en una miniatura cambia la imagen grande. La primera
+miniatura es siempre `image_url` (la "foto de portada", ya usada en toda
+la app — grillas, carrito, etc.); las demás son las de `product_images`.
+
+Verificado contra la base real con `BEGIN;...ROLLBACK;`: el dueño del
+producto puede insertar una fila en `product_images`; otro vendedor
+(no dueño de ese producto) es rechazado por RLS. En el navegador: sin
+errores de consola en `vender.js`/`producto.js`; un producto sin fotos
+extra se ve igual que antes (sin fila de miniaturas) — sin regresión.
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver

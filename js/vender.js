@@ -733,6 +733,83 @@ async function openEditProductForm(productId) {
 
   document.getElementById('add-product-form-container').style.display = 'block';
   document.getElementById('add-product-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  await renderExistingProductImages(productId);
+}
+
+/** F5-04: miniaturas de las fotos ya subidas, con botón para borrarlas. */
+async function renderExistingProductImages(productId) {
+  const container = document.getElementById('prod-existing-images');
+  if (!container) return;
+  container.textContent = '';
+
+  const { data: images, error } = await supabase
+    .from('product_images')
+    .select('id, url')
+    .eq('product_id', productId)
+    .order('position', { ascending: true });
+
+  if (error || !images) return;
+
+  images.forEach((img) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position: relative; width: 64px; height: 64px;';
+
+    const thumb = document.createElement('img');
+    thumb.src = img.url;
+    thumb.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 6px;';
+    wrap.appendChild(thumb);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 0.75rem; line-height: 1;';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', async () => {
+      const { error: deleteError } = await supabase.from('product_images').delete().eq('id', img.id);
+      if (deleteError) {
+        showToast('No se pudo borrar la foto.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      wrap.remove();
+    });
+    wrap.appendChild(removeBtn);
+
+    container.appendChild(wrap);
+  });
+}
+
+/** F5-04: sube los archivos elegidos al bucket 'products' y crea las filas en product_images. */
+async function uploadProductImages(productId, files) {
+  if (!files || files.length === 0) return;
+
+  const { data: existing } = await supabase
+    .from('product_images')
+    .select('position')
+    .eq('product_id', productId)
+    .order('position', { ascending: false })
+    .limit(1);
+  let nextPosition = (existing?.[0]?.position ?? -1) + 1;
+
+  for (const file of files) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
+    const path = `${productId}/${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage.from('products').upload(path, file);
+    if (uploadError) {
+      console.error('Error al subir la foto:', uploadError);
+      showToast(`No se pudo subir ${file.name}.`, 'error');
+      continue;
+    }
+
+    const { data: urlData } = supabase.storage.from('products').getPublicUrl(path);
+    await supabase.from('product_images').insert({
+      product_id: productId,
+      url: urlData.publicUrl,
+      position: nextPosition,
+    });
+    nextPosition += 1;
+  }
 }
 
 function setupDashboardEvents() {
@@ -758,6 +835,8 @@ function setupDashboardEvents() {
     if (formTitle) formTitle.textContent = 'Publicar nuevo producto';
     const submitBtn = addForm.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = 'Guardar Producto';
+    const existingImages = document.getElementById('prod-existing-images');
+    if (existingImages) existingImages.textContent = '';
   }
 
   btnShowAdd.addEventListener('click', () => {
@@ -823,23 +902,34 @@ function setupDashboardEvents() {
     if (catData) productData.category_id = catData.id;
 
     let error;
+    let savedProductId = editingProductId;
     if (isEditing) {
       ({ error } = await supabase.from('products').update(productData).eq('id', editingProductId));
     } else {
       productData.seller_id = user.id;
       productData.store_id = currentStoreId;
-      ({ error } = await supabase.from('products').insert([productData]));
+      const { data: inserted, error: insertError } = await supabase.from('products').insert([productData]).select('id').single();
+      error = insertError;
+      savedProductId = inserted?.id;
     }
 
     if (error) {
       showToast(isEditing ? "Error al guardar los cambios" : "Error al guardar el producto", "error");
       console.error(error);
-    } else {
-      showToast(isEditing ? "Producto actualizado" : "Producto creado", "success");
-      addFormContainer.style.display = 'none';
-      resetProductForm();
-      fetchProducts();
+      setLoading(btnSubmit, false, submitLabel);
+      return;
     }
+
+    // F5-04: subir las fotos adicionales elegidas (si hay), ya con el id real del producto
+    const extraImagesInput = document.getElementById('prod-extra-images');
+    if (savedProductId && extraImagesInput?.files?.length) {
+      await uploadProductImages(savedProductId, Array.from(extraImagesInput.files));
+    }
+
+    showToast(isEditing ? "Producto actualizado" : "Producto creado", "success");
+    addFormContainer.style.display = 'none';
+    resetProductForm();
+    fetchProducts();
     setLoading(btnSubmit, false, submitLabel);
   });
 }

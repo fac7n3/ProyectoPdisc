@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data: product, error } = await supabase
       .from('products')
-      .select('*, stores(name, id)')
+      .select('*, stores(name, id), product_images(url, position)')
       .eq('id', productId)
       .single();
 
@@ -52,6 +52,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     img.src = imgUrl;
     img.alt = product.title;
     gallery.appendChild(img);
+
+    // F5-04: miniaturas de fotos adicionales (product_images) — clic cambia la principal.
+    const extraImages = (product.product_images || []).sort((a, b) => a.position - b.position);
+    if (extraImages.length > 0) {
+      const thumbsRow = document.createElement('div');
+      thumbsRow.className = 'product-gallery__thumbs';
+      thumbsRow.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;';
+
+      const allThumbUrls = [imgUrl, ...extraImages.map((pi) => pi.url)];
+      allThumbUrls.forEach((url) => {
+        const thumb = document.createElement('img');
+        thumb.src = url;
+        thumb.alt = product.title;
+        thumb.style.cssText = 'width: 56px; height: 56px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent;';
+        thumb.addEventListener('click', () => { img.src = url; });
+        thumbsRow.appendChild(thumb);
+      });
+
+      gallery.appendChild(thumbsRow);
+    }
+
     container.appendChild(gallery);
 
     const info = document.createElement('div');

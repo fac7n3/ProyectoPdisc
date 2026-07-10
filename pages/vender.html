@@ -325,6 +325,11 @@
                     <textarea id="prod-desc" class="form-input" rows="3"></textarea>
                   </div>
                   <div class="form-group">
+                    <label class="form-label" for="prod-extra-images">Fotos adicionales (opcional, podés elegir varias)</label>
+                    <input type="file" id="prod-extra-images" class="form-input" accept="image/*" multiple />
+                    <div id="prod-existing-images" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;"></div>
+                  </div>
+                  <div class="form-group">
                     <label class="form-label" for="prod-image">URL de la imagen (temporal)</label>
                     <input type="url" id="prod-image" class="form-input" placeholder="https://..." />
                   </div>
