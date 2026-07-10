@@ -464,6 +464,122 @@ error) antes de aplicar. `get_advisors` limpio tras el fix del bug propio.
 Sin errores de consola al cargar `perfil.html`/`vender.html` en el
 navegador (redirige a login, sin sesión real — mismo límite de siempre).
 
+## Fase 9 — UX/UI, identidad y PWA (sin migración nueva — todo frontend)
+
+### F9-03 (A113-218) — home con ofertas reales
+
+`js/home.js` (`loadProducts`) no pedía `compare_at_price` en el `select` —
+agregado. Bug más importante: el link "Ofertas" del nav (construido en
+`home.js`/`search.js`) redirigía a `search.html?cat=ofertas`, y
+`js/search.js` (`applyFilters`) trataba "ofertas" como un slug real de
+`categories` (`.eq('categories.slug', filterState.category)`) — como esa
+categoría no existe en la tabla, el filtro nunca traía nada. Fix: rama
+nueva en `applyFilters` — si `filterState.category === 'ofertas'`, filtra
+`.not('compare_at_price', 'is', null)` en vez de por categoría.
+
+Verificado en el navegador: `search.html?cat=ofertas` corre sin errores de
+consola, muestra "0 resultados" / "No se encontraron productos con estos
+filtros" — correcto, porque hoy ningún producto real tiene
+`compare_at_price` cargado (confirmado por SQL: `count = 0`); antes daba
+0 resultados igual pero por la razón equivocada (filtro roto, no falta de
+ofertas reales). El día que un vendedor cargue una oferta desde
+`vender.js` (F5-05), va a aparecer acá correctamente.
+
+### F9-02 (A113-217) — PWA instalable
+
+Sin build plugin (`vite-plugin-pwa` no está instalado — decisión
+consciente de no sumar una dependencia de build nueva sin que el usuario
+lo pida). Todo servido como archivos estáticos en `public/` (Vite los
+copia tal cual a la raíz de `dist/`):
+
+- `public/manifest.webmanifest` — nombre, `start_url`, `theme_color`
+  (`#2563eb`, el mismo `--bl-primary`), `display: standalone`, ícono.
+- `public/icon.svg` — el mismo isotipo (casita/blob azul) que ya se usa
+  inline en el navbar de cada página, exportado como archivo propio. Un
+  solo ícono SVG con `sizes: "any"` — cubre Chrome/Android para
+  instalación; Safari/iOS no soporta SVG como ícono de "Agregar a
+  inicio" (usaría `apple-touch-icon`, que necesita un PNG cuadrado real)
+  — límite conocido, no se generó un PNG por no tener una herramienta de
+  conversión de imágenes en este entorno.
+- `public/sw.js` — service worker sin lista de precache: los nombres de
+  archivo de Vite llevan hash y cambian en cada build, así que precachear
+  una lista fija no tiene sentido sin integración de build. Cachea en
+  runtime: navegación (HTML) → red primero, cache como respaldo offline;
+  assets con extensión estática (`.js/.css/.png/...`) → cache primero (
+  seguro porque un build nuevo genera un nombre de archivo distinto, nunca
+  sirve una versión vieja). Nunca intercepta pedidos a otro origen
+  (Supabase, CDNs) — se corta apenas `url.origin !== self.location.origin`.
+- Registro: `navigator.serviceWorker.register('/sw.js')` agregado al final
+  de `js/auth-utils.js` (el único módulo que prácticamente todas las
+  páginas importan) — no hizo falta tocar cada página individualmente
+  para esto.
+- `<link rel="manifest">` + `<meta name="theme-color">` + `<link
+  rel="icon">` agregados al `<head>` de las 15 páginas HTML (`index.html`
+  + 14 en `pages/`), justo después de la etiqueta `<title>` de cada una.
+
+Verificado en el navegador: `fetch('/manifest.webmanifest')` → 200, JSON
+válido con el contenido esperado; `fetch('/sw.js')` → 200;
+`navigator.serviceWorker.getRegistrations()` → `["activated"]`.
+`fetch('/icon.svg')` → 200.
+
+### F9-04 (A113-219) — accesibilidad (acotado, no una auditoría completa)
+
+Se investigó primero cuánto faltaba realmente en vez de asumir: la
+mayoría de los `outline: none` del CSS del proyecto YA tenían un
+reemplazo visual (`border-color`/`box-shadow` en `:focus`) — no eran bugs.
+Se encontraron y corrigieron los 2 casos genuinamente rotos (foco
+invisible al navegar con teclado, sin ningún reemplazo):
+
+- `.password-toggle-btn` (`auth.css`, el ojito de mostrar/ocultar
+  contraseña en login/registro) — agregado `:focus-visible` con outline
+  propio.
+- `.pm-quantity__value` (`product-modal.css`, el input numérico de
+  cantidad en el modal rápido de producto) — `product-modal.css` ya tenía
+  un bloque `:focus-visible` completo para sus botones (`.pm-topbar__btn`,
+  `.pm-quantity__btn`, etc.), solo le faltaba este input a la lista.
+
+El resto de accesibilidad (ARIA en paneles dinámicos de `admin.js`,
+`<label>` faltantes puntuales, contraste AA completo) queda para una
+auditoría dedicada — fuera de alcance de esta pasada acotada.
+
+### F9-05 (A113-220) — responsive (gaps reales, no rediseño completo)
+
+Se relevó qué páginas no tenían NINGÚN `@media` en su `<style>` inline
+antes de tocar nada: `pages/admin.html` y `pages/repartidor.html` no
+tenían cero cobertura mobile. Agregado un breakpoint `@media (max-width:
+768px)` a cada una: menos padding/margin en el contenedor principal,
+encabezados con `flex-wrap` (antes podían desbordar en pantallas angostas
+con un `justify-content: space-between` sin wrap), tablas más compactas
+en `admin.html`. De paso, mismo ajuste de contenedor en `pages/vender.html`
+(comparte el mismo patrón `.vender-container`/`.vender-header`, ya tenía
+un breakpoint pero solo para ocultar el badge de F5-09).
+
+`pages/mensajes.html` ya tenía un breakpoint razonable (columna única en
+mobile) desde que se creó en F7-02 — sin cambios ahí.
+
+### F9-07 — identificado, diferido a propósito
+
+Investigando el modal rápido de producto (`js/product-modal.js`) para
+F9-04/F9-05 se encontró que **no consulta Supabase en absoluto** — arma
+todo leyendo el DOM de la tarjeta ya renderizada (`extractProductData`).
+El stock que muestra es **fabricado**: `stockSeed = suma de charCodes del
+id; stock = stockSeed % 40 + 5` — un número pseudoaleatorio determinístico
+por producto, no el `stock` real de la tabla `products`. El rating
+tampoco es real: lee `.product-card__stars`, un elemento que ninguna de
+las grillas (`home.js`/`search.js`/`comercio.js`) genera hoy, así que
+siempre da 0 estrellas.
+
+No es un problema de integridad — el checkout (`create_order`) revalida
+todo contra la base real, nadie puede comprar aprovechando el stock
+inventado. Pero sí es información falsa mostrada al usuario en la
+interfaz. Arreglarlo bien requiere reemplazar la extracción por DOM por
+un fetch real a Supabase (`stock`, `product_variants`, resumen de
+`reviews` vía `fetchReviewsSummary` de `reviews-utils.js`) — un cambio de
+alcance bastante más grande que el resto de los ítems de esta tanda de
+Fase 9 (toca el flujo entero de apertura del modal, no un CSS puntual).
+Se documenta acá para la próxima sesión en vez de apurar un parche a
+medias.
+
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
 nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`

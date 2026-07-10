@@ -6,6 +6,16 @@ import { initErrorLogging } from "./error-logger.js";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 initErrorLogging(supabase);
 
+// F9-02: PWA — registrar el service worker (una vez, en cualquier página que
+// importe este módulo, que es prácticamente todo el sitio).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.error('Error al registrar el service worker:', err);
+    });
+  });
+}
+
 // --- Sistema de Notificaciones ---
 function initToastContainer() {
   let container = document.getElementById("toast-container");

@@ -424,6 +424,12 @@ body {
   color: var(--auth-primary);
 }
 
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--auth-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ====== Loading Screen (Auth Guard) ====== */
 .auth-loading-screen {
   position: fixed;

@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
-    <title>SuperAdmin - Baradero Local</title>
+    <title>SuperAdmin - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
       .admin-container {
@@ -18,6 +21,8 @@
       }
       .admin-header {
         display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 2rem;
@@ -135,10 +140,28 @@
         font-weight: 600;
         font-size: 0.85rem;
       }
+
+      @media (max-width: 768px) {
+        .admin-container {
+          margin: 1rem auto;
+          padding: 1.25rem;
+          border-radius: var(--bl-radius-lg);
+        }
+        .admin-header h1 {
+          font-size: 1.25rem;
+        }
+        th, td {
+          padding: 0.6rem;
+          font-size: 0.85rem;
+        }
+        .admin-inline-form {
+          padding: 0.75rem;
+        }
+      }
     </style>
-    <script type="module" crossorigin src="/assets/admin-DZAMKs9K.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dh1CyNcg.js">
-    <link rel="stylesheet" crossorigin href="/assets/auth-C9N5n64s.css">
+    <script type="module" crossorigin src="/assets/admin-BRzALcaE.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dh9IHQy2.js">
+    <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
   </head>
   <body>

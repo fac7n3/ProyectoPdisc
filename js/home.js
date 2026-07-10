@@ -175,6 +175,7 @@ async function loadProducts() {
         id,
         title,
         price,
+        compare_at_price,
         image_url,
         stock,
         stores ( name )

@@ -1,0 +1,14 @@
+{
+  "name": "Baradero Local",
+  "short_name": "Baradero Local",
+  "description": "Comercio de proximidad para Baradero, Argentina — comprá en los negocios de tu barrio.",
+  "start_url": "/pages/home.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#2563eb",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

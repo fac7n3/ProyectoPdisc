@@ -948,6 +948,7 @@
 .pm-topbar__back:focus-visible,
 .pm-gallery__fav:focus-visible,
 .pm-quantity__btn:focus-visible,
+.pm-quantity__value:focus-visible,
 .pm-btn:focus-visible,
 .pm-tab:focus-visible,
 .pm-related-card:focus-visible,

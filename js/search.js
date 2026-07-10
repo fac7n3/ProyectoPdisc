@@ -38,7 +38,11 @@ async function applyFilters() {
     }
 
     // Apply category filter
-    if (filterState.category !== 'todas') {
+    // F9-03: "ofertas" no es una categoría real (no existe en la tabla categories) —
+    // filtra por productos con descuento en vez de por rubro.
+    if (filterState.category === 'ofertas') {
+      query = query.not('compare_at_price', 'is', null);
+    } else if (filterState.category !== 'todas') {
       query = query.eq('categories.slug', filterState.category);
     }
 
