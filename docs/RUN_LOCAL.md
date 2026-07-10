@@ -592,6 +592,74 @@ proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
 acá para no meter un patrón de suscripción/limpieza nuevo sin poder
 verificarlo en un navegador con sesión real.
 
+## F2-07 (A113-179) — Mercado Pago real (Checkout Pro)
+
+Primera vez que el proyecto usa **Supabase Edge Functions** (hasta acá todo
+pasaba por RPCs de Postgres) — necesarias porque una función SQL no puede
+hacer un `fetch` HTTP a la API de Mercado Pago, y el Access Token (secreto)
+no puede vivir en el frontend.
+
+- `supabase/functions/mp-create-preference/index.ts` (`verify_jwt: true`):
+  se invoca desde `carrito.js` con la sesión del cliente. El cliente Supabase
+  interno se crea reenviando el header `Authorization` del que llama (no
+  service role) — así las RLS existentes de `orders` (`orders_select_own`)
+  son las que deciden qué órdenes puede pagar, mismo criterio de "nunca
+  confiar en datos del cliente" que `create_order`. Arma un line-item por
+  orden (usa `total_price`, ya validado server-side por `create_order`) y
+  crea la preferencia contra `https://api.mercadopago.com/checkout/preferences`.
+- `supabase/functions/mp-webhook/index.ts` (`verify_jwt: false` a propósito
+  — Mercado Pago llama anónimo, no tiene un JWT de Supabase). La seguridad
+  acá no es la firma del webhook (no configurada todavía, ver hardening
+  pendiente abajo) sino **nunca confiar en el payload**: siempre se
+  re-consulta el pago real vía `GET /v1/payments/{id}` con el Access Token
+  antes de tocar una orden — un webhook falso con un ID inventado nunca pasa
+  esa verificación (o da 404, o el pago no es `approved`). Marca `paid` solo
+  filas `payment_method='mercadopago'` + `payment_status='pending'`
+  (idempotente, mismo criterio que `confirm_simulated_payment`), y dispara
+  `create_notification` para el vendedor.
+- `js/payment-providers.js`: provider `mercadopago` nuevo. A diferencia de
+  `simulado`/`transferencia`, `pay()` no confirma nada sincrónicamente —
+  llama a `mp-create-preference` y redirige el navegador a `init_point`
+  (nunca `sandbox_init_point`: con el modelo actual de MP, las credenciales
+  de **prueba** ya usan el prefijo `APP_USR-` igual que producción — lo que
+  importa es estar parado en la pestaña "Credenciales de prueba" del
+  dashboard, no un prefijo `TEST-` como en versiones viejas del panel).
+  `carrito.js` maneja el caso `redirecting` (no muestra el toast de
+  "pagado", el navegador ya está por salir de la página).
+- **Secret** `MP_ACCESS_TOKEN`: seteado a mano en el dashboard de Supabase
+  (Project Settings → Edge Functions → Secrets) — no hay tool de MCP para
+  setear secrets de Edge Functions, y la CLI local no está logueada en este
+  entorno (`npx supabase login` requiere un browser interactivo). Nunca
+  tocó el repo ni el frontend.
+- Bug propio encontrado probando el flujo real en el navegador:
+  `initPaymentMethodEvents()` (código de antes de F2-07, en `carrito.js`)
+  solo sabía leer los radios `simulado`/`transferencia`
+  (`transferenciaRadio.checked ? 'transferencia' : 'simulado'`) — elegir
+  "Mercado Pago" en la UI pagaba silenciosamente como simulado sin que el
+  usuario se diera cuenta. Corregido para que reconozca los 3 métodos y
+  sincronice con el radio marcado por default al cargar la página (antes
+  solo se actualizaba en el evento `change`).
+
+**Verificado de punta a punta contra producción real** (no solo
+`BEGIN;...ROLLBACK;`, un caso más): creé una preferencia de prueba
+directo contra la API de MP con el Access Token (confirmando que el
+secret funciona), confirmé que la Edge Function rechaza sin sesión (401)
+y valida ownership de la orden vía RLS (403); el usuario completó un pago
+real con el usuario comprador de prueba de Mercado Pago — el webhook
+llegó (`200`, logueado), la orden pasó a `payment_status='paid'` con el
+`payment_id` real de MP, y se creó la notificación `order_paid` para el
+vendedor.
+
+**Hardening pendiente, no bloqueante**: verificar la firma `x-signature`
+del webhook (Mercado Pago la expone en la config de Webhooks del panel)
+en vez de solo re-confirmar contra la API — ya es seguro sin eso (un
+payload falso nunca pasa la re-consulta), pero es una capa extra
+recomendada por MP contra abuso/spam del endpoint.
+
+**Para lanzar de verdad**: reemplazar `MP_ACCESS_TOKEN` por el de
+**producción** (mismo nombre de secret, no requiere tocar código ni
+volver a desplegar las funciones).
+
 ## Fase 10 — Calidad, testing y performance
 
 ### F10-03 (A113-226) — bug encontrado: imágenes rotas en producción + WebP

@@ -141,7 +141,7 @@ Sobre el esquema actual (`profiles`, `products`, `categories`, `stores`, `orders
 - [ ] **F2-04** 🟠 **Método de pago: Transferencia + comprobante**: el cliente sube el comprobante (`payment_proofs`), el **vendedor confirma** (D3), la orden pasa a `paid`.
 - [ ] **F2-05** 🟠 Elegir retiro/envío en el checkout + calcular `delivery_fee_cents` (política unificada de envíos).
 - [ ] **F2-06** 🟠 **Historial de pedidos** del cliente (en `perfil.html`).
-- [ ] **F2-07** 🟢 (Futuro) Provider **MercadoPago** (sandbox → real) implementando la misma interfaz.
+- [x] **F2-07** 🟢 Provider **MercadoPago** (Checkout Pro vía Edge Functions) implementando la misma interfaz. Probado de punta a punta con credenciales de prueba.
 
 ---
 
