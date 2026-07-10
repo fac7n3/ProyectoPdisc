@@ -73,6 +73,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 30. `30_compare_at_price.sql` — `products.compare_at_price` (F5-05, ver nota abajo).
 31. `31_store_profile_columns.sql` — `stores.description`/`zone`/`hours` (F5-08, ver nota abajo).
 32. `32_product_images.sql` — tabla `product_images` (F5-04, ver nota abajo).
+33. `33_product_variants.sql` — tabla `product_variants` (F5-03, ver nota abajo).
 
 No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
 sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
@@ -156,6 +157,44 @@ producto puede insertar una fila en `product_images`; otro vendedor
 (no dueño de ese producto) es rechazado por RLS. En el navegador: sin
 errores de consola en `vender.js`/`producto.js`; un producto sin fotos
 extra se ve igual que antes (sin fila de miniaturas) — sin regresión.
+
+### 33_product_variants.sql (F5-03 / A113-193) — aplicado
+
+Tabla `product_variants` (extraída de `13_target_data_model.sql` sección 1):
+`name`/`price`/`stock`/`sku` propios por variante, mismo patrón de RLS
+ownership que `product_images` (select público si el producto padre está
+activo o es del dueño/admin; write solo dueño del producto padre o admin).
+
+**Alcance a propósito acotado** (documentado también en el comentario de
+la migración): esta tarea NO integra variantes al carrito/checkout — eso
+implicaría rediseñar `cart-utils.js`/`carrito.js`/`create_order`/
+`order_items` para llevar un `variant_id` por línea (hoy solo referencian
+`product_id`), un cambio de fondo al núcleo de compra de Fase 2. El
+vendedor puede cargar variantes con su propio stock como referencia;
+comprar "por variante" de verdad queda para una tarea futura fuera del
+roadmap tal como está redactado ("con stock por variante", no "con
+checkout por variante").
+
+`js/vender.js`: nueva sección "Variantes (talle/color/peso)" dentro del
+form de producto, oculta por defecto y visible solo editando un producto
+ya existente (`editingProductId` seteado — una variante necesita un
+`product_id` real, igual que las fotos extra de F5-04). Lista las
+variantes cargadas con botón de borrado (`renderVariantsManager`) y un
+mini-form inline de nombre/precio/stock para agregar (`btn-add-variant`,
+reusa `isValidPrice`/`isValidStock` ya existentes).
+
+`js/producto.js`: si el producto tiene `product_variants`, se muestra un
+bloque informativo "Opciones disponibles" (nombre, precio, stock) debajo
+de la descripción, con una nota de "consultá con el vendedor" — puramente
+de lectura, no cambia el flujo de "Agregar al carrito" (que sigue
+agregando el producto base, sin variante).
+
+Verificado contra la base real con `BEGIN;...ROLLBACK;` (hecho al aplicar
+la migración): el dueño del producto inserta una variante correctamente;
+un vendedor no dueño de ese producto es rechazado por RLS. En el
+navegador: sin errores de consola en `vender.js`/`producto.js`; un
+producto sin variantes se ve igual que antes (bloque no se renderiza) —
+sin regresión.
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver

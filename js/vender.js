@@ -735,6 +735,11 @@ async function openEditProductForm(productId) {
   document.getElementById('add-product-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   await renderExistingProductImages(productId);
+
+  // F5-03: variantes solo tienen sentido con un product_id real, o sea editando.
+  const variantsSection = document.getElementById('prod-variants-section');
+  if (variantsSection) variantsSection.style.display = 'block';
+  await renderVariantsManager(productId);
 }
 
 /** F5-04: miniaturas de las fotos ya subidas, con botón para borrarlas. */
@@ -812,9 +817,104 @@ async function uploadProductImages(productId, files) {
   }
 }
 
+/** F5-03: lista las variantes de un producto (talle/color/peso) con botón para borrarlas. */
+async function renderVariantsManager(productId) {
+  const container = document.getElementById('prod-variants-list');
+  if (!container) return;
+  container.textContent = '';
+
+  const { data: variants, error } = await supabase
+    .from('product_variants')
+    .select('id, name, price, stock')
+    .eq('product_id', productId)
+    .order('created_at', { ascending: true });
+
+  if (error || !variants) return;
+
+  if (variants.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color: var(--bl-text-muted); font-size: 0.9rem; margin: 0;';
+    empty.textContent = 'Todavía no cargaste variantes.';
+    container.appendChild(empty);
+    return;
+  }
+
+  variants.forEach((variant) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--bl-bg-alt, #f5f5f5); border-radius: 6px;';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'flex: 1;';
+    label.textContent = `${variant.name} — ${formatPrice(variant.price)} — stock: ${variant.stock}`;
+    row.appendChild(label);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.style.cssText = 'width: 24px; height: 24px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 0.8rem; line-height: 1;';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', async () => {
+      const { error: deleteError } = await supabase.from('product_variants').delete().eq('id', variant.id);
+      if (deleteError) {
+        showToast('No se pudo borrar la variante.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      row.remove();
+      if (!container.children.length) await renderVariantsManager(productId);
+    });
+    row.appendChild(removeBtn);
+
+    container.appendChild(row);
+  });
+}
+
 function setupDashboardEvents() {
   setupStoreProfileForm();
   document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
+
+  // F5-03: alta de variante para el producto que se está editando.
+  document.getElementById('btn-add-variant')?.addEventListener('click', async () => {
+    if (!editingProductId) return;
+
+    const nameInput = document.getElementById('variant-name');
+    const priceInput = document.getElementById('variant-price');
+    const stockInput = document.getElementById('variant-stock');
+
+    const name = nameInput.value.trim();
+    const price = priceInput.value;
+    const stock = stockInput.value;
+
+    if (!name) {
+      showToast('La variante necesita un nombre.', 'error');
+      return;
+    }
+    if (!isValidPrice(price)) {
+      showToast('El precio de la variante debe ser un número entero mayor a 0.', 'error');
+      return;
+    }
+    if (!isValidStock(stock)) {
+      showToast('El stock de la variante debe ser un número entero mayor o igual a 0.', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('product_variants').insert({
+      product_id: editingProductId,
+      name,
+      price: parseInt(price),
+      stock: parseInt(stock),
+    });
+
+    if (error) {
+      showToast('No se pudo agregar la variante.', 'error');
+      console.error(error);
+      return;
+    }
+
+    nameInput.value = '';
+    priceInput.value = '';
+    stockInput.value = '';
+    await renderVariantsManager(editingProductId);
+  });
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
   const btnCancelAdd = document.getElementById('btn-cancel-add-product');
@@ -837,6 +937,10 @@ function setupDashboardEvents() {
     if (submitBtn) submitBtn.textContent = 'Guardar Producto';
     const existingImages = document.getElementById('prod-existing-images');
     if (existingImages) existingImages.textContent = '';
+    const variantsSection = document.getElementById('prod-variants-section');
+    if (variantsSection) variantsSection.style.display = 'none';
+    const variantsList = document.getElementById('prod-variants-list');
+    if (variantsList) variantsList.textContent = '';
   }
 
   btnShowAdd.addEventListener('click', () => {

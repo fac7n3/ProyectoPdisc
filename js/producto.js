@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data: product, error } = await supabase
       .from('products')
-      .select('*, stores(name, id), product_images(url, position)')
+      .select('*, stores(name, id), product_images(url, position), product_variants(id, name, price, stock)')
       .eq('id', productId)
       .single();
 
@@ -105,6 +105,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     descDiv.className = 'product-description';
     descDiv.textContent = product.description || 'Sin descripción disponible.';
     info.appendChild(descDiv);
+
+    // F5-03: display informativo de variantes (talle/color/peso) — no integra con el carrito.
+    const variants = product.product_variants || [];
+    if (variants.length > 0) {
+      const variantsDiv = document.createElement('div');
+      variantsDiv.className = 'product-variants-info';
+      variantsDiv.style.cssText = 'margin: 1rem 0;';
+
+      const variantsTitle = document.createElement('p');
+      variantsTitle.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem;';
+      variantsTitle.textContent = 'Opciones disponibles:';
+      variantsDiv.appendChild(variantsTitle);
+
+      const variantsList = document.createElement('ul');
+      variantsList.style.cssText = 'list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.35rem;';
+      variants.forEach((variant) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'font-size: 0.9rem; color: var(--bl-text-muted, #666);';
+        const stockNote = variant.stock > 0 ? `stock: ${variant.stock}` : 'sin stock';
+        li.textContent = `${variant.name} — ${formatPrice(variant.price)} (${stockNote})`;
+        variantsList.appendChild(li);
+      });
+      variantsDiv.appendChild(variantsList);
+
+      const variantsNote = document.createElement('p');
+      variantsNote.style.cssText = 'font-size: 0.8rem; color: var(--bl-text-muted, #999); margin-top: 0.35rem;';
+      variantsNote.textContent = 'Para pedir una opción específica, consultá con el vendedor.';
+      variantsDiv.appendChild(variantsNote);
+
+      info.appendChild(variantsDiv);
+    }
 
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'product-actions';

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (M1 completo; Fase 2 completa: F2-01 a F2-06).
+> Última actualización: 2026-07-09 (M1 completo; Fases 2-4 completas; Fase 5 completa salvo F5-09).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -106,11 +106,13 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 - **F5-06** (`A113-196`) — Gestión de pedidos, sin migración nueva. Sección "Mis pedidos" en `vender.js`: lista las últimas 50 órdenes de la tienda (antes solo había vistas parciales: pagos por confirmar F2-04, envíos en curso F3-04). El flujo `delivery` lo maneja el repartidor (F3-02/F3-03) — acá solo se ve. Para `pickup`, el vendedor gestiona directo (`UPDATE` simple, la RLS ya lo permitía): "Listo para retirar" y "Marcar entregado"; cancelar disponible para pending/paid. Verificado con `BEGIN;...ROLLBACK;` contra la base real.
 - **F5-04** (`A113-194`) — Tabla `product_images` (migración 32). Bucket `products` ya existía (público, policy de upload vendedor/admin) — no se tocó storage, solo la tabla de URLs. `vender.js`: input de archivos múltiple en el form de producto; al guardar sube a `{productId}/{timestamp}-{nombre saneado}` (mismo criterio anti path-traversal que F2-04) e inserta filas con `getPublicUrl()`; al editar, miniaturas con botón de borrado. `producto.js`: fila de miniaturas debajo de la imagen principal (la primera siempre `image_url`, portada ya usada en toda la app) — clic cambia la imagen grande. Verificado con `BEGIN;...ROLLBACK;`: dueño del producto puede insertar, otro vendedor rechazado por RLS; sin regresión en productos sin fotos extra.
+- **F5-03** (`A113-193`) — Tabla `product_variants` (migración 33): `name`/`price`/`stock`/`sku` por variante, mismo patrón de RLS ownership que `product_images`. **A propósito NO integrado al carrito/checkout** — implicaría llevar `variant_id` en `order_items`/`create_order` (hoy solo `product_id`), cambio de fondo al núcleo de compra de Fase 2; queda para una tarea futura. `vender.js`: sección "Variantes" en el form de producto, oculta salvo editando un producto existente (necesita `product_id` real) — lista con borrado (`renderVariantsManager`) + alta inline nombre/precio/stock. `producto.js`: bloque informativo "Opciones disponibles" (solo lectura, no cambia qué agrega "Agregar al carrito"). Verificado con `BEGIN;...ROLLBACK;`: dueño inserta, otro vendedor rechazado por RLS; sin regresión en productos sin variantes.
+
+**Fase 5 (Experiencia del vendedor) completa** salvo F5-09.
 
 ### ⏳ Próximo
-- **F5-03** (`A113-193`) — Variantes de producto (talle/color/peso) con stock por variante.
-- **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
-- **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo).
+- **F5-09** (`A113-199`) — UI diferenciada del vendedor (🟡, más subjetivo). Última tarea de Fase 5.
+- Fases 6-11 (roadmap completo) — tablero Jira ya creado (`A113-172..237`).
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)

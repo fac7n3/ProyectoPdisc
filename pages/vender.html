@@ -338,6 +338,27 @@
                     <button type="button" class="btn-outline" id="btn-cancel-add-product" style="flex: 1;">Cancelar</button>
                   </div>
                 </form>
+
+                <!-- Variantes (F5-03): solo disponible editando un producto ya creado -->
+                <div id="prod-variants-section" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--bl-border);">
+                  <h4 style="margin-bottom: 0.75rem;">Variantes (talle/color/peso)</h4>
+                  <div id="prod-variants-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;"></div>
+                  <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: end;">
+                    <div>
+                      <label class="form-label" for="variant-name">Nombre</label>
+                      <input type="text" id="variant-name" class="form-input" placeholder="Ej: Talle M" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="variant-price">Precio</label>
+                      <input type="number" id="variant-price" class="form-input" min="0" step="1" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="variant-stock">Stock</label>
+                      <input type="number" id="variant-stock" class="form-input" min="0" step="1" />
+                    </div>
+                    <button type="button" class="btn-outline" id="btn-add-variant" style="padding: 0.6rem 1rem;">Agregar</button>
+                  </div>
+                </div>
               </div>
 
             </div>
