@@ -76,8 +76,67 @@
       .status-pending { background: #fef3c7; color: #d97706; }
       .status-approved { background: #d1fae5; color: #059669; }
       .status-rejected { background: #fee2e2; color: #dc2626; }
-      
+      .status-suspended { background: #f3e8ff; color: #7c3aed; }
+
       #admin-content { display: none; }
+
+      .admin-inline-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: end;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: var(--bl-surface-alt);
+        border-radius: var(--bl-radius-md);
+      }
+      .admin-inline-form .form-group {
+        margin-bottom: 0;
+      }
+      .admin-inline-form label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--bl-text-secondary);
+        margin-bottom: 0.25rem;
+      }
+      .admin-inline-form input {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-sm);
+        font-family: inherit;
+      }
+      .btn-suspend {
+        background: #7c3aed;
+        color: white;
+      }
+      .btn-suspend:hover { background: #6d28d9; }
+      .btn-reactivate {
+        background: #10b981;
+        color: white;
+      }
+      .btn-reactivate:hover { background: #059669; }
+      .admin-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.5rem;
+      }
+      .admin-metric-card {
+        background: var(--bl-surface-alt);
+        padding: 1.5rem;
+        border-radius: var(--bl-radius-lg);
+        text-align: center;
+      }
+      .admin-metric-card h3 {
+        font-size: 1.75rem;
+        color: var(--bl-primary);
+        margin-bottom: 0.4rem;
+      }
+      .admin-metric-card p {
+        color: var(--bl-text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
     </style>
   </head>
   <body>
@@ -153,6 +212,175 @@
                 </tr>
               </thead>
               <tbody id="delivery-requests-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F6-05: Métricas globales -->
+          <div class="admin-header" style="margin-top: 3rem;">
+            <h1>Métricas Globales</h1>
+            <button class="action-btn" id="btn-refresh-metrics" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="admin-metrics-grid" id="metrics-grid">
+            <!-- Se llenará con JS -->
+          </div>
+
+          <!-- F6-02: CRUD de categorías -->
+          <div class="admin-header" style="margin-top: 3rem;">
+            <h1>Categorías</h1>
+            <button class="action-btn" id="btn-refresh-categories" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <form class="admin-inline-form" id="category-form">
+            <div class="form-group">
+              <label for="cat-name">Nombre</label>
+              <input type="text" id="cat-name" placeholder="Ej: Panadería" required />
+            </div>
+            <div class="form-group">
+              <label for="cat-slug">Slug</label>
+              <input type="text" id="cat-slug" placeholder="Ej: panaderia" required />
+            </div>
+            <div class="form-group">
+              <label for="cat-icon">Ícono (clase Font Awesome)</label>
+              <input type="text" id="cat-icon" placeholder="Ej: fa-solid fa-bread-slice" />
+            </div>
+            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Agregar</button>
+          </form>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Slug</th>
+                  <th>Ícono</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="categories-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F6-03: CRUD de cupones -->
+          <div class="admin-header" style="margin-top: 3rem;">
+            <h1>Cupones</h1>
+            <button class="action-btn" id="btn-refresh-coupons" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <form class="admin-inline-form" id="coupon-form">
+            <div class="form-group">
+              <label for="coupon-code">Código</label>
+              <input type="text" id="coupon-code" placeholder="Ej: BIENVENIDA10" required />
+            </div>
+            <div class="form-group">
+              <label for="coupon-discount">Descuento %</label>
+              <input type="number" id="coupon-discount" min="1" max="100" placeholder="10" required />
+            </div>
+            <div class="form-group">
+              <label for="coupon-expires">Vence</label>
+              <input type="date" id="coupon-expires" />
+            </div>
+            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Agregar</button>
+          </form>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descuento</th>
+                  <th>Vence</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="coupons-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F6-04: Moderación -->
+          <div class="admin-header" style="margin-top: 3rem;">
+            <h1>Moderación · Comercios</h1>
+            <button class="action-btn" id="btn-refresh-stores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Comercio</th>
+                  <th>CUIT</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="stores-mod-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Moderación · Buscar producto</h1>
+          </div>
+          <form class="admin-inline-form" id="product-search-form">
+            <div class="form-group">
+              <label for="product-search-input">Nombre del producto</label>
+              <input type="text" id="product-search-input" placeholder="Buscar..." required />
+            </div>
+            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Buscar</button>
+          </form>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Comercio</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="products-mod-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Moderación · Repartidores</h1>
+            <button class="action-btn" id="btn-refresh-repartidores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="repartidores-mod-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Moderación · Comprobantes de pago pendientes</h1>
+            <button class="action-btn" id="btn-refresh-proofs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>Comercio</th>
+                  <th>Monto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="proofs-mod-tbody">
                 <!-- Se llenará con JS -->
               </tbody>
             </table>

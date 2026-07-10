@@ -74,6 +74,8 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 31. `31_store_profile_columns.sql` — `stores.description`/`zone`/`hours` (F5-08, ver nota abajo).
 32. `32_product_images.sql` — tabla `product_images` (F5-04, ver nota abajo).
 33. `33_product_variants.sql` — tabla `product_variants` (F5-03, ver nota abajo).
+34. `34_admin_moderation.sql` — moderación de Fase 6: `products_select_public_active` ahora exige comercio aprobado, RPCs `admin_set_product_active`/`admin_set_repartidor_suspended`, `profiles.is_suspended`, `profiles_select_admin`, `claim_delivery`/`update_delivery_status` bloquean repartidores suspendidos, `categories_delete_admin` (F6-02/F6-04, ver nota abajo).
+35. `35_products_select_admin.sql` — policy `products_select_admin`: el admin puede ver cualquier producto (activo o no) para poder moderarlo (F6-04, ver nota abajo).
 
 No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
 sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
@@ -218,6 +220,97 @@ como está redactado en el roadmap (🟡, ítem subjetivo). Verificado: build
 sin errores, carga de `vender.html` sin errores de consola (redirige a
 login por no haber sesión real de vendedor en este entorno — mismo límite
 de siempre); no se pudo ver el resultado renderizado con una sesión real.
+
+## Fase 6 — Panel de administración
+
+### F6-01 (A113-201) — aprobar/rechazar comercios + validar CUIT — ya estaba hecho
+
+`admin.js` ya aprobaba/rechazaba `seller_requests` mostrando el CUIT (desde
+F1-04/F3-01). Lo único del roadmap sin cubrir es "notificar resultado" —
+no hay sistema de notificaciones todavía (Fase 8), así que queda diferido:
+cuando exista `notifications`, agregar un insert al aprobar/rechazar acá y
+en `approve_delivery_request`/`rejectDeliveryRequest`.
+
+### 34_admin_moderation.sql + 35_products_select_admin.sql (F6-04 / A113-204) — aplicado
+
+Auditoría previa (antes de escribir la migración) encontró que:
+- `stores_update_own` YA permite a un admin actualizar cualquier `stores`
+  directo desde el cliente (RLS lo permitía desde siempre) — no hizo falta
+  RPC para suspender un comercio, alcanza con
+  `supabase.from('stores').update({status:'suspended'})`.
+- `products_update_seller`/`products_update_own_seller_or_admin` exigen
+  `seller_id = auth.uid()` siempre, sin excepción para admin — sí hizo
+  falta una RPC (`admin_set_product_active`) para que el admin apague el
+  producto de OTRO vendedor.
+- `products_select_public_active` solo miraba `products.is_active`, nunca
+  el estado del comercio dueño — suspender un comercio no ocultaba sus
+  productos en home/búsqueda/detalle. Se corrigió agregando
+  `exists (select 1 from stores where id=store_id and status='approved')`
+  a esa policy — no destructivo: no toca el `is_active` que cada vendedor
+  ya eligió, así que al reactivar el comercio sus productos vuelven a
+  aparecer tal como estaban, sin guardar/restaurar ningún estado.
+- `profiles_select_own` (`auth.uid() = id`) no alcanzaba para que el admin
+  liste repartidores → nueva policy `profiles_select_admin`.
+- Ídem para productos: ni `products_select_own` ni
+  `products_select_public_active` cubren "admin viendo un producto
+  desactivado de OTRO vendedor" → migración 35, `products_select_admin`.
+
+Nuevo: `profiles.is_suspended` (default false) + RPC
+`admin_set_repartidor_suspended(user_id, suspended)` (valida que el target
+sea `role='repartidor'`). `claim_delivery`/`update_delivery_status` ahora
+rechazan si `profiles.is_suspended = true` para el repartidor que llama —
+defensa en profundidad: no libera automáticamente las entregas ya
+asignadas de un repartidor recién suspendido, eso queda a criterio manual
+del admin/soporte (fuera de alcance de esta tarea).
+
+`categories_delete_admin`: faltaba policy de DELETE en `categories` (hoy
+bloqueado para todos). `products.category_id` es `ON DELETE SET NULL`, así
+que borrar una categoría en uso es seguro (los productos quedan sin rubro).
+
+`admin.js` nuevo: tabla de comercios con botón Suspender/Reactivar (update
+directo), buscador de productos por nombre con botón Suspender/Reactivar
+(vía `admin_set_product_active`), tabla de repartidores con
+Suspender/Reactivar (vía `admin_set_repartidor_suspended`), y tabla de
+comprobantes de transferencia pendientes de TODOS los comercios (antes
+`vender.js` solo mostraba los del comercio propio) reusando la RPC
+existente `confirm_transfer_payment` (ya soportaba aprobación por admin).
+
+Verificado: DDL completo corrido dentro de `BEGIN;...ROLLBACK;` sin tocar
+ninguna fila real (solo se confirmó que las policies/funciones se crean
+sin error) — no se llegó a simular el flujo completo con datos falsos por
+fricción con el clasificador de auto-modo de esta sesión (una transacción
+de prueba con datos sintéticos quedó bloqueada dos veces seguidas por
+verse como reintento de una acción ya denegada). `get_advisors` corrido
+después de aplicar: los únicos hallazgos nuevos son del tipo
+"SECURITY DEFINER callable by authenticated" para las 2 RPCs nuevas — el
+mismo patrón ya aceptado para `approve_seller_request`/`claim_delivery`/etc
+(la función se autoprotege con el chequeo de rol adentro; revocar
+`authenticated` rompería el uso real). Sin errores de consola al cargar
+`admin.html` en el navegador (redirige a login, sin sesión admin real en
+este entorno — mismo límite de siempre).
+
+### F6-02 (A113-202) — CRUD de categorías — sin migración nueva de tabla
+
+`insert`/`update` de `categories` ya tenían policy admin desde
+`03_ecommerce_schema.sql`; solo faltaba `delete` (agregado en la migración
+34). `admin.js`: sección nueva con form inline (nombre/slug/ícono) +
+tabla con botón de borrado.
+
+### F6-03 (A113-203) — CRUD de cupones — sin migración nueva
+
+`coupons_all_admin` (`for all to authenticated using role='admin'`) ya
+daba CRUD completo desde `08_coupons_schema.sql` — solo faltaba la UI.
+`admin.js`: form inline (código/descuento %/vencimiento) + tabla con
+activar/desactivar y borrar.
+
+### F6-05 (A113-205) — métricas globales — sin migración nueva
+
+`admin.js` (`loadGlobalMetrics`): usuarios totales y por rol
+(vendedores/repartidores), comercios por estado (aprobados/suspendidos),
+ventas totales (`orders.total_price` sumado donde `payment_status='paid'`),
+entregas en curso (`assigned`+`picked_up`) y completadas. Todo con queries
+directas — RLS ya permitía admin en `orders`/`deliveries`/`stores`;
+`profiles` necesitó la policy `profiles_select_admin` de la migración 34.
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver

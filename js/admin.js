@@ -297,14 +297,580 @@ async function rejectDeliveryRequest(id) {
   }
 }
 
+// --- F6-05: métricas globales ---
+
+async function loadGlobalMetrics() {
+  const grid = document.getElementById('metrics-grid');
+  if (!grid) return;
+
+  const [{ data: profiles }, { data: stores }, { data: paidOrders }, { data: deliveries }] = await Promise.all([
+    supabase.from('profiles').select('role'),
+    supabase.from('stores').select('status'),
+    supabase.from('orders').select('total_price').eq('payment_status', 'paid'),
+    supabase.from('deliveries').select('status'),
+  ]);
+
+  const countBy = (rows, key) => (rows || []).reduce((acc, row) => {
+    acc[row[key]] = (acc[row[key]] || 0) + 1;
+    return acc;
+  }, {});
+
+  const roleCounts = countBy(profiles, 'role');
+  const storeCounts = countBy(stores, 'status');
+  const deliveryCounts = countBy(deliveries, 'status');
+  const totalSales = (paidOrders || []).reduce((sum, o) => sum + o.total_price, 0);
+
+  const metrics = [
+    { label: 'Usuarios totales', value: (profiles || []).length },
+    { label: 'Vendedores', value: roleCounts.vendedor || 0 },
+    { label: 'Repartidores', value: roleCounts.repartidor || 0 },
+    { label: 'Comercios aprobados', value: storeCounts.approved || 0 },
+    { label: 'Comercios suspendidos', value: storeCounts.suspended || 0 },
+    { label: 'Ventas totales', value: `$${totalSales.toLocaleString('es-AR')}` },
+    { label: 'Entregas en curso', value: (deliveryCounts.assigned || 0) + (deliveryCounts.picked_up || 0) },
+    { label: 'Entregas completadas', value: deliveryCounts.delivered || 0 },
+  ];
+
+  grid.textContent = '';
+  metrics.forEach((m) => {
+    const card = document.createElement('div');
+    card.className = 'admin-metric-card';
+    const h3 = document.createElement('h3');
+    h3.textContent = m.value;
+    const p = document.createElement('p');
+    p.textContent = m.label;
+    card.appendChild(h3);
+    card.appendChild(p);
+    grid.appendChild(card);
+  });
+}
+
+// --- F6-02: CRUD de categorías ---
+
+async function fetchCategories() {
+  const tbody = document.getElementById('categories-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando categorías...</td></tr>';
+
+  const { data, error } = await supabase.from('categories').select('*').order('name');
+
+  if (error) {
+    console.error('Error fetching categories:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar las categorías.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay categorías registradas.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((cat) => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = cat.name;
+    tr.appendChild(tdName);
+
+    const tdSlug = document.createElement('td');
+    tdSlug.textContent = cat.slug;
+    tr.appendChild(tdSlug);
+
+    const tdIcon = document.createElement('td');
+    tdIcon.textContent = cat.icon || '-';
+    tr.appendChild(tdIcon);
+
+    const tdActions = document.createElement('td');
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn btn-reject';
+    deleteBtn.title = 'Borrar';
+    const xIcon = document.createElement('i');
+    xIcon.className = 'fa-solid fa-trash';
+    deleteBtn.appendChild(xIcon);
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Borrar la categoría "${cat.name}"? Los productos que la usaban quedarán sin rubro.`)) return;
+      const { error: deleteError } = await supabase.from('categories').delete().eq('id', cat.id);
+      if (deleteError) {
+        showToast('No se pudo borrar la categoría.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      showToast('Categoría borrada.', 'success');
+      fetchCategories();
+    });
+    tdActions.appendChild(deleteBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function setupCategoryForm() {
+  document.getElementById('category-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('cat-name').value.trim();
+    const slug = document.getElementById('cat-slug').value.trim().toLowerCase();
+    const icon = document.getElementById('cat-icon').value.trim();
+
+    if (!name || !slug) {
+      showToast('Nombre y slug son obligatorios.', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('categories').insert({ name, slug, icon: icon || null });
+    if (error) {
+      showToast('No se pudo crear la categoría (¿el slug ya existe?).', 'error');
+      console.error(error);
+      return;
+    }
+
+    showToast('Categoría creada.', 'success');
+    e.target.reset();
+    fetchCategories();
+  });
+}
+
+// --- F6-03: CRUD de cupones ---
+
+async function fetchCoupons() {
+  const tbody = document.getElementById('coupons-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando cupones...</td></tr>';
+
+  const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching coupons:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los cupones.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay cupones registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((coupon) => {
+    const tr = document.createElement('tr');
+    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
+
+    const tdCode = document.createElement('td');
+    const codeStrong = document.createElement('strong');
+    codeStrong.textContent = coupon.code;
+    tdCode.appendChild(codeStrong);
+    tr.appendChild(tdCode);
+
+    const tdDiscount = document.createElement('td');
+    tdDiscount.textContent = `${coupon.discount_percentage}%`;
+    tr.appendChild(tdDiscount);
+
+    const tdExpires = document.createElement('td');
+    tdExpires.textContent = coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString('es-AR') : 'Sin vencimiento';
+    tr.appendChild(tdExpires);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    if (isExpired) {
+      statusBadge.className = 'status-badge status-rejected';
+      statusBadge.textContent = 'Vencido';
+    } else if (coupon.is_active) {
+      statusBadge.className = 'status-badge status-approved';
+      statusBadge.textContent = 'Activo';
+    } else {
+      statusBadge.className = 'status-badge status-suspended';
+      statusBadge.textContent = 'Inactivo';
+    }
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${coupon.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
+    toggleBtn.textContent = coupon.is_active ? 'Desactivar' : 'Activar';
+    toggleBtn.addEventListener('click', async () => {
+      const { error: updateError } = await supabase.from('coupons').update({ is_active: !coupon.is_active }).eq('id', coupon.id);
+      if (updateError) {
+        showToast('No se pudo actualizar el cupón.', 'error');
+        console.error(updateError);
+        return;
+      }
+      fetchCoupons();
+    });
+    tdActions.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn btn-reject';
+    deleteBtn.title = 'Borrar';
+    const xIcon = document.createElement('i');
+    xIcon.className = 'fa-solid fa-trash';
+    deleteBtn.appendChild(xIcon);
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
+      const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
+      if (deleteError) {
+        showToast('No se pudo borrar el cupón.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      showToast('Cupón borrado.', 'success');
+      fetchCoupons();
+    });
+    tdActions.appendChild(deleteBtn);
+
+    tr.appendChild(tdActions);
+    tbody.appendChild(tr);
+  });
+}
+
+function setupCouponForm() {
+  document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+    const discount = document.getElementById('coupon-discount').value;
+    const expiresAt = document.getElementById('coupon-expires').value;
+
+    const discountNum = parseInt(discount, 10);
+    if (!code || !Number.isInteger(discountNum) || discountNum < 1 || discountNum > 100) {
+      showToast('Código y descuento (1-100) son obligatorios.', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('coupons').insert({
+      code,
+      discount_percentage: discountNum,
+      expires_at: expiresAt || null,
+      is_active: true,
+    });
+
+    if (error) {
+      showToast('No se pudo crear el cupón (¿el código ya existe?).', 'error');
+      console.error(error);
+      return;
+    }
+
+    showToast('Cupón creado.', 'success');
+    e.target.reset();
+    fetchCoupons();
+  });
+}
+
+// --- F6-04: moderación ---
+
+async function fetchStoresForModeration() {
+  const tbody = document.getElementById('stores-mod-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando comercios...</td></tr>';
+
+  const { data, error } = await supabase.from('stores').select('id, name, cuit, status').order('name');
+
+  if (error) {
+    console.error('Error fetching stores for moderation:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar los comercios.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay comercios registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((store) => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = store.name;
+    tr.appendChild(tdName);
+
+    const tdCuit = document.createElement('td');
+    tdCuit.textContent = store.cuit || '-';
+    tr.appendChild(tdCuit);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge status-${store.status}`;
+    statusBadge.textContent = store.status;
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+    if (store.status === 'approved' || store.status === 'suspended') {
+      const isSuspended = store.status === 'suspended';
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = `action-btn ${isSuspended ? 'btn-reactivate' : 'btn-suspend'}`;
+      toggleBtn.textContent = isSuspended ? 'Reactivar' : 'Suspender';
+      toggleBtn.addEventListener('click', async () => {
+        const newStatus = isSuspended ? 'approved' : 'suspended';
+        if (!confirm(`¿${isSuspended ? 'Reactivar' : 'Suspender'} el comercio "${store.name}"?`)) return;
+        const { error: updateError } = await supabase.from('stores').update({ status: newStatus }).eq('id', store.id);
+        if (updateError) {
+          showToast('No se pudo actualizar el comercio.', 'error');
+          console.error(updateError);
+          return;
+        }
+        showToast(`Comercio ${isSuspended ? 'reactivado' : 'suspendido'}.`, 'success');
+        fetchStoresForModeration();
+      });
+      tdActions.appendChild(toggleBtn);
+    } else {
+      tdActions.textContent = '-';
+    }
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function fetchRepartidoresForModeration() {
+  const tbody = document.getElementById('repartidores-mod-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando repartidores...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, is_suspended')
+    .eq('role', 'repartidor')
+    .order('full_name');
+
+  if (error) {
+    console.error('Error fetching repartidores:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar los repartidores.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay repartidores registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((rep) => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = rep.full_name || '-';
+    tr.appendChild(tdName);
+
+    const tdEmail = document.createElement('td');
+    tdEmail.textContent = rep.email;
+    tr.appendChild(tdEmail);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge ${rep.is_suspended ? 'status-suspended' : 'status-approved'}`;
+    statusBadge.textContent = rep.is_suspended ? 'Suspendido' : 'Activo';
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${rep.is_suspended ? 'btn-reactivate' : 'btn-suspend'}`;
+    toggleBtn.textContent = rep.is_suspended ? 'Reactivar' : 'Suspender';
+    toggleBtn.addEventListener('click', async () => {
+      if (!confirm(`¿${rep.is_suspended ? 'Reactivar' : 'Suspender'} a "${rep.full_name || rep.email}"?`)) return;
+      const { error: rpcError } = await supabase.rpc('admin_set_repartidor_suspended', {
+        p_user_id: rep.id,
+        p_suspended: !rep.is_suspended,
+      });
+      if (rpcError) {
+        showToast(rpcError.message || 'No se pudo actualizar el repartidor.', 'error');
+        console.error(rpcError);
+        return;
+      }
+      showToast(`Repartidor ${rep.is_suspended ? 'reactivado' : 'suspendido'}.`, 'success');
+      fetchRepartidoresForModeration();
+    });
+    tdActions.appendChild(toggleBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function setupProductSearch() {
+  document.getElementById('product-search-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const term = document.getElementById('product-search-input').value.trim();
+    const tbody = document.getElementById('products-mod-tbody');
+    if (!term) return;
+
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando...</td></tr>';
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, title, is_active, stores(name)')
+      .ilike('title', `%${term}%`)
+      .limit(20);
+
+    if (error) {
+      console.error('Error searching products:', error);
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al buscar productos.</td></tr>';
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin resultados.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    data.forEach((product) => {
+      const tr = document.createElement('tr');
+
+      const tdTitle = document.createElement('td');
+      tdTitle.textContent = product.title;
+      tr.appendChild(tdTitle);
+
+      const tdStore = document.createElement('td');
+      tdStore.textContent = product.stores?.name || '-';
+      tr.appendChild(tdStore);
+
+      const tdStatus = document.createElement('td');
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `status-badge ${product.is_active ? 'status-approved' : 'status-suspended'}`;
+      statusBadge.textContent = product.is_active ? 'Activo' : 'Suspendido';
+      tdStatus.appendChild(statusBadge);
+      tr.appendChild(tdStatus);
+
+      const tdActions = document.createElement('td');
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = `action-btn ${product.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
+      toggleBtn.textContent = product.is_active ? 'Suspender' : 'Reactivar';
+      toggleBtn.addEventListener('click', async () => {
+        if (!confirm(`¿${product.is_active ? 'Suspender' : 'Reactivar'} "${product.title}"?`)) return;
+        const { error: rpcError } = await supabase.rpc('admin_set_product_active', {
+          p_product_id: product.id,
+          p_is_active: !product.is_active,
+        });
+        if (rpcError) {
+          showToast(rpcError.message || 'No se pudo actualizar el producto.', 'error');
+          console.error(rpcError);
+          return;
+        }
+        showToast(`Producto ${product.is_active ? 'suspendido' : 'reactivado'}.`, 'success');
+        document.getElementById('product-search-form').dispatchEvent(new Event('submit'));
+      });
+      tdActions.appendChild(toggleBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+async function fetchPendingProofsAdmin() {
+  const tbody = document.getElementById('proofs-mod-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando comprobantes...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('payment_proofs')
+    .select('id, receipt_url, created_at, orders(id, total_price, stores(name))')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching payment proofs:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar los comprobantes.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay comprobantes pendientes.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((proof) => {
+    const order = proof.orders;
+    const tr = document.createElement('tr');
+
+    const tdOrder = document.createElement('td');
+    tdOrder.textContent = order ? `#${order.id.split('-')[0].toUpperCase()}` : '-';
+    tr.appendChild(tdOrder);
+
+    const tdStore = document.createElement('td');
+    tdStore.textContent = order?.stores?.name || '-';
+    tr.appendChild(tdStore);
+
+    const tdAmount = document.createElement('td');
+    tdAmount.textContent = order ? `$${order.total_price.toLocaleString('es-AR')}` : '-';
+    tr.appendChild(tdAmount);
+
+    const tdActions = document.createElement('td');
+
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'action-btn';
+    viewBtn.style.background = 'var(--bl-primary)';
+    viewBtn.style.color = 'white';
+    viewBtn.textContent = 'Ver';
+    viewBtn.addEventListener('click', async () => {
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from('payment-proofs')
+        .createSignedUrl(proof.receipt_url, 60);
+      if (signedError || !signedData?.signedUrl) {
+        showToast('No se pudo abrir el comprobante.', 'error');
+        return;
+      }
+      window.open(signedData.signedUrl, '_blank', 'noopener,noreferrer');
+    });
+    tdActions.appendChild(viewBtn);
+
+    const approveBtn = document.createElement('button');
+    approveBtn.className = 'action-btn btn-approve';
+    approveBtn.title = 'Confirmar';
+    const checkIcon = document.createElement('i');
+    checkIcon.className = 'fa-solid fa-check';
+    approveBtn.appendChild(checkIcon);
+    approveBtn.addEventListener('click', () => handleProofDecisionAdmin(proof.id, true));
+    tdActions.appendChild(approveBtn);
+
+    const rejectBtn = document.createElement('button');
+    rejectBtn.className = 'action-btn btn-reject';
+    rejectBtn.title = 'Rechazar';
+    const xIcon = document.createElement('i');
+    xIcon.className = 'fa-solid fa-xmark';
+    rejectBtn.appendChild(xIcon);
+    rejectBtn.addEventListener('click', () => handleProofDecisionAdmin(proof.id, false));
+    tdActions.appendChild(rejectBtn);
+
+    tr.appendChild(tdActions);
+    tbody.appendChild(tr);
+  });
+}
+
+async function handleProofDecisionAdmin(proofId, approve) {
+  const { error } = await supabase.rpc('confirm_transfer_payment', { p_proof_id: proofId, p_approve: approve });
+  if (error) {
+    showToast(error.message || 'No se pudo procesar el comprobante.', 'error');
+    return;
+  }
+  showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
+  fetchPendingProofsAdmin();
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
   document.getElementById('btn-refresh').addEventListener('click', fetchRequests);
   document.getElementById('btn-refresh-delivery').addEventListener('click', fetchDeliveryRequests);
+  document.getElementById('btn-refresh-metrics').addEventListener('click', loadGlobalMetrics);
+  document.getElementById('btn-refresh-categories').addEventListener('click', fetchCategories);
+  document.getElementById('btn-refresh-coupons').addEventListener('click', fetchCoupons);
+  document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
+  document.getElementById('btn-refresh-repartidores-mod').addEventListener('click', fetchRepartidoresForModeration);
+  document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
+
+  setupCategoryForm();
+  setupCouponForm();
+  setupProductSearch();
 
   fetchRequests();
   fetchDeliveryRequests();
+  loadGlobalMetrics();
+  fetchCategories();
+  fetchCoupons();
+  fetchStoresForModeration();
+  fetchRepartidoresForModeration();
+  fetchPendingProofsAdmin();
 }
 
 guardPage({

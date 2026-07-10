@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (M1 completo; Fases 2-4 completas; Fase 5 completa salvo F5-09).
+> Última actualización: 2026-07-09 (M1 completo; Fases 2-6 completas).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -112,8 +112,18 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 5 (Experiencia del vendedor) completa.**
 
+## Progreso (Fase 6 — Panel de administración)
+### ✅ Hecho
+- **F6-01** (`A113-201`) — Aprobar/rechazar comercios + CUIT visible: ya estaba hecho (F1-04/F3-01). "Notificar resultado" queda diferido a Fase 8 (no hay sistema de notificaciones todavía).
+- **F6-04** (`A113-204`) — Moderación (migración 34+35). Suspender comercio: `stores_update_own` ya permitía a un admin actualizar cualquier `stores` directo (sin RPC) — se corrigió `products_select_public_active` para exigir además que el comercio esté `approved`, así que suspender de verdad oculta sus productos en home/búsqueda/detalle (no destructivo: no toca el `is_active` de cada producto). RPC `admin_set_product_active` (moderar un producto puntual de otro vendedor — `products_update_*` exige `seller_id=auth.uid()` sin excepción admin). `profiles.is_suspended` + RPC `admin_set_repartidor_suspended` + `claim_delivery`/`update_delivery_status` ahora bloquean repartidores suspendidos. `categories_delete_admin` (faltaba DELETE). Nuevas policies `profiles_select_admin`/`products_select_admin` (el admin no podía listar profiles ni ver productos ajenos inactivos). `admin.js`: tablas de comercios/repartidores con suspender-reactivar, buscador de productos, comprobantes de transferencia de TODOS los comercios (reusa `confirm_transfer_payment`, ya soportaba admin).
+- **F6-02** (`A113-202`) — CRUD de categorías en `admin.js` (insert/update ya eran admin-only; se sumó delete). Sin migración de tabla.
+- **F6-03** (`A113-203`) — CRUD de cupones en `admin.js` (`coupons_all_admin` ya daba RLS completa). Sin migración.
+- **F6-05** (`A113-205`) — Métricas globales en `admin.js`: usuarios por rol, comercios por estado, ventas totales, entregas en curso/completadas. Sin migración (solo necesitó `profiles_select_admin` de F6-04).
+
+**Fase 6 (Panel de administración) completa.**
+
 ### ⏳ Próximo
-- Fase 6 (ver roadmap, tablero ya creado dentro del rango `A113-172..237`) — Panel de administración: aprobar/rechazar comercios, CRUD de categorías/cupones, moderación, métricas globales.
+- Fase 7 (`A113-206` en adelante, roadmap) — Social: reseñas y chat.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
