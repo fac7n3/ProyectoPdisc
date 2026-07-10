@@ -1,5 +1,6 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice } from "./cart-utils.js";
+import { renderNotificationsSection } from "./notifications-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -481,6 +482,8 @@ async function renderFullProfile(user) {
   // Cargar las colecciones asíncronamente
   loadFavoritos(user.id);
   loadCompras(user.id);
+  const notificacionesContainer = document.getElementById("notificaciones-container");
+  if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
 }
 
 // --- Cerrar sesión ---

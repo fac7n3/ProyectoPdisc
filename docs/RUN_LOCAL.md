@@ -78,6 +78,7 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 35. `35_products_select_admin.sql` — policy `products_select_admin`: el admin puede ver cualquier producto (activo o no) para poder moderarlo (F6-04, ver nota abajo).
 36. `36_reviews.sql` — tabla `reviews` + RPC `report_review` (F7-01/F7-03, ver nota abajo).
 37. `37_conversations_messages.sql` — tablas `conversations`/`messages` (F7-02, ver nota abajo).
+38. `38_notifications.sql` — tabla `notifications` + triggers + eventos en RPCs existentes (F8-01, ver nota abajo).
 
 No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
 sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
@@ -398,6 +399,70 @@ store_id IS NULL`) en vez de asignarles una tienda al azar o borrarlos —
 reversible, no se pierde ningún dato. Verificado: 0 productos activos con
 `store_id` nulo después del fix; `producto.html`/`comercio.html` muestran
 el nombre real de la tienda para los productos que quedaron activos.
+
+## Fase 8 — Notificaciones
+
+### 38_notifications.sql (F8-01) — aplicado
+
+Tabla `notifications` (extraída de `13_target_data_model.sql` sección 10,
+tal cual estaba diseñada): sin policy de `INSERT` para `authenticated` a
+propósito — las notificaciones las crea el backend (funciones
+`SECURITY DEFINER` / triggers), nunca el cliente directo. Solo `select`/
+`update` de las propias.
+
+`create_notification(user_id, type, payload)` — helper interno
+`SECURITY DEFINER`, `EXECUTE` revocado de `public`/`anon`/`authenticated`
+(solo lo llaman otras funciones `SECURITY DEFINER` o triggers, nunca un
+cliente). Eventos conectados:
+
+- **Nueva reseña** (`reviews_notify_new`, trigger `AFTER INSERT`) → notifica
+  al dueño del comercio (o del comercio del producto reseñado).
+- **Nuevo mensaje** (`messages_notify_new`, trigger `AFTER INSERT`) →
+  notifica al otro participante de la conversación (cliente↔vendedor).
+- **Pedido creado** (parche en `create_order`) → notifica al vendedor de
+  cada tienda del carrito.
+- **Pedido pagado** (parche en `confirm_simulated_payment` y
+  `confirm_transfer_payment`, rama aprobada) → notifica al vendedor (pago
+  simulado) o al cliente (transferencia aprobada por el vendedor/admin).
+  `confirm_transfer_payment` rechazada → notifica al cliente
+  (`payment_rejected`).
+- **Envío en camino / entregado** (parche en `update_delivery_status`) →
+  notifica al cliente.
+
+`js/notifications-utils.js` (nuevo, compartido): `renderNotificationsSection`
+con DOM API — lista de notificaciones, "marcar como leída"/"marcar todas",
+sin resolver nombres de quién generó el evento (mismo criterio que
+`reviews-utils.js`: simplificación a propósito). Integrado como pestaña
+nueva "Notificaciones" en `perfil.html` (cliente) y sección nueva en el
+dashboard de `vender.js` (vendedor). El repartidor no recibe notificaciones
+en esta tarea — ningún evento conectado lo tiene como destinatario, fuera
+de alcance de F8-01 tal como está redactada.
+
+Bug propio encontrado y corregido antes de aplicar para real: `get_advisors`
+marcó `notify_new_review`/`notify_new_message` como invocables directo vía
+RPC (`/rest/v1/rpc/notify_new_review`) — al ser funciones de trigger
+`SECURITY DEFINER`, Postgres/PostgREST expone un endpoint igual que
+cualquier otra función si no se revoca `EXECUTE` explícitamente. Corregido
+revocando `EXECUTE` de `public`/`anon`/`authenticated` en ambas (ya estaba
+hecho para `create_notification`, se me pasó en las dos de trigger).
+Re-verificado con `get_advisors`: sin hallazgos nuevos.
+
+**F8-02 (Email/Resend) y F8-03 (WhatsApp Cloud API) — bloqueados.** Ambos
+canales necesitan credenciales de un proveedor externo (API key de Resend,
+token de WhatsApp Business Cloud API) que no existen en este entorno de
+desarrollo. La columna `notifications.channel` ya soporta `'email'`/
+`'whatsapp'` (además de `'in_app'`) para cuando se sumen, sin tener que
+tocar el esquema de nuevo — el trabajo pendiente es enteramente de
+Edge Functions + credenciales, no de modelo de datos. No se movieron a
+"En curso" en Jira (no hay trabajo real posible sin acceso a esas cuentas).
+F8-04 (notificaciones in-app/push nativas) sigue marcado "Futuro" en el
+roadmap — depende de que exista una app de celular.
+
+Verificado: DDL completo corrido dentro de `BEGIN;...ROLLBACK;` sin tocar
+datos reales (solo se confirmó que tabla/función/triggers se crean sin
+error) antes de aplicar. `get_advisors` limpio tras el fix del bug propio.
+Sin errores de consola al cargar `perfil.html`/`vender.html` en el
+navegador (redirige a login, sin sesión real — mismo límite de siempre).
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver

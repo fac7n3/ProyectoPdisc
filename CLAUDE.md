@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-10 (M1 completo; Fases 2-7 completas).
+> Última actualización: 2026-07-10 (M1 completo; Fases 2-7 completas; F8-01 hecho, F8-02/F8-03 bloqueados por credenciales externas).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -132,8 +132,14 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 7 (Social: reseñas y chat) completa.**
 
+## Progreso (Fase 8 — Notificaciones)
+### ✅ Hecho
+- **F8-01** (`A113-211`) — Centro de notificaciones. Migración 38: tabla `notifications` (extraída de `13_target_data_model.sql` sección 10, sin policy de INSERT para `authenticated` a propósito — las crea el backend) + `create_notification()` (helper `SECURITY DEFINER` interno) + triggers `reviews_notify_new`/`messages_notify_new` (nueva reseña/mensaje notifica al otro participante) + `create_order`/`confirm_simulated_payment`/`confirm_transfer_payment`/`update_delivery_status` parcheados para notificar en cada evento clave (pedido creado→vendedor, pagado→vendedor/cliente según el medio, enviado/entregado→cliente). `js/notifications-utils.js` (nuevo, compartido): `renderNotificationsSection` con DOM API. Integrado como pestaña nueva en `perfil.html` (cliente) y sección nueva en el dashboard de `vender.js` (vendedor). Bug propio encontrado y corregido antes de aplicar: los triggers `notify_new_review`/`notify_new_message` habían quedado invocables directo vía RPC (`get_advisors` los marcó) — se les revocó `EXECUTE` de `anon`/`authenticated`, igual que el resto de las `SECURITY DEFINER` internas del proyecto.
+- **F8-02**/**F8-03** (`A113-212`, `A113-213`) — Canales Email (Resend) y WhatsApp (Cloud API) — **bloqueados**, necesitan credenciales de un proveedor externo que no existen en este entorno. La columna `notifications.channel` ya soporta `'email'`/`'whatsapp'` para cuando se sumen sin tocar el esquema de nuevo. No movidos a "En curso" en Jira (no hay trabajo real posible sin las credenciales).
+- **F8-04** (`A113-214`) — Marcado "Futuro" en el roadmap (in-app/push cuando exista la app de celular) — no aplica todavía.
+
 ### ⏳ Próximo
-- Fase 8 (ver roadmap, tablero ya creado dentro del rango `A113-172..237`) — Notificaciones (centro de notificaciones + email + WhatsApp).
+- Fase 9 (ver roadmap, tablero ya creado dentro del rango `A113-172..237`) — UX/UI, identidad y PWA.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

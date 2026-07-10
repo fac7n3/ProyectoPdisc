@@ -1,6 +1,7 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
+import { renderNotificationsSection } from './notifications-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -173,6 +174,9 @@ async function loadDashboard(user) {
   currentStoreId = store.id;
   document.getElementById('dash-shop-name').textContent = store.name;
   fillStoreProfileForm(store);
+
+  const notificacionesContainer = document.getElementById('notificaciones-container');
+  if (notificacionesContainer) await renderNotificationsSection(notificacionesContainer, user.id);
 
   await fetchProducts();
   await renderAllOrders();

@@ -7,9 +7,10 @@
     <title>Mi Perfil - Baradero Local</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-ejCXuHod.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-DnkVoozZ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dh1CyNcg.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-BepK_C1-.js">
+    <link rel="modulepreload" crossorigin href="/assets/notifications-utils-DP5ZF7Lf.js">
     <link rel="stylesheet" crossorigin href="/assets/perfil-CMA9Y18Z.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Bmhlb9M6.css">
   </head>
@@ -51,6 +52,9 @@
         <nav class="profile-nav" role="navigation" aria-label="Menú de perfil">
           <a href="#" class="profile-nav__link profile-nav__link--active" data-target="tab-mis-datos">
             <i class="fa-solid fa-id-card"></i> <span>Mis datos</span>
+          </a>
+          <a href="#" class="profile-nav__link" data-target="tab-notificaciones">
+            <i class="fa-solid fa-bell"></i> <span>Notificaciones</span>
           </a>
           <a href="#" class="profile-nav__link" data-target="tab-compras">
             <i class="fa-solid fa-box-open"></i> <span>Mis compras</span>
@@ -130,6 +134,21 @@
                 <i class="fa-solid fa-shop"></i>
                 Quiero vender
               </a>
+            </div>
+          </article>
+        </div>
+
+        <!-- ======================= -->
+        <!-- PESTAÑA: NOTIFICACIONES -->
+        <!-- ======================= -->
+        <div id="tab-notificaciones" class="tab-pane" style="display: none; grid-column: 1 / -1;">
+          <article class="perfil-card perfil-card--full">
+            <h2 class="perfil-card__title">
+              <i class="fa-solid fa-bell"></i> Notificaciones
+            </h2>
+            <div id="notificaciones-container">
+              <!-- Renderizado por JS -->
+              <p style="color: var(--bl-perfil-text-sec);">Cargando tus notificaciones...</p>
             </div>
           </article>
         </div>
