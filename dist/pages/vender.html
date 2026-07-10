@@ -7,12 +7,39 @@
     <title>Vender - Baradero Local</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
+      /* F5-09: acento propio del "modo vendedor" — dentro de la misma paleta
+         azul del sitio (bl-primary sigue siendo azul), pero con un tono
+         propio (cyan/teal oscuro) que distingue visualmente el panel del
+         vendedor de las páginas de cliente. */
+      :root {
+        --bl-vendor-accent: #0e7490;
+        --bl-vendor-accent-dark: #155e75;
+      }
+      .vendor-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.9rem;
+        background: var(--bl-vendor-accent);
+        color: #fff;
+        border-radius: var(--bl-radius-pill);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+      @media (max-width: 768px) {
+        .vendor-mode-badge {
+          display: none;
+        }
+      }
       .vender-container {
         max-width: 800px;
         margin: 3rem auto;
         padding: 2rem;
         background: var(--bl-surface);
         border: 1px solid var(--bl-border);
+        border-top: 4px solid var(--bl-vendor-accent);
         border-radius: var(--bl-radius-xl);
         box-shadow: var(--bl-shadow-lg);
       }
@@ -50,13 +77,13 @@
       }
       .form-input:focus {
         outline: none;
-        border-color: var(--bl-primary);
-        box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+        border-color: var(--bl-vendor-accent);
+        box-shadow: 0 0 0 2px rgba(14,116,144,0.12);
       }
       .form-btn {
         width: 100%;
         padding: 1rem;
-        background: var(--bl-primary);
+        background: var(--bl-vendor-accent);
         color: white;
         border: none;
         border-radius: var(--bl-radius-md);
@@ -66,7 +93,7 @@
         transition: background 0.2s;
       }
       .form-btn:hover {
-        background: var(--bl-primary-dark);
+        background: var(--bl-vendor-accent-dark);
       }
 
       /* Estilos del Panel */
@@ -87,7 +114,7 @@
       }
       .stat-card h3 {
         font-size: 2rem;
-        color: var(--bl-primary);
+        color: var(--bl-vendor-accent);
         margin-bottom: 0.5rem;
       }
       .stat-card p {
@@ -102,8 +129,8 @@
       }
       .btn-outline {
         padding: 0.75rem 1.5rem;
-        border: 2px solid var(--bl-primary);
-        color: var(--bl-primary);
+        border: 2px solid var(--bl-vendor-accent);
+        color: var(--bl-vendor-accent);
         border-radius: var(--bl-radius-md);
         font-weight: 600;
         cursor: pointer;
@@ -111,7 +138,7 @@
         transition: all 0.2s;
       }
       .btn-outline:hover {
-        background: var(--bl-primary);
+        background: var(--bl-vendor-accent);
         color: white;
       }
     </style>
@@ -147,6 +174,7 @@
               <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
             </div>
           </a>
+          <span class="vendor-mode-badge"><i class="fa-solid fa-store"></i> Modo Vendedor</span>
           <div class="navbar__actions">
             <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
           </div>

@@ -196,6 +196,29 @@ navegador: sin errores de consola en `vender.js`/`producto.js`; un
 producto sin variantes se ve igual que antes (bloque no se renderiza) —
 sin regresión.
 
+### F5-09 (A113-199) — UI diferenciada del vendedor — sin migración
+
+Solo CSS/HTML dentro de `pages/vender.html` (estilos inline propios de esa
+página, no se tocó `Assets/styles/home.css` compartido con las páginas de
+cliente). Se agregó una variable de acento propio del panel de vendedor,
+`--bl-vendor-accent: #0e7490` (cyan/teal oscuro, dentro de la misma
+familia fría que `--bl-primary` #2563eb, pero un tono distinto para que
+se note que es "otro modo" sin salirse de la paleta azul del sitio):
+
+- Badge "Modo Vendedor" en el navbar (oculto en mobile ≤768px, donde el
+  navbar ya está apretado con logo + botón volver).
+- Borde superior de 4px con el acento en `.vender-container`.
+- `.form-btn`, `.btn-outline`, `.stat-card h3` y el foco de `.form-input`
+  pasan de `--bl-primary` a `--bl-vendor-accent`.
+
+Deliberadamente acotado a color/identidad visual, sin tocar estructura,
+layout ni el flujo de ningún formulario — es la interpretación más simple
+de "UI diferenciada... dentro de la paleta azul, con acentos propios" tal
+como está redactado en el roadmap (🟡, ítem subjetivo). Verificado: build
+sin errores, carga de `vender.html` sin errores de consola (redirige a
+login por no haber sesión real de vendedor en este entorno — mismo límite
+de siempre); no se pudo ver el resultado renderizado con una sesión real.
+
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
 nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`
