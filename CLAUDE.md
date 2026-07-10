@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-09 (M1 completo; Fases 2-6 completas).
+> Última actualización: 2026-07-10 (M1 completo; Fases 2-7 completas).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -122,8 +122,18 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 **Fase 6 (Panel de administración) completa.**
 
+## Progreso (Fase 7 — Social: reseñas y chat)
+### ✅ Hecho
+- **F7-01** (`A113-207`) — Reseñas y calificaciones (migración 36, tabla `reviews`: target_type product/store, rating 1-5, comment, `is_hidden`/`report_reason`/`reported_at` para F7-03). Módulo nuevo `js/reviews-utils.js` (`renderReviewsSection`, compartido): promedio+estrellas, lista de reseñas, form propio (upsert por `unique(target_type,target_id,client_id)` — un cliente edita su reseña en vez de duplicarla). Integrado en `producto.js` (target_type='product') y `comercio.js` (target_type='store'). Simplificación a propósito: no se resuelve el nombre del autor (se muestra "Cliente" genérico) — `reviews.client_id` referencia `auth.users`, no hay ningún otro lugar del proyecto que embeba nombres desde esa FK.
+- **F7-02** (`A113-208`) — Chat comprador-vendedor (migración 37, tablas `conversations`/`messages`, extraídas de `13_target_data_model.sql` sección 9 + `product_id` agregado a `conversations` para el contexto de producto que pide el roadmap). Página nueva `pages/mensajes.html` + `js/mensajes.js`: lista de conversaciones + hilo de mensajes + responder, usable tanto por cliente como por vendedor (misma tabla, la RLS ya distingue el rol). Botón "Contactar al vendedor" en `producto.js`/`comercio.js` que crea o encuentra la conversación (`upsert` por `client_id`+`store_id`) y redirige. Sin Supabase Realtime (mismo criterio que el resto del proyecto — se actualiza al recargar/reabrir el hilo).
+- **F7-03** (`A113-209`) — Moderación de reseñas: botón "Reportar" en la UI de reseñas (`reviews-utils.js`, llama RPC `report_review` — cualquier usuario puede reportar una reseña ajena, no solo el autor). Sección nueva "Reseñas reportadas" en `admin.js`/`admin.html`: lista las reportadas con botón Ocultar/Mostrar (`reviews.is_hidden`, ya cubierto por la policy `reviews_update_own` con excepción admin). Moderación de mensajes de chat deliberadamente fuera de alcance — son privados entre 2 partes (cliente/vendedor), menor necesidad de moderación pública que las reseñas.
+
+**Bug crítico de datos encontrado y corregido en esta sesión** (no relacionado con Fase 7 directamente, descubierto al verificar `producto.js` en el navegador): 8 productos (de 64) tenían `store_id = NULL` — un lote de seed huérfano del 2026-06-02, anterior y distinto a los seeds documentados (`04`/`06`, del 2026-06-19), sin `category_id` y con un `seller_id` compartido por las 14 tiendas de seed (no servía para inferir la tienda real). 4 de los 8 eran duplicados exactos de productos ya bien sembrados. Nota: gracias a la migración 34 (ver investigación de abajo) estos ya NO se mostraban con el fallback "Tienda" genérico en `home.js` — directamente no aparecían en ninguna grilla pública (`exists(...status='approved')` falla si `store_id` es null); pero seguían `is_active=true`, visibles en el dashboard del vendedor (`products_select_own` no filtra por `store_id`) y rompían al acceder por link directo a `producto.html?id=...`. Sin datos suficientes para reconstruir la tienda real de ninguno — consultado con el usuario, se optó por desactivarlos (`is_active = false`, reversible, no se borró nada) en vez de adivinar una tienda. Verificado: 0 productos activos con `store_id` nulo después del fix.
+
+**Fase 7 (Social: reseñas y chat) completa.**
+
 ### ⏳ Próximo
-- Fase 7 (`A113-206` en adelante, roadmap) — Social: reseñas y chat.
+- Fase 8 (ver roadmap, tablero ya creado dentro del rango `A113-172..237`) — Notificaciones (centro de notificaciones + email + WhatsApp).
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

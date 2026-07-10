@@ -76,6 +76,8 @@ el SQL se corre a mano en el **SQL Editor** de Supabase, en este orden exacto
 33. `33_product_variants.sql` — tabla `product_variants` (F5-03, ver nota abajo).
 34. `34_admin_moderation.sql` — moderación de Fase 6: `products_select_public_active` ahora exige comercio aprobado, RPCs `admin_set_product_active`/`admin_set_repartidor_suspended`, `profiles.is_suspended`, `profiles_select_admin`, `claim_delivery`/`update_delivery_status` bloquean repartidores suspendidos, `categories_delete_admin` (F6-02/F6-04, ver nota abajo).
 35. `35_products_select_admin.sql` — policy `products_select_admin`: el admin puede ver cualquier producto (activo o no) para poder moderarlo (F6-04, ver nota abajo).
+36. `36_reviews.sql` — tabla `reviews` + RPC `report_review` (F7-01/F7-03, ver nota abajo).
+37. `37_conversations_messages.sql` — tablas `conversations`/`messages` (F7-02, ver nota abajo).
 
 No hubo migración nueva para F5-07 (`A113-197`) — solo consultas nuevas
 sobre `orders` ya existente. `js/vender.js` (`loadDashboardStats`): "Ventas
@@ -311,6 +313,91 @@ ventas totales (`orders.total_price` sumado donde `payment_status='paid'`),
 entregas en curso (`assigned`+`picked_up`) y completadas. Todo con queries
 directas — RLS ya permitía admin en `orders`/`deliveries`/`stores`;
 `profiles` necesitó la policy `profiles_select_admin` de la migración 34.
+
+## Fase 7 — Social: reseñas y chat
+
+### 36_reviews.sql (F7-01 / F7-03) — aplicado
+
+Tabla `reviews` (extraída de `13_target_data_model.sql` sección 8, con
+`is_hidden`/`report_reason`/`reported_at` agregados de entrada para no
+tener que volver sobre la tabla en F7-03): `target_type` (`product`/`store`)
++ `target_id`, `rating` 1-5, `comment`, `unique(target_type,target_id,client_id)`
+(un cliente edita su reseña, no la duplica). RPC `report_review` — reportar
+una reseña ajena no se puede vía `UPDATE` directo (`reviews_update_own`
+exige ser el autor o admin), así que es una RPC `SECURITY DEFINER` aparte.
+
+`js/reviews-utils.js` (nuevo, compartido): `renderReviewsSection(container,
+targetType, targetId)` arma todo (promedio+estrellas, lista, form propio)
+con DOM API (nada de innerHTML con comentarios de usuarios). Integrado en
+`producto.js` (`target_type='product'`) y `comercio.js`
+(`target_type='store'`). Simplificación a propósito: no se resuelve el
+nombre del autor de la reseña — se muestra "Cliente" genérico, porque
+`reviews.client_id` referencia `auth.users` y ningún otro lugar del
+proyecto embebe nombres desde esa FK (haría falta un patrón nuevo,
+fuera de alcance de esta tarea).
+
+Verificado en el navegador: `producto.html`/`comercio.html` cargan la
+sección de reseñas sin errores de consola, muestran "Todavía no hay
+reseñas" + el form de alta correctamente.
+
+### 37_conversations_messages.sql (F7-02) — aplicado
+
+Tablas `conversations`/`messages` (extraídas de `13_target_data_model.sql`
+sección 9), con un cambio respecto al diseño original: se agregó
+`product_id` (nullable) a `conversations` para el "contexto de producto"
+que pide el roadmap — se mantiene un solo hilo por (cliente, comercio)
+en vez de un hilo por producto, y `product_id` guarda de qué producto
+partió la charla como dato informativo.
+
+Página nueva `pages/mensajes.html` + `js/mensajes.js` (agregada a
+`vite.config.js`): lista de conversaciones + hilo de mensajes + responder,
+usable tanto por cliente como por vendedor (misma tabla; la RLS ya
+distingue el rol por `client_id`/`store_id`). Botón "Contactar al
+vendedor" en `producto.js`/`comercio.js`: busca o crea la conversación
+(`client_id`+`store_id` es `unique`) y redirige a `mensajes.html`.
+
+Alcance a propósito acotado: sin Supabase Realtime (mismo criterio que
+"Envíos en curso"/pagos por confirmar — se actualiza al recargar/reabrir
+el hilo, no hay push en vivo); sin adjuntar imágenes al chat.
+
+Verificado en el navegador: `mensajes.html` carga sin errores de consola
+(redirige a login por no haber sesión — mismo límite de siempre, no hay
+credenciales de cliente/vendedor real en este entorno).
+
+### F7-03 (moderación de reseñas) — sin migración nueva adicional
+
+`js/reviews-utils.js`: botón "Reportar" en cada reseña de la lista pública,
+llama a `report_review` (RPC ya definida en la migración 36). `admin.js`:
+sección nueva "Reseñas reportadas" (`report_reason is not null`) con botón
+Ocultar/Mostrar sobre `reviews.is_hidden` (`UPDATE` directo, la policy
+`reviews_update_own` ya incluye la excepción de admin desde la migración
+36). Moderación de mensajes de chat deliberadamente fuera de alcance —
+son conversaciones privadas entre 2 partes, menor necesidad de moderación
+pública que las reseñas (que son visibles para cualquier visitante).
+
+## Bug de datos encontrado y corregido: productos con store_id NULL
+
+Durante la verificación en el navegador de F7-01, `producto.js` reveló que
+8 de los 64 productos (`is_active=true`) tenían `store_id = NULL` — causaba
+el fallback "Tienda" genérico ya documentado como bug conocido de
+`home.js`. Investigación: estos 8 productos son un lote de seed **huérfano**
+del 2026-06-02 (mismo `created_at` exacto en los 8), distinto y anterior a
+los seeds documentados en `04_seed_mock_data.sql`/`06_seed_10_stores_and_products.sql`
+(del 2026-06-19) — no corresponden a ningún script del repo (grepeado, cero
+coincidencias). Sin `category_id` y con un `seller_id` que es dueño de las
+14 tiendas de seed a la vez (el usuario de test usado para correr los
+seeds), no hay ninguna señal relacional para reconstruir a qué tienda
+pertenecía cada uno. 4 de los 8 (`Dulce de Leche Artesanal 1kg`,
+`Galletitas de Agua Pack x3`, `Leche Entera 1L`, `Café Molido Premium 500g`)
+son duplicados exactos (mismo título y precio) de productos ya sembrados
+correctamente el 19/06, con tienda válida.
+
+Consultado con el usuario (imposible adivinar la tienda real con certeza):
+se optó por desactivarlos (`UPDATE products SET is_active = false WHERE
+store_id IS NULL`) en vez de asignarles una tienda al azar o borrarlos —
+reversible, no se pierde ningún dato. Verificado: 0 productos activos con
+`store_id` nulo después del fix; `producto.html`/`comercio.html` muestran
+el nombre real de la tienda para los productos que quedaron activos.
 
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver

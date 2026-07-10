@@ -847,6 +847,77 @@ async function handleProofDecisionAdmin(proofId, approve) {
   fetchPendingProofsAdmin();
 }
 
+// --- F7-03: moderación de reseñas reportadas ---
+
+async function fetchReportedReviews() {
+  const tbody = document.getElementById('reviews-mod-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando reseñas reportadas...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id, rating, comment, is_hidden, report_reason, reported_at')
+    .not('report_reason', 'is', null)
+    .order('reported_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching reported reviews:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar las reseñas reportadas.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay reseñas reportadas.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((review) => {
+    const tr = document.createElement('tr');
+
+    const tdReview = document.createElement('td');
+    const starsSpan = document.createElement('span');
+    starsSpan.style.color = '#f59e0b';
+    starsSpan.textContent = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+    tdReview.appendChild(starsSpan);
+    if (review.comment) {
+      tdReview.appendChild(document.createElement('br'));
+      const commentSmall = document.createElement('small');
+      commentSmall.textContent = review.comment;
+      tdReview.appendChild(commentSmall);
+    }
+    tr.appendChild(tdReview);
+
+    const tdReason = document.createElement('td');
+    tdReason.textContent = review.report_reason;
+    tr.appendChild(tdReason);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge ${review.is_hidden ? 'status-suspended' : 'status-approved'}`;
+    statusBadge.textContent = review.is_hidden ? 'Oculta' : 'Visible';
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${review.is_hidden ? 'btn-reactivate' : 'btn-suspend'}`;
+    toggleBtn.textContent = review.is_hidden ? 'Mostrar' : 'Ocultar';
+    toggleBtn.addEventListener('click', async () => {
+      const { error: updateError } = await supabase.from('reviews').update({ is_hidden: !review.is_hidden }).eq('id', review.id);
+      if (updateError) {
+        showToast('No se pudo actualizar la reseña.', 'error');
+        console.error(updateError);
+        return;
+      }
+      fetchReportedReviews();
+    });
+    tdActions.appendChild(toggleBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
@@ -858,6 +929,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
   document.getElementById('btn-refresh-repartidores-mod').addEventListener('click', fetchRepartidoresForModeration);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
+  document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
 
   setupCategoryForm();
   setupCouponForm();
@@ -871,6 +943,7 @@ function initAdminPage() {
   fetchStoresForModeration();
   fetchRepartidoresForModeration();
   fetchPendingProofsAdmin();
+  fetchReportedReviews();
 }
 
 guardPage({

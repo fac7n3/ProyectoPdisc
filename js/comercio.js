@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
+import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -84,6 +85,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     meta.appendChild(productCountSpan);
 
     header.appendChild(meta);
+
+    const contactLink = document.createElement('a');
+    contactLink.style.cssText = 'display: inline-block; margin-top: 1rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+    contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}`;
+    contactLink.textContent = 'Contactar al vendedor';
+    header.appendChild(contactLink);
+
     mainContent.appendChild(header);
 
     const section = document.createElement('section');
@@ -158,6 +166,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     section.appendChild(grid);
     mainContent.appendChild(section);
+
+    const reviewsSection = document.createElement('section');
+    reviewsSection.style.cssText = 'max-width: 700px; margin-top: 2rem;';
+    mainContent.appendChild(reviewsSection);
+    renderReviewsSection(reviewsSection, 'store', storeId);
 
     initCartButtons();
     initWishlist();

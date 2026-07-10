@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast } from './cart-utils.js';
+import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -147,9 +148,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     addBtn.appendChild(cartIcon);
     addBtn.append(' Agregar al carrito');
     actionsDiv.appendChild(addBtn);
+
+    // F7-02: contactar al vendedor con contexto de este producto.
+    const contactLink = document.createElement('a');
+    contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+    contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
+    contactLink.textContent = 'Contactar al vendedor';
+    actionsDiv.appendChild(contactLink);
+
     info.appendChild(actionsDiv);
 
     container.appendChild(info);
+
+    // F7-01: reseñas del producto.
+    const reviewsSection = document.createElement('section');
+    reviewsSection.style.cssText = 'grid-column: 1/-1; max-width: 700px; margin-top: 2rem;';
+    container.appendChild(reviewsSection);
+    renderReviewsSection(reviewsSection, 'product', product.id);
 
     // Bind Add to Cart
     const btnAdd = document.getElementById('btn-add-cart');

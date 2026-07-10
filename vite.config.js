@@ -36,6 +36,7 @@ export default defineConfig({
         terminos: resolve(__dirname, 'pages/terminos.html'),
         info: resolve(__dirname, 'pages/info.html'),
         repartidor: resolve(__dirname, 'pages/repartidor.html'),
+        mensajes: resolve(__dirname, 'pages/mensajes.html'),
       }
     }
   }
