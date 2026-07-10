@@ -592,6 +592,27 @@ proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
 acá para no meter un patrón de suscripción/limpieza nuevo sin poder
 verificarlo en un navegador con sesión real.
 
+## Fase 11 — Deploy y lanzamiento
+
+Documentación de despliegue, guía de usuario y arquitectura ahora viven en
+archivos propios en vez de seguir creciendo acá: [DEPLOY.md](DEPLOY.md),
+[GUIA_USUARIO.md](GUIA_USUARIO.md), [ARQUITECTURA.md](ARQUITECTURA.md).
+
+Checklist go-live (F11-05) corrido contra la base real: RLS activa en las
+22 tablas de `public` (verificado con `pg_class.relrowsecurity`, no solo
+mirando policies sueltas), buckets con políticas correctas, sin secretos
+reales en el repo. `get_advisors` (security): único hallazgo genuino de 15
+fue `is_valid_cuit` sin `search_path` fijo — corregido (migración
+`fix_is_valid_cuit_search_path`, sin archivo numerado en `db/schema/` porque
+es un fix de una sola función ya definida en `16_input_validation_constraints.sql`,
+no un cambio de esquema nuevo). El resto de los hallazgos son RPCs
+`SECURITY DEFINER` invocables por `authenticated` a propósito (la superficie
+real de la app — cada uno valida el permiso adentro). Pendiente: activar
+"Leaked Password Protection" (toggle manual en el dashboard). El proyecto
+de Supabase está en plan **Free** — sin backups automáticos ni PITR;
+consultado con el usuario, decidió quedarse en Free por ahora (decisión de
+costo consciente, no un descuido — revisar si el volumen de ventas crece).
+
 ## F2-07 (A113-179) — Mercado Pago real (Checkout Pro)
 
 Primera vez que el proyecto usa **Supabase Edge Functions** (hasta acá todo

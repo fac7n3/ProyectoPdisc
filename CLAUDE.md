@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-10 (M1 completo; Fases 2-9 completas [F8-02/F8-03 bloqueados por credenciales externas]; Fase 10 completa salvo F10-02 opcional; F2-07 Mercado Pago real agregado y verificado en producción).
+> Última actualización: 2026-07-10 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -162,6 +162,19 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F10-02** (`A113-225`, E2E con Playwright) — explícitamente opcional en el roadmap. No hay framework de testing instalado; agregarlo es una decisión de mantenimiento a futuro (quién corre los tests, en qué CI), no un fix puntual.
 
 **Fase 10 completa** salvo F10-02 (opcional).
+
+## Progreso (Fase 11 — Deploy y lanzamiento)
+### ✅ Hecho
+- **F11-01** (`A113-230`) — Hosting ya elegido y funcionando desde el arranque del proyecto: Vercel + build multipágina de Vite. Cerrado sin trabajo nuevo, solo confirmación.
+- **F11-02** (`A113-231`) — Variables de entorno en Vercel: confirmadas funcionando (el sitio en producción conecta a Supabase correctamente, lo cual solo pasa si `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` están bien cargadas ahí). Bug real encontrado y corregido esta sesión: el login con Google redirigía a `localhost` con `ERR_CONNECTION_REFUSED` en producción — no era el código (`js/login.js`/`js/register.js` ya arman `redirectTo` dinámico con `window.location.origin`), sino que **Auth → URL Configuration** de Supabase (Site URL + Redirect URLs) seguía apuntando a `localhost` de cuando se armó el proyecto en desarrollo. Corregido a mano por el usuario en el dashboard (Site URL → `https://proyectopdisc.vercel.app`, agregado a Redirect URLs). Documentado en `docs/DEPLOY.md` para no repetir el error si cambia el dominio.
+- **F11-05** (`A113-234`) — Checklist go-live corrido: RLS activa en las 22 tablas de `public` (verificado por SQL directo, no solo por policies individuales); buckets con políticas correctas (`payment-proofs` privado + 8 policies de storage cubriendo products/stores/payment-proofs); ningún secreto real en el repo (`.env` solo tiene las claves públicas de Supabase por diseño, `MP_ACCESS_TOKEN` vive solo en Supabase). `get_advisors` (security): corregido `is_valid_cuit` (le faltaba `search_path` fijo, único hallazgo genuino de 15 — el resto son RPCs `SECURITY DEFINER` invocables por `authenticated` a propósito, es la superficie real de la app, cada una valida el permiso adentro). **Pendiente, decisión del usuario**: "Leaked Password Protection" de Supabase Auth sigue sin activar (toggle manual, gratis). **Backups**: el proyecto de Supabase está en plan **Free** (sin backups automáticos ni point-in-time recovery) — consultado con el usuario, decidió **quedarse en Free por ahora** y asumir el riesgo mientras el volumen sea bajo (no es un descuido, es una decisión de costo consciente — revisar si el volumen de ventas crece).
+- **F11-07** (`A113-236`) — Documentación final. `README.md` reescrito completo (el anterior describía la app como si solo tuviera login/vender, de antes de Fases 2-10). Docs nuevos: [docs/DEPLOY.md](docs/DEPLOY.md) (guía de deploy paso a paso, incluye el gotcha de Google OAuth de F11-02), [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) (qué puede hacer cada rol, en lenguaje de usuario final — sirve también para F11-06 cuando lleguen vendedores reales), [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) (resumen técnico del sistema — RLS+RPCs+Edge Functions, modelo de datos, decisiones deliberadas que pueden sorprender a alguien nuevo en el repo).
+- **F11-08** (`A113-237`) — Limpieza verificada, sin trabajo nuevo necesario: 0 `console.log` en `js/*.js`, 0 archivos JS sin referenciar desde ninguna página, seeds ya documentados e idempotentes (F0-07), versionado de `dist/` ya decidido y documentado desde el inicio del proyecto.
+
+### Pendiente (necesita acción o decisión del usuario, no autónoma)
+- **F11-03** (`A113-232`) — Edge Functions en prod: **pagos** (Mercado Pago) ✅ hecho (F2-07). Email/WhatsApp siguen bloqueados por falta de credenciales externas (F8-02/F8-03, sin cambios). No se cierra el ticket completo hasta que se resuelva esa parte.
+- **F11-04** (`A113-233`) — Dominio propio: requiere comprar un dominio (decisión de costo del usuario). Hoy el sitio corre en `proyectopdisc.vercel.app`. Instrucciones para cuando se compre uno están en `docs/DEPLOY.md` (incluye el paso de repetir la config de Google OAuth con el dominio nuevo).
+- **F11-06** (`A113-235`) — Cargar comercios reales: las 14 tiendas/64 productos actuales son datos de seed/mock. Hace falta que vendedores reales se registren y sean aprobados (flujo ya funciona, ver F1-04/F3-01) — es un tema de contenido/negocio, no de código.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

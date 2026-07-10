@@ -2,94 +2,88 @@
 
 > *"Mientras otras plataformas conectan personas lejanas, nosotros conectamos vecinos."*
 
-**Baradero Local** es una plataforma digital y catálogo interactivo diseñado para potenciar el comercio de proximidad en la ciudad de Baradero. Permite a los vecinos explorar y comprar productos de tiendas locales directamente desde sus hogares, y a los comerciantes registrar sus negocios y gestionar sus ventas a través de un panel especializado.
+**Baradero Local** es un e-commerce de comercio de proximidad para Baradero (Argentina): permite a los vecinos explorar y comprar productos de comercios locales, y a los comerciantes gestionar su tienda, stock y pedidos desde un panel propio. Incluye rol de repartidor para las entregas y un panel de administración completo.
 
 ---
 
-## ✨ Características Principales
+## ✨ Funcionalidades
 
-*   🔐 **Autenticación Completa con Supabase**: Inicio de sesión y registro de usuarios (como clientes o vendedores) mediante correo electrónico o de forma rápida a través de **Google OAuth**.
-*   🛒 **Catálogo Interactivo**: Visualización dinámica de productos locales con funcionalidades de agregar al carrito, marcar favoritos y filtros instantáneos por categorías (Lácteos, Carnes, Verduras, Farmacia, Limpieza, etc.).
-*   🏪 **Panel del Vendedor**: Área exclusiva para comerciantes locales donde pueden registrar su negocio y visualizar estadísticas clave (ventas del día, productos activos e ingresos mensuales).
-*   📱 **Diseño Moderno y Responsivo**: Interfaz fluida, pulida y adaptada tanto para dispositivos móviles como pantallas de escritorio, con transiciones y micro-animaciones premium.
-*   🏥 **Servicio de Utilidad Pública**: Sección integrada que informa las farmacias de turno activas en la ciudad.
+**Cliente**
+- Catálogo con filtros por categoría, búsqueda y ofertas.
+- Carrito sincronizado en la nube (funciona también sin sesión) y favoritos.
+- Checkout real con **Mercado Pago** (Checkout Pro), transferencia bancaria con comprobante, o pago simulado.
+- Retiro en el local o envío a domicilio dentro de Baradero (costo calculado según subtotal).
+- Historial de compras, reseñas de productos/comercios, chat directo con el vendedor.
+- Centro de notificaciones (pedido creado, pagado, enviado, entregado).
+- Instalable como **PWA** (funciona offline para contenido ya visitado).
+
+**Vendedor**
+- Alta/edición de productos con variantes, fotos adicionales y ofertas (precio anterior tachado).
+- Gestión de pedidos (pickup/delivery), confirmación de pagos por transferencia.
+- Estadísticas del día/mes, perfil de tienda (zona, horarios, descripción).
+
+**Repartidor**
+- Alta con aprobación manual del admin.
+- Toma de pedidos disponibles y actualización de estado (asignado → en camino → entregado).
+
+**Admin**
+- Aprobación de comercios y repartidores (CUIT validado).
+- Moderación de productos/comercios/reseñas, CRUD de categorías y cupones.
+- Métricas globales (usuarios, ventas, entregas).
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## 🛠️ Stack técnico
 
-*   **Frontend**: HTML5 semántico, CSS3 moderno (utilizando variables nativas, layouts Flexbox/Grid y efectos de diseño premium) y JavaScript modular (ES6+).
-*   **Backend as a Service (BaaS)**: [Supabase](https://supabase.com/) para la gestión de usuarios, base de datos relacional (PostgreSQL) y autenticación segura.
-*   **Herramienta de Construcción**: [Vite](https://vitejs.dev/) para el desarrollo ágil y bundling de assets.
+- **Frontend**: Vite 8 (multipágina) + JavaScript vanilla ES6 (sin framework), CSS3 con variables nativas.
+- **Backend**: [Supabase](https://supabase.com/) — Postgres con RLS en todas las tablas, Auth (email + Google OAuth), Storage, y **Edge Functions** (Deno) para lo que no puede vivir en el navegador ni en una función SQL (integración con Mercado Pago).
+- **Pagos**: Mercado Pago (Checkout Pro) vía Edge Functions; el Access Token nunca toca el frontend.
+- **Hosting**: [Vercel](https://vercel.com/), deploy automático en cada push a `main`.
 
 ---
 
-## 📁 Estructura del Proyecto
-
-El código está organizado de la siguiente manera:
+## 📁 Estructura del proyecto
 
 ```text
 Proyecto-Pdisc/
-├── Assets/                # Recursos de diseño y estilos
-│   ├── images/            # Imágenes estáticas (Logos, banners, productos)
-│   └── styles/            # Hojas de estilo CSS (home.css, auth.css, styles.css)
-├── db/
-│   └── schema/            # Scripts SQL para configurar la base de datos en Supabase
-├── docs/                  # Guías de desarrollo y análisis técnico
-├── js/                    # Lógica de negocio e integraciones en JavaScript
-│   ├── auth-utils.js      # Helpers de autenticación, notificaciones y redirecciones
-│   ├── home.js            # Control del catálogo, filtros y carrito en la Home
-│   ├── login.js           # Lógica del formulario de inicio de sesión
-│   ├── register.js        # Lógica del formulario de registro y roles
-│   ├── vender.js          # Control de panel y flujo de comercios locales
-│   └── supabase-config.js # Configuración de variables de entorno de Supabase
-├── pages/                 # Páginas HTML de la aplicación
-│   ├── home.html          # Portal principal y catálogo
-│   ├── login.html         # Pantalla de inicio de sesión
-│   ├── register.html      # Pantalla de creación de cuenta
-│   ├── perfil.html        # Panel de perfil de usuario autenticado
-│   └── vender.html        # Portal de vendedores y registro de comercios
-├── .env.example           # Plantilla de variables de entorno requeridas
-├── package.json           # Dependencias y scripts del proyecto
-└── README.md              # Documentación principal del proyecto
+├── Assets/                    # Estilos e imágenes fuente (source de los .webp servidos)
+├── db/schema/                 # Migraciones SQL, en orden — ver docs/RUN_LOCAL.md
+├── docs/                      # Documentación (ver índice más abajo)
+├── js/                        # Lógica de frontend, un archivo por página + módulos compartidos
+│   ├── auth-utils.js          # Cliente Supabase, notificaciones globales, PWA, banner offline
+│   ├── cart-utils.js          # Carrito, favoritos, formato de precio, estado de error
+│   ├── payment-providers.js   # Interfaz común simulado/transferencia/mercadopago
+│   └── ...                    # home.js, carrito.js, vender.js, admin.js, etc. (uno por página)
+├── pages/                     # Páginas HTML (una por ruta)
+├── public/                    # Assets servidos verbatim (íconos, manifest, imágenes optimizadas)
+├── scripts/                   # Scripts de tooling (Jira, optimización de imágenes)
+├── supabase/functions/        # Edge Functions (Mercado Pago)
+├── .env                       # Claves públicas de Supabase (sí, se versiona — ver docs/RUN_LOCAL.md)
+└── vite.config.js             # Entradas del build multipágina
 ```
 
 ---
 
-## 🚀 Inicio Rápido (Desarrollo Local)
+## 📚 Documentación
 
-### Requisitos Previos
+| Documento | Para qué sirve |
+|---|---|
+| [docs/RUN_LOCAL.md](docs/RUN_LOCAL.md) | Setup completo de desarrollo local: DB, migraciones en orden, historial técnico detallado de cada feature. |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Cómo desplegar a producción (Vercel + Supabase + Mercado Pago). |
+| [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) | Guía de uso por rol (cliente/vendedor/repartidor/admin). |
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Cómo está armado el sistema: modelo de datos, seguridad, decisiones clave. |
+| [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md) | Checklist manual de testing por rol y flujo. |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Plan completo del proyecto (fuente de verdad de qué está hecho y qué falta). |
+| [CLAUDE.md](CLAUDE.md) | Contexto de proyecto para trabajar con Claude Code (historial de decisiones y progreso). |
 
-*   [Node.js](https://nodejs.org/) (Versión 20 o superior recomendada)
-*   Una cuenta activa de [Supabase](https://supabase.com/) para conectar la autenticación y base de datos.
+---
 
-### Pasos para Configurar y Ejecutar
+## 🚀 Inicio rápido (desarrollo local)
 
-1.  **Clonar el repositorio y entrar al directorio:**
-    ```bash
-    cd Proyecto-Pdisc
-    ```
+```bash
+npm install
+cp .env.example .env   # completar con tus claves de Supabase
+npm run dev
+```
 
-2.  **Instalar dependencias:**
-    ```bash
-    npm install
-    ```
-
-3.  **Configurar Variables de Entorno:**
-    Crea un archivo `.env` en la raíz del proyecto basándote en `.env.example`:
-    ```bash
-    VITE_SUPABASE_URL="https://tu-proyecto.supabase.co"
-    VITE_SUPABASE_ANON_KEY="tu-anon-key-de-supabase"
-    ```
-
-4.  **Configurar la Base de Datos:**
-    Hay que correr **los 13 archivos** de [db/schema/](file:///c:/Proyecto/Proyecto-Pdisc/db/schema/) en orden (`01` a `13`) en el SQL Editor de Supabase — no alcanza con uno solo. El orden completo, qué hace cada archivo y notas de idempotencia están en [docs/RUN_LOCAL.md](file:///c:/Proyecto/Proyecto-Pdisc/docs/RUN_LOCAL.md).
-
-5.  **Iniciar Servidor Local:**
-    ```bash
-    npm run dev
-    ```
-    Abre en tu navegador la URL dev que se muestra en la terminal (usualmente `http://localhost:5173`).
-
-> [!NOTE]
-> Para una guía detallada paso a paso sobre cómo configurar los Callback URLs de Google OAuth y Google Cloud Console, consulta la guía completa de [docs/RUN_LOCAL.md](file:///c:/Proyecto/Proyecto-Pdisc/docs/RUN_LOCAL.md).
+La base de datos necesita las migraciones de `db/schema/` aplicadas **en orden** antes de que la app funcione — el paso a paso completo (incluyendo Google OAuth) está en [docs/RUN_LOCAL.md](docs/RUN_LOCAL.md).

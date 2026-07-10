@@ -232,14 +232,14 @@ Sobre el esquema actual (`profiles`, `products`, `categories`, `stores`, `orders
 
 ## 17. FASE 11 — Deploy y lanzamiento 🟠
 
-- [ ] **F11-01** 🟠 Elegir hosting (Vercel/Netlify) + build de Vite multi-página.
-- [ ] **F11-02** 🔴 Variables de entorno en prod + **callbacks de Google OAuth** para el dominio real.
-- [ ] **F11-03** 🟠 Configurar Edge Functions (email/WhatsApp/pagos) en prod.
-- [ ] **F11-04** 🟡 Dominio propio.
-- [ ] **F11-05** 🟠 **Checklist go-live**: RLS activa, secretos seguros, buckets con políticas, backups.
-- [ ] **F11-06** 🟠 Cargar **comercios reales** (D12) y datos de producción.
-- [ ] **F11-07** 🟠 **Documentación final**: README, guía de usuario por rol, guía de deploy, doc técnica.
-- [ ] **F11-08** 🟡 **Limpieza**: quitar mocks/seeds, `console.log`, código muerto; decidir versionado de `dist/`.
+- [x] **F11-01** 🟠 Elegir hosting (Vercel/Netlify) + build de Vite multi-página. Vercel, deploy automático en cada push a `main`.
+- [x] **F11-02** 🔴 Variables de entorno en prod + **callbacks de Google OAuth** para el dominio real. Bug encontrado y corregido: Site URL/Redirect URLs de Supabase Auth apuntaban a `localhost`.
+- [ ] **F11-03** 🟠 Configurar Edge Functions (email/WhatsApp/pagos) en prod. Pagos (Mercado Pago) ✅ listo. Email/WhatsApp bloqueados por credenciales externas (F8-02/F8-03).
+- [ ] **F11-04** 🟡 Dominio propio. Requiere compra (decisión de costo del usuario) — hoy `proyectopdisc.vercel.app`.
+- [x] **F11-05** 🟠 **Checklist go-live**: RLS activa, secretos seguros, buckets con políticas, backups. RLS/secretos/buckets ✓. Backups: proyecto en plan Free, decisión consciente del usuario de quedarse ahí por ahora.
+- [ ] **F11-06** 🟠 Cargar **comercios reales** (D12) y datos de producción. Necesita vendedores reales registrándose (flujo ya funciona) — tema de contenido, no de código.
+- [x] **F11-07** 🟠 **Documentación final**: README, guía de usuario por rol, guía de deploy, doc técnica. Ver README.md, docs/GUIA_USUARIO.md, docs/DEPLOY.md, docs/ARQUITECTURA.md.
+- [x] **F11-08** 🟡 **Limpieza**: quitar mocks/seeds, `console.log`, código muerto; decidir versionado de `dist/`. Verificado limpio, sin cambios necesarios.
 
 ---
 
