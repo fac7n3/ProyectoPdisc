@@ -125,6 +125,29 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 ### ⏳ Próximo
 - Fase 7 (`A113-206` en adelante, roadmap) — Social: reseñas y chat.
 
+## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
+Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"
+(`js/home.js`), algunos productos mostraban el texto genérico `'Tienda'` (fallback de
+`product.stores ? product.stores.name : 'Tienda'`, `js/home.js:198`) en vez del nombre real
+del comercio. Investigado el join `stores ( name )` de la query de `loadProducts()`
+(`js/home.js:172-183`) contra la base real (REST directo con la anon key, misma query que hace
+el browser) y en el navegador (preview en `pages/home.html`): **hoy no se reproduce** — los 56
+productos activos visibles para `anon` resuelven bien su tienda, 0 joins nulos.
+
+Causa raíz (ya resuelta como efecto colateral, no a propósito): antes de la migración 34
+(F6-04), `products_select_public_active` solo chequeaba `is_active = true`, sin mirar el estado
+del comercio dueño — así que un producto de un comercio `pending`/`suspended`, o con `store_id`
+null (la columna nunca tuvo `not null`), se listaba igual en el home. Pero `stores_select_public`
+sí exige `status = 'approved'` (o dueño/admin) — con esa combinación, el producto aparecía pero
+el embed a `stores(name)` volvía `null` por RLS → fallback `'Tienda'`. La migración 34 (F6-04,
+posterior a cuando se vio el bug) agregó `exists(... s.status = 'approved')` a
+`products_select_public_active` — ahora un producto con comercio no aprobado (o `store_id` null)
+directamente no se lista, en vez de listarse sin nombre. Mismo criterio de "approved" en ambas
+policies → ya no hay combinación posible que produzca el fallback.
+**Sin cambio de código.** Si vuelve a aparecer, sospechar de un producto real con `store_id`
+apuntando a un comercio `pending`/`rejected` que igual pasa `is_active`, y revisar si
+`products_select_public_active` sigue teniendo el chequeo `exists` de comercio aprobado.
+
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
 - No se usan migraciones de Supabase (`list_migrations` vacío); el SQL se aplicó a mano en el SQL Editor.
