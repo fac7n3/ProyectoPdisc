@@ -11,7 +11,7 @@ let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
 let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
 let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEvents()
 let shippingAddress = '';
-let paymentMethod = 'simulado'; // 'simulado' | 'transferencia' — ver initPaymentMethodEvents()
+let paymentMethod = 'mercadopago'; // 'mercadopago' | 'simulado' | 'transferencia' — ver initPaymentMethodEvents()
 
 // Política de envío unificada (F2-05): igual que en create_order (migración 20)
 // para que lo que se muestra en el resumen coincida con lo que se cobra.
@@ -238,14 +238,15 @@ function initDeliveryEvents() {
   });
 }
 
-/** Inicializar selector de método de pago (simulado / transferencia) */
+/** Inicializar selector de método de pago (mercadopago / simulado / transferencia) */
 function initPaymentMethodEvents() {
   const header = document.getElementById('payment-header');
   const content = document.getElementById('payment-content');
+  const mercadopagoRadio = document.getElementById('payment-mercadopago');
   const simuladoRadio = document.getElementById('payment-simulado');
   const transferenciaRadio = document.getElementById('payment-transferencia');
 
-  if (!header || !content || !simuladoRadio || !transferenciaRadio) return;
+  if (!header || !content || !mercadopagoRadio || !simuladoRadio || !transferenciaRadio) return;
 
   header.addEventListener('click', () => {
     const isHidden = content.style.display === 'none';
@@ -254,11 +255,15 @@ function initPaymentMethodEvents() {
   });
 
   function updateMethod() {
-    paymentMethod = transferenciaRadio.checked ? 'transferencia' : 'simulado';
+    if (mercadopagoRadio.checked) paymentMethod = 'mercadopago';
+    else if (transferenciaRadio.checked) paymentMethod = 'transferencia';
+    else paymentMethod = 'simulado';
   }
 
+  mercadopagoRadio.addEventListener('change', updateMethod);
   simuladoRadio.addEventListener('change', updateMethod);
   transferenciaRadio.addEventListener('change', updateMethod);
+  updateMethod(); // sincroniza con lo que esté marcado por default en el HTML
 }
 
 /** Inicializar lógica del cupón de descuento */
