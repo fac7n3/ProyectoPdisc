@@ -2,7 +2,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
 
 
 
@@ -88,7 +88,7 @@ async function applyFilters() {
       imageDiv.className = 'product-card__image';
 
       const img = document.createElement('img');
-      img.src = product.image_url || '../Assets/images/default-product.png';
+      img.src = product.image_url || '/img/no-image.svg';
       img.alt = product.title;
       img.loading = 'lazy';
       imageDiv.appendChild(img);
@@ -148,11 +148,7 @@ async function applyFilters() {
 
   } catch (err) {
     console.error('Error fetching products:', err);
-    grid.innerHTML = '';
-    const errMsg = document.createElement('div');
-    errMsg.style.cssText = 'grid-column: 1/-1; text-align: center; color: #ef4444; padding: 2rem;';
-    errMsg.textContent = 'Error al buscar productos.';
-    grid.appendChild(errMsg);
+    renderErrorState(grid, 'No se pudieron buscar productos.', applyFilters);
   }
 }
 

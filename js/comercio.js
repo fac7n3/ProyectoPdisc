@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         imageDiv.className = 'product-card__image';
 
         const img = document.createElement('img');
-        img.src = product.image_url || '../Assets/images/default-product.png';
+        img.src = product.image_url || '/img/no-image.svg';
         img.alt = product.title;
         img.loading = 'lazy';
         imageDiv.appendChild(img);
@@ -178,6 +178,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (err) {
     console.error('Error fetching store:', err);
-    mainContent.innerHTML = '<div style="text-align: center; padding: 4rem; color: #ef4444;">No se pudo cargar la información del comercio.</div>';
+    renderErrorState(mainContent, 'No se pudo cargar la información del comercio.', () => window.location.reload());
   }
 });

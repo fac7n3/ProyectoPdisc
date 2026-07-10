@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /pages/login.html
+Disallow: /pages/register.html
+Disallow: /pages/perfil.html
+Disallow: /pages/carrito.html
+Disallow: /pages/vender.html
+Disallow: /pages/admin.html
+Disallow: /pages/repartidor.html
+Disallow: /pages/mensajes.html

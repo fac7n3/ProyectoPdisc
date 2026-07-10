@@ -163,7 +163,7 @@ async function loadFavoritos(userId) {
     favoritosContainer.innerHTML = "";
     products.forEach(p => {
       const priceFmt = formatPrice(p.price);
-      const imgSrc = p.image_url || '../Assets/images/placeholder.png';
+      const imgSrc = p.image_url || '/img/no-image.svg';
 
       const card = document.createElement('a');
       card.className = "fav-card";

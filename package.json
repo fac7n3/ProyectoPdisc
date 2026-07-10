@@ -8,9 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:start": "supabase start",
-    "db:stop": "supabase stop"
+    "db:stop": "supabase stop",
+    "optimize-images": "node scripts/optimize-images.mjs"
   },
   "devDependencies": {
+    "sharp": "^0.35.3",
     "supabase": "^2.109.1",
     "vite": "^8.0.16"
   },

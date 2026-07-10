@@ -168,6 +168,35 @@ export function updateCartBadge() {
 /** Cantidad máxima por producto en el carrito */
 export const MAX_QTY = 99;
 
+/**
+ * F10-04: estado de error consistente para grillas/detalle que fallan al cargar
+ * desde Supabase (antes cada página tenía su propio div con estilos inline
+ * duplicados y sin botón de reintentar).
+ */
+export function renderErrorState(container, message, onRetry) {
+  if (!container) return;
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'bl-error-state';
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-triangle-exclamation';
+  wrap.appendChild(icon);
+  const p = document.createElement('p');
+  p.textContent = navigator.onLine === false
+    ? 'Sin conexión a internet. Revisá tu conexión e intentá de nuevo.'
+    : message;
+  wrap.appendChild(p);
+  if (onRetry) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bl-error-state__retry';
+    btn.textContent = 'Reintentar';
+    btn.addEventListener('click', onRetry);
+    wrap.appendChild(btn);
+  }
+  container.appendChild(wrap);
+}
+
 export function showToast(message, type = 'default') {
   const toast = document.getElementById('toast');
   if (!toast) return;

@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -208,7 +208,7 @@ async function loadProducts() {
       imageDiv.className = 'product-card__image';
 
       const img = document.createElement('img');
-      img.src = product.image_url || '../Assets/images/default-product.png';
+      img.src = product.image_url || '/img/no-image.svg';
       img.alt = product.title;
       img.loading = 'lazy';
       imageDiv.appendChild(img);
@@ -277,11 +277,7 @@ async function loadProducts() {
 
   } catch (err) {
     console.error('Error fetching products:', err);
-    const errMsg = document.createElement('div');
-    errMsg.style.cssText = 'grid-column: 1/-1; text-align: center; color: #ef4444; padding: 2rem;';
-    errMsg.textContent = 'Error al cargar productos.';
-    grid.innerHTML = '';
-    grid.appendChild(errMsg);
+    renderErrorState(grid, 'No se pudieron cargar los productos.', loadProducts);
   }
 }
 
@@ -347,7 +343,8 @@ async function loadStores() {
 
   } catch (err) {
     console.error('Error fetching stores:', err);
-    carousel.innerHTML = ''; // Ocultar carrusel en caso de error
+    carousel.innerHTML = '';
+    carousel.style.display = 'none'; // Ocultar carrusel en caso de error (no es contenido crítico)
   }
 }
 

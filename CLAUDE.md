@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-10 (M1 completo; Fases 2-7 completas; F8-01 hecho, F8-02/F8-03 bloqueados por credenciales externas; Fase 9 en curso: F9-02/F9-03/F9-04/F9-05 hechas).
+> Última actualización: 2026-07-10 (M1 completo; Fases 2-9 completas [F8-02/F8-03 bloqueados por credenciales externas]; Fase 10 completa salvo F10-02 opcional).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -148,6 +148,18 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 ### ⏳ Próximo / diferido
 - **F9-07** (modal de producto: variantes/reseñas reales) — identificado un bug real durante la investigación: `js/product-modal.js` arma el modal leyendo el DOM de la tarjeta clickeada (no consulta Supabase), y **fabrica el stock** con una fórmula pseudoaleatoria basada en el `id` del producto (`stockSeed % 40 + 5`) en vez de usar el stock real. El rating tampoco es real (lee `.product-card__stars`, un elemento que las grillas de home/search/comercio no generan). No es un problema de integridad de datos (el checkout revalida todo server-side, nadie puede comprar con el stock fabricado), pero sí muestra información inventada al usuario. Arreglarlo bien implica reemplazar la extracción por DOM por un fetch real a Supabase (stock, `product_variants`, resumen de `reviews`) — un cambio más grande que el resto de los ítems de esta tanda, se deja para una próxima sesión en vez de apurarlo.
 - **F9-01** (sistema de diseño, "más contraste, calidez y personalidad") y **F9-06** (micro-interacciones/estados vacíos/skeletons) — son los dos ítems más subjetivos de la fase (cambios visuales de gusto, no bugs concretos). A propósito no se tocaron sin una vuelta de diseño con el usuario — el resto de esta fase (F9-02 a F9-05) fueron todos arreglos concretos y verificables; estos dos ameritan una decisión de diseño, no una autónoma.
+
+## Progreso (Fase 10 — Calidad, testing y performance)
+### ✅ Hecho
+- **F10-03** (`A113-226`) — Bug crítico encontrado optimizando imágenes: **casi todas las fotos de producto y logos de tienda daban 404 en producción**, sin relación con el peso — `products.image_url`/`stores.logo_url` guardaban rutas relativas (`../Assets/images/mockups/...`) que Vite nunca copiaba a `dist/` (solo empaqueta lo referenciado estático en HTML/JS; estos valores solo existían como dato insertado por los seeds SQL, invisibles para el bundler — así es como `hero_banner.png`/`logoazulpng.png` sí llegaban a `dist/assets/`, por estar en un `<img src>` de HTML). Bonus: `meat.png`/`default-product.png`/`placeholder.png` (usados como fallback en 5 archivos JS) **nunca existieron como archivo**, rotos desde que se escribieron; y el fallback externo `https://via.placeholder.com/50` de `vender.js` ni siquiera está permitido por la CSP (`img-src`), bloqueado silenciosamente. Fix: `scripts/optimize-images.mjs` (nueva devDependency `sharp`) convierte los 24 PNG fuente a WebP (~9.9 MB → ~0.9 MB) en `public/img/*.webp` (rutas absolutas, no dependen de la profundidad de la página, a diferencia de la convención original que causó el bug); `public/img/no-image.svg` como placeholder genérico. Migración `39_fix_broken_image_paths.sql` (idempotente, aplicada: 56 productos + 10 tiendas repunteados) — verificada con `BEGIN;...ROLLBACK;` antes y `SELECT count(*)` después (0 rutas viejas). Seeds `04`/`06`/`07` actualizados para una base nueva. `loading="lazy"` sumado donde faltaba. Verificado en el navegador: fotos e logos reales, 0 solicitudes de imagen fallidas.
+- **F10-04** (`A113-227`) — `renderErrorState()` nuevo en `cart-utils.js`: reemplaza los divs de error con estilos inline duplicados en home/search/comercio/producto por un estado único con botón "Reintentar" (detecta `navigator.onLine` para el mensaje de "sin conexión"). Banner global de "sin conexión" en `auth-utils.js` (mismo patrón self-contained que el toast global ya existente ahí — no depende de qué CSS cargue la página), escucha `online`/`offline`.
+- **F10-05** (`A113-228`) — `apple-touch-icon.png` (180×180, generado con `sharp`) en las 16 páginas — cierra el gap de Safari/iOS documentado en F9-02. Open Graph + meta description en las 6 páginas de contenido público (home/producto/comercio/search/info/terminos) — sin SSR, contenido genérico de sitio (no por-producto). `public/robots.txt` nuevo (bloquea páginas privadas).
+- **F10-01** (`A113-224`) — [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md): checklist de testing manual por rol (cliente/vendedor/repartidor/admin) cubriendo los flujos reales de Fases 0-9.
+
+### Diferido (a propósito)
+- **F10-02** (`A113-225`, E2E con Playwright) — explícitamente opcional en el roadmap. No hay framework de testing instalado; agregarlo es una decisión de mantenimiento a futuro (quién corre los tests, en qué CI), no un fix puntual.
+
+**Fase 10 completa** salvo F10-02 (opcional).
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

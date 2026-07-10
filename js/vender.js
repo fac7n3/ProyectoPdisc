@@ -599,9 +599,10 @@ async function fetchProducts() {
     const tdImg = document.createElement('td');
     tdImg.style.padding = '1rem';
     const img = document.createElement('img');
-    img.src = p.image_url || 'https://via.placeholder.com/50';
+    img.src = p.image_url || '/img/no-image.svg';
     img.style.cssText = 'width: 50px; height: 50px; border-radius: 8px; object-fit: cover;';
     img.alt = p.title || 'Producto';
+    img.loading = 'lazy';
     tdImg.appendChild(img);
     tr.appendChild(tdImg);
 

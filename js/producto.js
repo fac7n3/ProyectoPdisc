@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, formatPrice, updateCartBadge, showToast } from './cart-utils.js';
+import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';
-    const imgUrl = product.image_url || '../Assets/images/default-product.png';
+    const imgUrl = product.image_url || '/img/no-image.svg';
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     container.innerHTML = '';
@@ -198,6 +198,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (err) {
     console.error('Error fetching product:', err);
-    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #ef4444;">No se pudo cargar el producto.</div>';
+    renderErrorState(container, 'No se pudo cargar el producto.', () => window.location.reload());
   }
 });

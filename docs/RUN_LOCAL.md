@@ -592,6 +592,86 @@ proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
 acá para no meter un patrón de suscripción/limpieza nuevo sin poder
 verificarlo en un navegador con sesión real.
 
+## Fase 10 — Calidad, testing y performance
+
+### F10-03 (A113-226) — bug encontrado: imágenes rotas en producción + WebP
+
+Optimizando imágenes se encontró que **la mayoría de las fotos de producto y
+logos de tienda daban 404 en producción**, no relacionado con el peso de los
+archivos: `products.image_url`/`stores.logo_url` guardaban rutas relativas
+tipo `../Assets/images/mockups/prod_x.png` (pensadas para resolver relativas
+a `pages/*.html`), pero esos PNG **nunca se copiaban a `dist/`** — Vite solo
+empaqueta lo que aparece estático en HTML/JS (así es como `hero_banner.png`/
+`logoazulpng.png` sí llegaban a `dist/assets/`, por estar en un `<img src>`
+de HTML), y estas rutas solo existían como *dato* insertado por los seeds SQL,
+invisible para el bundler. Confirmado con `find dist -iname "*mockup*"` →
+vacío. Bonus: `../Assets/images/products/meat.png` (usado por "Asado Especial
+x 1kg") y `../Assets/images/default-product.png`/`placeholder.png` (fallbacks
+en 5 archivos JS) **nunca existieron como archivo**, ni siquiera en `Assets/`
+fuente — rotos desde que se escribieron. El fallback externo de
+`vender.js` (`https://via.placeholder.com/50`) tampoco funcionaba: no está en
+el `img-src` de la CSP (`'self' data: https://*.googleusercontent.com
+https://*.supabase.co`), bloqueado silenciosamente.
+
+Fix: `scripts/optimize-images.mjs` (usa `sharp`, devDependency nueva)
+convierte los 24 PNG fuente (mockups + fotos de producto) a WebP
+(~9.9 MB → ~0.9 MB, resize a 1000px de ancho) en `public/img/*.webp` —
+Vite copia `public/` verbatim a la raíz de `dist/`, y rutas absolutas
+(`/img/x.webp`) no dependen de la profundidad de la página (a diferencia
+de la convención `../Assets/...` original, que fue la causa raíz real del
+bug). `public/img/no-image.svg` (placeholder genérico dibujado a mano, sin
+depender de ningún archivo fuente) reemplaza los 3 fallbacks rotos.
+`hero_banner.png` (708 KB) también convertido a `.webp` (84 KB), referenciado
+directo desde `pages/home.html` igual que antes.
+
+Migración `39_fix_broken_image_paths.sql` (aplicada): `UPDATE` idempotente
+que repunta cada fila con la ruta vieja a la nueva (56 productos + 10
+tiendas). Verificado con `BEGIN;...ROLLBACK;` antes de aplicar para real, y
+de nuevo con un `SELECT count(*)` después de aplicar (0 filas con ruta
+vieja). Seeds `04`/`06`/`07` actualizados para que una base nueva ya nazca
+con las rutas correctas. Además: `loading="lazy"` agregado a las miniaturas
+que no lo tenían (`vender.js`, `carrito.js`); `producto.js`/imagen principal
+queda `eager` (probable LCP de esa página).
+
+Verificado en el navegador (preview): home muestra fotos reales de producto
+y logos de tienda, 0 solicitudes fallidas de imagen, sin errores de consola.
+
+### F10-04 (A113-227) — manejo de errores y estados de red consistentes
+
+`renderErrorState(container, message, onRetry)` nuevo en `cart-utils.js`:
+reemplaza los divs de error con estilos inline duplicados en
+`home.js`/`search.js`/`comercio.js`/`producto.js` (cada uno tenía su propia
+copia) por un estado visual único con botón "Reintentar" (CSS en
+`home.css`, clase `.bl-error-state`). Detecta `navigator.onLine === false`
+para mostrar un mensaje específico de "sin conexión" en vez del genérico.
+
+Banner global de "sin conexión" en `auth-utils.js` (mismo patrón
+self-contained que el `showToast`/`initToastContainer` ya existente ahí —
+estilos inline inyectados por JS, no depende de qué hoja de estilos cargue
+cada página): escucha `online`/`offline` del navegador, visible en
+cualquier página que importe `auth-utils.js` (prácticamente todo el sitio).
+
+### F10-05 (A113-228) — SEO básico + Open Graph + favicon
+
+`public/apple-touch-icon.png` (180×180, generado con `sharp` desde
+`icon.svg`) agregado a las 16 páginas — cierra el gap documentado en F9-02
+("Safari/iOS no soporta ícono SVG para Agregar a Inicio"). `public/og-image.png`
+(512×512) + tags `og:title`/`og:description`/`og:image`/`twitter:card` en
+las 6 páginas de contenido público (home, producto, comercio, search, info,
+terminos) — no hay SSR, así que el contenido es genérico de sitio, no
+por-producto (un crawler de redes sociales no ejecuta el JS que carga el
+producto real). `meta name="description"` agregado donde faltaba.
+`public/robots.txt` nuevo: permite todo salvo las páginas privadas
+(login/register/perfil/carrito/vender/admin/repartidor/mensajes).
+
+**F10-02 (E2E con Playwright) — no implementado, explícitamente opcional
+en el roadmap.** No hay framework de testing instalado en el proyecto;
+agregarlo es una decisión de mantenimiento a futuro (quién corre los tests,
+en qué CI) más que un fix puntual — queda para cuando el equipo lo pida.
+
+**Fase 10 completa** salvo F10-02 (opcional, ver arriba). Checklist de
+testing manual por rol: [docs/TESTING_CHECKLIST.md](TESTING_CHECKLIST.md).
+
 ### F4-01 (A113-187) — sincronizar carrito en la nube — sin migración nueva
 
 `user_carts` ya existía desde `09_user_carts.sql` (tabla + RLS `select`/

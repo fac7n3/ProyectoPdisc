@@ -87,9 +87,10 @@ function renderCart() {
     productDiv.className = 'cart-item__product';
 
     const img = document.createElement('img');
-    img.src = item.image || '';
+    img.src = item.image || '/img/no-image.svg';
     img.alt = item.name || 'Producto';
     img.className = 'cart-item__img';
+    img.loading = 'lazy';
     productDiv.appendChild(img);
 
     const infoDiv = document.createElement('div');

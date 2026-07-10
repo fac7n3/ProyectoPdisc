@@ -16,6 +16,49 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// F10-04: banner de "sin conexión" consistente en todo el sitio (self-contained,
+// mismo criterio que initToastContainer más abajo — no depende de que la página
+// haya cargado home.css o auth.css).
+function getOfflineBanner() {
+  let banner = document.getElementById("bl-offline-banner");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "bl-offline-banner";
+    banner.setAttribute("role", "status");
+    banner.textContent = "Sin conexión a internet. Algunas funciones no van a andar hasta que vuelva la señal.";
+    banner.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9998;
+      background: #ef4444;
+      color: #fff;
+      text-align: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      transform: translateY(-100%);
+      transition: transform 0.25s ease;
+    `;
+    document.body.appendChild(banner);
+  }
+  return banner;
+}
+
+function updateOfflineBanner() {
+  const banner = getOfflineBanner();
+  banner.style.transform = navigator.onLine ? "translateY(-100%)" : "translateY(0)";
+}
+
+window.addEventListener("online", updateOfflineBanner);
+window.addEventListener("offline", updateOfflineBanner);
+if (document.body) {
+  updateOfflineBanner();
+} else {
+  document.addEventListener("DOMContentLoaded", updateOfflineBanner);
+}
+
 // --- Sistema de Notificaciones ---
 function initToastContainer() {
   let container = document.getElementById("toast-container");
