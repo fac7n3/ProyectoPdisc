@@ -175,10 +175,129 @@ async function loadDashboard(user) {
   fillStoreProfileForm(store);
 
   await fetchProducts();
+  await renderAllOrders();
   await renderPendingPayments();
   await renderShipmentsInProgress();
   await loadDashboardStats();
   setupDashboardEvents();
+}
+
+// --- F5-06: gestión de pedidos ---
+
+const ORDER_STATUS_LABELS_VENDER = {
+  pending: 'Pendiente',
+  paid: 'Pagado',
+  shipped: 'Enviado',
+  ready_for_pickup: 'Listo para retirar',
+  completed: 'Completado',
+  cancelled: 'Cancelado',
+};
+
+async function renderAllOrders() {
+  const container = document.getElementById('all-orders-container');
+  if (!container || !currentStoreId) return;
+
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('id, status, payment_status, delivery_method, total_price, created_at')
+    .eq('store_id', currentStoreId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  container.textContent = '';
+
+  if (error) {
+    console.error('Error al cargar pedidos:', error);
+    const errorMsg = document.createElement('p');
+    errorMsg.style.color = 'var(--bl-text-secondary)';
+    errorMsg.textContent = 'Error al cargar los pedidos.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  if (!orders || orders.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-text-secondary)';
+    emptyMsg.textContent = 'Todavía no tenés pedidos.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  orders.forEach((order) => container.appendChild(buildOrderRow(order)));
+}
+
+function buildOrderRow(order) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
+
+  const info = document.createElement('div');
+  const idStrong = document.createElement('strong');
+  idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+  info.appendChild(idStrong);
+  const detailsSpan = document.createElement('span');
+  detailsSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
+  const methodLabel = order.delivery_method === 'delivery' ? 'Envío' : 'Retiro en el local';
+  detailsSpan.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
+  info.appendChild(detailsSpan);
+  row.appendChild(info);
+
+  const statusSpan = document.createElement('span');
+  statusSpan.style.cssText = 'font-weight: 600;';
+  statusSpan.textContent = ORDER_STATUS_LABELS_VENDER[order.status] || order.status;
+  row.appendChild(statusSpan);
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display: flex; gap: 0.5rem;';
+
+  // El flujo de "delivery" lo maneja el repartidor (F3-03) -- acá el
+  // vendedor solo gestiona directamente el retiro en el local.
+  if (order.delivery_method === 'pickup' && order.status === 'paid') {
+    const readyBtn = document.createElement('button');
+    readyBtn.type = 'button';
+    readyBtn.className = 'form-btn';
+    readyBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
+    readyBtn.textContent = 'Listo para retirar';
+    readyBtn.addEventListener('click', () => updateOrderStatus(order.id, 'ready_for_pickup'));
+    actions.appendChild(readyBtn);
+  }
+
+  if (order.delivery_method === 'pickup' && order.status === 'ready_for_pickup') {
+    const completeBtn = document.createElement('button');
+    completeBtn.type = 'button';
+    completeBtn.className = 'form-btn';
+    completeBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
+    completeBtn.textContent = 'Marcar entregado';
+    completeBtn.addEventListener('click', () => updateOrderStatus(order.id, 'completed'));
+    actions.appendChild(completeBtn);
+  }
+
+  if (['pending', 'paid'].includes(order.status)) {
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-outline';
+    cancelBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.addEventListener('click', () => {
+      if (confirm('¿Cancelar este pedido?')) updateOrderStatus(order.id, 'cancelled');
+    });
+    actions.appendChild(cancelBtn);
+  }
+
+  row.appendChild(actions);
+  return row;
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+
+  if (error) {
+    console.error('Error al actualizar el pedido:', error);
+    showToast('No se pudo actualizar el pedido.', 'error');
+    return;
+  }
+
+  showToast('Pedido actualizado.', 'success');
+  renderAllOrders();
 }
 
 /** F5-08: precarga el form de perfil del comercio con los datos actuales. */
@@ -618,6 +737,7 @@ async function openEditProductForm(productId) {
 
 function setupDashboardEvents() {
   setupStoreProfileForm();
+  document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
   const btnCancelAdd = document.getElementById('btn-cancel-add-product');

@@ -104,6 +104,26 @@ Verificado: import sin errores de consola; `get_advisors` sin hallazgos
 nuevos. Sin sesión de vendedor real para probar el guardado end-to-end en
 el navegador — mismo límite que F0-04.
 
+### F5-06 (A113-196) — gestión de pedidos del vendedor — sin migración nueva
+
+Sección "Mis pedidos" en el dashboard de `vender.js`: lista las últimas 50
+órdenes de la tienda con estado y método de entrega (antes solo existían
+vistas parciales: "Pagos por confirmar" de F2-04 y "Envíos en curso" de
+F3-04, ninguna daba una vista completa de todos los pedidos).
+
+El flujo de `delivery_method='delivery'` lo maneja el repartidor
+(`claim_delivery`/`update_delivery_status`, F3-02/F3-03) — acá el vendedor
+solo lo ve, no lo modifica. Para `delivery_method='pickup'` sí gestiona
+directo (`UPDATE` simple sobre `orders.status`, la policy
+`orders_update_store_or_admin` ya lo permitía, sin RLS ni migración nueva):
+"Listo para retirar" (`paid → ready_for_pickup`) y "Marcar entregado"
+(`ready_for_pickup → completed`). Cualquier pedido en `pending`/`paid`
+también se puede cancelar (con confirmación).
+
+Verificado contra la base real con `BEGIN;...ROLLBACK;`: cliente crea y
+paga un pedido pickup → el vendedor dueño de la tienda lo marca
+`ready_for_pickup` → el `UPDATE` pasa la RLS sin problema.
+
 No hubo migración nueva para F3-04 (`A113-184`) — solo consultas nuevas en el
 frontend sobre columnas/tablas ya existentes (`orders`, `deliveries`). Ver
 nota en `js/perfil.js` (`DELIVERY_STATUS_LABELS`) y `js/vender.js`
