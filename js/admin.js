@@ -1143,6 +1143,76 @@ async function fetchSupportTickets() {
   });
 }
 
+// --- F12-12: log de auditoría de admin (admin_audit_log, 47_admin_audit_log.sql) ---
+// Poblado solo por el trigger log_admin_action (SECURITY DEFINER) -- no hay
+// insert directo expuesto, esta vista es de solo lectura.
+const AUDIT_ACTION_LABELS = { insert: 'Creó', update: 'Modificó', delete: 'Borró' };
+
+async function fetchAuditLog() {
+  const tbody = document.getElementById('audit-log-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando log...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('admin_audit_log')
+    .select('id, admin_id, action, target_table, target_id, details, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error('Error fetching audit log:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar el log.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Todavía no hay acciones de admin registradas.</td></tr>';
+    return;
+  }
+
+  const adminIds = [...new Set(data.map((log) => log.admin_id).filter(Boolean))];
+  const { data: profiles } = adminIds.length
+    ? await supabase.from('profiles').select('id, email').in('id', adminIds)
+    : { data: [] };
+  const emailByAdminId = new Map((profiles || []).map((p) => [p.id, p.email]));
+
+  tbody.innerHTML = '';
+  data.forEach((log) => {
+    const tr = document.createElement('tr');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = new Date(log.created_at).toLocaleString('es-AR');
+    tr.appendChild(tdDate);
+
+    const tdAdmin = document.createElement('td');
+    tdAdmin.textContent = log.admin_id ? (emailByAdminId.get(log.admin_id) || 'Admin eliminado') : '—';
+    tr.appendChild(tdAdmin);
+
+    const tdAction = document.createElement('td');
+    tdAction.textContent = AUDIT_ACTION_LABELS[log.action] || log.action;
+    tr.appendChild(tdAction);
+
+    const tdTable = document.createElement('td');
+    tdTable.textContent = log.target_table;
+    tr.appendChild(tdTable);
+
+    const tdActions = document.createElement('td');
+    const detailBtn = document.createElement('button');
+    detailBtn.type = 'button';
+    detailBtn.className = 'action-btn';
+    detailBtn.textContent = 'Ver detalle';
+    detailBtn.addEventListener('click', () => {
+      alert(
+        `Tabla: ${log.target_table}\nID: ${log.target_id || '—'}\n\nDatos:\n${JSON.stringify(log.details, null, 2)}`
+      );
+    });
+    tdActions.appendChild(detailBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
@@ -1158,6 +1228,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-revocations').addEventListener('click', fetchRevocationRequests);
   document.getElementById('btn-refresh-error-logs').addEventListener('click', fetchErrorLogs);
   document.getElementById('btn-refresh-support').addEventListener('click', fetchSupportTickets);
+  document.getElementById('btn-refresh-audit-log').addEventListener('click', fetchAuditLog);
 
   setupCategoryForm();
   setupCouponForm();
@@ -1175,6 +1246,7 @@ function initAdminPage() {
   fetchRevocationRequests();
   fetchErrorLogs();
   fetchSupportTickets();
+  fetchAuditLog();
 }
 
 guardPage({

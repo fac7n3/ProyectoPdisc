@@ -496,6 +496,28 @@
               </tbody>
             </table>
           </div>
+
+          <!-- F12-12: log de auditoría de acciones de admin -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Log de auditoría</h1>
+            <button class="action-btn" id="btn-refresh-audit-log" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Admin</th>
+                  <th>Acción</th>
+                  <th>Tabla</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="audit-log-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
 
