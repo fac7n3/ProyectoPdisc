@@ -40,8 +40,10 @@ async function applyFilters() {
     // Apply category filter
     // F9-03: "ofertas" no es una categoría real (no existe en la tabla categories) —
     // filtra por productos con descuento en vez de por rubro.
+    // F12-14: excluye ofertas ya vencidas (offer_expires_at en el pasado).
     if (filterState.category === 'ofertas') {
-      query = query.not('compare_at_price', 'is', null);
+      const today = new Date().toISOString().slice(0, 10);
+      query = query.not('compare_at_price', 'is', null).or(`offer_expires_at.is.null,offer_expires_at.gte.${today}`);
     } else if (filterState.category !== 'todas') {
       query = query.eq('categories.slug', filterState.category);
     }

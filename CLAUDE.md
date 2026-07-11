@@ -2,7 +2,8 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-12 hechos).
+> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01, F12-02, F12-03, F12-04, F12-05, F12-06, F12-07, F12-08, F12-09,
+F12-11, F12-12, F12-14 hechos; F12-13 saltado a pedido del usuario).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -236,10 +237,14 @@ completo de los 18 ítems, hechos y pendientes).
   - Verificado con `BEGIN;...ROLLBACK;`: admin suspende una tienda → 1 log; el propio vendedor la edita → 0 logs nuevos; admin crea y borra una categoría → 2 logs (insert+delete); cliente edita su propio teléfono → 0 logs; admin suspende un repartidor vía la RPC real → 1 log. RLS: un no-admin no puede leer `admin_audit_log` (0 filas).
   - **Hallazgo operativo, no de código**: `select * from auth.users where raw_app_meta_data->>'role' is not null` da 0 resultados con `role='admin'` -- **nadie tiene el rol admin asignado en producción todavía**, el panel de `admin.html` nunca fue accedido con una cuenta real (todo el testing de esta fase fue simulando el JWT en SQL). Falta asignarlo a mano desde el dashboard de Supabase (Authentication → Users → editar `raw_app_meta_data` → `{"role": "admin"}`) antes de poder usar cualquiera de las funciones de admin en el navegador real.
 
-### Pendiente (F12-13 a F12-18)
-Ver `docs/ROADMAP.md` sección 17.1 para la lista completa ordenada por prioridad. F12-13
-(insights del vendedor) y F12-14 en adelante quedan a definir con el usuario antes de seguir
-autónomamente (ver mensaje de fin de sesión).
+- **F12-14** (`A113-254`) — **Vencimiento de ofertas.** `products.offer_expires_at` (migración 48, `date` — el vendedor elige un día en un `<input type="date">`, no una hora exacta; "vence el 30" debe seguir la oferta activa durante todo el 30, por eso `date` y no `timestamptz`). `buildPriceRow()` (`cart-utils.js`, compartida home/search/comercio) ahora ignora el precio tachado si `offer_expires_at` ya pasó — el vendedor no tiene que acordarse de sacarlo a mano, el badge simplemente deja de mostrarse solo. `search.js`: el filtro "Ofertas" (F9-03) ahora también excluye las vencidas (`.or('offer_expires_at.is.null,offer_expires_at.gte.hoy')`). Input nuevo en `vender.js`/`vender.html`, solo se persiste si hay un `compare_at_price` cargado (si el vendedor borra el precio de oferta pero deja una fecha vieja en el form, no queda guardada una fecha huérfana). **Nota de verificación**: no hay ningún producto real con oferta activa en la base — probado con casos sintéticos vía `preview_eval` (import directo de `buildPriceRow` con productos fabricados: sin oferta / sin vencimiento / vigente / vence hoy / vencida ayer, los 5 correctos) en vez de datos reales, y el filtro de `search.js` confirmado sin errores contra la base real (0 resultados, correcto ya que ningún producto tiene oferta hoy).
+
+### Pendiente (F12-15 a F12-18)
+Ver `docs/ROADMAP.md` sección 17.1 para la lista completa. F12-13 (insights del vendedor) saltado
+a pedido del usuario -- va a pasar diseños propios. F12-15 en adelante (onboarding de vendedor,
+multi-usuario por comercio, roles de admin granulares) quedan para definir el rumbo con el
+usuario antes de seguir autónomamente; F12-18 (facturación/AFIP) ya está marcado fuera de
+alcance de código.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

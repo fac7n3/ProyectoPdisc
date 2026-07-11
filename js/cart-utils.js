@@ -124,7 +124,10 @@ export function formatPrice(price) {
  * F5-05: fila de precio de una product-card, con precio tachado + % de
  * descuento si el producto tiene `compare_at_price`. Compartida entre
  * home.js/search.js/comercio.js para no repetir el mismo bloque 3 veces.
- * @param {{price: number, compare_at_price?: number|null}} product
+ * F12-14: si `offer_expires_at` ya pasó, se ignora el precio de oferta y se
+ * muestra como un producto normal (sin tachado) -- el vendedor no tiene que
+ * acordarse de sacarlo a mano.
+ * @param {{price: number, compare_at_price?: number|null, offer_expires_at?: string|null}} product
  */
 export function buildPriceRow(product) {
   const priceRow = document.createElement('div');
@@ -135,7 +138,10 @@ export function buildPriceRow(product) {
   priceSpan.textContent = formatPrice(product.price);
   priceRow.appendChild(priceSpan);
 
-  if (product.compare_at_price && product.compare_at_price > product.price) {
+  const today = new Date().toISOString().slice(0, 10);
+  const offerExpired = product.offer_expires_at && product.offer_expires_at < today;
+
+  if (product.compare_at_price && product.compare_at_price > product.price && !offerExpired) {
     const oldSpan = document.createElement('span');
     oldSpan.className = 'product-card__price-old';
     oldSpan.textContent = formatPrice(product.compare_at_price);
