@@ -918,6 +918,64 @@ async function fetchReportedReviews() {
   });
 }
 
+// --- F12-02: solicitudes de arrepentimiento (auditoría cross-tienda) ---
+// El admin no resuelve la solicitud acá (eso lo hace el vendedor coordinando
+// la devolución y usando "Cancelar" en su propio panel, F5-06) — esta vista
+// es solo para auditar que no quede una solicitud sin atender.
+async function fetchRevocationRequests() {
+  const tbody = document.getElementById('revocations-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando solicitudes...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, status, total_price, revocation_requested_at, stores(name)')
+    .not('revocation_requested_at', 'is', null)
+    .order('revocation_requested_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching revocation requests:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar las solicitudes.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay solicitudes de arrepentimiento.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((order) => {
+    const tr = document.createElement('tr');
+
+    const tdOrder = document.createElement('td');
+    tdOrder.textContent = `#${order.id.slice(0, 8).toUpperCase()}`;
+    tr.appendChild(tdOrder);
+
+    const tdStore = document.createElement('td');
+    tdStore.textContent = order.stores?.name || 'Comercio';
+    tr.appendChild(tdStore);
+
+    const tdTotal = document.createElement('td');
+    tdTotal.textContent = `$${order.total_price.toLocaleString('es-AR')}`;
+    tr.appendChild(tdTotal);
+
+    const tdRequested = document.createElement('td');
+    tdRequested.textContent = new Date(order.revocation_requested_at).toLocaleDateString('es-AR');
+    tr.appendChild(tdRequested);
+
+    const tdStatus = document.createElement('td');
+    const resolved = order.status === 'cancelled';
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge ${resolved ? 'status-approved' : 'status-pending'}`;
+    statusBadge.textContent = resolved ? 'Resuelto (cancelado)' : 'Pendiente de resolución';
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    tbody.appendChild(tr);
+  });
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
@@ -930,6 +988,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-repartidores-mod').addEventListener('click', fetchRepartidoresForModeration);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
   document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
+  document.getElementById('btn-refresh-revocations').addEventListener('click', fetchRevocationRequests);
 
   setupCategoryForm();
   setupCouponForm();
@@ -944,6 +1003,7 @@ function initAdminPage() {
   fetchRepartidoresForModeration();
   fetchPendingProofsAdmin();
   fetchReportedReviews();
+  fetchRevocationRequests();
 }
 
 guardPage({

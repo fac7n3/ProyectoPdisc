@@ -618,6 +618,33 @@ sin fallar), y rechazo de una orden ajena (otro `auth.uid()`). `js/perfil.js`
 (badge de aviso en "Mis pedidos" — el vendedor resuelve con el botón
 "Cancelar" que ya existía en F5-06 una vez gestionada la devolución).
 
+## Fase 12 — Backlog post-lanzamiento (F12-01 a F12-04)
+
+Migraciones: `41_notify_request_status.sql` (trigger de notificación en
+aprobación/rechazo de vendedor/repartidor) y
+`42_vendor_coupons_and_per_store_shipping.sql` (`coupons.store_id`,
+`stores.delivery_fee`/`free_shipping_threshold`, `create_order` reescrita).
+
+Lo más delicado de este batch fue la reescritura de `create_order`: antes
+calculaba **un** porcentaje de descuento y **una** política de envío para
+todo el carrito de una sola vez; ahora ambos se calculan **dentro del loop
+por tienda**, leyendo `stores.delivery_fee`/`free_shipping_threshold` de
+cada una y aplicando el cupón solo si `coupon.store_id is null` (global) o
+coincide con esa tienda puntual. Los defaults (350/5000) son idénticos a
+las constantes viejas — ninguna de las 14 tiendas existentes ve cambiar su
+envío sin que el vendedor toque nada. Verificado con `BEGIN;...ROLLBACK;`
+contra productos reales de 2 tiendas distintas: cupón de tienda específica
+descuenta solo esa tienda ($1800→$1620, la otra queda en $600); umbral de
+envío gratis bajado a $100 en una tienda da envío gratis, costo de envío
+subido a $777 en otra cobra $777 (antes ambas hubieran dado $350 fijo).
+
+`carrito.js` reaprovecha el fetch de `validateCartFreshness` (F4-02, ya
+revalida precio/stock real de cada producto) para también traer
+`store_id`/`stores(delivery_fee, free_shipping_threshold)` sin duplicar una
+consulta — de paso corrige un bug latente: `calculateShippingByStore`
+agrupaba por el *nombre* de la tienda (string), no por su id real; dos
+tiendas con el mismo nombre se hubieran mezclado en el cálculo de envío.
+
 ## Fase 11 — Deploy y lanzamiento
 
 Documentación de despliegue, guía de usuario y arquitectura ahora viven en

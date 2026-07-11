@@ -430,6 +430,28 @@
               </tbody>
             </table>
           </div>
+
+          <!-- F12-02: solicitudes de arrepentimiento (auditoría cross-tienda) -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Solicitudes de arrepentimiento</h1>
+            <button class="action-btn" id="btn-refresh-revocations" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>Comercio</th>
+                  <th>Total</th>
+                  <th>Solicitado</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="revocations-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
 

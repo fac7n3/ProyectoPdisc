@@ -9,6 +9,10 @@ const TYPE_LABELS = {
   new_review: 'Recibiste una nueva reseña',
   new_message: 'Tenés un mensaje nuevo',
   revocation_requested: 'Un cliente solicitó arrepentimiento de compra',
+  seller_request_approved: '¡Tu solicitud de vendedor fue aprobada!',
+  seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
+  delivery_request_approved: '¡Tu solicitud de repartidor fue aprobada!',
+  delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
 };
 
 export async function fetchNotifications(userId) {

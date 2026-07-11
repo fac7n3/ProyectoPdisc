@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-10 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal (términos/privacidad/botón de arrepentimiento) agregado).
+> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-04 hechos).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -193,6 +193,23 @@ El usuario pidió arrancar por lo legal, pero mencionó varios pendientes más p
 - **Interfaces del vendedor + tab de "insights"**: el usuario va a pasar diseños propios más adelante; mientras tanto pidió algo provisional. **No implementado todavía** — a la espera de definir qué métricas mostrar (ya existen ventas del día/ingresos del mes en el dashboard, F5-07; "insights" sugiere algo más — comparativas, tendencias, productos más vendidos — falta especificar antes de construir algo que probablemente se descarte al llegar el diseño real).
 - **Apps nativas (App Store / Google Play)**: recomendación dada, no iniciada. Google Play: viable barato envolviendo la PWA existente con una Trusted Web Activity (Bubblewrap/PWABuilder, ~USD 25 cuenta de developer). Apple: más difícil, suele rechazar apps que son "solo un sitio envuelto" (guideline 4.2) salvo que tengan algo nativo real — necesitaría Capacitor + alguna función nativa, USD 99/año cuenta de developer. Es un proyecto aparte, no algo para una sesión de pasada.
 - El usuario también avisó que "seguramente" hay más cosas que se está olvidando — no hay una lista cerrada, van a ir apareciendo.
+
+## Progreso (Fase 12 — Backlog post-lanzamiento)
+Salió de una auditoría pedida por el usuario ("qué le falta al proyecto desde cliente/vendedor/
+admin"). Tablero de Jira creado (`A113-240` padre, `A113-241..258` subtareas F12-01 a F12-18,
+ordenadas de mayor a menor prioridad — ver `docs/ROADMAP.md` sección 17.1 para el detalle
+completo de los 18 ítems, hechos y pendientes).
+
+### ✅ Hecho
+- **F12-01** (`A113-241`) — Bug real encontrado en la propia auditoría: `approve_seller_request`/`approve_delivery_request` nunca notificaban al usuario aprobado, y el rechazo (`admin.js`, un `UPDATE` directo, no un RPC) tampoco. Fix con un **trigger genérico** (`notify_request_status_change`, migración `41_notify_request_status.sql`) en `seller_requests`/`delivery_requests` que dispara en cualquier cambio de `status` a `approved`/`rejected` — cubre los dos caminos (RPC de aprobación + update directo de rechazo) sin duplicar la llamada a `create_notification` en cada lugar. Verificado con `BEGIN;...ROLLBACK;` aprobando una solicitud pending real ("Test Bakery").
+- **F12-02** (`A113-242`) — Sección nueva "Solicitudes de arrepentimiento" en `admin.js`/`admin.html`: lista todas las órdenes con `revocation_requested_at` seteado, cross-tienda, con un badge "Resuelto"/"Pendiente de resolución" (según si `status='cancelled'`). Es solo de **auditoría** — el admin no resuelve nada acá, eso lo sigue haciendo el vendedor con "Cancelar" (F5-06) una vez coordinada la devolución. RLS de `orders` ya dejaba ver todo al admin (`orders_select_own` incluye un bypass de admin embebido), no hizo falta ninguna policy nueva.
+- **F12-03** (`A113-243`) — **Cupones propios por vendedor** (pedido explícito del usuario). `coupons.store_id` (nullable — null = cupón global de admin, no-null = de un vendedor) + 3 policies nuevas (`coupons_insert/update/delete_own_store`, scoped a `exists(stores donde owner_id = auth.uid())`); los cupones globales del admin no se tocan (siguen bajo `coupons_all_admin`). `create_order` reescrita: el descuento ahora se calcula **por tienda dentro del mismo loop** en vez de una vez para todo el carrito — un cupón de vendedor solo descuenta su propia tienda, si el carrito tiene productos de otro comercio ese comercio no se ve afectado. UI nueva "Mis cupones" en `vender.js`/`vender.html` (mismo patrón de filas `<div>` que "Mis pedidos", esta página no usa `<table>`). `carrito.js`: el preview de cupón ahora avisa si el código es de un comercio que no está en el carrito (antes decía "¡aplicado!" igual, aunque terminara descontando 0% en el total real). Verificado con `BEGIN;...ROLLBACK;`: cupón de tienda específica en un carrito de 2 tiendas → solo la tienda dueña del cupón se descuenta (`$1800→$1620`), la otra queda igual (`$600`).
+- **F12-04** (`A113-244`) — **Envío configurable por comercio** (mismo commit que F12-03, comparten la reescritura de `create_order`). `stores.delivery_fee`/`free_shipping_threshold` (default 350/5000 — **idénticos a las constantes globales viejas**, ninguna tienda existente ve cambiar su precio de envío sin tocar nada). Inputs nuevos en "Perfil de mi comercio" (`vender.js`/`vender.html`). `carrito.js`: `calculateShippingByStore` ahora agrupa por `store_id` real (antes agrupaba por el *nombre* de la tienda como string — un bug latente si dos tiendas comparten nombre) y usa el `delivery_fee`/`free_shipping_threshold` real de cada una, poblado en `validateCartFreshness` (F4-02, se aprovecha el mismo fetch que ya revalida precio/stock para no duplicar una consulta). Verificado con `BEGIN;...ROLLBACK;`: tienda con umbral bajado a $100 → envío gratis; otra tienda con costo subido a $777 → cobra $777 en vez de $350.
+
+### Pendiente (F12-05 a F12-18)
+Ver `docs/ROADMAP.md` sección 17.1 para la lista completa ordenada por prioridad. Los siguientes
+en la cola: teléfono de contacto del cliente (F12-05), direcciones guardadas (F12-06), cupones
+visibles públicamente (F12-07), calificar al repartidor (F12-08).
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

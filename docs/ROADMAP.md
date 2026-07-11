@@ -243,6 +243,35 @@ Sobre el esquema actual (`profiles`, `products`, `categories`, `stores`, `orders
 
 ---
 
+## 17.1 FASE 12 — Backlog post-lanzamiento (cliente/vendedor/admin) 🟡
+
+Salió de una auditoría pedida por el usuario tras cerrar la Fase 11: "qué cosas, detalles y
+funcionalidades le hacen falta al proyecto desde el punto de vista del cliente, vendedor y
+administrador". No estaba en el plan original — se agrega acá como fase propia, ordenada de
+mayor a menor prioridad. Los primeros ítems son bugs/huecos reales encontrados leyendo el
+código; los últimos son mejoras de fondo.
+
+- [x] **F12-01** 🔴 Notificar al vendedor/repartidor cuando su solicitud es aprobada. Trigger genérico en `seller_requests`/`delivery_requests` (cubre RPC de aprobación + rechazo directo de admin.js).
+- [x] **F12-02** 🔴 Vista de admin para solicitudes de arrepentimiento — sección nueva en `admin.js`, cross-tienda (RLS de `orders` ya dejaba ver todo al admin).
+- [x] **F12-03** 🟠 **Cupones propios por vendedor**: `coupons.store_id` (nullable) + RLS + `create_order` reescrita para que el descuento de un cupón de vendedor aplique solo a su propia tienda. UI nueva en `vender.js` ("Mis cupones").
+- [x] **F12-04** 🟠 **Envío configurable por comercio**: `stores.delivery_fee`/`free_shipping_threshold` (default 350/5000, igual que antes) — `create_order` y `carrito.js` los leen por tienda en vez de una constante global.
+- [ ] **F12-05** 🟠 Teléfono de contacto del cliente (hoy el registro solo pide email — ni repartidor ni vendedor pueden llamar al comprador).
+- [ ] **F12-06** 🟠 Direcciones guardadas del cliente (hoy la dirección de envío se escribe de cero en cada compra).
+- [ ] **F12-07** 🟡 Cupones visibles públicamente para el cliente (hoy hay que saber el código de antemano, no hay una sección de "promociones activas").
+- [ ] **F12-08** 🟡 Calificar al repartidor (las reseñas de F7-01 son solo de producto/tienda).
+- [ ] **F12-09** 🟡 Aviso de "volvió el stock" para un producto agotado.
+- [ ] **F12-10** 🟡 Panel de admin para `error_logs` (se guardan desde F1 pero no hay ninguna pantalla para leerlos, solo SQL directo).
+- [ ] **F12-11** 🟡 Panel de soporte/reclamos para el admin (hoy solo existe el mail genérico de las páginas legales).
+- [ ] **F12-12** 🟢 Log de auditoría de acciones de admin (quién aprobó/suspendió/borró qué).
+- [ ] **F12-13** 🟢 Insights/analíticas reales del vendedor (tendencias, producto más vendido) — el usuario va a pasar diseños propios; mientras tanto, algo provisional.
+- [ ] **F12-14** 🟢 Vencimiento de ofertas (`compare_at_price` no tiene fecha límite, hay que sacarlo a mano).
+- [ ] **F12-15** 🟢 Onboarding para vendedor recién aprobado (hoy cae a un dashboard vacío sin guía).
+- [ ] **F12-16** 🟢 Multi-usuario por comercio (hoy un solo login por tienda, sin cuentas de empleado).
+- [ ] **F12-17** 🟢 Roles de admin granulares (hoy es todo o nada).
+- [ ] **F12-18** 🟢 (Fuera de alcance de código) Facturación/comprobante fiscal (AFIP) — depende de cómo cada comercio declara sus ventas, es una decisión de negocio antes que una feature.
+
+---
+
 ## 18. Cronograma y milestones
 
 Runway: **~2026-07-07 → fines de octubre / principios de noviembre 2026** (~16 semanas). Sin presión, con buffer.

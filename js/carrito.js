@@ -13,24 +13,35 @@ let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEven
 let shippingAddress = '';
 let paymentMethod = 'mercadopago'; // 'mercadopago' | 'simulado' | 'transferencia' — ver initPaymentMethodEvents()
 
-// Política de envío unificada (F2-05): igual que en create_order (migración 20)
-// para que lo que se muestra en el resumen coincida con lo que se cobra.
+// F12-04: fallback antes de que termine de cargar el envío real de cada
+// tienda (validateCartFreshness lo trae) — coincide con el default real en
+// la base (39_.../42_vendor_coupons_and_per_store_shipping.sql), así que
+// nunca muestra un número distinto al que create_order va a cobrar.
 const FREE_SHIPPING_THRESHOLD = 5000;
 const FLAT_SHIPPING_FEE = 350;
 
-/** Agrupa el carrito por tienda y calcula el envío de cada una (post-descuento). */
+// F12-04: productId -> storeId y storeId -> {deliveryFee, freeShippingThreshold},
+// poblados por validateCartFreshness (ya trae los productos reales del carrito,
+// se aprovecha esa misma consulta para no duplicar un fetch).
+const productStoreId = new Map();
+const storeShippingById = new Map();
+
+/** Agrupa el carrito por tienda y calcula el envío real de cada una (post-descuento). */
 function calculateShippingByStore(cart, discount) {
   if (deliveryMethod === 'pickup') return 0;
 
   const subtotalByStore = cart.reduce((acc, item) => {
-    const shop = item.shop || 'Tienda';
-    acc[shop] = (acc[shop] || 0) + item.price * item.qty;
+    const storeId = productStoreId.get(item.id) || item.shop || 'Tienda';
+    acc[storeId] = (acc[storeId] || 0) + item.price * item.qty;
     return acc;
   }, {});
 
-  return Object.values(subtotalByStore).reduce((total, storeSubtotal) => {
+  return Object.entries(subtotalByStore).reduce((total, [storeId, storeSubtotal]) => {
     const discounted = storeSubtotal * (1 - discount);
-    return total + (discounted >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE);
+    const shipping = storeShippingById.get(storeId);
+    const threshold = shipping?.freeShippingThreshold ?? FREE_SHIPPING_THRESHOLD;
+    const fee = shipping?.deliveryFee ?? FLAT_SHIPPING_FEE;
+    return total + (discounted >= threshold ? 0 : fee);
   }, 0);
 }
 
@@ -301,20 +312,34 @@ function initCouponEvents() {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('discount_percentage')
+        .select('discount_percentage, store_id')
         .eq('code', code)
         .eq('is_active', true)
         .single();
+
+      // F12-03: un cupón de vendedor (store_id no nulo) solo sirve si el
+      // carrito tiene algo de esa tienda -- create_order lo revalida igual,
+      // pero avisar acá evita el "¡aplicado!" engañoso que en el total real
+      // termina descontando 0%.
+      const cartStoreIds = new Set(getCart().map((item) => productStoreId.get(item.id)).filter(Boolean));
+      const noAplica = data?.store_id && !cartStoreIds.has(data.store_id);
 
       if (error || !data) {
         currentDiscount = 0;
         appliedCouponCode = null;
         message.textContent = 'Código inválido o expirado.';
         message.classList.add('is-error');
+      } else if (noAplica) {
+        currentDiscount = 0;
+        appliedCouponCode = null;
+        message.textContent = 'Ese cupón es de un comercio que no tenés en el carrito.';
+        message.classList.add('is-error');
       } else {
         currentDiscount = data.discount_percentage / 100;
         appliedCouponCode = code;
-        message.textContent = `¡Cupón aplicado! Tenés ${data.discount_percentage}% de descuento.`;
+        message.textContent = data.store_id
+          ? `¡Cupón aplicado! Tenés ${data.discount_percentage}% de descuento en los productos de esa tienda.`
+          : `¡Cupón aplicado! Tenés ${data.discount_percentage}% de descuento.`;
         message.classList.add('is-success');
       }
     } catch (err) {
@@ -510,7 +535,7 @@ async function validateCartFreshness() {
 
   const { data: products, error } = await supabase
     .from('products')
-    .select('id, price, stock, is_active')
+    .select('id, price, stock, is_active, store_id, stores(delivery_fee, free_shipping_threshold)')
     .in('id', cart.map((item) => item.id));
 
   if (error) {
@@ -519,6 +544,23 @@ async function validateCartFreshness() {
   }
 
   const byId = new Map((products || []).map((p) => [p.id, p]));
+
+  // F12-04: mismo fetch de arriba ya trae la tienda real de cada producto —
+  // se aprovecha para armar el mapa de envío por tienda (antes era una
+  // constante global igual para todo el carrito).
+  productStoreId.clear();
+  storeShippingById.clear();
+  (products || []).forEach((p) => {
+    if (!p.store_id) return;
+    productStoreId.set(p.id, p.store_id);
+    if (p.stores) {
+      storeShippingById.set(p.store_id, {
+        deliveryFee: p.stores.delivery_fee,
+        freeShippingThreshold: p.stores.free_shipping_threshold,
+      });
+    }
+  });
+
   const removedNames = [];
   const adjustedNames = [];
 
@@ -539,8 +581,9 @@ async function validateCartFreshness() {
     return acc;
   }, []);
 
-  if (removedNames.length === 0 && adjustedNames.length === 0) return;
-
+  // A diferencia de antes, siempre re-renderiza: el mapa de envío recién
+  // poblado puede cambiar el costo mostrado aunque nada se haya sacado o
+  // ajustado.
   saveCart(validatedCart);
   renderCart();
 

@@ -162,7 +162,7 @@ async function loadDashboard(user) {
   // Obtener la tienda del usuario
   const { data: store, error } = await supabase
     .from('stores')
-    .select('id, name, logo_url, address, phone, description, zone, hours')
+    .select('id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold')
     .eq('owner_id', user.id)
     .single();
 
@@ -183,6 +183,7 @@ async function loadDashboard(user) {
   await renderPendingPayments();
   await renderShipmentsInProgress();
   await loadDashboardStats();
+  await renderMyCoupons();
   setupDashboardEvents();
 }
 
@@ -323,6 +324,8 @@ function fillStoreProfileForm(store) {
   const zoneInput = document.getElementById('store-zone');
   const hoursInput = document.getElementById('store-hours');
   const descInput = document.getElementById('store-description');
+  const deliveryFeeInput = document.getElementById('store-delivery-fee');
+  const freeShippingInput = document.getElementById('store-free-shipping-threshold');
 
   if (logoInput) logoInput.value = store.logo_url || '';
   if (addressInput) addressInput.value = store.address || '';
@@ -331,6 +334,9 @@ function fillStoreProfileForm(store) {
   // hours se guarda como un string JSON simple (ej: '"Lunes a viernes 9 a 18hs"')
   if (hoursInput) hoursInput.value = typeof store.hours === 'string' ? store.hours : '';
   if (descInput) descInput.value = store.description || '';
+  // F12-04: envío configurable por comercio (antes era una constante global 350/5000).
+  if (deliveryFeeInput) deliveryFeeInput.value = store.delivery_fee ?? 350;
+  if (freeShippingInput) freeShippingInput.value = store.free_shipping_threshold ?? 5000;
 }
 
 function setupStoreProfileForm() {
@@ -343,6 +349,14 @@ function setupStoreProfileForm() {
     setLoading(submitBtn, true, 'Guardar perfil');
 
     const hoursValue = document.getElementById('store-hours').value.trim();
+    const deliveryFeeValue = parseInt(document.getElementById('store-delivery-fee').value, 10);
+    const freeShippingValue = parseInt(document.getElementById('store-free-shipping-threshold').value, 10);
+
+    if (!Number.isFinite(deliveryFeeValue) || deliveryFeeValue < 0 || !Number.isFinite(freeShippingValue) || freeShippingValue < 0) {
+      showToast('El costo de envío y el umbral de envío gratis tienen que ser números válidos (0 o más).', 'error');
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
 
     const { error } = await supabase
       .from('stores')
@@ -353,6 +367,8 @@ function setupStoreProfileForm() {
         zone: document.getElementById('store-zone').value.trim() || null,
         hours: hoursValue || null,
         description: document.getElementById('store-description').value.trim() || null,
+        delivery_fee: deliveryFeeValue,
+        free_shipping_threshold: freeShippingValue,
       })
       .eq('id', currentStoreId);
 
@@ -363,6 +379,129 @@ function setupStoreProfileForm() {
       showToast('Perfil del comercio actualizado.', 'success');
     }
     setLoading(submitBtn, false, 'Guardar perfil');
+  });
+}
+
+// --- F12-03: cupones propios del vendedor (solo los de su propia tienda) ---
+
+async function renderMyCoupons() {
+  const container = document.getElementById('my-coupons-container');
+  if (!container || !currentStoreId) return;
+  container.textContent = '';
+
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('id, code, discount_percentage, is_active, expires_at')
+    .eq('store_id', currentStoreId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar cupones:', error);
+    const errorMsg = document.createElement('p');
+    errorMsg.style.color = 'var(--bl-text-secondary)';
+    errorMsg.textContent = 'Error al cargar tus cupones.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-text-secondary)';
+    emptyMsg.textContent = 'Todavía no creaste ningún cupón.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  data.forEach((coupon) => {
+    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
+
+    const info = document.createElement('div');
+    const codeStrong = document.createElement('strong');
+    codeStrong.textContent = coupon.code;
+    info.appendChild(codeStrong);
+    const detailsSpan = document.createElement('span');
+    detailsSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
+    detailsSpan.textContent = `${coupon.discount_percentage}% · ${isExpired ? 'Vencido' : (coupon.is_active ? 'Activo' : 'Inactivo')}`;
+    info.appendChild(detailsSpan);
+    row.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display: flex; gap: 0.5rem;';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'btn-outline';
+    toggleBtn.style.cssText = 'padding: 0.5rem 1rem;';
+    toggleBtn.textContent = coupon.is_active ? 'Desactivar' : 'Activar';
+    toggleBtn.addEventListener('click', async () => {
+      const { error: updateError } = await supabase.from('coupons').update({ is_active: !coupon.is_active }).eq('id', coupon.id);
+      if (updateError) {
+        showToast('No se pudo actualizar el cupón.', 'error');
+        console.error(updateError);
+        return;
+      }
+      renderMyCoupons();
+    });
+    actions.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn-outline';
+    deleteBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
+    deleteBtn.textContent = 'Borrar';
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
+      const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
+      if (deleteError) {
+        showToast('No se pudo borrar el cupón.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      showToast('Cupón borrado.', 'success');
+      renderMyCoupons();
+    });
+    actions.appendChild(deleteBtn);
+
+    row.appendChild(actions);
+    container.appendChild(row);
+  });
+}
+
+function setupMyCouponForm() {
+  const form = document.getElementById('my-coupon-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('my-coupon-code').value.trim().toUpperCase();
+    const discountNum = parseInt(document.getElementById('my-coupon-discount').value, 10);
+    const expiresAt = document.getElementById('my-coupon-expires').value;
+
+    if (!code || !Number.isInteger(discountNum) || discountNum < 1 || discountNum > 100) {
+      showToast('Código y descuento (1-100) son obligatorios.', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('coupons').insert({
+      code,
+      discount_percentage: discountNum,
+      expires_at: expiresAt || null,
+      is_active: true,
+      store_id: currentStoreId,
+    });
+
+    if (error) {
+      showToast('No se pudo crear el cupón (¿el código ya está en uso?).', 'error');
+      console.error(error);
+      return;
+    }
+
+    showToast('Cupón creado — ya se puede usar en el checkout.', 'success');
+    form.reset();
+    renderMyCoupons();
   });
 }
 
@@ -886,6 +1025,7 @@ async function renderVariantsManager(productId) {
 
 function setupDashboardEvents() {
   setupStoreProfileForm();
+  setupMyCouponForm();
   document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
 
   // F5-03: alta de variante para el producto que se está editando.
