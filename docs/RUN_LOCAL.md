@@ -607,11 +607,14 @@ fue `is_valid_cuit` sin `search_path` fijo — corregido (migración
 es un fix de una sola función ya definida en `16_input_validation_constraints.sql`,
 no un cambio de esquema nuevo). El resto de los hallazgos son RPCs
 `SECURITY DEFINER` invocables por `authenticated` a propósito (la superficie
-real de la app — cada uno valida el permiso adentro). Pendiente: activar
-"Leaked Password Protection" (toggle manual en el dashboard). El proyecto
-de Supabase está en plan **Free** — sin backups automáticos ni PITR;
-consultado con el usuario, decidió quedarse en Free por ahora (decisión de
-costo consciente, no un descuido — revisar si el volumen de ventas crece).
+real de la app — cada uno valida el permiso adentro). **Backups y "Leaked
+Password Protection" están gateados por el plan Pro de Supabase** (esto
+último no es un toggle gratis como se pensó en un momento — Supabase lo
+condiciona al plan pago). El proyecto está en plan **Free** — sin backups
+automáticos, sin PITR y sin leaked-password-check; consultado con el
+usuario, decidió quedarse en Free hasta que el proyecto empiece a facturar
+y recién ahí pasar a Pro (decisión de costo consciente y secuenciada, no
+un descuido).
 
 ## F2-07 (A113-179) — Mercado Pago real (Checkout Pro)
 
