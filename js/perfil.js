@@ -16,6 +16,7 @@ const cardRole = document.getElementById("card-role");
 
 const logoutBtn = document.getElementById("logout-btn");
 const mainContent = document.getElementById("main-content");
+const quickBtnAdmin = document.getElementById("quick-btn-admin");
 
 // Direcciones
 const formDirecciones = document.getElementById("direcciones-form");
@@ -85,6 +86,13 @@ function renderQuickProfile(user) {
   if (cardRole) {
     cardRole.textContent = quickRole.charAt(0).toUpperCase() + quickRole.slice(1);
     removeSkeleton(cardRole);
+  }
+
+  // El rol real que evalúa la RLS/el gate de admin.html vive en app_metadata
+  // (JWT), no en profiles.role -- mismo campo que arregló guardPage en F12-17.
+  const jwtRole = user.app_metadata?.role;
+  if (quickBtnAdmin && (jwtRole === 'admin' || jwtRole === 'moderador')) {
+    quickBtnAdmin.style.display = '';
   }
 }
 
