@@ -283,9 +283,17 @@ export async function guardPage({
         .select('role')
         .eq('id', user.id)
         .single();
-      
-      const role = profile?.role || user.user_metadata?.role || 'cliente';
-      if (role !== requireRole) {
+
+      // F12-17: app_metadata.role es lo que evalúa el RLS real (auth.jwt()),
+      // no profiles.role -- antes este gate solo miraba profiles.role, que
+      // nunca se setea a 'admin'/'moderador' en ningún flujo de la app (a
+      // diferencia de vendedor/repartidor, sincronizados por las RPCs de
+      // aprobación). Sin esto, una cuenta con app_metadata.role='admin'
+      // seteado a mano en el dashboard de Supabase (única forma de asignarlo)
+      // pasaba la RLS pero nunca podía entrar a admin.html.
+      const role = user.app_metadata?.role || profile?.role || 'cliente';
+      const allowedRoles = Array.isArray(requireRole) ? requireRole : [requireRole];
+      if (!allowedRoles.includes(role)) {
         window.location.replace('../pages/home.html');
         return null;
       }

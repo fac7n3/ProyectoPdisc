@@ -1249,10 +1249,40 @@ function initAdminPage() {
   fetchAuditLog();
 }
 
+// F12-17: roles de admin granulares. 'moderador' es un rol más acotado --
+// solo ve/gestiona reseñas reportadas y reclamos de soporte (F7-03/F12-11),
+// nada financiero ni de configuración (cupones, categorías, comercios,
+// métricas, log de auditoría, etc). Las policies de RLS son las que de
+// verdad protegen cada tabla (ver 50_moderador_role.sql) -- esto solo
+// oculta la UI que un moderador no puede usar, para que no vea botones
+// que van a fallar.
+const MODERADOR_ONLY_SECTIONS = [
+  'seller-requests', 'delivery-requests', 'metrics', 'categories', 'coupons',
+  'stores-mod', 'products-mod', 'repartidores-mod', 'proofs',
+  'revocations', 'error-logs', 'audit-log',
+];
+
+function hideAdminSection(sectionKey) {
+  const header = document.querySelector(`.admin-header[data-section="${sectionKey}"]`);
+  if (!header) return;
+  header.style.display = 'none';
+  let el = header.nextElementSibling;
+  while (el && !el.matches('.admin-header')) {
+    el.style.display = 'none';
+    el = el.nextElementSibling;
+  }
+}
+
+function applyRoleVisibility(role) {
+  if (role !== 'moderador') return;
+  MODERADOR_ONLY_SECTIONS.forEach(hideAdminSection);
+}
+
 guardPage({
   requireAuth: true,
-  requireRole: 'admin',
-  onReady: () => {
+  requireRole: ['admin', 'moderador'],
+  onReady: (user) => {
+    applyRoleVisibility(user?.app_metadata?.role);
     initAdminPage();
   }
 });

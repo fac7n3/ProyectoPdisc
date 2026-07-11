@@ -195,7 +195,7 @@
 
       <main>
         <div class="admin-container" id="admin-content">
-          <div class="admin-header">
+          <div class="admin-header" data-section="seller-requests">
             <h1>Solicitudes de Comercios</h1>
             <button class="action-btn" id="btn-refresh" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -218,7 +218,7 @@
             </table>
           </div>
 
-          <div class="admin-header" style="margin-top: 3rem;">
+          <div class="admin-header" style="margin-top: 3rem;" data-section="delivery-requests">
             <h1>Solicitudes de Repartidores</h1>
             <button class="action-btn" id="btn-refresh-delivery" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -242,7 +242,7 @@
           </div>
 
           <!-- F6-05: Métricas globales -->
-          <div class="admin-header" style="margin-top: 3rem;">
+          <div class="admin-header" style="margin-top: 3rem;" data-section="metrics">
             <h1>Métricas Globales</h1>
             <button class="action-btn" id="btn-refresh-metrics" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -251,7 +251,7 @@
           </div>
 
           <!-- F6-02: CRUD de categorías -->
-          <div class="admin-header" style="margin-top: 3rem;">
+          <div class="admin-header" style="margin-top: 3rem;" data-section="categories">
             <h1>Categorías</h1>
             <button class="action-btn" id="btn-refresh-categories" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -287,7 +287,7 @@
           </div>
 
           <!-- F6-03: CRUD de cupones -->
-          <div class="admin-header" style="margin-top: 3rem;">
+          <div class="admin-header" style="margin-top: 3rem;" data-section="coupons">
             <h1>Cupones</h1>
             <button class="action-btn" id="btn-refresh-coupons" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -324,7 +324,7 @@
           </div>
 
           <!-- F6-04: Moderación -->
-          <div class="admin-header" style="margin-top: 3rem;">
+          <div class="admin-header" style="margin-top: 3rem;" data-section="stores-mod">
             <h1>Moderación · Comercios</h1>
             <button class="action-btn" id="btn-refresh-stores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -344,7 +344,7 @@
             </table>
           </div>
 
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="products-mod">
             <h1>Moderación · Buscar producto</h1>
           </div>
           <form class="admin-inline-form" id="product-search-form">
@@ -370,7 +370,7 @@
             </table>
           </div>
 
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="repartidores-mod">
             <h1>Moderación · Repartidores</h1>
             <button class="action-btn" id="btn-refresh-repartidores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -390,7 +390,7 @@
             </table>
           </div>
 
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="proofs">
             <h1>Moderación · Comprobantes de pago pendientes</h1>
             <button class="action-btn" id="btn-refresh-proofs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -411,7 +411,7 @@
           </div>
 
           <!-- F7-03: reseñas reportadas -->
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="reviews-mod">
             <h1>Moderación · Reseñas reportadas</h1>
             <button class="action-btn" id="btn-refresh-reviews-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -432,7 +432,7 @@
           </div>
 
           <!-- F12-02: solicitudes de arrepentimiento (auditoría cross-tienda) -->
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="revocations">
             <h1>Solicitudes de arrepentimiento</h1>
             <button class="action-btn" id="btn-refresh-revocations" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -454,7 +454,7 @@
           </div>
 
           <!-- F12-10: errores de cliente registrados (error_logs, A113-171) -->
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="error-logs">
             <h1>Errores registrados</h1>
             <button class="action-btn" id="btn-refresh-error-logs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -476,7 +476,7 @@
           </div>
 
           <!-- F12-11: soporte/reclamos -->
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="support">
             <h1>Soporte / Reclamos</h1>
             <button class="action-btn" id="btn-refresh-support" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
@@ -498,7 +498,7 @@
           </div>
 
           <!-- F12-12: log de auditoría de acciones de admin -->
-          <div class="admin-header" style="margin-top: 2rem;">
+          <div class="admin-header" style="margin-top: 2rem;" data-section="audit-log">
             <h1>Log de auditoría</h1>
             <button class="action-btn" id="btn-refresh-audit-log" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
           </div>
