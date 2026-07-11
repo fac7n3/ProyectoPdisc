@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderActiveCoupons } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState, renderActiveCoupons } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -189,10 +189,7 @@ async function loadProducts() {
     grid.innerHTML = ''; // Limpiar skeletons
 
     if (!products || products.length === 0) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;';
-      emptyMsg.textContent = 'Aún no hay productos disponibles.';
-      grid.appendChild(emptyMsg);
+      renderEmptyState(grid, 'Aún no hay productos disponibles.', 'fa-box-open');
       return;
     }
 

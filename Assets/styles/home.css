@@ -431,6 +431,41 @@ ul, ol {
   transform: translateY(-1px);
 }
 
+/* F9-01 (provisional): franja de valor con el acento cálido de la paleta --
+   placeholder hasta que llegue un diseño real, ver docs/DISENOS_PROVISIONALES.md */
+.value-strip {
+  max-width: 1320px;
+  margin: 1rem auto 0;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+.value-strip__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bl-text-secondary);
+}
+
+.value-strip__item i {
+  color: var(--bl-accent);
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .value-strip {
+    gap: 0.75rem 1rem;
+  }
+  .value-strip__item {
+    font-size: 0.8125rem;
+  }
+}
+
 /* ===========================================================
    FARMACIA DE TURNO
    =========================================================== */
@@ -1317,6 +1352,38 @@ button.coupon-chip:hover {
 
 .bl-error-state__retry:hover {
   background: var(--bl-surface-alt);
+}
+
+/* F9-06 (provisional): estado vacío consistente -- mismo lenguaje visual que
+   .bl-error-state (F10-04) pero sin tono de error, para grillas que cargaron
+   bien y simplemente no tienen resultados. Ver docs/DISENOS_PROVISIONALES.md. */
+.bl-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--bl-text-secondary);
+}
+
+.bl-empty-state i {
+  font-size: 2rem;
+  color: var(--bl-text-muted);
+}
+
+.bl-empty-state p {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+/* F9-06 (provisional): micro-interacción de feedback al presionar, en los
+   botones compartidos que todavía no tenían ningún estado :active. */
+.quick-btn:active,
+.coupon-chip:active,
+.hero__banner-cta:active {
+  transform: scale(0.97);
 }
 
 /* ===========================================================

@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -102,10 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     grid.id = 'store-products-grid';
 
     if (!products || products.length === 0) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; color: #64748b; padding: 2rem;';
-      emptyMsg.textContent = 'Este comercio aún no tiene productos publicados.';
-      grid.appendChild(emptyMsg);
+      renderEmptyState(grid, 'Este comercio aún no tiene productos publicados.', 'fa-store-slash');
     } else {
       products.forEach(product => {
         const article = document.createElement('article');

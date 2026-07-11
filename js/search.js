@@ -2,7 +2,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 
 
 
@@ -70,10 +70,7 @@ async function applyFilters() {
     }
 
     if (!products || products.length === 0) {
-      const emptyMsg = document.createElement('div');
-      emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 2rem; color: #64748b;';
-      emptyMsg.textContent = 'No se encontraron productos con estos filtros.';
-      grid.appendChild(emptyMsg);
+      renderEmptyState(grid, 'No se encontraron productos con estos filtros.', 'fa-magnifying-glass');
       return;
     }
 

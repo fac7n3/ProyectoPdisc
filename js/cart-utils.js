@@ -276,6 +276,26 @@ export function renderErrorState(container, message, onRetry) {
   container.appendChild(wrap);
 }
 
+/**
+ * F9-06 (provisional): estado vacío consistente para grillas que cargaron
+ * bien pero no tienen resultados (antes cada página tenía su propio div de
+ * texto plano). Mismo criterio que renderErrorState (F10-04) -- ver
+ * docs/DISENOS_PROVISIONALES.md.
+ */
+export function renderEmptyState(container, message, icon = 'fa-box-open') {
+  if (!container) return;
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'bl-empty-state';
+  const iconEl = document.createElement('i');
+  iconEl.className = `fa-solid ${icon}`;
+  wrap.appendChild(iconEl);
+  const p = document.createElement('p');
+  p.textContent = message;
+  wrap.appendChild(p);
+  container.appendChild(wrap);
+}
+
 export function showToast(message, type = 'default') {
   const toast = document.getElementById('toast');
   if (!toast) return;

@@ -1,5 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
-import { formatPrice } from './cart-utils.js';
+import { formatPrice, renderErrorState } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
@@ -225,6 +225,7 @@ async function loadDashboard(user, staffStoreId) {
   await renderPendingPayments();
   await renderShipmentsInProgress();
   await loadDashboardStats();
+  await renderInsights();
 
   if (isStoreOwner) {
     await renderMyCoupons();
@@ -699,6 +700,118 @@ async function loadDashboardStats() {
   const revenueMonthEl = document.getElementById('stat-revenue-month');
   if (salesTodayEl) salesTodayEl.textContent = salesToday;
   if (revenueMonthEl) revenueMonthEl.textContent = formatPrice(revenueMonth);
+}
+
+/**
+ * F12-13 (provisional): insights básicos del vendedor -- producto más
+ * vendido + ventas de los últimos 7 días. Datos reales (no fabricados),
+ * pero el layout es un placeholder simple hasta que el usuario pase
+ * diseños propios -- ver docs/DISENOS_PROVISIONALES.md.
+ */
+async function renderInsights() {
+  const container = document.getElementById('insights-container');
+  if (!container || !currentStoreId) return;
+
+  container.textContent = '';
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const [{ data: items, error: itemsError }, { data: recentOrders, error: ordersError }] = await Promise.all([
+    supabase
+      .from('order_items')
+      .select('title, quantity, orders!inner(store_id, payment_status)')
+      .eq('orders.store_id', currentStoreId)
+      .eq('orders.payment_status', 'paid'),
+    supabase
+      .from('orders')
+      .select('total_price, created_at')
+      .eq('store_id', currentStoreId)
+      .eq('payment_status', 'paid')
+      .gte('created_at', sevenDaysAgo.toISOString()),
+  ]);
+
+  if (itemsError || ordersError) {
+    console.error('Error al cargar insights:', itemsError || ordersError);
+    renderErrorState(container, 'No se pudieron cargar los insights.', renderInsights);
+    return;
+  }
+
+  // Productos más vendidos -- agrupado por título (snapshot de order_items,
+  // mismo criterio que F2-06: no depende de que el producto siga activo).
+  const salesByTitle = new Map();
+  (items || []).forEach((item) => {
+    salesByTitle.set(item.title, (salesByTitle.get(item.title) || 0) + item.quantity);
+  });
+  const topProducts = [...salesByTitle.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  const topTitle = document.createElement('p');
+  topTitle.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem;';
+  topTitle.textContent = 'Productos más vendidos (histórico):';
+  container.appendChild(topTitle);
+
+  if (topProducts.length === 0) {
+    const emptyP = document.createElement('p');
+    emptyP.style.cssText = 'color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;';
+    emptyP.textContent = 'Todavía no tenés ventas confirmadas.';
+    container.appendChild(emptyP);
+  } else {
+    const list = document.createElement('ol');
+    list.style.cssText = 'margin: 0 0 1.5rem; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem;';
+    topProducts.forEach(([title, qty]) => {
+      const li = document.createElement('li');
+      li.style.cssText = 'font-size: 0.9rem;';
+      li.textContent = `${title} — ${qty} unidad${qty === 1 ? '' : 'es'} vendida${qty === 1 ? '' : 's'}`;
+      list.appendChild(li);
+    });
+    container.appendChild(list);
+  }
+
+  // Ventas de los últimos 7 días -- barras simples con CSS, sin librería de gráficos.
+  const trendTitle = document.createElement('p');
+  trendTitle.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem;';
+  trendTitle.textContent = 'Ventas de los últimos 7 días:';
+  container.appendChild(trendTitle);
+
+  const dailyTotals = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(sevenDaysAgo);
+    day.setDate(day.getDate() + i);
+    const dayKey = day.toISOString().slice(0, 10);
+    const total = (recentOrders || [])
+      .filter((o) => o.created_at.slice(0, 10) === dayKey)
+      .reduce((sum, o) => sum + o.total_price, 0);
+    dailyTotals.push({ day, total });
+  }
+  const maxTotal = Math.max(1, ...dailyTotals.map((d) => d.total));
+
+  const trendWrap = document.createElement('div');
+  trendWrap.style.cssText = 'display: flex; flex-direction: column; gap: 0.4rem;';
+  dailyTotals.forEach(({ day, total }) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem;';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'width: 3.5rem; color: var(--bl-text-secondary); flex-shrink: 0;';
+    label.textContent = day.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
+    row.appendChild(label);
+
+    const barTrack = document.createElement('div');
+    barTrack.style.cssText = 'flex: 1; background: var(--bl-border-light); border-radius: 4px; height: 10px; overflow: hidden;';
+    const bar = document.createElement('div');
+    bar.style.cssText = `width: ${Math.round((total / maxTotal) * 100)}%; background: var(--bl-accent); height: 100%; border-radius: 4px;`;
+    barTrack.appendChild(bar);
+    row.appendChild(barTrack);
+
+    const value = document.createElement('span');
+    value.style.cssText = 'width: 5.5rem; text-align: right; font-weight: 600; flex-shrink: 0;';
+    value.textContent = formatPrice(total);
+    row.appendChild(value);
+
+    trendWrap.appendChild(row);
+  });
+  container.appendChild(trendWrap);
 }
 
 // --- F2-04: comprobantes de transferencia por confirmar ---

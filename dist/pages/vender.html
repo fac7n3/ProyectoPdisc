@@ -156,14 +156,14 @@
         color: white;
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-BW6k3st6.js"></script>
+    <script type="module" crossorigin src="/assets/vender-2pE_t-ke.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DCs1hpHp.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-BLtiTjdo.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-C_9m7V4D.js">
     <link rel="modulepreload" crossorigin href="/assets/notifications-utils-CE9i_bMr.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-BWqWchi0.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-Dsbj1CW5.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-ClG1VbxK.css">
   </head>
   <body>
     <!-- Loading screen -->
@@ -256,6 +256,15 @@
                 <h3 id="stat-revenue-month">$0</h3>
                 <p>Ingresos del Mes</p>
               </div>
+            </div>
+
+            <!-- Insights (F12-13, provisional): productos más vendidos + ventas de los
+                 últimos 7 días. El usuario va a pasar diseños propios más adelante,
+                 ver docs/DISENOS_PROVISIONALES.md -- mientras tanto, datos reales con
+                 un layout simple. -->
+            <div id="insights-section" style="margin-top: 2rem;">
+              <h2 style="font-size: 1.25rem; color: var(--bl-text); margin-bottom: 0.25rem;">Insights <span style="font-weight: 400; font-size: 0.8rem; color: var(--bl-text-muted);">(provisional)</span></h2>
+              <div id="insights-container" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);"></div>
             </div>
 
             <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->

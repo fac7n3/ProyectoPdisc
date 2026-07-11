@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-13 [saltado a pedido del usuario] y F12-18 [fuera de alcance]; F9-07 resuelto).
+> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -148,8 +148,9 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F9-05** (`A113-220`) — Responsive, acotado a los gaps reales encontrados (no un rediseño mobile de cada página). `pages/admin.html` y `pages/repartidor.html` no tenían **ningún** `@media` en su `<style>` inline — agregado un breakpoint de 768px a cada una (`admin.html`: menos padding en `.admin-container`, `.admin-header` con `flex-wrap`, tablas más compactas; `repartidor.html`: menos padding en `.vender-container`, `.delivery-card` con `flex-wrap`). De paso, mismo ajuste en `vender.html` (comparte el mismo patrón de contenedor, ya tenía un breakpoint solo para el badge de F5-09, se le sumó lo mismo).
 - **F9-07** (`A113-222`) — Modal rápido de producto con datos reales. Antes `js/product-modal.js` armaba todo leyendo el DOM de la tarjeta clickeada: **fabricaba el stock** con una fórmula pseudoaleatoria (`stockSeed % 40 + 5`) y el rating leía `.product-card__stars`, un elemento que las grillas de home/search/comercio nunca generan (siempre 0 estrellas + un "vendidos" inventado multiplicando ese 0 por 2.3). Reescrito: `fetchProductData(productId)` consulta Supabase de verdad (`stock`, `price`/`compare_at_price`/`offer_expires_at` con el mismo criterio de vencimiento que `buildPriceRow`, `product_images`, `product_variants`, `stores.delivery_fee`/`free_shipping_threshold`) + `fetchReviewsSummary('product', id)` (reviews-utils.js, F7-01) para el rating real — si no hay reseñas, dice "Todavía no tiene reseñas" en vez de inventar un promedio. El modal ahora abre con un estado de carga (spinner) y maneja error+reintentar si falla la consulta. Bonus real agregado de paso: galería con miniaturas reales de `product_images` (antes 1 sola imagen fija), bloque de variantes igual al de `producto.js`, pestaña nueva "Reseñas" (carga perezosa de `renderReviewsSection` al abrirla, con formulario propio incluido), "Ver tienda"/nombre del comercio ahora navegan de verdad a `comercio.html` (antes no hacían nada), envío mostrado con el costo real por tienda (F12-04) en vez de un texto genérico sin acción, y stock=0 deshabilita cantidad/acciones en vez de nunca poder ocurrir (el stock fabricado nunca daba 0). Verificado en el navegador con productos reales (nombre/precio/tienda/stock/rating coinciden con la base; pestaña de reseñas renderiza sin errores). No verificado visualmente con un producto real que tenga `product_variants`/`product_images` cargados (ninguno existe todavía en la base) — la lógica espeja el mismo patrón ya probado en `producto.js` (F5-03/F5-04).
 
-### ⏳ Próximo / diferido
-- **F9-01** (sistema de diseño, "más contraste, calidez y personalidad") y **F9-06** (micro-interacciones/estados vacíos/skeletons) — son los dos ítems más subjetivos de la fase (cambios visuales de gusto, no bugs concretos). A propósito no se tocaron sin una vuelta de diseño con el usuario — el resto de esta fase (F9-02, F9-03, F9-04, F9-05, F9-07) fueron todos arreglos concretos y verificables; estos dos ameritan una decisión de diseño, no una autónoma.
+- **F9-01** (`A113-216`) y **F9-06** (`A113-221`) — resueltos **provisionalmente** (2026-07-11), a pedido del usuario, mientras llega una vuelta de diseño real. Ver [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) para el detalle de qué se tocó (franja de valor con el acento cálido existente, estados vacíos consistentes, micro-interacciones básicas) y qué a propósito no (paleta/tipografía, paneles internos con CSS propio).
+
+**Fase 9 completa** (F9-01 a F9-07, los dos últimos ítems de forma provisional).
 
 ## Progreso (Fase 10 — Calidad, testing y performance)
 ### ✅ Hecho
@@ -190,7 +191,7 @@ recomendado que lo revise un abogado antes del lanzamiento real.**
 ### Backlog mencionado por el usuario (2026-07-10), no abordado todavía — a propósito
 El usuario pidió arrancar por lo legal, pero mencionó varios pendientes más para después:
 - **Pulido de responsive**: "detalles que suman" — sin especificar dónde todavía, queda para cuando el usuario los señale o para una pasada dedicada.
-- **Interfaces del vendedor + tab de "insights"**: el usuario va a pasar diseños propios más adelante; mientras tanto pidió algo provisional. **No implementado todavía** — a la espera de definir qué métricas mostrar (ya existen ventas del día/ingresos del mes en el dashboard, F5-07; "insights" sugiere algo más — comparativas, tendencias, productos más vendidos — falta especificar antes de construir algo que probablemente se descarte al llegar el diseño real).
+- **Interfaces del vendedor + tab de "insights"**: resuelto provisionalmente el 2026-07-11 (ver sección "Diseños provisionales" más abajo y [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md)) — el usuario todavía va a pasar diseños propios, esto es un placeholder funcional con datos reales mientras tanto.
 - **Apps nativas (App Store / Google Play)**: recomendación dada, no iniciada. Google Play: viable barato envolviendo la PWA existente con una Trusted Web Activity (Bubblewrap/PWABuilder, ~USD 25 cuenta de developer). Apple: más difícil, suele rechazar apps que son "solo un sitio envuelto" (guideline 4.2) salvo que tengan algo nativo real — necesitaría Capacitor + alguna función nativa, USD 99/año cuenta de developer. Es un proyecto aparte, no algo para una sesión de pasada.
 - El usuario también avisó que "seguramente" hay más cosas que se está olvidando — no hay una lista cerrada, van a ir apareciendo.
 
@@ -251,10 +252,24 @@ completo de los 18 ítems, hechos y pendientes).
   - `admin.js`/`admin.html`: las 14 secciones del panel llevan un atributo `data-section="X"` en su `.admin-header` (sin restructurar el HTML -- las secciones son divs planos hermanos, no wrappeados, así que la función `hideAdminSection()` camina los hermanos siguientes hasta el próximo `.admin-header` para ocultar toda la sección de una). Con rol `moderador`, se ocultan las 12 secciones exclusivas de admin; "Moderación · Reseñas reportadas" y "Soporte / Reclamos" quedan visibles. Verificado parseando el HTML real con `DOMParser` (sin sesión real disponible, mismo límite de siempre): las 12 secciones se encuentran y ocultan correctamente (1-2 elementos hermanos cada una según si tienen un form), las 2 de moderador quedan intactas.
   - Verificado con `BEGIN;...ROLLBACK;`: moderador ve una reseña oculta ajena (un cliente común no), la des-oculta y queda auditado en `admin_audit_log`; moderador ve y actualiza el estado de un reclamo ajeno; moderador **no** puede crear una categoría (rechazado por RLS, ninguna policy nueva se la permite); acceso del admin sin ningún cambio (spot-check: sigue pudiendo crear categorías).
 
+- **F12-13** (`A113-253`) — Insights del vendedor, resuelto **provisionalmente** (2026-07-11):
+sección nueva "Insights (provisional)" en `vender.js`/`vender.html` con productos más vendidos
+(agrupado por título desde `order_items`, snapshot igual que F2-06) y ventas de los últimos 7
+días (barras simples con CSS, sin librería de gráficos). Datos 100% reales, layout deliberadamente
+simple -- ver [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md), se reemplaza cuando
+el usuario pase sus propios diseños.
+
 ### Pendiente (F12-18)
-Ver `docs/ROADMAP.md` sección 17.1. Con F12-17 cerrado, **Fase 12 queda completa** salvo F12-13
-(insights del vendedor, saltado a pedido del usuario -- va a pasar diseños propios) y F12-18
-(facturación/AFIP), que ya estaba marcado fuera de alcance de código desde el principio.
+Ver `docs/ROADMAP.md` sección 17.1. Con F12-13 y F12-17 cerrados, **Fase 12 queda completa** salvo
+F12-18 (facturación/AFIP), que ya estaba marcado fuera de alcance de código desde el principio.
+
+## Diseños provisionales (2026-07-11)
+A pedido del usuario, se implementaron versiones provisionales (con datos reales, no maquetas)
+de los 3 ítems que estaban a la espera de un diseño real: **F9-01** (sistema de diseño -- franja
+de valor con el acento cálido ya existente en la paleta), **F9-06** (estados vacíos consistentes +
+micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). Detalle completo,
+qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
+se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"
