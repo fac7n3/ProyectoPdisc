@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
   delivery_request_approved: '¡Tu solicitud de repartidor fue aprobada!',
   delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
+  stock_alert: 'Volvió el stock de un producto que te interesaba',
 };
 
 export async function fetchNotifications(userId) {
@@ -77,8 +78,23 @@ export async function renderNotificationsSection(container, userId) {
     row.style.cssText = `padding: 0.75rem; border-radius: 8px; border: 1px solid var(--bl-border, #e2e8f0); background: ${n.read_at ? 'transparent' : 'var(--bl-surface-alt, #f0f4f8)'};`;
 
     const title = document.createElement('strong');
-    title.textContent = TYPE_LABELS[n.type] || n.type;
+    // F12-09: a diferencia del resto (siempre texto genérico, ver arriba),
+    // un aviso de stock sin decir de qué producto es casi inútil -- el
+    // cliente puede tener varios pendientes en productos distintos.
+    if (n.type === 'stock_alert' && n.payload?.product_title) {
+      title.textContent = `¡Volvió el stock de "${n.payload.product_title}"!`;
+    } else {
+      title.textContent = TYPE_LABELS[n.type] || n.type;
+    }
     row.appendChild(title);
+
+    if (n.type === 'stock_alert' && n.payload?.product_id) {
+      const link = document.createElement('a');
+      link.href = `./producto.html?id=${encodeURIComponent(n.payload.product_id)}`;
+      link.style.cssText = 'display: block; font-size: 0.85rem; color: var(--bl-primary, #2563eb); margin-top: 0.15rem;';
+      link.textContent = 'Ver producto';
+      row.appendChild(link);
+    }
 
     const meta = document.createElement('div');
     meta.style.cssText = 'font-size: 0.8rem; color: var(--bl-text-muted, #94a3b8); margin-top: 0.25rem;';

@@ -147,6 +147,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     cartIcon.className = 'fa-solid fa-cart-plus';
     addBtn.appendChild(cartIcon);
     addBtn.append(' Agregar al carrito');
+
+    const outOfStock = product.stock <= 0;
+    if (outOfStock) {
+      addBtn.disabled = true;
+      addBtn.style.cssText = 'opacity: 0.5; cursor: not-allowed;';
+      addBtn.title = 'Producto sin stock';
+    }
     actionsDiv.appendChild(addBtn);
 
     // F7-02: contactar al vendedor con contexto de este producto.
@@ -157,6 +164,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     actionsDiv.appendChild(contactLink);
 
     info.appendChild(actionsDiv);
+
+    // F12-09: producto agotado -> ofrecer avisar cuando vuelva el stock.
+    if (outOfStock) {
+      const alertWrap = document.createElement('div');
+      alertWrap.style.cssText = 'margin-top: 0.75rem;';
+      info.appendChild(alertWrap);
+      renderStockAlertWidget(alertWrap, product.id);
+    }
 
     container.appendChild(info);
 
@@ -201,3 +216,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderErrorState(container, 'No se pudo cargar el producto.', () => window.location.reload());
   }
 });
+
+/**
+ * F12-09: producto agotado -> el cliente pide que le avisen cuando vuelva el
+ * stock (stock_alerts + trigger en products, 45_stock_alerts.sql). Requiere
+ * sesión -- a diferencia de favoritos (F4-03), no tiene sentido un modo
+ * invitado porque el aviso llega después, a un client_id real.
+ */
+async function renderStockAlertWidget(container, productId) {
+  container.textContent = '';
+
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'padding: 0.6rem 1.25rem; border: 2px solid var(--bl-text-muted, #94a3b8); color: var(--bl-text-secondary, #4a5568); border-radius: var(--bl-radius-md); font-weight: 600; background: none; cursor: pointer;';
+    btn.textContent = 'Avisarme cuando vuelva el stock';
+    btn.addEventListener('click', () => {
+      showToast('Iniciá sesión para que te avisemos.', 'default');
+      window.location.href = './login.html';
+    });
+    container.appendChild(btn);
+    return;
+  }
+
+  const { data: existing } = await supabase
+    .from('stock_alerts')
+    .select('notified_at')
+    .eq('product_id', productId)
+    .eq('client_id', session.user.id)
+    .maybeSingle();
+
+  if (existing && !existing.notified_at) {
+    const confirmedLabel = document.createElement('span');
+    confirmedLabel.style.cssText = 'color: var(--bl-success, #10b981); font-weight: 600;';
+    confirmedLabel.textContent = '✓ Te vamos a avisar cuando vuelva el stock.';
+    container.appendChild(confirmedLabel);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.style.cssText = 'display: block; margin-top: 0.35rem; background: none; border: none; color: var(--bl-text-muted, #94a3b8); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
+    cancelBtn.textContent = 'Cancelar aviso';
+    cancelBtn.addEventListener('click', async () => {
+      await supabase.from('stock_alerts').delete().eq('product_id', productId).eq('client_id', session.user.id);
+      renderStockAlertWidget(container, productId);
+    });
+    container.appendChild(cancelBtn);
+    return;
+  }
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.style.cssText = 'padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; background: none; cursor: pointer;';
+  btn.textContent = 'Avisarme cuando vuelva el stock';
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const { error } = await supabase
+      .from('stock_alerts')
+      .upsert(
+        { product_id: productId, client_id: session.user.id, notified_at: null },
+        { onConflict: 'product_id,client_id' }
+      );
+
+    if (error) {
+      console.error('Error al registrar aviso de stock:', error);
+      showToast('No se pudo registrar el aviso.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Avisarme cuando vuelva el stock';
+      return;
+    }
+
+    showToast('¡Listo! Te vamos a avisar cuando vuelva el stock.', 'success');
+    renderStockAlertWidget(container, productId);
+  });
+  container.appendChild(btn);
+}
