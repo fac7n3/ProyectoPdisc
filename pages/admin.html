@@ -452,6 +452,50 @@
               </tbody>
             </table>
           </div>
+
+          <!-- F12-10: errores de cliente registrados (error_logs, A113-171) -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Errores registrados</h1>
+            <button class="action-btn" id="btn-refresh-error-logs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                  <th>Mensaje</th>
+                  <th>URL</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="error-logs-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F12-11: soporte/reclamos -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Soporte / Reclamos</h1>
+            <button class="action-btn" id="btn-refresh-support" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                  <th>Asunto</th>
+                  <th>Mensaje</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="support-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
 

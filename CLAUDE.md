@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-09 hechos).
+> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-11 hechos).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -227,9 +227,12 @@ completo de los 18 ítems, hechos y pendientes).
   - `notifications-utils.js`: único caso del sistema de notificaciones que interpola datos del `payload` en el label (el resto son todos genéricos, ver arriba) — sin el nombre del producto, un aviso de stock es casi inútil si el cliente tiene varias alertas pendientes en productos distintos. También el único con un link ("Ver producto") — mismo motivo: no hay ninguna otra lista de "productos con stock repuesto" a la que ir.
   - **No verificado visualmente en el navegador** (única excepción a la práctica habitual de esta sesión): no hay ningún producto real con `stock=0`, y forzarlo directamente en la tabla `products` de producción **fue bloqueado por el clasificador de seguridad de Claude Code** (mutación fuera de una transacción `BEGIN;...ROLLBACK;`, correctamente) — no insistí con un workaround. Cubierto en cambio con: revisión de código exhaustiva, 0 errores de consola en una carga real de `producto.html`, confirmación de que el botón normal ("Agregar al carrito") no sufre ninguna regresión en un producto con stock real, y los 4 escenarios + RLS de la migración probados a fondo contra la base real.
 
-### Pendiente (F12-10 a F12-18)
+- **F12-10** (`A113-250`) — **Panel de admin para `error_logs`.** Sin migración — la tabla y su RLS `error_logs_select_admin` ya existían desde F1/A113-171, 100% frontend. Sección nueva "Errores registrados" en `admin.js`/`admin.html`: fecha, usuario (resuelto vía `profiles.email` con una segunda consulta — `error_logs.user_id` referencia `auth.users`, no `profiles`, mismo patrón que `phoneByClientId` de F12-05; "Invitado" si es null), mensaje y URL (truncados con `title` para ver completo al pasar el mouse), botón "Ver detalle" (`alert()`, mismo estilo que el resto del proyecto) con el stack trace completo. Solo lectura (es telemetría de diagnóstico, no un flujo con estados) y limitado a los últimos 100 (no es un visor de historial completo).
+- **F12-11** (`A113-251`) — **Panel de soporte/reclamos.** `db/schema/46_support_tickets.sql`: tabla `support_tickets` (RLS: dueño o admin ven, dueño inserta, **solo admin** actualiza el `status`) + trigger `notify_support_ticket_status_change` (notifica al autor cuando cambia de estado — separado del trigger genérico de F12-01 porque acá el vocabulario de estados es de 3 valores `open/in_progress/resolved`, no el binario `approved/rejected`). `js/support-utils.js` (nuevo, compartido): form "Contactar a soporte" + lista "Mis reclamos" con badge de estado — mismo patrón de reutilización que `reviews-utils.js`/`notifications-utils.js` (un módulo, varios puntos de integración), usado en `perfil.js` (tab nueva "Soporte"), `vender.js` y `repartidor.js` (misma sección al final de ambos dashboards). Admin: sección nueva "Soporte / Reclamos" en `admin.js`/`admin.html`, `<select>` de estado por fila (cambia con RLS `support_tickets_update_admin`). **Alcance a propósito acotado**: no hay hilo de respuesta dentro de la app — el admin sigue respondiendo por email (ahora con el email/asunto/mensaje estructurados en vez de un mail genérico a ciegas); un hilo completo bidireccional repetiría el sistema de chat de F7-02 para un caso de uso distinto. Verificado con `BEGIN;...ROLLBACK;`: notificación al cambiar de estado (no al tocar otro campo), status inválido rechazado por el CHECK, RLS ownership (`SET ROLE authenticated`: insertar/actualizar a nombre de otro usuario rechazado, usuario ajeno no ve tickets de otro).
+
+### Pendiente (F12-12 a F12-18)
 Ver `docs/ROADMAP.md` sección 17.1 para la lista completa ordenada por prioridad. Siguiente en
-la cola: panel de admin para `error_logs` (F12-10).
+la cola: log de auditoría de acciones de admin (F12-12).
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

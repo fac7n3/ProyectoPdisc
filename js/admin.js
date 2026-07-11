@@ -1,4 +1,5 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
+import { statusLabel as supportStatusLabel } from './support-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -976,6 +977,172 @@ async function fetchRevocationRequests() {
   });
 }
 
+// --- F12-10: panel de errores de cliente (error_logs, A113-171) ---
+// Hasta ahora solo se podían leer con SQL directo en el dashboard de Supabase.
+// Vista de solo lectura -- no hay "resolver"/"archivar", es telemetría de
+// diagnóstico, no un flujo con estados. Limitado a los últimos 100 (no es un
+// visor de historial completo, es para detectar problemas recientes).
+async function fetchErrorLogs() {
+  const tbody = document.getElementById('error-logs-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando errores...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('error_logs')
+    .select('id, message, stack, url, user_id, user_agent, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error('Error fetching error logs:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los errores.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay errores registrados.</td></tr>';
+    return;
+  }
+
+  // error_logs.user_id referencia auth.users, no profiles -> segunda consulta
+  // por los distintos user_id de la página (mismo patrón que phoneByClientId
+  // en vender.js/repartidor.js, F12-05).
+  const userIds = [...new Set(data.map((log) => log.user_id).filter(Boolean))];
+  const { data: profiles } = userIds.length
+    ? await supabase.from('profiles').select('id, email').in('id', userIds)
+    : { data: [] };
+  const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
+
+  tbody.innerHTML = '';
+  data.forEach((log) => {
+    const tr = document.createElement('tr');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = new Date(log.created_at).toLocaleString('es-AR');
+    tr.appendChild(tdDate);
+
+    const tdUser = document.createElement('td');
+    tdUser.textContent = log.user_id ? (emailByUserId.get(log.user_id) || 'Usuario eliminado') : 'Invitado';
+    tr.appendChild(tdUser);
+
+    const tdMessage = document.createElement('td');
+    tdMessage.style.cssText = 'max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+    tdMessage.textContent = log.message;
+    tdMessage.title = log.message;
+    tr.appendChild(tdMessage);
+
+    const tdUrl = document.createElement('td');
+    tdUrl.style.cssText = 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+    tdUrl.textContent = log.url || '—';
+    tdUrl.title = log.url || '';
+    tr.appendChild(tdUrl);
+
+    const tdActions = document.createElement('td');
+    const detailBtn = document.createElement('button');
+    detailBtn.type = 'button';
+    detailBtn.className = 'action-btn';
+    detailBtn.textContent = 'Ver detalle';
+    detailBtn.addEventListener('click', () => {
+      alert(
+        `Mensaje:\n${log.message}\n\nURL: ${log.url || '—'}\n\nUser agent: ${log.user_agent || '—'}\n\nStack:\n${log.stack || '(sin stack trace)'}`
+      );
+    });
+    tdActions.appendChild(detailBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
+// --- F12-11: soporte/reclamos (support_tickets, 46_support_tickets.sql) ---
+// El admin solo cambia el estado -- no hay respuesta en el hilo acá (ver nota
+// de alcance en la migración), sigue usando el email del usuario para eso.
+const SUPPORT_STATUSES = ['open', 'in_progress', 'resolved'];
+
+async function fetchSupportTickets() {
+  const tbody = document.getElementById('support-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando reclamos...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('id, user_id, subject, message, status, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching support tickets:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los reclamos.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay reclamos registrados.</td></tr>';
+    return;
+  }
+
+  const userIds = [...new Set(data.map((t) => t.user_id).filter(Boolean))];
+  const { data: profiles } = userIds.length
+    ? await supabase.from('profiles').select('id, email').in('id', userIds)
+    : { data: [] };
+  const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
+
+  tbody.innerHTML = '';
+  data.forEach((ticket) => {
+    const tr = document.createElement('tr');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = new Date(ticket.created_at).toLocaleString('es-AR');
+    tr.appendChild(tdDate);
+
+    const tdUser = document.createElement('td');
+    tdUser.textContent = emailByUserId.get(ticket.user_id) || 'Usuario eliminado';
+    tr.appendChild(tdUser);
+
+    const tdSubject = document.createElement('td');
+    tdSubject.textContent = ticket.subject;
+    tr.appendChild(tdSubject);
+
+    const tdMessage = document.createElement('td');
+    tdMessage.style.cssText = 'max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+    tdMessage.textContent = ticket.message;
+    tdMessage.title = ticket.message;
+    tr.appendChild(tdMessage);
+
+    const tdStatus = document.createElement('td');
+    const statusSelect = document.createElement('select');
+    statusSelect.style.cssText = 'padding: 0.35rem; width: auto;';
+    SUPPORT_STATUSES.forEach((s) => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = supportStatusLabel(s);
+      if (s === ticket.status) opt.selected = true;
+      statusSelect.appendChild(opt);
+    });
+    statusSelect.addEventListener('change', async () => {
+      const newStatus = statusSelect.value;
+      statusSelect.disabled = true;
+      const { error: updateError } = await supabase
+        .from('support_tickets')
+        .update({ status: newStatus })
+        .eq('id', ticket.id);
+
+      if (updateError) {
+        console.error('Error al actualizar el estado del reclamo:', updateError);
+        showToast('No se pudo actualizar el estado.', 'error');
+        statusSelect.value = ticket.status;
+      } else {
+        ticket.status = newStatus;
+        showToast('Estado actualizado.', 'success');
+      }
+      statusSelect.disabled = false;
+    });
+    tdStatus.appendChild(statusSelect);
+    tr.appendChild(tdStatus);
+
+    tbody.appendChild(tr);
+  });
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
@@ -989,6 +1156,8 @@ function initAdminPage() {
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
   document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
   document.getElementById('btn-refresh-revocations').addEventListener('click', fetchRevocationRequests);
+  document.getElementById('btn-refresh-error-logs').addEventListener('click', fetchErrorLogs);
+  document.getElementById('btn-refresh-support').addEventListener('click', fetchSupportTickets);
 
   setupCategoryForm();
   setupCouponForm();
@@ -1004,6 +1173,8 @@ function initAdminPage() {
   fetchPendingProofsAdmin();
   fetchReportedReviews();
   fetchRevocationRequests();
+  fetchErrorLogs();
+  fetchSupportTickets();
 }
 
 guardPage({

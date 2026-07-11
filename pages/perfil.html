@@ -65,6 +65,9 @@
           <a href="#" class="profile-nav__link" data-target="tab-direcciones">
             <i class="fa-solid fa-location-dot"></i> <span>Direcciones</span>
           </a>
+          <a href="#" class="profile-nav__link" data-target="tab-soporte">
+            <i class="fa-solid fa-headset"></i> <span>Soporte</span>
+          </a>
           <hr style="border:none; border-top: 1px solid var(--bl-perfil-border); margin: 0.5rem 0;" />
           <a href="#" class="profile-nav__link profile-nav__link--danger" id="logout-btn">
             <i class="fa-solid fa-right-from-bracket"></i> <span>Cerrar sesión</span>
@@ -208,6 +211,18 @@
                 Guardar cambios
               </button>
             </form>
+          </article>
+        </div>
+
+        <!-- ======================= -->
+        <!-- PESTAÑA: SOPORTE        -->
+        <!-- ======================= -->
+        <div id="tab-soporte" class="tab-pane" style="display: none; grid-column: 1 / -1;">
+          <article class="perfil-card perfil-card--full">
+            <h2 class="perfil-card__title">
+              <i class="fa-solid fa-headset"></i> Soporte
+            </h2>
+            <div id="support-container"></div>
           </article>
         </div>
 

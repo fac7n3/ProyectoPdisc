@@ -160,8 +160,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/admin-1ki7ccGp.js"></script>
+    <script type="module" crossorigin src="/assets/admin-Buleb5Ir.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CJ0b5n5i.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-Y7eYhWyl.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Dsbj1CW5.css">
   </head>
@@ -450,6 +451,50 @@
                 </tr>
               </thead>
               <tbody id="revocations-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F12-10: errores de cliente registrados (error_logs, A113-171) -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Errores registrados</h1>
+            <button class="action-btn" id="btn-refresh-error-logs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                  <th>Mensaje</th>
+                  <th>URL</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="error-logs-tbody">
+                <!-- Se llenará con JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- F12-11: soporte/reclamos -->
+          <div class="admin-header" style="margin-top: 2rem;">
+            <h1>Soporte / Reclamos</h1>
+            <button class="action-btn" id="btn-refresh-support" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Usuario</th>
+                  <th>Asunto</th>
+                  <th>Mensaje</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="support-tbody">
                 <!-- Se llenará con JS -->
               </tbody>
             </table>

@@ -2,6 +2,7 @@ import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { isValidPhone } from './validation-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { fetchReviewsSummary, buildStarsText } from './reviews-utils.js';
+import { renderSupportSection } from './support-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerView = document.getElementById('register-view');
@@ -39,6 +40,8 @@ async function checkDeliveryState(user) {
     loadAvailableOrders();
     loadMyDeliveries(user.id);
     loadMyRating(user.id);
+    const supportContainer = document.getElementById('support-container');
+    if (supportContainer) renderSupportSection(supportContainer);
     return;
   }
 

@@ -2,6 +2,7 @@ import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice } from "./cart-utils.js";
 import { renderNotificationsSection } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
+import { renderSupportSection } from "./support-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -623,6 +624,8 @@ async function renderFullProfile(user) {
   loadCompras(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
+  const supportContainer = document.getElementById("support-container");
+  if (supportContainer) renderSupportSection(supportContainer);
 }
 
 // --- Cerrar sesión ---

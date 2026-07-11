@@ -14,6 +14,13 @@ const TYPE_LABELS = {
   delivery_request_approved: '¡Tu solicitud de repartidor fue aprobada!',
   delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
+  support_ticket_status_change: 'Tu reclamo cambió de estado',
+};
+
+const SUPPORT_TICKET_STATUS_LABELS = {
+  open: 'Abierto',
+  in_progress: 'En progreso',
+  resolved: 'Resuelto',
 };
 
 export async function fetchNotifications(userId) {
@@ -83,6 +90,9 @@ export async function renderNotificationsSection(container, userId) {
     // cliente puede tener varios pendientes en productos distintos.
     if (n.type === 'stock_alert' && n.payload?.product_title) {
       title.textContent = `¡Volvió el stock de "${n.payload.product_title}"!`;
+    } else if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
+      const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
+      title.textContent = `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
     } else {
       title.textContent = TYPE_LABELS[n.type] || n.type;
     }
