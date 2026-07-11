@@ -23,13 +23,27 @@ async function checkSellerState(user) {
   if (profile?.role === 'vendedor' || profile?.role === 'admin') {
     registerView.style.display = 'none';
     dashboardView.style.display = 'block';
-    
+
     // Cargar lógica del dashboard
     await loadDashboard(user);
     return;
   }
 
-  // Si no es vendedor, ver si tiene solicitud pendiente
+  // F12-16: ¿es empleado de algún comercio? No necesita rol propio de vendedor.
+  const { data: staffRow } = await supabase
+    .from('store_staff')
+    .select('store_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (staffRow) {
+    registerView.style.display = 'none';
+    dashboardView.style.display = 'block';
+    await loadDashboard(user, staffRow.store_id);
+    return;
+  }
+
+  // Si no es vendedor ni empleado, ver si tiene solicitud pendiente
   const { data: req } = await supabase
     .from('seller_requests')
     .select('status, shop_name')
@@ -160,13 +174,25 @@ let currentStoreId = null;
 let editingProductId = null; // F5-02: null = alta nueva, id = editando ese producto
 let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardingChecklist
 let currentProductCount = 0;
+let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
 
-async function loadDashboard(user) {
-  // Obtener la tienda del usuario
+const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold';
+
+/**
+ * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
+ * quien entra no es el dueño sino un empleado (store_staff) -- en ese caso
+ * se carga la tienda por id en vez de por owner_id, y se ocultan las
+ * secciones exclusivas del dueño (perfil del comercio, cupones, empleados).
+ * Paridad total en lo operativo (productos/pedidos/comprobantes) vía las
+ * policies aditivas de 49_store_staff.sql -- nunca se tocó el acceso del dueño.
+ */
+async function loadDashboard(user, staffStoreId) {
+  isStoreOwner = !staffStoreId;
+
   const { data: store, error } = await supabase
     .from('stores')
-    .select('id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold')
-    .eq('owner_id', user.id)
+    .select(STORE_SELECT_COLUMNS)
+    .eq(isStoreOwner ? 'owner_id' : 'id', isStoreOwner ? user.id : staffStoreId)
     .single();
 
   if (error || !store) {
@@ -176,8 +202,17 @@ async function loadDashboard(user) {
 
   currentStoreId = store.id;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
-  document.getElementById('dash-shop-name').textContent = store.name;
-  fillStoreProfileForm(store);
+  document.getElementById('dash-shop-name').textContent = isStoreOwner ? store.name : `${store.name} (como empleado)`;
+
+  // Secciones exclusivas del dueño -- un empleado no las ve.
+  ['store-profile-section', 'my-coupons-section', 'store-staff-section'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isStoreOwner ? '' : 'none';
+  });
+
+  if (isStoreOwner) {
+    fillStoreProfileForm(store);
+  }
 
   const notificacionesContainer = document.getElementById('notificaciones-container');
   if (notificacionesContainer) await renderNotificationsSection(notificacionesContainer, user.id);
@@ -190,7 +225,12 @@ async function loadDashboard(user) {
   await renderPendingPayments();
   await renderShipmentsInProgress();
   await loadDashboardStats();
-  await renderMyCoupons();
+
+  if (isStoreOwner) {
+    await renderMyCoupons();
+    await renderStoreStaff();
+  }
+
   setupDashboardEvents();
 }
 
@@ -539,6 +579,99 @@ function setupMyCouponForm() {
   });
 }
 
+// --- F12-16: empleados del comercio (solo el dueño ve/gestiona esta sección) ---
+
+async function renderStoreStaff() {
+  const container = document.getElementById('store-staff-container');
+  if (!container || !currentStoreId) return;
+  container.textContent = '';
+
+  const { data: staff, error } = await supabase
+    .from('store_staff')
+    .select('id, user_id, created_at')
+    .eq('store_id', currentStoreId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar empleados:', error);
+    const errorMsg = document.createElement('p');
+    errorMsg.style.color = 'var(--bl-text-secondary)';
+    errorMsg.textContent = 'Error al cargar la lista de empleados.';
+    container.appendChild(errorMsg);
+    return;
+  }
+
+  if (!staff || staff.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-text-secondary)';
+    emptyMsg.textContent = 'Todavía no agregaste ningún empleado.';
+    container.appendChild(emptyMsg);
+    return;
+  }
+
+  // store_staff.user_id referencia auth.users, no profiles -> segunda consulta
+  // por los emails (mismo patrón que phoneByClientId en repartidor.js, F12-05).
+  const userIds = staff.map((s) => s.user_id);
+  const { data: profiles } = await supabase.from('profiles').select('id, email').in('id', userIds);
+  const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
+
+  staff.forEach((s) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
+
+    const info = document.createElement('span');
+    info.textContent = emailByUserId.get(s.user_id) || 'Cuenta eliminada';
+    row.appendChild(info);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-outline';
+    removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
+    removeBtn.textContent = 'Quitar acceso';
+    removeBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Quitarle el acceso a este panel a "${info.textContent}"?`)) return;
+      const { error: deleteError } = await supabase.from('store_staff').delete().eq('id', s.id);
+      if (deleteError) {
+        showToast('No se pudo quitar el acceso.', 'error');
+        console.error(deleteError);
+        return;
+      }
+      showToast('Acceso quitado.', 'success');
+      renderStoreStaff();
+    });
+    row.appendChild(removeBtn);
+
+    container.appendChild(row);
+  });
+}
+
+function setupStoreStaffForm() {
+  const form = document.getElementById('store-staff-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const emailInput = document.getElementById('store-staff-email');
+    const email = emailInput.value.trim();
+    if (!email) return;
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setLoading(submitBtn, true, 'Agregar');
+
+    const { error } = await supabase.rpc('add_store_staff', { p_store_id: currentStoreId, p_email: email });
+
+    if (error) {
+      showToast(error.message || 'No se pudo agregar al empleado.', 'error');
+      console.error(error);
+    } else {
+      showToast('Empleado agregado — ya puede entrar a este panel.', 'success');
+      form.reset();
+      renderStoreStaff();
+    }
+    setLoading(submitBtn, false, 'Agregar');
+  });
+}
+
 /** F5-07: ventas de hoy + ingresos del mes, ambos desde orders pagadas. */
 async function loadDashboardStats() {
   if (!currentStoreId) return;
@@ -763,7 +896,9 @@ function renderOnboardingChecklist(hasProducts) {
 
   container.textContent = '';
 
-  if (currentStoreHasProfile && hasProducts) {
+  // F12-16: el checklist apunta a acciones exclusivas del dueño (perfil,
+  // publicar producto) -- un empleado no las puede hacer, no tiene sentido mostrárselo.
+  if (!isStoreOwner || (currentStoreHasProfile && hasProducts)) {
     container.style.display = 'none';
     return;
   }
@@ -1133,6 +1268,7 @@ async function renderVariantsManager(productId) {
 function setupDashboardEvents() {
   setupStoreProfileForm();
   setupMyCouponForm();
+  setupStoreStaffForm();
   document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
 
   // F5-03: alta de variante para el producto que se está editando.

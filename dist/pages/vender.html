@@ -156,7 +156,7 @@
         color: white;
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Cl5K29iS.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BJTNEZgg.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CJ0b5n5i.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-CGy_UjIH.js">
     <link rel="modulepreload" crossorigin href="/assets/notifications-utils-DymY7r5j.js">
@@ -258,8 +258,8 @@
               </div>
             </div>
 
-            <!-- Perfil del comercio (F5-08) -->
-            <div style="margin-top: 3rem;">
+            <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->
+            <div id="store-profile-section" style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Perfil de mi comercio</h2>
               <form id="store-profile-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
                 <div class="form-group">
@@ -306,7 +306,8 @@
             </div>
 
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
-            <div style="margin-top: 3rem;">
+            <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
+            <div id="my-coupons-section" style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Mis cupones</h2>
               <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
                 <div>
@@ -324,6 +325,25 @@
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
               </form>
               <div id="my-coupons-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Cargado con JS -->
+              </div>
+            </div>
+
+            <!-- Empleados (F12-16): cuentas adicionales que pueden operar este comercio -->
+            <!-- Oculto para empleados -- solo el dueño gestiona quién tiene acceso -->
+            <div id="store-staff-section" style="margin-top: 3rem;">
+              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Empleados</h2>
+              <p style="color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                Dale acceso a este panel a otra cuenta ya registrada en Baradero Local (puede gestionar productos y pedidos, no puede editar el perfil del comercio, los cupones ni la lista de empleados).
+              </p>
+              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
+                <div>
+                  <label class="form-label" for="store-staff-email">Email de la cuenta a agregar</label>
+                  <input type="email" id="store-staff-email" class="form-input" placeholder="empleado@email.com" required />
+                </div>
+                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Agregar</button>
+              </form>
+              <div id="store-staff-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <!-- Cargado con JS -->
               </div>
             </div>
