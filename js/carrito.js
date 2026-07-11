@@ -249,6 +249,33 @@ function initDeliveryEvents() {
   });
 }
 
+/**
+ * F12-06: precarga la dirección guardada del perfil (si el cliente la cargó
+ * en "Mis datos" → Direcciones, perfil.js) para no escribirla de cero en
+ * cada compra — sigue siendo editable para esta compra puntual, no reemplaza
+ * el campo de texto libre por uno de solo lectura.
+ */
+async function prefillSavedAddress() {
+  const addressInput = document.getElementById('delivery-address');
+  if (!addressInput || addressInput.value.trim()) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('address, address_details')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.address) return;
+
+  addressInput.value = profile.address_details
+    ? `${profile.address} (${profile.address_details})`
+    : profile.address;
+  shippingAddress = addressInput.value.trim();
+}
+
 /** Inicializar selector de método de pago (mercadopago / simulado / transferencia) */
 function initPaymentMethodEvents() {
   const header = document.getElementById('payment-header');
@@ -602,4 +629,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initDeliveryEvents();
   initPaymentMethodEvents();
   validateCartFreshness();
+  prefillSavedAddress();
 });

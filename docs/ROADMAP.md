@@ -255,8 +255,8 @@ código; los últimos son mejoras de fondo.
 - [x] **F12-02** 🔴 Vista de admin para solicitudes de arrepentimiento — sección nueva en `admin.js`, cross-tienda (RLS de `orders` ya dejaba ver todo al admin).
 - [x] **F12-03** 🟠 **Cupones propios por vendedor**: `coupons.store_id` (nullable) + RLS + `create_order` reescrita para que el descuento de un cupón de vendedor aplique solo a su propia tienda. UI nueva en `vender.js` ("Mis cupones").
 - [x] **F12-04** 🟠 **Envío configurable por comercio**: `stores.delivery_fee`/`free_shipping_threshold` (default 350/5000, igual que antes) — `create_order` y `carrito.js` los leen por tienda en vez de una constante global.
-- [ ] **F12-05** 🟠 Teléfono de contacto del cliente (hoy el registro solo pide email — ni repartidor ni vendedor pueden llamar al comprador).
-- [ ] **F12-06** 🟠 Direcciones guardadas del cliente (hoy la dirección de envío se escribe de cero en cada compra).
+- [x] **F12-05** 🟠 Teléfono de contacto del cliente. Hallazgo al auditar: `profiles.phone` ya existía y ya se podía cargar desde "Mis datos" → Direcciones — el hueco real era que nadie (ni vendedor ni repartidor) podía **verlo**. RLS nueva + mostrado en `vender.js`/`repartidor.js`.
+- [x] **F12-06** 🟠 Direcciones guardadas del cliente. Ya existía `profiles.address`/`address_details` (mismo formulario) sin conectar al checkout — `carrito.js` ahora precarga la dirección guardada (editable por compra).
 - [ ] **F12-07** 🟡 Cupones visibles públicamente para el cliente (hoy hay que saber el código de antemano, no hay una sección de "promociones activas").
 - [ ] **F12-08** 🟡 Calificar al repartidor (las reseñas de F7-01 son solo de producto/tienda).
 - [ ] **F12-09** 🟡 Aviso de "volvió el stock" para un producto agotado.

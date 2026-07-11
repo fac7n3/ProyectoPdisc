@@ -645,6 +645,47 @@ consulta — de paso corrige un bug latente: `calculateShippingByStore`
 agrupaba por el *nombre* de la tienda (string), no por su id real; dos
 tiendas con el mismo nombre se hubieran mezclado en el cálculo de envío.
 
+### F12-05/F12-06 (A113-245, A113-246) — teléfono y direcciones del cliente
+
+Antes de escribir nada, encontré que `profiles.phone`/`address`/`address_details`
+**ya existían** en la base real y **ya estaban conectados** de punta a punta
+en `js/perfil.js` (form "Direcciones" — prefill + guardado real vía
+`.update()`). Mi propio análisis de gaps de la sesión anterior estaba
+desactualizado en esto. Dos problemas reales sí había:
+
+1. Esas 3 columnas **nunca tuvieron una migración versionada** — se crearon
+   a mano en el dashboard de Supabase (el comentario en `perfil.js` ya
+   avisaba: "si la migración SQL no se corrió, tirará error"). Backfileadas
+   ahora en `43_client_contact_and_addresses.sql` (idempotente).
+2. **Nadie más podía leerlas.** Ninguna policy dejaba a un vendedor o
+   repartidor ver el `profiles` de un cliente ajeno, ni siquiera de uno con
+   una orden real. RLS nueva `profiles_select_order_participants`: vendedor
+   ve al cliente con una orden en su tienda; repartidor ve al cliente con
+   una entrega asignada.
+
+**Nota de metodología de testing, importante para el futuro**: al probar
+esta policy con el truco de siempre (`set_config('request.jwt.claim.sub',
+...)`) el primer intento dio un **falso positivo** — un usuario sin ninguna
+relación con el cliente igual podía "verlo". La razón: la conexión de la
+herramienta de SQL tiene `BYPASSRLS` (rol `postgres`/`service_role`), y
+`set_config` sola solo cambia lo que devuelve `auth.uid()`, no hace que la
+conexión empiece a respetar RLS. Esto es invisible cuando se prueba una RPC
+`SECURITY DEFINER` (esas chequean `auth.uid()` con su propia lógica
+imperativa, `if`/`raise exception`, no dependen de que la fila sea
+"visible"), pero para una **policy plana de SELECT/UPDATE/DELETE** sin
+ninguna función de por medio, hace falta además `SET ROLE authenticated;`
+antes de simular el `auth.uid()` — con eso, los dos casos (dueño de la
+tienda ve al cliente que le compró ✓; usuario sin relación no ve nada ✗)
+se verificaron correctamente antes de aplicar.
+
+Frontend: teléfono mostrado en `vender.js` ("Mis pedidos") y `repartidor.js`
+("Mis entregas" — no en "Pedidos disponibles", recién al tomar el pedido).
+`orders.client_id` referencia `auth.users`, no `profiles` (sin FK directa),
+así que no se puede embeber en un solo `.select()` — se resuelve con una
+segunda consulta a `profiles` por los `client_id` de la página. `carrito.js`
+(`prefillSavedAddress`, nueva) precarga `profiles.address`/`address_details`
+en el campo de envío si está vacío, sigue editable por compra.
+
 ## Fase 11 — Deploy y lanzamiento
 
 Documentación de despliegue, guía de usuario y arquitectura ahora viven en

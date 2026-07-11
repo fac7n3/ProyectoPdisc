@@ -204,7 +204,7 @@ async function renderAllOrders() {
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at')
+    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -228,10 +228,20 @@ async function renderAllOrders() {
     return;
   }
 
-  orders.forEach((order) => container.appendChild(buildOrderRow(order)));
+  // F12-05: orders.client_id no tiene FK a profiles (sí a auth.users), así
+  // que PostgREST no puede embeberlo en el select de arriba -- hace falta
+  // una segunda consulta. RLS nueva (profiles_select_order_participants)
+  // es la que permite verlo: solo clientes que efectivamente compraron acá.
+  const clientIds = [...new Set(orders.map((o) => o.client_id).filter(Boolean))];
+  const { data: clientProfiles } = clientIds.length
+    ? await supabase.from('profiles').select('id, phone').in('id', clientIds)
+    : { data: [] };
+  const phoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
+
+  orders.forEach((order) => container.appendChild(buildOrderRow(order, phoneByClientId.get(order.client_id))));
 }
 
-function buildOrderRow(order) {
+function buildOrderRow(order, clientPhone) {
   const row = document.createElement('div');
   row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
 
@@ -244,6 +254,18 @@ function buildOrderRow(order) {
   const methodLabel = order.delivery_method === 'delivery' ? 'Envío' : 'Retiro en el local';
   detailsSpan.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
   info.appendChild(detailsSpan);
+
+  // F12-05: teléfono del cliente, para coordinar retiro/envío -- solo
+  // visible si lo cargó en su perfil (RLS ya lo permite ver, F12-05).
+  if (clientPhone) {
+    const phoneSpan = document.createElement('span');
+    phoneSpan.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.875rem; margin-top: 0.15rem;';
+    const phoneIcon = document.createElement('i');
+    phoneIcon.className = 'fa-solid fa-phone';
+    phoneSpan.appendChild(phoneIcon);
+    phoneSpan.append(` ${clientPhone}`);
+    info.appendChild(phoneSpan);
+  }
 
   // Botón de arrepentimiento (Ley 24.240 / Res. 424/2020): el cliente lo
   // solicitó desde "Mis compras" (request_order_revocation) -- el vendedor

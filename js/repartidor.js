@@ -108,7 +108,7 @@ function buildAvailableOrderCard(order, onClaim) {
 }
 
 /** Construye una tarjeta de "mis entregas" (ya tomadas) */
-function buildMyDeliveryCard(delivery) {
+function buildMyDeliveryCard(delivery, clientPhone) {
   const order = delivery.orders;
   const card = document.createElement('div');
   card.className = 'delivery-card';
@@ -125,6 +125,18 @@ function buildMyDeliveryCard(delivery) {
   addressSpan.className = 'delivery-card__address';
   addressSpan.textContent = order?.shipping_address || 'Sin dirección';
   info.appendChild(addressSpan);
+
+  // F12-05: teléfono del cliente para coordinar la entrega (solo si lo cargó
+  // en su perfil).
+  if (clientPhone) {
+    const phoneSpan = document.createElement('span');
+    phoneSpan.className = 'delivery-card__address';
+    const phoneIcon = document.createElement('i');
+    phoneIcon.className = 'fa-solid fa-phone';
+    phoneSpan.appendChild(phoneIcon);
+    phoneSpan.append(` ${clientPhone}`);
+    info.appendChild(phoneSpan);
+  }
 
   card.appendChild(info);
 
@@ -250,7 +262,7 @@ async function loadMyDeliveries(userId) {
 
   const { data, error } = await supabase
     .from('deliveries')
-    .select('id, status, orders ( shipping_address, stores ( name ) )')
+    .select('id, status, orders ( client_id, shipping_address, stores ( name ) )')
     .eq('repartidor_id', userId)
     .order('created_at', { ascending: false });
 
@@ -273,8 +285,18 @@ async function loadMyDeliveries(userId) {
     return;
   }
 
+  // F12-05: teléfono del cliente para coordinar la entrega -- orders.client_id
+  // no tiene FK a profiles (sí a auth.users), así que hace falta una segunda
+  // consulta. RLS nueva (profiles_select_order_participants) es la que
+  // permite verlo: solo clientes con una entrega asignada a este repartidor.
+  const clientIds = [...new Set(data.map((d) => d.orders?.client_id).filter(Boolean))];
+  const { data: clientProfiles } = clientIds.length
+    ? await supabase.from('profiles').select('id, phone').in('id', clientIds)
+    : { data: [] };
+  const phoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
+
   data.forEach((delivery) => {
-    container.appendChild(buildMyDeliveryCard(delivery));
+    container.appendChild(buildMyDeliveryCard(delivery, phoneByClientId.get(delivery.orders?.client_id)));
   });
 }
 
