@@ -294,6 +294,9 @@ function buildCompraItem(order) {
   const proofSection = buildPaymentProofSection(order);
   if (proofSection) info.appendChild(proofSection);
 
+  const revocationSection = buildRevocationSection(order);
+  if (revocationSection) info.appendChild(revocationSection);
+
   item.appendChild(info);
 
   const totalDiv = document.createElement('div');
@@ -387,13 +390,64 @@ function buildPaymentProofSection(order) {
   return wrap;
 }
 
+const REVOCATION_WINDOW_DAYS = 15;
+
+/**
+ * Botón de arrepentimiento (Ley 24.240 / Res. 424/2020): derecho a revocar
+ * una compra ya pagada dentro de los 10 días hábiles, sin justificar el
+ * motivo. Solo se muestra si la orden está pagada, todavía no se solicitó,
+ * y sigue dentro del plazo (15 días corridos, buffer conservador — ver
+ * request_order_revocation en 40_order_revocation.sql).
+ */
+function buildRevocationSection(order) {
+  if (order.payment_status !== 'paid') return null;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'compra-revocation';
+
+  if (order.revocation_requested_at) {
+    const msg = document.createElement('p');
+    msg.className = 'compra-proof__message';
+    msg.textContent = 'Solicitaste el arrepentimiento de esta compra — el comercio va a coordinar la devolución.';
+    wrap.appendChild(msg);
+    return wrap;
+  }
+
+  const deadline = new Date(order.created_at).getTime() + REVOCATION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  if (Date.now() > deadline) return null;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'bl-btn compra-revocation__btn';
+  btn.textContent = 'Solicitar arrepentimiento';
+  btn.addEventListener('click', async () => {
+    if (!confirm('¿Solicitar el arrepentimiento de esta compra? Se le va a avisar al comercio para que coordine la devolución.')) {
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const { error } = await supabase.rpc('request_order_revocation', { p_order_id: order.id });
+      if (error) throw error;
+      showToast('Arrepentimiento solicitado. El comercio va a coordinar la devolución.', 'success');
+      await loadCompras(order.client_id);
+    } catch (err) {
+      console.error('Error al solicitar arrepentimiento', err);
+      showToast(err.message || 'No se pudo solicitar el arrepentimiento.', 'error');
+      btn.disabled = false;
+    }
+  });
+  wrap.appendChild(btn);
+
+  return wrap;
+}
+
 async function loadCompras(userId) {
   if (!comprasContainer) return;
   try {
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
-        id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price,
+        id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
         stores ( name ),
         order_items ( quantity, price, title ),
         payment_proofs ( status, created_at ),

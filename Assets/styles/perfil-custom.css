@@ -428,6 +428,24 @@ body {
   font-size: 0.8125rem;
 }
 
+/* === Botón de arrepentimiento (Ley 24.240 / Res. 424/2020) === */
+.compra-revocation {
+  margin-top: 0.5rem;
+}
+
+.compra-revocation__btn {
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  background: transparent;
+  border: 1px solid var(--bl-perfil-border);
+  color: var(--bl-perfil-text-main);
+}
+
+.compra-revocation__btn:hover {
+  background: var(--bl-perfil-border);
+}
+
 /* === Favoritos Grid === */
 .favoritos-grid {
   display: grid;

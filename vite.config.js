@@ -34,6 +34,7 @@ export default defineConfig({
         producto: resolve(__dirname, 'pages/producto.html'),
         comercio: resolve(__dirname, 'pages/comercio.html'),
         terminos: resolve(__dirname, 'pages/terminos.html'),
+        privacidad: resolve(__dirname, 'pages/privacidad.html'),
         info: resolve(__dirname, 'pages/info.html'),
         repartidor: resolve(__dirname, 'pages/repartidor.html'),
         mensajes: resolve(__dirname, 'pages/mensajes.html'),

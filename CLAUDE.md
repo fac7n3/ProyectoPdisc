@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-10 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso).
+> Última actualización: 2026-07-10 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal (términos/privacidad/botón de arrepentimiento) agregado).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -175,6 +175,24 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **F11-03** (`A113-232`) — Edge Functions en prod: **pagos** (Mercado Pago) ✅ hecho (F2-07). Email/WhatsApp siguen bloqueados por falta de credenciales externas (F8-02/F8-03, sin cambios). No se cierra el ticket completo hasta que se resuelva esa parte.
 - **F11-04** (`A113-233`) — Dominio propio: requiere comprar un dominio (decisión de costo del usuario). Hoy el sitio corre en `proyectopdisc.vercel.app`. Instrucciones para cuando se compre uno están en `docs/DEPLOY.md` (incluye el paso de repetir la config de Google OAuth con el dominio nuevo).
 - **F11-06** (`A113-235`) — Cargar comercios reales: las 14 tiendas/64 productos actuales son datos de seed/mock. Hace falta que vendedores reales se registren y sean aprobados (flujo ya funciona, ver F1-04/F3-01) — es un tema de contenido/negocio, no de código.
+
+## Legal (2026-07-10) — términos, privacidad, botón de arrepentimiento
+No estaba en el roadmap original como fase propia, pedido directo del usuario tras repasar
+qué falta para el lanzamiento. **Disclaimer que le di al usuario y que sigue vigente: no soy
+abogado — todo el texto legal es un borrador con criterios generales de la ley argentina,
+recomendado que lo revise un abogado antes del lanzamiento real.**
+
+- **`pages/terminos.html` reescrita por completo** — tenía **Lorem Ipsum** desde que se creó (nunca tuvo contenido real, hallazgo encontrado al ir a agregar la política de privacidad al lado). Contenido nuevo: qué es Baradero Local (intermediario, no vendedor), tipos de cuenta, pagos, envío/retiro, **derecho de arrepentimiento** (Ley 24.240 + Res. 424/2020, 10 días hábiles), responsabilidades de los comercios, reseñas, límite de responsabilidad, ley aplicable.
+- **`pages/privacidad.html` (nueva)** — qué datos se recolectan (aclarando explícitamente que los datos de tarjeta los procesa Mercado Pago directamente, nunca los servidores propios), para qué se usan, con quién se comparten (Supabase/Mercado Pago/Google/Vercel), derechos del usuario (Ley 25.326), seguridad (RLS), retención. Agregada a `vite.config.js` y enlazada desde el footer de home/search/comercio/info/terminos.
+- **Botón de arrepentimiento — implementado de verdad, no solo el texto legal.** Migración `40_order_revocation.sql`: columna `orders.revocation_requested_at` + RPC `request_order_revocation` (`SECURITY DEFINER`): valida ownership, que la orden esté `paid`, que no se haya solicitado antes (idempotente) y el plazo (15 días corridos como buffer conservador que siempre cubre los 10 días hábiles legales, sin necesitar un calendario de feriados completo). No procesa el reembolso en sí — igual que `confirm_transfer_payment`, deja constancia y notifica al vendedor (`create_notification`, tipo `revocation_requested`) para que lo gestione manualmente. Frontend: botón "Solicitar arrepentimiento" en `perfil.js` ("Mis compras", visible en pedidos pagados dentro del plazo), badge de aviso en `vender.js` ("Mis pedidos") cuando hay una solicitud pendiente — el vendedor usa el botón "Cancelar" que ya existía (F5-06) una vez que resolvió la devolución. Verificado con `BEGIN;...ROLLBACK;` simulando `auth.uid()` (3 casos: alta exitosa, idempotencia, rechazo de orden ajena) antes de aplicar para real.
+- **`pages/info.html`** — la sección "Políticas de Devolución" no mencionaba el derecho de arrepentimiento (podía leerse como que la devolución dependía solo de cada comercio); corregida para linkear al botón real y a los Términos/Privacidad nuevos.
+
+### Backlog mencionado por el usuario (2026-07-10), no abordado todavía — a propósito
+El usuario pidió arrancar por lo legal, pero mencionó varios pendientes más para después:
+- **Pulido de responsive**: "detalles que suman" — sin especificar dónde todavía, queda para cuando el usuario los señale o para una pasada dedicada.
+- **Interfaces del vendedor + tab de "insights"**: el usuario va a pasar diseños propios más adelante; mientras tanto pidió algo provisional. **No implementado todavía** — a la espera de definir qué métricas mostrar (ya existen ventas del día/ingresos del mes en el dashboard, F5-07; "insights" sugiere algo más — comparativas, tendencias, productos más vendidos — falta especificar antes de construir algo que probablemente se descarte al llegar el diseño real).
+- **Apps nativas (App Store / Google Play)**: recomendación dada, no iniciada. Google Play: viable barato envolviendo la PWA existente con una Trusted Web Activity (Bubblewrap/PWABuilder, ~USD 25 cuenta de developer). Apple: más difícil, suele rechazar apps que son "solo un sitio envuelto" (guideline 4.2) salvo que tengan algo nativo real — necesitaría Capacitor + alguna función nativa, USD 99/año cuenta de developer. Es un proyecto aparte, no algo para una sesión de pasada.
+- El usuario también avisó que "seguramente" hay más cosas que se está olvidando — no hay una lista cerrada, van a ir apareciendo.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

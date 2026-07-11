@@ -592,6 +592,32 @@ proyecto (admin, pagos por confirmar, etc.); implementar Supabase Realtime
 acá para no meter un patrón de suscripción/limpieza nuevo sin poder
 verificarlo en un navegador con sesión real.
 
+## Legal — términos, privacidad, botón de arrepentimiento (40_order_revocation.sql)
+
+No soy abogado — todo el texto de `pages/terminos.html`/`pages/privacidad.html`
+es un borrador con criterios generales de la ley argentina (Ley 24.240,
+Res. 424/2020, Ley 25.326), recomendado que lo revise un abogado antes del
+lanzamiento real.
+
+`terminos.html` tenía **Lorem Ipsum** desde que se creó — nunca tuvo
+contenido real, encontrado al ir a agregar la política de privacidad al
+lado. `privacidad.html` es página nueva (agregada a `vite.config.js`).
+
+Botón de arrepentimiento implementado como feature real, no solo texto:
+migración `40_order_revocation.sql` agrega `orders.revocation_requested_at`
++ RPC `request_order_revocation` (`SECURITY DEFINER`) — valida ownership,
+`payment_status = 'paid'`, no solicitado antes (idempotente), y el plazo
+(15 días corridos, buffer conservador que cubre los 10 días hábiles legales
+sin necesitar un calendario de feriados). No procesa el reembolso en sí
+(depende del medio de pago, igual que `confirm_transfer_payment`) — deja
+constancia y notifica al vendedor. Verificado con `BEGIN;...ROLLBACK;`
+simulando `auth.uid()` vía `set_config('request.jwt.claim.sub', ...)`: alta
+exitosa, idempotencia (segunda solicitud devuelve `already_requested: true`
+sin fallar), y rechazo de una orden ajena (otro `auth.uid()`). `js/perfil.js`
+(botón en "Mis compras", solo visible si es elegible) y `js/vender.js`
+(badge de aviso en "Mis pedidos" — el vendedor resuelve con el botón
+"Cancelar" que ya existía en F5-06 una vez gestionada la devolución).
+
 ## Fase 11 — Deploy y lanzamiento
 
 Documentación de despliegue, guía de usuario y arquitectura ahora viven en

@@ -8,6 +8,7 @@ const TYPE_LABELS = {
   order_delivered: 'Tu pedido fue entregado',
   new_review: 'Recibiste una nueva reseña',
   new_message: 'Tenés un mensaje nuevo',
+  revocation_requested: 'Un cliente solicitó arrepentimiento de compra',
 };
 
 export async function fetchNotifications(userId) {

@@ -203,7 +203,7 @@ async function renderAllOrders() {
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, status, payment_status, delivery_method, total_price, created_at')
+    .select('id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -243,6 +243,17 @@ function buildOrderRow(order) {
   const methodLabel = order.delivery_method === 'delivery' ? 'Envío' : 'Retiro en el local';
   detailsSpan.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
   info.appendChild(detailsSpan);
+
+  // Botón de arrepentimiento (Ley 24.240 / Res. 424/2020): el cliente lo
+  // solicitó desde "Mis compras" (request_order_revocation) -- el vendedor
+  // tiene que coordinar la devolución y usar "Cancelar" acá una vez resuelta.
+  if (order.revocation_requested_at) {
+    const revocationBadge = document.createElement('div');
+    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.25rem 0.6rem; border-radius: var(--bl-radius-md); font-size: 0.8125rem; font-weight: 600; margin-top: 0.35rem; display: inline-block;';
+    revocationBadge.textContent = '⚠ Arrepentimiento solicitado por el cliente';
+    info.appendChild(revocationBadge);
+  }
+
   row.appendChild(info);
 
   const statusSpan = document.createElement('span');
