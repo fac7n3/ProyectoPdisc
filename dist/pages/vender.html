@@ -156,7 +156,7 @@
         color: white;
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-C7RYciTu.js"></script>
+    <script type="module" crossorigin src="/assets/vender-Cl5K29iS.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CJ0b5n5i.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-CGy_UjIH.js">
     <link rel="modulepreload" crossorigin href="/assets/notifications-utils-DymY7r5j.js">
@@ -239,7 +239,10 @@
               <h1>Panel de Vendedor</h1>
               <p>Bienvenido, <strong id="dash-shop-name">Tu Comercio</strong></p>
             </div>
-            
+
+            <!-- Onboarding (F12-15): solo se muestra hasta completar el perfil + primer producto -->
+            <div id="onboarding-container" style="display: none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem;"></div>
+
             <div class="dashboard-stats">
               <div class="stat-card">
                 <h3 id="stat-sales-today">0</h3>

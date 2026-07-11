@@ -158,6 +158,8 @@ function initVenderPage(user) {
 // --- Vista y Lógica de Vendedor (Dashboard) ---
 let currentStoreId = null;
 let editingProductId = null; // F5-02: null = alta nueva, id = editando ese producto
+let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardingChecklist
+let currentProductCount = 0;
 
 async function loadDashboard(user) {
   // Obtener la tienda del usuario
@@ -173,6 +175,7 @@ async function loadDashboard(user) {
   }
 
   currentStoreId = store.id;
+  currentStoreHasProfile = Boolean(store.description && store.description.trim());
   document.getElementById('dash-shop-name').textContent = store.name;
   fillStoreProfileForm(store);
 
@@ -384,6 +387,8 @@ function setupStoreProfileForm() {
       return;
     }
 
+    const descriptionValue = document.getElementById('store-description').value.trim();
+
     const { error } = await supabase
       .from('stores')
       .update({
@@ -392,7 +397,7 @@ function setupStoreProfileForm() {
         phone: document.getElementById('store-phone').value.trim() || null,
         zone: document.getElementById('store-zone').value.trim() || null,
         hours: hoursValue || null,
-        description: document.getElementById('store-description').value.trim() || null,
+        description: descriptionValue || null,
         delivery_fee: deliveryFeeValue,
         free_shipping_threshold: freeShippingValue,
       })
@@ -403,6 +408,9 @@ function setupStoreProfileForm() {
       showToast('No se pudo guardar el perfil.', 'error');
     } else {
       showToast('Perfil del comercio actualizado.', 'success');
+      // F12-15: onboarding -- si acaba de completar el perfil, el checklist se actualiza solo.
+      currentStoreHasProfile = Boolean(descriptionValue);
+      renderOnboardingChecklist(currentProductCount > 0);
     }
     setLoading(submitBtn, false, 'Guardar perfil');
   });
@@ -742,6 +750,73 @@ async function renderShipmentsInProgress() {
   });
 }
 
+/**
+ * F12-15: onboarding para el vendedor recién aprobado -- antes caía a un
+ * dashboard vacío sin ninguna guía. Se basa en el estado real (perfil
+ * completo / al menos un producto cargado), no en una preferencia guardada
+ * de "descartado" -- una vez cumplidos los dos pasos, desaparece solo y no
+ * vuelve a aparecer (no hay forma de "reabrirlo" a propósito, no hace falta).
+ */
+function renderOnboardingChecklist(hasProducts) {
+  const container = document.getElementById('onboarding-container');
+  if (!container) return;
+
+  container.textContent = '';
+
+  if (currentStoreHasProfile && hasProducts) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+
+  const title = document.createElement('h2');
+  title.style.cssText = 'font-size: 1.25rem; margin-bottom: 0.35rem;';
+  title.textContent = '¡Bienvenido a Baradero Local!';
+  container.appendChild(title);
+
+  const subtitle = document.createElement('p');
+  subtitle.style.cssText = 'color: var(--bl-text-secondary, #4a5568); margin-bottom: 1rem; font-size: 0.9rem;';
+  subtitle.textContent = 'Completá estos pasos para que tu comercio esté listo para vender:';
+  container.appendChild(subtitle);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display: flex; flex-direction: column; gap: 0.5rem;';
+
+  const steps = [
+    {
+      done: currentStoreHasProfile,
+      label: 'Completá el perfil de tu comercio (dirección, horarios, descripción)',
+      onClick: () => document.getElementById('store-profile-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    },
+    {
+      done: hasProducts,
+      label: 'Publicá tu primer producto',
+      onClick: () => document.getElementById('btn-show-add-product')?.click(),
+    },
+  ];
+
+  steps.forEach((step) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = `display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.9rem; border-radius: var(--bl-radius-md, 0.5rem); text-align: left; width: 100%; cursor: pointer; background: ${step.done ? '#d1fae5' : 'var(--bl-surface-alt, #f0f4f8)'}; border: 1px solid ${step.done ? '#a7f3d0' : 'var(--bl-border, #e2e8f0)'};`;
+    btn.addEventListener('click', step.onClick);
+
+    const icon = document.createElement('i');
+    icon.className = step.done ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
+    icon.style.color = step.done ? '#059669' : 'var(--bl-text-muted, #94a3b8)';
+    btn.appendChild(icon);
+
+    const text = document.createElement('span');
+    text.textContent = step.label;
+    if (step.done) text.style.cssText = 'text-decoration: line-through; color: var(--bl-text-muted, #94a3b8);';
+    btn.appendChild(text);
+
+    list.appendChild(btn);
+  });
+
+  container.appendChild(list);
+}
+
 async function fetchProducts() {
   if (!currentStoreId) return;
 
@@ -758,6 +833,11 @@ async function fetchProducts() {
 
   // F5-07: la tarjeta dice "Productos Activos" -- antes contaba todos (incluidos inactivos).
   document.getElementById('stat-products-count').textContent = products.filter((p) => p.is_active).length;
+
+  // F12-15: onboarding -- cuenta cualquier producto (activo o no), "publicar el
+  // primer producto" ya está cumplido aunque después lo haya desactivado.
+  currentProductCount = products.length;
+  renderOnboardingChecklist(currentProductCount > 0);
 
   const tbody = document.getElementById('seller-products-tbody');
   tbody.innerHTML = '';

@@ -239,12 +239,13 @@ completo de los 18 ítems, hechos y pendientes).
 
 - **F12-14** (`A113-254`) — **Vencimiento de ofertas.** `products.offer_expires_at` (migración 48, `date` — el vendedor elige un día en un `<input type="date">`, no una hora exacta; "vence el 30" debe seguir la oferta activa durante todo el 30, por eso `date` y no `timestamptz`). `buildPriceRow()` (`cart-utils.js`, compartida home/search/comercio) ahora ignora el precio tachado si `offer_expires_at` ya pasó — el vendedor no tiene que acordarse de sacarlo a mano, el badge simplemente deja de mostrarse solo. `search.js`: el filtro "Ofertas" (F9-03) ahora también excluye las vencidas (`.or('offer_expires_at.is.null,offer_expires_at.gte.hoy')`). Input nuevo en `vender.js`/`vender.html`, solo se persiste si hay un `compare_at_price` cargado (si el vendedor borra el precio de oferta pero deja una fecha vieja en el form, no queda guardada una fecha huérfana). **Nota de verificación**: no hay ningún producto real con oferta activa en la base — probado con casos sintéticos vía `preview_eval` (import directo de `buildPriceRow` con productos fabricados: sin oferta / sin vencimiento / vigente / vence hoy / vencida ayer, los 5 correctos) en vez de datos reales, y el filtro de `search.js` confirmado sin errores contra la base real (0 resultados, correcto ya que ningún producto tiene oferta hoy).
 
-### Pendiente (F12-15 a F12-18)
+- **F12-15** (`A113-255`) — **Onboarding para vendedor recién aprobado.** Sin migración, 100% frontend. `renderOnboardingChecklist()` en `vender.js`: banner con 2 pasos (perfil del comercio completo / al menos un producto publicado), cada uno un botón que lleva directo a la acción (scroll al form de perfil, o abre el form de alta de producto vía `btn-show-add-product.click()`). Basado en estado real vía dos variables de módulo (`currentStoreHasProfile`, `currentProductCount`) recalculadas en `fetchProducts()` (cubre alta/edición/borrado de producto, ya se llama desde los 4 lugares que tocan productos) y al guardar el perfil del comercio — no hay una preferencia "descartado" guardada en ningún lado ni una forma de reabrirlo a propósito, simplemente desaparece solo apenas se cumplen los dos pasos y no vuelve a aparecer.
+
+### Pendiente (F12-16 a F12-18)
 Ver `docs/ROADMAP.md` sección 17.1 para la lista completa. F12-13 (insights del vendedor) saltado
-a pedido del usuario -- va a pasar diseños propios. F12-15 en adelante (onboarding de vendedor,
-multi-usuario por comercio, roles de admin granulares) quedan para definir el rumbo con el
-usuario antes de seguir autónomamente; F12-18 (facturación/AFIP) ya está marcado fuera de
-alcance de código.
+a pedido del usuario -- va a pasar diseños propios. F12-16 (multi-usuario por comercio) y F12-17
+(roles de admin granulares) quedan para definir el rumbo con el usuario antes de seguir
+autónomamente; F12-18 (facturación/AFIP) ya está marcado fuera de alcance de código.
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"
