@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-06 hechos).
+> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 en curso — F12-01 a F12-08 hechos).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -212,9 +212,18 @@ completo de los 18 ítems, hechos y pendientes).
   - Frontend: teléfono del cliente mostrado en `vender.js` ("Mis pedidos") y `repartidor.js` ("Mis entregas", no en "Pedidos disponibles" — recién al tomar el pedido). `orders.client_id` no tiene FK a `profiles` (sí a `auth.users`), así que no se puede embeber en un solo `.select()`; se resuelve con una segunda consulta a `profiles` por los `client_id` distintos de la página.
   - `carrito.js`: `prefillSavedAddress()` (nuevo, corre al cargar la página) precarga `profiles.address`/`address_details` en el campo de dirección de envío si está vacío — sigue siendo editable para esa compra puntual, no es de solo lectura.
 
-### Pendiente (F12-07 a F12-18)
+- **F12-07** (`A113-247`) — **Cupones/promociones visibles públicamente.** Antes había que saber el código de antemano. La RLS `coupons_select_public` (F0, `08_coupons_schema.sql`) ya dejaba leer cualquier cupón activo/no vencido a `anon` — el hueco era 100% de frontend, sin migración nueva. `renderActiveCoupons(container, {onSelect, emptyHide})` (nuevo, `cart-utils.js`), compartida entre:
+  - `home.js`/`home.html`: sección "Cupones activos" (nueva, entre la barra de farmacia y el carrusel de locales), solo informativa — clic copia el código al portapapeles.
+  - `carrito.js`/`carrito.html`: fila de chips dentro del desplegable existente "¿Tenés un cupón?" — clic completa `#coupon-input` y dispara `applyCoupon()` directamente.
+  - Cada chip muestra código, `-N%`, a qué tienda aplica (o "Todo Baradero Local" si es global, F12-03) y vencimiento si tiene. **Bug propio evitado antes de commitear**: el primer intento controlaba la visibilidad del `<section>` padre vía `container.parentElement.style.display` — funciona en home.html (el padre es la sección misma) pero en carrito.html el padre es el contenido colapsable "¿Tenés un cupón?", así que hubiera quedado *forzado a abierto* apenas cargaran cupones, rompiendo el toggle. Corregido con un parámetro explícito `emptyHide` (default: el propio contenedor) en vez de asumir el padre.
+- **F12-08** (`A113-248`) — **Calificar al repartidor.** `reviews.target_type` (F7-01, `36_reviews.sql`) tenía un CHECK limitado a `('product', 'store')` — ampliado a `repartidor` en `44_repartidor_reviews.sql`. Sin cambios de RLS: `reviews_insert_own`/`reviews_select_public` ya son genéricas por `target_type` (ni siquiera product/store validan "compra verificada" a nivel RLS, así que tampoco se agregó esa restricción acá — consistencia con el patrón existente). Verificado con `BEGIN;...ROLLBACK;`: insert con `target_type='bogus'` sigue rechazado; calificar dos veces al mismo repartidor actualiza la fila existente (no duplica), igual que producto/tienda.
+  - `perfil.js` ("Mis compras"): `buildRepartidorRatingSection(order, reviewByRepartidorId)` — widget compacto (estrellas + botón, sin comentario a propósito para no sumar una textarea más a cada fila de pedido) que aparece solo si `delivery_method='delivery'` y la entrega asociada está `delivered`. Se califica a la persona, no al pedido puntual (mismo `unique(target_type,target_id,client_id)` que producto/tienda) — si el mismo repartidor entregó 2 pedidos, la segunda calificación actualiza la primera en vez de duplicarla. `reviewByRepartidorId` se prefetchea en bloque dentro de `loadCompras` (mismo patrón que `phoneByClientId` de F12-05) en vez de una consulta por fila.
+  - `repartidor.js`: línea "Mi calificación" en el dashboard (`loadMyRating`, nuevo) — reusa `fetchReviewsSummary('repartidor', userId)` de `reviews-utils.js` **sin ningún cambio** (ya era 100% genérica por `target_type`). Precedente: F5-07 ya mostraba stats privados en el dashboard del vendedor (ventas/ingresos) que no están en ninguna página pública — mismo criterio para el repartidor, que ni siquiera tiene página pública.
+  - A propósito **no** se agregó ninguna vista para que el admin vea calificaciones de repartidores — no lo pidió el roadmap ni el usuario; si hace falta moderar reseñas de repartidor, el RPC `report_review` (F7-03) ya es genérico por `target_type` y la sección "Reseñas reportadas" de `admin.js` ya las mostraría sin cambios (no verificado en UI, pero la query no filtra por `target_type`).
+
+### Pendiente (F12-09 a F12-18)
 Ver `docs/ROADMAP.md` sección 17.1 para la lista completa ordenada por prioridad. Siguiente en
-la cola: cupones visibles públicamente para el cliente (F12-07), calificar al repartidor (F12-08).
+la cola: aviso de "volvió el stock" (F12-09).
 
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"

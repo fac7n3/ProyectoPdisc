@@ -152,6 +152,79 @@ export function buildPriceRow(product) {
 }
 
 /**
+ * F12-07: sección pública de cupones/promociones activos. Antes había que
+ * saber el código de antemano (no existía ningún lugar para descubrirlos);
+ * la RLS `coupons_select_public` ya dejaba leer cualquier cupón activo y no
+ * vencido a anon/authenticated, así que esto es puro frontend. Compartida
+ * entre home.js (solo informativa) y carrito.js (clickeable, completa el
+ * input de cupón existente).
+ * @param {HTMLElement} container
+ * @param {{onSelect?: (code: string) => void, emptyHide?: HTMLElement}} [options] `emptyHide`:
+ *   elemento a ocultar si no hay cupones (default: el propio `container`). En home.html es la
+ *   `<section>` entera; en carrito.html NO se pasa a propósito -- el contenedor padre ahí es la
+ *   sección colapsable "¿Tenés un cupón?", que debe seguir controlada solo por su propio toggle.
+ */
+export async function renderActiveCoupons(container, { onSelect, emptyHide } = {}) {
+  if (!container) return;
+  const hideTarget = emptyHide || container;
+  try {
+    const { data: coupons, error } = await supabase
+      .from('coupons')
+      .select('code, discount_percentage, expires_at, store_id, stores ( name )')
+      .order('discount_percentage', { ascending: false })
+      .limit(12);
+
+    if (error) throw error;
+
+    container.innerHTML = '';
+
+    if (!coupons || coupons.length === 0) {
+      hideTarget.style.display = 'none';
+      return;
+    }
+
+    hideTarget.style.display = '';
+
+    coupons.forEach((coupon) => {
+      const chip = document.createElement(onSelect ? 'button' : 'div');
+      chip.className = 'coupon-chip';
+      if (onSelect) chip.type = 'button';
+
+      const codeSpan = document.createElement('span');
+      codeSpan.className = 'coupon-chip__code';
+      codeSpan.textContent = coupon.code;
+      chip.appendChild(codeSpan);
+
+      const pctSpan = document.createElement('span');
+      pctSpan.className = 'coupon-chip__pct';
+      pctSpan.textContent = `-${coupon.discount_percentage}%`;
+      chip.appendChild(pctSpan);
+
+      const scopeSpan = document.createElement('span');
+      scopeSpan.className = 'coupon-chip__scope';
+      scopeSpan.textContent = coupon.store_id ? (coupon.stores?.name || 'Un comercio') : 'Todo Baradero Local';
+      chip.appendChild(scopeSpan);
+
+      if (coupon.expires_at) {
+        const expSpan = document.createElement('span');
+        expSpan.className = 'coupon-chip__expiry';
+        expSpan.textContent = `Vence ${new Date(coupon.expires_at).toLocaleDateString('es-AR')}`;
+        chip.appendChild(expSpan);
+      }
+
+      if (onSelect) {
+        chip.addEventListener('click', () => onSelect(coupon.code));
+      }
+
+      container.appendChild(chip);
+    });
+  } catch (err) {
+    console.error('Error cargando cupones activos:', err);
+    container.parentElement && (container.parentElement.style.display = 'none');
+  }
+}
+
+/**
  * Actualizar el badge del carrito en el navbar
  */
 export function updateCartBadge() {

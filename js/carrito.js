@@ -3,7 +3,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
-import { getCart, saveCart, clearCart, updateCartBadge, MAX_QTY, formatPrice } from './cart-utils.js';
+import { getCart, saveCart, clearCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons } from './cart-utils.js';
 import { getPaymentProvider } from './payment-providers.js';
 
 // --- Estado del Carrito ---
@@ -383,12 +383,21 @@ function initCouponEvents() {
   }
 
   applyBtn.addEventListener('click', applyCoupon);
-  
+
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       applyCoupon();
     }
+  });
+
+  // F12-07: cupones públicos disponibles -- clic completa el input y aplica.
+  const couponsRow = document.getElementById('coupons-row');
+  renderActiveCoupons(couponsRow, {
+    onSelect: (code) => {
+      input.value = code;
+      applyCoupon();
+    },
   });
 }
 

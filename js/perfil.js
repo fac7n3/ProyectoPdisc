@@ -1,6 +1,7 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice } from "./cart-utils.js";
 import { renderNotificationsSection } from "./notifications-utils.js";
+import { submitReview } from "./reviews-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -232,7 +233,7 @@ const DELIVERY_STATUS_LABELS = {
  * se tratan como no confiables — mismo criterio que F1-01 en comercio.js/
  * producto.js.
  */
-function buildCompraItem(order) {
+function buildCompraItem(order, reviewByRepartidorId) {
   const date = new Date(order.created_at).toLocaleDateString('es-AR');
   const shortId = order.id.split('-')[0].toUpperCase();
   const statusText = ORDER_STATUS_LABELS[order.status] || order.status;
@@ -296,6 +297,9 @@ function buildCompraItem(order) {
 
   const revocationSection = buildRevocationSection(order);
   if (revocationSection) info.appendChild(revocationSection);
+
+  const ratingSection = buildRepartidorRatingSection(order, reviewByRepartidorId);
+  if (ratingSection) info.appendChild(ratingSection);
 
   item.appendChild(info);
 
@@ -441,6 +445,68 @@ function buildRevocationSection(order) {
   return wrap;
 }
 
+/**
+ * F12-08: calificar al repartidor que entregó el pedido. Se califica a la
+ * persona, no al pedido puntual -- reusa la misma tabla `reviews` genérica de
+ * F7-01 (target_type='repartidor', agregado al CHECK en 44_repartidor_reviews.sql),
+ * así que un repartidor con varias entregas al mismo cliente tiene una sola
+ * reseña editable (unique target_type+target_id+client_id), igual que producto/tienda.
+ */
+function buildRepartidorRatingSection(order, reviewByRepartidorId) {
+  const repartidorId = order.deliveries?.repartidor_id;
+  if (order.delivery_method !== 'delivery' || order.deliveries?.status !== 'delivered' || !repartidorId) {
+    return null;
+  }
+
+  const ownReview = reviewByRepartidorId?.get(repartidorId);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'compra-revocation';
+
+  const form = document.createElement('form');
+  form.style.cssText = 'display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.25rem;';
+
+  const label = document.createElement('span');
+  label.style.cssText = 'font-size: 0.85rem; color: var(--bl-perfil-text-sec);';
+  label.textContent = ownReview ? 'Tu calificación del repartidor:' : 'Calificá al repartidor:';
+  form.appendChild(label);
+
+  const ratingSelect = document.createElement('select');
+  ratingSelect.required = true;
+  ratingSelect.style.cssText = 'padding: 0.35rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-sm);';
+  [5, 4, 3, 2, 1].forEach((n) => {
+    const opt = document.createElement('option');
+    opt.value = String(n);
+    opt.textContent = `${'★'.repeat(n)}${'☆'.repeat(5 - n)}`;
+    ratingSelect.appendChild(opt);
+  });
+  if (ownReview) ratingSelect.value = String(ownReview.rating);
+  form.appendChild(ratingSelect);
+
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.className = 'bl-btn compra-revocation__btn';
+  submitBtn.textContent = ownReview ? 'Actualizar' : 'Calificar';
+  form.appendChild(submitBtn);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    try {
+      await submitReview('repartidor', repartidorId, parseInt(ratingSelect.value, 10), null);
+      showToast('¡Gracias por calificar al repartidor!', 'success');
+      await loadCompras(order.client_id);
+    } catch (err) {
+      console.error('Error al calificar al repartidor', err);
+      showToast(err.message || 'No se pudo guardar la calificación.', 'error');
+      submitBtn.disabled = false;
+    }
+  });
+
+  wrap.appendChild(form);
+  return wrap;
+}
+
 async function loadCompras(userId) {
   if (!comprasContainer) return;
   try {
@@ -451,7 +517,7 @@ async function loadCompras(userId) {
         stores ( name ),
         order_items ( quantity, price, title ),
         payment_proofs ( status, created_at ),
-        deliveries ( status )
+        deliveries ( status, repartidor_id )
       `)
       .eq('client_id', userId)
       .order('created_at', { ascending: false });
@@ -468,8 +534,27 @@ async function loadCompras(userId) {
       return;
     }
 
+    // F12-08: calificar al repartidor -- se califica a la persona (no por
+    // pedido), así que se busca en bloque si ya existe una reseña propia para
+    // cada repartidor que entregó algo, igual que el patrón de F12-05 (fono
+    // del cliente) con phoneByClientId.
+    const deliveredRepartidorIds = [...new Set(
+      orders
+        .filter((o) => o.deliveries?.status === 'delivered' && o.deliveries?.repartidor_id)
+        .map((o) => o.deliveries.repartidor_id)
+    )];
+    const { data: ownRepartidorReviews } = deliveredRepartidorIds.length
+      ? await supabase
+          .from('reviews')
+          .select('target_id, rating, comment')
+          .eq('target_type', 'repartidor')
+          .eq('client_id', userId)
+          .in('target_id', deliveredRepartidorIds)
+      : { data: [] };
+    const reviewByRepartidorId = new Map((ownRepartidorReviews || []).map((r) => [r.target_id, r]));
+
     orders.forEach((order) => {
-      comprasContainer.appendChild(buildCompraItem(order));
+      comprasContainer.appendChild(buildCompraItem(order, reviewByRepartidorId));
     });
   } catch (err) {
     console.error("Error loading orders", err);

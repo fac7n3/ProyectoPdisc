@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderActiveCoupons } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -281,6 +281,24 @@ async function loadProducts() {
   }
 }
 
+/** F12-07: cargar cupones/promociones activos, clic copia el código */
+function loadCoupons() {
+  const row = document.getElementById('coupons-row');
+  if (!row) return;
+
+  renderActiveCoupons(row, {
+    emptyHide: document.getElementById('coupons-section'),
+    onSelect: async (code) => {
+      try {
+        await navigator.clipboard.writeText(code);
+        showToast(`Código "${code}" copiado. Pegalo en el carrito al pagar.`, 'success');
+      } catch {
+        showToast(`Código: ${code}`, 'default');
+      }
+    },
+  });
+}
+
 /** Configurar modal de Farmacia de Turno */
 function initFarmaciaLink() {
   const farmaciaLink = document.getElementById('farmacia-link');
@@ -361,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCategories();
   loadStores();
   loadProducts();
+  loadCoupons();
 
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();

@@ -1,6 +1,7 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { isValidPhone } from './validation-utils.js';
 import { formatPrice } from './cart-utils.js';
+import { fetchReviewsSummary, buildStarsText } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerView = document.getElementById('register-view');
@@ -37,6 +38,7 @@ async function checkDeliveryState(user) {
     showDashboard();
     loadAvailableOrders();
     loadMyDeliveries(user.id);
+    loadMyRating(user.id);
     return;
   }
 
@@ -298,6 +300,18 @@ async function loadMyDeliveries(userId) {
   data.forEach((delivery) => {
     container.appendChild(buildMyDeliveryCard(delivery, phoneByClientId.get(delivery.orders?.client_id)));
   });
+}
+
+/** F12-08: "Mi calificación" -- promedio de las reseñas que dejaron los
+ * clientes tras una entrega (reviews.target_type='repartidor', F12-08). */
+async function loadMyRating(userId) {
+  const el = document.getElementById('repartidor-rating');
+  if (!el) return;
+
+  const { average, count } = await fetchReviewsSummary('repartidor', userId);
+  el.textContent = count > 0
+    ? `${buildStarsText(average)} ${average.toFixed(1)} (${count} calificación${count === 1 ? '' : 'es'})`
+    : 'Todavía no tenés calificaciones de clientes.';
 }
 
 function initRepartidorPage(user) {
