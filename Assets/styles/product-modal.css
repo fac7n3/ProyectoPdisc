@@ -962,3 +962,67 @@ body.modal-open {
   overflow: hidden;
   padding-right: var(--scrollbar-width, 0px);
 }
+
+/* --- F9-07: galería real (imagen principal + miniaturas de product_images) --- */
+.pm-gallery-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.pm-thumbs-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  overflow-x: auto;
+  background: var(--bl-surface);
+  border-top: 1px solid var(--bl-border-light);
+}
+
+.pm-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease;
+}
+
+.pm-thumb.is-active {
+  border-color: var(--bl-primary);
+}
+
+/* --- F9-07: carga y error reales (antes el modal se armaba solo con datos del DOM) --- */
+.pm-loading,
+.pm-modal-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  min-height: 320px;
+  text-align: center;
+  color: var(--bl-text-secondary);
+}
+
+.pm-loading i {
+  font-size: 1.75rem;
+  color: var(--bl-primary);
+}
+
+.pm-modal-error i {
+  font-size: 1.75rem;
+  color: var(--bl-danger);
+}
+
+.pm-modal-error__retry {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -1,12 +1,17 @@
 /**
  * product-modal.js — Modal de detalle de producto premium
  * Baradero Local
- * 
- * Módulo independiente: extrae datos del DOM de la tarjeta clickeada,
- * construye el modal dinámicamente, y maneja todas las interacciones.
+ *
+ * F9-07: el modal consulta el producto real en Supabase (stock, precio,
+ * variantes, fotos y reseñas) en vez de leerlo del DOM de la tarjeta
+ * clickeada. Antes fabricaba el stock con una fórmula pseudoaleatoria
+ * basada en el id y leía el rating de un elemento que las grillas nunca
+ * generan (siempre daba 0 estrellas / "vendidos" inventado).
  */
 
-import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite } from './cart-utils.js';
+import { supabase } from './auth-utils.js';
+import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite } from './cart-utils.js';
+import { fetchReviewsSummary, renderReviewsSection } from './reviews-utils.js';
 
 // ── Seguridad ───────────────────────────────────────────────
 function escapeHTML(str) {
@@ -19,46 +24,79 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
+// ── Datos reales del producto (Supabase) ────────────────────
+async function fetchProductData(productId) {
+  const [{ data: product, error }, reviewSummary] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, delivery_fee, free_shipping_threshold), product_images(url, position), product_variants(id, name, price, stock)')
+      .eq('id', productId)
+      .single(),
+    fetchReviewsSummary('product', productId),
+  ]);
 
-// ── Datos del producto ──────────────────────────────────────
-function extractProductData(card) {
-  const id = card.id;
-  const price = card.dataset.price !== undefined ? Number(card.dataset.price) : _parsePrice(card.querySelector('.product-card__price')?.textContent || '0');
-  const name = escapeHTML(card.querySelector('.product-card__name')?.textContent?.trim() || 'Producto');
-  const shopEl = card.querySelector('.product-card__shop');
-  const shop = escapeHTML(shopEl?.textContent?.trim()?.replace(/^\s*/, '') || 'Tienda');
-  const priceText = escapeHTML(card.querySelector('.product-card__price')?.textContent || '$0');
-  const priceOldText = escapeHTML(card.querySelector('.product-card__price-old')?.textContent || '');
-  const discountText = escapeHTML(card.querySelector('.product-card__discount')?.textContent || '');
-  const imgSrc = encodeURI(card.querySelector('.product-card__image img')?.getAttribute('src') || '');
-  const imgAlt = escapeHTML(card.querySelector('.product-card__image img')?.getAttribute('alt') || name);
-  const shippingText = escapeHTML(card.querySelector('.product-card__shipping')?.textContent?.trim() || '');
+  if (error || !product) throw error || new Error('Producto no encontrado');
 
-  // Rating
-  const starsContainer = card.querySelector('.product-card__stars');
-  const fullStars = starsContainer?.querySelectorAll('.fa-star:not(.empty)').length || 0;
-  const halfStars = starsContainer?.querySelectorAll('.fa-star-half-stroke').length || 0;
-  const emptyStars = starsContainer?.querySelectorAll('.fa-star.empty, .fa-regular.fa-star.empty').length || 0;
-  const ratingCount = escapeHTML(card.querySelector('.product-card__rating-count')?.textContent?.replace(/[()]/g, '') || '0');
+  // F12-14: mismo criterio que buildPriceRow (cart-utils.js) -- una oferta
+  // vencida se muestra como precio normal, sin tachado.
+  const today = new Date().toISOString().slice(0, 10);
+  const offerExpired = !!(product.offer_expires_at && product.offer_expires_at < today);
+  const hasDiscount = !!(product.compare_at_price && product.compare_at_price > product.price && !offerExpired);
+  const discountPct = hasDiscount ? Math.round((1 - product.price / product.compare_at_price) * 100) : 0;
 
-  // Categorías
-  const categories = (card.dataset.category || '').split(' ');
+  const store = product.stores || {};
+  const extraImages = (product.product_images || []).slice().sort((a, b) => a.position - b.position);
+  const images = [product.image_url || '/img/no-image.svg', ...extraImages.map((pi) => pi.url)];
 
-  // Badge
-  const badgeEl = card.querySelector('.product-card__badge');
-  const badgeText = escapeHTML(badgeEl?.textContent?.trim() || '');
-  const badgeType = badgeEl?.classList.contains('product-card__badge--envio') ? 'envio'
-    : badgeEl?.classList.contains('product-card__badge--oferta') ? 'descuento' : '';
+  // F12-04: envío/gratis real del comercio (antes era un texto genérico de
+  // "hacé clic para ver el costo" que no llevaba a ningún lado).
+  const freeShippingQualifies = store.free_shipping_threshold != null && product.price >= store.free_shipping_threshold;
+  let shippingText;
+  if (store.delivery_fee == null) {
+    shippingText = 'El costo de envío se calcula en el carrito, según el comercio.';
+  } else if (freeShippingQualifies || store.delivery_fee === 0) {
+    shippingText = 'Envío gratis en este comercio.';
+  } else {
+    shippingText = `Envío: ${formatPrice(store.delivery_fee)}` + (store.free_shipping_threshold ? ` (gratis desde ${formatPrice(store.free_shipping_threshold)})` : '');
+  }
 
-  // Stock simulado (aleatorio consistente basado en ID)
-  const stockSeed = (id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const stock = (stockSeed % 40) + 5;
+  let badgeText = '';
+  let badgeType = '';
+  if (hasDiscount) {
+    badgeText = `-${discountPct}%`;
+    badgeType = 'descuento';
+  } else if (freeShippingQualifies) {
+    badgeText = 'Envío gratis';
+    badgeType = 'envio';
+  }
+
+  // Rating real (reviews-utils.js, F7-01) -- si no hay reseñas, no se fabrica
+  // un promedio ni una cantidad de "vendidos".
+  const rating = reviewSummary.average;
+  const ratingCount = reviewSummary.count;
+  const fullStars = rating ? Math.floor(rating) : 0;
+  const halfStars = rating && rating - Math.floor(rating) >= 0.5 ? 1 : 0;
+  const emptyStars = Math.max(0, 5 - fullStars - halfStars);
 
   return {
-    id, price, name, shop, priceText, priceOldText, discountText,
-    imgSrc, imgAlt, shippingText,
+    id: product.id,
+    price: product.price,
+    name: escapeHTML(product.title || 'Producto'),
+    description: escapeHTML(product.description || ''),
+    shop: escapeHTML(store.name || 'Comercio'),
+    shopId: store.id || null,
+    priceText: formatPrice(product.price),
+    priceOldText: hasDiscount ? formatPrice(product.compare_at_price) : '',
+    discountText: hasDiscount ? `-${discountPct}%` : '',
+    images,
+    imgSrc: images[0],
+    imgAlt: escapeHTML(product.title || 'Producto'),
+    shippingText,
     fullStars, halfStars, emptyStars, ratingCount,
-    categories, badgeText, badgeType, stock
+    hasRating: ratingCount > 0,
+    badgeText, badgeType,
+    stock: product.stock ?? 0,
+    variants: product.product_variants || [],
   };
 }
 
@@ -67,15 +105,16 @@ function renderStars(full, half, empty) {
   let html = '';
   for (let i = 0; i < full; i++) html += '<i class="fa-solid fa-star"></i>';
   for (let i = 0; i < half; i++) html += '<i class="fa-solid fa-star-half-stroke"></i>';
-  // Calcular las estrellas vacías restantes hasta 5
   const totalEmpty = 5 - full - half;
   for (let i = 0; i < totalEmpty; i++) html += '<i class="fa-regular fa-star empty"></i>';
   return html;
 }
 
-// ── Stock visual ───────────────────────────────────────────
+// ── Stock visual (real, ya no fabricado) ───────────────────
 function getStockInfo(stock) {
-  if (stock <= 10) {
+  if (stock <= 0) {
+    return { text: 'Sin stock disponible', cssClass: 'low', fillClass: 'pm-stock__fill--low' };
+  } else if (stock <= 10) {
     return { text: `¡Últimas ${stock} unidades!`, cssClass: 'low', fillClass: 'pm-stock__fill--low' };
   } else if (stock <= 25) {
     return { text: `Quedan ${stock} unidades`, cssClass: 'ok', fillClass: 'pm-stock__fill--mid' };
@@ -83,7 +122,7 @@ function getStockInfo(stock) {
   return { text: `Disponible (${stock} unidades)`, cssClass: 'ok', fillClass: 'pm-stock__fill--high' };
 }
 
-// ── Productos relacionados ─────────────────────────────────
+// ── Productos relacionados (tarjetas ya renderizadas, datos reales) ──
 function getRelatedProducts(currentId, categories) {
   const allCards = document.querySelectorAll('.product-card');
   const related = [];
@@ -95,7 +134,6 @@ function getRelatedProducts(currentId, categories) {
     if (hasCommon) related.push(card);
   });
 
-  // Si no hay suficientes, tomar los demás
   if (related.length < 4) {
     allCards.forEach(card => {
       if (card.id !== currentId && !related.includes(card) && related.length < 6) {
@@ -107,20 +145,59 @@ function getRelatedProducts(currentId, categories) {
   return related.slice(0, 6);
 }
 
-// ── Construir HTML del modal ───────────────────────────────
+// ── URL de la tienda (relativa según la profundidad de la página actual) ──
+function shopUrl(shopId) {
+  const isInPages = window.location.pathname.includes('/pages/');
+  return `${isInPages ? './' : './pages/'}comercio.html?id=${encodeURIComponent(shopId)}`;
+}
+
+// ── Estado de carga (mientras se consulta Supabase) ────────
+function buildLoadingHTML() {
+  return `
+    <div class="product-modal" role="dialog" aria-modal="true" aria-label="Cargando producto">
+      <div class="pm-topbar">
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <div class="pm-topbar__actions">
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="pm-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Cargando producto...</p>
+      </div>
+    </div>
+  `;
+}
+
+function buildModalErrorHTML() {
+  return `
+    <div class="product-modal" role="dialog" aria-modal="true" aria-label="Error al cargar el producto">
+      <div class="pm-topbar">
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <div class="pm-topbar__actions">
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="pm-modal-error">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p>No se pudo cargar el producto.</p>
+        <button type="button" class="pm-modal-error__retry" id="pm-retry-btn">Reintentar</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── Construir HTML del modal con datos reales ──────────────
 function buildModalHTML(data) {
   const stockInfo = getStockInfo(data.stock);
-  const shopInitial = data.shop.replace(/^[\s\W]*/, '').charAt(0).toUpperCase();
-  const shopClean = data.shop.replace(/^[\s]*/, '').replace(/^\s*\S+\s*/, ''); // quitar icono text
+  const stockDisabled = data.stock <= 0;
+  const shopInitial = (data.shop || '?').charAt(0).toUpperCase();
 
-  // Related products
-  const relatedCards = getRelatedProducts(data.id, data.categories);
+  const relatedCards = getRelatedProducts(data.id, data.categories || []);
   let relatedHTML = '';
   relatedCards.forEach(card => {
-    // escapeHTML: rName/rPrice se leen vía textContent de otra tarjeta ya
-    // renderizada (p. ej. un título de producto con "<img onerror=...>"
-    // como texto plano no ejecuta ahí, pero re-inyectarlo tal cual en este
-    // innerHTML sí lo ejecutaría — hay que volver a escapar en el punto de uso.
+    // rName/rPrice se leen vía textContent de otra tarjeta ya renderizada --
+    // hay que volver a escapar en el punto de uso (mismo criterio que antes).
     const rName = escapeHTML(card.querySelector('.product-card__name')?.textContent?.trim() || '');
     const rPrice = escapeHTML(card.querySelector('.product-card__price')?.textContent || '');
     const rImg = encodeURI(card.querySelector('.product-card__image img')?.getAttribute('src') || '');
@@ -138,28 +215,49 @@ function buildModalHTML(data) {
     `;
   });
 
-  // Badge
   let badgeHTML = '';
   if (data.badgeText) {
     badgeHTML = `<span class="pm-gallery__badge pm-gallery__badge--${data.badgeType || 'descuento'}">${data.badgeText}</span>`;
   }
 
-  // Discount tag
-  let discountTagHTML = '';
-  if (data.discountText) {
-    discountTagHTML = `<span class="pm-discount-tag">${data.discountText}</span>`;
+  const discountTagHTML = data.discountText ? `<span class="pm-discount-tag">${data.discountText}</span>` : '';
+  const oldPriceHTML = data.priceOldText ? `<span class="pm-price-old">${data.priceOldText}</span>` : '';
+
+  // F5-04: miniaturas reales de product_images (antes solo había 1 imagen fija).
+  let thumbsHTML = '';
+  if (data.images.length > 1) {
+    thumbsHTML = `
+      <div class="pm-thumbs-row">
+        ${data.images.map((src, i) => `<img class="pm-thumb${i === 0 ? ' is-active' : ''}" data-thumb-src="${encodeURI(src)}" src="${encodeURI(src)}" alt="${data.imgAlt}" loading="lazy" />`).join('')}
+      </div>
+    `;
   }
 
-  // Old price
-  let oldPriceHTML = '';
-  if (data.priceOldText) {
-    oldPriceHTML = `<span class="pm-price-old">${data.priceOldText}</span>`;
+  const ratingHTML = data.hasRating
+    ? `
+      <div class="pm-rating__stars">${renderStars(data.fullStars, data.halfStars, data.emptyStars)}</div>
+      <span class="pm-rating__count">(${data.ratingCount} reseña${data.ratingCount === 1 ? '' : 's'})</span>
+    `
+    : `<span class="pm-rating__count">Todavía no tiene reseñas</span>`;
+
+  // F5-03: opciones/variantes reales, mismo criterio informativo que producto.js
+  // (no se integran al carrito -- el vendedor las gestiona aparte).
+  let variantsHTML = '';
+  if (data.variants.length > 0) {
+    variantsHTML = `
+      <div class="pm-variants">
+        <p class="pm-variants__title" style="font-weight:600; margin-bottom:0.4rem;">Opciones disponibles:</p>
+        <ul class="pm-variants__list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.3rem;">
+          ${data.variants.map(v => `<li style="font-size:0.85rem; color:var(--bl-text-secondary);">${escapeHTML(v.name)} — ${formatPrice(v.price)} (${v.stock > 0 ? `stock: ${v.stock}` : 'sin stock'})</li>`).join('')}
+        </ul>
+        <p style="font-size:0.75rem; color:var(--bl-text-muted); margin-top:0.3rem;">Para pedir una opción específica, consultá con el vendedor.</p>
+      </div>
+    `;
   }
 
   return `
     <div class="product-modal" role="dialog" aria-modal="true" aria-label="Detalle de ${data.name}">
-      
-      <!-- Top Bar -->
+
       <div class="pm-topbar">
         <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver">
           <i class="fa-solid fa-chevron-left"></i> Atrás
@@ -174,22 +272,22 @@ function buildModalHTML(data) {
         </div>
       </div>
 
-      <!-- Main 2-column layout -->
       <div class="pm-main">
-        
-        <!-- Gallery -->
-        <div class="pm-gallery" id="pm-gallery">
-          ${badgeHTML}
-          <button class="pm-gallery__fav" id="pm-fav-btn" aria-label="Agregar a favoritos">
-            <i class="fa-regular fa-heart"></i>
-          </button>
-          <img class="pm-gallery__img" src="${data.imgSrc}" alt="${data.imgAlt}" />
+
+        <div class="pm-gallery-col">
+          <div class="pm-gallery" id="pm-gallery">
+            ${badgeHTML}
+            <button class="pm-gallery__fav" id="pm-fav-btn" aria-label="Agregar a favoritos">
+              <i class="fa-regular fa-heart"></i>
+            </button>
+            <img class="pm-gallery__img" id="pm-gallery-img" src="${encodeURI(data.imgSrc)}" alt="${data.imgAlt}" />
+          </div>
+          ${thumbsHTML}
         </div>
 
-        <!-- Product Info -->
         <div class="pm-info">
-          
-          <div class="pm-shop" tabindex="0" role="link" aria-label="Ver tienda ${data.shop}">
+
+          <div class="pm-shop" id="pm-shop-link" tabindex="0" role="link" aria-label="Ver tienda ${data.shop}">
             <i class="fa-solid fa-store"></i>
             ${data.shop}
           </div>
@@ -197,12 +295,7 @@ function buildModalHTML(data) {
           <h2 class="pm-name">${data.name}</h2>
 
           <div class="pm-rating">
-            <div class="pm-rating__stars">
-              ${renderStars(data.fullStars, data.halfStars, data.emptyStars)}
-            </div>
-            <span class="pm-rating__count">(${data.ratingCount})</span>
-            <span class="pm-rating__sep"></span>
-            <span class="pm-rating__sales">${Math.floor(parseInt(data.ratingCount) * 2.3)} vendidos</span>
+            ${ratingHTML}
           </div>
 
           <div class="pm-price-block">
@@ -213,7 +306,7 @@ function buildModalHTML(data) {
             </div>
             <div class="pm-shipping">
               <i class="fa-solid fa-truck"></i>
-              ${data.shippingText || 'Consultá envío'}
+              ${data.shippingText}
             </div>
           </div>
 
@@ -228,6 +321,8 @@ function buildModalHTML(data) {
             </div>
           </div>
 
+          ${variantsHTML}
+
           <!-- Quantity -->
           <div class="pm-quantity">
             <span class="pm-quantity__label">Cantidad:</span>
@@ -235,8 +330,8 @@ function buildModalHTML(data) {
               <button class="pm-quantity__btn" id="pm-qty-minus" aria-label="Reducir cantidad" disabled>
                 <i class="fa-solid fa-minus"></i>
               </button>
-              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${data.stock}" aria-label="Cantidad" />
-              <button class="pm-quantity__btn" id="pm-qty-plus" aria-label="Aumentar cantidad">
+              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(data.stock, 1)}" aria-label="Cantidad" ${stockDisabled ? 'disabled' : ''} />
+              <button class="pm-quantity__btn" id="pm-qty-plus" aria-label="Aumentar cantidad" ${stockDisabled ? 'disabled' : ''}>
                 <i class="fa-solid fa-plus"></i>
               </button>
             </div>
@@ -244,11 +339,11 @@ function buildModalHTML(data) {
 
           <!-- Actions -->
           <div class="pm-actions">
-            <button class="pm-btn pm-btn--cart" id="pm-add-cart">
+            <button class="pm-btn pm-btn--cart" id="pm-add-cart" ${stockDisabled ? 'disabled' : ''}>
               <i class="fa-solid fa-cart-plus"></i>
-              Añadir al carrito
+              ${stockDisabled ? 'Sin stock' : 'Añadir al carrito'}
             </button>
-            <button class="pm-btn pm-btn--buy" id="pm-buy-now">
+            <button class="pm-btn pm-btn--buy" id="pm-buy-now" ${stockDisabled ? 'disabled' : ''}>
               <i class="fa-solid fa-bolt"></i>
               Comprar ahora
             </button>
@@ -265,25 +360,19 @@ function buildModalHTML(data) {
           <button class="pm-tab is-active" data-tab="desc" role="tab" aria-selected="true">Descripción</button>
           <button class="pm-tab" data-tab="specs" role="tab" aria-selected="false">Características</button>
           <button class="pm-tab" data-tab="shop" role="tab" aria-selected="false">Sobre la tienda</button>
+          <button class="pm-tab" data-tab="reviews" role="tab" aria-selected="false">Reseñas${data.hasRating ? ` (${data.ratingCount})` : ''}</button>
         </div>
 
         <div class="pm-tab-content is-visible" data-tab-content="desc">
           <p class="pm-description">
-            Descubrí <strong>${data.name}</strong> de <strong>${data.shop}</strong>, un producto de primera calidad 
-            disponible en tu zona. Comprando local apoyás a los comercios de Baradero y recibís 
-            productos frescos y de confianza directo en tu puerta. 
-            <br /><br />
-            Ideal para el día a día, con la calidad que ya conocés de los negocios de tu barrio.
+            ${data.description || `Producto de <strong>${data.shop}</strong>, disponible en tu zona. Comprando local apoyás a los comercios de Baradero.`}
           </p>
         </div>
 
         <div class="pm-tab-content" data-tab-content="specs">
           <div class="pm-features">
-            <div class="pm-feature-item"><i class="fa-solid fa-box"></i> Producto original con garantía del comercio</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-weight-scale"></i> Peso/volumen según etiqueta</div>
             <div class="pm-feature-item"><i class="fa-solid fa-store"></i> Vendido por ${data.shop}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-truck"></i> ${data.shippingText || 'Consultá disponibilidad de envío'}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-shield-halved"></i> Devolución gratuita dentro de las 48hs</div>
+            <div class="pm-feature-item"><i class="fa-solid fa-truck"></i> ${data.shippingText}</div>
             <div class="pm-feature-item"><i class="fa-solid fa-location-dot"></i> Disponible para envío y retiro en tienda</div>
           </div>
         </div>
@@ -297,9 +386,15 @@ function buildModalHTML(data) {
                 <i class="fa-solid fa-circle-check"></i> Comercio verificado • Baradero
               </div>
             </div>
-            <button class="pm-shop-info__link" aria-label="Ver todos los productos de ${data.shop}">
+            <button class="pm-shop-info__link" id="pm-view-shop-btn" aria-label="Ver todos los productos de ${data.shop}">
               Ver tienda
             </button>
+          </div>
+        </div>
+
+        <div class="pm-tab-content" data-tab-content="reviews">
+          <div id="pm-reviews-container">
+            <p style="color: var(--bl-text-muted); font-size: 0.9rem;">Cargando reseñas...</p>
           </div>
         </div>
       </div>
@@ -323,50 +418,72 @@ function buildModalHTML(data) {
 let currentOverlay = null;
 let previousFocus = null;
 let currentProductData = null;
+let currentEscHandler = null;
 
 // ── Abrir modal ────────────────────────────────────────────
-function openProductModal(card) {
+async function openProductModal(card) {
   if (!card.id) {
     console.error('Se intentó abrir el modal de un producto sin id real (UUID)');
     return;
   }
 
-  // Si ya hay uno abierto, cerrarlo primero
   if (currentOverlay) closeProductModal();
 
   previousFocus = document.activeElement;
-  currentProductData = extractProductData(card);
+  const productId = card.id;
+  const categories = (card.dataset.category || '').split(' ');
 
-  // Crear overlay
+  // El overlay se crea una sola vez y persiste durante todo el ciclo de vida
+  // del modal -- solo su innerHTML cambia (loading -> contenido -> error),
+  // así que los listeners atados al propio overlay (cerrar, click afuera,
+  // ESC) se bindean una sola vez acá y siguen funcionando después del swap.
   const overlay = document.createElement('div');
   overlay.className = 'product-modal-overlay';
   overlay.id = 'pm-overlay';
-  overlay.innerHTML = buildModalHTML(currentProductData);
+  overlay.innerHTML = buildLoadingHTML();
   document.body.appendChild(overlay);
   currentOverlay = overlay;
 
-  // Calcular scrollbar width para evitar layout shift
   const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
   document.documentElement.style.setProperty('--scrollbar-width', scrollbarWidth + 'px');
   document.body.classList.add('modal-open');
 
-  // Trigger reflow & open
   void overlay.offsetHeight;
   requestAnimationFrame(() => overlay.classList.add('is-open'));
 
-  // Bind events
-  bindModalEvents(overlay, currentProductData);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeProductModal();
+    else if (e.target.closest('#pm-close-back') || e.target.closest('#pm-close-btn')) closeProductModal();
+  });
+  currentEscHandler = (e) => { if (e.key === 'Escape') closeProductModal(); };
+  document.addEventListener('keydown', currentEscHandler);
 
-  // Animar la barra de stock
-  const stockFill = overlay.querySelector('.pm-stock__fill');
-  if (stockFill) {
-    const w = stockFill.style.width || window.getComputedStyle(stockFill).width;
-    stockFill.style.width = '0%';
-    requestAnimationFrame(() => {
+  try {
+    const data = await fetchProductData(productId);
+    data.categories = categories;
+
+    // El usuario pudo haber cerrado el modal mientras esperábamos la respuesta.
+    if (currentOverlay !== overlay) return;
+
+    currentProductData = data;
+    overlay.innerHTML = buildModalHTML(data);
+    bindModalEvents(overlay, data);
+
+    const stockFill = overlay.querySelector('.pm-stock__fill');
+    if (stockFill) {
+      const targetWidth = data.stock <= 0 ? '0%' : '';
+      stockFill.style.width = '0%';
       requestAnimationFrame(() => {
-        stockFill.style.width = '';
+        requestAnimationFrame(() => {
+          stockFill.style.width = targetWidth;
+        });
       });
-    });
+    }
+  } catch (err) {
+    console.error('Error al cargar el producto en el modal:', err);
+    if (currentOverlay !== overlay) return;
+    overlay.innerHTML = buildModalErrorHTML();
+    overlay.querySelector('#pm-retry-btn')?.addEventListener('click', () => openProductModal(card));
   }
 }
 
@@ -380,40 +497,27 @@ function closeProductModal() {
 
   const overlay = currentOverlay;
   currentOverlay = null;
+  currentProductData = null;
 
-  // Esperar la transición para remover del DOM
+  if (currentEscHandler) {
+    document.removeEventListener('keydown', currentEscHandler);
+    currentEscHandler = null;
+  }
+
   setTimeout(() => {
     overlay.remove();
   }, 400);
 
-  // Restaurar foco
   if (previousFocus) {
     previousFocus.focus();
     previousFocus = null;
   }
 }
 
-// ── Bind de eventos ────────────────────────────────────────
+// ── Bind de eventos del contenido (se re-ejecuta cada vez que el
+//    overlay recibe el HTML real, después del estado de carga) ──
 function bindModalEvents(overlay, data) {
   const modal = overlay.querySelector('.product-modal');
-
-  // Close buttons
-  overlay.querySelector('#pm-close-back')?.addEventListener('click', closeProductModal);
-  overlay.querySelector('#pm-close-btn')?.addEventListener('click', closeProductModal);
-
-  // Click fuera del modal
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeProductModal();
-  });
-
-  // ESC
-  const handleEsc = (e) => {
-    if (e.key === 'Escape') {
-      closeProductModal();
-      document.removeEventListener('keydown', handleEsc);
-    }
-  };
-  document.addEventListener('keydown', handleEsc);
 
   // Zoom de imagen
   const gallery = overlay.querySelector('#pm-gallery');
@@ -421,6 +525,28 @@ function bindModalEvents(overlay, data) {
     if (e.target.closest('.pm-gallery__fav')) return;
     gallery.classList.toggle('is-zoomed');
   });
+
+  // F5-04: miniaturas reales -- clic cambia la imagen principal.
+  const galleryImg = overlay.querySelector('#pm-gallery-img');
+  overlay.querySelectorAll('.pm-thumb').forEach((thumb) => {
+    thumb.addEventListener('click', () => {
+      const src = thumb.dataset.thumbSrc;
+      if (galleryImg && src) galleryImg.src = src;
+      overlay.querySelectorAll('.pm-thumb').forEach((t) => t.classList.remove('is-active'));
+      thumb.classList.add('is-active');
+    });
+  });
+
+  // Ir a la tienda real (antes "Ver tienda" y el nombre del comercio no hacían nada).
+  if (data.shopId) {
+    const goToShop = () => { window.location.href = shopUrl(data.shopId); };
+    const shopLink = overlay.querySelector('#pm-shop-link');
+    shopLink?.addEventListener('click', goToShop);
+    shopLink?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToShop(); }
+    });
+    overlay.querySelector('#pm-view-shop-btn')?.addEventListener('click', goToShop);
+  }
 
   // Favoritos (F4-03): misma fuente de verdad que las grillas de producto
   // (cart-utils.js) — antes este botón solo togglaba una clase CSS, sin
@@ -510,7 +636,6 @@ function bindModalEvents(overlay, data) {
     _saveCart(cart);
     _updateBadge();
 
-    // Animación de feedback
     addCartBtn.classList.add('pm-btn--added');
     const originalHTML = addCartBtn.innerHTML;
     addCartBtn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Agregado!';
@@ -551,7 +676,6 @@ function bindModalEvents(overlay, data) {
 
     closeProductModal();
 
-    // Redirigir al carrito
     const isInPages = window.location.pathname.includes('/pages/');
     window.location.href = isInPages ? './carrito.html' : './pages/carrito.html';
   });
@@ -573,7 +697,6 @@ function bindModalEvents(overlay, data) {
         _showToast('¡Link copiado al portapapeles!', 'success');
       }
     } catch (err) {
-      // User cancelled share, ignore
       if (err.name !== 'AbortError') {
         try {
           await navigator.clipboard.writeText(window.location.href);
@@ -583,9 +706,10 @@ function bindModalEvents(overlay, data) {
     }
   });
 
-  // Tabs
+  // Tabs (+ carga perezosa de reseñas reales al abrir esa pestaña)
   const tabs = overlay.querySelectorAll('.pm-tab');
   const tabContents = overlay.querySelectorAll('.pm-tab-content');
+  let reviewsLoaded = false;
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -601,6 +725,12 @@ function bindModalEvents(overlay, data) {
       const target = tab.dataset.tab;
       const content = overlay.querySelector(`[data-tab-content="${target}"]`);
       if (content) content.classList.add('is-visible');
+
+      if (target === 'reviews' && !reviewsLoaded) {
+        reviewsLoaded = true;
+        const reviewsContainer = overlay.querySelector('#pm-reviews-container');
+        if (reviewsContainer) renderReviewsSection(reviewsContainer, 'product', data.id);
+      }
     });
   });
 
@@ -611,7 +741,6 @@ function bindModalEvents(overlay, data) {
       const targetCard = document.getElementById(relId);
       if (targetCard) {
         closeProductModal();
-        // Pequeño delay para permitir la animación de cierre
         setTimeout(() => openProductModal(targetCard), 450);
       }
     };
@@ -646,16 +775,13 @@ function bindModalEvents(overlay, data) {
     }
   });
 
-  // Foco inicial al botón de cerrar
   setTimeout(() => firstFocusable?.focus(), 100);
 }
 
 // ── Inicializar click en tarjetas ──────────────────────────
 function initProductModal() {
-  // Delegación de eventos en el grid de productos
   document.querySelectorAll('.products__grid').forEach(grid => {
     grid.addEventListener('click', (e) => {
-      // No abrir modal si se clickeó un botón de acción
       const clickedAction = e.target.closest('.product-card__add, .product-card__wishlist');
       if (clickedAction) return;
 
