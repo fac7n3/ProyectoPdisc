@@ -16,7 +16,8 @@ const cardRole = document.getElementById("card-role");
 
 const logoutBtn = document.getElementById("logout-btn");
 const mainContent = document.getElementById("main-content");
-const quickBtnAdmin = document.getElementById("quick-btn-admin");
+const roleSwitcherWrap = document.getElementById("role-switcher-wrap");
+const roleSwitcher = document.getElementById("role-switcher");
 
 // Direcciones
 const formDirecciones = document.getElementById("direcciones-form");
@@ -88,11 +89,25 @@ function renderQuickProfile(user) {
     removeSkeleton(cardRole);
   }
 
-  // El rol real que evalúa la RLS/el gate de admin.html vive en app_metadata
-  // (JWT), no en profiles.role -- mismo campo que arregló guardPage en F12-17.
+  // Cambiar de rol (cliente/vendedor -> administrador/moderador): el rol real
+  // que evalúa la RLS/el gate de admin.html vive en app_metadata (JWT), no en
+  // profiles.role -- mismo campo que arregló guardPage en F12-17. Solo se
+  // ofrece la opción de administrador/moderador si el JWT realmente lo tiene
+  // (nunca es un selector libre -- elegir una opción solo navega, no cambia
+  // ningún permiso; los permisos ya los decide el JWT solo).
   const jwtRole = user.app_metadata?.role;
-  if (quickBtnAdmin && (jwtRole === 'admin' || jwtRole === 'moderador')) {
-    quickBtnAdmin.style.display = '';
+  if (roleSwitcherWrap && roleSwitcher && (jwtRole === 'admin' || jwtRole === 'moderador')) {
+    const elevatedOption = document.createElement('option');
+    elevatedOption.value = 'elevated';
+    elevatedOption.textContent = jwtRole === 'admin' ? 'Administrador' : 'Moderador';
+    roleSwitcher.appendChild(elevatedOption);
+    roleSwitcherWrap.style.display = 'block';
+
+    roleSwitcher.addEventListener('change', () => {
+      if (roleSwitcher.value === 'elevated') {
+        window.location.href = './admin.html';
+      }
+    });
   }
 }
 
@@ -599,6 +614,14 @@ async function renderFullProfile(user) {
     const roleFromDB = profile.role ?? "cliente";
     const emailToUse = profile.email ?? user.email ?? "sin email";
     const nameToUse = profile.full_name ?? "-";
+
+    // "Cambiar de rol": la opción "own" del selector representa el rol base
+    // real (cliente/vendedor/repartidor, tabla profiles) -- separado del rol
+    // elevado (admin/moderador) que ya se agregó en renderQuickProfile.
+    const ownOption = roleSwitcher?.querySelector('option[value="own"]');
+    if (ownOption) {
+      ownOption.textContent = `Mi cuenta (${roleFromDB.charAt(0).toUpperCase() + roleFromDB.slice(1)})`;
+    }
 
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
     if (sidebarName) sidebarName.textContent = nameToUse;

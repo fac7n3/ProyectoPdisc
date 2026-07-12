@@ -271,6 +271,24 @@ micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). 
 qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
 
+## Selector "Cambiar de rol" en perfil.html (2026-07-12)
+Pedido directo del usuario ("desde perfil, poder cambiar de rol de vendedor/cliente a
+administrador/moderador, solo si la cuenta está registrada como tal"). Reemplaza el botón suelto
+"Panel de administración" (agregado antes en Accesos rápidos) por un `<select>` "Cambiar de rol"
+en la tarjeta "Mi cuenta", junto al badge de rol actual — más descubrible y con el nombre correcto
+(Administrador/Moderador según corresponda, antes siempre decía "administración").
+- **No es un cambio de permisos, es solo navegación.** Elegir una opción del selector únicamente
+  hace `window.location.href` a `admin.html` — el gate real sigue siendo `guardPage` (F12-17), que
+  ya chequea `app_metadata.role`. La opción "Administrador"/"Moderador" solo se agrega al `<select>`
+  si `user.app_metadata?.role` es `'admin'`/`'moderador'` — un cliente o vendedor común nunca ve
+  esa opción, ni podría forzarla desde el DOM sin que `guardPage` lo rebote igual.
+- La opción "own" (por defecto, sin navegar) muestra el rol base real de `profiles.role`
+  (Cliente/Vendedor/Repartidor), resuelto en `renderFullProfile` una vez que llega el fetch a la
+  tabla — separado del rol elevado que se resuelve antes, en `renderQuickProfile` (datos del JWT,
+  sin esperar ningún round-trip).
+- `js/perfil.js`, `pages/perfil.html`. Sin migración — reusa el mismo `app_metadata.role` de
+  siempre.
+
 ## Optimización navbar de categorías + motor de búsqueda + resultados (2026-07-12)
 Pedido directo del usuario ("optimizá el navbar de categorías, el motor de búsqueda y la página
 de resultados, con investigación de patrones de e-commerce tipo Mercado Libre"). No es un ítem del

@@ -109,6 +109,12 @@
                 <span class="detail-label" style="margin-bottom: 0.5rem;">Rol actual</span>
                 <div class="level-badge skeleton" id="card-role">Cargando rol...</div>
               </div>
+              <div id="role-switcher-wrap" style="display: none; margin-top: 0.5rem;">
+                <label for="role-switcher" class="detail-label" style="display: block; margin-bottom: 0.4rem;">Cambiar de rol</label>
+                <select id="role-switcher" class="bl-input" style="max-width: 240px;">
+                  <option value="own">Mi cuenta (cliente/vendedor)</option>
+                </select>
+              </div>
               <p style="color: var(--bl-perfil-text-sec); font-size: 0.875rem; margin-top: 1rem;">
                 Disfrutá de todos los beneficios de comprar en comercios locales con Baradero Local.
               </p>
@@ -136,10 +142,6 @@
               <a href="./vender.html" class="quick-btn">
                 <i class="fa-solid fa-shop"></i>
                 Quiero vender
-              </a>
-              <a href="./admin.html" class="quick-btn" id="quick-btn-admin" style="display: none;">
-                <i class="fa-solid fa-user-shield"></i>
-                Panel de administración
               </a>
             </div>
           </article>
