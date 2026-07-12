@@ -60,6 +60,38 @@ export function getCategories() {
   return _categoriesPromise;
 }
 
+// ── Categorías destacadas (las más populares, para la tira de acceso rápido) ──
+// Patrón de e-commerce grande (Mercado Libre/Amazon): el mega-menú tiene TODAS
+// las categorías; la tira inline muestra solo un puñado destacado, no las 14.
+// "Destacadas" = las que más productos activos tienen (excluye las vacías).
+let _featuredPromise = null;
+export function getFeaturedCategories(limit = 6) {
+  if (!_featuredPromise) {
+    _featuredPromise = (async () => {
+      const categories = await getCategories();
+      const { data, error } = await supabase
+        .from('products')
+        .select('category_id')
+        .eq('is_active', true);
+      if (error || !data) return categories.slice(0, limit); // fallback: primeras N
+      const counts = new Map();
+      data.forEach((r) => {
+        if (r.category_id) counts.set(r.category_id, (counts.get(r.category_id) || 0) + 1);
+      });
+      return categories
+        .map((c) => ({ ...c, _count: counts.get(c.id) || 0 }))
+        .filter((c) => c._count > 0)
+        .sort((a, b) => b._count - a._count)
+        .slice(0, limit);
+    })().catch((err) => {
+      console.error('Error al cargar categorías destacadas:', err);
+      _featuredPromise = null;
+      return [];
+    });
+  }
+  return _featuredPromise;
+}
+
 // ── Búsquedas recientes (localStorage) ──────────────────────
 const RECENT_KEY = 'bl_recent_searches';
 const RECENT_MAX = 6;
@@ -93,7 +125,7 @@ export function clearRecentSearches() {
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
  * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'/'inicio').
  */
-export async function initCategoryBar({ activeSlug = 'inicio' } = {}) {
+export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6 } = {}) {
   const inner = document.getElementById('category-bar-inner');
   if (!inner) return;
 
@@ -183,15 +215,27 @@ export async function initCategoryBar({ activeSlug = 'inicio' } = {}) {
     if (e.key === 'Escape') closeMega();
   });
 
-  // --- Tira de acceso rápido (scrollea horizontal) ---
+  // --- Tira de acceso rápido: Inicio + Ofertas + solo las categorías
+  //     destacadas (no las 14). El resto vive en el mega-menú de arriba. ---
+  const featured = await getFeaturedCategories(featuredLimit);
+
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 
   const quickItems = [
     { slug: 'inicio', name: 'Inicio', href: './home.html' },
     { slug: 'ofertas', name: 'Ofertas', href: './search.html?cat=ofertas' },
-    ...categories.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
+    ...featured.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
   ];
+
+  // Si la categoría activa no está entre las destacadas, la agrego para que
+  // se vea resaltada (ej: entré por el mega-menú a una categoría no destacada).
+  if (activeSlug !== 'inicio' && activeSlug !== 'ofertas' && !quickItems.some((q) => q.slug === activeSlug)) {
+    const activeCat = categories.find((c) => c.slug === activeSlug);
+    if (activeCat) {
+      quickItems.push({ slug: activeCat.slug, name: activeCat.name, href: `./search.html?cat=${encodeURIComponent(activeCat.slug)}` });
+    }
+  }
 
   quickItems.forEach((item) => {
     const link = document.createElement('a');
