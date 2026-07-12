@@ -310,6 +310,36 @@ acentos). Cambios:
   375px, sin overflow horizontal): mega-menú, autocompletado acento-insensible, chips, paginación
   24→48→56, sin resultados+recuperación, orden por precio — todo OK, 0 errores de consola.
 
+## Campanita de notificaciones en la navbar (2026-07-12)
+Pedido directo del usuario ("un botón de notificaciones a la izquierda del de perfil, con avisos
+de descuentos en favoritos, ventas, aprobaciones, reclamos, etc."). Mejora ad-hoc, no trackeada
+en Jira. La mayoría de esos avisos **ya existían** desde F8-01 (`notifications` + triggers de
+`orders`/`reviews`/`messages`/`support_tickets`/`seller_requests`/`delivery_requests`) — lo nuevo
+fue exponerlos en la navbar (antes solo vivían en una pestaña de `perfil.html`/`vender.js`) y sumar
+el único aviso que faltaba: descuento en un producto de favoritos.
+- **Migración 52**: `notify_favorite_discount()` (mismo patrón que `notify_stock_alerts`, F12-09) —
+  dispara solo en la transición false→true de "tiene oferta real" (mismo criterio de `hasDiscount`
+  que `buildPriceRow`: `compare_at_price > price` y no vencida), así que una oferta que sigue
+  vigente en updates posteriores no re-notifica a cada rato, pero sacarla y volver a ponerla sí
+  avisa de nuevo. A diferencia de `stock_alerts` (opt-in explícito), reutiliza `favorites` (F4-03)
+  directo — marcarlo favorito ya es la señal de interés. Verificado con `BEGIN;...ROLLBACK;`::
+  oferta nueva → 1 notificación; sigue con oferta (ajuste menor de precio) → 0 nuevas; sacar y
+  reponer la oferta → 1 más (total 2, no 3). `get_advisors` sin hallazgos nuevos.
+- `js/notifications-utils.js`: tipo nuevo `favorite_price_drop` (mismo patrón de título+link a
+  "Ver producto" que `stock_alert`, generalizado con `PRODUCT_LINK_TYPES`) + `fetchUnreadCount()`
+  (query liviana `count:'exact', head:true` para el badge).
+- `js/nav-utils.js`: `initNotificationsBell()` (nuevo) — reutiliza `renderNotificationsSection()`
+  tal cual (F8-01) dentro de un dropdown compacto en vez de una sección de página completa; sin
+  sesión muestra "Iniciá sesión" en vez del centro de notificaciones. Badge (reusa `.cart-badge`,
+  ya cargado vía `carrito.css`) se recalcula al cerrar el dropdown (el usuario pudo haber marcado
+  leídas mientras estaba abierto) — mismo criterio "sin tiempo real, se actualiza al interactuar"
+  del resto del proyecto.
+- `pages/home.html`: `<div id="nav-notifications-wrap">` agregado en `.navbar__actions`, **antes**
+  de `#nav-profile` (a su izquierda). Solo en home por ahora, a pedido explícito — extender a
+  search/comercio/producto/carrito es una sola línea (`initNotificationsBell()`) cuando se pida.
+  Verificado en el navegador: orden correcto en el DOM, estado invitado, dropdown no se corta del
+  viewport, cierra con click-afuera y Escape, 0 errores de consola.
+
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"
 (`js/home.js`), algunos productos mostraban el texto genérico `'Tienda'` (fallback de

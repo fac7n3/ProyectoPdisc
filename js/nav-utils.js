@@ -15,6 +15,7 @@
 
 import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
+import { renderNotificationsSection, fetchUnreadCount } from './notifications-utils.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -486,6 +487,105 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
   document.addEventListener('click', (e) => {
     if (!wrapper.contains(e.target)) close();
   });
+}
+
+// ── Campanita de notificaciones (navbar) ────────────────────
+/**
+ * Botón de notificaciones para la navbar: reutiliza el centro de
+ * notificaciones ya existente (notifications-utils.js, F8-01 -- el mismo que
+ * usan perfil.html y el dashboard del vendedor), pero en formato dropdown
+ * compacto en vez de una sección de página completa.
+ *
+ * Requiere un contenedor `<div id="nav-notifications-wrap">` en el HTML
+ * (a la izquierda de #nav-profile en la navbar).
+ */
+export async function initNotificationsBell() {
+  const wrap = document.getElementById('nav-notifications-wrap');
+  if (!wrap) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+
+  wrap.innerHTML = '';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'navbar__action-circle';
+  btn.id = 'nav-notifications';
+  btn.setAttribute('aria-label', 'Notificaciones');
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  const bellIcon = document.createElement('i');
+  bellIcon.className = 'fa-regular fa-bell';
+  bellIcon.style.fontSize = '0.875rem';
+  btn.appendChild(bellIcon);
+
+  const badge = document.createElement('span');
+  badge.className = 'cart-badge';
+  badge.id = 'notif-badge';
+  btn.appendChild(badge);
+  wrap.appendChild(btn);
+
+  const panel = document.createElement('div');
+  panel.className = 'notif-dropdown';
+  panel.hidden = true;
+  panel.setAttribute('role', 'region');
+  panel.setAttribute('aria-label', 'Notificaciones');
+  wrap.appendChild(panel);
+
+  async function refreshBadge() {
+    if (!session) { badge.textContent = ''; badge.dataset.count = '0'; return; }
+    const count = await fetchUnreadCount(session.user.id);
+    badge.textContent = count > 0 ? (count > 9 ? '9+' : String(count)) : '';
+    badge.dataset.count = String(count);
+  }
+
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    refreshBadge(); // el usuario pudo haber marcado leídas mientras estaba abierto
+  }
+
+  async function open() {
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    panel.textContent = '';
+
+    if (!session) {
+      const msg = document.createElement('p');
+      msg.className = 'notif-dropdown__guest';
+      msg.textContent = 'Iniciá sesión para ver tus notificaciones.';
+      panel.appendChild(msg);
+      const loginLink = document.createElement('a');
+      loginLink.href = './login.html';
+      loginLink.className = 'notif-dropdown__login';
+      loginLink.textContent = 'Iniciar sesión';
+      panel.appendChild(loginLink);
+      return;
+    }
+
+    const title = document.createElement('p');
+    title.className = 'notif-dropdown__title';
+    title.textContent = 'Notificaciones';
+    panel.appendChild(title);
+
+    const content = document.createElement('div');
+    content.className = 'notif-dropdown__content';
+    panel.appendChild(content);
+    await renderNotificationsSection(content, session.user.id);
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (panel.hidden) open(); else close();
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !panel.hidden) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) close();
+  });
+
+  await refreshBadge();
 }
 
 // ── Helpers de scroll compartidos ───────────────────────────

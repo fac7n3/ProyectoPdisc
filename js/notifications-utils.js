@@ -15,7 +15,11 @@ const TYPE_LABELS = {
   delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
   support_ticket_status_change: 'Tu reclamo cambió de estado',
+  favorite_price_drop: 'Bajó de precio un producto de tus favoritos',
 };
+
+// Tipos que llevan un link a "Ver producto" (comparten el mismo payload.product_id).
+const PRODUCT_LINK_TYPES = new Set(['stock_alert', 'favorite_price_drop']);
 
 const SUPPORT_TICKET_STATUS_LABELS = {
   open: 'Abierto',
@@ -48,6 +52,21 @@ export async function markAllNotificationsRead(userId) {
     .update({ read_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('read_at', null);
+}
+
+/** Cantidad de no leídas -- liviano (head:true), para el badge de la campanita. */
+export async function fetchUnreadCount(userId) {
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('read_at', null);
+
+  if (error) {
+    console.error('Error al contar notificaciones no leídas:', error);
+    return 0;
+  }
+  return count || 0;
 }
 
 /** Arma el centro de notificaciones dentro de `container` (DOM API, sin innerHTML). */
@@ -90,6 +109,8 @@ export async function renderNotificationsSection(container, userId) {
     // cliente puede tener varios pendientes en productos distintos.
     if (n.type === 'stock_alert' && n.payload?.product_title) {
       title.textContent = `¡Volvió el stock de "${n.payload.product_title}"!`;
+    } else if (n.type === 'favorite_price_drop' && n.payload?.product_title) {
+      title.textContent = `¡Bajó de precio "${n.payload.product_title}"!`;
     } else if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
       const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
       title.textContent = `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
@@ -98,7 +119,7 @@ export async function renderNotificationsSection(container, userId) {
     }
     row.appendChild(title);
 
-    if (n.type === 'stock_alert' && n.payload?.product_id) {
+    if (PRODUCT_LINK_TYPES.has(n.type) && n.payload?.product_id) {
       const link = document.createElement('a');
       link.href = `./producto.html?id=${encodeURIComponent(n.payload.product_id)}`;
       link.style.cssText = 'display: block; font-size: 0.85rem; color: var(--bl-primary, #2563eb); margin-top: 0.15rem;';
