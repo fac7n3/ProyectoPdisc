@@ -271,6 +271,45 @@ micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). 
 qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
 
+## Optimización navbar de categorías + motor de búsqueda + resultados (2026-07-12)
+Pedido directo del usuario ("optimizá el navbar de categorías, el motor de búsqueda y la página
+de resultados, con investigación de patrones de e-commerce tipo Mercado Libre"). No es un ítem del
+roadmap — mejora ad-hoc, no trackeada en Jira. Se intentó un workflow (ultracode) para la
+investigación pero murió por límite de sesión; se implementó directo aplicando patrones conocidos
+de ML/Amazon (mega-menú de categorías, autocompletado, chips de filtros, búsqueda insensible a
+acentos). Cambios:
+- **Backend (migración 51, `search_products` RPC)**: reemplaza la búsqueda vieja de `search.js`
+  (solo `.ilike('title')`, case-insensitive pero NO insensible a acentos; y `categories!inner`
+  que descartaba de TODA la búsqueda cualquier producto sin categoría). El RPC (extensión
+  `unaccent`, `SECURITY INVOKER` → respeta la RLS, no expone nada nuevo) busca insensible a
+  acentos y multi-campo (título > nombre de tienda > descripción, con ranking de relevancia),
+  con filtros de categoría / pseudo-'ofertas' / zona / rango de precio, ordenamiento y paginación
+  (limit/offset + `total_count` vía `count(*) over()`). Verificado en `BEGIN;...ROLLBACK;`: "cafe"
+  encuentra "Café", filtros y paginación OK; `get_advisors` sin hallazgos nuevos (es INVOKER +
+  `search_path` fijo).
+- **`js/nav-utils.js` (nuevo, compartido home+search)**: (a) `initCategoryBar` — mega-menú
+  "Categorías" con las 14 categorías en grilla con iconos (Font Awesome por slug) + Ofertas/Vender/
+  **Repartir** (antes la reconstrucción dinámica en home.js perdía "Repartir"), más una tira de
+  acceso rápido scrolleable; toggle por click con `aria-expanded`, cierra con click-afuera/Escape.
+  (b) `initSearchBox` — autocompletado con sugerencias de productos reales (vía `search_products`,
+  con thumbnail/precio/tienda), categorías que matchean, y búsquedas recientes (localStorage),
+  navegación por teclado (flechas/enter/esc), debounce 220ms. (c) `getCategories` cacheado,
+  `initScrollTop`/`initNavbarScroll` compartidos (antes duplicados en ambos archivos).
+- **`js/search.js` (reescrito)**: usa el RPC con paginación ("Cargar más", 24 por página);
+  encabezado que refleja la consulta ("Resultados para X" / nombre de categoría / "Todos los
+  productos"); chips de filtros activos removibles + "Limpiar todo"; filtros funcionales
+  (categoría, rango de precio min/max) — se **quitaron Zona y Distancia** (no funcionales: las 14
+  tiendas tienen `zone` null y distancia necesita geolocalización; `p_zone` queda en el RPC para
+  el futuro); orden alineado al RPC; estado sin resultados con tips de recuperación + "Limpiar
+  filtros". La tarjeta de resultado ahora muestra el nombre de la tienda (consistente con home).
+- **`js/home.js`**: usa `nav-utils` para la barra de categorías + buscador (modo redirección a
+  `search.html?q=`); se borró el código duplicado de categorías/búsqueda/scroll.
+- **CSS (`home.css`)**: `.cat-mega*` (mega-menú), `.category-bar__quick` (tira scrolleable),
+  `.search-suggest*` (autocompletado), `.filter-chip*`/`.active-filters` (chips), `.results-title`,
+  `.price-range`, `.load-more-btn`, `.no-results*`. Verificado en el navegador (desktop + mobile
+  375px, sin overflow horizontal): mega-menú, autocompletado acento-insensible, chips, paginación
+  24→48→56, sin resultados+recuperación, orden por precio — todo OK, 0 errores de consola.
+
 ## Investigación: "Tienda" genérica en home.js (2026-07-10, no relacionada con F5-05)
 Reportado como visto de pasada verificando F5-05 en el navegador: en "Productos recomendados"
 (`js/home.js`), algunos productos mostraban el texto genérico `'Tienda'` (fallback de

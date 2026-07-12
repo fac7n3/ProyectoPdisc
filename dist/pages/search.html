@@ -19,14 +19,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/search-BDBx-QgZ.js"></script>
+    <script type="module" crossorigin src="/assets/search-Bgmql_D9.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DCs1hpHp.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-C_9m7V4D.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-X_FMxc-e.js">
     <link rel="modulepreload" crossorigin href="/assets/product-modal-Ct3-DgKb.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BBexU9VI.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-BSXxWGAn.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-4iLKZyDL.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-ClG1VbxK.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-BLZxOioq.css">
   </head>
   <body>
 
@@ -62,30 +63,9 @@
       </div>
     </nav>
 
-    <!-- ====== BARRA DE CATEGORÍAS ====== -->
+    <!-- ====== BARRA DE CATEGORÍAS (mega-menú + acceso rápido, poblada por nav-utils.js) ====== -->
     <div class="category-bar" role="navigation" aria-label="Categorías">
-      <div class="category-bar__inner">
-        <a href="#" class="category-bar__item category-bar__item--active" id="cat-inicio">Inicio</a>
-        <a href="#" class="category-bar__item" id="cat-ofertas">Ofertas</a>
-        <a href="#" class="category-bar__item" id="cat-verduras">Verduras</a>
-        <a href="#" class="category-bar__item" id="cat-carnes">Carnes</a>
-        <a href="#" class="category-bar__item" id="cat-lacteos">Lácteos</a>
-        
-        <!-- Menú Desplegable -->
-        <div class="category-bar__dropdown">
-          <a href="#" class="category-bar__item" id="cat-mas">
-            Más <i class="fa-solid fa-chevron-down" style="font-size:0.625rem; opacity:0.5; margin-left:0.25rem;"></i>
-          </a>
-          <div class="category-bar__dropdown-menu" role="menu">
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="limpieza">Limpieza</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="mascotas">Mascotas</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="bebes">Bebés</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="indumentaria">Indumentaria</a>
-            <div class="dropdown-divider" style="height: 1px; background: var(--bl-border); margin: 4px 0;"></div>
-            <a href="./vender.html" class="category-bar__dropdown-item" role="menuitem" style="color: var(--bl-primary); font-weight: 600;"><i class="fa-solid fa-store" style="color: inherit;"></i> Vender</a>
-          </div>
-        </div>
-      </div>
+      <div class="category-bar__inner" id="category-bar-inner"></div>
     </div>
 
     <!-- ====== CONTENIDO PRINCIPAL ====== -->
@@ -109,23 +89,10 @@
             </div>
             
             <div class="filter-group">
-              <label for="sidebar-search-input" class="filter-group__title">Buscar por nombre</label>
+              <label for="sidebar-search-input" class="filter-group__title">Buscar productos</label>
               <div class="filter-search-wrapper">
                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="sidebar-search-input" class="filter-input" placeholder="Nombre del comercio…" autocomplete="off" />
-              </div>
-            </div>
-
-            <div class="filter-group">
-              <label for="filter-zone" class="filter-group__title">Zona</label>
-              <div class="filter-select-wrapper">
-                <select class="filter-select" id="filter-zone">
-                  <option value="todas">Todas las zonas</option>
-                  <option value="centro">Centro</option>
-                  <option value="norte">Zona Norte</option>
-                  <option value="sur">Zona Sur</option>
-                </select>
-                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                <input type="search" id="sidebar-search-input" class="filter-input" placeholder="¿Qué buscás?" autocomplete="off" />
               </div>
             </div>
 
@@ -133,45 +100,41 @@
               <h4 class="filter-group__title" id="category-group-label">Categoría</h4>
               <div class="filter-pills" id="filter-categories" role="group" aria-labelledby="category-group-label">
                 <button class="filter-pill filter-pill--active" data-cat="todas">Todas</button>
-                <button class="filter-pill" data-cat="almacen">Almacén</button>
-                <button class="filter-pill" data-cat="barberia">Barbería</button>
-                <button class="filter-pill" data-cat="carniceria">Carnicería</button>
-                <button class="filter-pill" data-cat="carpinteria">Carpintería</button>
-                <button class="filter-pill" data-cat="supermercados">Supermercados</button>
-                <button class="filter-pill" data-cat="verdulerias">Verdulería</button>
-                <button class="filter-pill" data-cat="veterinaria">Veterinaria</button>
-                <button class="filter-pill" data-cat="optica">Óptica</button>
               </div>
             </div>
 
             <div class="filter-group">
-              <label for="filter-distance" class="filter-group__title">Radio de distancia: <span id="distance-value">10</span> km</label>
-              <input type="range" id="filter-distance" class="filter-range" min="1" max="50" value="10">
-              <p class="filter-note">Activa la ubicación para usar este filtro</p>
+              <h4 class="filter-group__title">Precio (pesos)</h4>
+              <div class="price-range">
+                <input type="number" id="filter-price-min" inputmode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" />
+                <span>—</span>
+                <input type="number" id="filter-price-max" inputmode="numeric" min="0" placeholder="Máx." aria-label="Precio máximo" />
+              </div>
             </div>
 
             <div class="filter-group">
               <label for="filter-sort" class="filter-group__title">Ordenar por</label>
               <div class="filter-select-wrapper">
                 <select class="filter-select" id="filter-sort">
-                  <option value="relevancia">Relevancia</option>
-                  <option value="nombre">Nombre</option>
-                  <option value="distancia">Distancia</option>
+                  <option value="relevancia">Más relevantes</option>
                   <option value="precio-asc">Menor precio</option>
                   <option value="precio-desc">Mayor precio</option>
+                  <option value="recientes">Más recientes</option>
+                  <option value="nombre">Nombre (A-Z)</option>
                 </select>
                 <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
               </div>
             </div>
-            
+
             <button class="filters-sidebar__apply" id="filters-apply-btn">Aplicar filtros</button>
           </aside>
 
           <div class="catalog-content">
             <div class="section-header">
-              <h2 class="section-header__title" id="catalog-title">Productos recomendados</h2>
-              <span class="catalog-count" id="catalog-count">8 resultados</span>
+              <h2 class="results-title" id="catalog-title">Todos los productos</h2>
+              <span class="catalog-count" id="catalog-count"></span>
             </div>
+            <div class="active-filters" id="active-filters"></div>
 
             <div class="products__grid" id="products-grid">
 
@@ -210,6 +173,10 @@
           </div>
 
         </div>
+
+            <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
+              <button class="load-more-btn" id="load-more-btn" type="button">Cargar más productos</button>
+            </div>
           </div> <!-- Fin .catalog-content -->
         </div> <!-- Fin .catalog-layout -->
       </section>

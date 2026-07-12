@@ -57,31 +57,9 @@
       </div>
     </nav>
 
-    <!-- ====== BARRA DE CATEGORÍAS ====== -->
+    <!-- ====== BARRA DE CATEGORÍAS (mega-menú + acceso rápido, poblada por nav-utils.js) ====== -->
     <div class="category-bar" role="navigation" aria-label="Categorías">
-      <div class="category-bar__inner">
-        <a href="#" class="category-bar__item category-bar__item--active" id="cat-inicio">Inicio</a>
-        <a href="#" class="category-bar__item" id="cat-ofertas">Ofertas</a>
-        <a href="#" class="category-bar__item" id="cat-verduras">Verduras</a>
-        <a href="#" class="category-bar__item" id="cat-carnes">Carnes</a>
-        <a href="#" class="category-bar__item" id="cat-lacteos">Lácteos</a>
-        
-        <!-- Menú Desplegable -->
-        <div class="category-bar__dropdown">
-          <a href="#" class="category-bar__item" id="cat-mas">
-            Más <i class="fa-solid fa-chevron-down" style="font-size:0.625rem; opacity:0.5; margin-left:0.25rem;"></i>
-          </a>
-          <div class="category-bar__dropdown-menu" role="menu">
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="limpieza">Limpieza</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="mascotas">Mascotas</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="bebes">Bebés</a>
-            <a href="#" class="category-bar__dropdown-item" role="menuitem" data-filter="indumentaria">Indumentaria</a>
-            <div class="dropdown-divider" style="height: 1px; background: var(--bl-border); margin: 4px 0;"></div>
-            <a href="./vender.html" class="category-bar__dropdown-item" role="menuitem" style="color: var(--bl-primary); font-weight: 600;"><i class="fa-solid fa-store" style="color: inherit;"></i> Vender</a>
-            <a href="./repartidor.html" class="category-bar__dropdown-item" role="menuitem" style="color: var(--bl-primary); font-weight: 600;"><i class="fa-solid fa-motorcycle" style="color: inherit;"></i> Repartir</a>
-          </div>
-        </div>
-      </div>
+      <div class="category-bar__inner" id="category-bar-inner"></div>
     </div>
 
     <!-- ====== CONTENIDO PRINCIPAL ====== -->

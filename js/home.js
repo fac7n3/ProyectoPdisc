@@ -1,167 +1,10 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState, renderActiveCoupons } from './cart-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
-
-
-
-
-/** Búsqueda — redirección a página de resultados */
-function initSearchRedirect() {
-  const input = document.getElementById('search-input');
-  const searchIcon = document.querySelector('.search-icon');
-
-  function doSearch() {
-    const query = input?.value.trim();
-    if (!query) return;
-    window.location.href = `./search.html?q=${encodeURIComponent(query)}`;
-  }
-
-  input?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      doSearch();
-    }
-  });
-
-  searchIcon?.addEventListener('click', () => {
-    if (input) doSearch();
-  });
-}
-
-/** Categorías — redirección a página de resultados */
-function initCategoriesRedirect() {
-  const categoryItems = document.querySelectorAll('.category-bar__item:not(#cat-mas), .category-bar__dropdown-item');
-
-  categoryItems.forEach(item => {
-    if(item.id === 'cat-mas' || item.getAttribute('href') === './vender.html') return;
-
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      const filter = item.dataset.filter || item.id.replace('cat-', '');
-      const mapFilter = filter === 'inicio' ? 'todas' : filter;
-      
-      if (mapFilter === 'todas') {
-        window.location.href = './search.html';
-      } else {
-        window.location.href = `./search.html?cat=${encodeURIComponent(mapFilter)}`;
-      }
-    });
-  });
-}
-
-/** Botón volver arriba */
-function initScrollTop() {
-  const btn = document.getElementById('scroll-top-btn');
-  if (!btn) return;
-
-  window.addEventListener('scroll', () => {
-    btn.classList.toggle('scroll-top--visible', window.scrollY > 400);
-  }, { passive: true });
-
-  btn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
-/** Navbar se compacta al hacer scroll */
-function initNavbarScroll() {
-  const navbar = document.querySelector('.navbar');
-  if (!navbar) return;
-
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 10) {
-      navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-    } else {
-      navbar.style.boxShadow = '';
-    }
-  }, { passive: true });
-}
-
-/** Obtener categorías de Supabase */
-async function loadCategories() {
-  const container = document.querySelector('.category-bar__inner');
-  if (!container) return;
-
-  try {
-    const { data: categories, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-
-    if (error) throw error;
-    if (!categories || categories.length === 0) return;
-
-    // Limpiar contenedor y reconstruir con DOM API segura
-    container.innerHTML = '';
-
-    // Items estáticos: Inicio y Ofertas
-    const inicio = document.createElement('a');
-    inicio.href = '#';
-    inicio.className = 'category-bar__item category-bar__item--active';
-    inicio.id = 'cat-inicio';
-    inicio.textContent = 'Inicio';
-    container.appendChild(inicio);
-
-    const ofertas = document.createElement('a');
-    ofertas.href = '#';
-    ofertas.className = 'category-bar__item';
-    ofertas.id = 'cat-ofertas';
-    ofertas.textContent = 'Ofertas';
-    container.appendChild(ofertas);
-
-    // Items dinámicos desde Supabase
-    categories.forEach(cat => {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.className = 'category-bar__item';
-      link.dataset.filter = cat.slug;
-      link.id = `cat-${cat.slug}`;
-      link.textContent = cat.name;
-      container.appendChild(link);
-    });
-
-    // Dropdown "Más"
-    const dropdown = document.createElement('div');
-    dropdown.className = 'category-bar__dropdown';
-
-    const masLink = document.createElement('a');
-    masLink.href = '#';
-    masLink.className = 'category-bar__item';
-    masLink.id = 'cat-mas';
-    masLink.textContent = 'Más ';
-    const chevron = document.createElement('i');
-    chevron.className = 'fa-solid fa-chevron-down';
-    chevron.style.cssText = 'font-size:0.625rem; opacity:0.5; margin-left:0.25rem;';
-    masLink.appendChild(chevron);
-    dropdown.appendChild(masLink);
-
-    const dropdownMenu = document.createElement('div');
-    dropdownMenu.className = 'category-bar__dropdown-menu';
-    dropdownMenu.setAttribute('role', 'menu');
-
-    const venderLink = document.createElement('a');
-    venderLink.href = './vender.html';
-    venderLink.className = 'category-bar__dropdown-item';
-    venderLink.setAttribute('role', 'menuitem');
-    venderLink.style.cssText = 'color: var(--bl-primary); font-weight: 600;';
-    const storeIcon = document.createElement('i');
-    storeIcon.className = 'fa-solid fa-store';
-    storeIcon.style.color = 'inherit';
-    venderLink.appendChild(storeIcon);
-    venderLink.append(' Vender');
-    dropdownMenu.appendChild(venderLink);
-
-    dropdown.appendChild(dropdownMenu);
-    container.appendChild(dropdown);
-
-    initCategoriesRedirect(); // re-bind listeners
-  } catch (err) {
-    console.error('Error fetching categories:', err);
-  }
-}
 
 /** Obtener productos de Supabase */
 async function loadProducts() {
@@ -366,15 +209,18 @@ async function loadStores() {
 
 // Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
-  initSearchRedirect();
-  initCategoriesRedirect();
   initScrollTop();
   initNavbarScroll();
   initFarmaciaLink();
   updateCartBadge();
-  
+
+  // Navbar de categorías (mega-menú) + buscador con autocompletado (compartidos)
+  initCategoryBar({ activeSlug: 'inicio' });
+  initSearchBox({
+    onSubmit: (term) => { window.location.href = `./search.html?q=${encodeURIComponent(term)}`; },
+  });
+
   // Cargar datos dinámicos
-  loadCategories();
   loadStores();
   loadProducts();
   loadCoupons();
