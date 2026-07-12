@@ -1119,6 +1119,80 @@ button.coupon-chip:hover {
   font-size: 0.75rem;
 }
 
+/* ── Filtro de categoría: dropdown en vez de todas las pills inline ── */
+.cat-filter-dropdown {
+  position: relative;
+}
+
+.cat-filter-dropdown__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+  color: var(--bl-text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cat-filter-dropdown__trigger:hover,
+.cat-filter-dropdown.is-open .cat-filter-dropdown__trigger {
+  border-color: var(--bl-primary);
+}
+
+.cat-filter-dropdown__trigger i {
+  font-size: 0.75rem;
+  color: var(--bl-text-muted);
+  transition: transform 0.2s;
+}
+
+.cat-filter-dropdown.is-open .cat-filter-dropdown__trigger i {
+  transform: rotate(180deg);
+}
+
+.cat-filter-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  box-shadow: var(--bl-shadow-lg);
+  padding: 0.375rem;
+  z-index: 60;
+}
+
+.cat-filter-dropdown__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: none;
+  background: none;
+  border-radius: var(--bl-radius-sm);
+  font-size: 0.875rem;
+  color: var(--bl-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-filter-dropdown__item:hover {
+  background: var(--bl-surface-alt);
+}
+
+.cat-filter-dropdown__item--active {
+  color: var(--bl-primary);
+  font-weight: 600;
+  background: var(--bl-surface-alt);
+}
+
 .filter-pills {
   display: flex;
   flex-wrap: wrap;

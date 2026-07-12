@@ -92,8 +92,12 @@
 
             <div class="filter-group">
               <h4 class="filter-group__title" id="category-group-label">Categoría</h4>
-              <div class="filter-pills" id="filter-categories" role="group" aria-labelledby="category-group-label">
-                <button class="filter-pill filter-pill--active" data-cat="todas">Todas</button>
+              <div class="cat-filter-dropdown" id="filter-categories">
+                <button type="button" class="cat-filter-dropdown__trigger" id="cat-filter-trigger" aria-haspopup="true" aria-expanded="false" aria-labelledby="category-group-label">
+                  <span id="cat-filter-label">Todas</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="cat-filter-dropdown__menu" id="cat-filter-menu" role="listbox" hidden></div>
               </div>
             </div>
 

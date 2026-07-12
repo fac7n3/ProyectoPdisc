@@ -301,9 +301,10 @@ function syncPriceInputs() {
 }
 
 function syncPills() {
-  document.querySelectorAll('.filter-pill').forEach((pill) => {
-    pill.classList.toggle('filter-pill--active', pill.dataset.cat === filterState.category ||
-      (filterState.category === 'todas' && pill.dataset.cat === 'todas'));
+  const label = document.getElementById('cat-filter-label');
+  if (label) label.textContent = categoryNameBySlug[filterState.category] || 'Todas';
+  document.querySelectorAll('.cat-filter-dropdown__item').forEach((item) => {
+    item.classList.toggle('cat-filter-dropdown__item--active', item.dataset.cat === filterState.category);
   });
 }
 
@@ -321,35 +322,56 @@ function clearAllFilters() {
   commit();
 }
 
-// ── Pills de categoría (sidebar) ────────────────────────────
+// ── Filtro de categoría: botón desplegable con todas las categorías
+//    (antes se listaban todas las pills una al lado de otra en el sidebar) ──
 async function renderCategoryPills() {
-  const container = document.getElementById('filter-categories');
-  if (!container) return;
+  const dropdown = document.getElementById('filter-categories');
+  const trigger = document.getElementById('cat-filter-trigger');
+  const menu = document.getElementById('cat-filter-menu');
+  if (!dropdown || !trigger || !menu) return;
+
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
   categoryNameBySlug['ofertas'] = 'Ofertas';
 
-  container.innerHTML = '';
-  const all = document.createElement('button');
-  all.className = 'filter-pill';
-  all.dataset.cat = 'todas';
-  all.textContent = 'Todas';
-  container.appendChild(all);
-
-  categories.forEach((cat) => {
-    const pill = document.createElement('button');
-    pill.className = 'filter-pill';
-    pill.dataset.cat = cat.slug;
-    pill.textContent = cat.name;
-    container.appendChild(pill);
-  });
-
-  container.querySelectorAll('.filter-pill').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      filterState.category = pill.dataset.cat || 'todas';
+  menu.textContent = '';
+  const options = [{ slug: 'todas', name: 'Todas' }, ...categories];
+  options.forEach((cat) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'cat-filter-dropdown__item';
+    item.dataset.cat = cat.slug;
+    item.setAttribute('role', 'option');
+    item.textContent = cat.name;
+    item.addEventListener('click', () => {
+      filterState.category = cat.slug;
       syncPills();
+      closeCatDropdown();
       commit();
     });
+    menu.appendChild(item);
+  });
+
+  function openCatDropdown() {
+    menu.hidden = false;
+    dropdown.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+  function closeCatDropdown() {
+    menu.hidden = true;
+    dropdown.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden ? openCatDropdown() : closeCatDropdown();
+  });
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) closeCatDropdown();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeCatDropdown();
   });
 
   syncPills();
