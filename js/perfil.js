@@ -1,5 +1,5 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
-import { formatPrice } from "./cart-utils.js";
+import { formatPrice, clearCart, updateCartBadge } from "./cart-utils.js";
 import { renderNotificationsSection } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
 import { renderSupportSection } from "./support-utils.js";
@@ -669,11 +669,40 @@ if (logoutBtn) {
   });
 }
 
+/**
+ * back_urls.success/pending de mp-create-preference (Edge Function) traen de
+ * vuelta acá con `?mp=success`/`?mp=pending` una vez que Mercado Pago aprobó
+ * el pago (o lo dejó pendiente de acreditación, ej. Rapipago). Recién en este
+ * punto se sabe que la compra de verdad se concretó -- por eso el carrito se
+ * vacía ACÁ y no de antemano en carrito.js (ver el bug documentado ahí: antes
+ * se vaciaba apenas se redirigía a Mercado Pago, y si el usuario volvía sin
+ * pagar perdía el carrito para nada).
+ */
+function handleMercadoPagoReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('mp');
+  if (status !== 'success' && status !== 'pending') return;
+
+  clearCart();
+  updateCartBadge();
+  showToast(
+    status === 'success'
+      ? '¡Pago aprobado! Tu pedido ya está en preparación.'
+      : 'Pago en revisión. Te vamos a avisar cuando se confirme.',
+    'success'
+  );
+
+  const url = new URL(window.location);
+  url.searchParams.delete('mp');
+  window.history.replaceState({}, '', url);
+}
+
 // --- Inicialización con Guard ---
 guardPage({
   requireAuth: true,
   onReady: (user) => {
     renderQuickProfile(user);
     renderFullProfile(user);
+    handleMercadoPagoReturn();
   },
 });

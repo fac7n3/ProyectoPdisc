@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-11 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md).
+> Última actualización: 2026-07-13 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
@@ -270,6 +270,47 @@ de valor con el acento cálido ya existente en la paleta), **F9-06** (estados va
 micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). Detalle completo,
 qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
+
+## Dos bugs reportados por el usuario (2026-07-13)
+
+**1) El carrito se vaciaba al volver desde Mercado Pago sin pagar.**
+`carrito.js` llamaba `clearCart()` inmediatamente después de que `payment-providers.js` disparaba
+`window.location.href = redirectUrl` hacia el checkout de MP. Como esa navegación es asincrónica
+y `window.location.href` no bloquea la ejecución, el `clearCart()` corría YA, antes de que el
+usuario llegara siquiera a ver el checkout — si después clickeaba "Volver" en Mercado Pago (vuelve
+con `?mp=failure`, `back_urls.failure` de `mp-create-preference`) o cerraba la pestaña, el carrito
+ya estaba perdido para siempre, aunque nunca hubiera pagado.
+- Fix: `carrito.js` ya no vacía el carrito en la rama `redirecting` — solo lo hace cuando se sabe
+  de verdad que la compra se concretó. `perfil.js` ahora maneja `?mp=success`/`?mp=pending`
+  (`back_urls.success`/`back_urls.pending`, con `auto_return: "approved"` de por medio) y ahí
+  recién vacía el carrito + muestra el toast de éxito. `carrito.js` maneja `?mp=failure` con un
+  toast explicando qué pasó, sin tocar el carrito (ya no hace falta, nunca se vació).
+- **Bug extra encontrado en el camino**: `validateCartFreshness()` (F4-02) mostraba el toast
+  "Actualizamos precios o cantidades..." SIEMPRE que no se sacó nada del carrito, aunque tampoco se
+  hubiera ajustado nada de verdad (`adjustedNames` vacío) — un aviso falso en cada apertura normal
+  del carrito, que además tapaba el toast nuevo de `?mp=failure` (mismo elemento `#toast`, el
+  último `showCartToast()` gana). Corregido: ese toast ahora solo se muestra si `adjustedNames.length > 0`.
+- Verificado en el navegador (carrito sembrado con un producto real vía `localStorage`, sin sesión
+  real disponible): `?mp=failure` deja el carrito intacto y muestra el toast correcto sin que se
+  tape; una carga normal sin `?mp=` no muestra ningún toast falso.
+
+**2) El selector "Cambiar de rol" (F12-17) dejó de aparecer.**
+No era un bug de esa función — la cuenta admin del usuario había perdido el rol en el JWT. Causa
+raíz encontrada con SQL directo: la cuenta se había registrado como vendedor (para probar
+`vender.html`) y la solicitud se aprobó; `approve_seller_request` (migración 24) hace
+`raw_app_meta_data = raw_app_meta_data || jsonb_build_object('role', 'vendedor')` **sin mirar qué
+rol tenía antes** — un `||` de jsonb pisa la clave `role` sea cual sea su valor, incluido
+`admin`/`moderador`. Mismo patrón exacto en `approve_delivery_request` (migración 25).
+- **Migración 53**: agrega `and coalesce(raw_app_meta_data ->> 'role', 'cliente') not in ('admin', 'moderador')`
+  al `where` de ese `update` puntual en ambas funciones — si la cuenta ya es admin/moderador, el
+  update no la toca y el rol elevado queda intacto. `profiles.role` se sigue actualizando siempre
+  (la cuenta SÍ es vendedor/repartidor ahora, eso es un hecho real aparte del rol elevado).
+  Verificado con `BEGIN;...ROLLBACK;`: cuenta admin aprobada como vendedor/repartidor → JWT sigue
+  `admin`, `profiles.role` pasa a `vendedor`/`repartidor`, tienda/solicitud se aprueban normal;
+  cuenta común aprobada → sin cambios de comportamiento (JWT y `profiles.role` pasan a `vendedor`
+  los dos, como siempre). `get_advisors` sin hallazgos nuevos.
+- Restaurado el `app_metadata.role` de la cuenta del usuario a `admin` (estaba en `vendedor` por
+  el bug). Recuerda que necesita cerrar sesión y volver a entrar para que el JWT nuevo tenga efecto.
 
 ## Selector "Cambiar de rol" en perfil.html (2026-07-12)
 Pedido directo del usuario ("desde perfil, poder cambiar de rol de vendedor/cliente a

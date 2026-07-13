@@ -504,10 +504,16 @@ function initCartEvents() {
       const paymentResult = await provider.pay(orderIds);
 
       // mercadopago ya disparó la redirección al checkout hospedado dentro de
-      // pay() — el navegador está por salir de la página, no hay nada más
-      // para mostrar acá (el pago real se confirma después vía webhook).
+      // pay() — el navegador está por salir de la página. A propósito NO se
+      // vacía el carrito acá: la redirección es asincrónica y `window.location.href`
+      // no bloquea la ejecución, así que un `clearCart()` acá corría ANTES de
+      // que el usuario llegara a pagar de verdad. Si después clickea "Volver"
+      // en Mercado Pago (vuelve a carrito.html con `?mp=failure`, ver el bloque
+      // al final del archivo) o cierra la pestaña, el carrito tiene que seguir
+      // intacto -- antes se perdía y había que rearmarlo todo de cero. El
+      // vaciado real ocurre recién si el pago se aprueba (perfil.html?mp=success/
+      // pending, ver perfil.js) o si el pago falla en el mismo tab (más abajo).
       if (paymentResult.redirecting) {
-        clearCart();
         return;
       }
 
@@ -623,14 +629,37 @@ async function validateCartFreshness() {
   saveCart(validatedCart);
   renderCart();
 
+  // Bug encontrado arreglando el vaciado prematuro del carrito (ver
+  // handleMercadoPagoReturn más abajo): este toast se mostraba SIEMPRE que no
+  // se quitó nada, aunque `adjustedNames` estuviera vacío -- es decir, en
+  // cada apertura del carrito con productos sin cambios reales. Además de ser
+  // un aviso falso, tapaba cualquier otro toast que se mostrara justo después
+  // (como el de "no se completó el pago con Mercado Pago").
   if (removedNames.length > 0) {
     showCartToast(`Ya no están disponibles: ${removedNames.join(', ')}`, 'error');
-  } else {
+  } else if (adjustedNames.length > 0) {
     showCartToast('Actualizamos precios o cantidades de tu carrito según disponibilidad actual.', 'default');
   }
 }
 
 // --- Inicialización ---
+/**
+ * back_urls.failure de mp-create-preference (Edge Function) trae de vuelta
+ * acá con `?mp=failure` cuando el usuario cancela/vuelve desde el checkout
+ * de Mercado Pago sin pagar. El carrito ya no se vacía de antemano (ver
+ * arriba), así que no hace falta reconstruir nada -- solo avisar qué pasó y
+ * limpiar el parámetro de la URL para que un refresh no repita el toast.
+ */
+function handleMercadoPagoReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('mp') !== 'failure') return;
+
+  showCartToast('No se completó el pago con Mercado Pago. Tu carrito sigue igual.', 'error');
+  const url = new URL(window.location);
+  url.searchParams.delete('mp');
+  window.history.replaceState({}, '', url);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderCart();
   initCartEvents();
@@ -639,4 +668,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initPaymentMethodEvents();
   validateCartFreshness();
   prefillSavedAddress();
+  handleMercadoPagoReturn();
 });
