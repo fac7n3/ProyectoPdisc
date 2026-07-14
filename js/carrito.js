@@ -221,6 +221,7 @@ function initDeliveryEvents() {
   const pickupRadio = document.getElementById('delivery-pickup');
   const shippingRadio = document.getElementById('delivery-shipping');
   const addressInput = document.getElementById('delivery-address');
+  const addressSelect = document.getElementById('delivery-address-select');
   const shippingLabel = document.getElementById('summary-shipping-label');
 
   if (!header || !content || !pickupRadio || !shippingRadio || !addressInput) return;
@@ -233,7 +234,19 @@ function initDeliveryEvents() {
 
   function updateMethod() {
     deliveryMethod = shippingRadio.checked ? 'delivery' : 'pickup';
-    addressInput.style.display = deliveryMethod === 'delivery' ? 'block' : 'none';
+    // Si hay direcciones guardadas, mostrar el selector; si no, el input libre.
+    const hasSelect = addressSelect && addressSelect.options.length > 2;
+    if (deliveryMethod === 'delivery') {
+      if (hasSelect) {
+        addressSelect.style.display = 'block';
+        addressInput.style.display = addressSelect.value === 'new' ? 'block' : 'none';
+      } else {
+        addressInput.style.display = 'block';
+      }
+    } else {
+      addressInput.style.display = 'none';
+      if (addressSelect) addressSelect.style.display = 'none';
+    }
     if (shippingLabel) {
       shippingLabel.textContent = deliveryMethod === 'delivery'
         ? 'Envío (Envío a domicilio)'
@@ -247,33 +260,62 @@ function initDeliveryEvents() {
   addressInput.addEventListener('input', () => {
     shippingAddress = addressInput.value.trim();
   });
+
+  if (addressSelect) {
+    addressSelect.addEventListener('change', () => {
+      if (addressSelect.value === 'new') {
+        addressInput.style.display = 'block';
+        addressInput.value = '';
+        shippingAddress = '';
+        addressInput.focus();
+      } else if (addressSelect.value) {
+        addressInput.style.display = 'none';
+        shippingAddress = addressSelect.value;
+      } else {
+        shippingAddress = '';
+      }
+    });
+  }
 }
 
 /**
- * F12-06: precarga la dirección guardada del perfil (si el cliente la cargó
- * en "Mis datos" → Direcciones, perfil.js) para no escribirla de cero en
- * cada compra — sigue siendo editable para esta compra puntual, no reemplaza
- * el campo de texto libre por uno de solo lectura.
+ * P0-2: carga las direcciones guardadas del usuario y popula el <select>.
+ * Si no hay direcciones, el selector queda con solo las 2 opciones default
+ * y el input libre se muestra directamente al elegir envío.
  */
-async function prefillSavedAddress() {
-  const addressInput = document.getElementById('delivery-address');
-  if (!addressInput || addressInput.value.trim()) return;
+async function loadAddressSelector() {
+  const addressSelect = document.getElementById('delivery-address-select');
+  if (!addressSelect) return;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('address, address_details')
-    .eq('id', user.id)
-    .single();
+  const { data: addresses } = await supabase
+    .from('user_addresses')
+    .select('id, label, address, details, is_default')
+    .eq('user_id', user.id)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true });
 
-  if (!profile?.address) return;
+  if (!addresses || addresses.length === 0) return;
 
-  addressInput.value = profile.address_details
-    ? `${profile.address} (${profile.address_details})`
-    : profile.address;
-  shippingAddress = addressInput.value.trim();
+  // Limpiar opciones previas (conservar las 2 default)
+  while (addressSelect.options.length > 2) {
+    addressSelect.remove(1);
+  }
+
+  addresses.forEach((addr) => {
+    const opt = document.createElement('option');
+    const fullAddr = addr.details ? `${addr.address} — ${addr.details}` : addr.address;
+    opt.value = fullAddr;
+    opt.textContent = `${addr.label}: ${fullAddr}`;
+    if (addr.is_default) {
+      opt.selected = true;
+      shippingAddress = fullAddr;
+    }
+    // Insertar antes de "Usar una dirección nueva"
+    addressSelect.insertBefore(opt, addressSelect.options[addressSelect.options.length - 1]);
+  });
 }
 
 /** Inicializar selector de método de pago (mercadopago / simulado / transferencia) */
@@ -667,6 +709,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initDeliveryEvents();
   initPaymentMethodEvents();
   validateCartFreshness();
-  prefillSavedAddress();
+  loadAddressSelector();
   handleMercadoPagoReturn();
 });

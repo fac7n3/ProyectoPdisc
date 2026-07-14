@@ -200,22 +200,37 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-location-dot"></i> Direcciones de envío
             </h2>
-            <form id="direcciones-form" class="direcciones-form">
+            <div id="addresses-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;"></div>
+            <button type="button" class="bl-btn bl-btn-primary" id="btn-add-address" style="width: fit-content;">
+              <i class="fa-solid fa-plus"></i> Agregar dirección
+            </button>
+            <form id="address-form" class="direcciones-form" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: var(--bl-radius-md, 0.5rem);">
+              <input type="hidden" id="address-edit-id" />
               <div class="form-group">
-                <label for="address-phone" class="detail-label">Teléfono de contacto</label>
-                <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" />
+                <label for="address-label" class="detail-label">Nombre (Ej: Casa, Trabajo)</label>
+                <input type="text" id="address-label" class="bl-input" placeholder="Casa" maxlength="30" />
               </div>
               <div class="form-group">
                 <label for="address-main" class="detail-label">Dirección (Calle y Número)</label>
-                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" />
+                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" required />
               </div>
               <div class="form-group">
                 <label for="address-details" class="detail-label">Detalles (Piso, depto, indicaciones)</label>
                 <input type="text" id="address-details" class="bl-input" placeholder="Ej: Piso 2, depto B, puerta negra" />
               </div>
-              <button type="submit" class="bl-btn bl-btn-primary" id="btn-save-address" style="width: fit-content; margin-top: 1rem;">
-                Guardar cambios
-              </button>
+              <div class="form-group">
+                <label for="address-phone" class="detail-label">Teléfono (opcional)</label>
+                <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" />
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; cursor: pointer;">
+                  <input type="checkbox" id="address-default" /> Establecer como predeterminada
+                </label>
+              </div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button type="submit" class="bl-btn bl-btn-primary" id="btn-save-address" style="width: fit-content;">Guardar</button>
+                <button type="button" class="bl-btn" id="btn-cancel-address" style="width: fit-content; background: var(--bl-border, #e2e8f0);">Cancelar</button>
+              </div>
             </form>
           </article>
         </div>

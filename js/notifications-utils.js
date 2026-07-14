@@ -15,6 +15,7 @@ const TYPE_LABELS = {
   delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
   support_ticket_status_change: 'Tu reclamo cambió de estado',
+  support_ticket_message: 'Soporte respondió a tu reclamo',
   favorite_price_drop: 'Bajó de precio un producto de tus favoritos',
 };
 
@@ -114,6 +115,14 @@ export async function renderNotificationsSection(container, userId) {
     } else if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
       const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
       title.textContent = `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
+    } else if (n.type === 'support_ticket_message' && n.payload?.subject) {
+      title.textContent = `Soporte respondió a tu reclamo "${n.payload.subject}"`;
+      if (n.payload?.message) {
+        const preview = document.createElement('p');
+        preview.style.cssText = 'font-size: 0.85rem; color: var(--bl-text-secondary, #4a5568); margin: 0.2rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        preview.textContent = n.payload.message;
+        row.appendChild(preview);
+      }
     } else {
       title.textContent = TYPE_LABELS[n.type] || n.type;
     }

@@ -4,6 +4,16 @@
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
 > Última actualización: 2026-07-13 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53).
 
+> ## ⚠️ PRIMERA ACCIÓN DE CADA SESIÓN
+> **Antes de cualquier otra tarea, leer [docs/MIGRACIONES_PENDIENTES.md](docs/MIGRACIONES_PENDIENTES.md).**
+> Lista las migraciones SQL nuevas todavía no aplicadas a la base de producción
+> de Supabase (`otzhdwuaffcplrveuadc`). Si tenés credenciales de Supabase
+> (MCP tools cargadas, `SUPABASE_ACCESS_TOKEN` en el entorno, o acceso al
+> SQL Editor del dashboard), **aplicalas en orden** antes de seguir. Si no
+> tenés credenciales, avisá al usuario que faltan aplicar y seguí con tareas
+> que no dependan de ellas. Marcar cada entrada como aplicada en ese archivo
+> después de correrla.
+
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
 Objetivo definido: **lanzamiento real**. Roles: `cliente`, `vendedor`, `repartidor` (planeado), `admin`.

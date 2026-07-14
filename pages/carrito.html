@@ -123,6 +123,10 @@
                 Envío a domicilio
               </label>
               <input type="text" id="delivery-address" class="coupon-input" placeholder="Dirección de entrega" style="display: none; text-transform: none; margin-top: 0.5rem;" autocomplete="street-address" />
+              <select id="delivery-address-select" class="coupon-input" style="display: none; text-transform: none; margin-top: 0.5rem;">
+                <option value="">Elegí una dirección guardada...</option>
+                <option value="new">+ Usar una dirección nueva</option>
+              </select>
             </div>
           </div>
 
@@ -139,10 +143,6 @@
               <label class="delivery-option">
                 <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
                 Transferencia bancaria
-              </label>
-              <label class="delivery-option">
-                <input type="radio" name="payment-method" id="payment-simulado" value="simulado" />
-                Pago simulado
               </label>
             </div>
           </div>

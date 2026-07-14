@@ -451,9 +451,11 @@ async function openProductModal(card) {
   void overlay.offsetHeight;
   requestAnimationFrame(() => overlay.classList.add('is-open'));
 
+  // Cerrar modal: solo con el botón X o "Atrás" (no al clickear afuera del
+  // cuadro — accesibilidad para gente mayor, que puede cerrarlo sin querer
+  // al tocar cualquier lado). Escape sigue funcionando (handler más abajo).
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeProductModal();
-    else if (e.target.closest('#pm-close-back') || e.target.closest('#pm-close-btn')) closeProductModal();
+    if (e.target.closest('#pm-close-back') || e.target.closest('#pm-close-btn')) closeProductModal();
   });
   currentEscHandler = (e) => { if (e.key === 'Escape') closeProductModal(); };
   document.addEventListener('keydown', currentEscHandler);

@@ -19,12 +19,18 @@ const mainContent = document.getElementById("main-content");
 const roleSwitcherWrap = document.getElementById("role-switcher-wrap");
 const roleSwitcher = document.getElementById("role-switcher");
 
-// Direcciones
-const formDirecciones = document.getElementById("direcciones-form");
+// Direcciones (multi-address book, P0-2)
+const addressesList = document.getElementById("addresses-list");
+const addressForm = document.getElementById("address-form");
+const addressEditId = document.getElementById("address-edit-id");
+const addressLabel = document.getElementById("address-label");
 const inputPhone = document.getElementById("address-phone");
 const inputAddress = document.getElementById("address-main");
 const inputDetails = document.getElementById("address-details");
+const addressDefault = document.getElementById("address-default");
 const btnSaveAddress = document.getElementById("btn-save-address");
+const btnAddAddress = document.getElementById("btn-add-address");
+const btnCancelAddress = document.getElementById("btn-cancel-address");
 
 // Contenedores
 const comprasContainer = document.getElementById("compras-container");
@@ -112,43 +118,217 @@ function renderQuickProfile(user) {
 }
 
 // --- Direcciones: Cargar y Guardar ---
-function fillDirecciones(profile) {
-  if (inputPhone) inputPhone.value = profile.phone || "";
-  if (inputAddress) inputAddress.value = profile.address || "";
-  if (inputDetails) inputDetails.value = profile.address_details || "";
-}
+// --- Multi-address book (P0-2) ---
+async function loadAddresses(userId) {
+  if (!addressesList) return;
 
-if (formDirecciones) {
-  formDirecciones.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!currentUserId) return;
-    
-    if (btnSaveAddress) {
-      btnSaveAddress.disabled = true;
-      btnSaveAddress.textContent = "Guardando...";
+  const { data: addresses, error } = await supabase
+    .from('user_addresses')
+    .select('id, label, address, details, phone, is_default, created_at')
+    .eq('user_id', userId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error al cargar direcciones:', error);
+    addressesList.innerHTML = '<p style="color:#ef4444;">Error al cargar tus direcciones.</p>';
+    return;
+  }
+
+  // Auto-migración: si el usuario tenía una dirección vieja en profiles.address
+  // y todavía no tiene user_addresses, migrarla.
+  if ((!addresses || addresses.length === 0) && currentUserId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('address, address_details, phone')
+      .eq('id', userId)
+      .single();
+    if (profile?.address) {
+      const { data: migrated } = await supabase
+        .from('user_addresses')
+        .insert({
+          user_id: userId,
+          label: 'Casa',
+          address: profile.address,
+          details: profile.address_details || null,
+          phone: profile.phone || null,
+          is_default: true,
+        })
+        .select('id, label, address, details, phone, is_default, created_at');
+      if (migrated && migrated.length > 0) {
+        return loadAddresses(userId);
+      }
+    }
+  }
+
+  addressesList.innerHTML = '';
+
+  if (!addresses || addresses.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color: var(--bl-perfil-text-sec);';
+    empty.textContent = 'Todavía no agregaste ninguna dirección.';
+    addressesList.appendChild(empty);
+    return;
+  }
+
+  addresses.forEach((addr) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'padding: 0.75rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: var(--bl-radius-md, 0.5rem); display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap;';
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex: 1; min-width: 200px;';
+
+    const labelStrong = document.createElement('strong');
+    labelStrong.textContent = addr.label;
+    if (addr.is_default) {
+      const badge = document.createElement('span');
+      badge.style.cssText = 'margin-left: 0.5rem; font-size: 0.7rem; background: #d1fae5; color: #059669; padding: 0.1rem 0.4rem; border-radius: 999px; font-weight: 700;';
+      badge.textContent = 'Predeterminada';
+      labelStrong.appendChild(badge);
+    }
+    info.appendChild(labelStrong);
+
+    const addrP = document.createElement('p');
+    addrP.style.cssText = 'margin: 0.2rem 0; font-size: 0.9rem;';
+    addrP.textContent = addr.details ? `${addr.address} — ${addr.details}` : addr.address;
+    info.appendChild(addrP);
+
+    if (addr.phone) {
+      const phoneP = document.createElement('p');
+      phoneP.style.cssText = 'margin: 0.1rem 0; font-size: 0.85rem; color: var(--bl-text-muted, #94a3b8);';
+      phoneP.textContent = `Tel: ${addr.phone}`;
+      info.appendChild(phoneP);
     }
 
-    const updates = {
-      phone: inputPhone.value.trim(),
-      address: inputAddress.value.trim(),
-      address_details: inputDetails.value.trim()
+    card.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display: flex; gap: 0.4rem; flex-wrap: wrap;';
+
+    if (!addr.is_default) {
+      const defaultBtn = document.createElement('button');
+      defaultBtn.type = 'button';
+      defaultBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: white; cursor: pointer;';
+      defaultBtn.textContent = 'Predeterminar';
+      defaultBtn.addEventListener('click', async () => {
+        await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
+        await supabase.from('user_addresses').update({ is_default: true }).eq('id', addr.id);
+        loadAddresses(userId);
+      });
+      actions.appendChild(defaultBtn);
+    }
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: white; cursor: pointer;';
+    editBtn.textContent = 'Editar';
+    editBtn.addEventListener('click', () => openAddressForm(addr));
+    actions.appendChild(editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #dc2626; cursor: pointer;';
+    delBtn.textContent = 'Eliminar';
+    delBtn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta dirección?')) return;
+      await supabase.from('user_addresses').delete().eq('id', addr.id);
+      loadAddresses(userId);
+    });
+    actions.appendChild(delBtn);
+
+    card.appendChild(actions);
+    addressesList.appendChild(card);
+  });
+}
+
+function openAddressForm(addr = null) {
+  if (!addressForm) return;
+  addressForm.style.display = '';
+  addressEditId.value = addr?.id || '';
+  addressLabel.value = addr?.label || '';
+  inputAddress.value = addr?.address || '';
+  inputDetails.value = addr?.details || '';
+  inputPhone.value = addr?.phone || '';
+  addressDefault.checked = addr?.is_default || false;
+  addressLabel.focus();
+}
+
+function closeAddressForm() {
+  if (!addressForm) return;
+  addressForm.style.display = 'none';
+  addressEditId.value = '';
+  addressLabel.value = '';
+  inputAddress.value = '';
+  inputDetails.value = '';
+  inputPhone.value = '';
+  addressDefault.checked = false;
+}
+
+if (btnAddAddress) {
+  btnAddAddress.addEventListener('click', () => openAddressForm());
+}
+
+if (btnCancelAddress) {
+  btnCancelAddress.addEventListener('click', closeAddressForm);
+}
+
+if (addressForm) {
+  addressForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUserId) return;
+
+    const addr = inputAddress.value.trim();
+    if (!addr) {
+      showToast('La dirección es obligatoria.', 'error');
+      return;
+    }
+
+    const payload = {
+      user_id: currentUserId,
+      label: addressLabel.value.trim() || 'Casa',
+      address: addr,
+      details: inputDetails.value.trim() || null,
+      phone: inputPhone.value.trim() || null,
+      is_default: addressDefault.checked,
     };
 
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', currentUserId);
+    if (btnSaveAddress) {
+      btnSaveAddress.disabled = true;
+      btnSaveAddress.textContent = 'Guardando...';
+    }
 
-      if (error) throw error;
-      showToast("Dirección guardada correctamente", "success");
+    try {
+      const editId = addressEditId.value;
+      if (editId) {
+        // Al editar, quitar is_default de las demás antes de actualizar
+        if (payload.is_default) {
+          await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', currentUserId).neq('id', editId);
+        }
+        const { error } = await supabase.from('user_addresses').update(payload).eq('id', editId);
+        if (error) throw error;
+      } else {
+        // Si es la primera dirección, hacerla predeterminada automáticamente
+        const { count } = await supabase
+          .from('user_addresses')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', currentUserId);
+        if (count === 0) payload.is_default = true;
+        if (payload.is_default) {
+          await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', currentUserId);
+        }
+        const { error } = await supabase.from('user_addresses').insert(payload);
+        if (error) throw error;
+      }
+      showToast('Dirección guardada.', 'success');
+      closeAddressForm();
+      loadAddresses(currentUserId);
     } catch (err) {
-      console.error(err);
-      showToast("Error al guardar dirección");
+      console.error('Error al guardar dirección:', err);
+      showToast(err.message || 'Error al guardar dirección.', 'error');
     } finally {
       if (btnSaveAddress) {
         btnSaveAddress.disabled = false;
-        btnSaveAddress.textContent = "Guardar cambios";
+        btnSaveAddress.textContent = 'Guardar';
       }
     }
   });
@@ -397,19 +577,26 @@ function buildPaymentProofSection(order) {
       const path = `${order.id}/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(path, file);
-      if (uploadError) throw uploadError;
+        .upload(path, file, { contentType: file.type || 'application/octet-stream' });
+      if (uploadError) throw { stage: 'storage', error: uploadError };
 
       const { error: insertError } = await supabase
         .from('payment_proofs')
         .insert({ order_id: order.id, receipt_url: path });
-      if (insertError) throw insertError;
+      if (insertError) throw { stage: 'db', error: insertError };
 
       showToast('Comprobante enviado. Esperá la confirmación del comercio.', 'success');
       await loadCompras(order.client_id);
     } catch (err) {
       console.error('Error al subir comprobante', err);
-      showToast('No se pudo subir el comprobante.', 'error');
+      const stage = err?.stage || 'unknown';
+      const msg = err?.error?.message || err?.message || 'Error desconocido';
+      const hint = stage === 'storage'
+        ? ' (storage)'
+        : stage === 'db'
+          ? ' (base de datos)'
+          : '';
+      showToast(`No se pudo subir el comprobante${hint}: ${msg}`, 'error');
       uploadBtn.disabled = false;
       uploadBtn.textContent = 'Subir comprobante';
     }
@@ -644,7 +831,7 @@ async function renderFullProfile(user) {
     }
 
     // Llenar formularios de otras pestañas
-    fillDirecciones(profile);
+    loadAddresses(user.id);
 
   } catch (err) {
     console.error("Profile fetch error:", err);

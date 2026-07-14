@@ -1068,15 +1068,14 @@ async function fetchErrorLogs() {
   });
 }
 
-// --- F12-11: soporte/reclamos (support_tickets, 46_support_tickets.sql) ---
-// El admin solo cambia el estado -- no hay respuesta en el hilo acá (ver nota
-// de alcance en la migración), sigue usando el email del usuario para eso.
-const SUPPORT_STATUSES = ['open', 'in_progress', 'resolved'];
+// --- F12-11 + P0-5: soporte/reclamos (support_tickets, 46/54_support_tickets) ---
+// El admin cambia el estado Y responde en el hilo (mensajes bidireccionales).
+const SUPPORT_STATUSES = ['open', 'in_progress', 'resolved', 'cancelled'];
 
 async function fetchSupportTickets() {
   const tbody = document.getElementById('support-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando reclamos...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando reclamos...</td></tr>';
 
   const { data, error } = await supabase
     .from('support_tickets')
@@ -1085,12 +1084,12 @@ async function fetchSupportTickets() {
 
   if (error) {
     console.error('Error fetching support tickets:', error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los reclamos.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error al cargar los reclamos.</td></tr>';
     return;
   }
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay reclamos registrados.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay reclamos registrados.</td></tr>';
     return;
   }
 
@@ -1153,8 +1152,123 @@ async function fetchSupportTickets() {
     tdStatus.appendChild(statusSelect);
     tr.appendChild(tdStatus);
 
+    const tdActions = document.createElement('td');
+    const replyBtn = document.createElement('button');
+    replyBtn.type = 'button';
+    replyBtn.style.cssText = 'padding: 0.35rem 0.7rem; border: 1px solid var(--bl-primary, #2563eb); color: var(--bl-primary, #2563eb); background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;';
+    replyBtn.textContent = 'Ver hilo';
+    replyBtn.addEventListener('click', () => toggleAdminTicketThread(tr, ticket));
+    tdActions.appendChild(replyBtn);
+    tr.appendChild(tdActions);
+
     tbody.appendChild(tr);
   });
+}
+
+async function toggleAdminTicketThread(tr, ticket) {
+  const existing = tr.nextSibling;
+  if (existing && existing.classList?.contains('ticket-thread-row')) {
+    existing.remove();
+    return;
+  }
+
+  const threadRow = document.createElement('tr');
+  threadRow.classList.add('ticket-thread-row');
+  const threadCell = document.createElement('td');
+  threadCell.colSpan = 6;
+  threadCell.style.cssText = 'padding: 1rem; background: var(--bl-surface-alt, #f0f4f8);';
+
+  const threadDiv = document.createElement('div');
+  threadDiv.style.cssText = 'max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem;';
+  threadCell.appendChild(threadDiv);
+
+  const loadingP = document.createElement('p');
+  loadingP.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
+  loadingP.textContent = 'Cargando mensajes...';
+  threadDiv.appendChild(loadingP);
+
+  const { data: messages, error } = await supabase
+    .from('support_ticket_messages')
+    .select('id, sender_id, message, created_at')
+    .eq('ticket_id', ticket.id)
+    .order('created_at', { ascending: true });
+
+  threadDiv.innerHTML = '';
+
+  if (error) {
+    const errP = document.createElement('p');
+    errP.style.cssText = 'color: #ef4444; font-size: 0.85rem;';
+    errP.textContent = 'Error al cargar los mensajes.';
+    threadDiv.appendChild(errP);
+  } else if (!messages || messages.length === 0) {
+    const noMsgs = document.createElement('p');
+    noMsgs.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
+    noMsgs.textContent = 'Todavía no hay mensajes en el hilo.';
+    threadDiv.appendChild(noMsgs);
+  } else {
+    const { data: { session } } = await supabase.auth.getSession();
+    const myId = session?.user?.id;
+    messages.forEach((m) => {
+      const isMine = m.sender_id === myId;
+      const bubble = document.createElement('div');
+      bubble.style.cssText = `padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; font-size: 0.875rem; ${isMine ? 'align-self: flex-end; background: var(--bl-primary, #2563eb); color: white;' : 'align-self: flex-start; background: white;'}`;
+      bubble.textContent = m.message;
+      const meta = document.createElement('div');
+      meta.style.cssText = `font-size: 0.7rem; color: ${isMine ? 'rgba(255,255,255,0.7)' : 'var(--bl-text-muted, #94a3b8)'}; margin-top: 0.2rem;`;
+      meta.textContent = new Date(m.created_at).toLocaleString('es-AR');
+      bubble.appendChild(meta);
+      threadDiv.appendChild(bubble);
+    });
+  }
+
+  if (ticket.status !== 'cancelled' && ticket.status !== 'resolved') {
+    const replyForm = document.createElement('div');
+    replyForm.style.cssText = 'display: flex; gap: 0.5rem;';
+
+    const replyInput = document.createElement('textarea');
+    replyInput.placeholder = 'Escribí una respuesta al usuario...';
+    replyInput.maxLength = 2000;
+    replyInput.style.cssText = 'flex: 1; padding: 0.5rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: var(--bl-radius-sm, 0.375rem); min-height: 60px; font-family: inherit; resize: vertical;';
+    replyForm.appendChild(replyInput);
+
+    const sendBtn = document.createElement('button');
+    sendBtn.type = 'button';
+    sendBtn.style.cssText = 'align-self: flex-end; padding: 0.5rem 1rem; background: var(--bl-primary, #2563eb); color: white; border: none; border-radius: var(--bl-radius-md, 0.5rem); cursor: pointer; font-weight: 600;';
+    sendBtn.textContent = 'Enviar';
+    replyForm.appendChild(sendBtn);
+
+    sendBtn.addEventListener('click', async () => {
+      const msg = replyInput.value.trim();
+      if (!msg) return;
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando...';
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error: insertError } = await supabase.from('support_ticket_messages').insert({
+        ticket_id: ticket.id,
+        sender_id: session.user.id,
+        message: msg,
+      });
+      if (insertError) {
+        showToast(insertError.message || 'No se pudo enviar.', 'error');
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Enviar';
+        return;
+      }
+      showToast('Respuesta enviada.', 'success');
+      threadRow.remove();
+      toggleAdminTicketThread(tr, ticket);
+    });
+
+    threadCell.appendChild(replyForm);
+  } else {
+    const closed = document.createElement('p');
+    closed.style.cssText = 'font-size: 0.85rem; color: var(--bl-text-muted, #94a3b8);';
+    closed.textContent = ticket.status === 'cancelled' ? 'Reclamo cancelado por el usuario.' : 'Reclamo resuelto.';
+    threadCell.appendChild(closed);
+  }
+
+  threadRow.appendChild(threadCell);
+  tr.after(threadRow);
 }
 
 // --- F12-12: log de auditoría de admin (admin_audit_log, 47_admin_audit_log.sql) ---
