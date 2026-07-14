@@ -20,8 +20,8 @@
 ## 2) Vercel (hosting)
 
 1. Conectar el repo de GitHub (`fac7n3/ProyectoPdisc`, rama `main`) a un proyecto de Vercel — framework autodetectado como Vite.
-2. **Project Settings → Environment Variables**: cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (los mismos valores que están en el `.env` del repo — Vercel construye desde cero en cada deploy, no sirve el `dist/` commiteado directamente).
-3. Cada push a `main` dispara un deploy automático a producción. El repo debe estar **público** en GitHub — si se pone privado, Vercel deja de poder deployar (permisos del GitHub App).
+2. **Project Settings → Environment Variables**: cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (Supabase → Project Settings → API — el `.env` del repo ya **no** los tiene, ver nota abajo; Vercel construye desde cero en cada deploy, no sirve el `dist/` commiteado directamente).
+3. Cada push a `main` dispara un deploy automático a producción. **Si el repo pasa a privado, Vercel deja de poder deployar** (queda `BLOCKED` sin build logs) — causa real (investigado 2026-07-14): el plan **Hobby** de Vercel no permite deployar un repo privado cuando el proyecto pertenece a un **Team** (acá, `baradero-local`); es un chequeo de plan/billing, no un permiso del GitHub App que haya que reotorgar. Para tener el repo privado y seguir deployando: upgradear el team a Pro, o mover el proyecto a una cuenta personal, o reemplazar la integración Git nativa por GitHub Actions + `vercel deploy --prebuilt`.
 4. **Dominio propio** (cuando se compre uno): Project Settings → Domains → agregar el dominio, seguir las instrucciones de DNS. Después de esto, hay que **repetir el paso 4 de Supabase** (Site URL/Redirect URLs) con el nuevo dominio, o el login con Google se rompe de nuevo.
 
 ## 3) Mercado Pago (pagos)

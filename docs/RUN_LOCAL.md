@@ -9,8 +9,13 @@
 ## 2) Instalar y correr
 
 1. `npm install`
-2. `npm run dev`
-3. Abrir `http://localhost:5173` (si ese puerto esta ocupado, `serve` usa otro)
+2. Crear un archivo `.env` en la raíz (ya **no** se versiona en git desde 2026-07-14, hay que armarlo a mano en cada máquina nueva) con:
+   ```
+   VITE_SUPABASE_URL="https://otzhdwuaffcplrveuadc.supabase.co"
+   VITE_SUPABASE_ANON_KEY="<Supabase → Project Settings → API → anon public key>"
+   ```
+3. `npm run dev`
+4. Abrir `http://localhost:5173` (si ese puerto esta ocupado, `serve` usa otro)
 
 ## 3) Paginas principales
 
