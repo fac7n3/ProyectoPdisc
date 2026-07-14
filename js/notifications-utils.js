@@ -17,6 +17,7 @@ const TYPE_LABELS = {
   support_ticket_status_change: 'Tu reclamo cambió de estado',
   support_ticket_message: 'Soporte respondió a tu reclamo',
   favorite_price_drop: 'Bajó de precio un producto de tus favoritos',
+  mp_split_needs_review: 'Tu vinculación con Mercado Pago necesita revisión',
 };
 
 // Tipos que llevan un link a "Ver producto" (comparten el mismo payload.product_id).

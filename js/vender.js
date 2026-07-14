@@ -176,7 +176,7 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 let currentProductCount = 0;
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
 
-const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold';
+const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot';
 
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
@@ -210,8 +210,16 @@ async function loadDashboard(user, staffStoreId) {
     if (el) el.style.display = isStoreOwner ? '' : 'none';
   });
 
+  // Mercado Pago (P0-6): además de ser dueño, la tienda tiene que estar en el piloto.
+  const mpConnectSection = document.getElementById('mp-connect-section');
+  if (mpConnectSection) mpConnectSection.style.display = isStoreOwner && store.mp_split_pilot ? '' : 'none';
+
   if (isStoreOwner) {
     fillStoreProfileForm(store);
+    if (store.mp_split_pilot) {
+      await handleMpOauthReturn(store);
+      renderMpConnectSection(store);
+    }
   }
 
   const notificacionesContainer = document.getElementById('notificaciones-container');
@@ -455,6 +463,67 @@ function setupStoreProfileForm() {
     }
     setLoading(submitBtn, false, 'Guardar perfil');
   });
+}
+
+// --- P0-6: vinculación de Mercado Pago (split payments, solo tiendas piloto) ---
+
+/**
+ * Si volvemos de la pantalla de autorización de Mercado Pago (?code=&state=),
+ * intercambia el code por tokens vía la Edge Function mp-oauth-callback y
+ * muta `store.mp_collector_id` en memoria para que el render siguiente ya
+ * refleje el vínculo, sin necesitar un segundo fetch a la tienda.
+ */
+async function handleMpOauthReturn(store) {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code || state !== store.id) return;
+
+  const { data, error } = await supabase.functions.invoke('mp-oauth-callback', {
+    body: { code, store_id: store.id },
+  });
+
+  // Limpiar el ?code=&state= de la URL para que no se reintente al refrescar.
+  window.history.replaceState({}, '', window.location.pathname);
+
+  if (error || !data || data.error) {
+    showToast(data?.error || error?.message || 'No se pudo vincular Mercado Pago.', 'error');
+    return;
+  }
+
+  store.mp_collector_id = data.mp_collector_id;
+  showToast('¡Mercado Pago vinculado! Ya podés cobrar directo a tu cuenta.', 'success');
+}
+
+function renderMpConnectSection(store) {
+  const container = document.getElementById('mp-connect-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (store.mp_collector_id) {
+    const status = document.createElement('p');
+    status.style.cssText = 'color: var(--bl-primary); font-weight: 600;';
+    status.textContent = '✅ Tu cuenta de Mercado Pago está vinculada. Los pagos con MP de esta tienda van directo a tu cuenta.';
+    container.appendChild(status);
+    return;
+  }
+
+  const status = document.createElement('p');
+  status.style.cssText = 'color: var(--bl-text-secondary); font-size: 0.9rem;';
+  status.textContent = 'Vinculá tu cuenta de Mercado Pago para poder cobrar directo (piloto). Sin vincular, esta tienda solo puede cobrar por transferencia.';
+  container.appendChild(status);
+
+  const connectBtn = document.createElement('button');
+  connectBtn.type = 'button';
+  connectBtn.className = 'form-btn';
+  connectBtn.style.cssText = 'width: auto; padding: 0.75rem 1.5rem;';
+  connectBtn.textContent = 'Conectar con Mercado Pago';
+  connectBtn.addEventListener('click', () => {
+    const redirectUri = `${window.location.origin}/pages/vender.html`;
+    const authorizeUrl = `https://auth.mercadopago.com/authorization?client_id=${encodeURIComponent(import.meta.env.VITE_MP_CLIENT_ID)}&response_type=code&platform_id=mp&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(store.id)}`;
+    window.location.href = authorizeUrl;
+  });
+  container.appendChild(connectBtn);
 }
 
 // --- F12-03: cupones propios del vendedor (solo los de su propia tienda) ---

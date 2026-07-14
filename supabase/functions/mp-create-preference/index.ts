@@ -1,19 +1,34 @@
-// F2-07: crea una preferencia de Checkout Pro (Mercado Pago) para una o más
-// órdenes ya existentes (create_order, pending, payment_method='mercadopago').
-// El Access Token de MP es secreto y SOLO vive acá (Edge Function) — el
-// frontend nunca lo ve, solo recibe el link de checkout ya armado.
+// F2-07 + P0-6 (split payments piloto): crea una preferencia de Checkout Pro
+// para una o más órdenes ya existentes (create_order, pending,
+// payment_method='mercadopago').
 //
-// Seguridad: el cliente Supabase se crea con el JWT del usuario que llama
-// (no service role), así que las RLS existentes de `orders` (orders_select_own)
-// son las que deciden qué órdenes puede usar — mismo criterio que el resto del
-// proyecto (nunca confiar en datos del cliente sin revalidar server-side).
+// Antes de P0-6, esto cobraba TODO con la cuenta de Mercado Pago de la
+// plataforma (un solo MP_ACCESS_TOKEN global) -- ningún vendedor recibía
+// la plata directo. Ahora, si el vendedor de la tienda vinculó su cuenta
+// (store_mp_credentials + stores.mp_collector_id), la preferencia se arma
+// con EL ACCESS TOKEN DEL VENDEDOR + un `marketplace_fee` (comisión de la
+// plataforma, arranca en 0%). Simplificación a propósito del piloto: MP no
+// permite dividir un solo pago entre varios collector_id (una preferencia =
+// un solo vendedor), así que si `order_ids` mezcla más de una tienda, se
+// rechaza con un mensaje claro en vez de intentar algo que no es posible.
+//
+// Seguridad: el cliente scoped al JWT del llamador decide qué órdenes puede
+// pagar (RLS `orders_select_own`, igual que antes). El access_token del
+// vendedor se lee con un cliente service-role aparte (mismo modelo de
+// confianza que mp-webhook) -- nunca sale de esta función.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!;
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://proyectopdisc.vercel.app";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const MP_CLIENT_ID = Deno.env.get("MP_CLIENT_ID")!;
+const MP_CLIENT_SECRET = Deno.env.get("MP_CLIENT_SECRET")!;
+const MP_MARKETPLACE_FEE_PCT = Number(Deno.env.get("MP_MARKETPLACE_FEE_PCT") ?? "0");
+
+// Refrescar si falta menos de un día para el vencimiento (o ya venció).
+const REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +40,37 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+async function refreshVendorToken(
+  serviceClient: ReturnType<typeof createClient>,
+  storeId: string,
+  refreshToken: string,
+) {
+  const res = await fetch("https://api.mercadopago.com/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: MP_CLIENT_ID,
+      client_secret: MP_CLIENT_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    }),
+  });
+  const token = await res.json();
+  if (!res.ok || !token.access_token) {
+    return null;
+  }
+  const expiresAt = new Date(Date.now() + Number(token.expires_in ?? 0) * 1000).toISOString();
+  await serviceClient
+    .from("store_mp_credentials")
+    .update({
+      access_token: token.access_token,
+      refresh_token: token.refresh_token ?? refreshToken,
+      expires_at: expiresAt,
+    })
+    .eq("store_id", storeId);
+  return token.access_token as string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -68,6 +114,68 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const storeIds = [...new Set(orders.map((o: { store_id: string }) => o.store_id))];
+    if (storeIds.length > 1) {
+      return jsonResponse(
+        {
+          error:
+            "Mercado Pago todavía no soporta pagar a varios comercios en un solo pago. Pagá cada comercio por separado.",
+        },
+        400,
+      );
+    }
+    const storeId = storeIds[0] as string;
+
+    const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { data: store, error: storeError } = await serviceClient
+      .from("stores")
+      .select("mp_split_pilot, mp_collector_id")
+      .eq("id", storeId)
+      .single();
+
+    if (storeError || !store?.mp_split_pilot || !store.mp_collector_id) {
+      return jsonResponse(
+        { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
+        400,
+      );
+    }
+
+    const { data: creds, error: credsError } = await serviceClient
+      .from("store_mp_credentials")
+      .select("access_token, refresh_token, expires_at")
+      .eq("store_id", storeId)
+      .single();
+
+    if (credsError || !creds) {
+      return jsonResponse(
+        { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
+        400,
+      );
+    }
+
+    let vendorAccessToken = creds.access_token as string;
+    const expiresAt = new Date(creds.expires_at as string).getTime();
+    if (expiresAt - Date.now() < REFRESH_MARGIN_MS) {
+      const refreshed = await refreshVendorToken(serviceClient, storeId, creds.refresh_token as string);
+      if (!refreshed) {
+        return jsonResponse(
+          {
+            error:
+              "El vendedor tiene que volver a vincular su cuenta de Mercado Pago (el acceso venció).",
+          },
+          409,
+        );
+      }
+      vendorAccessToken = refreshed;
+    }
+
+    const totalAmount = orders.reduce(
+      (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
+      0,
+    );
+    const marketplaceFee = Math.round((totalAmount * MP_MARKETPLACE_FEE_PCT) / 100);
+
     const items = orders.map((o: { id: string; total_price: number }) => ({
       title: `Pedido Baradero Local #${o.id.slice(0, 8)}`,
       quantity: 1,
@@ -79,10 +187,11 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${vendorAccessToken}`,
       },
       body: JSON.stringify({
         items,
+        marketplace_fee: marketplaceFee,
         external_reference: orderIds.join(","),
         back_urls: {
           success: `${SITE_URL}/pages/perfil.html?mp=success`,

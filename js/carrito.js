@@ -11,7 +11,7 @@ let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
 let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
 let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEvents()
 let shippingAddress = '';
-let paymentMethod = 'mercadopago'; // 'mercadopago' | 'simulado' | 'transferencia' — ver initPaymentMethodEvents()
+let paymentMethod = 'mercadopago'; // 'mercadopago' | 'transferencia' — ver initPaymentMethodEvents()
 
 // F12-04: fallback antes de que termine de cargar el envío real de cada
 // tienda (validateCartFreshness lo trae) — coincide con el default real en
@@ -25,6 +25,10 @@ const FLAT_SHIPPING_FEE = 350;
 // se aprovecha esa misma consulta para no duplicar un fetch).
 const productStoreId = new Map();
 const storeShippingById = new Map();
+
+// P0-6: storeId -> si esa tienda tiene Mercado Pago vinculado (piloto de
+// split payments). Poblado por validateCartFreshness junto al resto.
+const storeMpEligibleById = new Map();
 
 /** Agrupa el carrito por tienda y calcula el envío real de cada una (post-descuento). */
 function calculateShippingByStore(cart, discount) {
@@ -318,15 +322,22 @@ async function loadAddressSelector() {
   });
 }
 
-/** Inicializar selector de método de pago (mercadopago / simulado / transferencia) */
+/**
+ * Inicializar selector de método de pago (mercadopago / transferencia).
+ *
+ * Bug encontrado arreglando P0-6: el guard de acá abajo exigía también un
+ * #payment-simulado que ya no existe en el HTML (se sacó en P1-1) -- daba
+ * `null` siempre, así que esta función retornaba temprano y NUNCA conectaba
+ * ningún listener (ni el de abrir/cerrar el desplegable, ni el de elegir
+ * método de pago). Corregido sacando esa opción del guard.
+ */
 function initPaymentMethodEvents() {
   const header = document.getElementById('payment-header');
   const content = document.getElementById('payment-content');
   const mercadopagoRadio = document.getElementById('payment-mercadopago');
-  const simuladoRadio = document.getElementById('payment-simulado');
   const transferenciaRadio = document.getElementById('payment-transferencia');
 
-  if (!header || !content || !mercadopagoRadio || !simuladoRadio || !transferenciaRadio) return;
+  if (!header || !content || !mercadopagoRadio || !transferenciaRadio) return;
 
   header.addEventListener('click', () => {
     const isHidden = content.style.display === 'none';
@@ -334,16 +345,44 @@ function initPaymentMethodEvents() {
     header.classList.toggle('is-open', isHidden);
   });
 
-  function updateMethod() {
-    if (mercadopagoRadio.checked) paymentMethod = 'mercadopago';
-    else if (transferenciaRadio.checked) paymentMethod = 'transferencia';
-    else paymentMethod = 'simulado';
+  mercadopagoRadio.addEventListener('change', syncPaymentMethod);
+  transferenciaRadio.addEventListener('change', syncPaymentMethod);
+  syncPaymentMethod(); // sincroniza con lo que esté marcado por default en el HTML
+}
+
+function syncPaymentMethod() {
+  const transferenciaRadio = document.getElementById('payment-transferencia');
+  paymentMethod = transferenciaRadio?.checked ? 'transferencia' : 'mercadopago';
+}
+
+/**
+ * P0-6: Mercado Pago solo se ofrece si TODAS las tiendas presentes en el
+ * carrito tienen split vinculado (piloto) -- MP no permite dividir un solo
+ * pago entre varios vendedores, así que un carrito multi-tienda o con una
+ * tienda no vinculada no puede pagarse con MP todavía. Se llama después de
+ * validateCartFreshness, que ya trae el dato real de cada tienda.
+ */
+function updateMpAvailability() {
+  const mercadopagoRadio = document.getElementById('payment-mercadopago');
+  const mercadopagoLabel = document.getElementById('payment-mercadopago-label');
+  if (!mercadopagoRadio) return;
+
+  const storeIdsInCart = [...new Set(productStoreId.values())];
+  const eligible = storeIdsInCart.length > 0 && storeIdsInCart.every((id) => storeMpEligibleById.get(id));
+
+  mercadopagoRadio.disabled = !eligible;
+  if (mercadopagoLabel) {
+    mercadopagoLabel.title = eligible
+      ? ''
+      : 'Mercado Pago no está disponible para este carrito todavía (el comercio no tiene MP vinculado, o el carrito mezcla varios comercios).';
+    mercadopagoLabel.style.opacity = eligible ? '' : '0.5';
   }
 
-  mercadopagoRadio.addEventListener('change', updateMethod);
-  simuladoRadio.addEventListener('change', updateMethod);
-  transferenciaRadio.addEventListener('change', updateMethod);
-  updateMethod(); // sincroniza con lo que esté marcado por default en el HTML
+  if (!eligible && mercadopagoRadio.checked) {
+    const transferenciaRadio = document.getElementById('payment-transferencia');
+    if (transferenciaRadio) transferenciaRadio.checked = true;
+    syncPaymentMethod();
+  }
 }
 
 /** Inicializar lógica del cupón de descuento */
@@ -619,7 +658,7 @@ async function validateCartFreshness() {
 
   const { data: products, error } = await supabase
     .from('products')
-    .select('id, price, stock, is_active, store_id, stores(delivery_fee, free_shipping_threshold)')
+    .select('id, price, stock, is_active, store_id, stores(delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
     .in('id', cart.map((item) => item.id));
 
   if (error) {
@@ -634,6 +673,7 @@ async function validateCartFreshness() {
   // constante global igual para todo el carrito).
   productStoreId.clear();
   storeShippingById.clear();
+  storeMpEligibleById.clear();
   (products || []).forEach((p) => {
     if (!p.store_id) return;
     productStoreId.set(p.id, p.store_id);
@@ -642,8 +682,12 @@ async function validateCartFreshness() {
         deliveryFee: p.stores.delivery_fee,
         freeShippingThreshold: p.stores.free_shipping_threshold,
       });
+      // P0-6: piloto de split payments -- MP solo se ofrece si la tienda
+      // tiene split_pilot activo Y ya vinculó su cuenta (collector_id real).
+      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_split_pilot && p.stores.mp_collector_id));
     }
   });
+  updateMpAvailability();
 
   const removedNames = [];
   const adjustedNames = [];

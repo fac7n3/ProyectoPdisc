@@ -308,6 +308,14 @@
               </form>
             </div>
 
+            <!-- Conectar Mercado Pago (P0-6, piloto): oculto por defecto, solo se muestra si stores.mp_split_pilot=true (seteado a mano) -->
+            <div id="mp-connect-section" style="margin-top: 3rem; display: none;">
+              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Mercado Pago</h2>
+              <div style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
+                <div id="mp-connect-container"></div>
+              </div>
+            </div>
+
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
             <div id="my-coupons-section" style="margin-top: 3rem;">

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-13 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53).
+> Última actualización: 2026-07-15 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53; P0-6 split payments MP Marketplace implementado en modo piloto, falta activación con credenciales reales, ver docs/BACKLOG_MEJORAS.md).
 
 > ## ⚠️ PRIMERA ACCIÓN DE CADA SESIÓN
 > **Antes de cualquier otra tarea, leer [docs/MIGRACIONES_PENDIENTES.md](docs/MIGRACIONES_PENDIENTES.md).**
@@ -280,6 +280,60 @@ de valor con el acento cálido ya existente en la paleta), **F9-06** (estados va
 micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). Detalle completo,
 qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
+
+## P0-6: Split payments con Mercado Pago Marketplace, modo piloto (2026-07-15)
+Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`). Antes, `mp-create-preference`
+cobraba TODO con la cuenta de MP de la propia plataforma (`MP_ACCESS_TOKEN` global) — ningún
+vendedor recibía la plata directo. Decisiones del usuario: split automático vía OAuth (no
+conciliación manual), comisión de la plataforma arranca en **0%** y se sube de a poco con el
+tiempo (queda como env var `MP_MARKETPLACE_FEE_PCT`, no columna, para subirla sin migración), un
+vendedor sin Mercado Pago vinculado solo puede cobrar por transferencia, y se prueba primero con
+1-2 vendedores piloto (`stores.mp_split_pilot`, activado a mano por SQL) antes de abrirlo a todos.
+
+Mercado Pago no permite dividir un solo pago entre varios `collector_id` (verificado contra la
+documentación oficial: una preferencia = un solo vendedor) — por eso, si el carrito mezcla más de
+una tienda, Mercado Pago directamente no se ofrece como opción (transferencia/simulado siguen
+andando); se resuelve el caso multi-tienda encadenando pagos más adelante, no en el piloto.
+
+- **Migración 56** (`db/schema/56_mp_marketplace_split.sql`, aplicada): `stores.mp_collector_id`
+  (user_id de MP del vendedor vinculado) + `stores.mp_split_pilot` (gate manual del piloto) +
+  `orders.payment_status` con un valor nuevo `needs_review` (el webhook no pudo reconfirmar un pago
+  porque el token del vendedor venció y no se pudo refrescar — no se pierde el pago, queda para que
+  el admin lo resuelva a mano) + tabla nueva `store_mp_credentials` (access_token/refresh_token por
+  vendedor) con **RLS habilitada sin ninguna policy** — ni el dueño de la tienda puede leerla vía
+  API, solo las Edge Functions con `SUPABASE_SERVICE_ROLE_KEY` (mismo modelo de confianza que ya
+  usaba `mp-webhook`). Primera vez que el proyecto guarda un secreto de terceros en una tabla.
+- **Edge Function nueva `mp-oauth-callback`**: intercambia el `code` de la vinculación OAuth del
+  vendedor por `access_token`/`refresh_token`, los guarda en `store_mp_credentials`, setea
+  `stores.mp_collector_id`. Valida ownership del `store_id` contra el JWT del que llama.
+- **`mp-create-preference` reescrita**: agrupa `order_ids` por tienda (rechaza con mensaje claro si
+  hay más de una), usa el `access_token` del vendedor (refrescándolo si venció) + `marketplace_fee`
+  calculado como % del total, en vez del token global de la plataforma.
+- **`mp-webhook` actualizada**: para saber con qué token re-confirmar el pago (`GET
+  /v1/payments/{id}`), usa el campo `user_id` que trae el payload del webhook y lo matchea contra
+  `stores.mp_collector_id` — **este comportamiento no está 100% confirmado en la documentación
+  pública de Mercado Pago**, hay que verificarlo empíricamente con el primer pago real de split en
+  el piloto (si no matchea, el fallback al token global de la plataforma simplemente no encuentra
+  el pago — sin riesgo de seguridad, solo tarda en confirmarse). Si no matchea ningún vendedor,
+  cae al `MP_ACCESS_TOKEN` global (compatibilidad con órdenes `mercadopago` `pending` de antes de
+  esta migración).
+- **Frontend**: sección nueva "Mercado Pago" en `vender.js`/`vender.html` (oculta salvo
+  `mp_split_pilot=true`), botón "Conectar con Mercado Pago" que redirige a la autorización OAuth de
+  MP y vuelve a `vender.html?code=&state=`. En `carrito.js`, la opción "Mercado Pago" del checkout
+  se deshabilita si el carrito tiene productos de una tienda no vinculada/no piloto, o de más de
+  una tienda (`updateMpAvailability`, llamada después de `validateCartFreshness`).
+- **Bug propio encontrado de paso** (no relacionado a MP): `initPaymentMethodEvents()` en
+  `carrito.js` exigía un `#payment-simulado` en su guard que ya no existe en el HTML desde que se
+  sacó el pago simulado del carrito (P1-1 del backlog) — el guard daba `null` siempre, así que la
+  función retornaba temprano y **nunca conectaba ningún listener de método de pago** (ni el
+  desplegable, ni elegir Mercado Pago/transferencia). Corregido sacando esa condición del guard.
+- **Falta para poder probarlo** (no es código, son datos/credenciales que solo el usuario puede
+  cargar): `MP_CLIENT_ID`/`MP_CLIENT_SECRET`/`MP_MARKETPLACE_FEE_PCT=0` como Edge Function Secrets
+  en Supabase (se consiguen en el panel de Mercado Pago Developers, app de Marketplace);
+  `VITE_MP_CLIENT_ID` (público) en `.env`/Vercel; activar el piloto a mano por SQL para 1-2 tiendas
+  de prueba (`update public.stores set mp_split_pilot = true where id = '<store_id>'`); probar con
+  las credenciales de prueba de Mercado Pago (vendedor comprador de prueba, no plata real) antes de
+  confiar en el flujo. Detalle completo en `docs/BACKLOG_MEJORAS.md` (P0-6).
 
 ## Dos bugs reportados por el usuario (2026-07-13)
 

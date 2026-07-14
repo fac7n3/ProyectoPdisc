@@ -156,10 +156,10 @@
         color: white;
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-DI6mAAzO.js"></script>
+    <script type="module" crossorigin src="/assets/vender-Bp2sx7E7.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-lK0X-fRI.js">
-    <link rel="modulepreload" crossorigin href="/assets/notifications-utils-BdqHu251.js">
+    <link rel="modulepreload" crossorigin href="/assets/notifications-utils-_LZrwgN8.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
@@ -312,6 +312,14 @@
                 </div>
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Guardar perfil</button>
               </form>
+            </div>
+
+            <!-- Conectar Mercado Pago (P0-6, piloto): oculto por defecto, solo se muestra si stores.mp_split_pilot=true (seteado a mano) -->
+            <div id="mp-connect-section" style="margin-top: 3rem; display: none;">
+              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Mercado Pago</h2>
+              <div style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
+                <div id="mp-connect-container"></div>
+              </div>
             </div>
 
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
