@@ -11,157 +11,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="../Assets/styles/auth.css" />
+    <link rel="stylesheet" href="../Assets/styles/admin.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-      .admin-container {
-        max-width: 1000px;
-        margin: 3rem auto;
-        padding: 2rem;
-        background: var(--bl-surface);
-        border: 1px solid var(--bl-border);
-        border-radius: var(--bl-radius-xl);
-        box-shadow: var(--bl-shadow-lg);
-      }
-      .admin-header {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        border-bottom: 1px solid var(--bl-border);
-        padding-bottom: 1rem;
-      }
-      .admin-header h1 {
-        color: var(--bl-primary-deeper);
-        margin: 0;
-      }
-      .table-container {
-        overflow-x: auto;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-      }
-      th, td {
-        padding: 1rem;
-        text-align: left;
-        border-bottom: 1px solid var(--bl-border);
-      }
-      th {
-        background: var(--bl-surface-alt);
-        color: var(--bl-text-secondary);
-        font-weight: 600;
-      }
-      .action-btn {
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: var(--bl-radius-sm);
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        margin-right: 0.5rem;
-      }
-      .btn-approve {
-        background: #10b981;
-        color: white;
-      }
-      .btn-approve:hover { background: #059669; }
-      .btn-reject {
-        background: #ef4444;
-        color: white;
-      }
-      .btn-reject:hover { background: #dc2626; }
-      .status-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: var(--bl-radius-full);
-        font-size: 0.875rem;
-        font-weight: 600;
-      }
-      .status-pending { background: #fef3c7; color: #d97706; }
-      .status-approved { background: #d1fae5; color: #059669; }
-      .status-rejected { background: #fee2e2; color: #dc2626; }
-      .status-suspended { background: #f3e8ff; color: #7c3aed; }
-
-      #admin-content { display: none; }
-
-      .admin-inline-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: end;
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: var(--bl-surface-alt);
-        border-radius: var(--bl-radius-md);
-      }
-      .admin-inline-form .form-group {
-        margin-bottom: 0;
-      }
-      .admin-inline-form label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--bl-text-secondary);
-        margin-bottom: 0.25rem;
-      }
-      .admin-inline-form input {
-        padding: 0.5rem 0.75rem;
-        border: 1px solid var(--bl-border);
-        border-radius: var(--bl-radius-sm);
-        font-family: inherit;
-      }
-      .btn-suspend {
-        background: #7c3aed;
-        color: white;
-      }
-      .btn-suspend:hover { background: #6d28d9; }
-      .btn-reactivate {
-        background: #10b981;
-        color: white;
-      }
-      .btn-reactivate:hover { background: #059669; }
-      .admin-metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 1.5rem;
-      }
-      .admin-metric-card {
-        background: var(--bl-surface-alt);
-        padding: 1.5rem;
-        border-radius: var(--bl-radius-lg);
-        text-align: center;
-      }
-      .admin-metric-card h3 {
-        font-size: 1.75rem;
-        color: var(--bl-primary);
-        margin-bottom: 0.4rem;
-      }
-      .admin-metric-card p {
-        color: var(--bl-text-secondary);
-        font-weight: 600;
-        font-size: 0.85rem;
-      }
-
-      @media (max-width: 768px) {
-        .admin-container {
-          margin: 1rem auto;
-          padding: 1.25rem;
-          border-radius: var(--bl-radius-lg);
-        }
-        .admin-header h1 {
-          font-size: 1.25rem;
-        }
-        th, td {
-          padding: 0.6rem;
-          font-size: 0.85rem;
-        }
-        .admin-inline-form {
-          padding: 0.75rem;
-        }
-      }
-    </style>
   </head>
   <body>
     <!-- Loading screen -->
@@ -172,354 +23,514 @@
 
     <!-- Contenido principal -->
     <div id="main-content">
-      <nav class="navbar">
-        <div class="navbar__top">
-          <a href="./home.html" class="navbar__logo">
-            <span class="navbar__logo-icon">
-              <svg viewBox="0 0 100 100" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="admin-shell">
+        <!-- ===================== SIDEBAR ===================== -->
+        <aside class="admin-sidebar" id="admin-sidebar" aria-label="Navegación del panel">
+          <div class="admin-sidebar__brand">
+            <span class="admin-sidebar__logo">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M50 0 C 22.4 0 0 22.4 0 50 C 0 75 50 100 50 100 C 50 100 100 75 100 50 C 100 22.4 77.6 0 50 0 Z" fill="#2d4a7c"/>
                 <rect x="23" y="25" width="9" height="30" fill="#ffffff"/>
                 <path d="M 6 65 L 50 33 L 94 65" stroke="#ffffff" stroke-width="11" stroke-linecap="butt" stroke-linejoin="miter"/>
               </svg>
             </span>
-            <div class="navbar__logo-text">
-              <span class="navbar__logo-title">Baradero Local</span>
-              <span class="navbar__logo-subtitle">Panel SuperAdmin</span>
-            </div>
-          </a>
-          <div class="navbar__actions">
-            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+            <span class="admin-sidebar__brand-text">
+              <span class="admin-sidebar__brand-title">Baradero Local</span>
+              <span class="admin-sidebar__brand-sub">Panel SuperAdmin</span>
+            </span>
           </div>
+
+          <nav class="admin-nav" id="admin-nav" aria-label="Secciones">
+            <div class="admin-nav__group">
+              <p class="admin-nav__group-label">Panel</p>
+              <button type="button" class="admin-nav__item" data-target="metrics">
+                <i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Resumen</span>
+              </button>
+            </div>
+
+            <div class="admin-nav__group">
+              <p class="admin-nav__group-label">Solicitudes</p>
+              <button type="button" class="admin-nav__item" data-target="seller-requests">
+                <i class="fa-solid fa-store" aria-hidden="true"></i><span>Comercios</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="delivery-requests">
+                <i class="fa-solid fa-motorcycle" aria-hidden="true"></i><span>Repartidores</span>
+              </button>
+            </div>
+
+            <div class="admin-nav__group">
+              <p class="admin-nav__group-label">Catálogo</p>
+              <button type="button" class="admin-nav__item" data-target="categories">
+                <i class="fa-solid fa-tags" aria-hidden="true"></i><span>Categorías</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="coupons">
+                <i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Cupones</span>
+              </button>
+            </div>
+
+            <div class="admin-nav__group">
+              <p class="admin-nav__group-label">Moderación</p>
+              <button type="button" class="admin-nav__item" data-target="stores-mod">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span>Comercios</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="products-mod">
+                <i class="fa-solid fa-box" aria-hidden="true"></i><span>Productos</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="repartidores-mod">
+                <i class="fa-solid fa-id-badge" aria-hidden="true"></i><span>Repartidores</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="reviews-mod">
+                <i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i><span>Reseñas</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="proofs">
+                <i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Comprobantes</span>
+              </button>
+            </div>
+
+            <div class="admin-nav__group">
+              <p class="admin-nav__group-label">Operaciones</p>
+              <button type="button" class="admin-nav__item" data-target="revocations">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span>Arrepentimientos</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="support">
+                <i class="fa-solid fa-headset" aria-hidden="true"></i><span>Soporte</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="error-logs">
+                <i class="fa-solid fa-bug" aria-hidden="true"></i><span>Errores</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="audit-log">
+                <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><span>Auditoría</span>
+              </button>
+            </div>
+          </nav>
+
+          <div class="admin-sidebar__foot">
+            <a href="./home.html" class="admin-nav__item">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Volver al sitio</span>
+            </a>
+          </div>
+        </aside>
+
+        <div class="admin-scrim" id="admin-scrim" hidden></div>
+
+        <!-- ===================== ÁREA PRINCIPAL ===================== -->
+        <div class="admin-main">
+          <header class="admin-topbar">
+            <button type="button" class="admin-topbar__menu" id="admin-menu-toggle" aria-label="Abrir menú" aria-controls="admin-sidebar" aria-expanded="false">
+              <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+            <div class="admin-topbar__title">
+              <span class="admin-topbar__eyebrow">Panel de administración</span>
+              <h1 class="admin-topbar__heading" id="admin-current-title">Resumen</h1>
+            </div>
+            <span class="admin-topbar__spacer"></span>
+            <a href="./home.html" class="admin-btn admin-btn--ghost admin-topbar__home">
+              <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i><span>Ver sitio</span>
+            </a>
+          </header>
+
+          <main class="admin-content-wrap">
+            <div id="admin-content">
+              <!-- ===== Resumen / métricas ===== -->
+              <section class="admin-section" data-section="metrics">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Resumen general</h2>
+                    <p class="admin-section__subtitle">Métricas globales de la plataforma en tiempo real.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-metrics"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-metrics-grid" id="metrics-grid">
+                  <!-- Se llenará con JS -->
+                </div>
+              </section>
+
+              <!-- ===== Solicitudes de comercios ===== -->
+              <section class="admin-section" data-section="seller-requests">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Solicitudes de comercios</h2>
+                    <p class="admin-section__subtitle">Revisá y aprobá los comercios que quieren vender en Baradero Local.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Comercio</th>
+                          <th>CUIT</th>
+                          <th>Rubro</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="requests-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Solicitudes de repartidores ===== -->
+              <section class="admin-section" data-section="delivery-requests">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Solicitudes de repartidores</h2>
+                    <p class="admin-section__subtitle">Aprobá a quienes quieren repartir pedidos en la ciudad.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-delivery"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Nombre</th>
+                          <th>Teléfono</th>
+                          <th>Vehículo</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="delivery-requests-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Categorías ===== -->
+              <section class="admin-section" data-section="categories">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Categorías</h2>
+                    <p class="admin-section__subtitle">Administrá los rubros disponibles para los productos del catálogo.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-categories"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <form class="admin-inline-form" id="category-form">
+                  <div class="form-group">
+                    <label for="cat-name">Nombre</label>
+                    <input type="text" id="cat-name" placeholder="Ej: Panadería" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="cat-slug">Slug</label>
+                    <input type="text" id="cat-slug" placeholder="Ej: panaderia" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="cat-icon">Ícono (clase Font Awesome)</label>
+                    <input type="text" id="cat-icon" placeholder="Ej: fa-solid fa-bread-slice" />
+                  </div>
+                  <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-plus"></i> Agregar</button>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Nombre</th>
+                          <th>Slug</th>
+                          <th>Ícono</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="categories-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Cupones ===== -->
+              <section class="admin-section" data-section="coupons">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Cupones</h2>
+                    <p class="admin-section__subtitle">Creá y gestioná códigos de descuento para tus clientes.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-coupons"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <form class="admin-inline-form" id="coupon-form">
+                  <div class="form-group">
+                    <label for="coupon-code">Código</label>
+                    <input type="text" id="coupon-code" placeholder="Ej: BIENVENIDA10" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="coupon-discount">Descuento %</label>
+                    <input type="number" id="coupon-discount" min="1" max="100" placeholder="10" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="coupon-expires">Vence</label>
+                    <input type="date" id="coupon-expires" />
+                  </div>
+                  <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-plus"></i> Agregar</button>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Código</th>
+                          <th>Descuento</th>
+                          <th>Vence</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="coupons-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Moderación · Comercios ===== -->
+              <section class="admin-section" data-section="stores-mod">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Moderación · Comercios</h2>
+                    <p class="admin-section__subtitle">Suspendé o reactivá comercios ya aprobados según su comportamiento.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-stores-mod"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Comercio</th>
+                          <th>CUIT</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="stores-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Moderación · Productos ===== -->
+              <section class="admin-section" data-section="products-mod">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Moderación · Productos</h2>
+                    <p class="admin-section__subtitle">Buscá un producto por nombre para suspenderlo o reactivarlo.</p>
+                  </div>
+                </div>
+                <form class="admin-inline-form" id="product-search-form">
+                  <div class="form-group">
+                    <label for="product-search-input">Nombre del producto</label>
+                    <input type="text" id="product-search-input" placeholder="Buscar..." required />
+                  </div>
+                  <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Producto</th>
+                          <th>Comercio</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="products-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Moderación · Repartidores ===== -->
+              <section class="admin-section" data-section="repartidores-mod">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Moderación · Repartidores</h2>
+                    <p class="admin-section__subtitle">Suspendé o reactivá repartidores activos en la plataforma.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-repartidores-mod"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Nombre</th>
+                          <th>Email</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="repartidores-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Moderación · Reseñas reportadas ===== -->
+              <section class="admin-section" data-section="reviews-mod">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Moderación · Reseñas reportadas</h2>
+                    <p class="admin-section__subtitle">Ocultá o mostrá reseñas que fueron reportadas por los usuarios.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-reviews-mod"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Reseña</th>
+                          <th>Motivo del reporte</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="reviews-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Moderación · Comprobantes de pago ===== -->
+              <section class="admin-section" data-section="proofs">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Comprobantes de pago pendientes</h2>
+                    <p class="admin-section__subtitle">Verificá los comprobantes de transferencia y confirmá o rechazá cada pago.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-proofs"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Orden</th>
+                          <th>Comercio</th>
+                          <th>Monto</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="proofs-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Solicitudes de arrepentimiento ===== -->
+              <section class="admin-section" data-section="revocations">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Solicitudes de arrepentimiento</h2>
+                    <p class="admin-section__subtitle">Auditoría de las solicitudes de cancelación para que ninguna quede sin atender.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-revocations"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Orden</th>
+                          <th>Comercio</th>
+                          <th>Total</th>
+                          <th>Solicitado</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody id="revocations-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Soporte / Reclamos ===== -->
+              <section class="admin-section" data-section="support">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Soporte / Reclamos</h2>
+                    <p class="admin-section__subtitle">Seguí y actualizá el estado de los reclamos enviados por los usuarios.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-support"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Usuario</th>
+                          <th>Asunto</th>
+                          <th>Mensaje</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody id="support-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Errores registrados ===== -->
+              <section class="admin-section" data-section="error-logs">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Errores registrados</h2>
+                    <p class="admin-section__subtitle">Últimos 100 errores de cliente capturados para diagnóstico.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-error-logs"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Usuario</th>
+                          <th>Mensaje</th>
+                          <th>URL</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="error-logs-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Log de auditoría ===== -->
+              <section class="admin-section" data-section="audit-log">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Log de auditoría</h2>
+                    <p class="admin-section__subtitle">Historial de las acciones realizadas por administradores.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-audit-log"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Admin</th>
+                          <th>Acción</th>
+                          <th>Tabla</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="audit-log-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </main>
         </div>
-      </nav>
-
-      <main>
-        <div class="admin-container" id="admin-content">
-          <div class="admin-header" data-section="seller-requests">
-            <h1>Solicitudes de Comercios</h1>
-            <button class="action-btn" id="btn-refresh" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Comercio</th>
-                  <th>CUIT</th>
-                  <th>Rubro</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="requests-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="admin-header" style="margin-top: 3rem;" data-section="delivery-requests">
-            <h1>Solicitudes de Repartidores</h1>
-            <button class="action-btn" id="btn-refresh-delivery" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Nombre</th>
-                  <th>Teléfono</th>
-                  <th>Vehículo</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="delivery-requests-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F6-05: Métricas globales -->
-          <div class="admin-header" style="margin-top: 3rem;" data-section="metrics">
-            <h1>Métricas Globales</h1>
-            <button class="action-btn" id="btn-refresh-metrics" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="admin-metrics-grid" id="metrics-grid">
-            <!-- Se llenará con JS -->
-          </div>
-
-          <!-- F6-02: CRUD de categorías -->
-          <div class="admin-header" style="margin-top: 3rem;" data-section="categories">
-            <h1>Categorías</h1>
-            <button class="action-btn" id="btn-refresh-categories" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <form class="admin-inline-form" id="category-form">
-            <div class="form-group">
-              <label for="cat-name">Nombre</label>
-              <input type="text" id="cat-name" placeholder="Ej: Panadería" required />
-            </div>
-            <div class="form-group">
-              <label for="cat-slug">Slug</label>
-              <input type="text" id="cat-slug" placeholder="Ej: panaderia" required />
-            </div>
-            <div class="form-group">
-              <label for="cat-icon">Ícono (clase Font Awesome)</label>
-              <input type="text" id="cat-icon" placeholder="Ej: fa-solid fa-bread-slice" />
-            </div>
-            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Agregar</button>
-          </form>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Slug</th>
-                  <th>Ícono</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="categories-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F6-03: CRUD de cupones -->
-          <div class="admin-header" style="margin-top: 3rem;" data-section="coupons">
-            <h1>Cupones</h1>
-            <button class="action-btn" id="btn-refresh-coupons" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <form class="admin-inline-form" id="coupon-form">
-            <div class="form-group">
-              <label for="coupon-code">Código</label>
-              <input type="text" id="coupon-code" placeholder="Ej: BIENVENIDA10" required />
-            </div>
-            <div class="form-group">
-              <label for="coupon-discount">Descuento %</label>
-              <input type="number" id="coupon-discount" min="1" max="100" placeholder="10" required />
-            </div>
-            <div class="form-group">
-              <label for="coupon-expires">Vence</label>
-              <input type="date" id="coupon-expires" />
-            </div>
-            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Agregar</button>
-          </form>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Descuento</th>
-                  <th>Vence</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="coupons-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F6-04: Moderación -->
-          <div class="admin-header" style="margin-top: 3rem;" data-section="stores-mod">
-            <h1>Moderación · Comercios</h1>
-            <button class="action-btn" id="btn-refresh-stores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Comercio</th>
-                  <th>CUIT</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="stores-mod-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="admin-header" style="margin-top: 2rem;" data-section="products-mod">
-            <h1>Moderación · Buscar producto</h1>
-          </div>
-          <form class="admin-inline-form" id="product-search-form">
-            <div class="form-group">
-              <label for="product-search-input">Nombre del producto</label>
-              <input type="text" id="product-search-input" placeholder="Buscar..." required />
-            </div>
-            <button type="submit" class="action-btn" style="background: var(--bl-primary); color: white;">Buscar</button>
-          </form>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Comercio</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="products-mod-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="admin-header" style="margin-top: 2rem;" data-section="repartidores-mod">
-            <h1>Moderación · Repartidores</h1>
-            <button class="action-btn" id="btn-refresh-repartidores-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="repartidores-mod-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="admin-header" style="margin-top: 2rem;" data-section="proofs">
-            <h1>Moderación · Comprobantes de pago pendientes</h1>
-            <button class="action-btn" id="btn-refresh-proofs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Orden</th>
-                  <th>Comercio</th>
-                  <th>Monto</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="proofs-mod-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F7-03: reseñas reportadas -->
-          <div class="admin-header" style="margin-top: 2rem;" data-section="reviews-mod">
-            <h1>Moderación · Reseñas reportadas</h1>
-            <button class="action-btn" id="btn-refresh-reviews-mod" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Reseña</th>
-                  <th>Motivo del reporte</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="reviews-mod-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F12-02: solicitudes de arrepentimiento (auditoría cross-tienda) -->
-          <div class="admin-header" style="margin-top: 2rem;" data-section="revocations">
-            <h1>Solicitudes de arrepentimiento</h1>
-            <button class="action-btn" id="btn-refresh-revocations" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Orden</th>
-                  <th>Comercio</th>
-                  <th>Total</th>
-                  <th>Solicitado</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="revocations-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F12-10: errores de cliente registrados (error_logs, A113-171) -->
-          <div class="admin-header" style="margin-top: 2rem;" data-section="error-logs">
-            <h1>Errores registrados</h1>
-            <button class="action-btn" id="btn-refresh-error-logs" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Usuario</th>
-                  <th>Mensaje</th>
-                  <th>URL</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="error-logs-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F12-11: soporte/reclamos -->
-          <div class="admin-header" style="margin-top: 2rem;" data-section="support">
-            <h1>Soporte / Reclamos</h1>
-            <button class="action-btn" id="btn-refresh-support" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Usuario</th>
-                  <th>Asunto</th>
-                  <th>Mensaje</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="support-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- F12-12: log de auditoría de acciones de admin -->
-          <div class="admin-header" style="margin-top: 2rem;" data-section="audit-log">
-            <h1>Log de auditoría</h1>
-            <button class="action-btn" id="btn-refresh-audit-log" style="background: var(--bl-primary); color: white;"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Admin</th>
-                  <th>Acción</th>
-                  <th>Tabla</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="audit-log-tbody">
-                <!-- Se llenará con JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+      </div>
 
       <!-- Notificación Toast -->
       <div class="toast" id="toast" aria-live="polite" role="status"></div>
