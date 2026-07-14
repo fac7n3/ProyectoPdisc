@@ -322,26 +322,40 @@ async function loadGlobalMetrics() {
   const totalSales = (paidOrders || []).reduce((sum, o) => sum + o.total_price, 0);
 
   const metrics = [
-    { label: 'Usuarios totales', value: (profiles || []).length },
-    { label: 'Vendedores', value: roleCounts.vendedor || 0 },
-    { label: 'Repartidores', value: roleCounts.repartidor || 0 },
-    { label: 'Comercios aprobados', value: storeCounts.approved || 0 },
-    { label: 'Comercios suspendidos', value: storeCounts.suspended || 0 },
-    { label: 'Ventas totales', value: `$${totalSales.toLocaleString('es-AR')}` },
-    { label: 'Entregas en curso', value: (deliveryCounts.assigned || 0) + (deliveryCounts.picked_up || 0) },
-    { label: 'Entregas completadas', value: deliveryCounts.delivered || 0 },
+    { label: 'Usuarios totales', value: (profiles || []).length, icon: 'fa-users', color: '#2563eb' },
+    { label: 'Vendedores', value: roleCounts.vendedor || 0, icon: 'fa-store', color: '#0891b2' },
+    { label: 'Repartidores', value: roleCounts.repartidor || 0, icon: 'fa-motorcycle', color: '#7c3aed' },
+    { label: 'Comercios aprobados', value: storeCounts.approved || 0, icon: 'fa-circle-check', color: '#10b981' },
+    { label: 'Comercios suspendidos', value: storeCounts.suspended || 0, icon: 'fa-ban', color: '#ef4444' },
+    { label: 'Ventas totales', value: `$${totalSales.toLocaleString('es-AR')}`, icon: 'fa-sack-dollar', color: '#f59e0b' },
+    { label: 'Entregas en curso', value: (deliveryCounts.assigned || 0) + (deliveryCounts.picked_up || 0), icon: 'fa-truck-fast', color: '#3b82f6' },
+    { label: 'Entregas completadas', value: deliveryCounts.delivered || 0, icon: 'fa-flag-checkered', color: '#059669' },
   ];
 
   grid.textContent = '';
   metrics.forEach((m) => {
     const card = document.createElement('div');
     card.className = 'admin-metric-card';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'admin-metric-card__icon';
+    iconWrap.style.setProperty('--m-color', m.color);
+    const iconEl = document.createElement('i');
+    iconEl.className = `fa-solid ${m.icon}`;
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconWrap.appendChild(iconEl);
+
+    const body = document.createElement('div');
+    body.className = 'admin-metric-card__body';
     const h3 = document.createElement('h3');
     h3.textContent = m.value;
     const p = document.createElement('p');
     p.textContent = m.label;
-    card.appendChild(h3);
-    card.appendChild(p);
+    body.appendChild(h3);
+    body.appendChild(p);
+
+    card.appendChild(iconWrap);
+    card.appendChild(body);
     grid.appendChild(card);
   });
 }
@@ -1213,6 +1227,87 @@ async function fetchAuditLog() {
   });
 }
 
+// --- Navegación por secciones con carga perezosa ---
+// Antes se cargaban las 14 secciones de una sola vez al iniciar (13 fetches
+// en paralelo). Ahora cada sección carga sus datos la primera vez que se
+// abre; los botones "Refrescar" siguen forzando una recarga.
+const SECTION_LOADERS = {
+  'metrics': loadGlobalMetrics,
+  'seller-requests': fetchRequests,
+  'delivery-requests': fetchDeliveryRequests,
+  'categories': fetchCategories,
+  'coupons': fetchCoupons,
+  'stores-mod': fetchStoresForModeration,
+  'products-mod': null, // se llena al buscar (setupProductSearch)
+  'repartidores-mod': fetchRepartidoresForModeration,
+  'reviews-mod': fetchReportedReviews,
+  'proofs': fetchPendingProofsAdmin,
+  'revocations': fetchRevocationRequests,
+  'support': fetchSupportTickets,
+  'error-logs': fetchErrorLogs,
+  'audit-log': fetchAuditLog,
+};
+
+const loadedSections = new Set();
+
+function showSection(key) {
+  const section = document.querySelector(`.admin-section[data-section="${key}"]`);
+  if (!section || section.dataset.disabled === 'true') return;
+
+  document.querySelectorAll('.admin-section').forEach((s) => {
+    s.classList.toggle('is-active', s === section);
+  });
+
+  document.querySelectorAll('.admin-nav__item[data-target]').forEach((item) => {
+    const active = item.dataset.target === key;
+    item.classList.toggle('is-active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
+
+  const titleEl = section.querySelector('.admin-section__title');
+  const heading = document.getElementById('admin-current-title');
+  if (titleEl && heading) heading.textContent = titleEl.textContent;
+
+  // Carga perezosa: solo la primera vez que se abre la sección.
+  if (!loadedSections.has(key) && SECTION_LOADERS[key]) {
+    loadedSections.add(key);
+    SECTION_LOADERS[key]();
+  }
+
+  window.scrollTo({ top: 0, behavior: 'auto' });
+  closeSidebar();
+}
+
+// --- Drawer móvil ---
+function openSidebar() {
+  document.getElementById('admin-sidebar')?.classList.add('is-open');
+  const scrim = document.getElementById('admin-scrim');
+  if (scrim) { scrim.hidden = false; scrim.classList.add('is-open'); }
+  document.getElementById('admin-menu-toggle')?.setAttribute('aria-expanded', 'true');
+}
+
+function closeSidebar() {
+  document.getElementById('admin-sidebar')?.classList.remove('is-open');
+  const scrim = document.getElementById('admin-scrim');
+  if (scrim) { scrim.classList.remove('is-open'); scrim.hidden = true; }
+  document.getElementById('admin-menu-toggle')?.setAttribute('aria-expanded', 'false');
+}
+
+function setupSectionNav() {
+  document.querySelectorAll('.admin-nav__item[data-target]').forEach((item) => {
+    item.addEventListener('click', () => showSection(item.dataset.target));
+  });
+
+  const toggle = document.getElementById('admin-menu-toggle');
+  toggle?.addEventListener('click', () => {
+    const isOpen = document.getElementById('admin-sidebar')?.classList.contains('is-open');
+    if (isOpen) closeSidebar(); else openSidebar();
+  });
+  document.getElementById('admin-scrim')?.addEventListener('click', closeSidebar);
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+}
+
 function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
@@ -1233,20 +1328,11 @@ function initAdminPage() {
   setupCategoryForm();
   setupCouponForm();
   setupProductSearch();
+  setupSectionNav();
 
-  fetchRequests();
-  fetchDeliveryRequests();
-  loadGlobalMetrics();
-  fetchCategories();
-  fetchCoupons();
-  fetchStoresForModeration();
-  fetchRepartidoresForModeration();
-  fetchPendingProofsAdmin();
-  fetchReportedReviews();
-  fetchRevocationRequests();
-  fetchErrorLogs();
-  fetchSupportTickets();
-  fetchAuditLog();
+  // Abrir la primera sección visible (respeta el rol) y cargar solo esa.
+  const firstNav = document.querySelector('.admin-nav__item[data-target]:not([hidden])');
+  showSection(firstNav ? firstNav.dataset.target : 'metrics');
 }
 
 // F12-17: roles de admin granulares. 'moderador' es un rol más acotado --
@@ -1254,28 +1340,33 @@ function initAdminPage() {
 // nada financiero ni de configuración (cupones, categorías, comercios,
 // métricas, log de auditoría, etc). Las policies de RLS son las que de
 // verdad protegen cada tabla (ver 50_moderador_role.sql) -- esto solo
-// oculta la UI que un moderador no puede usar, para que no vea botones
+// oculta la UI que un moderador no puede usar, para que no vea opciones
 // que van a fallar.
-const MODERADOR_ONLY_SECTIONS = [
+const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'delivery-requests', 'metrics', 'categories', 'coupons',
   'stores-mod', 'products-mod', 'repartidores-mod', 'proofs',
   'revocations', 'error-logs', 'audit-log',
 ];
 
 function hideAdminSection(sectionKey) {
-  const header = document.querySelector(`.admin-header[data-section="${sectionKey}"]`);
-  if (!header) return;
-  header.style.display = 'none';
-  let el = header.nextElementSibling;
-  while (el && !el.matches('.admin-header')) {
-    el.style.display = 'none';
-    el = el.nextElementSibling;
-  }
+  const navItem = document.querySelector(`.admin-nav__item[data-target="${sectionKey}"]`);
+  if (navItem) navItem.hidden = true;
+  const section = document.querySelector(`.admin-section[data-section="${sectionKey}"]`);
+  if (section) section.dataset.disabled = 'true';
+}
+
+function hideEmptyNavGroups() {
+  document.querySelectorAll('.admin-nav__group').forEach((group) => {
+    if (!group.querySelector('.admin-nav__item[data-target]:not([hidden])')) {
+      group.hidden = true;
+    }
+  });
 }
 
 function applyRoleVisibility(role) {
   if (role !== 'moderador') return;
-  MODERADOR_ONLY_SECTIONS.forEach(hideAdminSection);
+  MODERADOR_HIDDEN_SECTIONS.forEach(hideAdminSection);
+  hideEmptyNavGroups();
 }
 
 guardPage({
