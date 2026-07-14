@@ -136,7 +136,7 @@ Todas las tablas tienen **RLS habilitado**. El rol se lee del JWT: `auth.jwt() -
 
 ## 7. Estado, pendientes y hallazgos
 
-### 🟡 Decisiones de producto abiertas (`Problematiccas proyecto.txt`)
+### 🟡 Decisiones de producto abiertas (histórico, ya resueltas — el archivo `Problematiccas proyecto.txt` se eliminó el 2026-07-14 por estar 100% superado)
 - Interfaz diferenciada para el vendedor (tema naranja).
 - Cómo validar que un comercio es **real** al registrarse (¿pedir CUIL/CUIT?).
 - Definir **envíos** y **medios de pago** (sin resolver).
@@ -152,8 +152,7 @@ Todas las tablas tienen **RLS habilitado**. El rol se lee del JWT: `auth.jwt() -
 2. **`db/schema/10_fix_auth_triggers.sql`** → `handle_new_user` intenta castear `'repartidor'` a `app_role`, pero el enum solo tiene `cliente`/`vendedor`/`admin` → **excepción** si `account_type='repartidor'`.
 
 ### 🔐 Auditorías de seguridad existentes (no rehacer, consultar primero)
-- **`oportunidades.md`** (raíz, 2026-06-09): auditoría de ciberseguridad completa. Destacado: **XSS en el carrito vía `innerHTML`** (SEC-01, crítica). IDs tipo SEC-01, AUTH-05, CODE-08.
-- **`docs/analysis_results.md`**: fallas UX/arquitectura. Ojo: describe en parte el estado **pre-fix** (algunos ítems ya están resueltos, p. ej. `prevent_role_update_on_profile` ya existe y `guardPage` ya usa `getUser`).
+- **`docs/analysis_results.md`** (2026-06-09): auditoría de ciberseguridad completa. Destacado: **XSS en el carrito vía `innerHTML`** (SEC-01, crítica). IDs tipo SEC-01, AUTH-05, CODE-08 — la nota de "no rehacer" acá arriba tenía el nombre de archivo cruzado con `oportunidades.md` (eliminado el 2026-07-14, esas eran notas informales de brainstorm, no la auditoría). Ojo: describe en parte el estado **pre-fix** — casi todos los hallazgos ya están resueltos, ver `CLAUDE.md` (F1-01/F1-02, A113-238, F2-01, etc.), no verificado ítem por ítem contra el código actual.
 - `vite.config.js` ya inyecta headers de seguridad en el dev server (X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy).
 
 ---

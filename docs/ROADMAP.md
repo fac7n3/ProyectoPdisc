@@ -312,6 +312,8 @@ Runway: **~2026-07-07 → fines de octubre / principios de noviembre 2026** (~16
 ## 21. Referencias
 
 - Contexto general: [`docs/CONTEXTO-PROYECTO.md`](CONTEXTO-PROYECTO.md)
-- Auditorías: [`oportunidades.md`](../oportunidades.md) · [`docs/analysis_results.md`](analysis_results.md)
-- Pendientes originales: [`Problematiccas proyecto.txt`](../Problematiccas%20proyecto.txt)
+- Auditoría: [`docs/analysis_results.md`](analysis_results.md)
 - Registro de trabajo: Jira **A113** (`baraderolocal.atlassian.net`)
+
+> `oportunidades.md` y `Problematiccas proyecto.txt` (raíz) se eliminaron el 2026-07-14 —
+> eran notas informales de brainstorm temprano, 100% superadas por este roadmap.
