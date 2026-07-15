@@ -29,6 +29,7 @@ export default defineConfig({
         perfil: resolve(__dirname, 'pages/perfil.html'),
         carrito: resolve(__dirname, 'pages/carrito.html'),
         search: resolve(__dirname, 'pages/search.html'),
+        comercios: resolve(__dirname, 'pages/comercios.html'),
         vender: resolve(__dirname, 'pages/vender.html'),
         admin: resolve(__dirname, 'pages/admin.html'),
         producto: resolve(__dirname, 'pages/producto.html'),

@@ -3,6 +3,7 @@ import { formatPrice, renderErrorState } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -103,6 +104,7 @@ function initVenderPage(user) {
   // Cargar categorías y estado del vendedor
   loadCategories();
   checkSellerState(user);
+  initNotificationsBell();
 
   // Manejar registro de comercio
   form?.addEventListener('submit', async (e) => {

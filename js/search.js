@@ -7,7 +7,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
-import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell } from './nav-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -443,6 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       commit();
     },
   });
+  initNotificationsBell();
 
   initSidebarFilters();
   syncInputs();

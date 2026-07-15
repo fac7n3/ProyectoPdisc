@@ -1,4 +1,5 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let currentUserId = null;
@@ -185,6 +186,7 @@ async function loadThread(convId) {
 
 async function initMensajesPage(user) {
   currentUserId = user.id;
+  initNotificationsBell();
 
   const params = new URLSearchParams(window.location.search);
   const storeParam = params.get('store');

@@ -57,6 +57,31 @@ revisión de código exhaustiva del flujo de eventos (debounce/clear/keydown/cli
 entre sí) en su lugar; recomendable una pasada visual rápida en la próxima sesión con navegador
 disponible.
 
+## ✅ Hecho (sesión 2026-07-16, agentes en paralelo)
+
+| # | Punto original | Tarea |
+|---|---|---|
+| P1-13 | #11 compl. | Sacados Vender y Repartir del mega-menú de categorías (`nav-utils.js`) — ya están en perfil.html > Mis datos > Accesos rápidos, sobraban ahí (ese menú es solo para categorías de productos + Ofertas) |
+| P1-5 | #7 | Campanita de notificaciones (`initNotificationsBell`, antes solo en home) extendida a search/comercio/producto/carrito/vender/repartidor/perfil/mensajes — el mismo `<div id="nav-notifications-wrap">` a la izquierda de `#nav-profile` (o del botón "Volver" en las páginas sin link a perfil) |
+| P1-4 | #22 | Página nueva `pages/comercios.html` + `js/comercios.js`: listado real de comercios `status='approved'` (nombre, logo con fallback, zona, rubro más común). Footer "Comercios" (home.html/search.html) actualizado de `./search.html` a `./comercios.html` |
+
+**P1-13**: sin migración, 100% frontend. La tira de acceso rápido scrolleable nunca tuvo
+Vender/Repartir (solo el mega-menú), así que no hizo falta tocarla.
+
+**P1-5**: en vender.js/repartidor.js/mensajes.js se llama recién dentro del callback `onReady` de
+`guardPage` (una vez que ya se sabe si hay sesión), igual que hace `home.js` en su
+`DOMContentLoaded`. `perfil.html` convive con su pestaña interna "Notificaciones"
+(`renderNotificationsSection` en `#notificaciones-container`) sin duplicar IDs — son containers
+distintos. `info.html`/`privacidad.html`/`terminos.html` quedan afuera a propósito: no tienen
+navbar completa (sin `#nav-profile` ni buscador), solo un botón "Volver al Inicio".
+
+**P1-4**: sin migración — la RLS pública de `stores` (`stores_select_public`, `status='approved'`)
+ya alcanzaba. El rubro más común se calcula client-side desde un solo embed
+`products(categories(name))` (RLS de `products` ya filtra a solo activos para `anon`). Todo con DOM
+API, sin `innerHTML` para datos de la tienda. **No verificado visualmente en el navegador** (sin
+herramientas de navegador conectadas en esta sesión) — cubierto con `npm run build` exitoso y
+revisión de código; recomendable una pasada visual en la próxima sesión.
+
 ---
 
 ## Pendiente — P0 (alta prioridad)
@@ -70,12 +95,9 @@ disponible.
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
 | P1-3 | #21 | pendiente | Atrás en producto relacionado va al producto anterior (manejar historial) |
-| P1-4 | #22 | pendiente | Footer "Comercios" lleva a productos — necesita página nueva de listado de comercios |
-| P1-5 | #7 | pendiente | Campanita notificaciones en todas las páginas (solo está en home) |
 | P1-9 | #14a | pendiente | Favoritos 3 secciones (productos/comercios/servicios futuro) + buscar/filtrar + corregir vista producto desde favoritos. Requiere tabla `favorite_stores` nueva. |
 | P1-10 | #11/#12 | pendiente | Mis datos: agregar Vender y Repartir en accesos rápidos |
 | P1-12 | #15 | pendiente | Vendedor configura si quiere ser contactado (toggle botón "Contactar al vendedor") |
-| P1-13 | #11 compl. | pendiente | Sacar Vender y Repartir del mega-menú de categorías |
 
 ## Pendiente — P2 (consistencia visual / navegación)
 
@@ -122,5 +144,4 @@ disponible.
 
 - **P0-1**: el fix mejora el error handling del upload del comprobante (muestra `storage`/`db`/`unknown` + el mensaje real). Hace falta repro del usuario: cuando pruebe transferencia y falle, el toast ahora va a decir exactamente qué falló — con eso podemos fixear el root cause.
 - **P0-3**: el flujo de arrepentimiento ya estaba bien implementado (migración 40), solo se verificó end-to-end.
-- **P1-4**: el link del footer "Comercios" apunta a `search.html` porque no hay página de listado de comercios. Fixearlo implica armar esa página nueva.
 - **Migraciones 54/55 ya aplicadas a producción** (confirmado en el mensaje del commit `790b7aa`).

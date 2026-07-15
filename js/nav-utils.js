@@ -179,13 +179,13 @@ export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6
   });
   panel.appendChild(grid);
 
-  // Accesos del panel: Ofertas, Vender, Repartir
+  // Acceso del panel: Ofertas. Vender/Repartir sacados (P1-13) — ya están en
+  // perfil.html > Mis datos > Accesos rápidos, sobraban acá (esto es solo
+  // categorías de productos).
   const megaFooter = document.createElement('div');
   megaFooter.className = 'cat-mega__footer';
   const footerLinks = [
     { href: './search.html?cat=ofertas', icon: 'fa-tags', text: 'Ofertas' },
-    { href: './vender.html', icon: 'fa-store', text: 'Vender' },
-    { href: './repartidor.html', icon: 'fa-motorcycle', text: 'Repartir' },
   ];
   footerLinks.forEach((f) => {
     const a = document.createElement('a');

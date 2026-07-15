@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta name="description" content="Baradero Local — Descubrí todos los comercios locales de Baradero: almacén, panadería, verdulería y mucho más." />
+    <title>Comercios — Baradero Local</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Comercios — Baradero Local" />
+    <meta property="og:description" content="Descubrí todos los comercios locales de Baradero." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script type="module" crossorigin src="/assets/comercios-DNxvYb3f.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B7PpoFzZ.js">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cxk7myuK.css">
+  </head>
+  <body>
+
+    <!-- ====== BARRA DE NAVEGACIÓN ====== -->
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+      <div class="navbar__top">
+        <!-- Logo -->
+        <a href="./home.html" class="navbar__logo" id="navbar-logo">
+          <img src="/assets/logoazulpng-BmcneNO6.png" alt="Baradero Local" class="navbar__logo-img" />
+          <div class="navbar__logo-text">
+            <span class="navbar__logo-title">Baradero Local</span>
+            <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+          </div>
+        </a>
+
+        <!-- Acciones -->
+        <div class="navbar__actions">
+          <div id="nav-notifications-wrap"></div>
+          <a href="./perfil.html" class="navbar__action-circle" id="nav-profile" aria-label="Mi cuenta"><i class="fa-regular fa-user" style="font-size: 0.875rem;"></i></a>
+          <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
+            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+            <span class="cart-badge" id="cart-badge"></span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Búsqueda -->
+      <div class="navbar__search-wrapper">
+        <div class="navbar__search">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
+          <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
+        </div>
+      </div>
+    </nav>
+
+    <!-- ====== BARRA DE CATEGORÍAS (mega-menú, poblada por nav-utils.js) ====== -->
+    <div class="category-bar" role="navigation" aria-label="Categorías">
+      <div class="category-bar__inner" id="category-bar-inner"></div>
+    </div>
+
+    <!-- ====== CONTENIDO PRINCIPAL ====== -->
+    <main>
+      <section class="products" id="comercios" aria-label="Listado de comercios">
+        <div class="catalog-content" style="max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem;">
+          <div class="section-header">
+            <h2 class="results-title">Comercios de Baradero</h2>
+            <span class="catalog-count" id="stores-count"></span>
+          </div>
+
+          <div class="products__grid" id="stores-grid">
+            <!-- skeleton -->
+            <div class="product-card skeleton-card">
+              <div class="skeleton-img"></div>
+              <div class="skeleton-body" style="padding: 1rem;">
+                <div class="skeleton-text" style="width: 60%; height: 16px; margin-bottom: 0.5rem; background: #cbd5e1; border-radius: 4px;"></div>
+                <div class="skeleton-text" style="width: 40%; height: 12px; background: #e2e8f0; border-radius: 4px;"></div>
+              </div>
+            </div>
+            <div class="product-card skeleton-card">
+              <div class="skeleton-img"></div>
+              <div class="skeleton-body" style="padding: 1rem;">
+                <div class="skeleton-text" style="width: 60%; height: 16px; margin-bottom: 0.5rem; background: #cbd5e1; border-radius: 4px;"></div>
+                <div class="skeleton-text" style="width: 40%; height: 12px; background: #e2e8f0; border-radius: 4px;"></div>
+              </div>
+            </div>
+            <div class="product-card skeleton-card">
+              <div class="skeleton-img"></div>
+              <div class="skeleton-body" style="padding: 1rem;">
+                <div class="skeleton-text" style="width: 60%; height: 16px; margin-bottom: 0.5rem; background: #cbd5e1; border-radius: 4px;"></div>
+                <div class="skeleton-text" style="width: 40%; height: 12px; background: #e2e8f0; border-radius: 4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ====== PIE DE PÁGINA ====== -->
+    <footer class="footer">
+      <div class="footer__inner">
+        <div class="footer__brand-container">
+          <div class="footer__brand-logo-text">
+            <span class="bl-text-stroke">BARADERO</span>
+            <span class="bl-text-stroke bl-text-stroke--white">LOCAL</span>
+          </div>
+          <p class="footer__brand-slogan">"Mientras otras plataformas conectan personas lejanas, nosotros conectamos vecinos".</p>
+        </div>
+        <div>
+          <div class="footer__col-title">Comprá</div>
+          <nav class="footer__links">
+            <a href="./search.html?cat=ofertas" class="footer__link">Ofertas del día</a>
+            <a href="./search.html?cat=almacen" class="footer__link">Supermercado</a>
+            <a href="./search.html" class="footer__link">Categorías</a>
+            <a href="./comercios.html" class="footer__link">Comercios</a>
+          </nav>
+        </div>
+        <div>
+          <div class="footer__col-title">Vendé</div>
+          <nav class="footer__links">
+            <a href="./vender.html" class="footer__link">Registrar comercio</a>
+            <a href="./info.html" class="footer__link">Cómo vender</a>
+            <a href="./info.html" class="footer__link">Costos y comisiones</a>
+          </nav>
+        </div>
+        <div>
+          <div class="footer__col-title">Ayuda</div>
+          <nav class="footer__links">
+            <a href="./info.html" class="footer__link">Contacto</a>
+            <a href="./info.html" class="footer__link">Preguntas frecuentes</a>
+            <a href="./info.html" class="footer__link">Devoluciones</a>
+            <a href="./info.html" class="footer__link">Términos</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <div class="footer__copyright-container">
+          <span>&copy; 2026 Baradero Local. Todos los derechos reservados.</span>
+          <a href="./terminos.html" class="footer__terms-link">Términos y condiciones</a>
+          <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
+        </div>
+        <div class="footer__socials">
+          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Volver arriba -->
+    <button class="scroll-top" id="scroll-top-btn" aria-label="Volver arriba">
+      <i class="fa-solid fa-chevron-up"></i>
+    </button>
+
+    <!-- Notificación Toast -->
+    <div class="toast" id="toast" aria-live="polite" role="status"></div>
+
+    <style>
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .store-card__logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .store-card__logo-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: var(--bl-primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.5rem;
+      }
+      .store-card__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.8125rem;
+        color: var(--bl-text-muted);
+      }
+      .store-card__meta i { width: 1rem; text-align: center; margin-right: 0.25rem; }
+    </style>
+
+  </body>
+</html>
