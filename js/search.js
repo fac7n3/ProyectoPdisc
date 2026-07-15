@@ -383,7 +383,6 @@ function initSidebarFilters() {
   const minEl = document.getElementById('filter-price-min');
   const maxEl = document.getElementById('filter-price-max');
   const sortSel = document.getElementById('filter-sort');
-  const applyBtn = document.getElementById('filters-apply-btn');
   const mobileBtn = document.getElementById('mobile-filters-btn');
   const sidebarClose = document.getElementById('filters-sidebar-close');
   const sidebar = document.getElementById('filters-sidebar');
@@ -415,10 +414,6 @@ function initSidebarFilters() {
     commit();
   });
 
-  applyBtn?.addEventListener('click', () => {
-    sidebar?.classList.remove('is-open');
-    showToast('Filtros aplicados');
-  });
   mobileBtn?.addEventListener('click', () => sidebar?.classList.add('is-open'));
   sidebarClose?.addEventListener('click', () => sidebar?.classList.remove('is-open'));
 }

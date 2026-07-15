@@ -805,7 +805,7 @@ ul, ol {
 .coupons-section {
   max-width: 1320px;
   margin: 1.5rem auto 0;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
 }
 
 .coupons-row {
@@ -1234,22 +1234,6 @@ button.coupon-chip:hover {
 .filter-note {
   font-size: 0.6875rem;
   color: var(--bl-text-muted);
-}
-
-.filters-sidebar__apply {
-  width: 100%;
-  padding: 0.75rem;
-  background: var(--bl-primary);
-  color: white;
-  border-radius: var(--bl-radius-md);
-  font-weight: 600;
-  font-size: 0.875rem;
-  transition: background 0.2s;
-  margin-top: 1rem;
-}
-
-.filters-sidebar__apply:hover {
-  background: var(--bl-primary-dark);
 }
 
 .mobile-filters-btn {

@@ -96,6 +96,14 @@ revisión de código; recomendable una pasada visual en la próxima sesión.
 Sin ítems pendientes por ahora — P1-3, P1-4, P1-5, P1-9, P1-10, P1-12 y P1-13 se resolvieron
 en la sesión 2026-07-16 (ver tablas "Hecho" arriba).
 
+## ✅ Hecho (sesión 2026-07-15, agente en paralelo)
+
+| # | Punto original | Notas |
+|---|---|---|
+| P2-8 | #13 | Sacado el botón "Aplicar filtros" de `pages/search.html` (`filters-apply-btn`) y su listener en `js/search.js`. Los filtros (búsqueda, categoría, precio, orden) ya llamaban `commit()` al cambiar — mismo patrón que el cupón de P1-7 — así que el botón era redundante; en mobile el cierre del panel sigue con el botón "X" (`filters-sidebar-close`) que ya existía. También se sacó la regla CSS `.filters-sidebar__apply` ahora sin uso en `Assets/styles/home.css`. |
+| P2-1 | #27 | Agregado botón "Volver" (`navbar__action-circle` con flecha, mismo patrón que `vender.html`/`repartidor.html`/`mensajes.html`) apuntando a `home.html`, en `pages/comercio.html` y `pages/perfil.html` (ninguna de las dos lo tenía). No requirió inventar un patrón nuevo. **No verificado visualmente** (sin navegador disponible en esta sesión). |
+| P2-6 | #1 | Revisado `Assets/styles/home.css`: `.value-strip`, `.farmacia-turno`, `.stores-carousel-section` (carrusel de "Locales Destacados", el que el usuario llama "negocios recomendados") y `.products` ya usaban el mismo `max-width: 1320px` + gutter de `1.5rem` — no había desalineado entre esas dos secciones puntuales. Se encontró y corrigió una inconsistencia real en la sección vecina de cupones (`.coupons-section` tenía `padding: 0 1rem` en vez de `1.5rem` como el resto de la columna). **No verificado visualmente** — si el usuario sigue viendo un desalineado después de este fix, hace falta una captura de pantalla para identificar la causa real (posiblemente perceptual, no de CSS). |
+
 ## ✅ Hecho (sesión 2026-07-16, agentes en paralelo)
 
 | # | Punto original | Notas |
@@ -108,14 +116,11 @@ en la sesión 2026-07-16 (ver tablas "Hecho" arriba).
 
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
-| P2-1 | #27 | pendiente | Botón retroceder intuitivo en tienda y usuario |
 | P2-2 | #8 | pendiente | Nav de vender y repartir distinto al resto (logo, tipografía, flecha vs botón, color verde agua) |
 | P2-3 | #6 | pendiente | Reseñas desalineadas en tienda |
 | P2-4 | #5 | pendiente | "Envío gratis" solo aparece dentro del producto, no afuera |
 | P2-5 | #9 | pendiente | Footer se ve mientras carga tienda + animación de carga |
-| P2-6 | #1 | pendiente | Alinear barra de farmacia y "negocios recomendados" con el resto |
 | P2-7 | #3 | pendiente | Productos relacionados: hover cortado + sin scroll horizontal en compu |
-| P2-8 | #13 | pendiente | Sacar botón "Aplicar filtros" en búsqueda |
 | P2-9 | #25 | pendiente | Carrito/comprar bloquear si no hay stock (F5-02 ya tiene toggle de producto) |
 | P2-10 | #23 | pendiente | Registro vendedor: permitir elegir más de un rubro (hoy `category_slug` único) |
 | P2-11 | #10 | pendiente | Arreglar en general cómo se ve tienda (pasada estética global de comercio.html) |
