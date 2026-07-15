@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-15 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53; P0-6 split payments MP Marketplace implementado en modo piloto, falta activación con credenciales reales, ver docs/BACKLOG_MEJORAS.md).
+> Última actualización: 2026-07-16 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53; P0-6 split payments MP Marketplace implementado en modo piloto, falta activación con credenciales reales (pausado por el usuario, requiere reconocimiento facial de Mercado Pago); P1-6 cupones de vendedor ya no públicos en bloque, migración 57 aplicada, ver docs/BACKLOG_MEJORAS.md).
 
 > ## ⚠️ PRIMERA ACCIÓN DE CADA SESIÓN
 > **Antes de cualquier otra tarea, leer [docs/MIGRACIONES_PENDIENTES.md](docs/MIGRACIONES_PENDIENTES.md).**
@@ -280,6 +280,31 @@ de valor con el acento cálido ya existente en la paleta), **F9-06** (estados va
 micro-interacciones básicas) y **F12-13** (insights del vendedor, ver arriba). Detalle completo,
 qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISIONALES.md) -- estos
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
+
+## P1-6: cupones de vendedor ya no se listan en bloque públicamente (2026-07-16)
+Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`, punto #16a). Antes,
+`coupons_select_public` dejaba leer CUALQUIER cupón activo (global o de un vendedor puntual, F12-03)
+a cualquier `anon`/`authenticated` — `renderActiveCoupons()` (F12-07) los mostraba todos en el home
+a cualquier visitante, sin relación con lo que estuviera comprando; y cualquiera con la anon key
+podía listar por API directa el código/% de descuento de todos los vendedores.
+- **Migración 57** (`db/schema/57_coupon_visibility_scope.sql`, aplicada): `coupons_select_public`
+  restringida a solo cupones globales (`store_id is null`) — siguen 100% públicos. Nueva
+  `coupons_select_own_store` (el dueño ve todos los suyos, activos o no — corrige de paso un bug
+  latente: sin esta policy, "Mis cupones" (`vender.js`) dependía sin querer de la policy pública,
+  así que un cupón desactivado directamente desaparecía de la lista de gestión en vez de solo
+  perder vigencia pública). Nueva RPC `validate_coupon_code(p_code)` (`SECURITY DEFINER`, una fila
+  por código exacto, nunca una lista) para que `carrito.js` siga validando un código que el usuario
+  ya escribió, sin necesitar una policy de lectura amplia — `create_order` no se toca, ya es
+  `SECURITY DEFINER` y no depende de estas policies.
+- `js/cart-utils.js` (`renderActiveCoupons`, home + carrito): ahora solo consulta cupones globales
+  (`store_id is null`) — un cupón de vendedor puntual deja de anunciarse en bloque, solo se puede
+  usar si el vendedor lo comunica directamente (o desde su propio panel de gestión). `js/carrito.js`
+  (`applyCoupon`): reemplazado el `select` directo a `coupons` por `validate_coupon_code`.
+- Verificado contra la base real (`BEGIN;...ROLLBACK;`, `SET ROLE anon`/`authenticated` +
+  `set_config('request.jwt.claim.sub', ...)`): `anon` sigue viendo los cupones globales existentes
+  pero 0 de vendedor; la RPC resuelve por igual un código global y uno de vendedor; el dueño de la
+  tienda ve su propio cupón inactivo, un extraño no. `get_advisors`: único hallazgo nuevo esperado
+  (`validate_coupon_code` invocable por `anon`, mismo patrón ya aceptado que `validate_cart_prices`).
 
 ## P0-6: Split payments con Mercado Pago Marketplace, modo piloto (2026-07-15)
 Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`). Antes, `mp-create-preference`

@@ -418,12 +418,10 @@ function initCouponEvents() {
     applyBtn.textContent = 'Validando...';
 
     try {
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('discount_percentage, store_id')
-        .eq('code', code)
-        .eq('is_active', true)
-        .single();
+      // P1-6: un cupón de vendedor puntual ya no se puede leer con un select
+      // directo (RLS, migración 57) -- se valida por código exacto vía RPC,
+      // que no expone el resto de los cupones de otros vendedores.
+      const { data, error } = await supabase.rpc('validate_coupon_code', { p_code: code });
 
       // F12-03: un cupón de vendedor (store_id no nulo) solo sirve si el
       // carrito tiene algo de esa tienda -- create_order lo revalida igual,

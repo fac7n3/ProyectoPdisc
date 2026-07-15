@@ -158,12 +158,12 @@ export function buildPriceRow(product) {
 }
 
 /**
- * F12-07: sección pública de cupones/promociones activos. Antes había que
- * saber el código de antemano (no existía ningún lugar para descubrirlos);
- * la RLS `coupons_select_public` ya dejaba leer cualquier cupón activo y no
- * vencido a anon/authenticated, así que esto es puro frontend. Compartida
- * entre home.js (solo informativa) y carrito.js (clickeable, completa el
- * input de cupón existente).
+ * F12-07 + P1-6: sección pública de cupones/promociones activos -- solo los
+ * globales (`store_id` null), los de un vendedor puntual ya no se listan en
+ * bloque (P1-6, migración 57: solo el dueño de la tienda o quien ya conoce el
+ * código exacto vía `validate_coupon_code` puede verlos). Compartida entre
+ * home.js (solo informativa) y carrito.js (clickeable, completa el input de
+ * cupón existente).
  * @param {HTMLElement} container
  * @param {{onSelect?: (code: string) => void, emptyHide?: HTMLElement}} [options] `emptyHide`:
  *   elemento a ocultar si no hay cupones (default: el propio `container`). En home.html es la
@@ -174,9 +174,13 @@ export async function renderActiveCoupons(container, { onSelect, emptyHide } = {
   if (!container) return;
   const hideTarget = emptyHide || container;
   try {
+    // P1-6: la RLS ya no deja listar cupones de un vendedor puntual en bloque
+    // (solo el dueño, o por código exacto vía validate_coupon_code) -- acá
+    // solo se muestran los globales, que siguen siendo 100% públicos.
     const { data: coupons, error } = await supabase
       .from('coupons')
-      .select('code, discount_percentage, expires_at, store_id, stores ( name )')
+      .select('code, discount_percentage, expires_at, store_id')
+      .is('store_id', null)
       .order('discount_percentage', { ascending: false })
       .limit(12);
 
@@ -206,9 +210,11 @@ export async function renderActiveCoupons(container, { onSelect, emptyHide } = {
       pctSpan.textContent = `-${coupon.discount_percentage}%`;
       chip.appendChild(pctSpan);
 
+      // Siempre global (store_id null) -- los de un vendedor puntual ya no
+      // se listan en bloque acá, ver el comentario de la query arriba.
       const scopeSpan = document.createElement('span');
       scopeSpan.className = 'coupon-chip__scope';
-      scopeSpan.textContent = coupon.store_id ? (coupon.stores?.name || 'Un comercio') : 'Todo Baradero Local';
+      scopeSpan.textContent = 'Todo Baradero Local';
       chip.appendChild(scopeSpan);
 
       if (coupon.expires_at) {

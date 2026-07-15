@@ -24,6 +24,26 @@ Rama de trabajo: `mejoras-post-lanzamiento` (cambios ya mergeados a `main` en co
 
 **Migraciones aplicadas a producción**: 54 (support_ticket_messages), 55 (user_addresses).
 
+## ✅ Hecho (sesión 2026-07-16)
+
+| # | Punto original | Tarea |
+|---|---|---|
+| P1-6 | #16a | Cupones de un vendedor puntual ya no se listan en bloque a `anon`/`authenticated` (migración 57) |
+
+**Migración 57 aplicada a producción**: `coupons_select_public` restringida a solo cupones
+globales (`store_id is null`); nueva `coupons_select_own_store` (el dueño ve todos los suyos,
+activos o no — corrige de paso un bug latente: sin esta policy, un cupón que el vendedor
+desactivaba desaparecía de "Mis cupones" en vez de solo perder vigencia pública); nueva RPC
+`validate_coupon_code(p_code)` (`SECURITY DEFINER`, una fila por código exacto, no una lista) para
+que `carrito.js` siga pudiendo validar un código que el usuario ya escribió sin necesitar una
+policy de lectura amplia. `renderActiveCoupons()` (`cart-utils.js`, home + carrito) ahora solo
+consulta cupones globales. Verificado contra la base real (`BEGIN;...ROLLBACK;`, `SET ROLE anon`
+y `SET ROLE authenticated` + `set_config('request.jwt.claim.sub', ...)`): `anon` sigue viendo los
+2 cupones globales existentes pero 0 de vendedor; la RPC resuelve por igual un código global y uno
+de vendedor; el dueño de la tienda ve su propio cupón inactivo, un extraño no. `get_advisors`: un
+solo hallazgo nuevo, esperado y ya aceptado en el proyecto (`validate_coupon_code` invocable por
+`anon`, mismo patrón intencional que `validate_cart_prices`).
+
 ---
 
 ## Pendiente — P0 (alta prioridad)
@@ -39,7 +59,6 @@ Rama de trabajo: `mejoras-post-lanzamiento` (cambios ya mergeados a `main` en co
 | P1-3 | #21 | pendiente | Atrás en producto relacionado va al producto anterior (manejar historial) |
 | P1-4 | #22 | pendiente | Footer "Comercios" lleva a productos — necesita página nueva de listado de comercios |
 | P1-5 | #7 | pendiente | Campanita notificaciones en todas las páginas (solo está en home) |
-| P1-6 | #16a | pendiente | Cupones solo visibles a quien corresponden (RLS `coupons_select_public` hoy deja a `anon` ver todos) |
 | P1-7 | #16b | pendiente | UX cupón carrito: aplicar al escribir + borrar intuitivo (hoy botón "Aplicar" + borrar raro) |
 | P1-9 | #14a | pendiente | Favoritos 3 secciones (productos/comercios/servicios futuro) + buscar/filtrar + corregir vista producto desde favoritos. Requiere tabla `favorite_stores` nueva. |
 | P1-10 | #11/#12 | pendiente | Mis datos: agregar Vender y Repartir en accesos rápidos |
