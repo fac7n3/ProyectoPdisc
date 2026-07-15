@@ -342,6 +342,71 @@ andando); se resuelve el caso multi-tienda encadenando pagos más adelante, no e
   las credenciales de prueba de Mercado Pago (vendedor comprador de prueba, no plata real) antes de
   confiar en el flujo. Detalle completo en `docs/BACKLOG_MEJORAS.md` (P0-6).
 
+### P0-6 — sesión de testing end-to-end (2026-07-15, continuación)
+
+Destrabado lo que faltaba de la nota anterior: `MP_CLIENT_ID`/`MP_CLIENT_SECRET` cargados como
+secrets de Edge Functions **por CLI** (Supabase CLI instalada en la sesión + Personal Access Token
+del usuario como `SUPABASE_ACCESS_TOKEN` — no hay tool de MCP de Supabase que gestione secrets,
+solo DB/migraciones/edge functions). `VITE_MP_CLIENT_ID` agregado al `.env` local.
+
+**Gotcha de MP nuevo**: la app de Mercado Pago exige que el `redirect_uri` de OAuth esté
+registrado **exactamente** en "URLs de redireccionamiento" (panel de la app) — con
+`http://localhost:5173/...` cargado, la pantalla de autorización daba un error genérico
+("Tenemos un problema y ya estamos trabajando para resolverlo", sin detalle). Con
+`https://proyectopdisc.vercel.app/pages/vender.html` cargado en su lugar, funcionó — **MP no
+acepta `http://localhost` como redirect_uri**, solo el usuario pudo cargar la URL de producción
+desde el panel (el intento de agregar la de localhost fue rechazado por el propio dashboard de
+MP, no confirmado por qué).
+
+**Metodología de prueba** (para no arriesgar cuentas/tiendas reales): se creó una cuenta y tienda
+de prueba nuevas desde cero (`proyectopdisc+splittest06@gmail.com`, tienda "Tienda Test Split
+P06") en vez de usar `facu.cells` (la tienda real del usuario) — el plan original era usar
+`facu.cells`, pero se cambió a pedido del usuario a mitad de sesión. La cuenta se registró vía
+`register.html` real (no insertada a mano en `auth.users`); el único bypass fue confirmar el
+email por SQL (`update auth.users set email_confirmed_at = now()`, autorizado explícitamente por
+el usuario) y crear la fila de `stores` directo por SQL con `mp_split_pilot=true` (sin pasar por
+`seller_requests`/`approve_seller_request`, para no disparar el guard anti-escalación de rol
+`prevent_role_update_on_profile` — la cuenta de prueba quedó con `profiles.role='cliente'`,
+suficiente porque `mp-oauth-callback`/`mp-create-preference` verifican *ownership* de la tienda
+por `owner_id`, no el rol).
+
+**Verificado con éxito, contra la base real** (tienda/cuenta de prueba, sin tocar nada de
+producción real):
+1. **`mp-oauth-callback`**: navegando a la URL de autorización de MP (`client_id` + `redirect_uri`
+   de producción + `state=store_id`) y logueando con el vendedor de prueba de MP (`create_test_user`
+   del MCP de Mercado Pago — el mismo ya usado en F2-07, `TESTUSER218381749661613735` /
+   ID `3534929376`), MP redirige con `?code=&state=`. Se invocó la Edge Function a mano (`fetch`
+   directo con el JWT de la sesión del navegador vía `javascript_tool`, ya que la cuenta de prueba
+   no tenía rol `vendedor` para que `vender.js` dispare `handleMpOauthReturn` sola) → `200
+   {"ok":true,"mp_collector_id":"3534929376"}`. Confirmado en la base: `stores.mp_collector_id`
+   seteado, `store_mp_credentials.access_token`/`refresh_token` no nulos.
+2. **`mp-create-preference`**: `create_order` (RPC, vía fetch directo a PostgREST) con
+   `payment_method='mercadopago'` sobre un producto de prueba ($1500) → `mp-create-preference`
+   devolvió un `pref_id` con prefijo `3534929376-...` (el collector del **vendedor conectado**, no
+   el `MP_ACCESS_TOKEN` global de la plataforma) — confirma que el split arma la preferencia con
+   el token correcto.
+
+**No verificado — bloqueado sin causa aislada**: completar el pago real y que `mp-webhook`
+confirme la orden. En el checkout de MP (`sandbox`/`Test` mode, banner "Test" visible arriba a la
+derecha), el botón "Pagar" quedó **deshabilitado** (`disabled=""` real en el DOM, no un bug de
+clicks — confirmado inspeccionando el elemento) tanto pagando con una tarjeta de prueba oficial
+(Mastercard `5031 7557 3453 0604`, titular `APRO`, CVV `123`, vencimiento `11/30`) como con
+"Dinero disponible" del comprador de prueba (`TESTUSER3668341471645588362` / ID `3534929378`).
+Se descartó la causa más obvia (documentada en la guía oficial de MP: "para probar necesitás dos
+cuentas, vendedor y comprador — no podés pagarte a vos mismo") porque el bloqueo persistió incluso
+logueado como comprador (no el vendedor). Causa real no encontrada — candidatos sin confirmar:
+alguna verificación de cuenta pendiente del vendedor de prueba recién conectado vía OAuth (a
+diferencia de una cuenta de test "nativa" del flujo de Checkout Pro sin marketplace), o algo
+específico del modo "Test" de esta preferencia en particular. **El usuario va a probarlo
+manualmente** la próxima vez que tenga tiempo — si vuelve a bloquearse, revisar primero si hay
+algún estado de verificación/aprobación pendiente en la cuenta del vendedor conectado (pestaña
+"Actividad"/"Seguridad" de esa cuenta de MP), y si el problema persiste, consultar soporte de MP
+con el `preference_id` generado.
+
+Nota operativa: en paralelo a este testing se lanzó un subagente para resolver ítems P2 del
+backlog (P2-1, P2-6, P2-8) — ver commit local `d6e9a96` (sin push), documentado en
+`docs/BACKLOG_MEJORAS.md`.
+
 ## Dos bugs reportados por el usuario (2026-07-13)
 
 **1) El carrito se vaciaba al volver desde Mercado Pago sin pagar.**
