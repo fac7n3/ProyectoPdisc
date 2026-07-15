@@ -357,11 +357,14 @@ function syncPaymentMethod() {
 }
 
 /**
- * P0-6: Mercado Pago solo se ofrece si TODAS las tiendas presentes en el
- * carrito tienen split vinculado (piloto) -- MP no permite dividir un solo
- * pago entre varios vendedores, así que un carrito multi-tienda o con una
- * tienda no vinculada no puede pagarse con MP todavía. Se llama después de
- * validateCartFreshness, que ya trae el dato real de cada tienda.
+ * P0-6: el backend (mp-create-preference) arma una preferencia con el token
+ * global de la plataforma para cualquier carrito -- salvo el único caso que
+ * de verdad es imposible en Mercado Pago: una tienda con split vinculado
+ * (piloto) compartiendo preferencia con OTRAS tiendas (cada una necesitaría
+ * su propio access_token, y una preferencia usa uno solo). Con una sola
+ * tienda en el carrito no importa si tiene split o no, el backend lo maneja
+ * bien en cualquier caso. Se llama después de validateCartFreshness, que ya
+ * trae el dato real de cada tienda.
  */
 function updateMpAvailability() {
   const mercadopagoRadio = document.getElementById('payment-mercadopago');
@@ -369,13 +372,14 @@ function updateMpAvailability() {
   if (!mercadopagoRadio) return;
 
   const storeIdsInCart = [...new Set(productStoreId.values())];
-  const eligible = storeIdsInCart.length > 0 && storeIdsInCart.every((id) => storeMpEligibleById.get(id));
+  const hasSplitStore = storeIdsInCart.some((id) => storeMpEligibleById.get(id));
+  const eligible = storeIdsInCart.length > 0 && (storeIdsInCart.length === 1 || !hasSplitStore);
 
   mercadopagoRadio.disabled = !eligible;
   if (mercadopagoLabel) {
     mercadopagoLabel.title = eligible
       ? ''
-      : 'Mercado Pago no está disponible para este carrito todavía (el comercio no tiene MP vinculado, o el carrito mezcla varios comercios).';
+      : 'Mercado Pago no está disponible: el carrito mezcla un comercio con Mercado Pago vinculado directo y otros comercios. Pagá ese comercio por separado.';
     mercadopagoLabel.style.opacity = eligible ? '' : '0.5';
   }
 

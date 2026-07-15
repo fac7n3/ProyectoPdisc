@@ -9,8 +9,12 @@
 // con EL ACCESS TOKEN DEL VENDEDOR + un `marketplace_fee` (comisión de la
 // plataforma, arranca en 0%). Simplificación a propósito del piloto: MP no
 // permite dividir un solo pago entre varios collector_id (una preferencia =
-// un solo vendedor), así que si `order_ids` mezcla más de una tienda, se
-// rechaza con un mensaje claro en vez de intentar algo que no es posible.
+// un solo vendedor), así que si `order_ids` mezcla una tienda con split
+// vinculado y OTRAS tiendas, se rechaza con un mensaje claro. Si ninguna
+// tienda del carrito tiene split vinculado, un carrito multi-tienda se cobra
+// entero con el token global de la plataforma en una sola preferencia (igual
+// que antes de P0-6) -- eso sí es posible, la restricción real de MP es "un
+// solo access_token por preferencia", no "una sola tienda".
 //
 // Seguridad: el cliente scoped al JWT del llamador decide qué órdenes puede
 // pagar (RLS `orders_select_own`, igual que antes). El access_token del
@@ -122,26 +126,41 @@ Deno.serve(async (req: Request) => {
     }
 
     const storeIds = [...new Set(orders.map((o: { store_id: string }) => o.store_id))];
-    if (storeIds.length > 1) {
+
+    const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { data: storesData, error: storesError } = await serviceClient
+      .from("stores")
+      .select("id, mp_split_pilot, mp_collector_id")
+      .in("id", storeIds);
+
+    if (storesError) throw storesError;
+
+    const splitStoreIds = (storesData || [])
+      .filter((s: { mp_split_pilot: boolean; mp_collector_id: string | null }) =>
+        s.mp_split_pilot && s.mp_collector_id,
+      )
+      .map((s: { id: string }) => s.id);
+
+    // Único caso realmente imposible: una tienda con split vinculado no
+    // puede compartir preferencia con OTRAS tiendas (distinto access_token
+    // cada una). Un carrito multi-tienda sin ninguna tienda en split sigue
+    // yendo entero por el token global, sin problema.
+    if (splitStoreIds.length > 0 && storeIds.length > 1) {
       return jsonResponse(
         {
           error:
-            "Mercado Pago todavía no soporta pagar a varios comercios en un solo pago. Pagá cada comercio por separado.",
+            "Mercado Pago no puede combinar en un solo pago una tienda con Mercado Pago vinculado directo y otras tiendas. Pagá esa tienda por separado.",
         },
         400,
       );
     }
-    const storeId = storeIds[0] as string;
 
-    const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    const { data: store, error: storeError } = await serviceClient
-      .from("stores")
-      .select("mp_split_pilot, mp_collector_id")
-      .eq("id", storeId)
-      .single();
-
-    const hasSplit = !storeError && !!store?.mp_split_pilot && !!store.mp_collector_id;
+    // Si llegamos acá con splitStoreIds no vacío, por la regla de arriba
+    // storeIds.length === 1 seguro (splitStoreIds ⊆ storeIds) -- un solo
+    // storeId y es el que tiene split.
+    const hasSplit = splitStoreIds.length === 1;
+    const storeId = (hasSplit ? splitStoreIds[0] : storeIds[0]) as string;
 
     // Token con el que se arma la preferencia: el del vendedor (split
     // piloteado) o, para el resto de las tiendas, el token global de la
