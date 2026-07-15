@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -86,14 +86,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     header.appendChild(meta);
 
+    const actionsRow = document.createElement('div');
+    actionsRow.style.cssText = 'display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;';
+
     // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
     if (store.accepts_contact !== false) {
       const contactLink = document.createElement('a');
-      contactLink.style.cssText = 'display: inline-block; margin-top: 1rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+      contactLink.style.cssText = 'display: inline-block; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
       contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}`;
       contactLink.textContent = 'Contactar al vendedor';
-      header.appendChild(contactLink);
+      actionsRow.appendChild(contactLink);
     }
+
+    // P1-9: favorito de comercio (mismo ícono que el de producto, requiere sesión).
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.setAttribute('aria-label', 'Agregar comercio a favoritos');
+    favBtn.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; width: 2.6rem; height: 2.6rem; border: 2px solid var(--bl-border); background: none; border-radius: 50%; cursor: pointer; color: #ef4444; font-size: 1.1rem;';
+    const favIcon = document.createElement('i');
+    favIcon.className = 'fa-regular fa-heart';
+    favBtn.appendChild(favIcon);
+    actionsRow.appendChild(favBtn);
+
+    let isStoreFavorite = false;
+    getFavoriteStoreIds().then((ids) => {
+      isStoreFavorite = ids.includes(storeId);
+      favIcon.classList.toggle('fa-solid', isStoreFavorite);
+      favIcon.classList.toggle('fa-regular', !isStoreFavorite);
+    });
+    favBtn.addEventListener('click', async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showToast('Iniciá sesión para guardar comercios favoritos', 'default');
+        return;
+      }
+      const wasFavorite = isStoreFavorite;
+      isStoreFavorite = !wasFavorite;
+      favIcon.classList.toggle('fa-solid', isStoreFavorite);
+      favIcon.classList.toggle('fa-regular', !isStoreFavorite);
+      showToast(isStoreFavorite ? 'Comercio agregado a favoritos' : 'Comercio eliminado de favoritos', isStoreFavorite ? 'success' : 'default');
+      try {
+        await toggleFavoriteStore(storeId, wasFavorite);
+      } catch (err) {
+        console.error('Error al actualizar comercio favorito:', err);
+      }
+    });
+
+    header.appendChild(actionsRow);
 
     mainContent.appendChild(header);
 

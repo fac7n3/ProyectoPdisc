@@ -1,5 +1,5 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
-import { formatPrice, clearCart, updateCartBadge } from "./cart-utils.js";
+import { formatPrice, clearCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
 import { renderNotificationsSection } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
 import { renderSupportSection } from "./support-utils.js";
@@ -35,6 +35,8 @@ const btnCancelAddress = document.getElementById("btn-cancel-address");
 // Contenedores
 const comprasContainer = document.getElementById("compras-container");
 const favoritosContainer = document.getElementById("favoritos-container");
+const favoritosStoresContainer = document.getElementById("favoritos-stores-container");
+const favFilterInput = document.getElementById("fav-filter-input");
 
 // Pestañas
 const navLinks = document.querySelectorAll(".profile-nav__link[data-target]");
@@ -334,73 +336,148 @@ if (addressForm) {
   });
 }
 
-// --- Favoritos: Cargar desde la tabla favorites (F4-03) ---
+// --- Favoritos: productos (favorites, F4-03) + comercios (favorite_stores, P1-9) ---
+// Se guardan en memoria para poder filtrar client-side sin repetir la query
+// por cada letra tecleada (el propio ítem del backlog dice "filtro simple,
+// no hace falta una query nueva").
+let favProductsCache = [];
+let favStoresCache = [];
+
+function buildFavProductCard(p) {
+  const card = document.createElement('a');
+  card.className = "fav-card";
+  card.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
+
+  const img = document.createElement('img');
+  img.src = p.image_url || '/img/no-image.svg';
+  img.alt = p.title;
+  img.loading = 'lazy';
+  card.appendChild(img);
+
+  const info = document.createElement('div');
+  info.className = 'fav-card-info';
+
+  const priceSpan = document.createElement('span');
+  priceSpan.className = 'fav-price';
+  priceSpan.textContent = formatPrice(p.price);
+  info.appendChild(priceSpan);
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'fav-title';
+  titleSpan.textContent = p.title;
+  info.appendChild(titleSpan);
+
+  card.appendChild(info);
+  return card;
+}
+
+function buildFavStoreCard(s) {
+  const card = document.createElement('a');
+  card.className = "fav-card";
+  card.href = `./comercio.html?id=${encodeURIComponent(s.id)}`;
+
+  const img = document.createElement('img');
+  img.src = s.logo_url || '/img/no-image.svg';
+  img.alt = s.name;
+  img.loading = 'lazy';
+  card.appendChild(img);
+
+  const info = document.createElement('div');
+  info.className = 'fav-card-info';
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'fav-title';
+  titleSpan.textContent = s.name;
+  info.appendChild(titleSpan);
+
+  card.appendChild(info);
+  return card;
+}
+
+function renderFavList(container, items, buildCard, emptyText) {
+  if (!container) return;
+  container.innerHTML = "";
+  if (items.length === 0) {
+    container.innerHTML = `<p style="color: var(--bl-perfil-text-sec);">${emptyText}</p>`;
+    return;
+  }
+  items.forEach((item) => container.appendChild(buildCard(item)));
+}
+
+/** Filtro client-side por texto (nombre del producto o de la tienda), P1-9. */
+function applyFavFilter() {
+  const q = (favFilterInput?.value || '').trim().toLowerCase();
+  const products = q ? favProductsCache.filter((p) => p.title.toLowerCase().includes(q)) : favProductsCache;
+  const stores = q ? favStoresCache.filter((s) => s.name.toLowerCase().includes(q)) : favStoresCache;
+  renderFavList(favoritosContainer, products, buildFavProductCard, q ? 'Sin resultados para tu búsqueda.' : 'Aún no agregaste productos a tus favoritos.');
+  renderFavList(favoritosStoresContainer, stores, buildFavStoreCard, q ? 'Sin resultados para tu búsqueda.' : 'Aún no agregaste comercios a tus favoritos.');
+}
+
+/** Sub-pestañas Productos/Comercios dentro de "Mis favoritos" (P1-9). */
+function setupFavSubtabs() {
+  const btnProducts = document.getElementById('fav-subtab-products');
+  const btnStores = document.getElementById('fav-subtab-stores');
+  if (!btnProducts || !btnStores) return;
+
+  [btnProducts, btnStores].forEach((btn) => {
+    btn.addEventListener('click', () => {
+      [btnProducts, btnStores].forEach((b) => b.classList.remove('fav-subtab-btn--active'));
+      btn.classList.add('fav-subtab-btn--active');
+      const target = btn.dataset.favTarget;
+      if (favoritosContainer) favoritosContainer.style.display = target === 'favoritos-container' ? '' : 'none';
+      if (favoritosStoresContainer) favoritosStoresContainer.style.display = target === 'favoritos-stores-container' ? '' : 'none';
+    });
+  });
+
+  favFilterInput?.addEventListener('input', applyFavFilter);
+}
+
 async function loadFavoritos(userId) {
   if (!favoritosContainer) return;
+
   try {
     const { data: favRows, error: favError } = await supabase
       .from('favorites')
       .select('product_id')
       .eq('user_id', userId);
-
     if (favError) throw favError;
 
     const wishlist = (favRows || []).map((f) => f.product_id);
-
-    if (wishlist.length === 0) {
-      favoritosContainer.innerHTML = `<p style="color: var(--bl-perfil-text-sec);">Aún no agregaste productos a tus favoritos.</p>`;
-      return;
+    let products = [];
+    if (wishlist.length > 0) {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, title, price, image_url')
+        .in('id', wishlist)
+        .eq('is_active', true);
+      if (error) throw error;
+      products = data || [];
     }
-
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('id, title, price, image_url')
-      .in('id', wishlist)
-      .eq('is_active', true);
-
-    if (error) throw error;
-
-    if (!products || products.length === 0) {
-      favoritosContainer.innerHTML = `<p style="color: var(--bl-perfil-text-sec);">No se encontraron los productos favoritos (pueden haber sido eliminados).</p>`;
-      return;
-    }
-
-    favoritosContainer.innerHTML = "";
-    products.forEach(p => {
-      const priceFmt = formatPrice(p.price);
-      const imgSrc = p.image_url || '/img/no-image.svg';
-
-      const card = document.createElement('a');
-      card.className = "fav-card";
-      card.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
-
-      const img = document.createElement('img');
-      img.src = imgSrc;
-      img.alt = p.title;
-      img.loading = 'lazy';
-      card.appendChild(img);
-
-      const info = document.createElement('div');
-      info.className = 'fav-card-info';
-
-      const priceSpan = document.createElement('span');
-      priceSpan.className = 'fav-price';
-      priceSpan.textContent = priceFmt;
-      info.appendChild(priceSpan);
-
-      const titleSpan = document.createElement('span');
-      titleSpan.className = 'fav-title';
-      titleSpan.textContent = p.title;
-      info.appendChild(titleSpan);
-
-      card.appendChild(info);
-      favoritosContainer.appendChild(card);
-    });
-
+    favProductsCache = products;
   } catch (err) {
     console.error("Error loading wishlist", err);
     favoritosContainer.innerHTML = `<p style="color: #ef4444;">Error al cargar favoritos.</p>`;
+    return;
   }
+
+  try {
+    const storeIds = await getFavoriteStoreIds();
+    let stores = [];
+    if (storeIds.length > 0) {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, logo_url')
+        .in('id', storeIds);
+      if (error) throw error;
+      stores = data || [];
+    }
+    favStoresCache = stores;
+  } catch (err) {
+    console.error("Error loading favorite stores", err);
+    favStoresCache = [];
+  }
+
+  applyFavFilter();
 }
 
 // --- Compras: Cargar desde DB ---
@@ -838,6 +915,7 @@ async function renderFullProfile(user) {
   }
   
   // Cargar las colecciones asíncronamente
+  setupFavSubtabs();
   loadFavoritos(user.id);
   loadCompras(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");

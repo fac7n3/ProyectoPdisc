@@ -446,6 +446,23 @@ body {
   background: var(--bl-perfil-border);
 }
 
+/* === Favoritos: sub-pestañas productos/comercios (P1-9) === */
+.fav-subtab-btn {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+  background: var(--bl-perfil-surface);
+  color: var(--bl-perfil-text-sec);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fav-subtab-btn--active {
+  background: var(--bl-primary);
+  border-color: var(--bl-primary);
+  color: #fff;
+}
+
 /* === Favoritos Grid === */
 .favoritos-grid {
   display: grid;

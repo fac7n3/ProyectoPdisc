@@ -434,6 +434,46 @@ export async function toggleFavorite(productId, isCurrentlyFavorite) {
 }
 
 /**
+ * Favoritos de COMERCIO (P1-9, migración 59, tabla favorite_stores) — mismo
+ * patrón que getFavoriteIds/toggleFavorite de arriba, pero sin fallback a
+ * localStorage para invitados: "seguir" una tienda es una acción secundaria
+ * y de menor frecuencia que favoritear un producto, no amerita duplicar la
+ * lógica de merge-al-loguearse (F4-01/F4-03) para este caso.
+ */
+export async function getFavoriteStoreIds() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase
+    .from('favorite_stores')
+    .select('store_id')
+    .eq('client_id', session.user.id);
+
+  if (error) {
+    console.error('Error al traer comercios favoritos:', error);
+    return [];
+  }
+
+  return (data || []).map((f) => f.store_id);
+}
+
+/**
+ * Agrega o quita un comercio de favoritos. Requiere sesión (sin invitado).
+ * @param {string} storeId
+ * @param {boolean} isCurrentlyFavorite - estado ANTES del toggle
+ */
+export async function toggleFavoriteStore(storeId, isCurrentlyFavorite) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  if (isCurrentlyFavorite) {
+    await supabase.from('favorite_stores').delete().eq('client_id', session.user.id).eq('store_id', storeId);
+  } else {
+    await supabase.from('favorite_stores').insert({ client_id: session.user.id, store_id: storeId });
+  }
+}
+
+/**
  * Al loguearse, sube los favoritos que se hayan marcado como invitado
  * (localStorage) a la tabla `favorites` y limpia el localStorage — la DB
  * pasa a ser la única fuente de verdad para ese usuario de acá en más.
