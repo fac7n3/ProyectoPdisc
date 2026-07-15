@@ -3,6 +3,7 @@ import { formatPrice, clearCart, updateCartBadge } from "./cart-utils.js";
 import { renderNotificationsSection } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
 import { renderSupportSection } from "./support-utils.js";
+import { initNotificationsBell } from "./nav-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -842,6 +843,7 @@ async function renderFullProfile(user) {
   loadCompras(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
+  initNotificationsBell();
   const supportContainer = document.getElementById("support-container");
   if (supportContainer) renderSupportSection(supportContainer);
 }

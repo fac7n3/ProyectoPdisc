@@ -5,6 +5,7 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, clearCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons } from './cart-utils.js';
 import { getPaymentProvider } from './payment-providers.js';
+import { initNotificationsBell } from './nav-utils.js';
 
 // --- Estado del Carrito ---
 let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
@@ -779,6 +780,7 @@ function handleMercadoPagoReturn() {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderCart();
+  initNotificationsBell();
   initCartEvents();
   initCouponEvents();
   initDeliveryEvents();

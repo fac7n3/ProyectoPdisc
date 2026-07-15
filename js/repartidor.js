@@ -3,6 +3,7 @@ import { isValidPhone } from './validation-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { fetchReviewsSummary, buildStarsText } from './reviews-utils.js';
 import { renderSupportSection } from './support-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerView = document.getElementById('register-view');
@@ -319,6 +320,7 @@ async function loadMyRating(userId) {
 
 function initRepartidorPage(user) {
   checkDeliveryState(user);
+  initNotificationsBell();
 
   const form = document.getElementById('delivery-form');
   const submitBtn = form?.querySelector('button[type="submit"]');
