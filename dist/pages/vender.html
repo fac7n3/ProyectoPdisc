@@ -156,9 +156,9 @@
         color: white;
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-BWLa6sSZ.js"></script>
+    <script type="module" crossorigin src="/assets/vender-Df6zm2au.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B7PpoFzZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B5K5HCX-.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
@@ -309,6 +309,14 @@
                     <label class="form-label" for="store-free-shipping-threshold">Envío gratis a partir de ($)</label>
                     <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
                   </div>
+                </div>
+                <!-- P1-12: el vendedor decide si se lo puede contactar (botón "Contactar
+                     al vendedor" en producto.js/comercio.js) -->
+                <div class="form-group">
+                  <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="store-accepts-contact" checked />
+                    Permitir que los clientes me contacten
+                  </label>
                 </div>
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Guardar perfil</button>
               </form>

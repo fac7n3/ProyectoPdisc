@@ -11,12 +11,12 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-BYscK2vT.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-CReZxJIR.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B7PpoFzZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B5K5HCX-.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Bzh9Xz78.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-CmB4bp9J.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-DLzEJkZz.css">
     <link rel="stylesheet" crossorigin href="/assets/home-Cxk7myuK.css">
   </head>
   <body>
@@ -149,6 +149,10 @@
                 <i class="fa-solid fa-shop"></i>
                 Quiero vender
               </a>
+              <a href="./repartidor.html" class="quick-btn">
+                <i class="fa-solid fa-truck-fast"></i>
+                Quiero repartir
+              </a>
             </div>
           </article>
         </div>
@@ -191,9 +195,19 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-heart" style="color: #ef4444;"></i> Mis favoritos
             </h2>
+            <!-- P1-9: 2 secciones (productos/comercios) -- "servicios" queda fuera de
+                 alcance a propósito, no existe esa feature en la app todavía. -->
+            <div class="fav-subtabs" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+              <button type="button" id="fav-subtab-products" class="fav-subtab-btn fav-subtab-btn--active" data-fav-target="favoritos-container">Productos</button>
+              <button type="button" id="fav-subtab-stores" class="fav-subtab-btn" data-fav-target="favoritos-stores-container">Comercios</button>
+            </div>
+            <input type="text" id="fav-filter-input" class="form-input" placeholder="Buscar en mis favoritos..." style="margin-bottom: 1rem;" />
             <div id="favoritos-container" class="favoritos-grid">
               <!-- Renderizado por JS -->
               <p style="color: var(--bl-perfil-text-sec);">Cargando tus favoritos...</p>
+            </div>
+            <div id="favoritos-stores-container" class="favoritos-grid" style="display: none;">
+              <!-- Renderizado por JS -->
             </div>
           </article>
         </div>
