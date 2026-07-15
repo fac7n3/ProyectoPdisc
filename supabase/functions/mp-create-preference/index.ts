@@ -92,6 +92,12 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    const { data: userData } = await supabase.auth.getUser();
+    const buyerEmail = userData?.user?.email;
+    const buyerName = (userData?.user?.user_metadata?.full_name as string | undefined)?.trim();
+    const [buyerFirstName, ...buyerLastNameParts] = buyerName ? buyerName.split(/\s+/) : [];
+    const buyerLastName = buyerLastNameParts.join(" ");
+
     const { data: orders, error } = await supabase
       .from("orders")
       .select("id, store_id, total_price, payment_method, payment_status")
@@ -192,6 +198,9 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         items,
         marketplace_fee: marketplaceFee,
+        payer: buyerEmail
+          ? { email: buyerEmail, name: buyerFirstName, surname: buyerLastName || undefined }
+          : undefined,
         external_reference: orderIds.join(","),
         back_urls: {
           success: `${SITE_URL}/pages/perfil.html?mp=success`,
