@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-16 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53; P0-6 split payments MP Marketplace implementado en modo piloto, falta activación con credenciales reales (pausado por el usuario, requiere reconocimiento facial de Mercado Pago); P1-6 cupones de vendedor ya no públicos en bloque, migración 57 aplicada, ver docs/BACKLOG_MEJORAS.md).
+> Última actualización: 2026-07-16 (M1 completo; Fases 2-10 completas [F8-02/F8-03 bloqueados por credenciales externas, F10-02 opcional]; F2-07 Mercado Pago real verificado en producción; Fase 11 en curso; legal agregado; Fase 12 completa salvo F12-18 [fuera de alcance]; F9-07 resuelto; F9-01/F9-06/F12-13 resueltos provisionalmente, ver docs/DISENOS_PROVISIONALES.md; bug del carrito vaciado prematuramente en Mercado Pago corregido; bug crítico de degradación de rol admin/moderador corregido, migración 53; P0-6 split payments MP Marketplace implementado en modo piloto, falta activación con credenciales reales (pausado por el usuario, requiere reconocimiento facial de Mercado Pago); P1-6 cupones de vendedor ya no públicos en bloque, migración 57 aplicada; P1-7 UX cupón carrito (aplicar al escribir + botón "Quitar"), ver docs/BACKLOG_MEJORAS.md).
 
 > ## ⚠️ PRIMERA ACCIÓN DE CADA SESIÓN
 > **Antes de cualquier otra tarea, leer [docs/MIGRACIONES_PENDIENTES.md](docs/MIGRACIONES_PENDIENTES.md).**
@@ -305,6 +305,17 @@ podía listar por API directa el código/% de descuento de todos los vendedores.
   pero 0 de vendedor; la RPC resuelve por igual un código global y uno de vendedor; el dueño de la
   tienda ve su propio cupón inactivo, un extraño no. `get_advisors`: único hallazgo nuevo esperado
   (`validate_coupon_code` invocable por `anon`, mismo patrón ya aceptado que `validate_cart_prices`).
+
+## P1-7: UX del cupón en el carrito — aplicar al escribir + borrar intuitivo (2026-07-16)
+Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`, punto #16b). Sin migración,
+100% frontend (`js/carrito.js`, `initCouponEvents`). Antes había que escribir el código Y clickear
+"Aplicar" (o Enter); ahora un listener de `input` con debounce de 500ms lo valida solo con escribir
+(reutiliza la misma `applyCoupon()`, ya migrada a la RPC `validate_coupon_code` de P1-6). "Borrar"
+era ambiguo — el botón "Aplicar" ahora pasa a decir "Quitar" (`.coupon-btn--remove`, color de aviso
+en `Assets/styles/carrito.css`) en cuanto queda un cupón aplicado, un solo click limpia el input y
+resetea el descuento al instante sin esperar el debounce. **No verificado en el navegador** (la
+extensión de Chrome no estaba conectada en esta sesión) — cubierto con revisión de código
+exhaustiva del flujo de eventos; recomendable una pasada visual en la próxima sesión.
 
 ## P0-6: Split payments con Mercado Pago Marketplace, modo piloto (2026-07-15)
 Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`). Antes, `mp-create-preference`

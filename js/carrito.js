@@ -385,7 +385,14 @@ function updateMpAvailability() {
   }
 }
 
-/** Inicializar lógica del cupón de descuento */
+/**
+ * Inicializar lógica del cupón de descuento.
+ * P1-7: antes había que escribir el código Y clickear "Aplicar" (o Enter);
+ * ahora se valida solo con un debounce mientras se escribe. "Borrar" antes
+ * era ambiguo (¿limpiar el input alcanza? ¿hace falta re-aplicar vacío?) --
+ * ahora el botón mismo pasa a decir "Quitar" en cuanto un cupón queda
+ * aplicado, un solo click limpia el input y resetea el descuento.
+ */
 function initCouponEvents() {
   const header = document.getElementById('coupon-header');
   const content = document.getElementById('coupon-content');
@@ -402,14 +409,23 @@ function initCouponEvents() {
     header.classList.toggle('is-open', isHidden);
   });
 
+  let debounceTimer = null;
+
+  function setIdleBtnState() {
+    applyBtn.textContent = appliedCouponCode ? 'Quitar' : 'Aplicar';
+    applyBtn.classList.toggle('coupon-btn--remove', Boolean(appliedCouponCode));
+  }
+
   async function applyCoupon() {
+    clearTimeout(debounceTimer);
     const code = input.value.trim().toUpperCase();
     message.className = 'coupon-message'; // reset
-    
+
     if (!code) {
       currentDiscount = 0;
       appliedCouponCode = null;
       message.textContent = '';
+      setIdleBtnState();
       renderCart();
       return;
     }
@@ -456,18 +472,35 @@ function initCouponEvents() {
       message.classList.add('is-error');
     } finally {
       applyBtn.disabled = false;
-      applyBtn.textContent = 'Aplicar';
+      setIdleBtnState();
       renderCart();
     }
   }
 
-  applyBtn.addEventListener('click', applyCoupon);
+  // El botón hace doble función: aplica ya (sin esperar el debounce) si no
+  // hay ningún cupón puesto, o lo quita de un solo click si ya hay uno.
+  applyBtn.addEventListener('click', () => {
+    if (appliedCouponCode) input.value = '';
+    applyCoupon();
+  });
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       applyCoupon();
     }
+  });
+
+  // P1-7: aplicar/quitar solo con escribir, sin depender del botón. Vaciar el
+  // input dispara la limpieza al toque (no hace falta esperar); escribir un
+  // código nuevo espera un debounce corto para no pegarle a la RPC en cada tecla.
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    if (!input.value.trim()) {
+      applyCoupon();
+      return;
+    }
+    debounceTimer = setTimeout(applyCoupon, 500);
   });
 
   // F12-07: cupones públicos disponibles -- clic completa el input y aplica.

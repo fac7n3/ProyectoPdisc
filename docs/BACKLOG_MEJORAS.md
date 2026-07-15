@@ -29,6 +29,7 @@ Rama de trabajo: `mejoras-post-lanzamiento` (cambios ya mergeados a `main` en co
 | # | Punto original | Tarea |
 |---|---|---|
 | P1-6 | #16a | Cupones de un vendedor puntual ya no se listan en bloque a `anon`/`authenticated` (migración 57) |
+| P1-7 | #16b | UX cupón carrito: aplica solo con escribir (debounce), botón pasa a "Quitar" con un cupón puesto |
 
 **Migración 57 aplicada a producción**: `coupons_select_public` restringida a solo cupones
 globales (`store_id is null`); nueva `coupons_select_own_store` (el dueño ve todos los suyos,
@@ -43,6 +44,18 @@ y `SET ROLE authenticated` + `set_config('request.jwt.claim.sub', ...)`): `anon`
 de vendedor; el dueño de la tienda ve su propio cupón inactivo, un extraño no. `get_advisors`: un
 solo hallazgo nuevo, esperado y ya aceptado en el proyecto (`validate_coupon_code` invocable por
 `anon`, mismo patrón intencional que `validate_cart_prices`).
+
+**P1-7**: sin migración, 100% frontend (`js/carrito.js`, `initCouponEvents`). Antes había que
+escribir el código y clickear "Aplicar" (o Enter) — ahora un listener de `input` con debounce de
+500ms lo valida solo con escribir (reutiliza la misma `applyCoupon()` de siempre, vía la RPC
+`validate_coupon_code` de P1-6). "Borrar" era ambiguo (¿alcanza con limpiar el input? ¿hace falta
+re-aplicar vacío?): el botón "Aplicar" ahora pasa a decir "Quitar" (con color de aviso,
+`.coupon-btn--remove` en `Assets/styles/carrito.css`) en cuanto un cupón queda aplicado — un solo
+click limpia el input y resetea el descuento al instante, sin esperar el debounce. **No verificado
+en el navegador** (la extensión de Chrome no estaba conectada en esta sesión) — cubierto con
+revisión de código exhaustiva del flujo de eventos (debounce/clear/keydown/click no pisan estados
+entre sí) en su lugar; recomendable una pasada visual rápida en la próxima sesión con navegador
+disponible.
 
 ---
 
@@ -59,7 +72,6 @@ solo hallazgo nuevo, esperado y ya aceptado en el proyecto (`validate_coupon_cod
 | P1-3 | #21 | pendiente | Atrás en producto relacionado va al producto anterior (manejar historial) |
 | P1-4 | #22 | pendiente | Footer "Comercios" lleva a productos — necesita página nueva de listado de comercios |
 | P1-5 | #7 | pendiente | Campanita notificaciones en todas las páginas (solo está en home) |
-| P1-7 | #16b | pendiente | UX cupón carrito: aplicar al escribir + borrar intuitivo (hoy botón "Aplicar" + borrar raro) |
 | P1-9 | #14a | pendiente | Favoritos 3 secciones (productos/comercios/servicios futuro) + buscar/filtrar + corregir vista producto desde favoritos. Requiere tabla `favorite_stores` nueva. |
 | P1-10 | #11/#12 | pendiente | Mis datos: agregar Vender y Repartir en accesos rápidos |
 | P1-12 | #15 | pendiente | Vendedor configura si quiere ser contactado (toggle botón "Contactar al vendedor") |

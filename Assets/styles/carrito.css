@@ -430,6 +430,17 @@
   cursor: not-allowed;
 }
 
+/* P1-7: el botón pasa a "Quitar" en cuanto hay un cupón aplicado -- color
+   distinto para que se note que ahora borra, no aplica. */
+.coupon-btn--remove {
+  background: var(--bl-danger);
+}
+
+.coupon-btn--remove:hover {
+  background: var(--bl-danger);
+  opacity: 0.85;
+}
+
 .coupon-message {
   font-size: 0.75rem;
   font-weight: 500;
