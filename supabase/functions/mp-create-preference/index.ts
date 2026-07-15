@@ -19,6 +19,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!;
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://proyectopdisc.vercel.app";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -140,47 +141,51 @@ Deno.serve(async (req: Request) => {
       .eq("id", storeId)
       .single();
 
-    if (storeError || !store?.mp_split_pilot || !store.mp_collector_id) {
-      return jsonResponse(
-        { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
-        400,
-      );
-    }
+    const hasSplit = !storeError && !!store?.mp_split_pilot && !!store.mp_collector_id;
 
-    const { data: creds, error: credsError } = await serviceClient
-      .from("store_mp_credentials")
-      .select("access_token, refresh_token, expires_at")
-      .eq("store_id", storeId)
-      .single();
+    // Token con el que se arma la preferencia: el del vendedor (split
+    // piloteado) o, para el resto de las tiendas, el token global de la
+    // plataforma (comportamiento de antes de P0-6 -- sin esto, cualquier
+    // tienda sin split rompía el pago por completo).
+    let accessToken = MP_ACCESS_TOKEN;
+    let marketplaceFee = 0;
 
-    if (credsError || !creds) {
-      return jsonResponse(
-        { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
-        400,
-      );
-    }
+    if (hasSplit) {
+      const { data: creds, error: credsError } = await serviceClient
+        .from("store_mp_credentials")
+        .select("access_token, refresh_token, expires_at")
+        .eq("store_id", storeId)
+        .single();
 
-    let vendorAccessToken = creds.access_token as string;
-    const expiresAt = new Date(creds.expires_at as string).getTime();
-    if (expiresAt - Date.now() < REFRESH_MARGIN_MS) {
-      const refreshed = await refreshVendorToken(serviceClient, storeId, creds.refresh_token as string);
-      if (!refreshed) {
+      if (credsError || !creds) {
         return jsonResponse(
-          {
-            error:
-              "El vendedor tiene que volver a vincular su cuenta de Mercado Pago (el acceso venció).",
-          },
-          409,
+          { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
+          400,
         );
       }
-      vendorAccessToken = refreshed;
-    }
 
-    const totalAmount = orders.reduce(
-      (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
-      0,
-    );
-    const marketplaceFee = Math.round((totalAmount * MP_MARKETPLACE_FEE_PCT) / 100);
+      accessToken = creds.access_token as string;
+      const expiresAt = new Date(creds.expires_at as string).getTime();
+      if (expiresAt - Date.now() < REFRESH_MARGIN_MS) {
+        const refreshed = await refreshVendorToken(serviceClient, storeId, creds.refresh_token as string);
+        if (!refreshed) {
+          return jsonResponse(
+            {
+              error:
+                "El vendedor tiene que volver a vincular su cuenta de Mercado Pago (el acceso venció).",
+            },
+            409,
+          );
+        }
+        accessToken = refreshed;
+      }
+
+      const totalAmount = orders.reduce(
+        (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
+        0,
+      );
+      marketplaceFee = Math.round((totalAmount * MP_MARKETPLACE_FEE_PCT) / 100);
+    }
 
     const items = orders.map((o: { id: string; total_price: number }) => ({
       title: `Pedido Baradero Local #${o.id.slice(0, 8)}`,
@@ -193,11 +198,11 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${vendorAccessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         items,
-        marketplace_fee: marketplaceFee,
+        ...(hasSplit ? { marketplace_fee: marketplaceFee } : {}),
         payer: buyerEmail
           ? { email: buyerEmail, name: buyerFirstName, surname: buyerLastName || undefined }
           : undefined,
