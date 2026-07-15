@@ -69,13 +69,18 @@ disponible.
 
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
-| P1-3 | #21 | pendiente | Atrás en producto relacionado va al producto anterior (manejar historial) |
 | P1-4 | #22 | pendiente | Footer "Comercios" lleva a productos — necesita página nueva de listado de comercios |
 | P1-5 | #7 | pendiente | Campanita notificaciones en todas las páginas (solo está en home) |
-| P1-9 | #14a | pendiente | Favoritos 3 secciones (productos/comercios/servicios futuro) + buscar/filtrar + corregir vista producto desde favoritos. Requiere tabla `favorite_stores` nueva. |
 | P1-10 | #11/#12 | pendiente | Mis datos: agregar Vender y Repartir en accesos rápidos |
-| P1-12 | #15 | pendiente | Vendedor configura si quiere ser contactado (toggle botón "Contactar al vendedor") |
 | P1-13 | #11 compl. | pendiente | Sacar Vender y Repartir del mega-menú de categorías |
+
+## ✅ Hecho (sesión 2026-07-16, agentes en paralelo)
+
+| # | Punto original | Notas |
+|---|---|---|
+| P1-3 | #21 | Modal rápido (`product-modal.js`): cada apertura de producto empuja un `history.pushState` con su propia profundidad (`pmDepth`); un listener de `popstate` reabre el producto de ese estado en el mismo modal. Cerrar de verdad (X/Atrás/ESC/click afuera) pasa por `requestCloseModal()`, que deshace de una sola vez todo lo empujado con `history.go(-depth)` en vez de obligar a apretar "atrás" una vez por producto visto. |
+| P1-9 | #14a | Favoritos con 2 secciones (Productos/Comercios) en `perfil.js`, sub-pestañas + filtro de texto client-side. Tabla nueva `favorite_stores` (migración 59, mismo patrón RLS que `favorites`/F4-03) + `getFavoriteStoreIds()`/`toggleFavoriteStore()` en `cart-utils.js` + botón de favorito en `comercio.js`. La 3ra sección ("servicios") queda **fuera de alcance a propósito** — no existe esa feature en la app (sin tabla ni concepto de "servicio" todavía). Revisando el link a `producto.html` desde favoritos no se encontró un bug de navegación reproducible (el href ya era correcto). |
+| P1-12 | #15 | `stores.accepts_contact` (migración 58, default `true`). Checkbox nuevo "Permitir que los clientes me contacten" en "Perfil de mi comercio" (`vender.js`). El botón "Contactar al vendedor" se oculta en `producto.js`/`comercio.js` cuando el vendedor lo desactiva. Sin RLS nueva (`stores_update_own` ya cubría el caso). |
 
 ## Pendiente — P2 (consistencia visual / navegación)
 
