@@ -420,8 +420,41 @@ let previousFocus = null;
 let currentProductData = null;
 let currentEscHandler = null;
 
+// ── Historial del navegador (P1-3) ─────────────────────────
+// El modal nunca cambia la URL, pero clickear un producto relacionado antes
+// no dejaba ningún rastro: "atrás" del navegador no volvía al producto
+// anterior, salía directo de la página. Cada apertura de producto empuja un
+// estado con su propia profundidad (pmDepth, incremental desde la última);
+// popstate reabre el producto de ese estado en el mismo modal. Cerrar de
+// verdad (X/Atrás/ESC/click afuera) deshace TODO lo empujado de una vez con
+// history.go(-depth) para no obligar al usuario a apretar "atrás" repetidas
+// veces -- un solo popstate resultante hace el cierre real.
+function pushProductHistoryState(productId) {
+  const depth = (history.state?.pmDepth || 0) + 1;
+  history.pushState({ pmProduct: productId, pmDepth: depth }, '', location.href);
+}
+
+function requestCloseModal() {
+  const depth = history.state?.pmDepth || 0;
+  if (depth > 0) {
+    history.go(-depth);
+  } else {
+    closeProductModal();
+  }
+}
+
+window.addEventListener('popstate', (e) => {
+  const productId = e.state?.pmProduct;
+  const targetCard = productId && document.getElementById(productId);
+  if (targetCard) {
+    openProductModal(targetCard, { skipHistoryPush: true });
+  } else if (currentOverlay) {
+    closeProductModal();
+  }
+});
+
 // ── Abrir modal ────────────────────────────────────────────
-async function openProductModal(card) {
+async function openProductModal(card, { skipHistoryPush = false } = {}) {
   if (!card.id) {
     console.error('Se intentó abrir el modal de un producto sin id real (UUID)');
     return;
@@ -432,6 +465,7 @@ async function openProductModal(card) {
   previousFocus = document.activeElement;
   const productId = card.id;
   const categories = (card.dataset.category || '').split(' ');
+  if (!skipHistoryPush) pushProductHistoryState(productId);
 
   // El overlay se crea una sola vez y persiste durante todo el ciclo de vida
   // del modal -- solo su innerHTML cambia (loading -> contenido -> error),
@@ -455,9 +489,9 @@ async function openProductModal(card) {
   // cuadro — accesibilidad para gente mayor, que puede cerrarlo sin querer
   // al tocar cualquier lado). Escape sigue funcionando (handler más abajo).
   overlay.addEventListener('click', (e) => {
-    if (e.target.closest('#pm-close-back') || e.target.closest('#pm-close-btn')) closeProductModal();
+    if (e.target.closest('#pm-close-back') || e.target.closest('#pm-close-btn')) requestCloseModal();
   });
-  currentEscHandler = (e) => { if (e.key === 'Escape') closeProductModal(); };
+  currentEscHandler = (e) => { if (e.key === 'Escape') requestCloseModal(); };
   document.addEventListener('keydown', currentEscHandler);
 
   try {

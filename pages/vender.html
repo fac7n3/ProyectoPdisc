@@ -305,6 +305,14 @@
                     <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
                   </div>
                 </div>
+                <!-- P1-12: el vendedor decide si se lo puede contactar (botón "Contactar
+                     al vendedor" en producto.js/comercio.js) -->
+                <div class="form-group">
+                  <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="store-accepts-contact" checked />
+                    Permitir que los clientes me contacten
+                  </label>
+                </div>
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Guardar perfil</button>
               </form>
             </div>
