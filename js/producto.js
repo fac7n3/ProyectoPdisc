@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { data: product, error } = await supabase
       .from('products')
-      .select('*, stores(name, id), product_images(url, position), product_variants(id, name, price, stock)')
+      .select('*, stores(name, id, accepts_contact), product_images(url, position), product_variants(id, name, price, stock)')
       .eq('id', productId)
       .single();
 
@@ -157,11 +157,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     actionsDiv.appendChild(addBtn);
 
     // F7-02: contactar al vendedor con contexto de este producto.
-    const contactLink = document.createElement('a');
-    contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
-    contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
-    contactLink.textContent = 'Contactar al vendedor';
-    actionsDiv.appendChild(contactLink);
+    // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
+    if (product.stores?.accepts_contact !== false) {
+      const contactLink = document.createElement('a');
+      contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+      contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
+      contactLink.textContent = 'Contactar al vendedor';
+      actionsDiv.appendChild(contactLink);
+    }
 
     info.appendChild(actionsDiv);
 

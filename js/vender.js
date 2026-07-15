@@ -176,7 +176,7 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 let currentProductCount = 0;
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
 
-const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot';
+const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, accepts_contact';
 
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
@@ -404,6 +404,7 @@ function fillStoreProfileForm(store) {
   const descInput = document.getElementById('store-description');
   const deliveryFeeInput = document.getElementById('store-delivery-fee');
   const freeShippingInput = document.getElementById('store-free-shipping-threshold');
+  const acceptsContactInput = document.getElementById('store-accepts-contact');
 
   if (logoInput) logoInput.value = store.logo_url || '';
   if (addressInput) addressInput.value = store.address || '';
@@ -415,6 +416,8 @@ function fillStoreProfileForm(store) {
   // F12-04: envío configurable por comercio (antes era una constante global 350/5000).
   if (deliveryFeeInput) deliveryFeeInput.value = store.delivery_fee ?? 350;
   if (freeShippingInput) freeShippingInput.value = store.free_shipping_threshold ?? 5000;
+  // P1-12: default true si la columna todavía no llegó desde el select (no debería pasar).
+  if (acceptsContactInput) acceptsContactInput.checked = store.accepts_contact !== false;
 }
 
 function setupStoreProfileForm() {
@@ -449,6 +452,7 @@ function setupStoreProfileForm() {
         description: descriptionValue || null,
         delivery_fee: deliveryFeeValue,
         free_shipping_threshold: freeShippingValue,
+        accepts_contact: document.getElementById('store-accepts-contact').checked,
       })
       .eq('id', currentStoreId);
 

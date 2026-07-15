@@ -86,11 +86,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     header.appendChild(meta);
 
-    const contactLink = document.createElement('a');
-    contactLink.style.cssText = 'display: inline-block; margin-top: 1rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
-    contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}`;
-    contactLink.textContent = 'Contactar al vendedor';
-    header.appendChild(contactLink);
+    // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
+    if (store.accepts_contact !== false) {
+      const contactLink = document.createElement('a');
+      contactLink.style.cssText = 'display: inline-block; margin-top: 1rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+      contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}`;
+      contactLink.textContent = 'Contactar al vendedor';
+      header.appendChild(contactLink);
+    }
 
     mainContent.appendChild(header);
 
