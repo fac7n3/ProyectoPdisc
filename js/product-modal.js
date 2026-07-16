@@ -789,6 +789,17 @@ function bindModalEvents(overlay, data) {
     });
   });
 
+  // Productos relacionados — traducir scroll vertical del mouse a horizontal
+  // (la scrollbar está oculta a propósito; en desktop sin touchpad no hay otra forma de scrollear)
+  const relatedScroll = overlay.querySelector('.pm-related__scroll');
+  if (relatedScroll) {
+    relatedScroll.addEventListener('wheel', (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // no pisar scroll horizontal nativo (touchpad)
+      relatedScroll.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }, { passive: false });
+  }
+
   // Focus trap
   const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
   const focusableEls = modal.querySelectorAll(focusableSelector);
