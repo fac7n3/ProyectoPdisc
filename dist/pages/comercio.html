@@ -55,13 +55,40 @@
         margin: 0 auto;
         padding: 0 1.5rem 4rem 1.5rem;
       }
+      /* P2-5: estado de carga -- evita que #main-content quede vacío (0 de
+         altura) mientras comercio.js hace el fetch async, lo que hacía que
+         el footer saltara al tope de la página por un instante. Mismo
+         patrón visual de spinner que .auth-loading-spinner (Assets/styles/auth.css),
+         replicado acá con las variables --bl-* ya usadas en esta página en
+         vez de importar auth.css entero. */
+      .store-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        min-height: 60vh;
+        padding: 4rem 1.5rem;
+        color: var(--bl-text-light);
+      }
+      .store-loading__spinner {
+        width: 44px;
+        height: 44px;
+        border: 3px solid var(--bl-border);
+        border-top-color: var(--bl-primary);
+        border-radius: 50%;
+        animation: store-loading-spin 0.8s linear infinite;
+      }
+      @keyframes store-loading-spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-__0czIZq.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-C1GvXYsz.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DCs1hpHp.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-DdvrCMr0.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-X_FMxc-e.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-ClCQc6d2.js">
-    <link rel="stylesheet" crossorigin href="/assets/product-modal-BSXxWGAn.css">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-D4MD163v.js">
+    <link rel="stylesheet" crossorigin href="/assets/product-modal-Doxu0zAw.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Bwp3lmXO.css">
     <link rel="stylesheet" crossorigin href="/assets/home-D5wRz0P3.css">
   </head>
@@ -95,8 +122,9 @@
     </nav>
 
     <main id="main-content">
-      <div style="text-align: center; padding: 4rem; color: #64748b;">
-        Cargando comercio...
+      <div class="store-loading">
+        <div class="store-loading__spinner"></div>
+        <span>Cargando comercio...</span>
       </div>
     </main>
 
