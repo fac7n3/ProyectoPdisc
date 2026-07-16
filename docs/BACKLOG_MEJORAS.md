@@ -112,18 +112,23 @@ en la sesión 2026-07-16 (ver tablas "Hecho" arriba).
 | P1-9 | #14a | Favoritos con 2 secciones (Productos/Comercios) en `perfil.js`, sub-pestañas + filtro de texto client-side. Tabla nueva `favorite_stores` (migración 59, mismo patrón RLS que `favorites`/F4-03) + `getFavoriteStoreIds()`/`toggleFavoriteStore()` en `cart-utils.js` + botón de favorito en `comercio.js`. La 3ra sección ("servicios") queda **fuera de alcance a propósito** — no existe esa feature en la app (sin tabla ni concepto de "servicio" todavía). Revisando el link a `producto.html` desde favoritos no se encontró un bug de navegación reproducible (el href ya era correcto). |
 | P1-12 | #15 | `stores.accepts_contact` (migración 58, default `true`). Checkbox nuevo "Permitir que los clientes me contacten" en "Perfil de mi comercio" (`vender.js`). El botón "Contactar al vendedor" se oculta en `producto.js`/`comercio.js` cuando el vendedor lo desactiva. Sin RLS nueva (`stores_update_own` ya cubría el caso). |
 
+## ✅ Hecho (sesión 2026-07-16, 5 agentes en paralelo vía worktrees)
+
+| # | Punto original | Notas |
+|---|---|---|
+| P2-9 | #25 | Las tarjetas de producto (`search.js`, `home.js`, `comercio.js` — 3 lugares duplicados, sin función compartida) tenían su propio botón "Agregar" que no miraba `stock` (a diferencia de `producto.js`/`product-modal.js`, que ya lo hacían bien). Ahora las 3 deshabilitan el botón y muestran "Sin stock" cuando `product.stock <= 0`, mismo criterio visual que ya usaba `product-modal.js`. El resto de la cadena (revalidación de carrito, RPC `create_order`) ya estaba bien protegido, no se tocó. |
+| P2-3 | #6 | `js/comercio.js` armaba la sección de reseñas con un `max-width: 700px` inline inventado. Ahora usa la misma clase `.store-products` (`max-width: 1200px`) que ya usa la grilla de productos de la tienda, quedando alineada con el resto del contenido. |
+| P2-7 | #3 | `.pm-related__scroll` (relacionados del modal rápido, `product-modal.css`) no tenía padding-top suficiente para el `translateY(-3px)` + sombra del hover de las tarjetas — quedaban recortadas arriba. Sumado padding. Además, sin scrollbar visible ni handler de rueda, una PC de escritorio sin touchpad no tenía forma de scrollear horizontal — agregado un listener `wheel` en `product-modal.js` que traduce scroll vertical a horizontal cuando el gesto es predominantemente vertical (no pisa el scroll horizontal nativo de touchpad). |
+| P2-5 | #9 | `pages/comercio.html` tenía `<main id="main-content">` vacío en el HTML estático seguido directo del `<footer>` — mientras `comercio.js` hacía el fetch async, el `<main>` colapsaba y el footer aparecía pegado arriba. El patrón de skeleton de `perfil.js` (`removeSkeleton`) no aplicaba (esa página tiene layout fijo pre-marcado; `comercio.html` arma todo dinámico). Se agregó un spinner (mismo estilo visual que `.auth-loading-spinner` de `auth.css`, reimplementado inline con las variables `--bl-*` de la página) con `min-height: 60vh` para que el `<main>` tenga altura real durante la carga. |
+| P2-2 | #8 | El logo del navbar en `vender.html`/`repartidor.html` (y también `mensajes.html`, no reportado por el usuario pero con el mismo problema) era un SVG inline con azul hardcodeado (`#2d4a7c`), distinto de la imagen real de marca (`logoazulpng.png`) que usa el resto del sitio. Unificado a la misma `<img>` que usa `home.html`. El "verde agua" que mencionó el usuario resultó ser `.vendor-mode-badge` (`--bl-vendor-accent: #0e7490`) — un acento intencional de "modo vendedor" (comentario `F5-09` ya en el código), no una inconsistencia del navbar; no se tocó. Tipografía y el patrón "flecha volver" ya estaban consistentes (mismas clases CSS, sin overrides). |
+
 ## Pendiente — P2 (consistencia visual / navegación)
 
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
-| P2-2 | #8 | pendiente | Nav de vender y repartir distinto al resto (logo, tipografía, flecha vs botón, color verde agua) |
-| P2-3 | #6 | pendiente | Reseñas desalineadas en tienda |
 | P2-4 | #5 | pendiente | "Envío gratis" solo aparece dentro del producto, no afuera |
-| P2-5 | #9 | pendiente | Footer se ve mientras carga tienda + animación de carga |
-| P2-7 | #3 | pendiente | Productos relacionados: hover cortado + sin scroll horizontal en compu |
-| P2-9 | #25 | pendiente | Carrito/comprar bloquear si no hay stock (F5-02 ya tiene toggle de producto) |
 | P2-10 | #23 | pendiente | Registro vendedor: permitir elegir más de un rubro (hoy `category_slug` único) |
-| P2-11 | #10 | pendiente | Arreglar en general cómo se ve tienda (pasada estética global de comercio.html) |
+| P2-11 | #10 | pendiente | Arreglar en general cómo se ve tienda (pasada estética global de comercio.html) — requiere criterio de diseño del usuario |
 
 ## Pendiente — P3 (estético / capricho)
 
