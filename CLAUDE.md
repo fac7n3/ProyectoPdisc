@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-16. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-07-16 (tarde). Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
 > (se carga solo cuando hace falta consultar el historial). Pendientes que sí necesitan quedar
@@ -51,7 +51,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **F8-02/F8-03** — Notificaciones por Email/WhatsApp bloqueadas: faltan credenciales de un proveedor externo (Resend/Meta Business). Plantillas de WhatsApp ya redactadas en `docs/WHATSAPP_TEMPLATES.md`.
 - **F11-04** — Dominio propio: requiere que el usuario compre un dominio (decisión de costo). Hoy corre en `proyectopdisc.vercel.app`. Pasos para cuando se compre uno, en `docs/DEPLOY.md`.
 - **F11-06** — Cargar comercios reales: las 14 tiendas/64 productos son datos de seed. Falta que vendedores reales se registren y sean aprobados (el flujo ya funciona).
-- **P0-6** — Split payments con Mercado Pago Marketplace (modo piloto): `MP_CLIENT_ID`/`MP_CLIENT_SECRET` cargados como secrets (2026-07-15, app MP "Baradero Local" id `7108552352273197`). **OAuth de vinculación + creación de preferencia verificados end-to-end** contra una tienda/cuenta de prueba (no una real): `mp-oauth-callback` vincula bien, `mp-create-preference` arma la preferencia con el token del vendedor conectado. **Falta**: confirmar el pago completo — el checkout de MP deja el botón "Pagar" deshabilitado sin error tanto con tarjeta de prueba como con saldo del comprador de prueba, causa no aislada (no es el clásico "no podés pagarte a vos mismo", ya se probó logueado como comprador). El usuario va a probarlo manualmente. Detalle completo en `docs/BACKLOG_MEJORAS.md` (P0-6) y skill `progreso-baradero-local`.
+- **P0-6** — Split payments con Mercado Pago Marketplace (modo piloto): `MP_CLIENT_ID`/`MP_CLIENT_SECRET` cargados como secrets (2026-07-15, app MP "Baradero Local" id `7108552352273197`). **OAuth de vinculación + creación de preferencia verificados end-to-end** contra una tienda/cuenta de prueba (no una real). **2026-07-16: dos regresiones reales encontradas y arregladas** — el split había roto el botón "Pagar" del carrito para cualquier tienda sin split vinculado (backend sin fallback al token global + un gate de frontend que exigía split para habilitar la opción); ambas restauradas, el botón del carrito ya funciona de nuevo para todas las tiendas. **Sigue pendiente** (sin relación con lo anterior): dentro del checkout de MP en sí, el botón "Pagar" queda deshabilitado sin error tanto con tarjeta de prueba como con saldo del comprador de prueba, causa no aislada. El usuario va a probarlo manualmente. Detalle completo en `docs/BACKLOG_MEJORAS.md` (P0-6) y skill `progreso-baradero-local`.
 - **F12-18** — Facturación/AFIP: fuera de alcance de código desde el principio (ver `docs/ROADMAP.md` sección 17.1).
 - **F10-02** — Tests E2E con Playwright: diferido a propósito, opcional en el roadmap.
 - **Backlog mencionado por el usuario (2026-07-10), sin abordar aún**: pulido de responsive en detalles sin especificar; apps nativas (App Store/Google Play) recomendadas pero no iniciadas.

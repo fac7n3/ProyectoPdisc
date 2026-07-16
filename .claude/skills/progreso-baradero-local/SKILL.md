@@ -407,6 +407,72 @@ Nota operativa: en paralelo a este testing se lanzó un subagente para resolver 
 backlog (P2-1, P2-6, P2-8) — ver commit local `d6e9a96` (sin push), documentado en
 `docs/BACKLOG_MEJORAS.md`.
 
+### P0-6 — dos regresiones reales encontradas y arregladas (2026-07-16)
+
+El usuario reportó "el botón de pagar con Mercado Pago dejó de andar en el carrito" — nada que
+ver con el botón "Pagar" deshabilitado *dentro* del checkout de MP documentado arriba (eso sigue
+sin resolver, es un problema distinto). Investigado con 2 tandas de 2 subagentes cada una
+(implementa + audita adversarial), ambas confirmaron sin hallazgos:
+
+1. **Regresión de backend** (commit `05d31d7`): el commit del split piloto (`b4b864b`) sacó el
+   fallback al `MP_ACCESS_TOKEN` global de la plataforma — dejó un `return 400` obligatorio para
+   cualquier tienda sin `mp_split_pilot`/`mp_collector_id`. Como solo "Tienda Test Split P06" tenía
+   el piloto activo, **cualquier tienda real rompía el pago por completo** (nunca redirigía a MP).
+   Restaurado: si la tienda no tiene split, arma la preferencia con el token global sin
+   `marketplace_fee` (comportamiento pre-P0-6); si lo tiene, sigue igual que antes. De paso
+   (commit `17d46cd`) se agregó `payer.email/name` a la preferencia — hueco real marcado por el
+   `quality_checklist` del MCP de Mercado Pago, tomado del JWT del comprador sin pedir datos nuevos.
+
+2. **Regresión de frontend** (commit `86e7f0e`), la causa real de que el botón siguiera sin
+   habilitarse después del fix #1: `js/carrito.js` (`updateMpAvailability`) tenía un gate que
+   exigía que **todas** las tiendas del carrito tuvieran split vinculado para siquiera poder
+   elegir Mercado Pago como método de pago — quedaba deshabilitado para cualquier tienda real. De
+   paso se encontró que el backend también rechazaba sin necesidad **cualquier carrito
+   multi-tienda** (`storeIds.length > 1`), algo que nunca existió antes de P0-6 (confirmado
+   comparando con `c93422f`, la versión F2-07 original). Regla correcta implementada en ambos
+   lados (frontend y backend, debe coincidir exacto): solo es imposible mezclar en una preferencia
+   una tienda con split vinculado + otras tiendas (necesitarían tokens distintos); un carrito
+   multi-tienda donde ninguna tiene split sigue yendo entero por el token global, como siempre.
+
+### P2-9/P2-3/P2-7/P2-5/P2-2 — 5 agentes en paralelo vía worktrees (2026-07-16)
+
+Primera vez en el proyecto usando `isolation: "worktree"` del tool Agent para paralelizar fixes
+de código real (no solo investigación). **Patrón que funcionó bien, repetir**: cada agente trabaja
+en su propio worktree/rama, toca solo archivos fuente (`.js`/`.html`/`.css`), commitea sin push y
+**sin correr `npm run build`** — el orquestador mergea las 5 ramas a `main` una por una
+(`git merge --no-ff`, conflictos mínimos aunque 2 agentes tocaran el mismo archivo en líneas
+distintas — mergeó solo) y recién ahí corre `npm run build` **una sola vez** al final. Correr el
+build por separado en cada worktree hubiese generado hashes de archivo (`vite build` con
+`[hash]` en el nombre) imposibles de mergear de forma consistente entre ramas independientes.
+
+Hallazgos de cada uno (investigación previa hecha por el orquestador antes de lanzar los agentes,
+para no hacerles re-descubrir la causa raíz — prompts con archivo+línea exactos):
+- **P2-9**: las tarjetas de producto en grillas (`search.js`, `home.js`, `comercio.js` — 3 copias
+  del mismo patrón, sin función compartida) tenían su propio botón "Agregar" sin chequeo de
+  `stock`, a diferencia de `producto.js`/`product-modal.js` que ya lo hacían bien. El resto de la
+  cadena (revalidación de carrito en `validateCartFreshness`, RPC `create_order` con `raise
+  exception` si no alcanza stock) ya estaba sólido — el gap era solo esas 3 tarjetas.
+- **P2-3**: `js/comercio.js` armaba la sección de reseñas con `max-width: 700px` inline inventado;
+  ahora reusa `.store-products` (1200px), la misma clase que la grilla de productos.
+- **P2-7**: `.pm-related__scroll` sin padding-top suficiente para el `translateY(-3px)` + sombra
+  del hover (recortaba arriba); sin scrollbar visible ni handler de rueda, un mouse de escritorio
+  sin touchpad no tenía forma de scrollear horizontal — agregado listener `wheel` que traduce
+  `deltaY`→`scrollLeft` cuando el gesto es predominantemente vertical.
+- **P2-5**: `pages/comercio.html` tenía `<main>` vacío en el HTML estático justo antes del
+  `<footer>` — mientras `comercio.js` hacía el fetch async, el footer quedaba pegado arriba. El
+  patrón `removeSkeleton` de `perfil.js` no aplicaba (esa página tiene layout fijo pre-marcado;
+  `comercio.html` arma todo dinámico vía DOM API) — se agregó un spinner nuevo con
+  `min-height: 60vh`, mismo estilo visual que `.auth-loading-spinner` de `auth.css`.
+- **P2-2**: el logo del navbar en `vender.html`/`repartidor.html` (y también `mensajes.html`, no
+  reportado por el usuario pero con el mismo bug) era un SVG inline con azul hardcodeado
+  (`#2d4a7c`) en vez de la imagen real de marca. Unificado a la misma `<img>` de `home.html`. El
+  "verde agua" que mencionó el usuario resultó ser `.vendor-mode-badge`
+  (`--bl-vendor-accent: #0e7490`), un acento intencional de "modo vendedor" con comentario `F5-09`
+  ya en el código — no se tocó.
+
+**Sin verificar en navegador real** (mismo caveat que P2-1/P2-6 de la sesión anterior) — los 5
+cambios están bien razonados y compilan/buildean limpio, pero valdría una pasada visual.
+
 ## Dos bugs reportados por el usuario (2026-07-13)
 
 **1) El carrito se vaciaba al volver desde Mercado Pago sin pagar.**
