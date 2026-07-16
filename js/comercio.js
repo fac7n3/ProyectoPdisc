@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     mainContent.appendChild(section);
 
     const reviewsSection = document.createElement('section');
-    reviewsSection.style.cssText = 'max-width: 700px; margin-top: 2rem;';
+    reviewsSection.className = 'store-products';
     mainContent.appendChild(reviewsSection);
     renderReviewsSection(reviewsSection, 'store', storeId);
 
