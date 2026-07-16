@@ -197,7 +197,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartIcon = document.createElement('i');
         cartIcon.className = 'fa-solid fa-cart-plus';
         addBtn.appendChild(cartIcon);
-        addBtn.append(' Agregar');
+        // P2-9: sin stock, no se puede agregar desde la tarjeta (antes solo se
+        // validaba en producto.js/product-modal.js, no acá).
+        const outOfStock = product.stock <= 0;
+        if (outOfStock) {
+          addBtn.disabled = true;
+          addBtn.style.cssText = 'opacity: 0.5; cursor: not-allowed;';
+          addBtn.title = 'Producto sin stock';
+        }
+        addBtn.append(outOfStock ? ' Sin stock' : ' Agregar');
         body.appendChild(addBtn);
 
         article.appendChild(body);
