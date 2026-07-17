@@ -79,7 +79,7 @@ export async function renderNotificationsSection(container, userId) {
 
   if (notifications.length === 0) {
     const empty = document.createElement('p');
-    empty.style.cssText = 'color: var(--bl-text-muted, #94a3b8);';
+    empty.className = 'notif-empty';
     empty.textContent = 'No tenés notificaciones todavía.';
     container.appendChild(empty);
     return;
@@ -87,25 +87,29 @@ export async function renderNotificationsSection(container, userId) {
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   if (unreadCount > 0) {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'notif-toolbar';
     const markAllBtn = document.createElement('button');
     markAllBtn.type = 'button';
-    markAllBtn.style.cssText = 'margin-bottom: 0.75rem; background: none; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.85rem;';
+    markAllBtn.className = 'notif-mark-all';
     markAllBtn.textContent = `Marcar las ${unreadCount} como leídas`;
     markAllBtn.addEventListener('click', async () => {
       await markAllNotificationsRead(userId);
       renderNotificationsSection(container, userId);
     });
-    container.appendChild(markAllBtn);
+    toolbar.appendChild(markAllBtn);
+    container.appendChild(toolbar);
   }
 
   const list = document.createElement('div');
-  list.style.cssText = 'display: flex; flex-direction: column; gap: 0.5rem;';
+  list.className = 'notif-list';
 
   notifications.forEach((n) => {
     const row = document.createElement('div');
-    row.style.cssText = `padding: 0.75rem; border-radius: 8px; border: 1px solid var(--bl-border, #e2e8f0); background: ${n.read_at ? 'transparent' : 'var(--bl-surface-alt, #f0f4f8)'};`;
+    row.className = n.read_at ? 'notif-item' : 'notif-item notif-item--unread';
 
     const title = document.createElement('strong');
+    title.className = 'notif-item__title';
     // F12-09: a diferencia del resto (siempre texto genérico, ver arriba),
     // un aviso de stock sin decir de qué producto es casi inútil -- el
     // cliente puede tener varios pendientes en productos distintos.
@@ -120,7 +124,7 @@ export async function renderNotificationsSection(container, userId) {
       title.textContent = `Soporte respondió a tu reclamo "${n.payload.subject}"`;
       if (n.payload?.message) {
         const preview = document.createElement('p');
-        preview.style.cssText = 'font-size: 0.85rem; color: var(--bl-text-secondary, #4a5568); margin: 0.2rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+        preview.className = 'notif-item__preview';
         preview.textContent = n.payload.message;
         row.appendChild(preview);
       }
@@ -132,20 +136,20 @@ export async function renderNotificationsSection(container, userId) {
     if (PRODUCT_LINK_TYPES.has(n.type) && n.payload?.product_id) {
       const link = document.createElement('a');
       link.href = `./producto.html?id=${encodeURIComponent(n.payload.product_id)}`;
-      link.style.cssText = 'display: block; font-size: 0.85rem; color: var(--bl-primary, #2563eb); margin-top: 0.15rem;';
+      link.className = 'notif-item__link';
       link.textContent = 'Ver producto';
       row.appendChild(link);
     }
 
     const meta = document.createElement('div');
-    meta.style.cssText = 'font-size: 0.8rem; color: var(--bl-text-muted, #94a3b8); margin-top: 0.25rem;';
+    meta.className = 'notif-item__meta';
     meta.textContent = new Date(n.created_at).toLocaleString('es-AR');
     row.appendChild(meta);
 
     if (!n.read_at) {
       const markBtn = document.createElement('button');
       markBtn.type = 'button';
-      markBtn.style.cssText = 'display: block; margin-top: 0.4rem; background: none; border: none; color: var(--bl-primary, #2563eb); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
+      markBtn.className = 'notif-item__mark';
       markBtn.textContent = 'Marcar como leída';
       markBtn.addEventListener('click', async () => {
         await markNotificationRead(n.id);
