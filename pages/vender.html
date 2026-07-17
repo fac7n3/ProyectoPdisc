@@ -338,6 +338,7 @@
       .pub-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); box-shadow: var(--bl-shadow-sm); position: relative; }
       .pub-row--paused { opacity: 0.68; }
       .pub-row__thumb { width: 56px; height: 56px; border-radius: var(--bl-radius-md); object-fit: cover; flex-shrink: 0; background: var(--bl-surface-alt); }
+      .pub-row__thumb--icon { display: flex; align-items: center; justify-content: center; color: var(--bl-text-muted); font-size: 1.25rem; }
       .pub-row__main { flex: 1 1 auto; min-width: 0; }
       .pub-row__title { display: block; font-weight: 600; color: var(--bl-text); text-decoration: none; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pub-row__title:hover { color: var(--bl-vendor-accent); }
@@ -348,6 +349,10 @@
       .pub-status { font-size: 0.76rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: var(--bl-radius-pill); white-space: nowrap; }
       .pub-status--active { background: rgba(16, 185, 129, 0.12); color: #047857; }
       .pub-status--paused { background: var(--bl-surface-alt); color: var(--bl-text-secondary); }
+      .pub-status--pending { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+      .pub-status--shipped { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; }
+      .pub-status--ready { background: rgba(14, 116, 144, 0.12); color: var(--bl-vendor-accent); }
+      .pub-status--cancelled { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
 
       .pub-actions { position: relative; flex-shrink: 0; }
       .pub-actions__toggle { background: none; border: none; color: var(--bl-text-secondary); cursor: pointer; padding: 0.5rem 0.65rem; border-radius: var(--bl-radius-md); font-size: 1rem; }
@@ -611,15 +616,33 @@
             </section>
 
             <!-- === Ventas (pedidos) === -->
+            <!-- Gestión de pedidos (F5-06), rediseño estilo ML (mismo patrón que Publicaciones,
+                 reusa las clases pub-* -- lista + filtros + menú de acciones por fila). -->
             <section class="mc-section" data-section="ventas" hidden>
-            <!-- Gestión de pedidos (F5-06) -->
-            <div style="margin-top: 3rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="font-size: 1.5rem; color: var(--bl-text);">Mis pedidos</h2>
-                <button class="btn-outline" id="btn-refresh-orders" style="padding: 0.5rem 1rem;">Refrescar</button>
+            <div class="pub-wrap">
+              <div class="pub-header">
+                <h1 class="pub-title">Ventas</h1>
               </div>
-              <div id="all-orders-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <!-- Cargado con JS -->
+
+              <div class="pub-toolbar" id="ventas-toolbar">
+                <div class="pub-search">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="search" id="ventas-search" placeholder="Buscar por N° de pedido o teléfono" autocomplete="off" />
+                </div>
+                <div class="pub-chips">
+                  <button type="button" class="pub-chip is-active" data-status="all">Todas</button>
+                  <button type="button" class="pub-chip" data-status="pending">Pendiente</button>
+                  <button type="button" class="pub-chip" data-status="paid">Pagado</button>
+                  <button type="button" class="pub-chip" data-status="ready_for_pickup">Listo para retirar</button>
+                  <button type="button" class="pub-chip" data-status="shipped">Enviado</button>
+                  <button type="button" class="pub-chip" data-status="completed">Completado</button>
+                  <button type="button" class="pub-chip" data-status="cancelled">Cancelado</button>
+                </div>
+                <span class="pub-count" id="ventas-count"></span>
+              </div>
+
+              <div class="pub-list" id="ventas-list">
+                <!-- Pedidos cargados con JS -->
               </div>
             </div>
 
@@ -687,7 +710,7 @@
               </div>
 
               <!-- Barra de filtros (búsqueda + estado + contador), todo client-side -->
-              <div class="pub-toolbar">
+              <div class="pub-toolbar" id="pub-toolbar">
                 <div class="pub-search">
                   <i class="fa-solid fa-magnifying-glass"></i>
                   <input type="search" id="pub-search" placeholder="Buscar en mis publicaciones" autocomplete="off" />

@@ -201,6 +201,13 @@ let pubSalesByProduct = new Map();
 let pubSearch = '';
 let pubStatus = 'all'; // 'all' | 'active' | 'inactive'
 
+// Sección "Ventas" (mismo rediseño ML): pedidos cacheados + estado de los
+// filtros client-side (búsqueda por N° de pedido / teléfono, chip de estado).
+let ordCache = [];
+let ordPhoneByClientId = new Map();
+let ordSearch = '';
+let ordStatus = 'all';
+
 const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, accepts_contact';
 
 /**
@@ -283,9 +290,17 @@ const ORDER_STATUS_LABELS_VENDER = {
   cancelled: 'Cancelado',
 };
 
+const ORDER_STATUS_BADGE_VARIANT = {
+  pending: 'pending',
+  paid: 'active',
+  shipped: 'shipped',
+  ready_for_pickup: 'ready',
+  completed: 'active',
+  cancelled: 'cancelled',
+};
+
 async function renderAllOrders() {
-  const container = document.getElementById('all-orders-container');
-  if (!container || !currentStoreId) return;
+  if (!currentStoreId) return;
 
   const { data: orders, error } = await supabase
     .from('orders')
@@ -294,120 +309,223 @@ async function renderAllOrders() {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  container.textContent = '';
-
   if (error) {
     console.error('Error al cargar pedidos:', error);
-    const errorMsg = document.createElement('p');
-    errorMsg.style.color = 'var(--bl-text-secondary)';
-    errorMsg.textContent = 'Error al cargar los pedidos.';
-    container.appendChild(errorMsg);
+    ordCache = [];
+    renderVentas();
     return;
   }
 
-  if (!orders || orders.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.style.color = 'var(--bl-text-secondary)';
-    emptyMsg.textContent = 'Todavía no tenés pedidos.';
-    container.appendChild(emptyMsg);
-    return;
-  }
+  ordCache = orders || [];
 
   // F12-05: orders.client_id no tiene FK a profiles (sí a auth.users), así
   // que PostgREST no puede embeberlo en el select de arriba -- hace falta
   // una segunda consulta. RLS nueva (profiles_select_order_participants)
   // es la que permite verlo: solo clientes que efectivamente compraron acá.
-  const clientIds = [...new Set(orders.map((o) => o.client_id).filter(Boolean))];
+  const clientIds = [...new Set(ordCache.map((o) => o.client_id).filter(Boolean))];
   const { data: clientProfiles } = clientIds.length
     ? await supabase.from('profiles').select('id, phone').in('id', clientIds)
     : { data: [] };
-  const phoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
+  ordPhoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
 
-  orders.forEach((order) => container.appendChild(buildOrderRow(order, phoneByClientId.get(order.client_id))));
+  renderVentas();
 }
 
+/** Fila de pedido estilo ML (mismas clases pub-* que Publicaciones): ícono + info/cliente + fecha + estado + acciones. */
 function buildOrderRow(order, clientPhone) {
   const row = document.createElement('div');
-  row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
+  row.className = 'pub-row';
 
-  const info = document.createElement('div');
-  const idStrong = document.createElement('strong');
-  idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-  info.appendChild(idStrong);
-  const detailsSpan = document.createElement('span');
-  detailsSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
+  const icon = document.createElement('div');
+  icon.className = 'pub-row__thumb pub-row__thumb--icon';
+  const iconEl = document.createElement('i');
+  iconEl.className = order.delivery_method === 'delivery' ? 'fa-solid fa-truck' : 'fa-solid fa-store';
+  icon.appendChild(iconEl);
+  row.appendChild(icon);
+
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('span');
+  title.className = 'pub-row__title';
+  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+  main.appendChild(title);
+
+  const sub = document.createElement('span');
+  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
   const methodLabel = order.delivery_method === 'delivery' ? 'Envío' : 'Retiro en el local';
-  detailsSpan.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
-  info.appendChild(detailsSpan);
+  sub.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
+  main.appendChild(sub);
 
   // F12-05: teléfono del cliente, para coordinar retiro/envío -- solo
   // visible si lo cargó en su perfil (RLS ya lo permite ver, F12-05).
   if (clientPhone) {
     const phoneSpan = document.createElement('span');
-    phoneSpan.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.875rem; margin-top: 0.15rem;';
+    phoneSpan.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.8rem; margin-top: 0.1rem;';
     const phoneIcon = document.createElement('i');
     phoneIcon.className = 'fa-solid fa-phone';
     phoneSpan.appendChild(phoneIcon);
     phoneSpan.append(` ${clientPhone}`);
-    info.appendChild(phoneSpan);
+    main.appendChild(phoneSpan);
   }
 
   // Botón de arrepentimiento (Ley 24.240 / Res. 424/2020): el cliente lo
   // solicitó desde "Mis compras" (request_order_revocation) -- el vendedor
-  // tiene que coordinar la devolución y usar "Cancelar" acá una vez resuelta.
+  // tiene que coordinar la devolución y usar "Cancelar" (menú de acciones) una vez resuelta.
   if (order.revocation_requested_at) {
     const revocationBadge = document.createElement('div');
-    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.25rem 0.6rem; border-radius: var(--bl-radius-md); font-size: 0.8125rem; font-weight: 600; margin-top: 0.35rem; display: inline-block;';
+    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.2rem 0.55rem; border-radius: var(--bl-radius-md); font-size: 0.75rem; font-weight: 600; margin-top: 0.3rem; display: inline-block;';
     revocationBadge.textContent = '⚠ Arrepentimiento solicitado por el cliente';
-    info.appendChild(revocationBadge);
+    main.appendChild(revocationBadge);
   }
 
-  row.appendChild(info);
+  row.appendChild(main);
 
-  const statusSpan = document.createElement('span');
-  statusSpan.style.cssText = 'font-weight: 600;';
-  statusSpan.textContent = ORDER_STATUS_LABELS_VENDER[order.status] || order.status;
-  row.appendChild(statusSpan);
+  const dateCell = document.createElement('div');
+  dateCell.className = 'pub-row__cell';
+  dateCell.appendChild(pubCellLabel('Fecha'));
+  const dateVal = document.createElement('span');
+  dateVal.className = 'pub-row__cell-val';
+  dateVal.textContent = new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  dateCell.appendChild(dateVal);
+  row.appendChild(dateCell);
 
-  const actions = document.createElement('div');
-  actions.style.cssText = 'display: flex; gap: 0.5rem;';
+  const statusCell = document.createElement('div');
+  statusCell.className = 'pub-row__cell';
+  const badge = document.createElement('span');
+  badge.className = `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`;
+  badge.textContent = ORDER_STATUS_LABELS_VENDER[order.status] || order.status;
+  statusCell.appendChild(badge);
+  row.appendChild(statusCell);
+
+  const actions = buildOrdActions(order);
+  if (actions) row.appendChild(actions);
+
+  return row;
+}
+
+/** Menú de acciones (⋮) del pedido -- mismo componente que buildPubActions, sin kebab si no hay ninguna acción disponible. */
+function buildOrdActions(order) {
+  const menu = document.createElement('div');
+  menu.className = 'pub-actions__menu';
+  menu.hidden = true;
 
   // El flujo de "delivery" lo maneja el repartidor (F3-03) -- acá el
   // vendedor solo gestiona directamente el retiro en el local.
   if (order.delivery_method === 'pickup' && order.status === 'paid') {
-    const readyBtn = document.createElement('button');
-    readyBtn.type = 'button';
-    readyBtn.className = 'form-btn';
-    readyBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
-    readyBtn.textContent = 'Listo para retirar';
-    readyBtn.addEventListener('click', () => updateOrderStatus(order.id, 'ready_for_pickup'));
-    actions.appendChild(readyBtn);
+    menu.appendChild(pubMenuItem('Listo para retirar', 'fa-box', () => {
+      closePubMenus();
+      updateOrderStatus(order.id, 'ready_for_pickup');
+    }));
   }
 
   if (order.delivery_method === 'pickup' && order.status === 'ready_for_pickup') {
-    const completeBtn = document.createElement('button');
-    completeBtn.type = 'button';
-    completeBtn.className = 'form-btn';
-    completeBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
-    completeBtn.textContent = 'Marcar entregado';
-    completeBtn.addEventListener('click', () => updateOrderStatus(order.id, 'completed'));
-    actions.appendChild(completeBtn);
+    menu.appendChild(pubMenuItem('Marcar entregado', 'fa-check', () => {
+      closePubMenus();
+      updateOrderStatus(order.id, 'completed');
+    }));
   }
 
   if (['pending', 'paid'].includes(order.status)) {
-    const cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.className = 'btn-outline';
-    cancelBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
-    cancelBtn.textContent = 'Cancelar';
-    cancelBtn.addEventListener('click', () => {
+    menu.appendChild(pubMenuItem('Cancelar pedido', 'fa-ban', () => {
+      closePubMenus();
       if (confirm('¿Cancelar este pedido?')) updateOrderStatus(order.id, 'cancelled');
-    });
-    actions.appendChild(cancelBtn);
+    }, true));
   }
 
-  row.appendChild(actions);
-  return row;
+  if (!menu.childElementCount) return null;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pub-actions';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = 'pub-actions__toggle';
+  toggleBtn.setAttribute('aria-label', 'Acciones del pedido');
+  const dots = document.createElement('i');
+  dots.className = 'fa-solid fa-ellipsis-vertical';
+  toggleBtn.appendChild(dots);
+  wrap.appendChild(toggleBtn);
+  wrap.appendChild(menu);
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closePubMenus();
+    menu.hidden = !willOpen;
+  });
+
+  return wrap;
+}
+
+function renderVentasEmpty(list) {
+  const box = document.createElement('div');
+  box.className = 'pub-empty';
+  const icon = document.createElement('i');
+  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
+  box.appendChild(icon);
+  const title = document.createElement('p');
+  title.className = 'pub-empty__title';
+  title.textContent = 'Todavía no tenés pedidos';
+  box.appendChild(title);
+  const sub = document.createElement('p');
+  sub.className = 'pub-empty__sub';
+  sub.textContent = 'Cuando alguien te compre, vas a verlo acá.';
+  box.appendChild(sub);
+  list.appendChild(box);
+}
+
+/** Aplica los filtros client-side (búsqueda por N° de pedido/teléfono + estado) sobre ordCache y renderiza. */
+function renderVentas() {
+  const list = document.getElementById('ventas-list');
+  if (!list) return;
+  list.textContent = '';
+
+  const countEl = document.getElementById('ventas-count');
+
+  if (!ordCache.length) {
+    if (countEl) countEl.textContent = '0 pedidos';
+    renderVentasEmpty(list);
+    return;
+  }
+
+  const term = ordSearch.trim().toLowerCase();
+  const filtered = ordCache.filter((o) => {
+    if (ordStatus !== 'all' && o.status !== ordStatus) return false;
+    if (term) {
+      const idMatch = o.id.split('-')[0].toLowerCase().includes(term);
+      const phone = (ordPhoneByClientId.get(o.client_id) || '').toLowerCase();
+      if (!idMatch && !phone.includes(term)) return false;
+    }
+    return true;
+  });
+
+  if (countEl) countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'pedido' : 'pedidos'}`;
+
+  if (!filtered.length) {
+    const note = document.createElement('p');
+    note.className = 'pub-nomatch';
+    note.textContent = 'No hay pedidos que coincidan con el filtro.';
+    list.appendChild(note);
+    return;
+  }
+
+  filtered.forEach((o) => list.appendChild(buildOrderRow(o, ordPhoneByClientId.get(o.client_id))));
+}
+
+/** Wire de los controles de la sección Ventas (búsqueda + chips de estado). Una sola vez. */
+function initVentasControls() {
+  document.getElementById('ventas-search')?.addEventListener('input', (e) => {
+    ordSearch = e.target.value;
+    renderVentas();
+  });
+
+  document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      ordStatus = chip.dataset.status;
+      document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+      renderVentas();
+    });
+  });
 }
 
 async function updateOrderStatus(orderId, newStatus) {
@@ -1516,10 +1634,13 @@ function initPublicacionesControls() {
     renderPublicaciones();
   });
 
-  document.querySelectorAll('.pub-chip').forEach((chip) => {
+  // Scopeado a #pub-toolbar: la sección Ventas reusa la misma clase .pub-chip
+  // para su propio filtro de estado (initVentasControls) -- sin este scope,
+  // ambos filtros se pisarían entre sí.
+  document.querySelectorAll('#pub-toolbar .pub-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       pubStatus = chip.dataset.status;
-      document.querySelectorAll('.pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+      document.querySelectorAll('#pub-toolbar .pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
       renderPublicaciones();
     });
   });
@@ -1700,7 +1821,7 @@ function setupDashboardEvents() {
   setupMyCouponForm();
   setupStoreStaffForm();
   initPublicacionesControls();
-  document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
+  initVentasControls();
 
   // F5-03: alta de variante para el producto que se está editando.
   document.getElementById('btn-add-variant')?.addEventListener('click', async () => {
