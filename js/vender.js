@@ -1,5 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
-import { formatPrice } from './cart-utils.js';
+import { formatPrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
@@ -193,6 +193,13 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
+
+// Sección "Publicaciones" (rediseño ML): productos cacheados + ventas por producto
+// + estado de los filtros client-side (búsqueda por título / estado activo-pausado).
+let pubProducts = [];
+let pubSalesByProduct = new Map();
+let pubSearch = '';
+let pubStatus = 'all'; // 'all' | 'active' | 'inactive'
 
 const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, accepts_contact';
 
@@ -1236,128 +1243,289 @@ async function fetchProducts() {
   currentProductCount = products.length;
   renderOnboardingChecklist(currentProductCount > 0);
 
-  const tbody = document.getElementById('seller-products-tbody');
-  tbody.innerHTML = '';
+  // Cache para el filtrado client-side + conteo de ventas por producto (ML).
+  pubProducts = products;
+  await loadSalesByProduct();
+  renderPublicaciones();
+}
 
-  if (products.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No tienes productos cargados aún.</td></tr>';
+/**
+ * Ventas por producto: unidades vendidas en órdenes pagadas de la tienda.
+ * Mismo patrón de embed `orders!inner(...)` que renderResumen() -- una sola
+ * consulta, agrupada en memoria por product_id.
+ */
+async function loadSalesByProduct() {
+  pubSalesByProduct = new Map();
+  if (!currentStoreId) return;
+
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('product_id, quantity, orders!inner(store_id, payment_status)')
+    .eq('orders.store_id', currentStoreId)
+    .eq('orders.payment_status', 'paid');
+
+  if (error) {
+    console.error('Error al cargar ventas por producto:', error);
     return;
   }
 
-  products.forEach(p => {
-    const tr = document.createElement('tr');
-    if (!p.is_active) tr.style.opacity = '0.55';
+  (data || []).forEach((it) => {
+    if (!it.product_id) return;
+    pubSalesByProduct.set(it.product_id, (pubSalesByProduct.get(it.product_id) || 0) + (it.quantity || 0));
+  });
+}
 
-    // Image cell
-    const tdImg = document.createElement('td');
-    tdImg.style.padding = '1rem';
-    const img = document.createElement('img');
-    img.src = p.image_url || '/img/no-image.svg';
-    img.style.cssText = 'width: 50px; height: 50px; border-radius: 8px; object-fit: cover;';
-    img.alt = p.title || 'Producto';
-    img.loading = 'lazy';
-    tdImg.appendChild(img);
-    tr.appendChild(tdImg);
+/** Cierra cualquier menú de acciones (⋮) de fila que esté abierto. */
+function closePubMenus() {
+  document.querySelectorAll('.pub-actions__menu').forEach((m) => { m.hidden = true; });
+}
 
-    // Name + description cell
-    const tdName = document.createElement('td');
-    tdName.style.padding = '1rem';
-    const strong = document.createElement('strong');
-    strong.textContent = p.title;
-    tdName.appendChild(strong);
-    if (!p.is_active) {
-      const badge = document.createElement('span');
-      badge.style.cssText = 'margin-left: 0.5rem; font-size: 0.75rem; color: #ef4444; font-weight: 600;';
-      badge.textContent = '(Inactivo)';
-      tdName.appendChild(badge);
+function pubCellLabel(text) {
+  const label = document.createElement('span');
+  label.className = 'pub-row__cell-label';
+  label.textContent = text;
+  return label;
+}
+
+function pubMenuItem(text, iconClass, onClick, danger) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pub-actions__item' + (danger ? ' pub-actions__item--danger' : '');
+  const icon = document.createElement('i');
+  icon.className = `fa-solid ${iconClass}`;
+  btn.appendChild(icon);
+  btn.append(` ${text}`);
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
+function buildPubActions(p) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pub-actions';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = 'pub-actions__toggle';
+  toggleBtn.setAttribute('aria-label', 'Acciones de la publicación');
+  const dots = document.createElement('i');
+  dots.className = 'fa-solid fa-ellipsis-vertical';
+  toggleBtn.appendChild(dots);
+  wrap.appendChild(toggleBtn);
+
+  const menu = document.createElement('div');
+  menu.className = 'pub-actions__menu';
+  menu.hidden = true;
+
+  // Editar -- reusa el flujo de edición existente (F5-02).
+  menu.appendChild(pubMenuItem('Editar', 'fa-pen', () => {
+    closePubMenus();
+    openEditProductForm(p.id);
+  }));
+
+  // Pausar / Reactivar -- togglea is_active (misma lógica de siempre).
+  menu.appendChild(pubMenuItem(p.is_active ? 'Pausar' : 'Reactivar', p.is_active ? 'fa-eye-slash' : 'fa-eye', async () => {
+    closePubMenus();
+    const { error } = await supabase.from('products').update({ is_active: !p.is_active }).eq('id', p.id);
+    if (error) {
+      showToast('No se pudo actualizar el producto.', 'error');
+      console.error(error);
+      return;
     }
-    if (p.description) {
-      tdName.appendChild(document.createElement('br'));
-      const small = document.createElement('small');
-      small.style.color = 'var(--bl-text-secondary)';
-      small.textContent = p.description.substring(0, 30) + '...';
-      tdName.appendChild(small);
+    showToast(p.is_active ? 'Publicación pausada' : 'Publicación activada', 'success');
+    fetchProducts();
+  }));
+
+  // Ver publicación -- link a la página de detalle pública.
+  const view = document.createElement('a');
+  view.className = 'pub-actions__item';
+  view.href = `producto.html?id=${p.id}`;
+  const viewIcon = document.createElement('i');
+  viewIcon.className = 'fa-solid fa-arrow-up-right-from-square';
+  view.appendChild(viewIcon);
+  view.append(' Ver publicación');
+  menu.appendChild(view);
+
+  // Eliminar (misma confirmación/advertencia que antes).
+  menu.appendChild(pubMenuItem('Eliminar', 'fa-trash', async () => {
+    closePubMenus();
+    if (!confirm('¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)')) return;
+    const { error } = await supabase.from('products').delete().eq('id', p.id);
+    if (error) {
+      showToast('No se pudo eliminar el producto.', 'error');
+      console.error(error);
+      return;
     }
-    tr.appendChild(tdName);
+    fetchProducts();
+  }, true));
 
-    // Price cell
-    const tdPrice = document.createElement('td');
-    tdPrice.style.cssText = 'padding: 1rem; color: var(--bl-primary); font-weight: 600;';
-    tdPrice.textContent = formatPrice(p.price);
-    tr.appendChild(tdPrice);
+  wrap.appendChild(menu);
 
-    // Actions cell
-    const tdActions = document.createElement('td');
-    tdActions.style.padding = '1rem';
-
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn-edit-product';
-    editBtn.dataset.id = p.id;
-    editBtn.title = 'Editar';
-    editBtn.style.cssText = 'background: transparent; border: none; color: var(--bl-primary); cursor: pointer; padding: 0.5rem;';
-    const editIcon = document.createElement('i');
-    editIcon.className = 'fa-solid fa-pen';
-    editBtn.appendChild(editIcon);
-    tdActions.appendChild(editBtn);
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'btn-toggle-product';
-    toggleBtn.dataset.id = p.id;
-    toggleBtn.dataset.active = p.is_active;
-    toggleBtn.title = p.is_active ? 'Desactivar' : 'Activar';
-    toggleBtn.style.cssText = 'background: transparent; border: none; color: var(--bl-text-secondary); cursor: pointer; padding: 0.5rem;';
-    const toggleIcon = document.createElement('i');
-    toggleIcon.className = p.is_active ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
-    toggleBtn.appendChild(toggleIcon);
-    tdActions.appendChild(toggleBtn);
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'btn-delete-product';
-    deleteBtn.dataset.id = p.id;
-    deleteBtn.title = 'Eliminar';
-    deleteBtn.style.cssText = 'background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0.5rem;';
-    const trashIcon = document.createElement('i');
-    trashIcon.className = 'fa-solid fa-trash';
-    deleteBtn.appendChild(trashIcon);
-    tdActions.appendChild(deleteBtn);
-
-    tr.appendChild(tdActions);
-
-    tbody.appendChild(tr);
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closePubMenus();
+    menu.hidden = !willOpen;
   });
 
-  // Bind acciones
-  document.querySelectorAll('.btn-delete-product').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      if (confirm('¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)')) {
-        await supabase.from('products').delete().eq('id', id);
-        fetchProducts();
+  return wrap;
+}
+
+/** Fila de publicación estilo ML: miniatura + título/precio + stock + ventas + estado + acciones. */
+function buildPubRow(p) {
+  const row = document.createElement('div');
+  row.className = 'pub-row' + (p.is_active ? '' : ' pub-row--paused');
+
+  const thumb = document.createElement('img');
+  thumb.className = 'pub-row__thumb';
+  thumb.src = p.image_url || '/img/no-image.svg';
+  thumb.alt = p.title || 'Producto';
+  thumb.loading = 'lazy';
+  row.appendChild(thumb);
+
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('a');
+  title.className = 'pub-row__title';
+  title.href = `producto.html?id=${p.id}`;
+  title.textContent = p.title;
+  main.appendChild(title);
+  // buildPriceRow (F5-05): precio tachado + badge -N% respetando offer_expires_at vencido.
+  main.appendChild(buildPriceRow(p));
+  row.appendChild(main);
+
+  const stockCell = document.createElement('div');
+  stockCell.className = 'pub-row__cell';
+  stockCell.appendChild(pubCellLabel('Stock'));
+  const stockVal = document.createElement('span');
+  stockVal.className = 'pub-row__cell-val' + ((p.stock ?? 0) <= 0 ? ' pub-row__cell-val--zero' : '');
+  stockVal.textContent = p.stock ?? 0;
+  stockCell.appendChild(stockVal);
+  row.appendChild(stockCell);
+
+  const salesCell = document.createElement('div');
+  salesCell.className = 'pub-row__cell';
+  salesCell.appendChild(pubCellLabel('Ventas'));
+  const salesVal = document.createElement('span');
+  salesVal.className = 'pub-row__cell-val';
+  salesVal.textContent = pubSalesByProduct.get(p.id) || 0;
+  salesCell.appendChild(salesVal);
+  row.appendChild(salesCell);
+
+  const statusCell = document.createElement('div');
+  statusCell.className = 'pub-row__cell';
+  const badge = document.createElement('span');
+  badge.className = 'pub-status ' + (p.is_active ? 'pub-status--active' : 'pub-status--paused');
+  badge.textContent = p.is_active ? 'Activa' : 'Pausada';
+  statusCell.appendChild(badge);
+  row.appendChild(statusCell);
+
+  row.appendChild(buildPubActions(p));
+  return row;
+}
+
+function renderPubEmpty(list) {
+  const box = document.createElement('div');
+  box.className = 'pub-empty';
+  const icon = document.createElement('i');
+  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
+  box.appendChild(icon);
+  const title = document.createElement('p');
+  title.className = 'pub-empty__title';
+  title.textContent = 'Todavía no tenés publicaciones';
+  box.appendChild(title);
+  const sub = document.createElement('p');
+  sub.className = 'pub-empty__sub';
+  sub.textContent = 'Publicá tu primer producto para empezar a vender.';
+  box.appendChild(sub);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pub-empty__btn';
+  btn.textContent = 'Publicar ahora';
+  btn.addEventListener('click', () => document.getElementById('btn-show-add-product')?.click());
+  box.appendChild(btn);
+  list.appendChild(box);
+}
+
+/** Aplica los filtros client-side (búsqueda + estado) sobre pubProducts y renderiza. */
+function renderPublicaciones() {
+  const list = document.getElementById('pub-list');
+  if (!list) return;
+  list.textContent = '';
+
+  const countEl = document.getElementById('pub-count');
+
+  if (!pubProducts.length) {
+    if (countEl) countEl.textContent = '0 publicaciones';
+    renderPubEmpty(list);
+    return;
+  }
+
+  const term = pubSearch.trim().toLowerCase();
+  const filtered = pubProducts.filter((p) => {
+    if (pubStatus === 'active' && !p.is_active) return false;
+    if (pubStatus === 'inactive' && p.is_active) return false;
+    if (term && !(p.title || '').toLowerCase().includes(term)) return false;
+    return true;
+  });
+
+  if (countEl) {
+    countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'publicación' : 'publicaciones'}`;
+  }
+
+  if (!filtered.length) {
+    const note = document.createElement('p');
+    note.className = 'pub-nomatch';
+    note.textContent = 'No hay publicaciones que coincidan con el filtro.';
+    list.appendChild(note);
+    return;
+  }
+
+  filtered.forEach((p) => list.appendChild(buildPubRow(p)));
+}
+
+/** Wire de los controles de la sección Publicaciones (menú Publicar, búsqueda, chips). Una sola vez. */
+function initPublicacionesControls() {
+  const menuBtn = document.getElementById('btn-publish-menu');
+  const menu = document.getElementById('pub-publish-menu');
+  if (menuBtn && menu) {
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = menu.hidden;
+      menu.hidden = !willOpen;
+      menuBtn.setAttribute('aria-expanded', String(willOpen));
+    });
+    menu.querySelectorAll('button, a').forEach((el) => el.addEventListener('click', () => {
+      menu.hidden = true;
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }));
+    document.addEventListener('click', () => {
+      if (!menu.hidden) {
+        menu.hidden = true;
+        menuBtn.setAttribute('aria-expanded', 'false');
       }
     });
+  }
+
+  // "Masivamente": stub (la fuente por código de barras todavía no está definida).
+  document.getElementById('btn-bulk-publish')?.addEventListener('click', () => {
+    showToast('Publicación masiva: próximamente.', 'default');
   });
 
-  document.querySelectorAll('.btn-toggle-product').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      const isActive = e.currentTarget.dataset.active === 'true';
-      const { error } = await supabase.from('products').update({ is_active: !isActive }).eq('id', id);
-      if (error) {
-        showToast('No se pudo actualizar el producto.', 'error');
-        console.error(error);
-        return;
-      }
-      showToast(isActive ? 'Producto desactivado' : 'Producto activado', 'success');
-      fetchProducts();
+  document.getElementById('pub-search')?.addEventListener('input', (e) => {
+    pubSearch = e.target.value;
+    renderPublicaciones();
+  });
+
+  document.querySelectorAll('.pub-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      pubStatus = chip.dataset.status;
+      document.querySelectorAll('.pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+      renderPublicaciones();
     });
   });
 
-  document.querySelectorAll('.btn-edit-product').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      await openEditProductForm(id);
-    });
-  });
+  // Cerrar los menús de acciones (⋮) de fila al clickear afuera.
+  document.addEventListener('click', closePubMenus);
 }
 
 /** F5-02: trae el producto y precarga el form de alta como form de edición. */
@@ -1531,6 +1699,7 @@ function setupDashboardEvents() {
   setupStoreProfileForm();
   setupMyCouponForm();
   setupStoreStaffForm();
+  initPublicacionesControls();
   document.getElementById('btn-refresh-orders')?.addEventListener('click', renderAllOrders);
 
   // F5-03: alta de variante para el producto que se está editando.

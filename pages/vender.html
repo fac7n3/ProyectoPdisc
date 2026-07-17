@@ -306,6 +306,72 @@
       .rs-bars__fill { background: var(--bl-vendor-accent); height: 100%; border-radius: 4px; }
       .rs-bars__value { width: 5.5rem; text-align: right; font-weight: 600; flex-shrink: 0; }
       @media (max-width: 640px) { .rs-strip, .rs-grid { grid-template-columns: 1fr; } }
+
+      /* --- Sección Publicaciones (diseño ML "Mis publicaciones") --- */
+      .pub-wrap { margin-top: 0.5rem; }
+      .pub-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+      .pub-title { font-size: 1.5rem; color: var(--bl-text); margin: 0; }
+      .pub-publish { position: relative; }
+      .pub-publish__btn { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.6rem 1.1rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
+      .pub-publish__btn:hover { background: var(--bl-vendor-accent-dark); }
+      .pub-publish__menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); box-shadow: var(--bl-shadow-lg); min-width: 240px; padding: 0.35rem; }
+      .pub-publish__menu[hidden] { display: none; }
+      .pub-publish__item { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.6rem 0.7rem; background: none; border: none; font: inherit; text-align: left; color: var(--bl-text); cursor: pointer; border-radius: var(--bl-radius-sm); }
+      .pub-publish__item:hover { background: var(--bl-surface-hover); }
+      .pub-publish__item i { width: 1rem; text-align: center; color: var(--bl-text-muted); }
+      .pub-publish__item--soon { color: var(--bl-text-secondary); }
+      .pub-soon { margin-left: auto; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: var(--bl-surface-alt); color: var(--bl-text-muted); padding: 0.12rem 0.45rem; border-radius: var(--bl-radius-pill); }
+
+      .pub-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+      .pub-search { position: relative; flex: 1 1 240px; min-width: 200px; }
+      .pub-search i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-muted); font-size: 0.85rem; }
+      .pub-search input { width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.2rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); font: inherit; }
+      .pub-search input:focus { outline: none; border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 2px rgba(14, 116, 144, 0.12); }
+      .pub-chips { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+      .pub-chip { padding: 0.5rem 0.9rem; border: 1px solid var(--bl-border); background: var(--bl-surface); border-radius: var(--bl-radius-pill); font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
+      .pub-chip:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
+      .pub-chip.is-active { background: var(--bl-vendor-accent); border-color: var(--bl-vendor-accent); color: #fff; }
+      .pub-count { color: var(--bl-text-secondary); font-size: 0.88rem; margin-left: auto; }
+
+      .pub-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+      .pub-nomatch { color: var(--bl-text-secondary); padding: 1.5rem; text-align: center; }
+      .pub-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); box-shadow: var(--bl-shadow-sm); position: relative; }
+      .pub-row--paused { opacity: 0.68; }
+      .pub-row__thumb { width: 56px; height: 56px; border-radius: var(--bl-radius-md); object-fit: cover; flex-shrink: 0; background: var(--bl-surface-alt); }
+      .pub-row__main { flex: 1 1 auto; min-width: 0; }
+      .pub-row__title { display: block; font-weight: 600; color: var(--bl-text); text-decoration: none; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pub-row__title:hover { color: var(--bl-vendor-accent); }
+      .pub-row__cell { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 4.25rem; text-align: center; flex-shrink: 0; }
+      .pub-row__cell-label { font-size: 0.7rem; color: var(--bl-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+      .pub-row__cell-val { font-weight: 600; color: var(--bl-text); }
+      .pub-row__cell-val--zero { color: var(--bl-danger); }
+      .pub-status { font-size: 0.76rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: var(--bl-radius-pill); white-space: nowrap; }
+      .pub-status--active { background: rgba(16, 185, 129, 0.12); color: #047857; }
+      .pub-status--paused { background: var(--bl-surface-alt); color: var(--bl-text-secondary); }
+
+      .pub-actions { position: relative; flex-shrink: 0; }
+      .pub-actions__toggle { background: none; border: none; color: var(--bl-text-secondary); cursor: pointer; padding: 0.5rem 0.65rem; border-radius: var(--bl-radius-md); font-size: 1rem; }
+      .pub-actions__toggle:hover { background: var(--bl-surface-hover); color: var(--bl-text); }
+      .pub-actions__menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); box-shadow: var(--bl-shadow-lg); min-width: 190px; padding: 0.35rem; }
+      .pub-actions__menu[hidden] { display: none; }
+      .pub-actions__item { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.7rem; background: none; border: none; font: inherit; text-align: left; color: var(--bl-text); cursor: pointer; border-radius: var(--bl-radius-sm); text-decoration: none; width: 100%; }
+      .pub-actions__item:hover { background: var(--bl-surface-hover); }
+      .pub-actions__item i { width: 1rem; text-align: center; color: var(--bl-text-muted); }
+      .pub-actions__item--danger, .pub-actions__item--danger i { color: var(--bl-danger); }
+
+      .pub-empty { text-align: center; padding: 3rem 1.5rem; }
+      .pub-empty__icon { font-size: 2.5rem; color: var(--bl-text-muted); margin-bottom: 0.75rem; }
+      .pub-empty__title { font-size: 1.15rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.35rem; }
+      .pub-empty__sub { color: var(--bl-text-secondary); margin-bottom: 1.25rem; }
+      .pub-empty__btn { background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
+      .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
+
+      @media (max-width: 640px) {
+        .pub-row { flex-wrap: wrap; }
+        .pub-row__main { flex-basis: calc(100% - 56px - 1rem); }
+        .pub-row__cell { min-width: 0; flex: 1 1 auto; align-items: flex-start; text-align: left; }
+        .pub-count { margin-left: 0; width: 100%; }
+      }
     </style>
     <link rel="stylesheet" href="../Assets/styles/auth.css" />
   </head>
@@ -606,28 +672,37 @@
 
             <!-- === Publicaciones === -->
             <section class="mc-section" data-section="publicaciones" hidden>
-            <!-- Formularios y Listas -->
-            <div style="margin-top: 3rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 style="font-size: 1.5rem; color: var(--bl-text);">Mis Productos</h2>
-                <button class="form-btn" id="btn-show-add-product" style="width: auto; padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuevo Producto</button>
+            <div class="pub-wrap">
+              <div class="pub-header">
+                <h1 class="pub-title">Publicaciones</h1>
+                <div class="pub-publish">
+                  <button type="button" class="pub-publish__btn" id="btn-publish-menu" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa-solid fa-plus"></i> Publicar <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;"></i>
+                  </button>
+                  <div class="pub-publish__menu" id="pub-publish-menu" hidden>
+                    <button type="button" class="pub-publish__item" id="btn-show-add-product"><i class="fa-solid fa-pen-to-square"></i> De forma individual</button>
+                    <button type="button" class="pub-publish__item pub-publish__item--soon" id="btn-bulk-publish"><i class="fa-solid fa-barcode"></i> Masivamente <span class="pub-soon">Próximamente</span></button>
+                  </div>
+                </div>
               </div>
 
-              <!-- Lista de productos -->
-              <div style="background: white; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; margin-bottom: 2rem;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                  <thead style="background: var(--bl-surface-alt); border-bottom: 1px solid var(--bl-border);">
-                    <tr>
-                      <th style="padding: 1rem;">Imagen</th>
-                      <th style="padding: 1rem;">Nombre</th>
-                      <th style="padding: 1rem;">Precio</th>
-                      <th style="padding: 1rem;">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody id="seller-products-tbody">
-                    <!-- Productos cargados con JS -->
-                  </tbody>
-                </table>
+              <!-- Barra de filtros (búsqueda + estado + contador), todo client-side -->
+              <div class="pub-toolbar">
+                <div class="pub-search">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="search" id="pub-search" placeholder="Buscar en mis publicaciones" autocomplete="off" />
+                </div>
+                <div class="pub-chips">
+                  <button type="button" class="pub-chip is-active" data-status="all">Todas</button>
+                  <button type="button" class="pub-chip" data-status="active">Activas</button>
+                  <button type="button" class="pub-chip" data-status="inactive">Pausadas</button>
+                </div>
+                <span class="pub-count" id="pub-count"></span>
+              </div>
+
+              <!-- Lista de publicaciones (poblada por renderPublicaciones()) -->
+              <div class="pub-list" id="pub-list">
+                <!-- Publicaciones cargadas con JS -->
               </div>
 
               <!-- Formulario de nuevo producto (Oculto por defecto) -->
