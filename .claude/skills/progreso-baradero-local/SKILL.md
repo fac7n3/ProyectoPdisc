@@ -673,14 +673,49 @@ markup interno todavía). Sin migración en ninguno de los 3 commits — 100% fr
   (ambos usan `document.querySelectorAll('.pub-chip')`). Solución: cada toolbar tiene su propio id
   (`#pub-toolbar` / `#ventas-toolbar`) y las queries se scopean a `<id> .pub-chip` — mismas clases
   CSS compartidas (sin duplicar ~60 líneas de estilos), sin cruce de eventos.
-- **Pendiente** (quedan "solo fuente", sin el rediseño ML todavía): Perfil de mi comercio, Mis
-  cupones, Empleados, Notificaciones, Soporte, Pagos por confirmar, Envíos en curso — cada una es
-  candidata a migrar cuando se retome este esfuerzo, siguiendo el mismo patrón (evaluar primero si
-  el layout de lista `pub-*` aplica tal cual, como con Ventas, antes de crear clases nuevas).
-- **No verificado visualmente en el navegador** en ninguno de los 3 commits (sin herramienta de
-  navegador conectada en esta sesión) — cubierto con `npm run build` exitoso + revisión de código
-  exhaustiva (mismo patrón ya probado de Publicaciones, reutilizado sin cambios estructurales).
-  Recomendable una pasada visual (mobile + desktop) la próxima vez que haya navegador disponible.
+- **Bugs reales encontrados y corregidos durante la verificación visual con Playwright** (sesión
+  siguiente, cuenta real "facu.cells"):
+  - **Login/registro con Google no dejaba elegir cuenta** (commit `0c9d740`, `js/login.js` +
+    `js/register.js`): si el navegador ya tenía una sesión de Google activa, `signInWithOAuth`
+    entraba directo con esa cuenta sin mostrar el selector — agregado
+    `queryParams: { prompt: 'select_account' }`.
+  - **Resumen mostraba "Bienvenido, tu comercio" en vez del nombre real** (commit `15f3156`,
+    `pages/vender.html` + `js/vender.js`): el `<strong>` del saludo no tenía `id`, así que nunca se
+    seteaba con `store.name` (el sidebar sí lo mostraba bien, la data estaba disponible). Agregado
+    `id="welcome-store-name"` + asignación junto a `dash-shop-name` en `loadDashboard`.
+- **Pagos por confirmar (commit `11bc950`)**: reusa el shell `pub-wrap`/`pub-list`, pero las filas
+  (`buildPendingPaymentRow`) usan **botones visibles** ("Ver comprobante"/"Confirmar"/"Rechazar") en
+  vez del menú `⋮` — a diferencia de Publicaciones/Ventas, acá las 2-3 acciones se usan de entrada
+  (no son secundarias), así que esconderlas en un kebab sería peor UX. Mismo criterio aplicado
+  después en Empleados ("Quitar acceso").
+- **Envíos en curso (commit `2b3c23c`)**: mismo shell, pero **de solo lectura** — sin kebab ni
+  botones. El repartidor gestiona el estado desde su propio panel (F3-03); acá el vendedor solo
+  hace seguimiento. Badges nuevos: `.pub-status--pending/shipped/ready/cancelled` ya cubrían los
+  3 estados de envío (`assigned`→ready, `picked_up`→shipped, `delivered`→active), sin CSS nuevo.
+- **Mis cupones (commit `43e7f45`)**: mismo shell; filas con menú `⋮` (Activar/Desactivar, Borrar) —
+  misma lógica que Publicaciones, porque alternar `is_active` es una acción secundaria (no se usa
+  de entrada como en Pagos). El formulario de creación (`#my-coupon-form`) queda intacto arriba de
+  la lista, sin tocar.
+- **Empleados (commit `36710c0`)**: mismo shell; única acción ("Quitar acceso") como botón visible,
+  mismo criterio que Pagos por confirmar. **Gotcha propio**: al envolver `#my-coupons-section` en
+  `.pub-wrap` durante el commit de Mis cupones se perdió el `id="my-coupons-section"` que
+  `loadDashboard()` usa para ocultar la sección completa a empleados (`style.display = 'none'` si
+  `!isStoreOwner`) — el `if (el)` lo hacía fallar en silencio, no un error visible. Corregido en el
+  mismo commit de Empleados: el `id` se mantiene en el div `.pub-wrap`, no hace falta un wrapper
+  extra. **Al envolver cualquier sección existente en `.pub-wrap`, revisar primero si el id viejo
+  del contenedor lo usa JS para algo más que estilos** (visibilidad condicional, querySelectors,
+  etc.) antes de sacarlo.
+- **Pendiente** (quedan "solo fuente", sin el rediseño ML — y probablemente no lo necesiten):
+  Perfil de mi comercio (formulario de configuración, no una lista — el patrón `pub-*` no aplica
+  tal cual), Notificaciones y Soporte (reusan componentes compartidos con `perfil.html`
+  — `notifications-utils.js`/`support-utils.js` —, rediseñarlos acá tocaría código que afecta otras
+  páginas, fuera de alcance de este esfuerzo ad-hoc).
+- **Verificación visual**: Resumen, Publicaciones, Ventas, Pagos por confirmar y Envíos en curso se
+  verificaron con Playwright contra la cuenta real "facu.cells" (screenshots + consola sin errores;
+  para Ventas/Envíos con 0 pedidos reales se inyectaron filas de preview vía `browser_evaluate`,
+  puramente client-side, nunca tocando la DB, descartadas al recargar). Mis cupones y Empleados
+  (último batch) se hicieron sin esa pasada visual — el usuario pidió no seguir gastando tokens en
+  verificación; pendiente una revisión visual si se retoma este esfuerzo.
 
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
