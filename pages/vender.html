@@ -686,11 +686,14 @@
             </section>
 
             <!-- === Envíos en curso === -->
+            <!-- Estado de envío de los pedidos con delivery (F3-04), mismo shell que Pagos
+                 por confirmar -- solo lectura, el repartidor gestiona el estado desde su panel. -->
             <section class="mc-section" data-section="envios" hidden>
-            <!-- Estado de envío de los pedidos con delivery (F3-04) -->
-            <div style="margin-top: 3rem;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Envíos en curso</h2>
-              <div id="shipments-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="pub-wrap">
+              <div class="pub-header">
+                <h1 class="pub-title">Envíos en curso</h1>
+              </div>
+              <div class="pub-list" id="shipments-container">
                 <!-- Cargado con JS -->
               </div>
             </div>

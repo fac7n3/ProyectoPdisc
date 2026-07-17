@@ -1240,6 +1240,15 @@ const SHIPMENT_STATUS_LABELS = {
   delivered: 'Entregado',
 };
 
+// Mismas 3 variantes de color que ya usa Ventas (pub-status--*) -- coinciden
+// bien semánticamente: esperando/asignado en tonos de "todavía no salió",
+// en camino = shipped (azul), entregado = active (verde).
+const SHIPMENT_STATUS_BADGE_VARIANT = {
+  assigned: 'ready',
+  picked_up: 'shipped',
+  delivered: 'active',
+};
+
 async function renderShipmentsInProgress() {
   const container = document.getElementById('shipments-container');
   if (!container || !currentStoreId) return;
@@ -1264,37 +1273,67 @@ async function renderShipmentsInProgress() {
   }
 
   if (!orders || orders.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.style.color = 'var(--bl-text-secondary)';
-    emptyMsg.textContent = 'No hay envíos en curso.';
-    container.appendChild(emptyMsg);
+    renderShipmentsEmpty(container);
     return;
   }
 
-  orders.forEach((order) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white;';
+  orders.forEach((order) => container.appendChild(buildShipmentRow(order)));
+}
 
-    const info = document.createElement('div');
-    const idStrong = document.createElement('strong');
-    idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-    info.appendChild(idStrong);
-    const addressSpan = document.createElement('span');
-    addressSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
-    addressSpan.textContent = order.shipping_address || '';
-    info.appendChild(addressSpan);
-    row.appendChild(info);
+function renderShipmentsEmpty(container) {
+  const box = document.createElement('div');
+  box.className = 'pub-empty';
+  const icon = document.createElement('i');
+  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
+  box.appendChild(icon);
+  const title = document.createElement('p');
+  title.className = 'pub-empty__title';
+  title.textContent = 'No hay envíos en curso';
+  box.appendChild(title);
+  const sub = document.createElement('p');
+  sub.className = 'pub-empty__sub';
+  sub.textContent = 'Los pedidos con envío pagados van a aparecer acá hasta que se entreguen.';
+  box.appendChild(sub);
+  container.appendChild(box);
+}
 
-    const statusSpan = document.createElement('span');
-    // deliveries.order_id es UNIQUE -> PostgREST lo embebe como objeto único.
-    const deliveryStatus = order.deliveries?.status;
-    statusSpan.textContent = deliveryStatus
-      ? (SHIPMENT_STATUS_LABELS[deliveryStatus] || deliveryStatus)
-      : 'Esperando repartidor';
-    row.appendChild(statusSpan);
+/** Fila estilo ML (clases pub-*), solo lectura -- el repartidor gestiona el estado desde
+ * su propio panel (F3-03), acá el vendedor solo hace seguimiento, sin acciones. */
+function buildShipmentRow(order) {
+  const row = document.createElement('div');
+  row.className = 'pub-row';
 
-    container.appendChild(row);
-  });
+  const icon = document.createElement('div');
+  icon.className = 'pub-row__thumb pub-row__thumb--icon';
+  const iconEl = document.createElement('i');
+  iconEl.className = 'fa-solid fa-truck';
+  icon.appendChild(iconEl);
+  row.appendChild(icon);
+
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('span');
+  title.className = 'pub-row__title';
+  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+  main.appendChild(title);
+  const sub = document.createElement('span');
+  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
+  sub.textContent = `${formatPrice(order.total_price)} · ${order.shipping_address || 'Sin dirección cargada'}`;
+  main.appendChild(sub);
+  row.appendChild(main);
+
+  const statusCell = document.createElement('div');
+  statusCell.className = 'pub-row__cell';
+  const badge = document.createElement('span');
+  // deliveries.order_id es UNIQUE -> PostgREST lo embebe como objeto único.
+  const deliveryStatus = order.deliveries?.status;
+  const variant = deliveryStatus ? (SHIPMENT_STATUS_BADGE_VARIANT[deliveryStatus] || 'paused') : 'pending';
+  badge.className = `pub-status pub-status--${variant}`;
+  badge.textContent = deliveryStatus ? (SHIPMENT_STATUS_LABELS[deliveryStatus] || deliveryStatus) : 'Esperando repartidor';
+  statusCell.appendChild(badge);
+  row.appendChild(statusCell);
+
+  return row;
 }
 
 /**
