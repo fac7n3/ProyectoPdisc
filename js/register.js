@@ -168,7 +168,9 @@ async function registerWithGoogle() {
     const redirectTo = `${window.location.origin}/pages/home.html`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo },
+      // Sin esto, si el navegador ya tiene una sesión de Google activa,
+      // Google entra directo con esa cuenta sin dejar elegir otra.
+      options: { redirectTo, queryParams: { prompt: "select_account" } },
     });
 
     if (error) {
