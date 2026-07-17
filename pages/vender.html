@@ -156,6 +156,156 @@
         background: var(--bl-vendor-accent);
         color: white;
       }
+
+      /* --- Shell "Mi cuenta": sidebar (fijo desktop / drawer mobile) + contenido --- */
+      .mc-shell {
+        display: flex;
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+        align-items: flex-start;
+      }
+      .mc-sidebar {
+        flex: 0 0 260px;
+        background: var(--bl-surface);
+        border: 1px solid var(--bl-border);
+        border-top: 4px solid var(--bl-vendor-accent);
+        border-radius: var(--bl-radius-lg);
+        box-shadow: var(--bl-shadow-sm);
+        padding: 0.75rem;
+        position: sticky;
+        top: 1rem;
+      }
+      .mc-sidebar__header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.4rem 0.6rem 0.75rem;
+        border-bottom: 1px solid var(--bl-border);
+        margin-bottom: 0.5rem;
+      }
+      .mc-sidebar__titles { display: flex; flex-direction: column; line-height: 1.2; }
+      .mc-sidebar__title { font-weight: 700; color: var(--bl-text); }
+      .mc-store-name { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .mc-close {
+        display: none;
+        margin-left: auto;
+        background: none;
+        border: none;
+        font-size: 1.1rem;
+        color: var(--bl-text-secondary);
+        cursor: pointer;
+      }
+      .mc-group__trigger {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem;
+        background: none;
+        border: none;
+        font: inherit;
+        color: var(--bl-text);
+        cursor: pointer;
+        border-radius: var(--bl-radius-md);
+        font-weight: 600;
+      }
+      .mc-group__trigger:hover { background: var(--bl-surface-hover); }
+      .mc-group__chevron { margin-left: auto; transition: transform 0.2s; font-size: 0.75rem; color: var(--bl-text-muted); }
+      .mc-group.is-open .mc-group__chevron { transform: rotate(180deg); }
+      .mc-group__panel { padding: 0.1rem 0 0.4rem 2.1rem; display: flex; flex-direction: column; gap: 0.05rem; }
+      .mc-group__panel[hidden] { display: none; }
+      .mc-navitem {
+        text-align: left;
+        padding: 0.45rem 0.6rem;
+        background: none;
+        border: none;
+        font: inherit;
+        color: var(--bl-text-secondary);
+        cursor: pointer;
+        border-radius: var(--bl-radius-sm);
+        font-size: 0.92rem;
+      }
+      .mc-navitem:hover { background: var(--bl-surface-hover); color: var(--bl-text); }
+      .mc-navitem.is-active { color: var(--bl-vendor-accent); font-weight: 600; background: rgba(14, 116, 144, 0.08); }
+      .mc-navlink {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem;
+        color: var(--bl-text);
+        text-decoration: none;
+        border-radius: var(--bl-radius-md);
+        font-weight: 600;
+      }
+      .mc-navlink:hover { background: var(--bl-surface-hover); }
+      .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
+      .mc-content { flex: 1 1 auto; min-width: 0; }
+      .mc-section[hidden] { display: none; }
+      .mc-hamburger {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: var(--bl-vendor-accent);
+        cursor: pointer;
+      }
+      .mc-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 999; }
+      .mc-backdrop[hidden] { display: none; }
+
+      @media (max-width: 900px) {
+        .mc-shell { flex-direction: column; padding: 0 0.75rem; }
+        .mc-sidebar {
+          position: fixed;
+          top: 0; left: 0; bottom: 0;
+          width: 82%;
+          max-width: 320px;
+          z-index: 1000;
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          border-radius: 0;
+          border-top: none;
+          overflow-y: auto;
+        }
+        .mc-sidebar.is-open { transform: translateX(0); }
+        .mc-close { display: inline-flex; }
+        .mc-hamburger { display: inline-flex; }
+      }
+
+      /* --- Sección Resumen (diseño ML con paleta propia) --- */
+      .rs-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+      .rs-strip__cell { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.1rem 1.25rem; box-shadow: var(--bl-shadow-card); }
+      .rs-strip__label { font-size: 0.8rem; color: var(--bl-text-secondary); margin-bottom: 0.35rem; }
+      .rs-strip__value { font-size: 1.5rem; font-weight: 700; color: var(--bl-text); line-height: 1.1; }
+      .rs-strip__sub { font-size: 0.78rem; color: var(--bl-text-muted); margin-top: 0.3rem; }
+      .rs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; }
+      .rs-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.25rem; box-shadow: var(--bl-shadow-card); }
+      .rs-card--wide { grid-column: 1 / -1; }
+      .rs-card__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.9rem; }
+      .rs-pending-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
+      .rs-pending-row:last-child { border-bottom: none; }
+      .rs-pending-row:hover .rs-pending-row__label { color: var(--bl-vendor-accent); }
+      .rs-pending-row__label { color: var(--bl-text); font-size: 0.92rem; }
+      .rs-pending-row__right { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--bl-text-muted); }
+      .rs-badge { min-width: 1.5rem; text-align: center; background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); padding: 0.1rem 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--bl-text); }
+      .rs-badge--alert { background: var(--bl-vendor-accent); color: #fff; }
+      .rs-stars { color: var(--bl-accent); letter-spacing: 2px; font-size: 1.1rem; }
+      .rs-empty { color: var(--bl-text-muted); font-size: 0.88rem; }
+      .rs-link { color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.85rem; cursor: pointer; background: none; border: none; padding: 0; margin-top: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+      .rs-link:hover { text-decoration: underline; }
+      .rs-pie { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+      .rs-pie__chart { width: 130px; height: 130px; border-radius: 50%; flex-shrink: 0; }
+      .rs-pie__legend { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.84rem; min-width: 0; }
+      .rs-pie__item { display: flex; align-items: center; gap: 0.5rem; color: var(--bl-text-secondary); }
+      .rs-pie__dot { width: 0.72rem; height: 0.72rem; border-radius: 50%; flex-shrink: 0; }
+      .rs-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+      .rs-bars__row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+      .rs-bars__label { width: 3.5rem; color: var(--bl-text-secondary); flex-shrink: 0; }
+      .rs-bars__track { flex: 1; background: var(--bl-border-light); border-radius: 4px; height: 10px; overflow: hidden; }
+      .rs-bars__fill { background: var(--bl-vendor-accent); height: 100%; border-radius: 4px; }
+      .rs-bars__value { width: 5.5rem; text-align: right; font-weight: 600; flex-shrink: 0; }
+      @media (max-width: 640px) { .rs-strip, .rs-grid { grid-template-columns: 1fr; } }
     </style>
     <link rel="stylesheet" href="../Assets/styles/auth.css" />
   </head>
@@ -180,6 +330,7 @@
           </a>
           <span class="vendor-mode-badge"><i class="fa-solid fa-store"></i> Modo Vendedor</span>
           <div class="navbar__actions">
+            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
             <div id="nav-notifications-wrap"></div>
             <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
           </div>
@@ -187,10 +338,8 @@
       </nav>
 
       <main>
-        <div class="vender-container">
-          
-          <!-- Vista de Registro -->
-          <div id="register-view">
+        <!-- Vista de Registro (card centrada, sin sidebar) -->
+        <div id="register-view" class="vender-container">
             <div class="vender-header">
               <h1>Empezá a vender en Baradero</h1>
               <p>Completá los datos de tu comercio y sumate a la red local.</p>
@@ -220,42 +369,66 @@
               </div>
               <button type="submit" class="form-btn">Crear mi tienda</button>
             </form>
-          </div>
+        </div>
 
-          <!-- Vista del Panel -->
-          <div id="dashboard-view">
-            <div class="vender-header">
-              <h1>Panel de Vendedor</h1>
-              <p>Bienvenido, <strong id="dash-shop-name">Tu Comercio</strong></p>
+        <!-- Vista del Panel: shell "Mi cuenta" (sidebar + contenido) -->
+        <div id="dashboard-view" class="mc-shell">
+          <div class="mc-backdrop" id="mc-backdrop" hidden></div>
+
+          <aside class="mc-sidebar" id="mc-sidebar">
+            <div class="mc-sidebar__header">
+              <div class="mc-sidebar__titles">
+                <span class="mc-sidebar__title">Mi cuenta</span>
+                <span class="mc-store-name" id="dash-shop-name">Tu Comercio</span>
+              </div>
+              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
             </div>
+
+            <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-bag-shopping mc-navicon"></i> Compras</a>
+
+            <div class="mc-group is-open">
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-tag mc-navicon"></i> Ventas <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <div class="mc-group__panel">
+                <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
+                <button type="button" class="mc-navitem" data-section="publicaciones">Publicaciones</button>
+                <button type="button" class="mc-navitem" data-section="ventas">Ventas</button>
+                <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
+                <button type="button" class="mc-navitem" data-section="envios">Envíos en curso</button>
+                <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
+                <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
+                <button type="button" class="mc-navitem mc-navitem--owner" data-section="perfil-comercio">Perfil de mi comercio</button>
+                <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
+                <button type="button" class="mc-navitem" data-section="soporte">Soporte</button>
+              </div>
+            </div>
+
+            <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-user mc-navicon"></i> Mi perfil</a>
+            <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-gear mc-navicon"></i> Configuración</a>
+
+            <button class="btn-outline" id="btn-logout-seller" style="width: 100%; margin-top: 1rem; border-color: #ef4444; color: #ef4444;">Volver al inicio</button>
+          </aside>
+
+          <div class="mc-content">
+            <div id="mc-pending-notice" style="display:none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);"></div>
+
+            <!-- === Resumen === -->
+            <section class="mc-section" data-section="resumen">
+              <div class="vender-header" style="text-align:left; margin-bottom:1.5rem;">
+                <h1 style="font-size:1.5rem;">Resumen</h1>
+                <p>Bienvenido, <strong>tu comercio</strong></p>
+              </div>
 
             <!-- Onboarding (F12-15): solo se muestra hasta completar el perfil + primer producto -->
             <div id="onboarding-container" style="display: none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem;"></div>
 
-            <div class="dashboard-stats">
-              <div class="stat-card">
-                <h3 id="stat-sales-today">0</h3>
-                <p>Ventas Hoy</p>
-              </div>
-              <div class="stat-card">
-                <h3 id="stat-products-count">0</h3>
-                <p>Productos Activos</p>
-              </div>
-              <div class="stat-card">
-                <h3 id="stat-revenue-month">$0</h3>
-                <p>Ingresos del Mes</p>
-              </div>
-            </div>
+            <!-- Franja superior + grilla de cards (diseño ML). Poblado por renderResumen(). -->
+            <div id="resumen-strip" class="rs-strip"></div>
+            <div id="resumen-grid" class="rs-grid"></div>
 
-            <!-- Insights (F12-13, provisional): productos más vendidos + ventas de los
-                 últimos 7 días. El usuario va a pasar diseños propios más adelante,
-                 ver docs/DISENOS_PROVISIONALES.md -- mientras tanto, datos reales con
-                 un layout simple. -->
-            <div id="insights-section" style="margin-top: 2rem;">
-              <h2 style="font-size: 1.25rem; color: var(--bl-text); margin-bottom: 0.25rem;">Insights <span style="font-weight: 400; font-size: 0.8rem; color: var(--bl-text-muted);">(provisional)</span></h2>
-              <div id="insights-container" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);"></div>
-            </div>
+            </section>
 
+            <!-- === Perfil de mi comercio === -->
+            <section class="mc-section" data-section="perfil-comercio" hidden>
             <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->
             <div id="store-profile-section" style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Perfil de mi comercio</h2>
@@ -318,7 +491,10 @@
                 <div id="mp-connect-container"></div>
               </div>
             </div>
+            </section>
 
+            <!-- === Mis cupones === -->
+            <section class="mc-section" data-section="cupones" hidden>
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
             <div id="my-coupons-section" style="margin-top: 3rem;">
@@ -343,6 +519,10 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Empleados === -->
+            <section class="mc-section" data-section="empleados" hidden>
             <!-- Empleados (F12-16): cuentas adicionales que pueden operar este comercio -->
             <!-- Oculto para empleados -- solo el dueño gestiona quién tiene acceso -->
             <div id="store-staff-section" style="margin-top: 3rem;">
@@ -362,6 +542,10 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Ventas (pedidos) === -->
+            <section class="mc-section" data-section="ventas" hidden>
             <!-- Gestión de pedidos (F5-06) -->
             <div style="margin-top: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -373,6 +557,10 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Notificaciones === -->
+            <section class="mc-section" data-section="notificaciones" hidden>
             <!-- Centro de notificaciones (F8-01) -->
             <div style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Notificaciones</h2>
@@ -381,11 +569,19 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Soporte === -->
+            <section class="mc-section" data-section="soporte" hidden>
             <!-- Soporte / reclamos (F12-11) -->
             <div style="margin-top: 3rem;">
               <div id="support-container"></div>
             </div>
 
+            </section>
+
+            <!-- === Pagos por confirmar === -->
+            <section class="mc-section" data-section="pagos" hidden>
             <!-- Pagos por transferencia pendientes de confirmar (F2-04) -->
             <div style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Pagos por confirmar</h2>
@@ -394,6 +590,10 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Envíos en curso === -->
+            <section class="mc-section" data-section="envios" hidden>
             <!-- Estado de envío de los pedidos con delivery (F3-04) -->
             <div style="margin-top: 3rem;">
               <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Envíos en curso</h2>
@@ -402,6 +602,10 @@
               </div>
             </div>
 
+            </section>
+
+            <!-- === Publicaciones === -->
+            <section class="mc-section" data-section="publicaciones" hidden>
             <!-- Formularios y Listas -->
             <div style="margin-top: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -499,11 +703,8 @@
 
             </div>
 
-            <div class="action-buttons" style="margin-top: 3rem;">
-              <button class="btn-outline" id="btn-logout-seller" style="border-color: #ef4444; color: #ef4444;">Volver al inicio</button>
-            </div>
+            </section>
           </div>
-
         </div>
       </main>
 
