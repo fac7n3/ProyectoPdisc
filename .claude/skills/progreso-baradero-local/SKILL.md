@@ -740,10 +740,18 @@ markup interno todavía). Sin migración en ninguno de los 3 commits — 100% fr
     reclamo referenciaba `thread` (fuera de scope dentro de `renderTicketThread`) → `ReferenceError`
     que hacía fallar el envío de respuestas (el mensaje sí se guardaba, pero el re-render tiraba);
     corregido a `threadEl`.
-  - **Sin verificar en navegador todavía** — build limpio y cambios razonados por lectura, pero
-    falta la pasada visual (Playwright / cuenta real) de las 3 secciones en vender.html + confirmar
-    que Notificaciones/Soporte de `perfil.html` (cliente) y `repartidor.html` no desentonan con su
-    nuevo look ML.
+  - **Verificado en producción (2026-07-17)** — pusheado a `main` (deploy Vercel `dpl_AUrNiSQ...`
+    READY) y revisado con Claude-in-Chrome contra la cuenta real **facu.cells** en
+    `proyectopdisc.vercel.app/pages/vender.html`: las 3 secciones renderizan bien con datos reales
+    (Perfil con cards "Datos del comercio"/"Contacto y ubicación"/"Envíos" + card MP del piloto;
+    Notificaciones con realce azul `--bl-primary` en la no leída; Soporte con form en card + empty
+    state), **0 errores de consola**, sin overflow horizontal (`scrollWidth 1239 < innerWidth 1254`;
+    el "corte" aparente era el `devicePixelRatio 1.25` del navegador), y la media query
+    `≤640px → .pf-grid: 1fr` confirmada deployada y activa (desktop 2col `395px 395px`). Lo único
+    NO verificado visualmente: la LISTA de reclamos de Soporte con datos (badges de estado + hilo +
+    el fix del `ReferenceError` en "responder"), porque facu.cells no tiene tickets — la lógica está
+    por lectura, faltaría crear un ticket de prueba para verlo en UI. `perfil.html` (cliente) /
+    `repartidor.html`: no revisados en UI pero cargan el mismo `home.css`, mismo componente.
 - **Pendiente** (quedan "solo fuente", sin rediseñar — y probablemente no lo necesiten): ninguna de
   las secciones originalmente diferidas; sólo restan formularios de configuración que no encajan en
   el patrón de lista si aparecieran nuevos.
