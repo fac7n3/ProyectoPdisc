@@ -15,18 +15,20 @@ async function checkSellerState(user) {
 
   if (!user) return; // guardPage ya se encarga de redirigir
 
-  // Verificar si ya tiene el rol o una solicitud
+  // El rol "real" vive en el JWT (app_metadata), no en profiles.role, que puede
+  // quedar desincronizado tras cambios de rol (ver F12-17 / migración 53).
+  const appRole = user.app_metadata?.role;
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  if (profile?.role === 'vendedor' || profile?.role === 'admin') {
+  const isSeller = ['vendedor', 'admin'].includes(profile?.role) || ['vendedor', 'admin'].includes(appRole);
+  if (isSeller) {
     registerView.style.display = 'none';
     dashboardView.style.display = 'flex'; // shell "Mi cuenta" (sidebar + contenido)
-
-    // Cargar lógica del dashboard
     await loadDashboard(user);
     return;
   }
@@ -45,7 +47,7 @@ async function checkSellerState(user) {
     return;
   }
 
-  // Si no es vendedor ni empleado, ver si tiene solicitud pendiente
+  // ¿Tiene una solicitud de vendedor?
   const { data: req } = await supabase
     .from('seller_requests')
     .select('status, shop_name')
@@ -55,10 +57,17 @@ async function checkSellerState(user) {
   if (req) {
     registerView.style.display = 'none';
     dashboardView.style.display = 'flex';
-    shopNameLabel.textContent = `${req.shop_name} (Estado: ${req.status})`;
 
-    // Solicitud pendiente de aprobación: todavía no hay panel. Ocultamos el sidebar y
-    // todas las secciones, y mostramos un aviso de estado en su lugar.
+    // Solicitud APROBADA: es vendedor aunque profiles.role no lo refleje (desincronización
+    // de rol) -- mostrar el panel real, no el aviso de "pendiente".
+    if (req.status === 'approved') {
+      await loadDashboard(user);
+      return;
+    }
+
+    // Pendiente o rechazada: todavía no hay panel. Ocultamos el sidebar y todas las
+    // secciones, y mostramos el estado.
+    shopNameLabel.textContent = `${req.shop_name} (Estado: ${req.status})`;
     const sidebar = document.getElementById('mc-sidebar');
     if (sidebar) sidebar.style.display = 'none';
     document.querySelectorAll('.mc-content .mc-section').forEach((s) => { s.hidden = true; });
