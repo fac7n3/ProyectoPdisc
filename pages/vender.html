@@ -568,7 +568,7 @@
             <section class="mc-section" data-section="cupones" hidden>
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
-            <div class="pub-wrap">
+            <div class="pub-wrap" id="my-coupons-section">
               <div class="pub-header"><h1 class="pub-title">Mis cupones</h1></div>
               <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
                 <div>
@@ -593,23 +593,20 @@
             <section class="mc-section" data-section="empleados" hidden>
             <!-- Empleados (F12-16): cuentas adicionales que pueden operar este comercio -->
             <!-- Oculto para empleados -- solo el dueño gestiona quién tiene acceso -->
-            <div id="store-staff-section" style="margin-top: 3rem;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Empleados</h2>
+            <div class="pub-wrap" id="store-staff-section">
+              <div class="pub-header"><h1 class="pub-title">Empleados</h1></div>
               <p style="color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
                 Dale acceso a este panel a otra cuenta ya registrada en Baradero Local (puede gestionar productos y pedidos, no puede editar el perfil del comercio, los cupones ni la lista de empleados).
               </p>
-              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
+              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
                 <div>
                   <label class="form-label" for="store-staff-email">Email de la cuenta a agregar</label>
                   <input type="email" id="store-staff-email" class="form-input" placeholder="empleado@email.com" required />
                 </div>
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Agregar</button>
               </form>
-              <div id="store-staff-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <!-- Cargado con JS -->
-              </div>
+              <div id="store-staff-container" class="pub-list"></div>
             </div>
-
             </section>
 
             <!-- === Ventas (pedidos) === -->

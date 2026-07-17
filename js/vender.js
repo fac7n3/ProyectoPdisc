@@ -848,6 +848,56 @@ function setupMyCouponForm() {
 
 // --- F12-16: empleados del comercio (solo el dueño ve/gestiona esta sección) ---
 
+function renderStaffEmpty(container) {
+  const empty = document.createElement('div');
+  empty.className = 'pub-empty';
+  empty.innerHTML = '<i class="fa-solid fa-users"></i><p>Todavía no agregaste ningún empleado.</p>';
+  container.appendChild(empty);
+}
+
+function buildStaffRow(s, email) {
+  const row = document.createElement('div');
+  row.className = 'pub-row';
+
+  const thumb = document.createElement('div');
+  thumb.className = 'pub-row__thumb pub-row__thumb--icon';
+  thumb.innerHTML = '<i class="fa-solid fa-user"></i>';
+  row.appendChild(thumb);
+
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('p');
+  title.className = 'pub-row__title';
+  title.textContent = email || 'Cuenta eliminada';
+  const sub = document.createElement('p');
+  sub.className = 'pub-row__subtitle';
+  sub.textContent = `Agregado el ${new Date(s.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`;
+  main.appendChild(title);
+  main.appendChild(sub);
+  row.appendChild(main);
+
+  // Única acción disponible: se muestra como botón visible, no kebab (mismo criterio que Pagos por confirmar).
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn-outline';
+  removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap;';
+  removeBtn.textContent = 'Quitar acceso';
+  removeBtn.addEventListener('click', async () => {
+    if (!confirm(`¿Quitarle el acceso a este panel a "${title.textContent}"?`)) return;
+    const { error: deleteError } = await supabase.from('store_staff').delete().eq('id', s.id);
+    if (deleteError) {
+      showToast('No se pudo quitar el acceso.', 'error');
+      console.error(deleteError);
+      return;
+    }
+    showToast('Acceso quitado.', 'success');
+    renderStoreStaff();
+  });
+  row.appendChild(removeBtn);
+
+  return row;
+}
+
 async function renderStoreStaff() {
   const container = document.getElementById('store-staff-container');
   if (!container || !currentStoreId) return;
@@ -869,10 +919,7 @@ async function renderStoreStaff() {
   }
 
   if (!staff || staff.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.style.color = 'var(--bl-text-secondary)';
-    emptyMsg.textContent = 'Todavía no agregaste ningún empleado.';
-    container.appendChild(emptyMsg);
+    renderStaffEmpty(container);
     return;
   }
 
@@ -882,34 +929,7 @@ async function renderStoreStaff() {
   const { data: profiles } = await supabase.from('profiles').select('id, email').in('id', userIds);
   const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
 
-  staff.forEach((s) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
-
-    const info = document.createElement('span');
-    info.textContent = emailByUserId.get(s.user_id) || 'Cuenta eliminada';
-    row.appendChild(info);
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn-outline';
-    removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
-    removeBtn.textContent = 'Quitar acceso';
-    removeBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Quitarle el acceso a este panel a "${info.textContent}"?`)) return;
-      const { error: deleteError } = await supabase.from('store_staff').delete().eq('id', s.id);
-      if (deleteError) {
-        showToast('No se pudo quitar el acceso.', 'error');
-        console.error(deleteError);
-        return;
-      }
-      showToast('Acceso quitado.', 'success');
-      renderStoreStaff();
-    });
-    row.appendChild(removeBtn);
-
-    container.appendChild(row);
-  });
+  staff.forEach((s) => container.appendChild(buildStaffRow(s, emailByUserId.get(s.user_id))));
 }
 
 function setupStoreStaffForm() {
