@@ -716,11 +716,37 @@ markup interno todavía). Sin migración en ninguno de los 3 commits — 100% fr
   extra. **Al envolver cualquier sección existente en `.pub-wrap`, revisar primero si el id viejo
   del contenedor lo usa JS para algo más que estilos** (visibilidad condicional, querySelectors,
   etc.) antes de sacarlo.
-- **Pendiente** (quedan "solo fuente", sin el rediseño ML — y probablemente no lo necesiten):
-  Perfil de mi comercio (formulario de configuración, no una lista — el patrón `pub-*` no aplica
-  tal cual), Notificaciones y Soporte (reusan componentes compartidos con `perfil.html`
-  — `notifications-utils.js`/`support-utils.js` —, rediseñarlos acá tocaría código que afecta otras
-  páginas, fuera de alcance de este esfuerzo ad-hoc).
+- **Últimas 3 secciones migradas al estilo ML (2026-07-17)** — a pedido del usuario, con dos
+  subagentes en paralelo (worktrees aislados, archivos disjuntos, merge + `npm run build` único al
+  final; mismo patrón que el batch P2 del 2026-07-16). Usé la skill `ui-ux-pro-max` para los
+  criterios de forms/contraste. Commits `2286c13` (Perfil) + `15c6f3e` (Notif/Soporte), mergeados a
+  `main` (`c5cd277`/`63c11bd`) + build `0aa7d36`.
+  - **Perfil de mi comercio** (solo `pages/vender.html`, clases nuevas `pf-*` en su `<style>`
+    inline): el form plano gris único pasó a 3 cards `.pf-card` (mismo look que `.rs-card`) agrupadas
+    por tema — "Datos del comercio", "Contacto y ubicación", "Envíos" — + la card de Mercado Pago
+    reusando el shell. Grilla 2col→1col en 640px. **Sin tocar JS**: se preservaron los 13 ids que
+    `vender.js` busca (`store-*`, `store-profile-form/section`, `mp-connect-section/container`) con
+    sus `type`/atributos; `#store-profile-section` sigue envolviendo todo el form (JS le hace
+    `display:none` para empleados, F12-16).
+  - **Notificaciones + Soporte** (componentes COMPARTIDOS: `notifications-utils.js` +
+    `support-utils.js` reescritos de `style.cssText` inline a clases semánticas `notif-*`/`tkt-*`
+    definidas en `Assets/styles/home.css`). Acento `--bl-primary` a propósito (NO
+    `--bl-vendor-accent`), porque estas funciones también las usan `perfil.html` (cliente) y
+    `repartidor.js` — las 3 páginas + el dropdown de la campanita (`nav-utils.js`) cargan `home.css`,
+    así que el rediseño quedó consistente en todas de una sola vez (ya no es "fuera de alcance" como
+    se había marcado antes: al ir a clases compartidas, tocar una mejora las tres). Firmas/exports/
+    comportamiento intactos (mark-read, mark-all, expandir hilo, cancelar, responder, enviar).
+    **Bug latente pre-existente arreglado de paso** en `support-utils.js`: el path "responder" a un
+    reclamo referenciaba `thread` (fuera de scope dentro de `renderTicketThread`) → `ReferenceError`
+    que hacía fallar el envío de respuestas (el mensaje sí se guardaba, pero el re-render tiraba);
+    corregido a `threadEl`.
+  - **Sin verificar en navegador todavía** — build limpio y cambios razonados por lectura, pero
+    falta la pasada visual (Playwright / cuenta real) de las 3 secciones en vender.html + confirmar
+    que Notificaciones/Soporte de `perfil.html` (cliente) y `repartidor.html` no desentonan con su
+    nuevo look ML.
+- **Pendiente** (quedan "solo fuente", sin rediseñar — y probablemente no lo necesiten): ninguna de
+  las secciones originalmente diferidas; sólo restan formularios de configuración que no encajan en
+  el patrón de lista si aparecieran nuevos.
 - **Verificación visual**: Resumen, Publicaciones, Ventas, Pagos por confirmar y Envíos en curso se
   verificaron con Playwright contra la cuenta real "facu.cells" (screenshots + consola sin errores;
   para Ventas/Envíos con 0 pedidos reales se inyectaron filas de preview vía `browser_evaluate`,
