@@ -434,6 +434,17 @@ sin resolver, es un problema distinto). Investigado con 2 tandas de 2 subagentes
    una tienda con split vinculado + otras tiendas (necesitarían tokens distintos); un carrito
    multi-tienda donde ninguna tiene split sigue yendo entero por el token global, como siempre.
 
+### P0-6 — resuelto (confirmado por el usuario, 2026-07-17)
+
+El usuario probó manualmente el paso que había quedado bloqueado (botón "Pagar" deshabilitado
+dentro del checkout de MP, sin causa aislada — ver sesión de testing 2026-07-15 arriba) y confirmó
+que ya funciona. Causa real nunca confirmada (quedó como candidato sin verificar algún estado de
+verificación/aprobación pendiente en la cuenta de vendedor de prueba recién conectada vía OAuth) —
+no hizo falta ningún cambio de código para destrabarlo, se resolvió solo (probablemente el estado
+de la cuenta de prueba de MP terminó de propagarse/verificarse del lado de Mercado Pago). **P0-6
+completo end-to-end**: OAuth de vinculación + creación de preferencia con split + pago real +
+webhook, todo verificado. Sacado de "Pendientes activos" en `CLAUDE.md`.
+
 ### P2-9/P2-3/P2-7/P2-5/P2-2 — 5 agentes en paralelo vía worktrees (2026-07-16)
 
 Primera vez en el proyecto usando `isolation: "worktree"` del tool Agent para paralelizar fixes

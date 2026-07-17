@@ -85,11 +85,11 @@ revisión de código; recomendable una pasada visual en la próxima sesión.
 
 ---
 
-## Pendiente — P0 (alta prioridad)
+## ✅ Hecho (sesión 2026-07-17)
 
-| # | Punto original | Estado | Notas |
-|---|---|---|---|
-| P0-6 | #18 | **OAuth + preferencia verificados end-to-end; falta confirmar el pago completo** | Split de plata con MP Marketplace. Sesión 2026-07-15: `MP_CLIENT_ID`/`MP_CLIENT_SECRET` cargados como secrets (vía Supabase CLI + Personal Access Token, no había tool de MCP para esto); `VITE_MP_CLIENT_ID` cargado en `.env` local. Redirect URI registrada en el panel de MP tuvo que ser `https://proyectopdisc.vercel.app/pages/vender.html` — **MP rechaza `http://localhost` como redirect_uri** (error genérico "Tenemos un problema..." sin detalle), solo acepta https. Probado con cuenta y tienda de prueba nuevas (no se tocó ninguna tienda real): `mp-oauth-callback` vinculó de punta a punta (`stores.mp_collector_id` y `store_mp_credentials.access_token/refresh_token` quedaron seteados); `mp-create-preference` devolvió un `pref_id` con el prefijo del **collector del vendedor conectado** (no el de la plataforma), confirmando que el split arma la preferencia con el token correcto. **No confirmado**: completar el pago y que el webhook marque la orden `paid`. El checkout de MP dejó el botón "Pagar" deshabilitado (`disabled=""` real, sin mensaje de error) tanto pagando con tarjeta de prueba como con el saldo del comprador de prueba, ya logueado con la cuenta compradora (no la vendedora) — se descartó que fuera el problema clásico de "no podés pagarte a vos mismo" (documentado en la guía de MP: hacen falta cuentas de prueba separadas de vendedor y comprador) porque persistió incluso logueado como comprador. Causa raíz no aislada; el usuario va a probarlo manualmente. Simplificación a propósito del piloto: si el carrito mezcla más de una tienda, Mercado Pago no se ofrece como opción — MP no permite dividir un pago entre varios vendedores. **Regresión encontrada y arreglada (sesión 2026-07-16)**: al agregar el split piloto se sacó el fallback al `MP_ACCESS_TOKEN` global, así que cualquier tienda sin `mp_split_pilot` activo (todas menos la de prueba) recibía 400 "Este comercio todavía no tiene Mercado Pago vinculado." y el botón de pagar nunca redirigía a MP. Restaurado el fallback en `mp-create-preference` (usa el token global sin `marketplace_fee` cuando la tienda no tiene split vinculado) y redesplegado (versión 6). |
+| # | Punto original | Tarea |
+|---|---|---|
+| P0-6 | #18 | Split payments con Mercado Pago Marketplace (modo piloto) — **resuelto end-to-end**, confirmado por el usuario. OAuth de vinculación + creación de preferencia con split + pago real + webhook, todo verificado. El bloqueo que quedaba pendiente de la sesión 2026-07-15 (botón "Pagar" deshabilitado dentro del checkout de MP, sin causa aislada) se destrabó solo al reintentar — no hizo falta ningún cambio de código. Detalle completo en skill `progreso-baradero-local`. |
 
 ## Pendiente — P1 (media prioridad)
 
