@@ -702,69 +702,113 @@ async function renderMyCoupons() {
   }
 
   if (!data || data.length === 0) {
-    const emptyMsg = document.createElement('p');
-    emptyMsg.style.color = 'var(--bl-text-secondary)';
-    emptyMsg.textContent = 'Todavía no creaste ningún cupón.';
-    container.appendChild(emptyMsg);
+    renderCouponsEmpty(container);
     return;
   }
 
-  data.forEach((coupon) => {
-    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
+  data.forEach((coupon) => container.appendChild(buildCouponRow(coupon)));
+}
 
-    const row = document.createElement('div');
-    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white; flex-wrap: wrap;';
+function renderCouponsEmpty(container) {
+  const box = document.createElement('div');
+  box.className = 'pub-empty';
+  const icon = document.createElement('i');
+  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
+  box.appendChild(icon);
+  const title = document.createElement('p');
+  title.className = 'pub-empty__title';
+  title.textContent = 'Todavía no creaste ningún cupón';
+  box.appendChild(title);
+  const sub = document.createElement('p');
+  sub.className = 'pub-empty__sub';
+  sub.textContent = 'Usá el formulario de arriba para crear el primero.';
+  box.appendChild(sub);
+  container.appendChild(box);
+}
 
-    const info = document.createElement('div');
-    const codeStrong = document.createElement('strong');
-    codeStrong.textContent = coupon.code;
-    info.appendChild(codeStrong);
-    const detailsSpan = document.createElement('span');
-    detailsSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
-    detailsSpan.textContent = `${coupon.discount_percentage}% · ${isExpired ? 'Vencido' : (coupon.is_active ? 'Activo' : 'Inactivo')}`;
-    info.appendChild(detailsSpan);
-    row.appendChild(info);
+/** Fila estilo ML, mismo patrón que buildPubRow (Publicaciones): kebab con Activar/Desactivar + Borrar. */
+function buildCouponRow(coupon) {
+  const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
 
-    const actions = document.createElement('div');
-    actions.style.cssText = 'display: flex; gap: 0.5rem;';
+  const row = document.createElement('div');
+  row.className = 'pub-row' + (coupon.is_active && !isExpired ? '' : ' pub-row--paused');
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.type = 'button';
-    toggleBtn.className = 'btn-outline';
-    toggleBtn.style.cssText = 'padding: 0.5rem 1rem;';
-    toggleBtn.textContent = coupon.is_active ? 'Desactivar' : 'Activar';
-    toggleBtn.addEventListener('click', async () => {
-      const { error: updateError } = await supabase.from('coupons').update({ is_active: !coupon.is_active }).eq('id', coupon.id);
-      if (updateError) {
-        showToast('No se pudo actualizar el cupón.', 'error');
-        console.error(updateError);
-        return;
-      }
-      renderMyCoupons();
-    });
-    actions.appendChild(toggleBtn);
+  const icon = document.createElement('div');
+  icon.className = 'pub-row__thumb pub-row__thumb--icon';
+  const iconEl = document.createElement('i');
+  iconEl.className = 'fa-solid fa-ticket';
+  icon.appendChild(iconEl);
+  row.appendChild(icon);
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'btn-outline';
-    deleteBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem;';
-    deleteBtn.textContent = 'Borrar';
-    deleteBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
-      const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
-      if (deleteError) {
-        showToast('No se pudo borrar el cupón.', 'error');
-        console.error(deleteError);
-        return;
-      }
-      showToast('Cupón borrado.', 'success');
-      renderMyCoupons();
-    });
-    actions.appendChild(deleteBtn);
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('span');
+  title.className = 'pub-row__title';
+  title.textContent = coupon.code;
+  main.appendChild(title);
+  const sub = document.createElement('span');
+  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
+  sub.textContent = `${coupon.discount_percentage}% de descuento` + (coupon.expires_at ? ` · Vence ${new Date(coupon.expires_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}` : '');
+  main.appendChild(sub);
+  row.appendChild(main);
 
-    row.appendChild(actions);
-    container.appendChild(row);
+  const statusCell = document.createElement('div');
+  statusCell.className = 'pub-row__cell';
+  const badge = document.createElement('span');
+  const statusVariant = isExpired ? 'cancelled' : (coupon.is_active ? 'active' : 'paused');
+  const statusLabel = isExpired ? 'Vencido' : (coupon.is_active ? 'Activo' : 'Inactivo');
+  badge.className = `pub-status pub-status--${statusVariant}`;
+  badge.textContent = statusLabel;
+  statusCell.appendChild(badge);
+  row.appendChild(statusCell);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pub-actions';
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = 'pub-actions__toggle';
+  toggleBtn.setAttribute('aria-label', 'Acciones del cupón');
+  const dots = document.createElement('i');
+  dots.className = 'fa-solid fa-ellipsis-vertical';
+  toggleBtn.appendChild(dots);
+  wrap.appendChild(toggleBtn);
+
+  const menu = document.createElement('div');
+  menu.className = 'pub-actions__menu';
+  menu.hidden = true;
+  menu.appendChild(pubMenuItem(coupon.is_active ? 'Desactivar' : 'Activar', coupon.is_active ? 'fa-eye-slash' : 'fa-eye', async () => {
+    closePubMenus();
+    const { error: updateError } = await supabase.from('coupons').update({ is_active: !coupon.is_active }).eq('id', coupon.id);
+    if (updateError) {
+      showToast('No se pudo actualizar el cupón.', 'error');
+      console.error(updateError);
+      return;
+    }
+    renderMyCoupons();
+  }));
+  menu.appendChild(pubMenuItem('Borrar', 'fa-trash', async () => {
+    closePubMenus();
+    if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
+    const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
+    if (deleteError) {
+      showToast('No se pudo borrar el cupón.', 'error');
+      console.error(deleteError);
+      return;
+    }
+    showToast('Cupón borrado.', 'success');
+    renderMyCoupons();
+  }, true));
+  wrap.appendChild(menu);
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closePubMenus();
+    menu.hidden = !willOpen;
   });
+
+  row.appendChild(wrap);
+  return row;
 }
 
 function setupMyCouponForm() {

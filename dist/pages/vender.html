@@ -377,7 +377,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Bc3Qo7xB.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DBUT7TbT.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-B5K5HCX-.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
@@ -573,9 +573,9 @@
             <section class="mc-section" data-section="cupones" hidden>
             <!-- Mis cupones (F12-03): a diferencia de los cupones globales del admin, estos solo aplican a mi tienda -->
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
-            <div id="my-coupons-section" style="margin-top: 3rem;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Mis cupones</h2>
-              <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+            <div class="pub-wrap">
+              <div class="pub-header"><h1 class="pub-title">Mis cupones</h1></div>
+              <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
                 <div>
                   <label class="form-label" for="my-coupon-code">Código</label>
                   <input type="text" id="my-coupon-code" class="form-input" placeholder="Ej: MITIENDA10" required />
@@ -590,11 +590,8 @@
                 </div>
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
               </form>
-              <div id="my-coupons-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <!-- Cargado con JS -->
-              </div>
+              <div id="my-coupons-container" class="pub-list"></div>
             </div>
-
             </section>
 
             <!-- === Empleados === -->
