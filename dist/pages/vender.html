@@ -370,20 +370,38 @@
       .pub-empty__btn { background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
       .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
 
+      /* Perfil de mi comercio (estilo ML "Mi cuenta > Datos de mi negocio") */
+      .pf-wrap { max-width: 860px; }
+      .pf-title { font-size: 1.5rem; font-weight: 700; color: var(--bl-text); margin-bottom: 1.25rem; }
+      .pf-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.5rem; box-shadow: var(--bl-shadow-card); margin-bottom: 1.25rem; }
+      .pf-card__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.35rem; }
+      .pf-card__hint { font-size: 0.85rem; color: var(--bl-text-secondary); margin-bottom: 1.25rem; }
+      .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+      .pf-field { display: flex; flex-direction: column; }
+      .pf-field--full { grid-column: 1 / -1; }
+      .pf-field .form-label { margin-bottom: 0.4rem; }
+      .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
+      .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      .pf-actions { display: flex; justify-content: flex-end; }
+      .pf-actions .form-btn { width: auto; padding: 0.75rem 2rem; font-size: 1rem; }
+
       @media (max-width: 640px) {
+        .pf-grid { grid-template-columns: 1fr; }
+        .pf-actions { justify-content: stretch; }
+        .pf-actions .form-btn { width: 100%; }
         .pub-row { flex-wrap: wrap; }
         .pub-row__main { flex-basis: calc(100% - 56px - 1rem); }
         .pub-row__cell { min-width: 0; flex: 1 1 auto; align-items: flex-start; text-align: left; }
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-RtYwz30A.js"></script>
+    <script type="module" crossorigin src="/assets/vender-CQnYC3cM.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B5K5HCX-.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-KmCtX_eg.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-BSdJ0gJq.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-CZwZ6wpG.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-D5wRz0P3.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Bz5yYpZQ.css">
   </head>
   <body>
     <!-- Loading screen -->
@@ -506,64 +524,83 @@
             <!-- === Perfil de mi comercio === -->
             <section class="mc-section" data-section="perfil-comercio" hidden>
             <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->
-            <div id="store-profile-section" style="margin-top: 3rem;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Perfil de mi comercio</h2>
-              <form id="store-profile-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
-                <div class="form-group">
-                  <label class="form-label" for="store-logo">URL del logo</label>
-                  <input type="url" id="store-logo" class="form-input" placeholder="https://..." />
-                </div>
-                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                  <div>
-                    <label class="form-label" for="store-address">Dirección</label>
-                    <input type="text" id="store-address" class="form-input" />
-                  </div>
-                  <div>
-                    <label class="form-label" for="store-phone">Teléfono</label>
-                    <input type="text" id="store-phone" class="form-input" />
-                  </div>
-                </div>
-                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                  <div>
-                    <label class="form-label" for="store-zone">Zona / Barrio</label>
-                    <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
-                  </div>
-                  <div>
-                    <label class="form-label" for="store-hours">Horarios de atención</label>
-                    <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
+            <div id="store-profile-section" class="pf-wrap">
+              <h2 class="pf-title">Perfil de mi comercio</h2>
+              <form id="store-profile-form">
+                <!-- Datos del comercio -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Datos del comercio</h3>
+                  <p class="pf-card__hint">Cómo se presenta tu tienda a los clientes.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-logo">URL del logo</label>
+                      <input type="url" id="store-logo" class="form-input" placeholder="https://..." />
+                    </div>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-description">Descripción</label>
+                      <textarea id="store-description" class="form-input" rows="3" placeholder="Contales a tus clientes sobre tu comercio"></textarea>
+                    </div>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label" for="store-description">Descripción</label>
-                  <textarea id="store-description" class="form-input" rows="3" placeholder="Contales a tus clientes sobre tu comercio"></textarea>
-                </div>
-                <!-- F12-04: envío configurable por comercio (antes era una regla global para todas las tiendas) -->
-                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                  <div>
-                    <label class="form-label" for="store-delivery-fee">Costo de envío ($)</label>
-                    <input type="number" id="store-delivery-fee" class="form-input" min="0" step="1" required />
+
+                <!-- Contacto y ubicación -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Contacto y ubicación</h3>
+                  <p class="pf-card__hint">Dónde te encuentran y cómo comunicarse con vos.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-address">Dirección</label>
+                      <input type="text" id="store-address" class="form-input" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-phone">Teléfono</label>
+                      <input type="text" id="store-phone" class="form-input" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-zone">Zona / Barrio</label>
+                      <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-hours">Horarios de atención</label>
+                      <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
+                    </div>
+                    <!-- P1-12: el vendedor decide si se lo puede contactar (botón "Contactar
+                         al vendedor" en producto.js/comercio.js) -->
+                    <div class="pf-field pf-field--full">
+                      <label class="pf-check">
+                        <input type="checkbox" id="store-accepts-contact" checked />
+                        Permitir que los clientes me contacten
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label class="form-label" for="store-free-shipping-threshold">Envío gratis a partir de ($)</label>
-                    <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
+                </div>
+
+                <!-- Envíos -- F12-04: envío configurable por comercio (antes era una regla global para todas las tiendas) -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Envíos</h3>
+                  <p class="pf-card__hint">Configurá el costo de envío dentro de Baradero.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-delivery-fee">Costo de envío ($)</label>
+                      <input type="number" id="store-delivery-fee" class="form-input" min="0" step="1" required />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-free-shipping-threshold">Envío gratis a partir de ($)</label>
+                      <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
+                    </div>
                   </div>
                 </div>
-                <!-- P1-12: el vendedor decide si se lo puede contactar (botón "Contactar
-                     al vendedor" en producto.js/comercio.js) -->
-                <div class="form-group">
-                  <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                    <input type="checkbox" id="store-accepts-contact" checked />
-                    Permitir que los clientes me contacten
-                  </label>
+
+                <div class="pf-actions">
+                  <button type="submit" class="form-btn">Guardar perfil</button>
                 </div>
-                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Guardar perfil</button>
               </form>
             </div>
 
             <!-- Conectar Mercado Pago (P0-6, piloto): oculto por defecto, solo se muestra si stores.mp_split_pilot=true (seteado a mano) -->
-            <div id="mp-connect-section" style="margin-top: 3rem; display: none;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Mercado Pago</h2>
-              <div style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
+            <div id="mp-connect-section" class="pf-wrap" style="display: none;">
+              <h2 class="pf-title">Mercado Pago</h2>
+              <div class="pf-card">
                 <div id="mp-connect-container"></div>
               </div>
             </div>
