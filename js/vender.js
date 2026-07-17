@@ -1123,10 +1123,7 @@ async function renderPendingPayments() {
   container.textContent = '';
 
   if (withPendingProof.length === 0) {
-    const msg = document.createElement('p');
-    msg.style.color = 'var(--bl-text-secondary)';
-    msg.textContent = 'No hay comprobantes pendientes de revisión.';
-    container.appendChild(msg);
+    renderPendingPaymentsEmpty(container);
     return;
   }
 
@@ -1135,26 +1132,56 @@ async function renderPendingPayments() {
   });
 }
 
+function renderPendingPaymentsEmpty(container) {
+  const box = document.createElement('div');
+  box.className = 'pub-empty';
+  const icon = document.createElement('i');
+  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
+  box.appendChild(icon);
+  const title = document.createElement('p');
+  title.className = 'pub-empty__title';
+  title.textContent = 'No hay comprobantes pendientes';
+  box.appendChild(title);
+  const sub = document.createElement('p');
+  sub.className = 'pub-empty__sub';
+  sub.textContent = 'Los comprobantes de transferencia que suban tus clientes van a aparecer acá.';
+  box.appendChild(sub);
+  container.appendChild(box);
+}
+
+/** Fila estilo ML (clases pub-*), pero con Confirmar/Rechazar/Ver siempre visibles -- son
+ * acciones primarias acá, no tiene sentido esconderlas detrás de un menú ⋮ como en Ventas/Publicaciones. */
 function buildPendingPaymentRow(order, proof) {
   const row = document.createElement('div');
-  row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: white;';
+  row.className = 'pub-row';
 
-  const info = document.createElement('div');
-  const idStrong = document.createElement('strong');
-  idStrong.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-  info.appendChild(idStrong);
-  const totalSpan = document.createElement('span');
-  totalSpan.style.cssText = 'color: var(--bl-text-secondary); margin-left: 0.5rem;';
-  totalSpan.textContent = formatPrice(order.total_price);
-  info.appendChild(totalSpan);
-  row.appendChild(info);
+  const icon = document.createElement('div');
+  icon.className = 'pub-row__thumb pub-row__thumb--icon';
+  const iconEl = document.createElement('i');
+  iconEl.className = 'fa-solid fa-receipt';
+  icon.appendChild(iconEl);
+  row.appendChild(icon);
+
+  const main = document.createElement('div');
+  main.className = 'pub-row__main';
+  const title = document.createElement('span');
+  title.className = 'pub-row__title';
+  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
+  main.appendChild(title);
+  const sub = document.createElement('span');
+  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
+  const proofDate = new Date(proof.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  sub.textContent = `${formatPrice(order.total_price)} · Comprobante subido el ${proofDate}`;
+  main.appendChild(sub);
+  row.appendChild(main);
 
   const actions = document.createElement('div');
-  actions.style.cssText = 'display: flex; gap: 0.5rem;';
+  actions.style.cssText = 'display: flex; gap: 0.5rem; flex-shrink: 0;';
 
   const viewBtn = document.createElement('button');
   viewBtn.type = 'button';
   viewBtn.className = 'btn-outline';
+  viewBtn.style.cssText = 'padding: 0.5rem 0.9rem;';
   viewBtn.textContent = 'Ver comprobante';
   viewBtn.addEventListener('click', async () => {
     const { data, error } = await supabase.storage
@@ -1172,14 +1199,14 @@ function buildPendingPaymentRow(order, proof) {
   approveBtn.type = 'button';
   approveBtn.className = 'form-btn';
   approveBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
-  approveBtn.textContent = 'Confirmar pago';
+  approveBtn.textContent = 'Confirmar';
   approveBtn.addEventListener('click', () => handlePaymentDecision(proof.id, true));
   actions.appendChild(approveBtn);
 
   const rejectBtn = document.createElement('button');
   rejectBtn.type = 'button';
   rejectBtn.className = 'btn-outline';
-  rejectBtn.style.cssText = 'border-color: #ef4444; color: #ef4444;';
+  rejectBtn.style.cssText = 'padding: 0.5rem 0.9rem; border-color: #ef4444; color: #ef4444;';
   rejectBtn.textContent = 'Rechazar';
   rejectBtn.addEventListener('click', () => handlePaymentDecision(proof.id, false));
   actions.appendChild(rejectBtn);

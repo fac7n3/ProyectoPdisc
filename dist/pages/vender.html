@@ -377,7 +377,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Dp26EpvR.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DR6Hd5ox.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BTekq8aY.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-B5K5HCX-.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-B0Ezs5ee.js">
@@ -675,11 +675,15 @@
             </section>
 
             <!-- === Pagos por confirmar === -->
+            <!-- Pagos por transferencia pendientes de confirmar (F2-04), mismo shell visual
+                 que Publicaciones/Ventas (pub-wrap/pub-row/pub-empty) pero sin toolbar --
+                 esta lista ya viene filtrada a "sin revisar", no hace falta buscador ni chips. -->
             <section class="mc-section" data-section="pagos" hidden>
-            <!-- Pagos por transferencia pendientes de confirmar (F2-04) -->
-            <div style="margin-top: 3rem;">
-              <h2 style="font-size: 1.5rem; color: var(--bl-text); margin-bottom: 1rem;">Pagos por confirmar</h2>
-              <div id="pending-payments-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="pub-wrap">
+              <div class="pub-header">
+                <h1 class="pub-title">Pagos por confirmar</h1>
+              </div>
+              <div class="pub-list" id="pending-payments-container">
                 <!-- Cargado con JS -->
               </div>
             </div>
