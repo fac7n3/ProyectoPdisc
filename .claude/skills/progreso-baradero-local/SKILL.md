@@ -624,6 +624,64 @@ policies → ya no hay combinación posible que produzca el fallback.
 apuntando a un comercio `pending`/`rejected` que igual pasa `is_active`, y revisar si
 `products_select_public_active` sigue teniendo el chequeo `exists` de comercio aprobado.
 
+## Panel vendedor: rediseño "Mi cuenta" estilo ML (2026-07-16)
+Pedido directo del usuario, mejora ad-hoc de UI (no trackeada en Jira). Reemplaza el layout viejo
+de `vender.html` (secciones apiladas una debajo de otra en una sola página larga) por un shell de
+sidebar + contenido tipo "Mi cuenta" de Mercado Libre, migrando una sección a la vez al estilo ML
+completo mientras el resto queda "solo fuente" (movida adentro del shell nuevo, sin rediseñar el
+markup interno todavía). Sin migración en ninguno de los 3 commits — 100% frontend.
+
+- **Shell (commit `b9deec5`)**: `js/vender-shell.js` (nuevo) — sidebar fija en desktop / drawer en
+  mobile, navegación por `data-section` sincronizada con el hash de la URL (`initVenderShell`,
+  llamado al final de `loadDashboard`). Un solo `.mc-section[data-section]` visible por vez; grupos
+  colapsables (`.mc-group`) para agrupar ítems del sidebar. `pages/vender.html`: las 9 secciones
+  existentes (Resumen, Perfil de mi comercio, Mis cupones, Empleados, Ventas, Notificaciones,
+  Soporte, Pagos por confirmar, Envíos en curso, Publicaciones) quedaron movidas tal cual adentro
+  del shell nuevo — mismo contenido/ids/lógica, sin retocar su HTML interno todavía. La sección
+  "Resumen" sí se rediseñó de una: franja de KPIs (`.rs-strip`) + grilla de cards (`.rs-grid`,
+  gráfico de torta de estados de pedido, barras de ventas de los últimos 7 días, lista de pagos
+  pendientes/lo más vendido) reemplazando el bloque de estadísticas viejo.
+- **Fix de regresión encontrado en el camino (commit `30a7566`)**: `checkSellerState()` solo miraba
+  `profiles.role` (puede quedar desincronizado tras un cambio de rol, ver F12-17/migración 53 más
+  arriba) y trataba cualquier `seller_request` como pendiente sin mirar su `status` — una cuenta
+  con la solicitud ya `approved` seguía viendo el aviso de "pendiente de aprobación" en vez del
+  panel real. Corregido: ahora también acepta el rol del JWT (`app_metadata.role`) y filtra por
+  `status === 'approved'`.
+- **Publicaciones (commit `71e4173`)**: segunda sección migrada al estilo ML completo. Reemplaza la
+  tabla de productos por el layout de "Mis publicaciones" de ML — filas (`.pub-row`) con
+  miniatura/título/precio (`buildPriceRow`, F5-05, tachado+%off respetando `offer_expires_at`
+  vencido)/stock/ventas/estado + menú de acciones `⋮` (Editar/Pausar-Reactivar/Ver/Eliminar,
+  reusa `openEditProductForm`/`is_active`/`delete` ya existentes de F5-02); barra de filtros
+  (búsqueda + chips Todas/Activas/Pausadas + contador) 100% client-side sobre un cache en memoria
+  (`pubProducts`); botón "Publicar" con menú (individual = el form de siempre; masiva = stub
+  "Próximamente", sin fuente de datos para escaneo de código de barras todavía, ver P4-1 del
+  backlog); estado vacío estilo ML. Conteo de ventas por producto vía una query a `order_items`
+  agrupada en memoria (mismo patrón que `renderResumen`). Todo con DOM API, anti-XSS.
+- **Ventas (commit `fe2cfe8`)**: tercera sección migrada, mismo patrón que Publicaciones — **reusa
+  las clases CSS `pub-*` tal cual** en vez de duplicarlas (fila `.pub-row`, badges `.pub-status`,
+  menú `.pub-actions`, chips `.pub-chip`, buscador `.pub-search`), porque es estructuralmente el
+  mismo componente de lista (ícono en vez de miniatura, cliente/fecha en vez de stock/ventas,
+  badges de estado de pedido en vez de activa/pausada). Badges nuevos agregados al set existente:
+  `.pub-status--pending/shipped/ready/cancelled` (antes solo existían `--active`/`--paused`,
+  suficientes para productos pero no para los 6 estados de una orden). Menú de acciones por fila
+  con las mismas 3 acciones de siempre (Listo para retirar/Marcar entregado/Cancelar, F5-06) pero
+  contextual — si un pedido no tiene ninguna acción disponible (p.ej. `completed`), no se muestra
+  ningún botón `⋮` vacío. Sacado el botón "Refrescar" (ya no hace falta: `updateOrderStatus`
+  siempre re-renderiza solo, mismo criterio que Publicaciones). **Gotcha real encontrado y resuelto
+  antes de commitear**: Publicaciones y Ventas comparten la clase `.pub-chip` para sus chips de
+  filtro — sin scopear, el listener de clicks de una sección tocaba también los chips de la otra
+  (ambos usan `document.querySelectorAll('.pub-chip')`). Solución: cada toolbar tiene su propio id
+  (`#pub-toolbar` / `#ventas-toolbar`) y las queries se scopean a `<id> .pub-chip` — mismas clases
+  CSS compartidas (sin duplicar ~60 líneas de estilos), sin cruce de eventos.
+- **Pendiente** (quedan "solo fuente", sin el rediseño ML todavía): Perfil de mi comercio, Mis
+  cupones, Empleados, Notificaciones, Soporte, Pagos por confirmar, Envíos en curso — cada una es
+  candidata a migrar cuando se retome este esfuerzo, siguiendo el mismo patrón (evaluar primero si
+  el layout de lista `pub-*` aplica tal cual, como con Ventas, antes de crear clases nuevas).
+- **No verificado visualmente en el navegador** en ninguno de los 3 commits (sin herramienta de
+  navegador conectada en esta sesión) — cubierto con `npm run build` exitoso + revisión de código
+  exhaustiva (mismo patrón ya probado de Publicaciones, reutilizado sin cambios estructurales).
+  Recomendable una pasada visual (mobile + desktop) la próxima vez que haya navegador disponible.
+
 ## Hallazgos de la auditoría de DB (2026-07-07)
 - **9 tablas**, todas con RLS. (Actualización 2026-07-08: los seeds YA se aplicaron — 64 products, 14 stores, 14 categories, 2 coupons; orders/order_items siguen vacías.)
 - No se usan migraciones de Supabase (`list_migrations` vacío); el SQL se aplicó a mano en el SQL Editor.
