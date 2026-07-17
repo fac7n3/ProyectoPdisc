@@ -235,6 +235,8 @@ async function loadDashboard(user, staffStoreId) {
   currentStoreId = store.id;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
   document.getElementById('dash-shop-name').textContent = isStoreOwner ? store.name : `${store.name} (como empleado)`;
+  const welcomeStoreName = document.getElementById('welcome-store-name');
+  if (welcomeStoreName) welcomeStoreName.textContent = store.name;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
   ['store-profile-section', 'my-coupons-section', 'store-staff-section'].forEach((id) => {
