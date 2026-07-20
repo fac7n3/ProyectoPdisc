@@ -188,7 +188,7 @@ function renderNoResults() {
   wrap.appendChild(h3);
 
   const tips = document.createElement('ul');
-  ['Revisá la ortografía', 'Probá con términos más generales', 'Quitá algún filtro'].forEach((t) => {
+  ['Probá con términos más generales'].forEach((t) => {
     const li = document.createElement('li');
     li.textContent = t;
     tips.appendChild(li);
