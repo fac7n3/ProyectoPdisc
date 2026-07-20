@@ -27,6 +27,22 @@ layout en cada navegación (es un multipágina, cada página rehidrata el navbar
   `runSearch` reemplaza el texto plano "Buscando..." por el bloque spinner + "Buscando productos...".
   Verificado: `animationName: bl-spin` aplicado, render correcto (la RPC es tan rápida que el estado
   es fugaz en uso real; se verificó inyectando el markup del estado de carga con el CSS deployado).
+- **Segunda tanda (mismo día, commit `cad49a3`)**: tras el fix de arriba el parpadeo se fue, pero el
+  usuario reportó que al navegar entre páginas "desaparecían" la foto de perfil y el texto de la barra
+  de categorías — porque ambos se construyen tras un fetch (avatar via `getUser()`+`profiles`;
+  categorías via RPC) y aparecían tarde. Fix con el mismo patrón para los dos: **cachear en
+  localStorage y renderizar al instante desde cache, refrescando en background**.
+  - Foto de perfil (`js/auth-utils.js` `updateNavbarProfile`): cachea la URL del avatar en
+    `bl_avatar_url`, la pinta sincrónico al entrar (antes de resolver `getUser()`), y actualiza/limpia
+    la cache según el resultado real (login/logout).
+  - Barra de categorías (`js/nav-utils.js`): `initCategoryBar` separada en `renderCategoryBar` +
+    cache `bl_catbar_cache` (solo name+slug de categorías y destacadas). Si hay cache, dibuja al
+    instante y refresca en background sin re-render (las categorías casi nunca cambian; si cambian se
+    ve al siguiente load). Sin cache (primera visita), espera el fetch y dibuja una vez.
+  - Verificado en producción (Claude-in-Chrome, facu.cells): tras una primera visita, `bl_avatar_url`
+    y `bl_catbar_cache` (14 cats + 6 destacadas) quedan en localStorage; al navegar a otra página, el
+    `<img>` del avatar y los 8 items de la barra ya están renderizados de entrada (no vuelven al ícono
+    ni quedan en blanco).
 
 Migrado desde CLAUDE.md el 2026-07-15 para no cargarlo siempre en contexto (era ~104.000
 caracteres de historial, la mayor parte ya cerrado). El estado activo y los pendientes que sí
