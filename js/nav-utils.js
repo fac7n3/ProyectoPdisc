@@ -503,7 +503,15 @@ export async function initNotificationsBell() {
   const wrap = document.getElementById('nav-notifications-wrap');
   if (!wrap) return;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  // El botón se construye de inmediato (sincrónico), sin esperar la red: así el
+  // ícono aparece apenas corre el JS y no "titila" apareciendo tarde en cada
+  // navegación. La sesión (getSession, red) se resuelve en paralelo y solo el
+  // número del badge / el contenido del dropdown esperan por ella.
+  let session = null;
+  const sessionReady = supabase.auth.getSession().then(({ data }) => {
+    session = data.session;
+    return session;
+  });
 
   wrap.innerHTML = '';
 
@@ -533,6 +541,7 @@ export async function initNotificationsBell() {
   wrap.appendChild(panel);
 
   async function refreshBadge() {
+    await sessionReady;
     if (!session) { badge.textContent = ''; badge.dataset.count = '0'; return; }
     const count = await fetchUnreadCount(session.user.id);
     badge.textContent = count > 0 ? (count > 9 ? '9+' : String(count)) : '';
@@ -549,6 +558,8 @@ export async function initNotificationsBell() {
     panel.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
+
+    await sessionReady;
 
     if (!session) {
       const msg = document.createElement('p');
@@ -585,7 +596,7 @@ export async function initNotificationsBell() {
     if (e.key === 'Escape' && !panel.hidden) close();
   });
 
-  await refreshBadge();
+  refreshBadge(); // en bg: espera la sesión adentro, no bloquea el render del botón
 }
 
 // ── Helpers de scroll compartidos ───────────────────────────

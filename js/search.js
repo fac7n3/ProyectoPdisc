@@ -39,8 +39,13 @@ async function runSearch({ append = false } = {}) {
     filterState.page = 0;
     grid.innerHTML = '';
     const loading = document.createElement('div');
-    loading.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--bl-text-muted);';
-    loading.textContent = 'Buscando...';
+    loading.className = 'bl-loading-block';
+    const spinner = document.createElement('div');
+    spinner.className = 'bl-spinner';
+    loading.appendChild(spinner);
+    const loadingText = document.createElement('span');
+    loadingText.textContent = 'Buscando productos...';
+    loading.appendChild(loadingText);
     grid.appendChild(loading);
   } else if (loadMoreBtn) {
     loadMoreBtn.disabled = true;
