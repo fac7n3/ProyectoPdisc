@@ -98,6 +98,27 @@ function renderQuickProfile(user) {
     removeSkeleton(cardRole);
   }
 
+  // Avatar al instante: evita que la foto grande "desaparezca" (quede en el
+  // skeleton) hasta que resuelva el fetch del perfil. Fuente inmediata: el JWT
+  // (avatar de Google) o, si no, la cache del navbar (bl_avatar_url).
+  // renderFullProfile luego lo refina con el avatar real de la DB si difiere.
+  if (sidebarAvatar) {
+    let quickAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    if (!quickAvatar) {
+      try { quickAvatar = localStorage.getItem("bl_avatar_url") || null; } catch { quickAvatar = null; }
+    }
+    if (quickAvatar) {
+      removeSkeleton(sidebarAvatar);
+      sidebarAvatar.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = quickAvatar;
+      img.alt = quickName || "Avatar";
+      img.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: 50%;";
+      img.onerror = () => { sidebarAvatar.innerHTML = '<i class="fa-regular fa-user"></i>'; };
+      sidebarAvatar.appendChild(img);
+    }
+  }
+
   // Cambiar de rol (cliente/vendedor -> administrador/moderador): el rol real
   // que evalúa la RLS/el gate de admin.html vive en app_metadata (JWT), no en
   // profiles.role -- mismo campo que arregló guardPage en F12-17. Solo se
