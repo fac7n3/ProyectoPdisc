@@ -747,11 +747,21 @@ markup interno todavía). Sin migración en ninguno de los 3 commits — 100% fr
     Notificaciones con realce azul `--bl-primary` en la no leída; Soporte con form en card + empty
     state), **0 errores de consola**, sin overflow horizontal (`scrollWidth 1239 < innerWidth 1254`;
     el "corte" aparente era el `devicePixelRatio 1.25` del navegador), y la media query
-    `≤640px → .pf-grid: 1fr` confirmada deployada y activa (desktop 2col `395px 395px`). Lo único
-    NO verificado visualmente: la LISTA de reclamos de Soporte con datos (badges de estado + hilo +
-    el fix del `ReferenceError` en "responder"), porque facu.cells no tiene tickets — la lógica está
-    por lectura, faltaría crear un ticket de prueba para verlo en UI. `perfil.html` (cliente) /
-    `repartidor.html`: no revisados en UI pero cargan el mismo `home.css`, mismo componente.
+    `≤640px → .pf-grid: 1fr` confirmada deployada y activa (desktop 2col `395px 395px`). La LISTA de
+    reclamos de Soporte con datos también quedó verificada: se creó un ticket de prueba real vía el
+    form "Enviar reclamo" (facu.cells) → renderiza la fila ML con badge "Abierto" + botón "Cancelar
+    reclamo" (danger); al expandir el hilo y **enviar una respuesta**, la burbuja propia aparece
+    alineada a la derecha en `--bl-primary` sin ningún error — **confirma en vivo el fix del
+    `ReferenceError` (`thread`→`threadEl`)** del path "responder" (antes del fix ese re-render
+    tiraba y la burbuja no aparecía). Quedó un ticket de prueba "Prueba de diseño — verificación
+    panel vendedor" en producción (borrable/cancelable). `perfil.html` (cliente) / `repartidor.html`:
+    no revisados en UI pero cargan el mismo `home.css`, mismo componente compartido.
+  - **Gotcha operativo de la sesión de verificación**: crear el ticket por SQL (execute_sql) fue
+    bloqueado por el clasificador de seguridad (leer `auth.users` + mutar producción) — mismo límite
+    ya documentado en F12-09; la vía que sí funciona es el form real vía Claude-in-Chrome. La
+    extensión se desconectó a mitad de sesión (service worker suspendido al pasar Chrome a segundo
+    plano) y hubo que reinstalarla/reconectarla en una ventana nueva (que arrancó sin sesión → login
+    manual del usuario).
 - **Pendiente** (quedan "solo fuente", sin rediseñar — y probablemente no lo necesiten): ninguna de
   las secciones originalmente diferidas; sólo restan formularios de configuración que no encajan en
   el patrón de lista si aparecieran nuevos.
