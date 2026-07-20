@@ -351,9 +351,29 @@ export async function guardPage({
 }
 
 // --- Actualizar Foto de Perfil en Navbar ---
+const AVATAR_CACHE_KEY = "bl_avatar_url";
+const DEFAULT_PROFILE_ICON = '<i class="fa-regular fa-user" style="font-size: 0.875rem;"></i>';
+
+function renderNavAvatar(navProfile, avatarUrl) {
+  navProfile.innerHTML = "";
+  const img = document.createElement("img");
+  img.src = avatarUrl;
+  img.alt = "Mi perfil";
+  img.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;";
+  img.onerror = () => { navProfile.innerHTML = DEFAULT_PROFILE_ICON; };
+  navProfile.appendChild(img);
+}
+
 export async function updateNavbarProfile() {
   const navProfile = document.getElementById("nav-profile");
   if (!navProfile) return;
+
+  // Render inmediato desde cache: evita que la foto "desaparezca" (vuelva al ícono)
+  // en cada navegación mientras getUser()/profiles resuelven por red.
+  try {
+    const cached = localStorage.getItem(AVATAR_CACHE_KEY);
+    if (cached) renderNavAvatar(navProfile, cached);
+  } catch { /* localStorage bloqueado: ignorar */ }
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -373,19 +393,16 @@ export async function updateNavbarProfile() {
       }
 
       if (avatarUrl) {
-        navProfile.innerHTML = "";
-        const img = document.createElement("img");
-        img.src = avatarUrl;
-        img.alt = "Mi perfil";
-        img.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;";
-        img.onerror = () => {
-          navProfile.innerHTML = '<i class="fa-regular fa-user" style="font-size: 0.875rem;"></i>';
-        };
-        navProfile.appendChild(img);
+        renderNavAvatar(navProfile, avatarUrl);
+        try { localStorage.setItem(AVATAR_CACHE_KEY, avatarUrl); } catch { /* ignore */ }
+      } else {
+        navProfile.innerHTML = DEFAULT_PROFILE_ICON;
+        try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
       }
     } else {
       // Si no está autenticado, volvemos al icono por defecto
-      navProfile.innerHTML = '<i class="fa-regular fa-user" style="font-size: 0.875rem;"></i>';
+      navProfile.innerHTML = DEFAULT_PROFILE_ICON;
+      try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
     }
   } catch (err) {
     console.error("Error al actualizar la foto de perfil en el navbar:", err);

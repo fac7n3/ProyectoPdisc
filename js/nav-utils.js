@@ -122,16 +122,60 @@ export function clearRecentSearches() {
 }
 
 // ── Barra de categorías con mega-menú ───────────────────────
+const CATBAR_CACHE_KEY = 'bl_catbar_cache';
+
+function readCatBarCache() {
+  try {
+    const raw = localStorage.getItem(CATBAR_CACHE_KEY);
+    if (!raw) return null;
+    const c = JSON.parse(raw);
+    if (!c || !Array.isArray(c.categories) || !Array.isArray(c.featured)) return null;
+    return c;
+  } catch { return null; }
+}
+
+function writeCatBarCache(categories, featured) {
+  try {
+    // Solo name+slug: es lo único que usa renderCategoryBar.
+    const slim = {
+      categories: categories.map((c) => ({ name: c.name, slug: c.slug })),
+      featured: featured.map((c) => ({ name: c.name, slug: c.slug })),
+    };
+    localStorage.setItem(CATBAR_CACHE_KEY, JSON.stringify(slim));
+  } catch { /* localStorage bloqueado: ignorar */ }
+}
+
 /**
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
  * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'/'inicio').
+ *
+ * Render en dos tiempos: si hay cache en localStorage, dibuja la barra al
+ * instante (evita que el texto "desaparezca" en cada navegación mientras el
+ * fetch resuelve) y refresca el cache en background para la próxima. Sin cache
+ * (primera visita), espera el fetch y dibuja una vez.
  */
 export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6 } = {}) {
   const inner = document.getElementById('category-bar-inner');
   if (!inner) return;
 
-  const categories = await getCategories();
+  const cached = readCatBarCache();
+  if (cached) {
+    renderCategoryBar(inner, cached.categories, cached.featured, activeSlug);
+    // Refresco silencioso para la próxima navegación (sin re-render: las
+    // categorías casi nunca cambian; si cambian, se ve al siguiente load).
+    Promise.all([getCategories(), getFeaturedCategories(featuredLimit)])
+      .then(([categories, featured]) => writeCatBarCache(categories, featured))
+      .catch(() => {});
+    return;
+  }
 
+  const categories = await getCategories();
+  const featured = await getFeaturedCategories(featuredLimit);
+  renderCategoryBar(inner, categories, featured, activeSlug);
+  writeCatBarCache(categories, featured);
+}
+
+function renderCategoryBar(inner, categories, featured, activeSlug) {
   inner.textContent = '';
 
   // --- Botón mega-menú "Categorías" (fijo, no scrollea) ---
@@ -218,8 +262,6 @@ export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6
 
   // --- Tira de acceso rápido: Inicio + Ofertas + solo las categorías
   //     destacadas (no las 14). El resto vive en el mega-menú de arriba. ---
-  const featured = await getFeaturedCategories(featuredLimit);
-
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 
