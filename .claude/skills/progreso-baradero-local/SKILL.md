@@ -5,6 +5,29 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Fixes de carga del navbar + spinner de búsqueda (2026-07-20)
+Reporte del usuario: la campana de notificaciones "titilaba", el menú del navbar (barra de
+categorías) "desaparecía" al navegar entre páginas, y pidió un spinner de carga en la búsqueda
+(como el de "Verificando sesión"). Causa raíz común: elementos del navbar que se construyen por JS
+después de llamadas async (sesión, categorías) sin espacio reservado → aparecen tarde y empujan el
+layout en cada navegación (es un multipágina, cada página rehidrata el navbar de cero). Commit
+`8df498b`, verificado en producción con Claude-in-Chrome (cuenta facu.cells).
+- **Campana titila** (`js/nav-utils.js` `initNotificationsBell` + `Assets/styles/home.css`):
+  `initNotificationsBell` esperaba `getSession()` (red) ANTES de dibujar el botón → aparecía tarde.
+  Ahora construye el botón sincrónico y resuelve la sesión en paralelo (`sessionReady` promise); solo
+  el número del badge y el contenido del dropdown esperan por ella. Además `#nav-notifications-wrap`
+  ahora reserva `min-width/height: 2.25rem` (igual que `.navbar__action-circle`) para no empujar el
+  layout al aparecer.
+- **Barra de categorías desaparece** (`home.css`): `.category-bar__inner` estaba sin `min-height` →
+  colapsaba a 0 hasta que cargaban las categorías (fetch). Agregado `min-height: 3rem` para reservar
+  la altura. (Nota: NO había ningún bug de comentario CSS `\*` — la salida del grep me lo mostró mal
+  escapado, el archivo tenía `/*` válido; verificar siempre con Read, no con el render del grep.)
+- **Spinner de búsqueda** (`home.css` + `js/search.js`): nuevo `.bl-spinner` + `@keyframes bl-spin`
+  + `.bl-loading-block` reutilizables en `home.css` (mismo lenguaje que `.auth-loading-spinner`).
+  `runSearch` reemplaza el texto plano "Buscando..." por el bloque spinner + "Buscando productos...".
+  Verificado: `animationName: bl-spin` aplicado, render correcto (la RPC es tan rápida que el estado
+  es fugaz en uso real; se verificó inyectando el markup del estado de carga con el CSS deployado).
+
 Migrado desde CLAUDE.md el 2026-07-15 para no cargarlo siempre en contexto (era ~104.000
 caracteres de historial, la mayor parte ya cerrado). El estado activo y los pendientes que sí
 necesitan estar siempre visibles quedaron en CLAUDE.md, sección "Pendientes activos". Este
