@@ -43,6 +43,24 @@ layout en cada navegación (es un multipágina, cada página rehidrata el navbar
     y `bl_catbar_cache` (14 cats + 6 destacadas) quedan en localStorage; al navegar a otra página, el
     `<img>` del avatar y los 8 items de la barra ya están renderizados de entrada (no vuelven al ícono
     ni quedan en blanco).
+- **Tercera tanda (commit `dd0b858`)**: el usuario reportó que al entrar a `perfil.html` (clickeando
+  la foto del navbar) la foto GRANDE de la tarjeta de cuenta (`#sidebar-avatar`) "desaparecía hasta
+  cargar" — es un elemento distinto al avatar del navbar: arranca como skeleton y `perfil.js`
+  (`renderFullProfile`) lo llena recién tras el fetch del perfil a la DB. Fix en `renderQuickProfile`
+  (sincrónico, corre antes del fetch): pinta el avatar al instante desde `user.user_metadata`
+  (avatar de Google, viene en el JWT) con fallback a la cache `bl_avatar_url`; `renderFullProfile`
+  después lo refina con el avatar real de la DB si difiere (p.ej. si el usuario subió uno propio).
+  Verificado: bundle deployado contiene el marcador `bl_avatar_url`, y la foto grande se ve
+  renderizada (no skeleton).
+- **Gotcha operativo**: `curl` a `proyectopdisc.vercel.app` devuelve un **403 "Vercel Security
+  Checkpoint"** (protección anti-bot) — no sirve para pollear el estado del deploy ni para leer el
+  HTML/bundles servidos. Usar el browser real (Claude-in-Chrome pasa el challenge) o el MCP de
+  Vercel (`list_deployments`/`get_deployment`, aunque a veces rate-limitea). Además: **Vercel
+  rebuildeaa desde fuente**, así que el hash del bundle en producción (`perfil-D1pbI-Jp.js`) NO
+  coincide con el del build local (`perfil-D1ErCTsP.js`) aunque sea el mismo código — para verificar
+  qué versión está live, buscar un literal de string del cambio dentro del bundle (los comentarios y
+  nombres de variables locales se pierden en la minificación; los string literals como
+  `bl_avatar_url` sobreviven).
 
 Migrado desde CLAUDE.md el 2026-07-15 para no cargarlo siempre en contexto (era ~104.000
 caracteres de historial, la mayor parte ya cerrado). El estado activo y los pendientes que sí
