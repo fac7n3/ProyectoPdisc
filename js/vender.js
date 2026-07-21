@@ -16,16 +16,22 @@ async function checkSellerState(user) {
   if (!user) return; // guardPage ya se encarga de redirigir
 
   // El rol "real" vive en el JWT (app_metadata), no en profiles.role, que puede
-  // quedar desincronizado tras cambios de rol (ver F12-17 / migración 53).
+  // quedar desincronizado tras cambios de rol (ver F12-17 / migración 53). Si el
+  // JWT ya dice vendedor/admin (caso común) revelamos el shell al instante sin
+  // esperar el round-trip a profiles: eso hacía que el dashboard tardara en
+  // aparecer. profiles queda solo como fallback si el JWT no trae el rol todavía.
   const appRole = user.app_metadata?.role;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  let isSeller = ['vendedor', 'admin'].includes(appRole);
+  if (!isSeller) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    isSeller = ['vendedor', 'admin'].includes(profile?.role);
+  }
 
-  const isSeller = ['vendedor', 'admin'].includes(profile?.role) || ['vendedor', 'admin'].includes(appRole);
   if (isSeller) {
     registerView.style.display = 'none';
     dashboardView.style.display = 'flex'; // shell "Mi cuenta" (sidebar + contenido)
@@ -221,6 +227,16 @@ const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, z
 async function loadDashboard(user, staffStoreId) {
   isStoreOwner = !staffStoreId;
 
+  // Cache-first del nombre de la tienda: lo pintamos al instante desde
+  // localStorage (mismo patrón que bl_catbar_cache) para que el header no
+  // muestre "Tu Comercio" y salte al nombre real en cada navegación.
+  const shopNameEl = document.getElementById('dash-shop-name');
+  const SHOP_NAME_KEY = `bl_vender_shopname_${user.id}`;
+  try {
+    const cachedName = localStorage.getItem(SHOP_NAME_KEY);
+    if (cachedName && shopNameEl) shopNameEl.textContent = cachedName;
+  } catch { /* localStorage bloqueado: ignorar */ }
+
   const { data: store, error } = await supabase
     .from('stores')
     .select(STORE_SELECT_COLUMNS)
@@ -234,7 +250,9 @@ async function loadDashboard(user, staffStoreId) {
 
   currentStoreId = store.id;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
-  document.getElementById('dash-shop-name').textContent = isStoreOwner ? store.name : `${store.name} (como empleado)`;
+  const shopLabel = isStoreOwner ? store.name : `${store.name} (como empleado)`;
+  if (shopNameEl) shopNameEl.textContent = shopLabel;
+  try { localStorage.setItem(SHOP_NAME_KEY, shopLabel); } catch { /* ignore */ }
   const welcomeStoreName = document.getElementById('welcome-store-name');
   if (welcomeStoreName) welcomeStoreName.textContent = store.name;
 
@@ -252,6 +270,15 @@ async function loadDashboard(user, staffStoreId) {
   const mpConnectSection = document.getElementById('mp-connect-section');
   if (mpConnectSection) mpConnectSection.style.display = isStoreOwner && store.mp_split_pilot ? '' : 'none';
 
+  // Cablear el shell YA (sidebar interactivo + mostrar la sección correcta del
+  // hash al instante), ANTES de la cadena de renders de datos. Antes esto era lo
+  // último: el sidebar aparecía pero no respondía a clicks hasta que resolvían
+  // ~10 fetches, y un deep-link (#ventas) mostraba "Resumen" y saltaba. Ambas
+  // funciones solo cablean listeners/nav sobre DOM estático; cada sección
+  // rellena su propio placeholder por detrás a medida que llega su data.
+  setupDashboardEvents();
+  initVenderShell(); // shell "Mi cuenta": sidebar + navegación por sección (Fase 0)
+
   if (isStoreOwner) {
     fillStoreProfileForm(store);
     if (store.mp_split_pilot) {
@@ -266,19 +293,20 @@ async function loadDashboard(user, staffStoreId) {
   const supportContainer = document.getElementById('support-container');
   if (supportContainer) await renderSupportSection(supportContainer);
 
+  // fetchProducts primero (setea currentActiveProductCount, que lee renderResumen);
+  // el resto son renders independientes → en paralelo, cada sección pinta apenas
+  // tiene sus datos en vez de esperar a los de las demás secciones.
   await fetchProducts();
-  await renderAllOrders();
-  await renderPendingPayments();
-  await renderShipmentsInProgress();
-  await renderResumen();
+  await Promise.all([
+    renderAllOrders(),
+    renderPendingPayments(),
+    renderShipmentsInProgress(),
+    renderResumen(),
+  ]);
 
   if (isStoreOwner) {
-    await renderMyCoupons();
-    await renderStoreStaff();
+    await Promise.all([renderMyCoupons(), renderStoreStaff()]);
   }
-
-  setupDashboardEvents();
-  initVenderShell(); // shell "Mi cuenta": sidebar + navegación por sección (Fase 0)
 }
 
 // --- F5-06: gestión de pedidos ---

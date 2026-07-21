@@ -32,26 +32,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    // Fetch store
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('*')
-      .eq('id', storeId)
-      .single();
+    // Tienda y productos son consultas independientes (ambas solo dependen de
+    // storeId): en paralelo el spinner dura 1 round-trip en vez de 2.
+    const [
+      { data: store, error: storeError },
+      { data: products, error: productsError },
+    ] = await Promise.all([
+      supabase.from('stores').select('*').eq('id', storeId).single(),
+      supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false }),
+    ]);
 
     if (storeError || !store) throw storeError || new Error('Comercio no encontrado');
+    if (productsError) throw productsError;
 
     document.title = `${store.name} — Baradero Local`;
-
-    // Fetch products
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('*')
-      .eq('store_id', storeId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
-
-    if (productsError) throw productsError;
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     mainContent.innerHTML = '';

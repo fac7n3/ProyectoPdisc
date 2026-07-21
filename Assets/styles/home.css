@@ -1559,6 +1559,21 @@ button.coupon-chip:hover {
   transform: scale(1.05);
 }
 
+/* Skeletons de tarjeta de producto (home / search / comercios).
+   Reservan el MISMO alto que .product-card__image en cada breakpoint para que
+   la grilla no "salte" (CLS) al reemplazar los skeletons por las tarjetas
+   reales. Sin esto, .skeleton-img quedaba en alto 0 y la grilla crecía de golpe. */
+.skeleton-card { pointer-events: none; }
+.skeleton-img {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #edf2f7 37%, #e2e8f0 63%);
+  background-size: 400% 100%;
+  animation: bl-skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes bl-skeleton-shimmer { to { background-position: -400% 0; } }
+
 /* Botón de favoritos */
 .product-card__wishlist {
   position: absolute;
@@ -2013,6 +2028,8 @@ button.coupon-chip:hover {
     padding: 0.75rem;
   }
 
+  .skeleton-img { height: 140px; }
+
   .product-card__body {
     padding: 0.75rem;
   }
@@ -2060,6 +2077,8 @@ button.coupon-chip:hover {
   .product-card__image {
     height: 120px;
   }
+
+  .skeleton-img { height: 120px; }
 }
 
 /* ===========================================================

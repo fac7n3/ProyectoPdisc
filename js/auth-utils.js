@@ -368,39 +368,51 @@ export async function updateNavbarProfile() {
   const navProfile = document.getElementById("nav-profile");
   if (!navProfile) return;
 
-  // Render inmediato desde cache: evita que la foto "desaparezca" (vuelva al ícono)
-  // en cada navegación mientras getUser()/profiles resuelven por red.
+  // 1) Render inmediato desde cache: evita que la foto "desaparezca" (vuelva al
+  //    ícono) en cada navegación mientras getUser()/profiles resuelven por red.
+  let painted = false;
   try {
     const cached = localStorage.getItem(AVATAR_CACHE_KEY);
-    if (cached) renderNavAvatar(navProfile, cached);
+    if (cached) { renderNavAvatar(navProfile, cached); painted = true; }
   } catch { /* localStorage bloqueado: ignorar */ }
 
+  // 2) La AUTORIDAD de "logueado o no" es la sesión local (getSession, sin red),
+  //    igual que guardPage. Solo con NO-sesión borramos la foto + el cache. Si
+  //    getUser() más abajo devuelve null de forma transitoria (offline, token en
+  //    refresh, cliente de auth frío) NO borramos nada: eso hacía que la foto
+  //    desapareciera y encima el borrado del cache volvía el parpadeo pegajoso.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    navProfile.innerHTML = DEFAULT_PROFILE_ICON;
+    try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
+    return;
+  }
+
+  // 3) Con sesión local pero cache frío (primera navegación tras loguearse),
+  //    pintar ya desde el JWT (avatar de Google OAuth) antes de esperar la red.
+  if (!painted) {
+    const jwtAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+    if (jwtAvatar) renderNavAvatar(navProfile, jwtAvatar);
+  }
+
+  // 4) Refresco autoritativo por red: avatar guardado en el perfil de la DB.
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      // Intenta obtener el avatar del metadata de auth o del perfil de la base de datos
-      let avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    if (!user) return; // null transitorio: dejamos la foto cacheada/JWT intacta
 
-      // Buscamos si hay un avatar guardado en la base de datos
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+    let avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile && profile.avatar_url) avatarUrl = profile.avatar_url;
 
-      if (profile && profile.avatar_url) {
-        avatarUrl = profile.avatar_url;
-      }
-
-      if (avatarUrl) {
-        renderNavAvatar(navProfile, avatarUrl);
-        try { localStorage.setItem(AVATAR_CACHE_KEY, avatarUrl); } catch { /* ignore */ }
-      } else {
-        navProfile.innerHTML = DEFAULT_PROFILE_ICON;
-        try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
-      }
+    if (avatarUrl) {
+      renderNavAvatar(navProfile, avatarUrl);
+      try { localStorage.setItem(AVATAR_CACHE_KEY, avatarUrl); } catch { /* ignore */ }
     } else {
-      // Si no está autenticado, volvemos al icono por defecto
+      // Logueado y verificado pero sin ninguna foto: recién acá al ícono default.
       navProfile.innerHTML = DEFAULT_PROFILE_ICON;
       try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
     }

@@ -13,6 +13,11 @@ const statusTitle = document.getElementById('status-title');
 const statusText = document.getElementById('status-text');
 const dashboardView = document.getElementById('dashboard-view');
 
+// El form de registro arranca oculto (no tiene display:none por CSS): así no
+// "parpadea" antes de que checkDeliveryState decida la vista correcta. Antes se
+// veía el form de "Sumate como repartidor" y saltaba al dashboard/estado.
+if (registerView) registerView.style.display = 'none';
+
 function showStatus({ icon, title, text }) {
   registerView.style.display = 'none';
   dashboardView.style.display = 'none';
@@ -30,13 +35,21 @@ function showDashboard() {
 
 /** Repartidor ya aprobado, solicitud pendiente, o nada todavía (mostrar form) */
 async function checkDeliveryState(user) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  // El rol ya está en el JWT (app_metadata.role), que es lo que evalúa RLS. Para
+  // un repartidor aprobado (caso común) mostramos el dashboard al instante sin
+  // esperar el round-trip a profiles — así no parpadea el form. El fetch a
+  // profiles queda solo como fallback si el JWT todavía no trae el rol.
+  let role = user.app_metadata?.role;
+  if (role !== 'repartidor') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    role = profile?.role;
+  }
 
-  if (profile?.role === 'repartidor') {
+  if (role === 'repartidor') {
     showDashboard();
     loadAvailableOrders();
     loadMyDeliveries(user.id);

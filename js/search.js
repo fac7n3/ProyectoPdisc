@@ -22,6 +22,7 @@ const filterState = {
 
 let totalCount = 0;
 let categoryNameBySlug = {}; // slug -> nombre (para header y chips)
+let searchToken = 0; // descarta respuestas viejas del RPC (cambios rápidos de filtro)
 
 // --- Referencias DOM ---
 const grid = document.getElementById('products-grid');
@@ -35,18 +36,25 @@ const loadMoreBtn = document.getElementById('load-more-btn');
 async function runSearch({ append = false } = {}) {
   if (!grid) return;
 
+  const token = ++searchToken;
+
   if (!append) {
     filterState.page = 0;
-    grid.innerHTML = '';
-    const loading = document.createElement('div');
-    loading.className = 'bl-loading-block';
-    const spinner = document.createElement('div');
-    spinner.className = 'bl-spinner';
-    loading.appendChild(spinner);
-    const loadingText = document.createElement('span');
-    loadingText.textContent = 'Buscando productos...';
-    loading.appendChild(loadingText);
-    grid.appendChild(loading);
+    // Primera carga: dejamos los skeletons del HTML (ya reservan el layout, no
+    // hay salto). En cambios de filtro posteriores ya no quedan skeletons →
+    // ahí sí mostramos el spinner de "Buscando productos...".
+    if (!grid.querySelector('.skeleton-card')) {
+      grid.innerHTML = '';
+      const loading = document.createElement('div');
+      loading.className = 'bl-loading-block';
+      const spinner = document.createElement('div');
+      spinner.className = 'bl-spinner';
+      loading.appendChild(spinner);
+      const loadingText = document.createElement('span');
+      loadingText.textContent = 'Buscando productos...';
+      loading.appendChild(loadingText);
+      grid.appendChild(loading);
+    }
   } else if (loadMoreBtn) {
     loadMoreBtn.disabled = true;
     loadMoreBtn.textContent = 'Cargando...';
@@ -65,6 +73,7 @@ async function runSearch({ append = false } = {}) {
     });
 
     if (error) throw error;
+    if (token !== searchToken) return; // llegó una búsqueda más nueva: descartar
 
     if (!append) grid.innerHTML = '';
 
