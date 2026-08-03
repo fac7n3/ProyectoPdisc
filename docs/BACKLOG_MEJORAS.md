@@ -122,20 +122,32 @@ en la sesión 2026-07-16 (ver tablas "Hecho" arriba).
 | P2-5 | #9 | `pages/comercio.html` tenía `<main id="main-content">` vacío en el HTML estático seguido directo del `<footer>` — mientras `comercio.js` hacía el fetch async, el `<main>` colapsaba y el footer aparecía pegado arriba. El patrón de skeleton de `perfil.js` (`removeSkeleton`) no aplicaba (esa página tiene layout fijo pre-marcado; `comercio.html` arma todo dinámico). Se agregó un spinner (mismo estilo visual que `.auth-loading-spinner` de `auth.css`, reimplementado inline con las variables `--bl-*` de la página) con `min-height: 60vh` para que el `<main>` tenga altura real durante la carga. |
 | P2-2 | #8 | El logo del navbar en `vender.html`/`repartidor.html` (y también `mensajes.html`, no reportado por el usuario pero con el mismo problema) era un SVG inline con azul hardcodeado (`#2d4a7c`), distinto de la imagen real de marca (`logoazulpng.png`) que usa el resto del sitio. Unificado a la misma `<img>` que usa `home.html`. El "verde agua" que mencionó el usuario resultó ser `.vendor-mode-badge` (`--bl-vendor-accent: #0e7490`) — un acento intencional de "modo vendedor" (comentario `F5-09` ya en el código), no una inconsistencia del navbar; no se tocó. Tipografía y el patrón "flecha volver" ya estaban consistentes (mismas clases CSS, sin overrides). |
 
+## ✅ Hecho (sesión 2026-08-03)
+
+| # | Punto original | Notas |
+|---|---|---|
+| P3-2 | #2 | Sacada la sección "Cupones activos" de `home.html`/`home.js` (`loadCoupons()`, el `<section id="coupons-section">` y el CSS `.coupons-section` ahora muerto). `carrito.js`/`cart-utils.js` (`renderActiveCoupons`) no se tocaron — el cupón del carrito es otra feature, no la que pidió sacar el usuario. |
+| P2-4 | #5 | "Envío gratis" ahora se calcula igual que en `product-modal.js` (precio del producto ≥ `store.free_shipping_threshold`) y se muestra en las tarjetas de `home.js`, `search.js` y `comercio.js` -- antes `home.js` mostraba un texto "Calcular envío" con un toast hardcodeado ($20.000, dato inventado) y las otras dos no mostraban nada. Helper compartido `buildShippingBadge(product, store)` en `cart-utils.js`. `search.js` usa el RPC `search_products`, que no devuelve el umbral de la tienda -- se agregó una consulta liviana adicional a `stores` por los `store_id` de la página (cacheada en memoria), sin tocar el RPC/migración. |
+| P2-10 | #23 | Registro de vendedor: `shop-category` pasó a `<select multiple>` (rubro de a uno o varios). Nueva columna `seller_requests.category_slugs` (array, migración `db/schema/60_seller_request_multi_category.sql`, **pendiente de aplicar** -- ver `docs/MIGRACIONES_PENDIENTES.md`, sin credenciales de Supabase en esta sesión). La columna vieja `category_slug` queda sin usar pero no se borró (approve_seller_request nunca la copiaba a `stores`, no hay nada más que dependa de ella). `admin.js` ahora muestra la lista completa en la tabla de solicitudes. |
+
+**Corrección de esta sesión**: P3-1 ("envío gratis borroso, hecho con IA") estaba mal marcado como pendiente -- ya estaba resuelto (texto plano con CSS, `.pm-gallery__badge--envio`, sin ninguna imagen generada por IA en el repo). Se corrige el estado abajo.
+
 ## Pendiente — P2 (consistencia visual / navegación)
 
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
-| P2-4 | #5 | pendiente | "Envío gratis" solo aparece dentro del producto, no afuera |
-| P2-10 | #23 | pendiente | Registro vendedor: permitir elegir más de un rubro (hoy `category_slug` único) |
 | P2-11 | #10 | pendiente | Arreglar en general cómo se ve tienda (pasada estética global de comercio.html) — requiere criterio de diseño del usuario |
+
+## Hecho (verificado en sesión 2026-08-03, ya estaba resuelto de antes)
+
+| # | Punto original | Notas |
+|---|---|---|
+| P3-1 | #4 | "Envío gratis" ya es texto plano con CSS (`product-modal.js` + `.pm-gallery__badge--envio`), no una imagen. Estaba mal clasificado como pendiente. |
 
 ## Pendiente — P3 (estético / capricho)
 
 | # | Punto original | Estado | Notas |
 |---|---|---|---|
-| P3-1 | #4 | pendiente | "Envío gratis" borroso y hecho con IA — versión plana simple |
-| P3-2 | #2 | pendiente | Sacar cupones del inicio |
 | P3-3 | #10 compl. | pendiente | Arreglar en general cómo se ve tienda (solapa con P2-11) |
 
 ## Pendiente — P4 (features nuevas grandes)

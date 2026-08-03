@@ -60,7 +60,8 @@ async function fetchRequests() {
     tr.appendChild(tdCuit);
 
     const tdCategory = document.createElement('td');
-    tdCategory.textContent = req.category_slug || '-';
+    // P2-10: category_slugs (array, multi-rubro) reemplaza a category_slug (un solo valor).
+    tdCategory.textContent = (req.category_slugs && req.category_slugs.length ? req.category_slugs.join(', ') : req.category_slug) || '-';
     tr.appendChild(tdCategory);
 
     const tdStatus = document.createElement('td');

@@ -6,7 +6,7 @@
 // estado sin resultados con recuperación.
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
-import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState } from './cart-utils.js';
+import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell } from './nav-utils.js';
 
 const PAGE_SIZE = 24;
@@ -23,6 +23,18 @@ const filterState = {
 let totalCount = 0;
 let categoryNameBySlug = {}; // slug -> nombre (para header y chips)
 let searchToken = 0; // descarta respuestas viejas del RPC (cambios rápidos de filtro)
+
+// P2-4: search_products (RPC) no devuelve free_shipping_threshold de la tienda
+// -- se cachea acá por store_id en vez de tocar el RPC para un dato cosmético.
+const storeShippingById = new Map();
+
+async function loadShippingThresholds(products) {
+  const missingIds = [...new Set(products.map((p) => p.store_id).filter((id) => id && !storeShippingById.has(id)))];
+  if (!missingIds.length) return;
+  const { data, error } = await supabase.from('stores').select('id, free_shipping_threshold').in('id', missingIds);
+  if (error) return; // el badge es cosmético: si falla, simplemente no se muestra
+  data.forEach((s) => storeShippingById.set(s.id, s.free_shipping_threshold));
+}
 
 // --- Referencias DOM ---
 const grid = document.getElementById('products-grid');
@@ -88,6 +100,7 @@ async function runSearch({ append = false } = {}) {
       return;
     }
 
+    await loadShippingThresholds(products || []);
     (products || []).forEach((p) => grid.appendChild(buildCard(p)));
 
     initCartButtons();
@@ -259,6 +272,9 @@ function buildCard(product) {
   body.appendChild(nameH3);
 
   body.appendChild(buildPriceRow(product));
+
+  const shippingBadge = buildShippingBadge(product, { free_shipping_threshold: storeShippingById.get(product.store_id) });
+  if (shippingBadge) body.appendChild(shippingBadge);
 
   const addBtn = document.createElement('button');
   addBtn.className = 'product-card__add';

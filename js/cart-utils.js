@@ -158,6 +158,28 @@ export function buildPriceRow(product) {
 }
 
 /**
+ * P2-4: badge "Envío gratis" para tarjetas de producto (home/search/comercio),
+ * mismo criterio que ya usaba product-modal.js (precio del producto solo
+ * alcanza el umbral de la tienda) -- antes esas tarjetas no mostraban nada
+ * real, solo un texto genérico ("Calcular envío") sin datos de la tienda.
+ * @param {{price: number}} product
+ * @param {{free_shipping_threshold?: number|null}} [store]
+ * @returns {HTMLElement|null} null si la tienda no tiene envío gratis o el producto no llega al umbral
+ */
+export function buildShippingBadge(product, store) {
+  if (!store || store.free_shipping_threshold == null) return null;
+  if (product.price < store.free_shipping_threshold) return null;
+
+  const span = document.createElement('span');
+  span.className = 'product-card__shipping';
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-truck';
+  span.appendChild(icon);
+  span.append(' Envío gratis');
+  return span;
+}
+
+/**
  * F12-07 + P1-6: sección pública de cupones/promociones activos -- solo los
  * globales (`store_id` null), los de un vendedor puntual ya no se listan en
  * bloque (P1-6, migración 57: solo el dueño de la tienda o quien ya conoce el

@@ -22,31 +22,18 @@
 
 ## Pendientes (en orden de aplicación)
 
-### `db/schema/54_support_ticket_messages.sql`
-- **Tarea**: P0-5 — Soporte hilo tipo chat + usuario cancela reclamo.
-- **Qué hace**: agrega `cancelled` al CHECK de `support_tickets.status`, crea
-  tabla `support_ticket_messages` (hilo bidireccional cliente ↔ admin/moderador),
-  actualiza la RLS de `support_tickets` para que el dueño pueda cancelar
-  (solo `status='cancelled'`, no otros cambios), y un trigger que notifica al
-  usuario cuando el admin responde en el hilo.
-- **Depende de**: `46_support_tickets.sql` (F12-11, ya aplicada) y
-  `38_notifications.sql` (`create_notification`, ya aplicada).
-- **Aplicada**: ✅ 2026-07-14 — verificada con `BEGIN;...ROLLBACK;` antes de
-  aplicar para real; `get_advisors` sin hallazgos nuevos (`notify_support_ticket_message`
-  ya sin `EXECUTE` de `public`/`anon`/`authenticated`).
+1. `db/schema/60_seller_request_multi_category.sql` — agrega `seller_requests.category_slugs`
+   (array) para P2-10 (multi-rubro al registrarse como vendedor). No se pudo aplicar en esta
+   sesión (2026-08-03): sin credenciales de Supabase cargadas (`mcp__supabase__apply_migration`
+   devolvió "Unauthorized. Please provide a valid access token"). Idempotente, no rompe nada si
+   se corre después de que alguien la aplique manualmente por otra vía.
 
-### `db/schema/55_user_addresses.sql`
-- **Tarea**: P0-2 — Multi-address book (varias direcciones guardadas por usuario).
-- **Qué hace**: crea tabla `user_addresses` (label, address, details, phone,
-  is_default) con RLS ownership y un trigger `ensure_single_default_address`
-  que garantiza que solo haya una dirección predeterminada por usuario.
-- **Depende de**: nada (tabla nueva, sin FK a otras tablas nuevas).
-- **Nota**: el JS de `perfil.js` auto-migra la dirección vieja de
-  `profiles.address`/`address_details` a esta tabla la primera vez que el
-  usuario abre la libreta de direcciones — no hace falta migrar datos a mano.
-- **Aplicada**: ✅ 2026-07-14 — verificada con `BEGIN;...ROLLBACK;` antes de
-  aplicar para real; `get_advisors` sin hallazgos nuevos (`ensure_single_default_address`
-  ya sin `EXECUTE` de `public`/`anon`/`authenticated`).
+Antes de esta entrada: verificado contra la base real (`list_migrations`, proyecto
+`otzhdwuaffcplrveuadc`) el 2026-07-23: **todas las migraciones 01 a 59 ya
+están aplicadas**, incluidas 54-59 que esta lista había dejado de actualizar
+(quedaban registradas como pendientes/no mencionadas pese a estar aplicadas
+desde las sesiones del 2026-07-14 al 2026-07-16 — ver `docs/BACKLOG_MEJORAS.md`
+para el detalle de cada una).
 
 ---
 
@@ -83,6 +70,6 @@ supabase db execute --project-ref otzhdwuaffcplrveuadc < db/schema/55_user_addre
 
 ## Historial (ya aplicadas, no tocar)
 
-Las migraciones 01 a 53 ya están aplicadas en producción (ver sección
-"Progreso" del `CLAUDE.md` para el detalle de cada una). Este archivo solo
-lista las pendientes desde julio 2026 en adelante.
+Las migraciones 01 a 59 ya están aplicadas en producción (ver skill
+`progreso-baradero-local` y `docs/BACKLOG_MEJORAS.md` para el detalle de cada
+una). Este archivo solo lista las pendientes.

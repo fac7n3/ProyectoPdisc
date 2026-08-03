@@ -443,10 +443,11 @@
                 <input type="text" id="shop-cuit" class="form-input" placeholder="Sin guiones" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="shop-category">Rubro Principal</label>
-                <select id="shop-category" class="form-input" required>
+                <label class="form-label" for="shop-category">Rubro(s)</label>
+                <select id="shop-category" class="form-input" multiple required>
                   <option value="">Cargando rubros...</option>
                 </select>
+                <small style="color: var(--bl-text-muted); display: block; margin-top: 0.25rem;">Mantené Ctrl (o Cmd en Mac) para elegir más de uno.</small>
               </div>
               <div class="form-group">
                 <label class="form-label" for="shop-address">Dirección del Local</label>

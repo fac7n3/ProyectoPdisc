@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-07-16 (noche). Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-08-03. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
 > (se carga solo cuando hace falta consultar el historial). Pendientes que sí necesitan quedar
@@ -48,9 +48,9 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **F8-02/F8-03** — Notificaciones por Email/WhatsApp bloqueadas: faltan credenciales de un proveedor externo (Resend/Meta Business). Plantillas de WhatsApp ya redactadas en `docs/WHATSAPP_TEMPLATES.md`.
+- **F8-02/F8-03** — Notificaciones por Email/WhatsApp bloqueadas: falta credenciales de un proveedor externo (Resend/Meta Business) **y** escribir el código de integración (verificado 2026-08-03: ninguna edge function llama a Resend ni a la API de WhatsApp/Meta todavía — solo existen las de Mercado Pago). Plantillas de WhatsApp ya redactadas en `docs/WHATSAPP_TEMPLATES.md`.
 - **F11-04** — Dominio propio: requiere que el usuario compre un dominio (decisión de costo). Hoy corre en `proyectopdisc.vercel.app`. Pasos para cuando se compre uno, en `docs/DEPLOY.md`.
-- **F11-06** — Cargar comercios reales: las 14 tiendas/64 productos son datos de seed. Falta que vendedores reales se registren y sean aprobados (el flujo ya funciona).
+- **F11-06** — Cargar comercios reales: las 14 tiendas son datos de seed. El conteo de productos es incierto sin acceso a la DB real: los archivos de seed (`db/schema/04_seed_mock_data.sql` + `06_seed_10_stores_and_products.sql`) suman 56, pero la última auditoría contra la base real (2026-07-08, ver skill `progreso-baradero-local`) había medido 64 — probablemente se cargaron productos sueltos a mano después del seed. No se pudo re-verificar en la sesión 2026-08-03 (sin credenciales de Supabase). Falta que vendedores reales se registren y sean aprobados (el flujo ya funciona).
 - **F12-18** — Facturación/AFIP: fuera de alcance de código desde el principio (ver `docs/ROADMAP.md` sección 17.1).
 - **F10-02** — Tests E2E con Playwright: diferido a propósito, opcional en el roadmap.
 - **Backlog mencionado por el usuario (2026-07-10), sin abordar aún**: pulido de responsive en detalles sin especificar; apps nativas (App Store/Google Play) recomendadas pero no iniciadas.

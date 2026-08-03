@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
+import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -189,6 +189,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         body.appendChild(nameH3);
 
         body.appendChild(buildPriceRow(product));
+
+        const shippingBadge = buildShippingBadge(product, store);
+        if (shippingBadge) body.appendChild(shippingBadge);
 
         const addBtn = document.createElement('button');
         addBtn.className = 'product-card__add';

@@ -835,12 +835,6 @@ ul, ol {
    CUPONES ACTIVOS (F12-07)
    =========================================================== */
 
-.coupons-section {
-  max-width: 1320px;
-  margin: 1.5rem auto 0;
-  padding: 0 1.5rem;
-}
-
 .coupons-row {
   display: flex;
   gap: 0.75rem;

@@ -104,10 +104,6 @@ async function loadCategories() {
   }
 
   select.innerHTML = '';
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Seleccioná un rubro...';
-  select.appendChild(placeholder);
 
   categories.forEach(c => {
     const option = document.createElement('option');
@@ -133,7 +129,8 @@ function initVenderPage(user) {
     
     const nameInput = document.getElementById('shop-name').value.trim();
     const cuitInput = document.getElementById('shop-cuit').value.trim();
-    const categoryInput = document.getElementById('shop-category').value;
+    // P2-10: shop-category ahora es <select multiple> -- se puede elegir más de un rubro.
+    const categoriesInput = [...document.getElementById('shop-category').selectedOptions].map((o) => o.value).filter(Boolean);
     const addressInput = document.getElementById('shop-address').value.trim();
     const phoneInput = document.getElementById('shop-phone').value.trim();
 
@@ -143,6 +140,10 @@ function initVenderPage(user) {
     }
     if (!isValidCuit(cuitInput)) {
       showToast("El CUIT ingresado no es válido. Verificá el formato (11 dígitos) y el dígito verificador.", "error");
+      return;
+    }
+    if (categoriesInput.length === 0) {
+      showToast("Elegí al menos un rubro.", "error");
       return;
     }
     if (!addressInput) {
@@ -170,7 +171,7 @@ function initVenderPage(user) {
         user_id: user.id, 
         shop_name: nameInput,
         cuit: cuitInput,
-        category_slug: categoryInput,
+        category_slugs: categoriesInput,
         address: addressInput,
         phone: phoneInput
       });
@@ -2036,7 +2037,10 @@ function setupDashboardEvents() {
   const categorySelect = document.getElementById('prod-category');
   const baseCategorySelect = document.getElementById('shop-category');
   if (categorySelect && baseCategorySelect) {
-    categorySelect.innerHTML = baseCategorySelect.innerHTML;
+    // prod-category es single-select (un producto va en una sola categoría);
+    // a diferencia de shop-category (P2-10, ahora multiple) necesita un
+    // placeholder vacío para no arrancar con la primera categoría preseleccionada.
+    categorySelect.innerHTML = '<option value="">Seleccioná una categoría...</option>' + baseCategorySelect.innerHTML;
   }
 
   function resetProductForm() {

@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState, renderActiveCoupons } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
@@ -22,7 +22,7 @@ async function loadProducts() {
         offer_expires_at,
         image_url,
         stock,
-        stores ( name )
+        stores ( name, free_shipping_threshold )
       `)
       .eq('is_active', true)
       .limit(12);
@@ -83,21 +83,8 @@ async function loadProducts() {
 
       body.appendChild(buildPriceRow(product));
 
-      const shippingSpan = document.createElement('span');
-      shippingSpan.className = 'product-card__shipping';
-      shippingSpan.style.cursor = 'pointer';
-      shippingSpan.title = 'Hacé clic para ver el costo de envío';
-      shippingSpan.addEventListener('click', (e) => {
-        e.preventDefault();
-        import('./auth-utils.js').then(({ showToast }) => {
-          showToast('Envío dentro de Baradero: $1.500. ¡Gratis en compras mayores a $20.000!');
-        });
-      });
-      const truckIcon = document.createElement('i');
-      truckIcon.className = 'fa-solid fa-truck';
-      shippingSpan.appendChild(truckIcon);
-      shippingSpan.append(' Calcular envío');
-      body.appendChild(shippingSpan);
+      const shippingBadge = buildShippingBadge(product, product.stores);
+      if (shippingBadge) body.appendChild(shippingBadge);
 
       const addBtn = document.createElement('button');
       addBtn.className = 'product-card__add';
@@ -128,24 +115,6 @@ async function loadProducts() {
     console.error('Error fetching products:', err);
     renderErrorState(grid, 'No se pudieron cargar los productos.', loadProducts);
   }
-}
-
-/** F12-07: cargar cupones/promociones activos, clic copia el código */
-function loadCoupons() {
-  const row = document.getElementById('coupons-row');
-  if (!row) return;
-
-  renderActiveCoupons(row, {
-    emptyHide: document.getElementById('coupons-section'),
-    onSelect: async (code) => {
-      try {
-        await navigator.clipboard.writeText(code);
-        showToast(`Código "${code}" copiado. Pegalo en el carrito al pagar.`, 'success');
-      } catch {
-        showToast(`Código: ${code}`, 'default');
-      }
-    },
-  });
 }
 
 /** Configurar modal de Farmacia de Turno */
@@ -232,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cargar datos dinámicos
   loadStores();
   loadProducts();
-  loadCoupons();
 
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();
