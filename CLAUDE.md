@@ -36,6 +36,17 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **Verificación de vendedor:** aprobación manual del admin **+** validar CUIT.
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
 
+## Identidad de marca
+Sistema de identidad de marca vivo, construido 2026-08-03 con las marketing skills instaladas
+(`product-marketing`, `marketing-council`, `brand`) — rama `feature/marketing-skills`, no mergeada a
+`main` todavía. Se apoya en el sistema visual ya en producción (`Assets/styles/styles.css`), no lo
+reemplaza. Detalle completo del proceso y de las decisiones: skill `progreso-baradero-local`.
+- **[`.agents/product-marketing.md`](.agents/product-marketing.md)** — contexto de producto/audiencia/voz (marketplace de dos lados: cliente vecino / vendedor comerciante).
+- **[`docs/brand-guidelines.md`](docs/brand-guidelines.md)** — paleta, tipografía, logo, voz, imágenes, componentes, prompts de IA. Tokens legibles por máquina en `Assets/design-tokens.json`/`.css`.
+- **[`video/BRAND.md`](video/BRAND.md)** — identidad en movimiento para el proyecto Remotion de `video/` (formatos, principios de animación con nombre, ritmo, checklist para historias nuevas). Usar esto antes de producir cualquier video/historia nueva.
+- Decisión central: categoría = **"comercio de proximidad"**, nunca "tienda online"/"marketplace" de cara al cliente. Color ancla de marca: `#284175`. Voz: vecinal, cálida, directa, nunca "corporativa/inmobiliaria".
+- **Mantenerlo vivo:** si una tarea cambia algo que estos documentos describen (paleta, tagline, una nueva feature de cara al usuario, una pieza de video nueva), actualizar el documento correspondiente en esa misma tarea — no dejarlos desactualizados. Es el mismo criterio que "Al completar cada tarea" más abajo.
+
 ## Flujo de trabajo y tracking (IMPORTANTE)
 - **Jira A113** (baraderolocal.atlassian.net) es el tablero de progreso. **M1** = Fase 0 (padre `A113-134`) + Fase 1 (padre `A113-153`), subtareas `A113-135`…`A113-163` — **completo**. **M2 en adelante** (Fases 2-11) ya tiene tablero creado: `A113-172`…`A113-237`, con prefijo del roadmap (`F2-01a`…).
 - Estados: `Tareas por hacer` → `En curso` → `Finalizada`.
@@ -55,6 +66,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **F10-02** — Tests E2E con Playwright: diferido a propósito, opcional en el roadmap.
 - **Backlog mencionado por el usuario (2026-07-10), sin abordar aún**: pulido de responsive en detalles sin especificar; apps nativas (App Store/Google Play) recomendadas pero no iniciadas.
 - Nadie tiene el rol `admin` asignado todavía en producción (asignar a mano en el dashboard de Supabase, Authentication → Users → `raw_app_meta_data` → `{"role": "admin"}`) — necesario antes de poder usar el panel de admin con una cuenta real.
+- **Dos sistemas de color/tipografía conviven en el sitio** (encontrado 2026-08-03 armando la identidad de marca, ver sección de arriba): `Assets/styles/styles.css` define la paleta "oficial" (`#3f85ba`/`#284175`, Segoe UI/Georgia), pero `home.css`/`admin.css`/`carrito.css`/`product-modal.css` — que alimentan la mayoría de las páginas reales — usan un token system distinto (`--bl-primary: #2563eb`, `--bl-font: Inter`, ~70 usos solo en `home.css`). No es un bug a corregir sin preguntar, es una decisión de producto pendiente (cuál de los dos es "el" azul/fuente oficial). Detalle en `docs/brand-guidelines.md` (secciones 1 y 2).
 
 ## Scripts de tooling
 

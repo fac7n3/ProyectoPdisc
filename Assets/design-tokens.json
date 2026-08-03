@@ -1,0 +1,78 @@
+{
+  "$schema": "Design tokens de Baradero Local — ver docs/brand-guidelines.md. Espejo legible por máquina de Assets/styles/styles.css (:root) más las extensiones semánticas nuevas.",
+  "primitive": {
+    "color": {
+      "primary": {
+        "base": "#3f85ba",
+        "light": "#78b4eb",
+        "dark": "#284175",
+        "hover": "#1f3460",
+        "_comment": "dark (#284175) es el color ancla de marca a largo plazo (ver sección 1 de brand-guidelines.md); base (#3f85ba) es acento de superficie ya en uso."
+      },
+      "secondary": {
+        "base": "#78b4eb",
+        "_comment": "alias de primary.light — superficies (card de login), fondos de bloques destacados."
+      },
+      "accent": {
+        "base": "#284175",
+        "_comment": "alias de primary.dark — usar como acento fijo de marca en piezas nuevas (logo, CTA, remate de video)."
+      },
+      "neutral": {
+        "bg": "#dfdfdf",
+        "bgInput": "#3f6d99",
+        "textDark": "#111111",
+        "textLight": "#ffffff",
+        "textMuted": "#686868",
+        "border": "#5286b5"
+      },
+      "success": {
+        "base": "#0B6B4D",
+        "_comment": "pago confirmado / completado. Verde-azulado oscuro, no verde de sistema — armoniza con primary.dark/hover. AA: 6.51:1 sobre blanco, 4.89:1 sobre neutral.bg."
+      },
+      "warning": {
+        "base": "#8F4D00",
+        "_comment": "pendiente / en camino / listo para retirar. Ámbar quemado, cálido y a propósito distinto del azul frío de marca. AA: 6.50:1 sobre blanco, 4.88:1 sobre neutral.bg."
+      },
+      "error": {
+        "base": "#A4302A",
+        "_comment": "cancelado. Rojo ladrillo/terracota, misma familia cálida que warning. AA: 6.92:1 sobre blanco, 5.19:1 sobre neutral.bg."
+      }
+    },
+    "font": {
+      "main": "\"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif",
+      "serif": "Georgia, \"Times New Roman\", serif",
+      "video": "Inter",
+      "weight": {
+        "regular": 400,
+        "semibold": 600,
+        "bold": 700
+      },
+      "size": {
+        "h1Desktop": "3rem",
+        "h1Mobile": "2rem",
+        "h2Desktop": "2.125rem",
+        "h2Mobile": "1.5rem",
+        "h3Desktop": "1.5rem",
+        "h3Mobile": "1.25rem",
+        "bodyDesktop": "1rem",
+        "bodyMobile": "0.9375rem",
+        "captionDesktop": "0.8125rem",
+        "captionMobile": "0.75rem"
+      }
+    },
+    "spacing": {
+      "xs": "0.25rem",
+      "sm": "0.5rem",
+      "md": "0.875rem",
+      "lg": "1.125rem",
+      "xl": "2.25rem"
+    },
+    "radius": {
+      "sm": "0.5rem",
+      "md": "1rem",
+      "lg": "1.25rem",
+      "pill": "1.75rem",
+      "circle": "50%"
+    }
+  }
+}

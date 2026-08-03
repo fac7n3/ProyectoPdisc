@@ -5,6 +5,62 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Identidad de marca completa + skills de marketing (2026-08-03)
+El usuario pidió instalar el repo `coreyhaines31/marketingskills` (47 skills de marketing) y, con
+ellas, construir una identidad de marca completa para que a futuro se puedan producir videos/historias
+bien hechos con el proyecto Remotion ya existente en `video/`, y que esa identidad se mantenga
+actualizada a medida que el proyecto evolucione. Todo en la rama `feature/marketing-skills` (no
+mergeada a `main` todavía).
+- **Skills instaladas:** las 47 de `marketingskills` copiadas a `.claude/skills/` (cro, copywriting,
+  seo-audit, ads, pricing, product-marketing, marketing-council, video, social, etc.), conviven con las
+  ya presentes (`brand`, `design`, `design-system`, `banner-design`, `slides`, `ui-styling`, `ui-ux-pro-max`).
+- **Descubrimiento previo importante:** ya existía un proyecto Remotion completo y sin commitear en
+  `video/` (`video/src/marca.js`, `lib/anim.jsx`, `Root.jsx`, 5 historias en `historias/`) con un
+  lenguaje de movimiento propio (fondo que respira, entradas elásticas, texto que se revela palabra por
+  palabra, cortina de encadenado, CTA con latido) y un patrón `AGENDA` de una historia de Instagram por
+  día de semana. No se tocó el código de las escenas, solo se documentó y se extendió `marca.js` de
+  forma aditiva.
+- **Proceso:** workflow con un panel de 4 asesores del skill `marketing-council` (April Dunford,
+  Seth Godin, Byron Sharp, Rory Sutherland) evaluando posicionamiento/personalidad específicamente para
+  Baradero Local, seguido de 3 documentos escritos en cadena (cada uno usa el anterior como contexto).
+- **Documentos vivos creados** (se actualizan a mano cuando el proyecto cambie, no son estáticos):
+  - `.agents/product-marketing.md` — contexto de producto completo (skill `product-marketing`):
+    audiencia de dos lados (cliente vecino / vendedor comerciante), diferenciación, objeciones,
+    lenguaje del cliente, voz de marca. Formato del skill pero con headers en español.
+  - `docs/brand-guidelines.md` — guía de identidad visual y de voz completa (skill `brand`): paleta,
+    tipografía, uso del logo, voz/tono, imágenes, componentes, prompts de generación de imágenes con IA,
+    accesibilidad (ratios de contraste calculados).
+  - `video/BRAND.md` — spec técnica de identidad en movimiento para Remotion: nombra cada patrón de
+    `lib/anim.jsx`, formatos/IDs de `Composition` reales, zonas seguras y ritmo por beats de historias
+    de Instagram, checklist paso a paso para agregar una historia nueva siguiendo el patrón `AGENDA`.
+  - `Assets/design-tokens.json` + `Assets/design-tokens.css` — tokens legibles por máquina (colores,
+    tipografía, spacing, radios). **Ojo:** deliberadamente en `Assets/` con A mayúscula (la carpeta que
+    ya existe), no `assets/` — en Windows son la misma carpeta pero en git/Linux no, y el script
+    `sync-brand-to-tokens.cjs` del skill `brand` apunta a `assets/` en minúscula; no se usó ese script,
+    los tokens se escribieron a mano en la ruta correcta.
+- **Decisiones de marca que quedaron fijadas:**
+  - Categoría: "comercio de proximidad", nunca "tienda online"/"marketplace" de cara al cliente —
+    para no compararse en catálogo/velocidad contra MercadoLibre, donde siempre pierde.
+  - Color ancla de marca: `#284175` (el azul más oscuro de la paleta ya existente), no `#3f85ba` —
+    más memorizable, menos "azul de fintech genérico".
+  - 3 colores semánticos nuevos para estado de pedido (no existían): éxito `#0B6B4D`, advertencia
+    `#8F4D00`, error `#A4302A` — paleta cálida/terrosa a propósito, para no verse como el semáforo
+    rojo/amarillo/verde de cualquier dashboard genérico.
+  - Voz: vecinal, cálida, directa, con nombre propio (nunca "su pedido"/"el usuario"). El riesgo
+    explícito a evitar (ya nombrado por un usuario real en el pasado) es sonar "como una inmobiliaria".
+  - Remate de cierre para cuando se lance de verdad: reemplazar `CIERRE = "Próximamente"` en
+    `video/src/marca.js` por "Conectamos vecinos" (el slogan del footer, convertido en firma de marca).
+- **Hallazgo real no buscado, importante:** el sitio corre hoy con DOS sistemas de color/tipografía en
+  paralelo. `Assets/styles/styles.css` (`:root`) define la paleta "oficial" (`#3f85ba`/`#284175`,
+  Segoe UI/Georgia), pero `Assets/styles/home.css`, `admin.css`, `carrito.css` y `product-modal.css`
+  — que alimentan la mayoría de las páginas reales (home, admin, carrito, modal de producto, perfil) —
+  usan un token system totalmente distinto (`--bl-primary: #2563eb`, `--bl-success`/`--bl-danger`,
+  `--bl-font: 'Inter', ...`), verificado con grep (~70 usos de `--bl-primary` solo en `home.css`). No es
+  un bug de esta tarea, es deuda de identidad preexistente — quedó documentada en
+  `docs/brand-guidelines.md` (sección 1 y 2) pero **no resuelta**, ver "Pendientes activos" en
+  `CLAUDE.md`. Es una decisión de producto (qué azul/fuente es "la" oficial), no algo para resolver sin
+  preguntar.
+
 ## Fixes de carga del navbar + spinner de búsqueda (2026-07-20)
 Reporte del usuario: la campana de notificaciones "titilaba", el menú del navbar (barra de
 categorías) "desaparecía" al navegar entre páginas, y pidió un spinner de carga en la búsqueda

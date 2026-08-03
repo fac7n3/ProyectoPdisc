@@ -1,0 +1,65 @@
+/* Design tokens de Baradero Local — ver docs/brand-guidelines.md.
+   Espejo en custom properties de Assets/design-tokens.json.
+   No reemplaza a Assets/styles/styles.css (:root); es la versión documentada
+   y ampliada (colores semánticos, escala tipográfica, spacing, radios) para
+   piezas nuevas y para que video/ y otros consumidores lean los mismos valores
+   sin parsear el markdown. */
+
+:root {
+  /* Color — primario */
+  --color-primary: #3f85ba;
+  --color-primary-light: #78b4eb;
+  --color-primary-dark: #284175; /* ancla de marca a largo plazo */
+  --color-primary-hover: #1f3460;
+
+  /* Color — secundario / acento (alias semánticos de la primaria) */
+  --color-secondary: #78b4eb;
+  --color-accent: #284175;
+
+  /* Color — neutros / fondo */
+  --color-bg: #dfdfdf;
+  --color-bg-input: #3f6d99;
+  --color-text-dark: #111111;
+  --color-text-light: #ffffff;
+  --color-text-muted: #686868;
+  --color-border: #5286b5;
+
+  /* Color — semánticos (estado de pedido) */
+  --color-success: #0B6B4D; /* pagado / completado */
+  --color-warning: #8F4D00; /* pendiente / enviado / listo para retirar */
+  --color-error: #A4302A;   /* cancelado */
+
+  /* Tipografía */
+  --font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-video: "Inter", sans-serif;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-size-h1: 3rem;
+  --font-size-h1-mobile: 2rem;
+  --font-size-h2: 2.125rem;
+  --font-size-h2-mobile: 1.5rem;
+  --font-size-h3: 1.5rem;
+  --font-size-h3-mobile: 1.25rem;
+  --font-size-body: 1rem;
+  --font-size-body-mobile: 0.9375rem;
+  --font-size-caption: 0.8125rem;
+  --font-size-caption-mobile: 0.75rem;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.875rem;
+  --spacing-lg: 1.125rem;
+  --spacing-xl: 2.25rem;
+
+  /* Radios */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 1.75rem;
+  --radius-circle: 50%;
+}
