@@ -5,9 +5,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Paleta de marca */
-  --bl-primary: #2563eb;
-  --bl-primary-dark: #1d4ed8;
+  /* Paleta de marca — ancla oficial #284175, ver docs/brand-guidelines.md */
+  --bl-primary: #284175;
+  --bl-primary-dark: #1f3460;
   --bl-primary-deeper: #1e3a5f;
   --bl-accent: #f59e0b;
   --bl-accent-hover: #d97706;
@@ -719,7 +719,7 @@ ul, ol {
   height: 280px;
   border-radius: var(--bl-radius-xl);
   overflow: hidden;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--bl-primary-deeper) 0%, var(--bl-primary) 100%);
 }
 
 .hero__banner img {

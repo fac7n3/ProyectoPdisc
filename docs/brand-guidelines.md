@@ -1,8 +1,8 @@
 # Guía de identidad de marca — Baradero Local
 
-> Última actualización: 2026-08-03
+> Última actualización: 2026-08-05
 > Estado: Vivo — se actualiza a medida que el proyecto evoluciona (ver [CLAUDE.md](../CLAUDE.md)).
-> Fuente de verdad del sistema visual: [`Assets/styles/styles.css`](../Assets/styles/styles.css) y el resto de `Assets/styles/*.css`. Tokens legibles por máquina (para el sitio, piezas futuras y video): [`Assets/design-tokens.json`](../Assets/design-tokens.json) y [`Assets/design-tokens.css`](../Assets/design-tokens.css). Detalle de la identidad en movimiento (Remotion): `video/BRAND.md`.
+> Fuente de verdad del sistema visual: [`Assets/styles/home.css`](../Assets/styles/home.css) (el `:root` que define `--bl-primary` etc., consumido vía `var()` por `admin.css`, `carrito.css` y `product-modal.css` — se carga en las 14 páginas reales del sitio) y [`Assets/styles/auth.css`](../Assets/styles/auth.css) (login/registro, únicas páginas que no cargan `home.css`). **`Assets/styles/styles.css` no se corrige acá: se verificó el 2026-08-05 que ningún `.html` de `pages/` lo enlaza — es CSS muerto, no la fuente de verdad que esta guía asumía.** Tokens legibles por máquina (para piezas futuras y video, no consumidos hoy por ninguna página real): [`Assets/design-tokens.json`](../Assets/design-tokens.json) y [`Assets/design-tokens.css`](../Assets/design-tokens.css). Detalle de la identidad en movimiento (Remotion): `video/BRAND.md`.
 
 Baradero Local es **comercio de proximidad**, no una tienda online genérica ni un marketplace nacional. Cada decisión de esta guía — color, tipografía, foto, copy — existe para demostrar esa categoría en cada punto de contacto, no solo para declararla en el footer. El riesgo que esta guía existe para evitar ya fue nombrado por un usuario real: una versión anterior "parecía inmobiliaria o de viajes". Esa es la vara: si una pieza nueva podría ser el sitio de cualquier otro pueblo del país, no sirve.
 
@@ -10,10 +10,9 @@ Baradero Local es **comercio de proximidad**, no una tienda online genérica ni 
 
 | | |
 |---|---|
-| Color primario | `#3f85ba` (azul medio) — anclaje de marca a largo plazo: `#284175` (azul oscuro) |
-| Color secundario | `#78b4eb` (azul claro, superficies) |
-| Fuente principal | Segoe UI (pila de sistema, sitio) |
-| Fuente de video | Inter (Remotion, `@remotion/google-fonts`) |
+| Color primario (oficial, decidido 2026-08-05) | `#284175` (azul oscuro, "ancla") |
+| Color secundario | `#3f85ba` (azul medio, acento de superficie) / `#78b4eb` (azul claro, superficies) |
+| Fuente principal (oficial, decidido 2026-08-05) | Inter (`@import` de Google Fonts, sitio + video) |
 | Voz en 3 palabras | Vecinal, cálida, directa |
 
 ---
@@ -22,7 +21,7 @@ Baradero Local es **comercio de proximidad**, no una tienda online genérica ni 
 
 ### Colores primarios
 
-Definidos en `:root` de `Assets/styles/styles.css`, usados hoy en topbar, botones y la pantalla de login. Son la paleta de marca oficial.
+Definidos como referencia histórica en `:root` de `Assets/styles/styles.css` (hoy CSS muerto, ningún `.html` lo enlaza) y replicados como `--bl-primary`/`--bl-primary-dark` en `:root` de `Assets/styles/home.css` — el archivo que sí carga en las 14 páginas reales del sitio, y del que heredan `admin.css`, `carrito.css` y `product-modal.css` vía `var()`. `auth.css` (login/registro) usa su propio `--auth-primary`/`--auth-primary-hover` con los mismos valores. Esta es la paleta de marca oficial.
 
 | Nombre | Variable CSS | Hex | RGB | Uso |
 |---|---|---|---|---|
@@ -44,7 +43,7 @@ Definidos en `:root` de `Assets/styles/styles.css`, usados hoy en topbar, botone
 | Texto secundario | `--text-muted` | `#686868` | Texto de apoyo, placeholders |
 | Borde | `--border-color` | `#5286b5` | Separadores, bordes de inputs |
 
-> **Nota de ingeniería (para quien toque CSS):** además de este sistema, `Assets/styles/home.css` define un segundo set de tokens (`--bl-primary: #2563eb`, `--bl-success`, `--bl-danger`, `--bl-radius-*`, `--bl-shadow-*`, etc.) que hoy alimenta la mayoría de las páginas reales (home, admin, carrito, modal de producto, perfil) — un azul distinto (`#2563eb`, más genérico/"stock") al de `styles.css`. Es deuda de identidad real, no un error de esta guía: los dos sistemas conviven en producción. Esta guía fija `#284175`/`#3f85ba` como la paleta de marca de referencia; una tarea futura razonable es migrar `--bl-primary` a los tokens de `Assets/design-tokens.css` para que el sitio tenga un solo azul, no dos.
+> **Nota de ingeniería (para quien toque CSS) — resuelto 2026-08-05:** el sitio tenía dos azules en producción: `styles.css` (nunca cargado por ninguna página, se creía "fuente de verdad" y no lo era) fijaba `#3f85ba`/`#284175`, mientras `home.css` (cargado en las 14 páginas reales) usaba `--bl-primary: #2563eb`, un azul genérico tipo dashboard SaaS — el mismo registro que ya había generado el comentario de "parece inmobiliaria". Se resolvió apuntando `--bl-primary`/`--bl-primary-dark` en `home.css` a `#284175`/`#1f3460` (el ancla ya documentada acá abajo), y migrando los hex/`rgba()` sueltos que duplicaban el azul viejo en `product-modal.css`, `admin.css` y `auth.css` para que usen los mismos tokens. `Assets/styles/styles.css` queda sin tocar (código muerto, no se borró sin que se pida). **Pendiente nuevo, no resuelto en esta pasada:** `Assets/styles/perfil-custom.css` (la página "Perfil de mi comercio" rediseñada estilo Mercado Libre) usa un tercer azul propio (`hsl(220, 72%, 46%)`, ≈`#2159ca`) que tampoco coincide con el ancla — no se tocó porque es un rediseño reciente y afinado a propósito, requiere su propia revisión.
 
 ### Colores semánticos (nuevos) — estado de pedido
 
@@ -86,15 +85,15 @@ Calculados según la fórmula de luminancia relativa de WCAG 2.1 (mínimo AA: 4.
 
 ## 2. Tipografía
 
-### Pila del sitio: fuentes de sistema
+### Pila del sitio: Inter (oficial, decidido 2026-08-05)
 
 ```css
---font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+--bl-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 ```
 
-Es la fuente base de todo el sitio (aplicada globalmente vía el reset `*` en `styles.css`). **Por qué fuente de sistema y no una fuente cargada:** cero peso de descarga y cero FOUT (flash of unstyled text) — en un sitio de e-commerce donde la primera carga importa (conversión, datos móviles de un vecino con 4G), no vale la pena pagar una fuente externa para texto de UI que nadie nota si es "Segoe UI" o "Inter". Es una decisión de rendimiento, no estética.
+Es la fuente base de las 14 páginas reales del sitio (`home.css` y derivados) y ahora también de `auth.css` (login/registro, que antes se quedaba en la pila de sistema porque no carga `home.css`). **Por qué Inter y no la pila de sistema:** el argumento de rendimiento (cero peso, cero FOUT) ya no aplicaba en la práctica — para el momento de esta decisión, `home.css`, `admin.css`, `carrito.css`, `product-modal.css` y `perfil-custom.css` ya importaban Inter y la aplicaban en la enorme mayoría de las páginas reales; revertir a la pila de sistema habría significado deshacer una decisión visual ya en producción en casi todo el sitio para ahorrar peso solo en login/registro (2 páginas), perdiendo además la consistencia con `video/` (que ya usa Inter). Se optó por terminar de unificar hacia Inter en vez de revertir.
 
-> **Nota de ingeniería:** `Assets/styles/home.css`, `admin.css`, `carrito.css` y `product-modal.css` importan Inter desde Google Fonts (`--bl-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`) y la aplican en la mayoría de las páginas reales — en la práctica, gran parte del sitio ya no corre en la pila de sistema pura. No es una decisión documentada, es deuda de identidad que conviene resolver junto con la unificación de color de la sección anterior: o se vuelve a la pila de sistema en todos lados (rendimiento) o se adopta Inter como fuente oficial del sitio y se actualiza `--font-main` para que coincida (consistencia con el video, que ya usa Inter).
+`Assets/styles/styles.css` sigue fijando `--font-main: "Segoe UI"...` pero es código muerto (ver nota de la sección 1) — no refleja ninguna página real.
 
 ### Acento serif: Georgia
 
@@ -102,7 +101,7 @@ Es la fuente base de todo el sitio (aplicada globalmente vía el reset `*` en `s
 --font-serif: Georgia, "Times New Roman", serif;
 ```
 
-Uso actual: los headlines editoriales de la pantalla de login (`.welcome h1`, labels y botones grandes de `.login-card`). Es el único lugar del sitio con un tono más editorial/cálido en vez de utilitario — encaja con la voz vecinal, no corporativa, en el momento de mayor peso emocional (el primer "bienvenido"). No se usa en ningún otro lugar del sitio hoy; si se extiende, debería ser a otros momentos de bienvenida/cierre (ej. un hero futuro), no a UI utilitaria (formularios, tablas, botones de acción).
+**Corrección 2026-08-05:** esta sección describía un uso en `.welcome h1`/`.login-card` que no existe en el `auth.css` real (verificado: `Georgia` no aparece en ningún selector de `auth.css`, solo en el `styles.css` muerto). Es aspiracional, no un hecho actual — queda como propuesta para un futuro momento de bienvenida/cierre editorial (ver sugerencia original: hero futuro, no UI utilitaria), pero no reflejar como "uso actual" hasta que se implemente.
 
 ### Fuente de video: Inter
 

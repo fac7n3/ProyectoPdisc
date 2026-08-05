@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root {
   --auth-bg: #f2f6fc;
   --auth-primary: #284175;
@@ -6,7 +8,7 @@
   --auth-text-light: #666666;
   --auth-border: #e0e6ed;
   --auth-card-bg: #ffffff;
-  --font-main: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 * {
@@ -480,13 +482,13 @@ body {
 }
 
 .auth-terms:has(#terms-checkbox:checked) {
-  border-color: #2563eb;
+  border-color: var(--auth-primary);
   background: #eff6ff;
 }
 
 .auth-terms:has(#terms-checkbox:checked) .auth-terms__custom-check {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--auth-primary);
+  border-color: var(--auth-primary);
 }
 
 .auth-terms:has(#terms-checkbox:checked) .auth-terms__custom-check::after {
@@ -548,12 +550,12 @@ body {
 }
 
 .auth-terms__link {
-  color: #2563eb;
+  color: var(--auth-primary);
   font-weight: 600;
   text-decoration: underline;
   transition: color 0.15s;
 }
 
 .auth-terms__link:hover {
-  color: #1d4ed8;
+  color: var(--auth-primary-hover);
 }

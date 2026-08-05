@@ -5,6 +5,54 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Unificación de color/tipografía oficial + merge a main (2026-08-05)
+Seguimiento de la tarea anterior: el usuario pidió pushear todo a `main` (incluida la carpeta
+`video/` completa, que había quedado sin commitear) y decidir cuál de los dos sistemas de
+color/tipografía era el oficial.
+- **Merge a main:** `feature/marketing-skills`/`preview/mejoras-envio-cupones-rubros` mergeado
+  (fast-forward) a `main` y pusheado — dispara deploy de Vercel. Se sumaron en el camino: el
+  proyecto Remotion completo (antes solo `marca.js`/`BRAND.md` estaban commiteados, faltaba
+  `Root.jsx`, historias, `HelloWorld/`, config) y 7 skills de diseño instaladas desde el
+  2026-07-13 pero nunca commiteadas (`banner-design`, `brand`, `design`, `design-system`,
+  `slides`, `ui-styling`, `ui-ux-pro-max`) — necesarias para que estén disponibles al clonar el
+  repo en otra máquina.
+- **Decisión de color/tipografía:** `#284175` (azul oscuro, ya era el "ancla" documentado) +
+  Inter, ambos oficiales.
+- **Hallazgo clave que cambió el diagnóstico previo:** `Assets/styles/styles.css` — el archivo
+  que la sesión del 2026-08-03 asumía como "fuente de verdad del sistema visual" — **no lo carga
+  ninguna página real** (`grep -rl "styles.css" pages/` no devuelve nada; solo lo referencia el
+  comentario de `design-tokens.css`, que tampoco carga ninguna página). El sistema realmente en
+  producción es `home.css` (`--bl-primary`, cargado en las 14 páginas reales, heredado vía
+  `var()` por `admin.css`/`carrito.css`/`product-modal.css`) + `auth.css` (login/registro, único
+  caso que no carga `home.css`, con sus propias `--auth-primary`/`--font-main`). Esto invirtió la
+  decisión "obvia": en vez de mover el sitio hacia `styles.css`, se apuntó `home.css` hacia el
+  ancla `#284175` ya documentada, porque es el archivo que de verdad renderiza en todas partes.
+- **Cambios de código:** `home.css` `:root` (`--bl-primary: #2563eb → #284175`,
+  `--bl-primary-dark: #1d4ed8 → #1f3460`) + un gradiente hardcodeado del hero. `product-modal.css`
+  y `admin.css`: 11 `rgba(37, 99, 235, *)` (= rgb del `#2563eb` viejo) → `rgba(40, 65, 117, *)` (=
+  rgb de `#284175`), más 3 gradientes hex hardcodeados migrados a `var(--bl-primary)`/
+  `var(--bl-primary-dark)`. `auth.css`: agregado `@import` de Inter + `--font-main` actualizado
+  (antes se quedaba en la pila de sistema porque no carga `home.css`), y 5 hex hardcodeados
+  (`#2563eb`/`#1d4ed8` en reglas de términos/checkbox/link) migrados a
+  `var(--auth-primary)`/`var(--auth-primary-hover)` (que ya eran `#284175`/`#1f3460` — esas
+  reglas puntuales estaban usando un azul distinto al del resto del propio archivo). `npm run
+  build` corrido después para regenerar `dist/` (versionado en git). Verificado visualmente con
+  Playwright (`npm run dev` + capturas de `home.html` y `login.html`) — sin errores de consola
+  nuevos, contraste correcto, gradientes y botones renderizando bien.
+- **Por qué no se tocó `Assets/styles/styles.css`:** queda como código muerto, no se borró sin
+  que se pida (no era parte de lo pedido).
+- **Nuevo hallazgo sin resolver:** `Assets/styles/perfil-custom.css` (página "Perfil de mi
+  comercio", rediseño ML del 2026-07-16) usa un **tercer** azul propio
+  (`hsl(220, 72%, 46%)` ≈ `#2159ca`), ni `#284175` ni el `#2563eb` viejo — no se tocó por ser un
+  rediseño reciente y afinado a propósito, requiere su propia revisión antes de unificar.
+- **Otro hallazgo, tangencial:** `docs/brand-guidelines.md` tenía una sección ("Acento serif:
+  Georgia") que describía un uso en `.welcome h1`/`.login-card` que no existe en el `auth.css`
+  real (`Georgia` solo aparece en el `styles.css` muerto) — corregida a "aspiracional, no uso
+  actual" en el mismo commit de docs.
+- **Docs actualizados en la misma tarea:** `docs/brand-guidelines.md` (secciones 1 y 2 +
+  cabecera, marcado como resuelto con fecha) y `CLAUDE.md` (Pendientes activos: el ítem del
+  dual-sistema pasa a resuelto, se agrega el de `perfil-custom.css`).
+
 ## Identidad de marca completa + skills de marketing (2026-08-03)
 El usuario pidió instalar el repo `coreyhaines31/marketingskills` (47 skills de marketing) y, con
 ellas, construir una identidad de marca completa para que a futuro se puedan producir videos/historias

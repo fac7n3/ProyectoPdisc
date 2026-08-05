@@ -155,7 +155,7 @@
 }
 
 .admin-nav__item.is-active {
-  background: rgba(37, 99, 235, 0.28);
+  background: rgba(40, 65, 117, 0.28);
   color: #fff;
   font-weight: 600;
 }
@@ -688,7 +688,7 @@
 .admin-inline-form input:focus {
   outline: none;
   border-color: var(--bl-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
 }
 
 .admin-inline-form .action-btn {
