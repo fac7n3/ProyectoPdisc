@@ -38,9 +38,10 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 ## Identidad de marca
 Sistema de identidad de marca vivo, construido 2026-08-03 con las marketing skills instaladas
-(`product-marketing`, `marketing-council`, `brand`) — rama `feature/marketing-skills`, no mergeada a
-`main` todavía. Se apoya en el sistema visual ya en producción (`Assets/styles/styles.css`), no lo
-reemplaza. Detalle completo del proceso y de las decisiones: skill `progreso-baradero-local`.
+(`product-marketing`, `marketing-council`, `brand`) — mergeado a `main` el 2026-08-05 (rama
+`feature/marketing-skills` ya integrada, incluyendo el proyecto Remotion completo en `video/`). Se
+apoya en el sistema visual ya en producción (`Assets/styles/styles.css`), no lo reemplaza. Detalle
+completo del proceso y de las decisiones: skill `progreso-baradero-local`.
 - **[`.agents/product-marketing.md`](.agents/product-marketing.md)** — contexto de producto/audiencia/voz (marketplace de dos lados: cliente vecino / vendedor comerciante).
 - **[`docs/brand-guidelines.md`](docs/brand-guidelines.md)** — paleta, tipografía, logo, voz, imágenes, componentes, prompts de IA. Tokens legibles por máquina en `Assets/design-tokens.json`/`.css`.
 - **[`video/BRAND.md`](video/BRAND.md)** — identidad en movimiento para el proyecto Remotion de `video/` (formatos, principios de animación con nombre, ritmo, checklist para historias nuevas). Usar esto antes de producir cualquier video/historia nueva.
