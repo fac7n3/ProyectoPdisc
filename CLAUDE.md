@@ -9,14 +9,11 @@
 > siempre visibles: ver sección "Pendientes activos" más abajo.
 
 > ## ⚠️ PRIMERA ACCIÓN DE CADA SESIÓN
-> **Antes de cualquier otra tarea, leer [docs/MIGRACIONES_PENDIENTES.md](docs/MIGRACIONES_PENDIENTES.md).**
-> Lista las migraciones SQL nuevas todavía no aplicadas a la base de producción
-> de Supabase (`otzhdwuaffcplrveuadc`). Si tenés credenciales de Supabase
-> (MCP tools cargadas, `SUPABASE_ACCESS_TOKEN` en el entorno, o acceso al
-> SQL Editor del dashboard), **aplicalas en orden** antes de seguir. Si no
-> tenés credenciales, avisá al usuario que faltan aplicar y seguí con tareas
-> que no dependan de ellas. Marcar cada entrada como aplicada en ese archivo
-> después de correrla.
+> **Antes de cualquier otra cosa, correr `git pull`.** El repo se trabaja desde
+> varias máquinas/sesiones — el local puede estar varios commits atrás de
+> `origin/main` sin que se note (pasó el 2026-08-05: 23 commits de diferencia,
+> incluyendo todo el trabajo de identidad de marca). Si hay cambios locales sin
+> commitear, evaluar antes de pull (stash si hace falta).
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
