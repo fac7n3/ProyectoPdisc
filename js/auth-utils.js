@@ -364,9 +364,19 @@ function renderNavAvatar(navProfile, avatarUrl) {
   navProfile.appendChild(img);
 }
 
+// Contador de generación: updateNavbarProfile() se dispara dos veces por carga
+// de página (la llamada directa + el evento INITIAL_SESSION que Supabase emite
+// solo al suscribirse en onAuthStateChange, ver GoTrueClient._emitInitialSession).
+// Sin esto, si la invocación más vieja queda más lenta y resuelve después de un
+// cambio de sesión más nuevo (logout, sync cross-tab), puede re-pintar/re-cachear
+// un avatar justo después de que la invocación más nueva ya reseteó el navbar.
+let navProfileGen = 0;
+
 export async function updateNavbarProfile() {
   const navProfile = document.getElementById("nav-profile");
   if (!navProfile) return;
+
+  const myGen = ++navProfileGen;
 
   // 1) Render inmediato desde cache: evita que la foto "desaparezca" (vuelva al
   //    ícono) en cada navegación mientras getUser()/profiles resuelven por red.
@@ -382,6 +392,7 @@ export async function updateNavbarProfile() {
   //    refresh, cliente de auth frío) NO borramos nada: eso hacía que la foto
   //    desapareciera y encima el borrado del cache volvía el parpadeo pegajoso.
   const { data: { session } } = await supabase.auth.getSession();
+  if (myGen !== navProfileGen) return; // superada por una invocación más nueva
   if (!session) {
     navProfile.innerHTML = DEFAULT_PROFILE_ICON;
     try { localStorage.removeItem(AVATAR_CACHE_KEY); } catch { /* ignore */ }
@@ -398,6 +409,7 @@ export async function updateNavbarProfile() {
   // 4) Refresco autoritativo por red: avatar guardado en el perfil de la DB.
   try {
     const { data: { user } } = await supabase.auth.getUser();
+    if (myGen !== navProfileGen) return; // superada por una invocación más nueva
     if (!user) return; // null transitorio: dejamos la foto cacheada/JWT intacta
 
     let avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
@@ -406,6 +418,7 @@ export async function updateNavbarProfile() {
       .select("avatar_url")
       .eq("id", user.id)
       .maybeSingle();
+    if (myGen !== navProfileGen) return; // superada por una invocación más nueva
     if (profile && profile.avatar_url) avatarUrl = profile.avatar_url;
 
     if (avatarUrl) {

@@ -535,6 +535,7 @@ function initCartEvents() {
       if (cart[index] && cart[index].qty > 1) {
         cart[index].qty--;
         saveCart(cart);
+        updateCartBadge();
         renderCart();
       }
     } else if (btn.classList.contains('cart-qty__plus')) {
@@ -545,6 +546,7 @@ function initCartEvents() {
         }
         cart[index].qty++;
         saveCart(cart);
+        updateCartBadge();
         renderCart();
       }
     } else if (btn.classList.contains('cart-item__delete')) {
@@ -552,6 +554,7 @@ function initCartEvents() {
         const name = cart[index].name;
         cart.splice(index, 1);
         saveCart(cart);
+        updateCartBadge();
         renderCart();
         showCartToast(`${name} eliminado del carrito`);
       }
@@ -562,6 +565,7 @@ function initCartEvents() {
   const clearBtn = document.getElementById('cart-clear-btn');
   clearBtn?.addEventListener('click', () => {
     saveCart([]);
+    updateCartBadge();
     renderCart();
     showCartToast('Carrito vaciado');
   });
@@ -749,6 +753,7 @@ async function validateCartFreshness() {
   // poblado puede cambiar el costo mostrado aunque nada se haya sacado o
   // ajustado.
   saveCart(validatedCart);
+  updateCartBadge();
   renderCart();
 
   // Bug encontrado arreglando el vaciado prematuro del carrito (ver
@@ -784,6 +789,7 @@ function handleMercadoPagoReturn() {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderCart();
+  updateCartBadge();
   initNotificationsBell();
   initCartEvents();
   initCouponEvents();

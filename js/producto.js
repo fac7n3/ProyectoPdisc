@@ -1,26 +1,17 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initSearchBox, initNotificationsBell, initCategoryBar } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateCartBadge();
   initNotificationsBell();
+  initCategoryBar({ activeSlug: 'inicio' });
 
-  // Search redirect
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (query) {
-          window.location.href = `./search.html?q=${encodeURIComponent(query)}`;
-        }
-      }
-    });
-  }
+  initSearchBox({
+    onSubmit: (term) => { window.location.href = `./search.html?q=${encodeURIComponent(term)}`; },
+  });
 
   const container = document.getElementById('product-container');
   const params = new URLSearchParams(window.location.search);

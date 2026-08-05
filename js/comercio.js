@@ -1,26 +1,18 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateCartBadge();
   initNotificationsBell();
+  initCategoryBar({ activeSlug: 'inicio' });
 
-  // Search redirect
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (query) {
-          window.location.href = `./search.html?q=${encodeURIComponent(query)}`;
-        }
-      }
-    });
-  }
+  // Buscador con autocompletado (compartido)
+  initSearchBox({
+    onSubmit: (term) => { window.location.href = `./search.html?q=${encodeURIComponent(term)}`; },
+  });
 
   const mainContent = document.getElementById('main-content');
   const params = new URLSearchParams(window.location.search);
