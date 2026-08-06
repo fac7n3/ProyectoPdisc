@@ -7,8 +7,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 initErrorLogging(supabase);
 
 // F9-02: PWA — registrar el service worker (una vez, en cualquier página que
-// importe este módulo, que es prácticamente todo el sitio).
-if ('serviceWorker' in navigator) {
+// importe este módulo, que es prácticamente todo el sitio). Solo en build de
+// producción: sw.js cachea JS/CSS "cache-first" asumiendo que cada build
+// cambia el nombre de archivo (hash de Vite) — cierto en dist/, falso en
+// `vite dev` (sirve /js/*.js sin hash), donde eso cachea una copia vieja del
+// módulo para siempre y rompe imports nuevos (ej. getFavoriteStoreIds).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((err) => {
       console.error('Error al registrar el service worker:', err);
