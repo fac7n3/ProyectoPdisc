@@ -6,3 +6,8 @@ context.md
 .mcp.json
 # Credenciales Jira (registro de commits)
 .jira.env
+
+# Capturas sueltas de verificacion tiradas en la raiz (ventas.png, envios.png,
+# publicaciones.png, etc). La barra inicial ancla la regla a la raiz: las
+# imagenes del sitio viven en Assets/images/ y public/, y no se ven afectadas.
+/*.png
