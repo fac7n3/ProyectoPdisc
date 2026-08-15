@@ -132,12 +132,18 @@ import{o as e}from"./speed-insights-D2W7XY-7.js";import{C as t,E as n,S as r,f a
 
           <!-- Actions -->
           <div class="pm-actions">
-            <button class="pm-btn pm-btn--cart" id="pm-add-cart" ${n?`disabled`:``}>
-              ${n?`Sin stock`:`Añadir al carrito`}
+            ${n?`
+            <button class="pm-btn pm-btn--cart" id="pm-add-cart" disabled>
+              Sin stock
             </button>
-            <button class="pm-btn pm-btn--buy" id="pm-buy-now" ${n?`disabled`:``}>
+            `:`
+            <button class="pm-btn pm-btn--cart" id="pm-add-cart">
+              Añadir al carrito
+            </button>
+            <button class="pm-btn pm-btn--buy" id="pm-buy-now">
               Comprar ahora
             </button>
+            `}
           </div>
 
         </div>
