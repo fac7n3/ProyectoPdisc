@@ -167,24 +167,18 @@
   padding: 0.375rem 0.875rem;
   border-radius: var(--bl-radius-pill);
   z-index: 2;
-  animation: pm-badge-pulse 2.5s ease-in-out infinite;
+  /* Plano a propósito: sin degradado, sin glow y sin animación de pulso -- el
+     scale(1.05) infinito dejaba el texto en subpíxeles y se veía borroso. */
 }
 
 .pm-gallery__badge--descuento {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #dc2626;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .pm-gallery__badge--envio {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: var(--bl-success);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-@keyframes pm-badge-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
 }
 
 /* Botón de favoritos en galería */
@@ -622,16 +616,10 @@
 
 .pm-tab-content {
   display: none;
-  animation: pm-fade-in 0.3s ease;
 }
 
 .pm-tab-content.is-visible {
   display: block;
-}
-
-@keyframes pm-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .pm-description {
@@ -741,27 +729,18 @@
   letter-spacing: -0.01em;
 }
 
+/* Grilla que envuelve en varias filas: en desktop el carrusel horizontal no se
+   podía mover sin rueda/touchpad, así que los relacionados se leen scrolleando
+   el modal hacia abajo como cualquier otra sección. */
 .pm-related__scroll {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.875rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  /* overflow-x: auto fuerza overflow-y a "auto" también (spec), así que
-     .pm-related-card:hover (translateY(-3px) + box-shadow) se recorta contra
-     el borde superior salvo que le demos aire arriba con padding real. */
   padding: 0.75rem 0.25rem 0.5rem;
-}
-
-.pm-related__scroll::-webkit-scrollbar {
-  display: none;
 }
 
 /* Mini tarjeta de producto relacionado */
 .pm-related-card {
-  flex: 0 0 160px;
-  scroll-snap-align: start;
   background: var(--bl-surface);
   border: 1px solid var(--bl-border);
   border-radius: var(--bl-radius-lg);
@@ -937,8 +916,8 @@
     font-size: 0.8125rem;
   }
 
-  .pm-related-card {
-    flex: 0 0 140px;
+  .pm-related__scroll {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   .pm-related-card__img {

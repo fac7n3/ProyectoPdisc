@@ -134,15 +134,17 @@ function getRelatedProducts(currentId, categories) {
     if (hasCommon) related.push(card);
   });
 
-  if (related.length < 4) {
+  // La grilla envuelve en varias filas, así que conviene tener más de una fila
+  // para llenar al bajar (antes era un carrusel de 6 y quedaba corto).
+  if (related.length < 8) {
     allCards.forEach(card => {
-      if (card.id !== currentId && !related.includes(card) && related.length < 6) {
+      if (card.id !== currentId && !related.includes(card) && related.length < 12) {
         related.push(card);
       }
     });
   }
 
-  return related.slice(0, 6);
+  return related.slice(0, 12);
 }
 
 // ── URL de la tienda (relativa según la profundidad de la página actual) ──
@@ -788,17 +790,6 @@ function bindModalEvents(overlay, data) {
       }
     });
   });
-
-  // Productos relacionados — traducir scroll vertical del mouse a horizontal
-  // (la scrollbar está oculta a propósito; en desktop sin touchpad no hay otra forma de scrollear)
-  const relatedScroll = overlay.querySelector('.pm-related__scroll');
-  if (relatedScroll) {
-    relatedScroll.addEventListener('wheel', (e) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // no pisar scroll horizontal nativo (touchpad)
-      relatedScroll.scrollLeft += e.deltaY;
-      e.preventDefault();
-    }, { passive: false });
-  }
 
   // Focus trap
   const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
