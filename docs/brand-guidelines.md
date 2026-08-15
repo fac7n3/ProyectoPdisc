@@ -32,6 +32,26 @@ Definidos como referencia histórica en `:root` de `Assets/styles/styles.css` (h
 
 **Por qué `#284175` es el ancla, no `#3f85ba`.** El panel de marketing (Byron Sharp) señaló que hoy no hay un solo activo de color fijo: el celeste medio `#3f85ba` es indistinguible del azul de cualquier fintech o inmobiliaria — exactamente el registro que ya generó el comentario de "parece inmobiliaria". `#284175` es más oscuro, más memorizable y no genérico. **Regla para piezas nuevas (logo, CTA de video, topbar de piezas futuras): `#284175` es el color que se repite siempre igual.** `#3f85ba` sigue siendo válido como acento de superficie (así se usa hoy en el sitio), pero no se introduce en piezas nuevas como color de marca principal.
 
+### Acento del "modo vendedor"
+
+El panel del vendedor (`pages/vender.html`, las 9 pestañas de "Mi cuenta > Ventas") usa un acento propio
+para distinguirse de las páginas de cliente — decisión de F5-09, que sigue vigente. Vive solo en el
+`<style>` de `pages/vender.html`; no está en `home.css` porque no lo usa ninguna otra página.
+
+| Nombre | Variable CSS | Hex | RGB | Uso |
+|---|---|---|---|---|
+| Azul vendedor | `--bl-vendor-accent` | `#2f5aa8` | `rgb(47, 90, 168)` | Badge "Modo Vendedor", borde del sidebar, botones y chips del panel |
+| Azul vendedor oscuro | `--bl-vendor-accent-dark` | `#254a8c` | `rgb(37, 74, 140)` | Estados `:hover` sobre el anterior |
+| — (triplete) | `--bl-vendor-accent-rgb` | `47, 90, 168` | — | Fondos y anillos translúcidos: `rgba(var(--bl-vendor-accent-rgb), .12)` |
+
+**Corregido 2026-08-14.** Hasta esa fecha el acento era `#0e7490` (cyan/teal): leía como *verde*, quedaba
+fuera de la familia azul y contradecía el ancla. Se reemplazó por un azul más saturado y claro que
+`#284175` — sigue distinguiendo el panel, pero dentro de la identidad. Contraste de `#2f5aa8` sobre
+blanco: **6.68:1** (AA para texto normal), que es lo que hace falta porque hay botones con texto blanco
+encima. Se agregó además `--bl-vendor-accent-rgb` porque cuatro reglas repetían el `rgb()` a mano y
+quedaron en teal cuando se cambió el token: cualquier color translúcido nuevo debe derivarse de ahí,
+no escribirse a mano.
+
 ### Neutros y fondo
 
 | Nombre | Variable CSS | Hex | Uso |
@@ -78,6 +98,7 @@ Calculados según la fórmula de luminancia relativa de WCAG 2.1 (mínimo AA: 4.
 | Éxito `#0B6B4D` sobre blanco / sobre `--bg-color` | 6.51:1 / 4.89:1 | ✅ / ✅ | ✅ / ✅ |
 | Advertencia `#8F4D00` sobre blanco / sobre `--bg-color` | 6.50:1 / 4.88:1 | ✅ / ✅ | ✅ / ✅ |
 | Error `#A4302A` sobre blanco / sobre `--bg-color` | 6.92:1 / 5.19:1 | ✅ / ✅ | ✅ / ✅ |
+| Blanco sobre `--bl-vendor-accent` (#2f5aa8) | 6.68:1 | ✅ | ✅ |
 
 **Conclusiones prácticas:** los 3 colores semánticos nuevos pasan AA como texto sólido tanto sobre blanco como sobre el fondo gris del sitio (`--bg-color`), en cualquier combinación. `--primary-color` (#3f85ba) como fondo con texto blanco encima **no** llega a 4.5:1 — usarlo solo con texto grande/bold o iconografía (ya es como se usa hoy: botones píldora con texto corto en mayúscula/negrita), nunca con párrafos. `--primary-light` nunca lleva texto blanco (por eso la card de login ya usa texto oscuro sobre ella). `--text-muted` sobre `--bg-color` está al límite (4.18:1): evitarlo para texto de cuerpo pequeño sobre el fondo gris, está pensado para blanco/superficies claras (5.57:1 ahí).
 

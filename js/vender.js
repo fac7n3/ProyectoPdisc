@@ -1832,7 +1832,6 @@ async function openEditProductForm(productId) {
   document.getElementById('prod-compare-price').value = product.compare_at_price ?? '';
   document.getElementById('prod-offer-expires').value = product.offer_expires_at ?? '';
   document.getElementById('prod-desc').value = product.description || '';
-  document.getElementById('prod-image').value = product.image_url || '';
   document.getElementById('prod-category').value = product.categories?.slug || '';
 
   const formTitle = document.getElementById('add-product-form-title');
@@ -1840,90 +1839,214 @@ async function openEditProductForm(productId) {
   const submitBtn = document.querySelector('#add-product-form button[type="submit"]');
   if (submitBtn) submitBtn.textContent = 'Guardar cambios';
 
-  document.getElementById('add-product-form-container').style.display = 'block';
-  document.getElementById('add-product-form-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-  await renderExistingProductImages(productId);
+  openProductForm();
+  await hydrateProductGallery(product);
 
   // F5-03: variantes solo tienen sentido con un product_id real, o sea editando.
   const variantsSection = document.getElementById('prod-variants-section');
-  if (variantsSection) variantsSection.style.display = 'block';
+  if (variantsSection) variantsSection.hidden = false;
   await renderVariantsManager(productId);
 }
 
-/** F5-04: miniaturas de las fotos ya subidas, con botón para borrarlas. */
-async function renderExistingProductImages(productId) {
-  const container = document.getElementById('prod-existing-images');
-  if (!container) return;
-  container.textContent = '';
+/* --- Galería de fotos del form (portada + adicionales en una sola grilla) ---
+ *
+ * El lado cliente (js/producto.js, js/product-modal.js) arma la galería como
+ * [products.image_url, ...product_images ordenadas por position]. O sea: la
+ * portada vive en products.image_url y NO como fila de product_images, o se
+ * vería duplicada. persistProductImages() es el único lugar que escribe esto.
+ *
+ * productImages es el orden final y el índice 0 es la portada:
+ *   { kind: 'saved', url }            -> ya está en storage
+ *   { kind: 'new', file, previewUrl } -> elegida recién, todavía sin subir
+ */
+let productImages = [];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+let galleryDragFrom = null;
 
-  const { data: images, error } = await supabase
+/** Carga en la galería la portada + las adicionales de un producto ya guardado. */
+async function hydrateProductGallery(product) {
+  resetProductGallery();
+  if (product.image_url) productImages.push({ kind: 'saved', url: product.image_url });
+
+  const { data: extra, error } = await supabase
     .from('product_images')
-    .select('id, url')
-    .eq('product_id', productId)
+    .select('url, position')
+    .eq('product_id', product.id)
     .order('position', { ascending: true });
 
-  if (error || !images) return;
+  if (error) console.error('No se pudieron cargar las fotos del producto:', error);
+  (extra || []).forEach((row) => productImages.push({ kind: 'saved', url: row.url }));
 
-  images.forEach((img) => {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'position: relative; width: 64px; height: 64px;';
+  renderProductGallery();
+}
 
-    const thumb = document.createElement('img');
-    thumb.src = img.url;
-    thumb.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 6px;';
-    wrap.appendChild(thumb);
+/** Vacía la galería, liberando las previews en memoria de las fotos sin subir. */
+function resetProductGallery() {
+  productImages.forEach((item) => {
+    if (item.kind === 'new') URL.revokeObjectURL(item.previewUrl);
+  });
+  productImages = [];
+  renderProductGallery();
+}
 
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.style.cssText = 'position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 0.75rem; line-height: 1;';
-    removeBtn.textContent = '×';
-    removeBtn.addEventListener('click', async () => {
-      const { error: deleteError } = await supabase.from('product_images').delete().eq('id', img.id);
-      if (deleteError) {
-        showToast('No se pudo borrar la foto.', 'error');
-        console.error(deleteError);
-        return;
-      }
-      wrap.remove();
+/** Suma archivos elegidos a la galería, descartando los que no sirven. */
+function addFilesToGallery(files) {
+  Array.from(files || []).forEach((file) => {
+    if (!file.type.startsWith('image/')) {
+      showToast(`"${file.name}" no es una imagen.`, 'error');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showToast(`"${file.name}" pesa más de 5 MB.`, 'error');
+      return;
+    }
+    productImages.push({ kind: 'new', file, previewUrl: URL.createObjectURL(file) });
+  });
+  renderProductGallery();
+}
+
+function moveGalleryImage(from, to) {
+  if (from == null || to == null || from === to) return;
+  const [moved] = productImages.splice(from, 1);
+  productImages.splice(to, 0, moved);
+  renderProductGallery();
+}
+
+function renderProductGallery() {
+  const grid = document.getElementById('prod-gallery');
+  if (!grid) return;
+  grid.textContent = '';
+
+  productImages.forEach((item, index) => {
+    const cell = document.createElement('div');
+    cell.className = 'pubform__photo';
+    cell.draggable = true;
+
+    const img = document.createElement('img');
+    img.src = item.kind === 'new' ? item.previewUrl : item.url;
+    img.alt = index === 0 ? 'Foto de portada' : `Foto ${index + 1}`;
+    cell.appendChild(img);
+
+    if (index === 0) {
+      const badge = document.createElement('span');
+      badge.className = 'pubform__badge';
+      badge.textContent = 'Portada';
+      cell.appendChild(badge);
+    } else {
+      // El drag&drop HTML5 no existe en touch: sin este botón, desde el celular
+      // no habría forma de cambiar la portada.
+      const coverBtn = document.createElement('button');
+      coverBtn.type = 'button';
+      coverBtn.className = 'pubform__photo-cover';
+      coverBtn.textContent = 'Hacer portada';
+      coverBtn.addEventListener('click', () => moveGalleryImage(index, 0));
+      cell.appendChild(coverBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'pubform__photo-del';
+    delBtn.setAttribute('aria-label', `Quitar foto ${index + 1}`);
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => {
+      const [removed] = productImages.splice(index, 1);
+      if (removed?.kind === 'new') URL.revokeObjectURL(removed.previewUrl);
+      renderProductGallery();
     });
-    wrap.appendChild(removeBtn);
+    cell.appendChild(delBtn);
 
-    container.appendChild(wrap);
+    cell.addEventListener('dragstart', () => {
+      galleryDragFrom = index;
+      cell.classList.add('is-dragging');
+    });
+    cell.addEventListener('dragend', () => {
+      galleryDragFrom = null;
+      cell.classList.remove('is-dragging');
+      grid.querySelectorAll('.pubform__photo').forEach((c) => c.classList.remove('is-over'));
+    });
+    cell.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (galleryDragFrom !== null && galleryDragFrom !== index) cell.classList.add('is-over');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('is-over'));
+    cell.addEventListener('drop', (e) => {
+      e.preventDefault();
+      cell.classList.remove('is-over');
+      moveGalleryImage(galleryDragFrom, index);
+      galleryDragFrom = null;
+    });
+
+    grid.appendChild(cell);
   });
 }
 
-/** F5-04: sube los archivos elegidos al bucket 'products' y crea las filas en product_images. */
-async function uploadProductImages(productId, files) {
-  if (!files || files.length === 0) return;
+/** Muestra el form ocultando el listado (una cosa a la vez). */
+function openProductForm() {
+  document.querySelector('.pub-wrap')?.classList.add('is-editing');
+  const container = document.getElementById('add-product-form-container');
+  if (container) container.hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  const { data: existing } = await supabase
-    .from('product_images')
-    .select('position')
-    .eq('product_id', productId)
-    .order('position', { ascending: false })
-    .limit(1);
-  let nextPosition = (existing?.[0]?.position ?? -1) + 1;
+/** Vuelve al listado. */
+function closeProductForm() {
+  document.querySelector('.pub-wrap')?.classList.remove('is-editing');
+  const container = document.getElementById('add-product-form-container');
+  if (container) container.hidden = true;
+}
 
-  for (const file of files) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
-    const path = `${productId}/${Date.now()}-${safeName}`;
+/** F5-04: sube una foto al bucket 'products' y devuelve su URL pública (null si falló). */
+async function uploadProductImage(productId, file) {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
+  const path = `${productId}/${Date.now()}-${safeName}`;
 
-    const { error: uploadError } = await supabase.storage.from('products').upload(path, file);
-    if (uploadError) {
-      console.error('Error al subir la foto:', uploadError);
-      showToast(`No se pudo subir ${file.name}.`, 'error');
+  const { error: uploadError } = await supabase.storage.from('products').upload(path, file);
+  if (uploadError) {
+    console.error('Error al subir la foto:', uploadError);
+    showToast(`No se pudo subir ${file.name}.`, 'error');
+    return null;
+  }
+  return supabase.storage.from('products').getPublicUrl(path).data.publicUrl;
+}
+
+/**
+ * Sube las fotos nuevas y deja product_images con TODAS menos la portada.
+ * Devuelve la URL de portada, que el llamador guarda en products.image_url.
+ *
+ * Reescribe las filas de cero (borrar + insertar) en vez de diffear: así la
+ * portada nunca queda además como fila (se vería duplicada en la vista de
+ * cliente) y position siempre coincide con el orden que ve el vendedor.
+ * ponytail: reinserta todas las filas en cada guardado; si un producto llegara
+ * a tener decenas de fotos, diffear.
+ */
+async function persistProductImages(productId) {
+  const urls = [];
+  for (const item of productImages) {
+    if (item.kind === 'saved') {
+      urls.push(item.url);
       continue;
     }
-
-    const { data: urlData } = supabase.storage.from('products').getPublicUrl(path);
-    await supabase.from('product_images').insert({
-      product_id: productId,
-      url: urlData.publicUrl,
-      position: nextPosition,
-    });
-    nextPosition += 1;
+    const url = await uploadProductImage(productId, item.file);
+    if (url) urls.push(url);
   }
+
+  const { error: deleteError } = await supabase.from('product_images').delete().eq('product_id', productId);
+  if (deleteError) {
+    console.error('No se pudieron limpiar las fotos previas:', deleteError);
+    showToast('No se pudo guardar el orden de las fotos.', 'error');
+    return urls[0] ?? null;
+  }
+
+  const rest = urls.slice(1).map((url, position) => ({ product_id: productId, url, position }));
+  if (rest.length) {
+    const { error: insertError } = await supabase.from('product_images').insert(rest);
+    if (insertError) {
+      console.error('No se pudieron guardar las fotos adicionales:', insertError);
+      showToast('No se pudieron guardar las fotos adicionales.', 'error');
+    }
+  }
+
+  return urls[0] ?? null;
 }
 
 /** F5-03: lista las variantes de un producto (talle/color/peso) con botón para borrarlas. */
@@ -2030,7 +2153,6 @@ function setupDashboardEvents() {
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
   const btnCancelAdd = document.getElementById('btn-cancel-add-product');
-  const addFormContainer = document.getElementById('add-product-form-container');
   const addForm = document.getElementById('add-product-form');
 
   // Llenar categorías del form
@@ -2049,30 +2171,64 @@ function setupDashboardEvents() {
     const formTitle = document.getElementById('add-product-form-title');
     if (formTitle) formTitle.textContent = 'Publicar nuevo producto';
     const submitBtn = addForm.querySelector('button[type="submit"]');
-    if (submitBtn) submitBtn.textContent = 'Guardar Producto';
-    const existingImages = document.getElementById('prod-existing-images');
-    if (existingImages) existingImages.textContent = '';
+    if (submitBtn) submitBtn.textContent = 'Guardar producto';
+    resetProductGallery();
     const variantsSection = document.getElementById('prod-variants-section');
-    if (variantsSection) variantsSection.style.display = 'none';
+    if (variantsSection) variantsSection.hidden = true;
     const variantsList = document.getElementById('prod-variants-list');
     if (variantsList) variantsList.textContent = '';
   }
 
   btnShowAdd.addEventListener('click', () => {
     resetProductForm();
-    addFormContainer.style.display = 'block';
+    openProductForm();
   });
 
-  btnCancelAdd.addEventListener('click', () => {
-    addFormContainer.style.display = 'none';
-    resetProductForm();
+  // Cancelar (abajo) y "Volver a publicaciones" (arriba) hacen lo mismo.
+  [btnCancelAdd, document.getElementById('btn-back-publicaciones')].forEach((btn) => {
+    btn?.addEventListener('click', () => {
+      closeProductForm();
+      resetProductForm();
+    });
   });
+
+  // Zona de carga: click, teclado y arrastrar-y-soltar caen en el mismo input.
+  const dropZone = document.getElementById('prod-drop');
+  const imagesInput = document.getElementById('prod-images');
+  if (dropZone && imagesInput) {
+    dropZone.addEventListener('click', () => imagesInput.click());
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        imagesInput.click();
+      }
+    });
+    imagesInput.addEventListener('change', () => {
+      addFilesToGallery(imagesInput.files);
+      // Se limpia para que elegir el mismo archivo otra vez vuelva a disparar change.
+      imagesInput.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach((evt) =>
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('is-over');
+      })
+    );
+    ['dragleave', 'drop'].forEach((evt) =>
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('is-over');
+      })
+    );
+    dropZone.addEventListener('drop', (e) => addFilesToGallery(e.dataTransfer?.files));
+  }
 
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnSubmit = addForm.querySelector('button[type="submit"]');
     const isEditing = Boolean(editingProductId);
-    const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar Producto';
+    const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar producto';
 
     const titleValue = document.getElementById('prod-name').value.trim();
     const priceValue = document.getElementById('prod-price').value;
@@ -2114,7 +2270,8 @@ function setupDashboardEvents() {
       offer_expires_at: comparePriceValue && offerExpiresValue ? offerExpiresValue : null,
       category_id: null,
       description: document.getElementById('prod-desc').value.trim(),
-      image_url: document.getElementById('prod-image').value.trim()
+      // image_url se setea después de subir las fotos: en un alta todavía no
+      // existe el id del producto, que hace falta para la ruta en storage.
     };
 
     // El select guarda el slug de la categoría; hay que resolver el UUID real
@@ -2141,14 +2298,23 @@ function setupDashboardEvents() {
       return;
     }
 
-    // F5-04: subir las fotos adicionales elegidas (si hay), ya con el id real del producto
-    const extraImagesInput = document.getElementById('prod-extra-images');
-    if (savedProductId && extraImagesInput?.files?.length) {
-      await uploadProductImages(savedProductId, Array.from(extraImagesInput.files));
+    // F5-04: recién acá hay id real, que es lo que necesita la ruta en storage.
+    // persistProductImages sube las fotos nuevas, reescribe product_images y
+    // devuelve la portada para guardarla en products.image_url.
+    if (savedProductId) {
+      const coverUrl = await persistProductImages(savedProductId);
+      const { error: coverError } = await supabase
+        .from('products')
+        .update({ image_url: coverUrl })
+        .eq('id', savedProductId);
+      if (coverError) {
+        console.error('No se pudo guardar la foto de portada:', coverError);
+        showToast('El producto se guardó, pero falló la foto de portada.', 'error');
+      }
     }
 
     showToast(isEditing ? "Producto actualizado" : "Producto creado", "success");
-    addFormContainer.style.display = 'none';
+    closeProductForm();
     resetProductForm();
     fetchProducts();
     setLoading(btnSubmit, false, submitLabel);

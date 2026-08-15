@@ -5,6 +5,57 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Rediseño del alta de producto (panel vendedor) (2026-08-14)
+Rama `rediseno-publicar-producto`. El usuario reportó que "la pestaña cuando el vendedor sube un
+producto está muy verde" y pidió rediseñarla entera, con plan previo. Tres decisiones suyas al
+plantearle las opciones: (1) el modo vendedor conserva acento propio pero en azul de marca —no
+unificar del todo con `--bl-primary`—, (2) el form en tarjetas en la misma página, no modal ni wizard,
+(3) subida real de fotos + galería unificada (portada y adicionales juntas, reordenables).
+
+- **El "verde" era `--bl-vendor-accent: #0e7490`** (cyan/teal de F5-09), definido en el `<style>` de
+  `pages/vender.html` y usado en 28 lugares de *todo* el panel, no solo en Publicaciones. Cambiado a
+  `#2f5aa8` / `#254a8c` (azul saturado, hermano del ancla `#284175`; contraste 6.68:1 sobre blanco,
+  necesario porque lleva texto blanco encima). Al ser un token, el cambio arregló las 9 pestañas solo.
+- **Gotcha:** cuatro reglas repetían el teal a mano en `rgba()` (`.form-input:focus`,
+  `.mc-navitem.is-active`, `.pub-search input:focus`, `.pub-status--ready`) y quedaron verdes después
+  de cambiar el token. Se agregó `--bl-vendor-accent-rgb: 47, 90, 168` y todas derivan de ahí. Si se
+  agrega un translúcido nuevo, usar ese token — no escribir el `rgb()` a mano otra vez.
+- **El form dejó de apilarse debajo del listado.** Antes era `display:none` → `block` +
+  `scrollIntoView`. Ahora `.pub-wrap` toma `.is-editing`, que oculta header/toolbar/lista por CSS, y
+  el form (`.pubform`, `hidden`) ocupa su lugar con un "← Volver a publicaciones". Los helpers son
+  `openProductForm()` / `closeProductForm()` en `js/vender.js`.
+- **Estructura en 4 `<fieldset>`** (Fotos · Datos básicos · Precio y stock · Variantes) con clases
+  `.pubform__*` en el `<style>` de la página; se sacaron todos los `style="..."` inline del markup.
+  Variantes sigue siendo solo-al-editar (limitación de F5-03, sin cambios).
+- **Se eliminó el campo "URL de la imagen (temporal)"** (`#prod-image`), que obligaba al vendedor a
+  pegar una URL para la foto principal. Junto con `#prod-extra-images` fue reemplazado por una sola
+  zona de carga (click / teclado / arrastrar-y-soltar) más una grilla de miniaturas.
+- **Contrato de la galería — lo importante para no romper el lado cliente.** `js/producto.js` y
+  `js/product-modal.js` ya armaban la galería como `[products.image_url, ...product_images ordenadas
+  por position]`. O sea el modelo ya existía: **la portada vive en `products.image_url` y NO como fila
+  de `product_images`**, o se ve duplicada en la vista de cliente. Por eso el rediseño **no necesitó
+  migración SQL** ni tocar esos dos archivos. `persistProductImages()` es el único lugar que escribe
+  esto: sube las nuevas, **borra todas las filas y las reinserta** con `position` = índice, y devuelve
+  la portada para que el submit la guarde en `image_url`. Borrar-y-reinsertar en vez de diffear es lo
+  que hace que la duplicación sea imposible por construcción y que `position` siempre coincida con el
+  orden que ve el vendedor.
+- **En un alta hay que subir después del insert**: `product_images.product_id` es NOT NULL y la ruta
+  en storage usa el id del producto. Por eso `productData` ya no lleva `image_url` y el submit hace
+  insert → `persistProductImages()` → `update({ image_url })`. Las previews antes de guardar salen de
+  `URL.createObjectURL` (se revocan al resetear el form).
+- **Táctil:** el drag&drop HTML5 no existe en mobile, así que cada foto que no es portada lleva un
+  botón "Hacer portada" — sin eso, desde el celular no habría forma de cambiarla.
+- Validación nueva en cliente: se rechaza lo que no sea imagen y lo que pase de 5 MB (antes no había
+  ninguna y el archivo se subía igual).
+- **Verificado**: `npm run build` OK; render, colores computados (`#2f5aa8` en botón/badge/link, cero
+  teal), grilla, `.is-editing` ocultando el listado y responsive a 375px sin desborde — todo contra un
+  harness estático generado desde el CSS/markup reales (el guard de sesión impide entrar a
+  `vender.html` sin cuenta de vendedor). Consola sin errores propios (solo el CSP de vercel
+  speed-insights, preexistente en dev). **Sin verificar**: el camino contra la DB real (alta con
+  fotos, cambio de portada, no-duplicación en la vista de cliente) — requiere login de vendedor.
+- **Storage:** al quitar una foto se borra su fila pero **no** el objeto del bucket (era así antes
+  también). Queda como basura acumulable; no se abordó.
+
 ## Unificación de color/tipografía oficial + merge a main (2026-08-05)
 Seguimiento de la tarea anterior: el usuario pidió pushear todo a `main` (incluida la carpeta
 `video/` completa, que había quedado sin commitear) y decidir cuál de los dos sistemas de
