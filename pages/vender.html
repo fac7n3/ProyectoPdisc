@@ -13,13 +13,20 @@
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-      /* F5-09: acento propio del "modo vendedor" — dentro de la misma paleta
-         azul del sitio (bl-primary sigue siendo azul), pero con un tono
-         propio (cyan/teal oscuro) que distingue visualmente el panel del
-         vendedor de las páginas de cliente. */
+      /* F5-09: acento propio del "modo vendedor" — un tono más saturado y
+         claro que el ancla de marca (#284175), que distingue visualmente el
+         panel del vendedor de las páginas de cliente sin salirse de la
+         familia azul. Antes era cyan/teal (#0e7490): se cambió porque leía
+         como "verde" y quedaba fuera de la identidad.
+         Contraste sobre blanco 6.7:1 (AA) — hay botones con texto blanco
+         encima (.form-btn, .pub-publish__btn, .pub-chip.is-active). */
       :root {
-        --bl-vendor-accent: #0e7490;
-        --bl-vendor-accent-dark: #155e75;
+        --bl-vendor-accent: #2f5aa8;
+        --bl-vendor-accent-dark: #254a8c;
+        /* Mismo color en triplete, para los fondos/anillos translúcidos:
+           rgba(var(--bl-vendor-accent-rgb), .12). Antes cada uno repetía el
+           rgb() a mano y quedaron todos en teal al cambiar el token. */
+        --bl-vendor-accent-rgb: 47, 90, 168;
       }
       .vendor-mode-badge {
         display: inline-flex;
@@ -94,7 +101,7 @@
       .form-input:focus {
         outline: none;
         border-color: var(--bl-vendor-accent);
-        box-shadow: 0 0 0 2px rgba(14,116,144,0.12);
+        box-shadow: 0 0 0 2px rgba(var(--bl-vendor-accent-rgb), 0.12);
       }
       .form-btn {
         width: 100%;
@@ -229,7 +236,7 @@
         font-size: 0.92rem;
       }
       .mc-navitem:hover { background: var(--bl-surface-hover); color: var(--bl-text); }
-      .mc-navitem.is-active { color: var(--bl-vendor-accent); font-weight: 600; background: rgba(14, 116, 144, 0.08); }
+      .mc-navitem.is-active { color: var(--bl-vendor-accent); font-weight: 600; background: rgba(var(--bl-vendor-accent-rgb), 0.08); }
       .mc-navlink {
         display: flex;
         align-items: center;
@@ -327,7 +334,7 @@
       .pub-search { position: relative; flex: 1 1 240px; min-width: 200px; }
       .pub-search i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-muted); font-size: 0.85rem; }
       .pub-search input { width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.2rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); font: inherit; }
-      .pub-search input:focus { outline: none; border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 2px rgba(14, 116, 144, 0.12); }
+      .pub-search input:focus { outline: none; border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 2px rgba(var(--bl-vendor-accent-rgb), 0.12); }
       .pub-chips { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
       .pub-chip { padding: 0.5rem 0.9rem; border: 1px solid var(--bl-border); background: var(--bl-surface); border-radius: var(--bl-radius-pill); font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-chip:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
@@ -352,7 +359,7 @@
       .pub-status--paused { background: var(--bl-surface-alt); color: var(--bl-text-secondary); }
       .pub-status--pending { background: rgba(245, 158, 11, 0.12); color: #b45309; }
       .pub-status--shipped { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; }
-      .pub-status--ready { background: rgba(14, 116, 144, 0.12); color: var(--bl-vendor-accent); }
+      .pub-status--ready { background: rgba(var(--bl-vendor-accent-rgb), 0.12); color: var(--bl-vendor-accent); }
       .pub-status--cancelled { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
 
       .pub-actions { position: relative; flex-shrink: 0; }
@@ -371,6 +378,59 @@
       .pub-empty__sub { color: var(--bl-text-secondary); margin-bottom: 1.25rem; }
       .pub-empty__btn { background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
       .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
+
+      /* --- Alta/edición de producto: el form reemplaza al listado --- */
+      .pub-wrap.is-editing .pub-header,
+      .pub-wrap.is-editing .pub-toolbar,
+      .pub-wrap.is-editing .pub-list { display: none; }
+
+      .pubform { max-width: 860px; }
+      .pubform[hidden] { display: none; }
+      .pubform__head { margin-bottom: 1.25rem; }
+      .pubform__back { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.25rem 0; font: inherit; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer; margin-bottom: 0.5rem; }
+      .pubform__back:hover { color: var(--bl-vendor-accent-dark); text-decoration: underline; }
+      .pubform__title { font-size: 1.5rem; font-weight: 700; color: var(--bl-text); }
+
+      .pubform__card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.5rem; box-shadow: var(--bl-shadow-card); margin-bottom: 1.25rem; }
+      .pubform__card[hidden] { display: none; }
+      .pubform__legend { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); padding: 0 0.4rem; margin-left: -0.4rem; }
+      .pubform__hint { font-size: 0.85rem; color: var(--bl-text-secondary); margin: 0.35rem 0 0; }
+      .pubform__legend + .pubform__hint { margin-bottom: 1rem; }
+      .pubform__opt { font-weight: 400; color: var(--bl-text-muted); }
+      .pubform__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+      .pubform__card .form-group:last-child { margin-bottom: 0; }
+
+      /* Precio: el "$" va adentro del input (el sistema es de pesos enteros) */
+      .pubform__money { position: relative; }
+      .pubform__money-sign { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-secondary); font-weight: 600; pointer-events: none; }
+      .pubform__money .form-input { padding-left: 1.9rem; }
+
+      /* Zona de carga de fotos */
+      .pubform__drop { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1.75rem 1rem; border: 2px dashed var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface-alt); color: var(--bl-text-secondary); text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+      .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); outline: none; }
+      .pubform__drop i { font-size: 1.6rem; color: var(--bl-vendor-accent); }
+      .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
+
+      .pubform__gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+      .pubform__gallery:empty { display: none; }
+      .pubform__photo { position: relative; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; background: var(--bl-surface-alt); cursor: grab; }
+      .pubform__photo.is-dragging { opacity: 0.4; }
+      .pubform__photo.is-over { border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 2px rgba(var(--bl-vendor-accent-rgb), 0.25); }
+      .pubform__photo img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+      .pubform__badge { position: absolute; top: 0.35rem; left: 0.35rem; background: var(--bl-vendor-accent); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: var(--bl-radius-pill); }
+      .pubform__photo-del { position: absolute; top: 0.35rem; right: 0.35rem; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; font-size: 0.8rem; line-height: 1; }
+      .pubform__photo-del:hover { background: var(--bl-danger); }
+      /* Alternativa táctil/teclado al arrastrar (el drag&drop HTML5 no va en mobile) */
+      .pubform__photo-cover { position: absolute; left: 0; right: 0; bottom: 0; border: none; background: rgba(0, 0, 0, 0.6); color: #fff; font: inherit; font-size: 0.72rem; font-weight: 600; padding: 0.3rem; cursor: pointer; }
+      .pubform__photo-cover:hover { background: var(--bl-vendor-accent); }
+
+      .pubform__variants { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+      .pubform__variant-add { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: end; }
+      .pubform__variant-add .form-group { margin-bottom: 0; }
+      .pubform__variant-add .btn-outline { padding: 0.6rem 1rem; }
+
+      .pubform__actions { display: flex; justify-content: flex-end; gap: 1rem; }
+      .pubform__actions .form-btn { width: auto; padding: 0.85rem 2rem; font-size: 1rem; }
 
       /* Perfil de mi comercio (estilo ML "Mi cuenta > Datos de mi negocio") */
       .pf-wrap { max-width: 860px; }
@@ -391,6 +451,13 @@
         .pf-grid { grid-template-columns: 1fr; }
         .pf-actions { justify-content: stretch; }
         .pf-actions .form-btn { width: 100%; }
+        .pubform__card { padding: 1.1rem; }
+        .pubform__row { grid-template-columns: 1fr; }
+        .pubform__variant-add { grid-template-columns: 1fr 1fr; }
+        .pubform__variant-add .btn-outline { grid-column: 1 / -1; }
+        .pubform__gallery { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+        .pubform__actions { flex-direction: column-reverse; }
+        .pubform__actions .form-btn, .pubform__actions .btn-outline { width: 100%; }
         .pub-row { flex-wrap: wrap; }
         .pub-row__main { flex-basis: calc(100% - 56px - 1rem); }
         .pub-row__cell { min-width: 0; flex: 1 1 auto; align-items: flex-start; text-align: left; }
@@ -769,75 +836,109 @@
                 <!-- Publicaciones cargadas con JS -->
               </div>
 
-              <!-- Formulario de nuevo producto (Oculto por defecto) -->
-              <div id="add-product-form-container" style="display: none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);">
-                <h3 style="margin-bottom: 1rem;" id="add-product-form-title">Publicar nuevo producto</h3>
-                <form id="add-product-form">
-                  <div class="form-group">
-                    <label class="form-label" for="prod-name">Nombre del Producto</label>
-                    <input type="text" id="prod-name" class="form-input" required />
-                  </div>
-                  <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div>
-                      <label class="form-label" for="prod-price">Precio (ARS)</label>
-                      <input type="number" id="prod-price" class="form-input" min="0" step="1" required />
+              <!-- Formulario de alta/edición. Oculto por defecto; cuando se abre,
+                   .pub-wrap toma .is-editing y reemplaza al listado (no se apila debajo). -->
+              <div id="add-product-form-container" class="pubform" hidden>
+                <div class="pubform__head">
+                  <button type="button" class="pubform__back" id="btn-back-publicaciones">
+                    <i class="fa-solid fa-arrow-left"></i> Volver a publicaciones
+                  </button>
+                  <h2 class="pubform__title" id="add-product-form-title">Publicar nuevo producto</h2>
+                </div>
+
+                <form id="add-product-form" class="pubform__form">
+                  <fieldset class="pubform__card">
+                    <legend class="pubform__legend">Fotos</legend>
+                    <p class="pubform__hint">
+                      La primera foto es la <strong>portada</strong>: es la que se ve en el listado y en el buscador.
+                      Podés reordenarlas arrastrándolas.
+                    </p>
+                    <div class="pubform__drop" id="prod-drop" role="button" tabindex="0">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                      <span class="pubform__drop-main">Elegí las fotos o arrastralas acá</span>
+                      <span class="pubform__hint">JPG, PNG o WEBP · hasta 5 MB cada una</span>
                     </div>
-                    <div>
-                      <label class="form-label" for="prod-stock">Stock disponible</label>
-                      <input type="number" id="prod-stock" class="form-input" min="0" step="1" value="1" required />
+                    <input type="file" id="prod-images" accept="image/*" multiple hidden />
+                    <div class="pubform__gallery" id="prod-gallery"></div>
+                  </fieldset>
+
+                  <fieldset class="pubform__card">
+                    <legend class="pubform__legend">Datos básicos</legend>
+                    <div class="form-group">
+                      <label class="form-label" for="prod-name">Nombre del producto</label>
+                      <input type="text" id="prod-name" class="form-input" required />
                     </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-compare-price">Precio anterior (opcional, para mostrarlo tachado como oferta)</label>
-                    <input type="number" id="prod-compare-price" class="form-input" min="0" step="1" placeholder="Dejalo vacío si no está en oferta" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-offer-expires">Vencimiento de la oferta (opcional)</label>
-                    <input type="date" id="prod-offer-expires" class="form-input" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-category">Categoría</label>
-                    <select id="prod-category" class="form-input" required></select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-desc">Descripción</label>
-                    <textarea id="prod-desc" class="form-input" rows="3"></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-extra-images">Fotos adicionales (opcional, podés elegir varias)</label>
-                    <input type="file" id="prod-extra-images" class="form-input" accept="image/*" multiple />
-                    <div id="prod-existing-images" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;"></div>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="prod-image">URL de la imagen (temporal)</label>
-                    <input type="url" id="prod-image" class="form-input" placeholder="https://..." />
-                  </div>
-                  <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button type="submit" class="form-btn" style="flex: 1;">Guardar Producto</button>
-                    <button type="button" class="btn-outline" id="btn-cancel-add-product" style="flex: 1;">Cancelar</button>
+                    <div class="form-group">
+                      <label class="form-label" for="prod-category">Categoría</label>
+                      <select id="prod-category" class="form-input" required></select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="prod-desc">Descripción</label>
+                      <textarea id="prod-desc" class="form-input" rows="4"></textarea>
+                    </div>
+                  </fieldset>
+
+                  <fieldset class="pubform__card">
+                    <legend class="pubform__legend">Precio y stock</legend>
+                    <div class="pubform__row">
+                      <div class="form-group">
+                        <label class="form-label" for="prod-price">Precio</label>
+                        <div class="pubform__money">
+                          <span class="pubform__money-sign" aria-hidden="true">$</span>
+                          <input type="number" id="prod-price" class="form-input" min="0" step="1" inputmode="numeric" required />
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="prod-stock">Stock disponible</label>
+                        <input type="number" id="prod-stock" class="form-input" min="0" step="1" inputmode="numeric" value="1" required />
+                      </div>
+                    </div>
+                    <div class="pubform__row">
+                      <div class="form-group">
+                        <label class="form-label" for="prod-compare-price">
+                          Precio anterior <span class="pubform__opt">(opcional)</span>
+                        </label>
+                        <div class="pubform__money">
+                          <span class="pubform__money-sign" aria-hidden="true">$</span>
+                          <input type="number" id="prod-compare-price" class="form-input" min="0" step="1" inputmode="numeric" placeholder="Vacío si no está en oferta" />
+                        </div>
+                        <p class="pubform__hint">Se muestra tachado al lado del precio actual.</p>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="prod-offer-expires">
+                          Vencimiento de la oferta <span class="pubform__opt">(opcional)</span>
+                        </label>
+                        <input type="date" id="prod-offer-expires" class="form-input" />
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <!-- Variantes (F5-03): solo disponible editando un producto ya creado -->
+                  <fieldset class="pubform__card" id="prod-variants-section" hidden>
+                    <legend class="pubform__legend">Variantes <span class="pubform__opt">(talle/color/peso)</span></legend>
+                    <div id="prod-variants-list" class="pubform__variants"></div>
+                    <div class="pubform__variant-add">
+                      <div class="form-group">
+                        <label class="form-label" for="variant-name">Nombre</label>
+                        <input type="text" id="variant-name" class="form-input" placeholder="Ej: Talle M" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="variant-price">Precio</label>
+                        <input type="number" id="variant-price" class="form-input" min="0" step="1" inputmode="numeric" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="variant-stock">Stock</label>
+                        <input type="number" id="variant-stock" class="form-input" min="0" step="1" inputmode="numeric" />
+                      </div>
+                      <button type="button" class="btn-outline" id="btn-add-variant">Agregar</button>
+                    </div>
+                  </fieldset>
+
+                  <div class="pubform__actions">
+                    <button type="button" class="btn-outline" id="btn-cancel-add-product">Cancelar</button>
+                    <button type="submit" class="form-btn">Guardar producto</button>
                   </div>
                 </form>
-
-                <!-- Variantes (F5-03): solo disponible editando un producto ya creado -->
-                <div id="prod-variants-section" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--bl-border);">
-                  <h4 style="margin-bottom: 0.75rem;">Variantes (talle/color/peso)</h4>
-                  <div id="prod-variants-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;"></div>
-                  <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: end;">
-                    <div>
-                      <label class="form-label" for="variant-name">Nombre</label>
-                      <input type="text" id="variant-name" class="form-input" placeholder="Ej: Talle M" />
-                    </div>
-                    <div>
-                      <label class="form-label" for="variant-price">Precio</label>
-                      <input type="number" id="variant-price" class="form-input" min="0" step="1" />
-                    </div>
-                    <div>
-                      <label class="form-label" for="variant-stock">Stock</label>
-                      <input type="number" id="variant-stock" class="form-input" min="0" step="1" />
-                    </div>
-                    <button type="button" class="btn-outline" id="btn-add-variant" style="padding: 0.6rem 1rem;">Agregar</button>
-                  </div>
-                </div>
               </div>
 
             </div>
