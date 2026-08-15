@@ -83,7 +83,6 @@ import{o as e}from"./speed-insights-D2W7XY-7.js";import{C as t,E as n,S as r,f a
         <div class="pm-info">
 
           <div class="pm-shop" id="pm-shop-link" tabindex="0" role="link" aria-label="Ver tienda ${e.shop}">
-            <i class="fa-solid fa-store"></i>
             ${e.shop}
           </div>
 
@@ -100,7 +99,6 @@ import{o as e}from"./speed-insights-D2W7XY-7.js";import{C as t,E as n,S as r,f a
               ${c}
             </div>
             <div class="pm-shipping">
-              <i class="fa-solid fa-truck"></i>
               ${e.shippingText}
             </div>
           </div>
@@ -135,11 +133,9 @@ import{o as e}from"./speed-insights-D2W7XY-7.js";import{C as t,E as n,S as r,f a
           <!-- Actions -->
           <div class="pm-actions">
             <button class="pm-btn pm-btn--cart" id="pm-add-cart" ${n?`disabled`:``}>
-              <i class="fa-solid fa-cart-plus"></i>
               ${n?`Sin stock`:`Añadir al carrito`}
             </button>
             <button class="pm-btn pm-btn--buy" id="pm-buy-now" ${n?`disabled`:``}>
-              <i class="fa-solid fa-bolt"></i>
               Comprar ahora
             </button>
           </div>
@@ -166,9 +162,9 @@ import{o as e}from"./speed-insights-D2W7XY-7.js";import{C as t,E as n,S as r,f a
 
         <div class="pm-tab-content" data-tab-content="specs">
           <div class="pm-features">
-            <div class="pm-feature-item"><i class="fa-solid fa-store"></i> Vendido por ${e.shop}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-truck"></i> ${e.shippingText}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-location-dot"></i> Disponible para envío y retiro en tienda</div>
+            <div class="pm-feature-item">Vendido por ${e.shop}</div>
+            <div class="pm-feature-item">${e.shippingText}</div>
+            <div class="pm-feature-item">Disponible para envío y retiro en tienda</div>
           </div>
         </div>
 
