@@ -290,7 +290,6 @@ function buildModalHTML(data) {
         <div class="pm-info">
 
           <div class="pm-shop" id="pm-shop-link" tabindex="0" role="link" aria-label="Ver tienda ${data.shop}">
-            <i class="fa-solid fa-store"></i>
             ${data.shop}
           </div>
 
@@ -307,7 +306,6 @@ function buildModalHTML(data) {
               ${discountTagHTML}
             </div>
             <div class="pm-shipping">
-              <i class="fa-solid fa-truck"></i>
               ${data.shippingText}
             </div>
           </div>
@@ -342,11 +340,9 @@ function buildModalHTML(data) {
           <!-- Actions -->
           <div class="pm-actions">
             <button class="pm-btn pm-btn--cart" id="pm-add-cart" ${stockDisabled ? 'disabled' : ''}>
-              <i class="fa-solid fa-cart-plus"></i>
               ${stockDisabled ? 'Sin stock' : 'Añadir al carrito'}
             </button>
             <button class="pm-btn pm-btn--buy" id="pm-buy-now" ${stockDisabled ? 'disabled' : ''}>
-              <i class="fa-solid fa-bolt"></i>
               Comprar ahora
             </button>
           </div>
@@ -373,9 +369,9 @@ function buildModalHTML(data) {
 
         <div class="pm-tab-content" data-tab-content="specs">
           <div class="pm-features">
-            <div class="pm-feature-item"><i class="fa-solid fa-store"></i> Vendido por ${data.shop}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-truck"></i> ${data.shippingText}</div>
-            <div class="pm-feature-item"><i class="fa-solid fa-location-dot"></i> Disponible para envío y retiro en tienda</div>
+            <div class="pm-feature-item">Vendido por ${data.shop}</div>
+            <div class="pm-feature-item">${data.shippingText}</div>
+            <div class="pm-feature-item">Disponible para envío y retiro en tienda</div>
           </div>
         </div>
 

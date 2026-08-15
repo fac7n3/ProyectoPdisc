@@ -253,10 +253,6 @@
   background: rgba(40, 65, 117, 0.12);
 }
 
-.pm-shop i {
-  font-size: 0.75rem;
-}
-
 /* Nombre del producto */
 .pm-name {
   font-size: 1.5rem;
@@ -350,10 +346,6 @@
   color: var(--bl-success);
   font-weight: 600;
   margin-top: 0.5rem;
-}
-
-.pm-shipping i {
-  font-size: 0.75rem;
 }
 
 /* Indicador de stock */
@@ -643,12 +635,6 @@
   padding: 0.5rem 0;
 }
 
-.pm-feature-item i {
-  color: var(--bl-primary);
-  font-size: 0.875rem;
-  width: 1.25rem;
-  text-align: center;
-}
 
 /* Info de la tienda en tabs */
 .pm-shop-info {
