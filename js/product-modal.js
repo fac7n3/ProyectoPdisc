@@ -339,12 +339,18 @@ function buildModalHTML(data) {
 
           <!-- Actions -->
           <div class="pm-actions">
-            <button class="pm-btn pm-btn--cart" id="pm-add-cart" ${stockDisabled ? 'disabled' : ''}>
-              ${stockDisabled ? 'Sin stock' : 'Añadir al carrito'}
+            ${stockDisabled ? `
+            <button class="pm-btn pm-btn--cart" id="pm-add-cart" disabled>
+              Sin stock
             </button>
-            <button class="pm-btn pm-btn--buy" id="pm-buy-now" ${stockDisabled ? 'disabled' : ''}>
+            ` : `
+            <button class="pm-btn pm-btn--cart" id="pm-add-cart">
+              Añadir al carrito
+            </button>
+            <button class="pm-btn pm-btn--buy" id="pm-buy-now">
               Comprar ahora
             </button>
+            `}
           </div>
 
         </div>
