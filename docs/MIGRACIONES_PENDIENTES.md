@@ -28,6 +28,19 @@
    devolvió "Unauthorized. Please provide a valid access token"). Idempotente, no rompe nada si
    se corre después de que alguien la aplique manualmente por otra vía.
 
+2. `db/schema/66_cart_hints_preference.sql` — agrega `profiles.cart_hints_enabled`
+   (boolean not null default true) para el carrito agrupado por comercio: es la preferencia
+   "Mostrar ayudas en el carrito" que se edita desde Perfil → Mis datos. Se dejó **sin aplicar
+   a propósito** (2026-08-16, pedido explícito del usuario: la aplica él).
+   - **Numeración:** los números 61 a 65 están **reservados** por la rama sin mergear
+     `feature/logistica-terceros` — por eso esta salta a 66. No reusarlos ni renumerar.
+   - **Mientras esté pendiente la app funciona igual:** `js/hints-utils.js` ignora el error de
+     "columna inexistente" y cae a la cache de localStorage (`bl_cart_hints`), y `js/perfil.js`
+     avisa "Preferencia guardada solo en este dispositivo." si el update falla. Lo único que
+     falta hasta aplicarla es que la preferencia siga a la cuenta entre dispositivos.
+   - Sin RLS ni funciones nuevas (`profiles_select_own`/`profiles_update_own` ya cubren la
+     columna). Idempotente (`add column if not exists`).
+
 Antes de esta entrada: verificado contra la base real (`list_migrations`, proyecto
 `otzhdwuaffcplrveuadc`) el 2026-07-23: **todas las migraciones 01 a 59 ya
 están aplicadas**, incluidas 54-59 que esta lista había dejado de actualizar
