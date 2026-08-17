@@ -182,7 +182,9 @@ function renderHero(container, shift) {
   dot.setAttribute('aria-hidden', 'true');
   estado.appendChild(dot);
   estado.appendChild(el('strong', null, 'Abierta ahora'));
-  const cierre = end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  // hour12:false explícito: sin eso, es-AR en algunos navegadores devuelve
+  // "08:00 a. m.", que acá nadie usa ni lee rápido a la madrugada.
+  const cierre = end.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   const mismoDia = isoDate(end) === isoDate(new Date());
   estado.appendChild(el('span', 'fx-muted', ` · cierra ${cierre}${mismoDia ? '' : ' de mañana'}`));
   main.appendChild(estado);
