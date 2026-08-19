@@ -22,24 +22,24 @@
 
 ## Pendientes (en orden de aplicación)
 
-1. `db/schema/60_seller_request_multi_category.sql` — agrega `seller_requests.category_slugs`
-   (array) para P2-10 (multi-rubro al registrarse como vendedor). No se pudo aplicar en esta
-   sesión (2026-08-03): sin credenciales de Supabase cargadas (`mcp__supabase__apply_migration`
-   devolvió "Unauthorized. Please provide a valid access token"). Idempotente, no rompe nada si
-   se corre después de que alguien la aplique manualmente por otra vía.
+*(Sin pendientes en esta rama.)*
 
-2. `db/schema/66_cart_hints_preference.sql` — agrega `profiles.cart_hints_enabled`
-   (boolean not null default true) para el carrito agrupado por comercio: es la preferencia
-   "Mostrar ayudas en el carrito" que se edita desde Perfil → Mis datos. Se dejó **sin aplicar
-   a propósito** (2026-08-16, pedido explícito del usuario: la aplica él).
-   - **Numeración:** los números 61 a 65 están **reservados** por la rama sin mergear
-     `feature/logistica-terceros` — por eso esta salta a 66. No reusarlos ni renumerar.
-   - **Mientras esté pendiente la app funciona igual:** `js/hints-utils.js` ignora el error de
-     "columna inexistente" y cae a la cache de localStorage (`bl_cart_hints`), y `js/perfil.js`
-     avisa "Preferencia guardada solo en este dispositivo." si el update falla. Lo único que
-     falta hasta aplicarla es que la preferencia siga a la cuenta entre dispositivos.
-   - Sin RLS ni funciones nuevas (`profiles_select_own`/`profiles_update_own` ya cubren la
-     columna). Idempotente (`add column if not exists`).
+## ✅ Aplicadas recientemente
+
+- `db/schema/66_cart_hints_preference.sql` — **aplicada el 2026-08-18** vía `apply_migration`
+  (nombre en Supabase: `cart_hints_preference`). Agrega `profiles.cart_hints_enabled`
+  (boolean not null default true), la preferencia "Mostrar ayudas en el carrito" que se edita
+  desde Perfil → Mis datos. Verificado post-aplicación: la columna existe y los 15 perfiles
+  quedaron con las ayudas activas por el default. Sin RLS ni funciones nuevas
+  (`profiles_select_own`/`profiles_update_own` ya cubren la columna).
+- `db/schema/60_seller_request_multi_category.sql` — **aplicada el 2026-08-16**
+  (`seller_request_multi_category`). Agrega `seller_requests.category_slugs` para P2-10.
+
+> **Numeración — no reusar:** 61 a 65 están tomadas por `feature/logistica-terceros` (sin
+> aplicar todavía) y la 67 por `feature/farmacias-de-turno` (ya aplicada). La próxima
+> migración nueva arranca en la **68**.
+
+---
 
 Antes de esta entrada: verificado contra la base real (`list_migrations`, proyecto
 `otzhdwuaffcplrveuadc`) el 2026-07-23: **todas las migraciones 01 a 59 ya
