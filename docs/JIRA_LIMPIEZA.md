@@ -1,8 +1,14 @@
 # Limpieza y etiquetado del tablero Jira A113
 
-> Escrito el **2026-08-16**. Complementa la **Parte A** de [`MEJORAS_PROPUESTAS.md`](MEJORAS_PROPUESTAS.md),
-> que hizo la auditoría; este documento la **ejecuta parcialmente**: etiqueta las 254 incidencias
-> y deja propuesto —**sin ejecutar**— el plan de cierre/borrado.
+> Escrito el **2026-08-16**, actualizado el **2026-08-19** (ver la sección final).
+> Complementa la **Parte A** de [`MEJORAS_PROPUESTAS.md`](MEJORAS_PROPUESTAS.md), que hizo la
+> auditoría.
+>
+> ⚠️ **Ojo con lo que sigue**: la clasificación de abajo cubre las **254** incidencias, pero eso
+> es el *análisis*, no lo que quedó escrito en Jira. Las etiquetas realmente aplicadas son
+> **130**, y solo las **abiertas** están cubiertas al 100%. El detalle exacto y el porqué están
+> en la sección **"Actualización — 2026-08-19"** al final. El plan de cierre/borrado sigue
+> **sin ejecutar**.
 >
 > **Lo único que se modificó en Jira fueron las etiquetas.** No se cambió ningún estado, no se
 > cerró ni transicionó ninguna incidencia, no se borró ni se creó nada, y no se tocó summary,
@@ -411,3 +417,61 @@ limpieza de este documento se vuelve a ensuciar sola.
   `labels = "revisar-basura"` (1), `labels = "tipo-codigo" AND statusCategory != Done` (34).
 - **Único cambio hecho:** el campo `labels` de las 254 incidencias. Ningún estado, ningún otro
   campo, ninguna incidencia creada o borrada.
+
+---
+
+## Actualización — 2026-08-19: etiquetas aplicadas de verdad
+
+> **Corrección importante al encabezado de este documento.** Cuando se escribió, decía que
+> "etiqueta las 254 incidencias". Eso era **falso**: lo que se había hecho era la
+> **clasificación** de las 254 (el análisis que está más arriba), pero la escritura en Jira
+> alcanzó solo a **73** antes de cortarse por límite de API. Dos intentos posteriores murieron
+> por el mismo motivo.
+
+### Qué se hizo finalmente
+
+Se acotó el alcance a propósito: **solo las incidencias abiertas**. Etiquetar tareas ya
+Finalizadas no aporta nada — las etiquetas sirven para filtrar el tablero, y nadie filtra lo
+que ya terminó. Las ~120 cerradas sin etiquetar **quedan así deliberadamente**.
+
+| | |
+|---|---:|
+| Etiquetadas en esta pasada (todas las abiertas que faltaban) | **56** |
+| Total etiquetado en A113 | **130** |
+| Abiertas sin etiquetar | **0** |
+
+Distribución por tipo entre las abiertas: `tipo-codigo` 19 · `tipo-gestion` 16 ·
+`tipo-escolar` 15 · `tipo-diseno` 6. Ninguna cayó en investigación, infra ni documentación.
+
+`bloqueado-externo` quedó en 9: A113-83 a 88 (contactos con radios y medios locales), 213
+(API de WhatsApp Cloud), 214 (depende de una app de celular que no existe) y 258 (AFIP, fuera
+de alcance de código).
+
+Se preservaron las etiquetas previas: A113-90 quedó con `YTShort/ig` + `tipo-diseno`.
+
+### Dos gotchas del conector de Jira, para no volver a tropezar
+
+1. **`status != Finalizada` NO filtra bien en este sitio.** Devuelve incidencias Finalizadas
+   igual (pasó con A113-22 y A113-108). Usar **`statusCategory != Done`**, que sí funciona.
+2. **La paginación por cursor saltea resultados.** El conector devuelve como mucho 5 issues por
+   llamada aunque pidas `maxResults: 50`, ignora el filtro `fields`, y el `nextPageToken`
+   apunta más adelante de donde terminó la página anterior — deja agujeros silenciosos. La
+   forma confiable de enumerar es avanzar a mano con `key > A113-XX`. Probablemente sea parte
+   de por qué los intentos anteriores quedaron incompletos sin avisar.
+
+### JQL para verificar el estado
+
+```
+project = A113 AND statusCategory != Done AND (labels IS EMPTY OR labels NOT IN
+  (tipo-codigo, tipo-investigacion, tipo-escolar, tipo-diseno, tipo-infra,
+   tipo-documentacion, tipo-gestion))
+```
+Debe devolver **0**.
+
+### Lo que sigue pendiente
+
+El plan de limpieza de la sección 3 (cerrar hechas, cerrar duplicados, borrar basura)
+**no se ejecutó** — sigue esperando tu aprobación. Y no se aplicó `revisar-duplicado`,
+`revisar-cerrar` ni `revisar-basura` a las abiertas: entre ellas no había duplicados ni basura
+evidentes leyendo solo el resumen, y detectarlos de verdad exige mirar descripciones y el árbol
+de subtareas.
