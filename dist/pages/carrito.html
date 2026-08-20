@@ -113,7 +113,7 @@
             </div>
             <div class="cart-summary__section-content" id="coupon-content" style="display: none;">
               <div class="coupon-input-group">
-                <input type="text" id="coupon-input" placeholder="Ingresá tu código" class="coupon-input" autocomplete="off" />
+                <input type="text" id="coupon-input" aria-label="Código de cupón de descuento" placeholder="Ingresá tu código" class="coupon-input" autocomplete="off" />
                 <button id="coupon-apply-btn" class="coupon-btn">Aplicar</button>
               </div>
               <p id="coupon-message" class="coupon-message"></p>
@@ -135,8 +135,8 @@
                 <input type="radio" name="delivery-method" id="delivery-shipping" value="delivery" />
                 Envío a domicilio
               </label>
-              <input type="text" id="delivery-address" class="coupon-input" placeholder="Dirección de entrega" style="display: none; text-transform: none; margin-top: 0.5rem;" autocomplete="street-address" />
-              <select id="delivery-address-select" class="coupon-input" style="display: none; text-transform: none; margin-top: 0.5rem;">
+              <input type="text" id="delivery-address" class="coupon-input" aria-label="Dirección de entrega" placeholder="Dirección de entrega" style="display: none; text-transform: none; margin-top: 0.5rem;" autocomplete="street-address" />
+              <select id="delivery-address-select" class="coupon-input" aria-label="Elegí una dirección guardada" style="display: none; text-transform: none; margin-top: 0.5rem;">
                 <option value="">Elegí una dirección guardada...</option>
                 <option value="new">+ Usar una dirección nueva</option>
               </select>

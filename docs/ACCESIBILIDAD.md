@@ -88,27 +88,42 @@ había pasado algo.
 - Consola sin errores nuevos (el de Vercel Speed Insights bloqueado por CSP es preexistente en
   todas las páginas).
 
-### Lo que NO se pudo verificar acá
+### Segunda pasada — formularios y verificación (misma rama)
 
-**El skip link apareciendo al presionar Tab.** El panel del navegador de esta sesión no tiene
-foco de documento (`document.hasFocus() === false`), y sin eso `:focus` no matchea. Se verificó
-en cambio que la regla `.skip-link:focus { top: 0 }` existe y que, aplicada, el link se dibuja
-arriba de todo (44px de alto, 258 de ancho). **Falta abrir la página en un navegador de verdad
-y presionar Tab.**
+**Campos de formulario: 0 sin nombre accesible.** La primera estimación decía "~54 por revisar";
+era un grep tosco que contaba también los que ya tenían `<label for>`. El número real de campos
+rotos era **9**, y una auditoría más fina —que contempla el *label implícito*, es decir el input
+anidado dentro de un `<label>`— confirmó que los radios y checkboxes del carrito y del perfil
+**ya estaban bien**. Los 9 reales (cupón, dirección de entrega, selector de direcciones, los dos
+buscadores del navbar en `comercio`/`producto`, filtro de favoritos, los dos buscadores de
+`vender` y el input de fotos) recibieron `aria-label`.
 
-**Y sobre todo: falta probarlo con TalkBack real en un Android.** Nada de lo de acá reemplaza
-eso. Un lector de pantalla real siempre encuentra cosas que el código no muestra.
+> El `placeholder` **no** es un nombre accesible: desaparece al escribir y los lectores no lo
+> anuncian de forma confiable. Por eso no alcanzaba con que lo tuvieran.
+
+**Los modales ya estaban resueltos.** La primera versión de este documento los listaba como
+pendientes; era incorrecto. `js/product-modal.js` ya trae `role="dialog"`, `aria-modal="true"`,
+`aria-label` con el nombre del producto, trampa de foco con Tab/Shift+Tab, restauración del foco
+al elemento que lo abrió, y cierre con Escape.
+
+**El skip link quedó verificado end-to-end.** Con un Tab real en el navegador: es el primer
+elemento que recibe foco, matchea `:focus`, y se dibuja arriba de todo (top 0, 44px de alto,
+258 de ancho). Al activarlo, el foco viaja al `<main>`.
+
+> Detalle que costó un rato: leer `getComputedStyle().top` justo después de enfocar devuelve
+> `-100px`, porque agarra la transición de 150ms a mitad de camino. Parece un bug y no lo es.
+> Para verificarlo hay que anular la transición o leer después de que termine.
 
 ---
 
 ## Lo que queda pendiente
 
-1. **Probar con TalkBack en un teléfono.** Es el único test que vale de verdad.
-2. **Formularios**: quedaron ~54 inputs por revisar uno por uno (que tengan `<label for>` o
-   `aria-label`, y que los errores de validación se anuncien con `aria-describedby` +
-   `role="alert"`). Esta pasada no los tocó.
-3. **Modales** (detalle de producto, vaciar carrito): falta atrapar el foco adentro mientras
-   están abiertos y devolverlo al botón que los abrió al cerrar.
-4. **Contraste de color**: no se auditó. Requiere medir cada par texto/fondo.
-5. **El carrito y el panel de logística** viven en otras ramas sin mergear: cuando se integren,
-   hay que darles la misma pasada (skip link, `h1`, labels en los botones generados por JS).
+1. **Probarlo con TalkBack en un teléfono Android.** Es el único test que vale de verdad, y no
+   se puede hacer desde acá. Un lector de pantalla real siempre encuentra cosas que el código
+   no muestra.
+2. **Anuncio de errores de validación.** Los formularios avisan visualmente, pero falta
+   `aria-describedby` + `role="alert"` para que el error se lea al ocurrir.
+3. **Contraste de color**: no se auditó. Requiere medir cada par texto/fondo.
+4. **El carrito y el panel de logística** viven en otras ramas sin mergear: cuando se integren,
+   hay que darles la misma pasada (skip link, `h1`, labels en lo generado por JS). El modal de
+   "vaciar carrito" de esa rama, en particular, necesita su propia trampa de foco.
