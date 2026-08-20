@@ -84,16 +84,21 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BT0NA6tX.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-DpLvhRvW.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-D2W7XY-7.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-CTwQwWss.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-D76XA-f2.js">
     <link rel="modulepreload" crossorigin href="/assets/product-modal-EFcA2UmW.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-hgIgZIpS.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Bwp3lmXO.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DpC9GIj-.css">
   </head>
   <body>
+    <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
+         categorias, que en TalkBack son mas de 20 pasos en cada pagina. -->
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
     <!-- ====== BARRA DE NAVEGACIÓN ====== -->
     <nav class="navbar" role="navigation" aria-label="Navegación principal">
       <div class="navbar__top">
@@ -129,7 +134,8 @@
       <div class="category-bar__inner" id="category-bar-inner"></div>
     </div>
 
-    <main id="main-content">
+    <main id="main-content" tabindex="-1">
+      <h1 class="sr-only" id="page-h1">Cargando comercio</h1>
       <div class="store-loading">
         <div class="store-loading__spinner"></div>
         <span>Cargando comercio...</span>
