@@ -10,8 +10,11 @@
   --bl-perfil-border: hsl(220, 14%, 86%);    /* Bordes sutiles */
   --bl-perfil-text-main: hsl(220, 14%, 22%); /* Texto oscuro elegante */
   --bl-perfil-text-sec: hsl(220, 10%, 56%);  /* Texto secundario */
-  --bl-perfil-primary: hsl(220, 72%, 46%);   /* Azul primario */
-  --bl-perfil-primary-hover: hsl(220, 75%, 38%);
+  /* Azul de marca (#284175). Antes esta página tenía un azul propio
+     (hsl(220,72%,46%)) que no coincidía con el resto del sitio — se unificó
+     al ancla de marca en el rediseño del hub. */
+  --bl-perfil-primary: var(--bl-primary, #284175);
+  --bl-perfil-primary-hover: var(--bl-primary-dark, #1f3460);
   
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
@@ -30,50 +33,64 @@ body {
 /* === Layout Principal === */
 .profile-container {
   width: 100%;
-  max-width: 1200px;
-  margin: 2rem auto;
+  max-width: 1100px;
+  margin: 2.5rem auto;
   padding: 0 1rem;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 2rem;
-  align-items: start;
 }
 
 @media (max-width: 860px) {
   .profile-container {
-    grid-template-columns: 1fr; /* Apilado en móvil */
-    margin: 1rem auto;
-    gap: 1rem;
+    margin: 1.5rem auto;
   }
 }
 
-/* === Sidebar (Navegación) === */
-.profile-sidebar {
-  background: var(--bl-perfil-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  position: sticky;
-  top: 90px;
+/* === Encabezado (avatar + nombre + mail) === */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
 }
 
-.profile-sidebar__header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--bl-perfil-border);
-  text-align: center;
+.profile-header__info {
+  min-width: 0;
+}
+
+.profile-header__name {
+  font-size: 1.375rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.profile-header__email {
+  font-size: 1rem;
+  color: var(--bl-perfil-text-sec);
+  margin: 0.35rem 0 0;
+}
+
+@media (max-width: 600px) {
+  .profile-header {
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .profile-header__name { font-size: 1.125rem; }
+  .profile-header__email { font-size: 0.875rem; }
 }
 
 .profile-avatar-large {
-  width: 64px;
-  height: 64px;
-  background: var(--bl-perfil-bg);
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  background: var(--bl-perfil-surface);
+  border: 1px solid var(--bl-perfil-border);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: var(--bl-perfil-text-sec);
-  margin: 0 auto 0.75rem;
   overflow: hidden;
 }
 
@@ -83,102 +100,121 @@ body {
   object-fit: cover;
 }
 
-.profile-sidebar__name {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
-  line-height: 1.2;
+/* === Hub de la cuenta (grilla de secciones) === */
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
 
-.profile-sidebar__email {
-  font-size: 0.875rem;
-  color: var(--bl-perfil-text-sec);
-  margin-top: 0.25rem;
-}
-
-.profile-nav {
+.account-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 0;
-}
-
-.profile-nav__link {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  color: var(--bl-perfil-text-main);
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  min-height: 128px;
+  background: var(--bl-perfil-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
   text-decoration: none;
-  font-weight: 500;
-  transition: background var(--duration-normal) var(--ease-spring), color var(--duration-normal) ease;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform var(--duration-normal) var(--ease-spring), box-shadow var(--duration-normal) var(--ease-spring), border-color var(--duration-normal) ease;
 }
 
-.profile-nav__link i {
+.account-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--bl-perfil-border);
+}
+
+.account-card:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.account-card__icon {
+  font-size: 1.375rem;
+  color: var(--bl-perfil-text-main);
+  margin-bottom: 1.5rem;
+}
+
+.account-card__title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--bl-perfil-text-main);
+}
+
+.account-card__desc {
+  font-size: 0.875rem;
   color: var(--bl-perfil-text-sec);
-  font-size: 1.125rem;
-  width: 20px;
+  line-height: 1.4;
+}
+
+/* Puntito de aviso (notificaciones sin leer), como el "!" naranja de ML */
+.account-card__badge {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f27a1a;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 18px;
   text-align: center;
 }
 
-.profile-nav__link:hover {
-  background: var(--bl-perfil-bg);
-}
-
-.profile-nav__link--active {
-  color: var(--bl-perfil-primary);
-  border-left: 4px solid var(--bl-perfil-primary);
-  background: rgba(37, 99, 235, 0.05);
-}
-
-.profile-nav__link--active i {
-  color: var(--bl-perfil-primary);
-}
-
-.profile-nav__link--danger {
-  color: #ef4444;
-}
-.profile-nav__link--danger i {
-  color: #ef4444;
-}
-.profile-nav__link--danger:hover {
-  background: #fef2f2;
-}
-
-/* En móvil, el sidebar puede ser un menú horizontal scrolleable */
-@media (max-width: 860px) {
-  .profile-sidebar {
-    position: static;
-  }
-  .profile-nav {
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-  }
-  .profile-nav::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-  }
-  .profile-nav__link {
-    flex-shrink: 0;
-    padding: 1rem;
-    border-left: none;
-    border-bottom: 3px solid transparent;
-  }
-  .profile-nav__link--active {
-    border-left: none;
-    border-bottom: 3px solid var(--bl-perfil-primary);
-  }
-  .profile-nav__link span {
-    display: none; /* Ocultar texto en móvil para ahorrar espacio, dejar íconos */
-  }
-}
-
-/* === Main Content (Bento Grid) === */
+/* === Sección abierta === */
 .profile-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  display: block;
+}
+
+.section-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--bl-perfil-primary);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.section-back:hover {
+  text-decoration: underline;
+}
+
+/* === Pie === */
+.profile-footer {
+  margin-top: 2.5rem;
+  font-size: 0.875rem;
+  color: var(--bl-perfil-text-sec);
+}
+
+.profile-footer__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--bl-perfil-primary);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.profile-footer__link:hover {
+  text-decoration: underline;
 }
 
 /* Tarjeta genérica */
@@ -193,10 +229,6 @@ body {
 .perfil-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-}
-
-.perfil-card--full {
-  grid-column: 1 / -1; /* Ocupa todo el ancho */
 }
 
 .perfil-card__title {
@@ -243,50 +275,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, hsl(220, 80%, 56%), hsl(280, 70%, 58%));
+  background: var(--bl-perfil-primary);
   color: white;
   padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--bl-radius-pill, 50rem);
   font-weight: 600;
   font-size: 1rem;
   width: fit-content;
-}
-
-/* Accesos rápidos (cuadrícula interna) */
-.quick-access-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.quick-btn {
-  background: var(--bl-perfil-bg);
-  border: 1px solid var(--bl-perfil-border);
-  border-radius: var(--radius-md);
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  text-decoration: none;
-  color: var(--bl-perfil-text-main);
-  font-weight: 500;
-  font-size: 0.875rem;
-  transition: all var(--duration-normal) var(--ease-spring);
-  cursor: pointer;
-}
-
-.quick-btn i {
-  font-size: 1.5rem;
-  color: var(--bl-perfil-primary);
-}
-
-.quick-btn:hover {
-  background: var(--bl-perfil-surface);
-  border-color: var(--bl-perfil-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
 }
 
 /* === Skeleton Loading Animation === */
@@ -323,8 +318,13 @@ body {
   border-radius: 50%;
 }
 
-/* === Pestañas (Tabs) === */
+/* === Secciones (se muestra solo la abierta desde el hub) === */
 .tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
   animation: fadeIn var(--duration-normal) var(--ease-out);
 }
 
@@ -541,7 +541,7 @@ body {
 .bl-input:focus {
   outline: none;
   border-color: var(--bl-perfil-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
 }
 
 .bl-btn {

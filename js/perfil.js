@@ -1,6 +1,6 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice, clearCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
-import { renderNotificationsSection } from "./notifications-utils.js";
+import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
 import { renderSupportSection } from "./support-utils.js";
 import { initNotificationsBell } from "./nav-utils.js";
@@ -39,41 +39,40 @@ const favoritosContainer = document.getElementById("favoritos-container");
 const favoritosStoresContainer = document.getElementById("favoritos-stores-container");
 const favFilterInput = document.getElementById("fav-filter-input");
 
-// Pestañas
-const navLinks = document.querySelectorAll(".profile-nav__link[data-target]");
+// Hub de secciones (grilla de tarjetas) y panel de la sección abierta
+const accountCards = document.querySelectorAll(".account-card[data-target]");
 const tabPanes = document.querySelectorAll(".tab-pane");
+const accountHub = document.getElementById("account-hub");
+const sectionsWrap = document.getElementById("profile-sections");
+const sectionBack = document.getElementById("section-back");
 
 // Variable global para user_id
 let currentUserId = null;
 
-// --- Lógica de Pestañas (Tabs) ---
-navLinks.forEach(link => {
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    const targetId = link.getAttribute("data-target");
-    if (!targetId) return;
+// --- Navegación del hub: la grilla y la sección abierta se turnan ---
+function openSection(targetId) {
+  const targetPane = document.getElementById(targetId);
+  if (!targetPane) return;
 
-    // Quitar active de todos
-    navLinks.forEach(l => l.classList.remove("profile-nav__link--active"));
-    tabPanes.forEach(pane => {
-      pane.style.display = "none";
-      pane.classList.remove("active");
-    });
+  tabPanes.forEach((pane) => pane.classList.remove("active"));
+  targetPane.classList.add("active");
 
-    // Activar el clickeado
-    link.classList.add("profile-nav__link--active");
-    const targetPane = document.getElementById(targetId);
-    if (targetPane) {
-      // Usar grid-column full width para compras/fav/direc, o dejar mis-datos normal
-      targetPane.style.display = targetId === "tab-mis-datos" ? "contents" : "block";
-      if (targetId !== "tab-mis-datos") targetPane.style.gridColumn = "1 / -1";
-      
-      // Forzar reflow para que la animación CSS corra de nuevo
-      void targetPane.offsetWidth;
-      targetPane.classList.add("active");
-    }
-  });
+  if (accountHub) accountHub.style.display = "none";
+  if (sectionsWrap) sectionsWrap.style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function closeSection() {
+  tabPanes.forEach((pane) => pane.classList.remove("active"));
+  if (sectionsWrap) sectionsWrap.style.display = "none";
+  if (accountHub) accountHub.style.display = "grid";
+}
+
+accountCards.forEach((card) => {
+  card.addEventListener("click", () => openSection(card.dataset.target));
 });
+
+if (sectionBack) sectionBack.addEventListener("click", closeSection);
 
 
 // --- Función auxiliar ---
@@ -87,7 +86,7 @@ function renderQuickProfile(user) {
   const quickName = user.user_metadata?.full_name || user.user_metadata?.name || user.email;
   const quickRole = user.app_metadata?.role || "cliente";
 
-  if (mainContent) mainContent.style.display = "grid";
+  if (mainContent) mainContent.style.display = "block";
 
   if (sidebarName) { sidebarName.textContent = quickName || "-"; removeSkeleton(sidebarName); }
   if (sidebarEmail) { sidebarEmail.textContent = user.email || "sin email"; removeSkeleton(sidebarEmail); }
@@ -943,6 +942,13 @@ async function renderFullProfile(user) {
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
+
+  // Aviso en la tarjeta del hub si hay notificaciones sin leer.
+  const notifCardBadge = document.getElementById("notif-card-badge");
+  if (notifCardBadge) {
+    const unread = await fetchUnreadCount(user.id);
+    if (unread > 0) notifCardBadge.style.display = "block";
+  }
   const supportContainer = document.getElementById("support-container");
   if (supportContainer) renderSupportSection(supportContainer);
 }
@@ -979,6 +985,9 @@ function handleMercadoPagoReturn() {
       : 'Pago en revisión. Te vamos a avisar cuando se confirme.',
     'success'
   );
+
+  // Al volver de Mercado Pago lo que el usuario quiere ver es el pedido, no el hub.
+  openSection('tab-compras');
 
   const url = new URL(window.location);
   url.searchParams.delete('mp');
