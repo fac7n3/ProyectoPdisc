@@ -47,49 +47,73 @@
 
     <!-- ====== CONTENIDO DEL PERFIL ====== -->
     <div class="profile-container" id="main-content" style="display: none;">
-      
-      <!-- Menú Lateral -->
-      <aside class="profile-sidebar">
-        <div class="profile-sidebar__header">
-          <div class="profile-avatar-large skeleton skeleton-avatar" id="sidebar-avatar">
-            <i class="fa-regular fa-user"></i>
-          </div>
-          <p class="profile-sidebar__name skeleton skeleton-text" id="sidebar-name">Cargando...</p>
-          <p class="profile-sidebar__email skeleton skeleton-text skeleton-text-short" id="sidebar-email"></p>
-        </div>
-        <nav class="profile-nav" role="navigation" aria-label="Menú de perfil">
-          <a href="#" class="profile-nav__link profile-nav__link--active" data-target="tab-mis-datos">
-            <i class="fa-solid fa-id-card"></i> <span>Mis datos</span>
-          </a>
-          <a href="#" class="profile-nav__link" data-target="tab-notificaciones">
-            <i class="fa-solid fa-bell"></i> <span>Notificaciones</span>
-          </a>
-          <a href="#" class="profile-nav__link" data-target="tab-compras">
-            <i class="fa-solid fa-box-open"></i> <span>Mis compras</span>
-          </a>
-          <a href="#" class="profile-nav__link" data-target="tab-favoritos">
-            <i class="fa-solid fa-heart"></i> <span>Favoritos</span>
-          </a>
-          <a href="#" class="profile-nav__link" data-target="tab-direcciones">
-            <i class="fa-solid fa-location-dot"></i> <span>Direcciones</span>
-          </a>
-          <a href="#" class="profile-nav__link" data-target="tab-soporte">
-            <i class="fa-solid fa-headset"></i> <span>Soporte</span>
-          </a>
-          <hr style="border:none; border-top: 1px solid var(--bl-perfil-border); margin: 0.5rem 0;" />
-          <a href="#" class="profile-nav__link profile-nav__link--danger" id="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i> <span>Cerrar sesión</span>
-          </a>
-        </nav>
-      </aside>
 
-      <!-- Panel Principal -->
-      <main class="profile-content">
-        
+      <!-- Encabezado: quién sos -->
+      <header class="profile-header">
+        <div class="profile-avatar-large skeleton skeleton-avatar" id="sidebar-avatar">
+          <i class="fa-regular fa-user"></i>
+        </div>
+        <div class="profile-header__info">
+          <h1 class="profile-header__name skeleton skeleton-text" id="sidebar-name">Cargando...</h1>
+          <p class="profile-header__email skeleton skeleton-text skeleton-text-short" id="sidebar-email"></p>
+        </div>
+      </header>
+
+      <!-- Hub: grilla de secciones de la cuenta -->
+      <div class="account-grid" id="account-hub">
+        <button type="button" class="account-card" data-target="tab-mis-datos">
+          <i class="fa-regular fa-id-card account-card__icon"></i>
+          <span class="account-card__title">Información de tu perfil</span>
+          <span class="account-card__desc">Datos personales y de tu cuenta.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-notificaciones">
+          <i class="fa-regular fa-bell account-card__icon"></i>
+          <span class="account-card__badge" id="notif-card-badge" style="display: none;">!</span>
+          <span class="account-card__title">Notificaciones</span>
+          <span class="account-card__desc">Novedades de tus pedidos y comercios.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-compras">
+          <i class="fa-solid fa-box-open account-card__icon"></i>
+          <span class="account-card__title">Mis compras</span>
+          <span class="account-card__desc">Seguí el estado de tus pedidos.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-favoritos">
+          <i class="fa-regular fa-heart account-card__icon"></i>
+          <span class="account-card__title">Favoritos</span>
+          <span class="account-card__desc">Productos y comercios que guardaste.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-direcciones">
+          <i class="fa-solid fa-location-dot account-card__icon"></i>
+          <span class="account-card__title">Direcciones</span>
+          <span class="account-card__desc">Direcciones guardadas en tu cuenta.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-soporte">
+          <i class="fa-regular fa-comment account-card__icon"></i>
+          <span class="account-card__title">Soporte</span>
+          <span class="account-card__desc">¿Necesitás una mano? Escribinos.</span>
+        </button>
+        <a href="./vender.html" class="account-card">
+          <i class="fa-solid fa-shop account-card__icon"></i>
+          <span class="account-card__title">Vendé en Baradero Local</span>
+          <span class="account-card__desc">Publicá los productos de tu comercio.</span>
+        </a>
+        <a href="./repartidor.html" class="account-card">
+          <i class="fa-solid fa-truck-fast account-card__icon"></i>
+          <span class="account-card__title">Repartí con nosotros</span>
+          <span class="account-card__desc">Sumate como repartidor de la zona.</span>
+        </a>
+      </div>
+
+      <!-- Panel de la sección abierta -->
+      <main class="profile-content" id="profile-sections" style="display: none;">
+        <button type="button" class="section-back" id="section-back">
+          <i class="fa-solid fa-arrow-left"></i> Volver a mi perfil
+        </button>
+
         <!-- ======================= -->
         <!-- PESTAÑA: MIS DATOS      -->
         <!-- ======================= -->
-        <div id="tab-mis-datos" class="tab-pane active" style="display: contents;">
+        <div id="tab-mis-datos" class="tab-pane">
           <!-- Tarjeta: Info Personal -->
           <article class="perfil-card">
             <h2 class="perfil-card__title">
@@ -129,41 +153,13 @@
             </div>
           </article>
 
-          <!-- Tarjeta: Accesos Rápidos (Full width) -->
-          <article class="perfil-card perfil-card--full">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-bolt"></i> Accesos rápidos
-            </h2>
-            <div class="quick-access-grid">
-              <a href="./home.html" class="quick-btn">
-                <i class="fa-solid fa-store"></i>
-                Ir a comprar
-              </a>
-              <a href="./search.html" class="quick-btn">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                Buscar productos
-              </a>
-              <a href="./carrito.html" class="quick-btn">
-                <i class="fa-solid fa-cart-shopping"></i>
-                Mi carrito
-              </a>
-              <a href="./vender.html" class="quick-btn">
-                <i class="fa-solid fa-shop"></i>
-                Quiero vender
-              </a>
-              <a href="./repartidor.html" class="quick-btn">
-                <i class="fa-solid fa-truck-fast"></i>
-                Quiero repartir
-              </a>
-            </div>
-          </article>
         </div>
 
         <!-- ======================= -->
         <!-- PESTAÑA: NOTIFICACIONES -->
         <!-- ======================= -->
-        <div id="tab-notificaciones" class="tab-pane" style="display: none; grid-column: 1 / -1;">
-          <article class="perfil-card perfil-card--full">
+        <div id="tab-notificaciones" class="tab-pane">
+          <article class="perfil-card">
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-bell"></i> Notificaciones
             </h2>
@@ -177,8 +173,8 @@
         <!-- ======================= -->
         <!-- PESTAÑA: MIS COMPRAS    -->
         <!-- ======================= -->
-        <div id="tab-compras" class="tab-pane" style="display: none; grid-column: 1 / -1;">
-          <article class="perfil-card perfil-card--full">
+        <div id="tab-compras" class="tab-pane">
+          <article class="perfil-card">
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-box-open"></i> Mi historial de compras
             </h2>
@@ -192,8 +188,8 @@
         <!-- ======================= -->
         <!-- PESTAÑA: FAVORITOS      -->
         <!-- ======================= -->
-        <div id="tab-favoritos" class="tab-pane" style="display: none; grid-column: 1 / -1;">
-          <article class="perfil-card perfil-card--full">
+        <div id="tab-favoritos" class="tab-pane">
+          <article class="perfil-card">
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-heart" style="color: #ef4444;"></i> Mis favoritos
             </h2>
@@ -217,8 +213,8 @@
         <!-- ======================= -->
         <!-- PESTAÑA: DIRECCIONES    -->
         <!-- ======================= -->
-        <div id="tab-direcciones" class="tab-pane" style="display: none; grid-column: 1 / -1;">
-          <article class="perfil-card perfil-card--full">
+        <div id="tab-direcciones" class="tab-pane">
+          <article class="perfil-card">
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-location-dot"></i> Direcciones de envío
             </h2>
@@ -260,8 +256,8 @@
         <!-- ======================= -->
         <!-- PESTAÑA: SOPORTE        -->
         <!-- ======================= -->
-        <div id="tab-soporte" class="tab-pane" style="display: none; grid-column: 1 / -1;">
-          <article class="perfil-card perfil-card--full">
+        <div id="tab-soporte" class="tab-pane">
+          <article class="perfil-card">
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-headset"></i> Soporte
             </h2>
@@ -270,6 +266,10 @@
         </div>
 
       </main>
+
+      <p class="profile-footer">
+        Podés <button type="button" class="profile-footer__link" id="logout-btn">cerrar sesión</button> cuando quieras.
+      </p>
 
     </div>
 
