@@ -898,7 +898,10 @@ async function renderFullProfile(user) {
 
     const roleFromDB = profile.role ?? "cliente";
     const emailToUse = profile.email ?? user.email ?? "sin email";
-    const nameToUse = profile.full_name ?? "-";
+    // Si el perfil no tiene nombre cargado, conservar el que ya pintó
+    // renderQuickProfile desde el JWT (el nombre de Google, o el email como
+    // último recurso): pisarlo con "-" era cambiar un dato bueno por uno peor.
+    const nameToUse = profile.full_name?.trim() || null;
 
     // "Cambiar de rol": la opción "own" del selector representa el rol base
     // real (cliente/vendedor/repartidor, tabla profiles) -- separado del rol
@@ -909,9 +912,9 @@ async function renderFullProfile(user) {
     }
 
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
-    if (sidebarName) sidebarName.textContent = nameToUse;
+    if (sidebarName && nameToUse) sidebarName.textContent = nameToUse;
     if (cardEmail) cardEmail.textContent = emailToUse;
-    if (cardName) cardName.textContent = nameToUse;
+    if (cardName && nameToUse) cardName.textContent = nameToUse;
     if (cardRole) cardRole.textContent = roleFromDB.charAt(0).toUpperCase() + roleFromDB.slice(1);
 
     // Renderizar avatar
