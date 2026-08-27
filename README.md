@@ -58,7 +58,7 @@ Proyecto-Pdisc/
 ├── public/                    # Assets servidos verbatim (íconos, manifest, imágenes optimizadas)
 ├── scripts/                   # Scripts de tooling (Jira, optimización de imágenes)
 ├── supabase/functions/        # Edge Functions (Mercado Pago)
-├── .env                       # Claves públicas de Supabase (sí, se versiona — ver docs/RUN_LOCAL.md)
+├── .env.example                # Plantilla de claves públicas de Supabase — .env real NO se versiona (ver docs/RUN_LOCAL.md)
 └── vite.config.js             # Entradas del build multipágina
 ```
 
@@ -82,7 +82,7 @@ Proyecto-Pdisc/
 
 ```bash
 npm install
-cp .env.example .env   # completar con tus claves de Supabase
+cp .env.example .env   # completar con tus claves de Supabase (.env no se versiona en git)
 npm run dev
 ```
 
