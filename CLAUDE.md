@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-08-14. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-08-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
 > (se carga solo cuando hace falta consultar el historial). Pendientes que sí necesitan quedar
@@ -91,6 +91,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - Nadie tiene el rol `admin` asignado todavía en producción (asignar a mano en el dashboard de Supabase, Authentication → Users → `raw_app_meta_data` → `{"role": "admin"}`) — necesario antes de poder usar el panel de admin con una cuenta real.
 - **Resuelto 2026-08-05** — color/tipografía oficial decidido: `#284175` (azul oscuro, ya era el "ancla" documentado) + Inter. Se descubrió al resolver esto que `Assets/styles/styles.css` (la supuesta "fuente de verdad") no lo carga ninguna página real — `home.css` sí, y de ahí heredan `admin.css`/`carrito.css`/`product-modal.css` vía `var()`. Se apuntaron esos tokens (`--bl-primary`) y los hex/`rgba()` sueltos de `product-modal.css`/`admin.css`/`auth.css` al ancla; `styles.css` queda sin usar (no se borró). Detalle completo en `docs/brand-guidelines.md` (secciones 1 y 2).
 - **Resuelto 2026-08-25** — `Assets/styles/perfil-custom.css` (página "Mi perfil") ya no usa su tercer azul propio (`hsl(220, 72%, 46%)`): sus tokens `--bl-perfil-primary`/`--bl-perfil-primary-hover` ahora apuntan a `var(--bl-primary)`/`var(--bl-primary-dark)` (el ancla `#284175`). Se unificó al rediseñar la página como hub de tarjetas estilo Mercado Libre (rama `rediseno-perfil-hub`); de paso se sacaron los `rgba(37,99,235,…)` sueltos y el degradé azul/violeta del badge de rol.
+- **Resuelto 2026-08-28** — el link "Términos" del menú superior del footer (distinto del link de abajo, "Términos y condiciones") apuntaba mal a `info.html` en vez de `terminos.html`, en `home.html`, `search.html` y `comercios.html`. Corregido en los tres.
+- **Resuelto 2026-08-28** — se borró `docs/BACKLOG_MEJORAS.md` (backlog priorizado P0-P4 post-lanzamiento) a pedido del usuario. El backlog de pendientes vigente queda solo en esta sección ("Pendientes activos"); se limpiaron de paso las referencias muertas al archivo que quedaban en `docs/MIGRACIONES_PENDIENTES.md` y en el skill `progreso-baradero-local`.
 
 ## Scripts de tooling
 
