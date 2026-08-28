@@ -1186,3 +1186,71 @@ El front igual mantiene el respaldo: si recibiera 404 cae al pedido manual por t
 ("tenés un comercio activo…"): `functions.invoke` **no** parsea el cuerpo del error, lo deja crudo
 en `error.context` — de ahí el helper `readFunctionError`, sin el cual el motivo se perdía y todo
 se veía como un error genérico.
+
+## Prueba real de `delete-account` → apareció un bug de esquema (2026-08-28)
+
+Rama `fix-orders-nullable`. El usuario pidió probar la baja de cuenta con una cuenta de descarte.
+La prueba valió la pena: **el camino feliz estaba roto** y las verificaciones anteriores (401 sin
+sesión, 200 en el preflight) no lo tocaban.
+
+### El bug
+
+`orders.client_id` y `orders.store_id` estaban declaradas `ON DELETE SET NULL` —alguien eligió a
+propósito que el pedido sobreviva al usuario y a la tienda, para que el comercio conserve su
+historial— **pero las dos columnas eran `NOT NULL`**. La cascada intentaba escribir NULL, el
+constraint lo rechazaba, y el DELETE del padre fallaba entero:
+
+```
+null value in column "client_id" of relation "orders" violates not-null constraint
+```
+
+Consecuencia: **no se podía borrar una cuenta que tuviera aunque sea un pedido** (de cualquier
+estado, incluso `completed`), ni **una tienda con pedidos**. La función devolvía 500.
+
+El dato estaba a la vista antes de escribir la función (una consulta de columnas NOT NULL había
+listado `orders.client_id`) y no se cruzó con la regla SET NULL del FK. Sin probar de verdad,
+llegaba a un usuario real.
+
+**Consulta que caza esta clase de bug** (no solo este caso) — debe dar 0 filas:
+```sql
+select con.conrelid::regclass, att.attname
+from pg_constraint con
+join unnest(con.conkey) with ordinality k(attnum, ord) on true
+join pg_attribute att on att.attrelid = con.conrelid and att.attnum = k.attnum
+where con.contype='f' and con.confdeltype='n' and att.attnotnull;
+```
+
+Arreglo: migración `62_orders_nullable_on_delete.sql` (quita el NOT NULL de las dos columnas,
+alineándolas con la intención ya declarada en el FK; no se toca el FK). Verificado antes de
+aplicar que la app lo tolera: la RLS `orders_select_own` compara `client_id = auth.uid()` y con
+NULL da falso (el pedido anonimizado deja de verse del lado cliente, que es lo buscado);
+`vender.js` ya hacía `.filter(Boolean)` sobre client_id y leía el teléfono con `|| ''`; `perfil.js`
+usa `order.stores?.name || 'Comercio'`.
+
+### Cómo se probó (sirve de receta si hay que repetirlo)
+
+El alta por la API pública **no sirve**: la validación de email rechaza `.invalid` y `example.com`
+("email_address_invalid"), el alta manda mail de confirmación (o sea que no devuelve sesión) y a
+los pocos intentos corta con 429 `over_email_send_rate_limit`.
+
+Lo que funcionó fue crear el usuario directo en `auth.users` por SQL con `crypt(pw, gen_salt('bf'))`
+y `email_confirmed_at = now()`, más su fila en `auth.identities`. **Gotcha:** hay que poner los
+campos de token (`confirmation_token`, `recovery_token`, `email_change`, `email_change_token_new`,
+`email_change_token_current`, `phone_change`, `phone_change_token`, `reauthentication_token`) en
+`''`, no en NULL — si quedan NULL, el login falla con 500 *"Database error querying schema"*.
+Después se saca el JWT con `grant_type=password` contra `/auth/v1/token`.
+
+### Resultado final (cuenta de descarte nº2, ya borrada)
+
+| Escenario | Resultado |
+|---|---|
+| Con comercio a su nombre | 409 `tiene_tienda`, nombre del comercio en el mensaje |
+| Con pedido `paid` | 409 `pedidos_abiertos`, singular bien conjugado |
+| Con pedido `completed` | **200 `{"ok":true}"`** |
+
+Tras el 200: usuario, perfil, identidad, direcciones y favoritos en 0; el pedido **sigue
+existiendo** con `client_id` en NULL, `store_id` intacto y `total_price` sin tocar. O sea, el
+comercio conserva la venta y la persona desaparece — que es exactamente lo que se buscaba.
+
+Las dos cuentas de descarte y sus datos quedaron borrados; se verificó que no quedaran usuarios
+`%@baradero-local.test`, tiendas de prueba ni pedidos huérfanos.
