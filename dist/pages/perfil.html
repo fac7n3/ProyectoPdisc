@@ -12,12 +12,12 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-Bc0v9jvI.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-qd8rR7vg.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-BP5N-NBo.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CivoFhuJ.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BxE69RLA.js">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-BzF2tyNW.css">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-CrxHU93G.js">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-SEEoU8YS.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Bwp3lmXO.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DpC9GIj-.css">
   </head>
@@ -119,44 +119,135 @@
         <!-- PESTAÑA: MIS DATOS      -->
         <!-- ======================= -->
         <div id="tab-mis-datos" class="tab-pane">
-          <!-- Tarjeta: Info Personal -->
-          <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-user-pen"></i> Información personal
-            </h2>
-            <div class="detail-list">
-              <div class="detail-item">
-                <span class="detail-label">Nombre y apellido</span>
-                <span class="detail-value skeleton skeleton-text" id="card-name">Cargando nombre</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Correo electrónico</span>
-                <span class="detail-value skeleton skeleton-text" id="card-email">cargando@email.com</span>
-              </div>
-            </div>
-          </article>
 
-          <!-- Tarjeta: Nivel / Beneficios -->
-          <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-award"></i> Mi cuenta
-            </h2>
-            <div class="detail-list" style="align-items: flex-start;">
-              <div class="detail-item">
-                <span class="detail-label" style="margin-bottom: 0.5rem;">Rol actual</span>
-                <div class="level-badge skeleton" id="card-role">Cargando rol...</div>
+          <header class="datos-intro">
+            <h2 class="datos-intro__title">Información de tu perfil</h2>
+            <p class="datos-intro__lead">
+              Con estos datos el comercio sabe quién hizo el pedido y el repartidor a quién entregárselo.
+              Solo los ve el comercio donde comprás.
+            </p>
+          </header>
+
+          <!-- Aviso de perfil incompleto. Lo muestra el JS solo si falta algo. -->
+          <div class="datos-nudge" id="datos-nudge" hidden>
+            <i class="fa-solid fa-circle-exclamation datos-nudge__icon" aria-hidden="true"></i>
+            <div class="datos-nudge__body">
+              <p class="datos-nudge__text" id="datos-nudge-text"></p>
+              <div class="datos-progress" role="progressbar" aria-labelledby="datos-nudge-text" aria-valuemin="0" aria-valuemax="100" id="datos-progress">
+                <span class="datos-progress__bar" id="datos-progress-bar"></span>
               </div>
-              <div id="role-switcher-wrap" style="display: none; margin-top: 0.5rem;">
-                <label for="role-switcher" class="detail-label" style="display: block; margin-bottom: 0.4rem;">Cambiar de rol</label>
-                <select id="role-switcher" class="bl-input" style="max-width: 240px;">
-                  <option value="own">Mi cuenta (cliente/vendedor)</option>
-                </select>
-              </div>
-              <p style="color: var(--bl-perfil-text-sec); font-size: 0.875rem; margin-top: 1rem;">
-                Disfrutá de todos los beneficios de comprar en comercios locales con Baradero Local.
-              </p>
             </div>
-          </article>
+          </div>
+
+          <!-- ---------- Foto ---------- -->
+          <section class="datos-group">
+            <h3 class="datos-group__title">Tu foto</h3>
+            <div class="datos-panel">
+              <div class="datos-photo">
+                <div class="datos-photo__frame" id="datos-avatar">
+                  <i class="fa-regular fa-user" aria-hidden="true"></i>
+                </div>
+                <div class="datos-photo__body">
+                  <p class="datos-photo__hint">
+                    Aparece cuando dejás una reseña o le escribís a un comercio. Formato JPG o PNG, hasta 2 MB.
+                  </p>
+                  <div class="datos-photo__actions">
+                    <button type="button" class="datos-btn" id="btn-avatar-pick">Cambiar foto</button>
+                    <button type="button" class="datos-btn datos-btn--quiet" id="btn-avatar-remove" hidden>Quitar</button>
+                  </div>
+                  <p class="datos-row__error" id="avatar-error" role="alert" hidden></p>
+                </div>
+                <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" hidden />
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- Datos personales (filas editables, las arma el JS) ---------- -->
+          <section class="datos-group">
+            <h3 class="datos-group__title">Datos personales</h3>
+            <div class="datos-panel" id="datos-personales"></div>
+          </section>
+
+          <!-- ---------- Contacto ---------- -->
+          <section class="datos-group">
+            <h3 class="datos-group__title">Contacto</h3>
+            <div class="datos-panel">
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Correo electrónico</span>
+                  <span class="datos-row__value skeleton skeleton-text" id="card-email">cargando@email.com</span>
+                  <span class="datos-row__hint">Es con el que entrás a tu cuenta. Para cambiarlo, escribinos desde Soporte.</span>
+                </div>
+                <span class="datos-tag" id="email-verified" hidden>
+                  <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verificado
+                </span>
+              </div>
+              <div class="datos-panel__rows" id="datos-contacto"></div>
+            </div>
+          </section>
+
+          <!-- ---------- Seguridad ---------- -->
+          <section class="datos-group">
+            <h3 class="datos-group__title">Seguridad</h3>
+            <div class="datos-panel">
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Contraseña</span>
+                  <span class="datos-row__value" id="password-value">••••••••</span>
+                  <span class="datos-row__hint" id="password-hint">Te mandamos un correo con el link para cambiarla.</span>
+                </div>
+                <button type="button" class="datos-btn" id="btn-change-password">Cambiar</button>
+              </div>
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Entrás con</span>
+                  <span class="datos-row__value" id="login-provider">—</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- Cuenta ---------- -->
+          <section class="datos-group">
+            <h3 class="datos-group__title">Tu cuenta</h3>
+            <div class="datos-panel">
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Tipo de cuenta</span>
+                  <span class="datos-row__value" id="card-role">Cargando…</span>
+                </div>
+                <div id="role-switcher-wrap" hidden>
+                  <label for="role-switcher" class="sr-only">Cambiar de rol</label>
+                  <select id="role-switcher" class="datos-input datos-input--compact">
+                    <option value="own">Mi cuenta (cliente/vendedor)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Comprás en Baradero Local desde</span>
+                  <span class="datos-row__value" id="card-member-since">—</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ---------- Privacidad: separado a propósito del resto ---------- -->
+          <section class="datos-group datos-group--privacy">
+            <h3 class="datos-group__title">Tus datos son tuyos</h3>
+            <p class="datos-privacy__lead">
+              Podés llevarte una copia de todo lo que guardamos, o borrar tu cuenta cuando quieras
+              (Ley 25.326 de Protección de Datos Personales).
+            </p>
+            <div class="datos-privacy__actions">
+              <button type="button" class="datos-btn" id="btn-download-data">
+                <i class="fa-solid fa-download" aria-hidden="true"></i> Descargar mis datos
+              </button>
+              <button type="button" class="datos-btn datos-btn--danger" id="btn-delete-account">
+                Eliminar mi cuenta
+              </button>
+            </div>
+          </section>
 
         </div>
 
