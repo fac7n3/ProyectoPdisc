@@ -52,7 +52,9 @@ export const PROFILE_FIELDS = [
     key: "birth_date",
     container: "datos-personales",
     label: "Fecha de nacimiento",
-    hint: "Algunos comercios la necesitan para venderte productos con restricción de edad.",
+    // Sin ayuda a propósito: la que había hablaba de productos con restricción
+    // de edad y eso todavía no está definido (queda para cuando se resuelva
+    // cómo se maneja la venta de alcohol). `hint` es opcional en el renderer.
     display: (p) => formatBirthDate(p.birth_date),
     inputs: (p) => [{
       el: "input", name: "birth_date", type: "date", value: p.birth_date || "",

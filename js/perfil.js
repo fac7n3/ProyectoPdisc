@@ -5,6 +5,7 @@ import { submitReview } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
+import { removeStoredObjects } from "./storage-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -951,10 +952,12 @@ function buildDisplayRow(field) {
   value.textContent = shown || "Sin completar";
   main.appendChild(value);
 
-  const hint = document.createElement("span");
-  hint.className = "datos-row__hint";
-  hint.textContent = field.hint;
-  main.appendChild(hint);
+  if (field.hint) {
+    const hint = document.createElement("span");
+    hint.className = "datos-row__hint";
+    hint.textContent = field.hint;
+    main.appendChild(hint);
+  }
 
   row.appendChild(main);
 
@@ -1025,10 +1028,12 @@ function openRowEditor(field) {
 
   main.appendChild(editWrap);
 
-  const hint = document.createElement("span");
-  hint.className = "datos-row__hint";
-  hint.textContent = field.hint;
-  main.appendChild(hint);
+  if (field.hint) {
+    const hint = document.createElement("span");
+    hint.className = "datos-row__hint";
+    hint.textContent = field.hint;
+    main.appendChild(hint);
+  }
 
   const error = document.createElement("p");
   error.className = "datos-row__error";
@@ -1189,20 +1194,13 @@ function paintAvatar(url) {
 
 // --- Foto de perfil ---
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-const AVATAR_PUBLIC_PREFIX = "/storage/v1/object/public/avatars/";
 
 /**
- * Borra del bucket la foto anterior. Sin esto se acumulan objetos que nadie
- * referencia y que igual se pagan -- es el mismo problema que ya está
- * anotado como pendiente para las fotos de producto; acá se evita de entrada
- * porque la ruta la controlamos nosotros.
+ * Borra del bucket la foto anterior. Si la que había era la de Google (u otra
+ * URL externa), removeStoredObjects la ignora sola.
  */
 async function deleteStoredAvatar(url) {
-  if (!url || !url.includes(AVATAR_PUBLIC_PREFIX)) return;
-  const path = decodeURIComponent(url.split(AVATAR_PUBLIC_PREFIX)[1].split("?")[0]);
-  if (!path) return;
-  const { error } = await supabase.storage.from("avatars").remove([path]);
-  if (error) console.warn("No se pudo borrar la foto anterior:", error.message);
+  await removeStoredObjects(supabase, "avatars", [url]);
 }
 
 function setupAvatarControls() {
@@ -1352,6 +1350,41 @@ function renderAccountRows(user) {
 }
 
 // --- Privacidad (Ley 25.326: acceso y supresión de los datos propios) ---
+
+/**
+ * Lee el cuerpo del error de una Edge Function. `functions.invoke` no lo
+ * parsea: deja la Response cruda colgada en `error.context`, así que sin esto
+ * el motivo real (409 "tenés un comercio activo") se pierde.
+ */
+async function readFunctionError(error) {
+  const res = error?.context;
+  if (!res || typeof res.json !== "function") return null;
+  try {
+    return { status: res.status, body: await res.json() };
+  } catch {
+    return { status: res.status, body: null };
+  }
+}
+
+/**
+ * Camino viejo: dejar el pedido de baja como ticket para que lo procese un
+ * admin. Queda solo como respaldo por si la Edge Function `delete-account`
+ * todavía no está desplegada en el proyecto.
+ */
+async function requestDeletionByTicket(user) {
+  try {
+    await submitSupportTicket(
+      "Pedido de eliminación de cuenta",
+      `El usuario ${user.email} (${user.id}) pidió eliminar su cuenta y sus datos ` +
+      `desde "Información de tu perfil".`
+    );
+    showToast("Recibimos tu pedido. Te vamos a escribir por correo para confirmarlo.", "success");
+  } catch (err) {
+    console.error("Error al registrar el pedido de baja", err);
+    showToast("No pudimos registrar el pedido. Escribinos desde Soporte, por favor.", "error");
+  }
+}
+
 function setupPrivacyActions(user) {
   const downloadBtn = document.getElementById("btn-download-data");
   const deleteBtn = document.getElementById("btn-delete-account");
@@ -1400,28 +1433,49 @@ function setupPrivacyActions(user) {
   });
 
   deleteBtn?.addEventListener("click", async () => {
-    // Borrar la cuenta de auth de verdad necesita la service role key, que no
-    // puede vivir en el navegador: se abre un pedido por el mismo canal de
-    // soporte que ya usa el resto de la app y lo procesa un admin.
     const ok = confirm(
-      "Vas a pedir que borremos tu cuenta y todos tus datos.\n\n" +
-      "Se pierden tus pedidos, tus favoritos y tus direcciones. No se puede deshacer.\n\n" +
-      "¿Seguimos?"
+      "Vas a borrar tu cuenta y tus datos.\n\n" +
+      "Se pierden tus favoritos, tus direcciones y tus datos personales. " +
+      "Tus pedidos quedan en el historial del comercio, pero sin tu nombre.\n\n" +
+      "No se puede deshacer. ¿Seguimos?"
     );
     if (!ok) return;
 
     deleteBtn.disabled = true;
-    deleteBtn.textContent = "Enviando el pedido…";
+    deleteBtn.textContent = "Dando de baja…";
+
     try {
-      await submitSupportTicket(
-        "Pedido de eliminación de cuenta",
-        `El usuario ${user.email} (${user.id}) pidió eliminar su cuenta y sus datos ` +
-        `desde "Información de tu perfil".`
-      );
-      showToast("Recibimos tu pedido. Te vamos a escribir por correo para confirmarlo.", "success");
+      const { error } = await supabase.functions.invoke("delete-account", { method: "POST" });
+
+      if (!error) {
+        showToast("Listo, borramos tu cuenta. ¡Gracias por haber pasado!", "success");
+        await supabase.auth.signOut();
+        window.location.href = "./home.html";
+        return;
+      }
+
+      const detail = await readFunctionError(error);
+
+      // 409 = la baja no corresponde todavía (tiene comercio activo o pedidos
+      // en curso). Es un motivo entendible, se muestra tal cual.
+      if (detail?.status === 409 && detail.body?.message) {
+        showToast(detail.body.message, "error");
+        return;
+      }
+
+      // Cualquier otro error con respuesta del servidor: mostrarlo y no seguir.
+      if (detail?.status && detail.status !== 404) {
+        showToast(detail.body?.error || "No pudimos completar la baja. Probá de nuevo.", "error");
+        return;
+      }
+
+      // 404: la Edge Function todavía no está desplegada. Se cae al pedido
+      // manual por soporte, que es como funcionaba antes -- así el botón nunca
+      // queda roto mientras tanto.
+      await requestDeletionByTicket(user);
     } catch (err) {
-      console.error("Error al pedir la baja de la cuenta", err);
-      showToast("No pudimos registrar el pedido. Escribinos desde Soporte, por favor.", "error");
+      console.error("Error al dar de baja la cuenta", err);
+      await requestDeletionByTicket(user);
     } finally {
       deleteBtn.disabled = false;
       deleteBtn.textContent = "Eliminar mi cuenta";
