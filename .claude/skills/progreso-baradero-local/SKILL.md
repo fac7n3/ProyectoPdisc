@@ -501,7 +501,7 @@ qué se tocó y qué no, en [docs/DISENOS_PROVISIONALES.md](docs/DISENOS_PROVISI
 se reemplazan cuando el usuario traiga sus propios diseños, no son decisiones finales.
 
 ## P1-6: cupones de vendedor ya no se listan en bloque públicamente (2026-07-16)
-Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`, punto #16a). Antes,
+Del backlog de mejoras post-lanzamiento (punto #16a). Antes,
 `coupons_select_public` dejaba leer CUALQUIER cupón activo (global o de un vendedor puntual, F12-03)
 a cualquier `anon`/`authenticated` — `renderActiveCoupons()` (F12-07) los mostraba todos en el home
 a cualquier visitante, sin relación con lo que estuviera comprando; y cualquiera con la anon key
@@ -526,7 +526,7 @@ podía listar por API directa el código/% de descuento de todos los vendedores.
   (`validate_coupon_code` invocable por `anon`, mismo patrón ya aceptado que `validate_cart_prices`).
 
 ## P1-7: UX del cupón en el carrito — aplicar al escribir + borrar intuitivo (2026-07-16)
-Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`, punto #16b). Sin migración,
+Del backlog de mejoras post-lanzamiento (punto #16b). Sin migración,
 100% frontend (`js/carrito.js`, `initCouponEvents`). Antes había que escribir el código Y clickear
 "Aplicar" (o Enter); ahora un listener de `input` con debounce de 500ms lo valida solo con escribir
 (reutiliza la misma `applyCoupon()`, ya migrada a la RPC `validate_coupon_code` de P1-6). "Borrar"
@@ -540,7 +540,7 @@ instante; un código inexistente muestra "Código inválido o expirado." sin rom
 de consola en todo el flujo.
 
 ## P0-6: Split payments con Mercado Pago Marketplace, modo piloto (2026-07-15)
-Del backlog de mejoras post-lanzamiento (`docs/BACKLOG_MEJORAS.md`). Antes, `mp-create-preference`
+Del backlog de mejoras post-lanzamiento. Antes, `mp-create-preference`
 cobraba TODO con la cuenta de MP de la propia plataforma (`MP_ACCESS_TOKEN` global) — ningún
 vendedor recibía la plata directo. Decisiones del usuario: split automático vía OAuth (no
 conciliación manual), comisión de la plataforma arranca en **0%** y se sube de a poco con el
@@ -591,7 +591,7 @@ andando); se resuelve el caso multi-tienda encadenando pagos más adelante, no e
   `VITE_MP_CLIENT_ID` (público) en `.env`/Vercel; activar el piloto a mano por SQL para 1-2 tiendas
   de prueba (`update public.stores set mp_split_pilot = true where id = '<store_id>'`); probar con
   las credenciales de prueba de Mercado Pago (vendedor comprador de prueba, no plata real) antes de
-  confiar en el flujo. Detalle completo en `docs/BACKLOG_MEJORAS.md` (P0-6).
+  confiar en el flujo.
 
 ### P0-6 — sesión de testing end-to-end (2026-07-15, continuación)
 
@@ -655,8 +655,7 @@ algún estado de verificación/aprobación pendiente en la cuenta del vendedor c
 con el `preference_id` generado.
 
 Nota operativa: en paralelo a este testing se lanzó un subagente para resolver ítems P2 del
-backlog (P2-1, P2-6, P2-8) — ver commit local `d6e9a96` (sin push), documentado en
-`docs/BACKLOG_MEJORAS.md`.
+backlog (P2-1, P2-6, P2-8) — ver commit local `d6e9a96` (sin push).
 
 ### P0-6 — dos regresiones reales encontradas y arregladas (2026-07-16)
 
