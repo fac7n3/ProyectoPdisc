@@ -364,6 +364,10 @@ if (addressForm) {
 // no hace falta una query nueva").
 let favProductsCache = [];
 let favStoresCache = [];
+/** Categoría elegida en el filtro ('todas' = sin filtrar). */
+let favCategory = 'todas';
+/** Sub-pestaña abierta: el filtro por categoría solo aplica a productos. */
+let favTab = 'productos';
 
 function buildFavProductCard(p) {
   const card = document.createElement('a');
@@ -426,13 +430,110 @@ function renderFavList(container, items, buildCard, emptyText) {
   items.forEach((item) => container.appendChild(buildCard(item)));
 }
 
-/** Filtro client-side por texto (nombre del producto o de la tienda), P1-9. */
+/** Nombre de la categoría de un producto favorito (null si no tiene). */
+function favCategoryOf(product) {
+  return product.categories?.name || null;
+}
+
+/**
+ * Arma los chips de categoría con las que el usuario REALMENTE tiene en
+ * favoritos, con el conteo de cada una. Ofrecer las 14 categorías del sitio
+ * cuando tenés favoritos de dos sería mandar al usuario a filtros vacíos.
+ */
+function renderFavCategoryChips() {
+  const wrap = document.getElementById('fav-categories');
+  if (!wrap) return;
+
+  wrap.textContent = '';
+
+  // El filtro por categoría es de producto: en la pestaña de comercios no va.
+  if (favTab !== 'productos') {
+    wrap.hidden = true;
+    return;
+  }
+
+  const counts = new Map();
+  favProductsCache.forEach((p) => {
+    const name = favCategoryOf(p);
+    if (name) counts.set(name, (counts.get(name) || 0) + 1);
+  });
+
+  // Con una sola categoría (o ninguna) el filtro no filtra nada: se oculta.
+  // No se resetea favCategory acá: esta función corre al final de
+  // applyFavFilter, así que cambiar el filtro sin volver a aplicarlo dejaría
+  // la grilla mostrando un recorte y los chips diciendo otra cosa.
+  if (counts.size < 2) {
+    wrap.hidden = true;
+    return;
+  }
+
+  wrap.hidden = false;
+
+  const sinCategoria = favProductsCache.filter((p) => !favCategoryOf(p)).length;
+  const opciones = [
+    { key: 'todas', label: 'Todas', count: favProductsCache.length },
+    ...[...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
+      .map(([name, count]) => ({ key: name, label: name, count })),
+  ];
+  if (sinCategoria) opciones.push({ key: '__sin__', label: 'Sin categoría', count: sinCategoria });
+
+  opciones.forEach((op) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'fav-chip' + (favCategory === op.key ? ' fav-chip--active' : '');
+    chip.setAttribute('aria-pressed', String(favCategory === op.key));
+
+    const label = document.createElement('span');
+    label.textContent = op.label;
+    chip.appendChild(label);
+
+    const count = document.createElement('span');
+    count.className = 'fav-chip__count';
+    count.textContent = `(${op.count})`;
+    chip.appendChild(count);
+
+    chip.addEventListener('click', () => {
+      // Volver a tocar la categoría activa la desactiva.
+      favCategory = favCategory === op.key ? 'todas' : op.key;
+      applyFavFilter();
+    });
+
+    wrap.appendChild(chip);
+  });
+}
+
+/** Filtro client-side por texto (P1-9) + por categoría de producto. */
 function applyFavFilter() {
   const q = (favFilterInput?.value || '').trim().toLowerCase();
-  const products = q ? favProductsCache.filter((p) => p.title.toLowerCase().includes(q)) : favProductsCache;
+
+  const clearBtn = document.getElementById('fav-filter-clear');
+  if (clearBtn) clearBtn.hidden = !q;
+
+  let products = favProductsCache;
+  if (favCategory === '__sin__') {
+    products = products.filter((p) => !favCategoryOf(p));
+  } else if (favCategory !== 'todas') {
+    products = products.filter((p) => favCategoryOf(p) === favCategory);
+  }
+  if (q) products = products.filter((p) => p.title.toLowerCase().includes(q));
+
   const stores = q ? favStoresCache.filter((s) => s.name.toLowerCase().includes(q)) : favStoresCache;
-  renderFavList(favoritosContainer, products, buildFavProductCard, q ? 'Sin resultados para tu búsqueda.' : 'Aún no agregaste productos a tus favoritos.');
-  renderFavList(favoritosStoresContainer, stores, buildFavStoreCard, q ? 'Sin resultados para tu búsqueda.' : 'Aún no agregaste comercios a tus favoritos.');
+
+  // El mensaje de vacío distingue "no tenés nada" de "tu filtro no dio nada":
+  // decirle "todavía no agregaste favoritos" a alguien que sí tiene, pero
+  // filtrados, es mentirle.
+  const filtrando = !!q || favCategory !== 'todas';
+  renderFavList(
+    favoritosContainer, products, buildFavProductCard,
+    filtrando ? 'No hay favoritos que coincidan con lo que buscás.' : 'Aún no agregaste productos a tus favoritos.'
+  );
+  renderFavList(
+    favoritosStoresContainer, stores, buildFavStoreCard,
+    q ? 'No hay comercios que coincidan con lo que buscás.' : 'Aún no agregaste comercios a tus favoritos.'
+  );
+
+  renderFavCategoryChips();
 }
 
 /** Sub-pestañas Productos/Comercios dentro de "Mis favoritos" (P1-9). */
@@ -446,12 +547,32 @@ function setupFavSubtabs() {
       [btnProducts, btnStores].forEach((b) => b.classList.remove('fav-subtab-btn--active'));
       btn.classList.add('fav-subtab-btn--active');
       const target = btn.dataset.favTarget;
+      favTab = target === 'favoritos-container' ? 'productos' : 'comercios';
       if (favoritosContainer) favoritosContainer.style.display = target === 'favoritos-container' ? '' : 'none';
       if (favoritosStoresContainer) favoritosStoresContainer.style.display = target === 'favoritos-stores-container' ? '' : 'none';
+      renderFavCategoryChips();
     });
   });
 
   favFilterInput?.addEventListener('input', applyFavFilter);
+
+  const clearBtn = document.getElementById('fav-filter-clear');
+  clearBtn?.addEventListener('click', () => {
+    if (favFilterInput) {
+      favFilterInput.value = '';
+      favFilterInput.focus();
+    }
+    applyFavFilter();
+  });
+
+  // Escape limpia la búsqueda sin tener que ir hasta la "x".
+  favFilterInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && favFilterInput.value) {
+      e.preventDefault();
+      favFilterInput.value = '';
+      applyFavFilter();
+    }
+  });
 }
 
 async function loadFavoritos(userId) {
@@ -469,7 +590,9 @@ async function loadFavoritos(userId) {
     if (wishlist.length > 0) {
       const { data, error } = await supabase
         .from('products')
-        .select('id, title, price, image_url')
+        // categories viene por la FK products.category_id, para el filtro por
+        // categoría (un producto puede no tener, se agrupa en "Sin categoría").
+        .select('id, title, price, image_url, categories(name)')
         .in('id', wishlist)
         .eq('is_active', true);
       if (error) throw error;
