@@ -1254,3 +1254,40 @@ comercio conserva la venta y la persona desaparece — que es exactamente lo que
 
 Las dos cuentas de descarte y sus datos quedaron borrados; se verificó que no quedaran usuarios
 `%@baradero-local.test`, tiendas de prueba ni pedidos huérfanos.
+
+## Selector de comprobante personalizado (2026-08-28)
+
+Rama `selector-comprobante`. El usuario pidió sacar el `<input type="file">` nativo (el
+"Seleccionar archivo / Ningún archivo seleccionado" del navegador) de la tarjeta de pedido y
+reemplazarlo por uno con el estilo del sitio.
+
+**Era el único input de archivo pelado que quedaba**: se buscaron todos y los otros dos (avatar en
+`perfil.html`, fotos de producto en `vender.html`) ya estaban `hidden` con disparador propio. O sea
+que era un caso aislado de verdad, no la punta de un patrón repetido.
+
+Se reusó el lenguaje visual del dropzone del alta de producto (`.pubform__drop`: borde punteado +
+ícono + `role="button"`), pero **compacto**: acá vive adentro de la tarjeta de un pedido, no en un
+formulario entero, así que es una fila de 60px en vez de un bloque de 1.75rem de padding.
+
+`buildProofPicker()` en `js/perfil.js` devuelve `{ element, getFile, onChange }`. Dos estados: zona
+de arrastre, y "chip" con el archivo elegido (ícono, nombre recortado con ellipsis, peso formateado
+y botón de quitar). Lo único que el input nativo aportaba —mostrar qué archivo elegiste— se
+conserva; el resto se gana.
+
+De paso:
+- **Se agregó tope de 10 MB**, que no existía: antes se podía mandar un archivo de cualquier tamaño
+  y fallaba recién en el storage, con un mensaje incomprensible.
+- El botón "Subir comprobante" arranca **deshabilitado** hasta que haya archivo, en vez de ser
+  apretable para contestar con un toast de reproche ("Elegí un archivo primero").
+- Accesibilidad: `role="button"` + `tabIndex=0` + Enter/Espacio (un div con role=button no responde
+  solo a esas teclas), `aria-label` en la zona y en el botón de quitar, y el error con `role="alert"`.
+
+**Arreglo adyacente:** `.compra-item` era una fila flex sin regla para pantallas chicas, así que en
+un teléfono la info quedaba apretada en ~190px (el detalle del pedido partido en dos líneas, el
+selector nuevo ilegible) y el precio flotando al costado. Se agregó el apilado en `max-width: 600px`.
+El input nativo sufría lo mismo, no lo causó este cambio.
+
+**Gotcha de verificación:** medir con el panel del navegador oculto da basura —`window.innerWidth`
+devuelve 0 y todos los `getBoundingClientRect()` colapsan (la zona "medía" 124px de alto y el
+contenedor 151px). Hay que forzar un viewport con `resize_window` antes de medir o de sacar
+capturas; con 1100x900 los números dieron bien (zona de 60px, botón de 44px).

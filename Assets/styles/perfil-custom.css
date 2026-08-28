@@ -362,6 +362,19 @@ body {
   color: var(--bl-perfil-primary);
 }
 
+/* En un teléfono la tarjeta seguía siendo una fila fija: la info quedaba
+   apretada en media pantalla (el detalle del pedido cortado en dos líneas, el
+   selector de comprobante en ~190px) y el precio flotando al costado. */
+@media (max-width: 600px) {
+  .compra-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .compra-total { align-self: flex-start; }
+}
+
 .compra-items-list {
   list-style: none;
   padding: 0;
@@ -388,14 +401,131 @@ body {
   color: #991b1b;
 }
 
-.compra-proof__file {
-  font-size: 0.8125rem;
-}
-
 .compra-proof__btn {
   width: fit-content;
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+.compra-proof__btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Selector de comprobante ---
+   Reemplaza al <input type="file"> nativo, que no se puede estilar (cada
+   navegador dibuja su propio "Seleccionar archivo") y cortaba la estética de
+   la tarjeta. Mismo lenguaje que el dropzone del alta de producto --borde
+   punteado + ícono-- pero compacto: acá vive adentro de la tarjeta de un
+   pedido, no en un formulario entero. */
+.proof-drop {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px dashed var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+  background: var(--bl-perfil-bg);
+  color: var(--bl-perfil-hint);
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: border-color var(--duration-normal) ease, background-color var(--duration-normal) ease;
+}
+
+.proof-drop:hover,
+.proof-drop.is-over {
+  border-color: var(--bl-perfil-primary);
+  background: rgba(40, 65, 117, 0.04);
+}
+
+.proof-drop:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.proof-drop__icon {
+  font-size: 1.1rem;
+  color: var(--bl-perfil-primary);
+  flex-shrink: 0;
+}
+
+.proof-drop__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.proof-drop__main {
+  font-weight: 600;
+  color: var(--bl-perfil-text-main);
+}
+
+/* --- Archivo ya elegido --- */
+.proof-file {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+  background: var(--bl-perfil-surface);
+  font-size: 0.8125rem;
+}
+
+.proof-file[hidden],
+.proof-drop[hidden] { display: none; }
+
+.proof-file__icon {
+  font-size: 1rem;
+  color: var(--bl-perfil-primary);
+  flex-shrink: 0;
+}
+
+/* El nombre se recorta, no empuja al botón de quitar fuera de la tarjeta. */
+.proof-file__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--bl-perfil-text-main);
+}
+
+.proof-file__size {
+  flex-shrink: 0;
+  color: var(--bl-perfil-hint);
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-file__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--bl-perfil-hint);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) ease, color var(--duration-normal) ease;
+}
+
+.proof-file__remove:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.proof-file__remove:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
 }
 
 /* === Botón de arrepentimiento (Ley 24.240 / Res. 424/2020) === */
