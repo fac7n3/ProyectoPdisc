@@ -614,9 +614,160 @@ function buildCompraItem(order, reviewByRepartidorId) {
   return item;
 }
 
+const MAX_PROOF_BYTES = 10 * 1024 * 1024;
+
+/** 1536000 -> "1,5 MB". Para que el peso se lea, no se calcule. */
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString('es-AR', { maximumFractionDigits: 1 })} MB`;
+}
+
+/**
+ * Selector de comprobante con el estilo del sitio.
+ *
+ * El `<input type="file">` nativo no se puede estilar --cada navegador dibuja
+ * su propio botón "Seleccionar archivo" y su "Ningún archivo seleccionado"--
+ * así que queda oculto y lo dispara una zona propia, igual que ya hacían el
+ * avatar y las fotos de producto. Lo que sí se conserva del nativo es lo
+ * único que aportaba: mostrar qué archivo elegiste.
+ *
+ * Devuelve { element, getFile, onChange }.
+ */
+function buildProofPicker() {
+  const root = document.createElement('div');
+  root.className = 'proof-picker';
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf';
+  input.hidden = true;
+
+  const drop = document.createElement('div');
+  drop.className = 'proof-drop';
+  drop.setAttribute('role', 'button');
+  drop.tabIndex = 0;
+  drop.setAttribute('aria-label', 'Elegir el comprobante de pago');
+
+  const dropIcon = document.createElement('i');
+  dropIcon.className = 'fa-solid fa-receipt proof-drop__icon';
+  dropIcon.setAttribute('aria-hidden', 'true');
+  drop.appendChild(dropIcon);
+
+  const dropText = document.createElement('span');
+  dropText.className = 'proof-drop__text';
+  const dropMain = document.createElement('span');
+  dropMain.className = 'proof-drop__main';
+  dropMain.textContent = 'Elegí el comprobante o arrastralo acá';
+  const dropHint = document.createElement('span');
+  dropHint.textContent = 'Una foto o un PDF, hasta 10 MB';
+  dropText.append(dropMain, dropHint);
+  drop.appendChild(dropText);
+
+  // Vista del archivo ya elegido (reemplaza a la zona de arrastre).
+  const chip = document.createElement('div');
+  chip.className = 'proof-file';
+  chip.hidden = true;
+
+  const chipIcon = document.createElement('i');
+  chipIcon.className = 'fa-solid fa-file-lines proof-file__icon';
+  chipIcon.setAttribute('aria-hidden', 'true');
+
+  const chipName = document.createElement('span');
+  chipName.className = 'proof-file__name';
+
+  const chipSize = document.createElement('span');
+  chipSize.className = 'proof-file__size';
+
+  const chipRemove = document.createElement('button');
+  chipRemove.type = 'button';
+  chipRemove.className = 'proof-file__remove';
+  chipRemove.setAttribute('aria-label', 'Quitar el archivo elegido');
+  const removeIcon = document.createElement('i');
+  removeIcon.className = 'fa-solid fa-xmark';
+  removeIcon.setAttribute('aria-hidden', 'true');
+  chipRemove.appendChild(removeIcon);
+
+  chip.append(chipIcon, chipName, chipSize, chipRemove);
+
+  const error = document.createElement('p');
+  error.className = 'compra-proof__message compra-proof__message--error';
+  error.setAttribute('role', 'alert');
+  error.hidden = true;
+
+  root.append(drop, chip, input, error);
+
+  let selected = null;
+  let notify = () => {};
+
+  function render() {
+    drop.hidden = !!selected;
+    chip.hidden = !selected;
+    if (selected) {
+      chipName.textContent = selected.name;
+      chipSize.textContent = formatFileSize(selected.size);
+    }
+    notify(selected);
+  }
+
+  function setFile(file) {
+    error.hidden = true;
+    if (!file) {
+      selected = null;
+      render();
+      return;
+    }
+    if (file.size > MAX_PROOF_BYTES) {
+      error.textContent = `Ese archivo pesa ${formatFileSize(file.size)} y el máximo son 10 MB. Probá con una foto más liviana.`;
+      error.hidden = false;
+      selected = null;
+      render();
+      return;
+    }
+    selected = file;
+    render();
+  }
+
+  drop.addEventListener('click', () => input.click());
+  drop.addEventListener('keydown', (e) => {
+    // Un div con role="button" no responde solo a Enter/Espacio.
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      input.click();
+    }
+  });
+
+  input.addEventListener('change', () => setFile(input.files?.[0] || null));
+
+  chipRemove.addEventListener('click', () => {
+    input.value = '';
+    setFile(null);
+    drop.focus();
+  });
+
+  // Arrastrar y soltar. Sin el preventDefault en dragover el navegador abre
+  // el archivo en una pestaña nueva en vez de soltarlo acá.
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('is-over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('is-over');
+    setFile(e.dataTransfer?.files?.[0] || null);
+  });
+
+  return {
+    element: root,
+    getFile: () => selected,
+    onChange: (fn) => { notify = fn; },
+  };
+}
+
 /**
  * F2-04: si la orden es por transferencia y sigue pendiente, muestra el
- * estado del último comprobante (si hay uno) y un input para subir uno
+ * estado del último comprobante (si hay uno) y un selector para subir uno
  * nuevo. El vendedor lo confirma/rechaza desde vender.js.
  */
 function buildPaymentProofSection(order) {
@@ -647,24 +798,22 @@ function buildPaymentProofSection(order) {
     wrap.appendChild(msg);
   }
 
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*,application/pdf';
-  fileInput.className = 'compra-proof__file';
-  wrap.appendChild(fileInput);
+  const picker = buildProofPicker();
+  wrap.appendChild(picker.element);
 
   const uploadBtn = document.createElement('button');
   uploadBtn.type = 'button';
   uploadBtn.className = 'bl-btn bl-btn-primary compra-proof__btn';
   uploadBtn.textContent = 'Subir comprobante';
+  // Deshabilitado hasta que haya archivo: es más claro que dejarlo apretable
+  // para contestar con un toast de reproche.
+  uploadBtn.disabled = true;
+  picker.onChange((file) => { uploadBtn.disabled = !file; });
   wrap.appendChild(uploadBtn);
 
   uploadBtn.addEventListener('click', async () => {
-    const file = fileInput.files?.[0];
-    if (!file) {
-      showToast('Elegí un archivo primero.', 'error');
-      return;
-    }
+    const file = picker.getFile();
+    if (!file) return;
 
     uploadBtn.disabled = true;
     uploadBtn.textContent = 'Subiendo...';
