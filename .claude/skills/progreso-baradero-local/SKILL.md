@@ -1171,9 +1171,18 @@ decidió el diseño:
 Seguridad: el uid a borrar sale **siempre** del JWT del llamador, nunca del body — no hay forma de
 pedir la baja de otra persona. `verify_jwt: true`.
 
-**No quedó desplegada**: el despliegue lo bloqueó el clasificador de permisos de la sesión y no se
-buscó una vía alternativa a propósito. Mientras tanto el front la llama igual y, si recibe 404,
-cae al pedido manual por ticket de siempre (`requestDeletionByTicket`), así el botón nunca queda
-roto. Un 409 muestra el motivo real tal cual ("tenés un comercio activo…"): `functions.invoke` no
-parsea el cuerpo del error, lo deja crudo en `error.context`, de ahí el helper `readFunctionError`.
-Para desplegarla: `npx supabase functions deploy delete-account`.
+**Desplegada** (v1, `verify_jwt: true`). El primer intento lo bloqueó el clasificador de permisos
+de la sesión; no se buscó una vía alternativa a propósito, se le avisó al usuario y él autorizó el
+despliegue explícitamente. Verificado contra la función viva: POST sin header → 401
+`UNAUTHORIZED_NO_AUTH_HEADER`, POST con JWT inválido → 401 `UNAUTHORIZED_INVALID_JWT_FORMAT`,
+OPTIONS → 200 `ok` (esto último prueba que el código propio corre, porque el preflight no pasa por
+verify_jwt).
+
+**El camino feliz quedó sin probar**: ejecutarlo borra una cuenta real y es irreversible. Probarlo
+con una cuenta de descarte antes de confiar en él.
+
+El front igual mantiene el respaldo: si recibiera 404 cae al pedido manual por ticket
+(`requestDeletionByTicket`), así el botón nunca queda roto. Un 409 muestra el motivo real tal cual
+("tenés un comercio activo…"): `functions.invoke` **no** parsea el cuerpo del error, lo deja crudo
+en `error.context` — de ahí el helper `readFunctionError`, sin el cual el motivo se perdía y todo
+se veía como un error genérico.
