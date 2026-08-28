@@ -121,7 +121,8 @@ check("cada campo tiene todo lo que el renderer necesita", () => {
   PROFILE_FIELDS.forEach((f) => {
     assert.ok(f.key, "falta key");
     assert.ok(f.label, `falta label en ${f.key}`);
-    assert.ok(f.hint, `falta hint en ${f.key}`);
+    // `hint` es opcional: fecha de nacimiento no tiene, a propósito.
+    if ("hint" in f) assert.equal(typeof f.hint, "string", `hint raro en ${f.key}`);
     assert.equal(typeof f.display, "function", `falta display en ${f.key}`);
     assert.equal(typeof f.collect, "function", `falta collect en ${f.key}`);
     assert.equal(typeof f.validate, "function", `falta validate en ${f.key}`);

@@ -1116,3 +1116,64 @@ horaria y los regex de documento y teléfono.
 **Limpieza:** se borraron `.detail-list`, `.detail-item`, `.detail-value` y `.level-badge` de
 `perfil-custom.css` — esta pantalla era la única que las usaba. Sobrevive `.detail-label`, que
 todavía usa el formulario de direcciones.
+
+## Fotos huérfanas de Storage + baja de cuenta real (2026-08-28)
+
+Rama `ajustes-perfil-pendientes`. El usuario pidió tres cosas: sacar la descripción de "fecha de
+nacimiento" y arreglar los dos pendientes que habían quedado del rediseño del perfil.
+
+### 1. Descripción de "fecha de nacimiento"
+Decía "Algunos comercios la necesitan para venderte productos con restricción de edad". Se sacó
+porque la venta de alcohol todavía no está definida (queda para más adelante). `hint` pasó a ser
+**opcional** en el renderer de filas — hay guardas en `buildDisplayRow` y en `openRowEditor`, si no
+el `textContent` quedaba literalmente en `"undefined"`.
+
+### 2. Fotos huérfanas del bucket `products` (pendiente que venía de 2026-08-14)
+
+Había **dos** caminos que dejaban archivos sueltos, no uno: quitar una foto editando el producto, y
+eliminar el producto entero (nunca se tocaba el storage).
+
+**Gotcha importante:** la solución "obvia" era listar la carpeta `{productId}/` y borrar lo que
+sobra. **No funciona:** el bucket `products` no tiene policy de SELECT sobre `storage.objects` (se
+verificó en `pg_policies` — solo tiene INSERT, UPDATE y DELETE), así que `list()` devuelve vacío
+**sin error**. Habría quedado un fix que no hace nada y parece que sí. Por eso se rastrean las URLs
+explícitamente: `savedImageUrlsAtLoad` guarda las fotos que el producto tenía al abrir el
+formulario, y al guardar se borra la diferencia contra las que quedaron. Para el borrado del
+producto, las URLs se leen **antes** del delete (después `product_images` ya se fue en cascada).
+
+El parseo URL pública → ruta se extrajo a **`js/storage-utils.js`** porque `perfil.js` ya hacía lo
+mismo para los avatares (era duplicación). No importa nada, ni el cliente de Supabase (se recibe
+por parámetro), así que corre con `node js/storage-utils.test.mjs` — 11 chequeos. Vale la pena
+testearlo aunque sea corto: es lo que decide **qué archivo se borra**. Cubre que ignore URLs de
+otro bucket y externas (la foto de Google), que corte query y fragmento, que decodifique el
+porcentaje, que rechace `..`, que no llame a la API si no quedó nada y que un error del storage no
+rompa la operación.
+
+Solo se borra lo que se desreferencia de ahora en más. **Las fotos huérfanas anteriores siguen
+ahí** — para limpiarlas haría falta una pasada puntual con service role.
+
+### 3. Baja de cuenta de verdad
+
+Se escribió `supabase/functions/delete-account/index.ts`, que borra la cuenta con la service role
+key en vez de dejar un ticket que un admin procese a mano.
+
+Antes de escribirla se auditaron los FK contra `auth.users` y `stores`, y ahí apareció lo que
+decidió el diseño:
+- `orders.client_id` → **SET NULL**: el pedido sobrevive anonimizado, el comercio conserva su
+  historial de ventas. `order_items.product_id` y `orders.store_id` también son SET NULL, y
+  `order_items` ya guarda `title`/`price` congelados — o sea, el recibo no se rompe.
+- `stores.owner_id` → **CASCADE**: borrar a un vendedor **se lleva la tienda entera** (productos,
+  cupones, conversaciones, credenciales de MP). Por eso la función **bloquea** la baja si la
+  persona tiene un comercio y la deriva a soporte. Segunda guarda: pedidos en `paid`/`shipped`/
+  `ready_for_pickup` (no se bloquea por `pending`, que suele ser un carrito abandonado y dejaría la
+  cuenta trabada para siempre).
+
+Seguridad: el uid a borrar sale **siempre** del JWT del llamador, nunca del body — no hay forma de
+pedir la baja de otra persona. `verify_jwt: true`.
+
+**No quedó desplegada**: el despliegue lo bloqueó el clasificador de permisos de la sesión y no se
+buscó una vía alternativa a propósito. Mientras tanto el front la llama igual y, si recibe 404,
+cae al pedido manual por ticket de siempre (`requestDeletionByTicket`), así el botón nunca queda
+roto. Un 409 muestra el motivo real tal cual ("tenés un comercio activo…"): `functions.invoke` no
+parsea el cuerpo del error, lo deja crudo en `error.context`, de ahí el helper `readFunctionError`.
+Para desplegarla: `npx supabase functions deploy delete-account`.

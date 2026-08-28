@@ -5,6 +5,7 @@ import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
+import { removeStoredObjects } from './storage-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -1628,12 +1629,22 @@ function buildPubActions(p) {
   menu.appendChild(pubMenuItem('Eliminar', 'fa-trash', async () => {
     closePubMenus();
     if (!confirm('¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)')) return;
+
+    // Las URLs se leen ANTES de borrar: al irse el producto, product_images se
+    // va en cascada y ya no habría forma de saber qué archivos quedaron sueltos.
+    const { data: imgRows } = await supabase
+      .from('product_images')
+      .select('url')
+      .eq('product_id', p.id);
+    const imageUrls = [p.image_url, ...(imgRows || []).map((r) => r.url)];
+
     const { error } = await supabase.from('products').delete().eq('id', p.id);
     if (error) {
       showToast('No se pudo eliminar el producto.', 'error');
       console.error(error);
       return;
     }
+    await removeStoredObjects(supabase, 'products', imageUrls);
     fetchProducts();
   }, true));
 
@@ -1862,6 +1873,14 @@ async function openEditProductForm(productId) {
 let productImages = [];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 let galleryDragFrom = null;
+/**
+ * Fotos que el producto tenía al abrirse el formulario. Al guardar, las que ya
+ * no estén acá se borran del bucket: sin esta foto del "antes" no hay forma de
+ * saber cuáles quitó el vendedor, y quedaban acumulándose en storage.
+ * (No se puede listar la carpeta: el bucket `products` no tiene policy de
+ * SELECT, así que list() devolvería vacío sin avisar.)
+ */
+let savedImageUrlsAtLoad = [];
 
 /** Carga en la galería la portada + las adicionales de un producto ya guardado. */
 async function hydrateProductGallery(product) {
@@ -1877,6 +1896,7 @@ async function hydrateProductGallery(product) {
   if (error) console.error('No se pudieron cargar las fotos del producto:', error);
   (extra || []).forEach((row) => productImages.push({ kind: 'saved', url: row.url }));
 
+  savedImageUrlsAtLoad = productImages.map((item) => item.url);
   renderProductGallery();
 }
 
@@ -1886,6 +1906,7 @@ function resetProductGallery() {
     if (item.kind === 'new') URL.revokeObjectURL(item.previewUrl);
   });
   productImages = [];
+  savedImageUrlsAtLoad = [];
   renderProductGallery();
 }
 
@@ -2038,12 +2059,23 @@ async function persistProductImages(productId) {
   }
 
   const rest = urls.slice(1).map((url, position) => ({ product_id: productId, url, position }));
+  let wroteOk = true;
   if (rest.length) {
     const { error: insertError } = await supabase.from('product_images').insert(rest);
     if (insertError) {
       console.error('No se pudieron guardar las fotos adicionales:', insertError);
       showToast('No se pudieron guardar las fotos adicionales.', 'error');
+      wroteOk = false;
     }
+  }
+
+  // Recién con la DB ya escrita se sabe qué fotos quedaron: las que el vendedor
+  // sacó se borran del bucket. Si la escritura falló no se toca nada -- borrar
+  // un archivo que todavía referencia una fila sería peor que dejar basura.
+  if (wroteOk) {
+    const kept = new Set(urls);
+    await removeStoredObjects(supabase, 'products', savedImageUrlsAtLoad.filter((u) => !kept.has(u)));
+    savedImageUrlsAtLoad = [...urls];
   }
 
   return urls[0] ?? null;
