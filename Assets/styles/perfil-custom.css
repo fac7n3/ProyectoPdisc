@@ -244,43 +244,14 @@ body {
   color: var(--bl-perfil-primary);
 }
 
-/* Lista de detalles */
-.detail-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
+/* Etiqueta de campo del formulario de direcciones. Las demás clases de la
+   vieja "lista de detalles" (.detail-list/.detail-item/.detail-value y el
+   .level-badge del rol) se borraron al rediseñar "Información de tu perfil":
+   esa pantalla era la única que las usaba. */
 .detail-label {
   font-size: 0.875rem;
   color: var(--bl-perfil-text-sec);
   font-weight: 500;
-}
-
-.detail-value {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--bl-perfil-text-main);
-}
-
-/* Badge de Nivel/Rol */
-.level-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--bl-perfil-primary);
-  color: white;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--bl-radius-pill, 50rem);
-  font-weight: 600;
-  font-size: 1rem;
-  width: fit-content;
 }
 
 /* === Skeleton Loading Animation === */
@@ -562,4 +533,401 @@ body {
 .bl-btn-primary:hover {
   background: var(--bl-perfil-primary-hover);
   transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   "Información de tu perfil" — lista de datos de la cuenta
+   ==========================================================================
+   Deliberadamente NO reusa .perfil-card: una tarjeta que flota al pasar el
+   mouse está bien para algo en lo que hacés click entero (las del hub), pero
+   acá cada fila tiene su propia acción — si el contenedor se mueve, el botón
+   "Editar" se te escapa del cursor. Lista quieta, con divisores, como la
+   pantalla de datos de cualquier tienda de verdad.
+
+   El texto secundario usa un gris más oscuro que --bl-perfil-text-sec: ese
+   llega a ~3.5:1 sobre blanco y las ayudas son texto que hay que poder leer
+   (AA pide 4.5:1). */
+:root {
+  --bl-perfil-hint: hsl(220, 12%, 42%);
+}
+
+.datos-intro {
+  margin-bottom: 2rem;
+}
+
+.datos-intro__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.datos-intro__lead {
+  margin: 0.5rem 0 0;
+  max-width: 58ch; /* medida de lectura cómoda */
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--bl-perfil-hint);
+}
+
+/* --- Aviso de perfil incompleto --- */
+.datos-nudge {
+  display: flex;
+  gap: 0.875rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1rem 1.125rem;
+  background: #fffaf0;
+  border: 1px solid #fde3b8;
+  border-radius: var(--radius-md);
+}
+
+.datos-nudge[hidden] { display: none; }
+
+.datos-nudge__icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  color: #b45309;
+}
+
+.datos-nudge__body { flex: 1; min-width: 0; }
+
+.datos-nudge__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #7c4a03;
+}
+
+.datos-progress {
+  margin-top: 0.75rem;
+  height: 4px;
+  border-radius: 2px;
+  background: #fde3b8;
+  overflow: hidden;
+}
+
+.datos-progress__bar {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: #d97706;
+  transition: width 400ms var(--ease-spring);
+}
+
+/* --- Grupos --- */
+.datos-group { margin-bottom: 2rem; }
+
+.datos-group__title {
+  margin: 0 0 0.625rem;
+  padding-left: 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bl-perfil-hint);
+}
+
+.datos-panel {
+  background: var(--bl-perfil-surface);
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* --- Fila --- */
+.datos-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+}
+
+/* Divisor entre filas hermanas, sin línea colgando al final. El
+   :not(:first-child) global cubre tanto las filas sueltas del HTML como las
+   que inyecta el JS dentro de .datos-panel__rows. */
+.datos-panel > .datos-row + .datos-row,
+.datos-panel > .datos-panel__rows > .datos-row,
+.datos-panel > .datos-panel__rows:not(:empty) {
+  border-top: 1px solid var(--bl-perfil-border);
+}
+
+.datos-panel > .datos-panel__rows > .datos-row:first-child {
+  border-top: none;
+}
+
+.datos-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.datos-row__label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--bl-perfil-hint);
+}
+
+.datos-row__value {
+  font-size: 1rem;
+  color: var(--bl-perfil-text-main);
+  overflow-wrap: anywhere;
+}
+
+/* Un dato faltante se marca con texto, no solo con color: nadie que no
+   distinga el gris se queda sin enterarse. */
+.datos-row__value--empty {
+  color: var(--bl-perfil-hint);
+  font-style: italic;
+}
+
+.datos-row__hint {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--bl-perfil-hint);
+  max-width: 52ch;
+}
+
+.datos-row__error {
+  margin: 0.125rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #b91c1c;
+}
+
+.datos-row__error[hidden] { display: none; }
+
+/* --- Botones de la sección --- */
+.datos-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  min-height: 44px; /* objetivo táctil mínimo */
+  padding: 0.5rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--bl-perfil-primary);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--duration-normal) ease, color var(--duration-normal) ease;
+}
+
+.datos-btn:hover { background: var(--bl-perfil-bg); }
+
+.datos-btn:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.datos-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.datos-btn--quiet { color: var(--bl-perfil-hint); }
+
+.datos-btn--danger { color: #b91c1c; }
+.datos-btn--danger:hover { background: #fef2f2; }
+
+/* Única acción primaria visible a la vez: la de guardar la fila abierta. */
+.datos-btn--primary {
+  background: var(--bl-perfil-primary);
+  border-color: var(--bl-perfil-primary);
+  color: #fff;
+}
+
+.datos-btn--primary:hover { background: var(--bl-perfil-primary-hover); }
+
+/* --- Modo edición de una fila --- */
+.datos-row--editing { background: var(--bl-perfil-bg); }
+
+.datos-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.datos-input {
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+  background: var(--bl-perfil-surface);
+  font-family: inherit;
+  font-size: 1rem; /* 16px: evita el zoom automático de iOS */
+  color: var(--bl-perfil-text-main);
+  transition: border-color var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
+}
+
+.datos-input:focus {
+  outline: none;
+  border-color: var(--bl-perfil-primary);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
+}
+
+.datos-input--grow { flex: 1; min-width: 12rem; }
+.datos-input--compact { min-width: 9rem; }
+
+.datos-input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.datos-input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+}
+
+.datos-row__actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* --- Etiqueta "Verificado" --- */
+.datos-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--bl-radius-pill, 50rem);
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.datos-tag[hidden] { display: none; }
+
+/* --- Foto --- */
+.datos-photo {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  padding: 1.25rem;
+}
+
+.datos-photo__frame {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--bl-perfil-border);
+  background: var(--bl-perfil-bg);
+  color: var(--bl-perfil-hint);
+  font-size: 1.5rem;
+  overflow: hidden;
+}
+
+.datos-photo__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.datos-photo__body { flex: 1; min-width: 0; }
+
+.datos-photo__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--bl-perfil-hint);
+  max-width: 46ch;
+}
+
+.datos-photo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  margin-left: -0.875rem; /* alinea el texto del botón con la ayuda de arriba */
+}
+
+/* --- Privacidad: separada del resto a propósito (una acción destructiva no
+       vive al lado de "editar mi teléfono"). --- */
+.datos-group--privacy {
+  margin-top: 3rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--bl-perfil-border);
+}
+
+.datos-privacy__lead {
+  margin: 0 0 1rem;
+  max-width: 58ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--bl-perfil-hint);
+}
+
+.datos-privacy__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: -0.875rem;
+}
+
+/* Solo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Teléfono chico --- */
+@media (max-width: 600px) {
+  .datos-intro__title { font-size: 1.25rem; }
+
+  .datos-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+    padding: 1rem;
+  }
+
+  /* La acción baja debajo del dato y se alinea a la izquierda, en vez de
+     quedar apretada contra el borde derecho. */
+  .datos-row__actions,
+  .datos-row > .datos-btn {
+    align-self: flex-start;
+    margin-left: -0.875rem;
+  }
+
+  .datos-tag { align-self: flex-start; }
+
+  .datos-input--grow { min-width: 0; width: 100%; }
+
+  .datos-edit { flex-direction: column; align-items: stretch; }
+
+  .datos-photo {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .datos-photo__actions { margin-left: -0.875rem; }
+}
+
+/* Respetar "reducir movimiento" del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  .datos-progress__bar { transition: none; }
 }

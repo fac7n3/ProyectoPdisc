@@ -2,8 +2,9 @@ import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice, clearCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview } from "./reviews-utils.js";
-import { renderSupportSection } from "./support-utils.js";
+import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell } from "./nav-utils.js";
+import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -11,9 +12,9 @@ const sidebarName = document.getElementById("sidebar-name");
 const sidebarEmail = document.getElementById("sidebar-email");
 const sidebarAvatar = document.getElementById("sidebar-avatar");
 
-const cardName = document.getElementById("card-name");
 const cardEmail = document.getElementById("card-email");
 const cardRole = document.getElementById("card-role");
+const cardMemberSince = document.getElementById("card-member-since");
 
 const logoutBtn = document.getElementById("logout-btn");
 const mainContent = document.getElementById("main-content");
@@ -90,7 +91,6 @@ function renderQuickProfile(user) {
 
   if (sidebarName) { sidebarName.textContent = quickName || "-"; removeSkeleton(sidebarName); }
   if (sidebarEmail) { sidebarEmail.textContent = user.email || "sin email"; removeSkeleton(sidebarEmail); }
-  if (cardName) { cardName.textContent = quickName || "-"; removeSkeleton(cardName); }
   if (cardEmail) { cardEmail.textContent = user.email || "sin email"; removeSkeleton(cardEmail); }
   if (cardRole) {
     cardRole.textContent = quickRole.charAt(0).toUpperCase() + quickRole.slice(1);
@@ -130,7 +130,7 @@ function renderQuickProfile(user) {
     elevatedOption.value = 'elevated';
     elevatedOption.textContent = jwtRole === 'admin' ? 'Administrador' : 'Moderador';
     roleSwitcher.appendChild(elevatedOption);
-    roleSwitcherWrap.style.display = 'block';
+    roleSwitcherWrap.hidden = false;
 
     roleSwitcher.addEventListener('change', () => {
       if (roleSwitcher.value === 'elevated') {
@@ -876,6 +876,559 @@ async function loadCompras(userId) {
 }
 
 
+// ===========================================================================
+// "Información de tu perfil"
+// ===========================================================================
+// Cada dato es una fila que se edita sola (progressive disclosure): abrir un
+// formulario entero para corregir el teléfono era pedirle al usuario que
+// revise seis campos para tocar uno. Solo una fila abierta a la vez.
+//
+// Los campos se declaran una sola vez en profile-fields.js y el mismo renderer
+// arma la fila de lectura y la de edición -- escribir las cuatro filas a mano
+// era el mismo bloque copiado cuatro veces, con cuatro lugares donde olvidarse
+// el aria-label.
+
+/** Copia local del perfil de la DB; se actualiza al guardar cada fila. */
+let profileData = {};
+/** Fila que está abierta en modo edición (o null). */
+let openEditorKey = null;
+/** Foto que se está mostrando (puede ser la de Google, no solo la nuestra). */
+let displayedAvatarUrl = null;
+
+/** Datos que cuentan para la barra de "perfil completo". */
+const COMPLETION_CHECKS = [
+  { name: "tu nombre", done: (p) => !!p.full_name },
+  { name: "tu teléfono", done: (p) => !!p.phone },
+  { name: "tu documento", done: (p) => !!p.doc_number },
+  { name: "tu fecha de nacimiento", done: (p) => !!p.birth_date },
+  // La de Google también cuenta: se ve igual, sería raro pedirle una foto a
+  // alguien que ya tiene uno puesta.
+  { name: "una foto", done: () => !!displayedAvatarUrl },
+];
+
+function updateCompletionNudge() {
+  const nudge = document.getElementById("datos-nudge");
+  const text = document.getElementById("datos-nudge-text");
+  const bar = document.getElementById("datos-progress-bar");
+  const meter = document.getElementById("datos-progress");
+  if (!nudge || !text || !bar) return;
+
+  const missing = COMPLETION_CHECKS.filter((c) => !c.done(profileData));
+  const pct = Math.round(((COMPLETION_CHECKS.length - missing.length) / COMPLETION_CHECKS.length) * 100);
+
+  bar.style.width = `${pct}%`;
+  if (meter) meter.setAttribute("aria-valuenow", String(pct));
+
+  if (missing.length === 0) {
+    nudge.hidden = true;
+    return;
+  }
+
+  const names = missing.map((m) => m.name);
+  const list = names.length === 1
+    ? names[0]
+    : `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+  text.textContent = `Tu perfil está completo al ${pct}%. Te falta cargar ${list}.`;
+  nudge.hidden = false;
+}
+
+function buildDisplayRow(field) {
+  const row = document.createElement("div");
+  row.className = "datos-row";
+  row.dataset.key = field.key;
+
+  const main = document.createElement("div");
+  main.className = "datos-row__main";
+
+  const label = document.createElement("span");
+  label.className = "datos-row__label";
+  label.textContent = field.label;
+  main.appendChild(label);
+
+  const shown = field.display(profileData);
+  const value = document.createElement("span");
+  value.className = shown ? "datos-row__value" : "datos-row__value datos-row__value--empty";
+  value.textContent = shown || "Sin completar";
+  main.appendChild(value);
+
+  const hint = document.createElement("span");
+  hint.className = "datos-row__hint";
+  hint.textContent = field.hint;
+  main.appendChild(hint);
+
+  row.appendChild(main);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "datos-btn";
+  btn.textContent = shown ? "Editar" : "Completar";
+  // Sin este aria-label, un lector de pantalla anuncia cuatro botones
+  // "Editar" seguidos sin decir cuál es cuál.
+  btn.setAttribute("aria-label", `${shown ? "Editar" : "Completar"} ${field.label.toLowerCase()}`);
+  btn.addEventListener("click", () => openRowEditor(field));
+  row.appendChild(btn);
+
+  return row;
+}
+
+function openRowEditor(field) {
+  // Cerrar la que hubiera abierta re-renderiza las filas, así que la fila a
+  // reemplazar se busca DESPUÉS (la de antes quedaría desconectada del DOM).
+  if (openEditorKey) {
+    openEditorKey = null;
+    renderDatosRows();
+  }
+  const row = document.querySelector(`.datos-row[data-key="${field.key}"]`);
+  if (!row) return;
+
+  const editRow = document.createElement("div");
+  editRow.className = "datos-row datos-row--editing";
+  editRow.dataset.key = field.key;
+
+  const main = document.createElement("div");
+  main.className = "datos-row__main";
+
+  const label = document.createElement("span");
+  label.className = "datos-row__label";
+  label.textContent = field.label;
+  main.appendChild(label);
+
+  const editWrap = document.createElement("div");
+  editWrap.className = "datos-edit";
+  const els = {};
+
+  field.inputs(profileData).forEach((spec) => {
+    let el;
+    if (spec.el === "select") {
+      el = document.createElement("select");
+      spec.options.forEach((opt) => {
+        const o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt;
+        el.appendChild(o);
+      });
+    } else {
+      el = document.createElement("input");
+      el.type = spec.type;
+      if (spec.placeholder) el.placeholder = spec.placeholder;
+      if (spec.autocomplete) el.autocomplete = spec.autocomplete;
+      if (spec.inputMode) el.inputMode = spec.inputMode;
+      if (spec.maxLength) el.maxLength = spec.maxLength;
+      if (spec.max) el.max = spec.max;
+    }
+    el.className = spec.className;
+    el.value = spec.value;
+    el.setAttribute("aria-label", spec.aria);
+    els[spec.name] = el;
+    editWrap.appendChild(el);
+  });
+
+  main.appendChild(editWrap);
+
+  const hint = document.createElement("span");
+  hint.className = "datos-row__hint";
+  hint.textContent = field.hint;
+  main.appendChild(hint);
+
+  const error = document.createElement("p");
+  error.className = "datos-row__error";
+  error.setAttribute("role", "alert");
+  error.hidden = true;
+  main.appendChild(error);
+
+  editRow.appendChild(main);
+
+  const actions = document.createElement("div");
+  actions.className = "datos-row__actions";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "datos-btn datos-btn--quiet";
+  cancelBtn.textContent = "Cancelar";
+  actions.appendChild(cancelBtn);
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "datos-btn datos-btn--primary";
+  saveBtn.textContent = "Guardar";
+  actions.appendChild(saveBtn);
+
+  editRow.appendChild(actions);
+
+  const closeEditor = () => {
+    openEditorKey = null;
+    renderDatosRows();
+  };
+
+  const showError = (msg) => {
+    error.textContent = msg;
+    error.hidden = false;
+    Object.values(els).forEach((el) => el.setAttribute("aria-invalid", "true"));
+  };
+
+  cancelBtn.addEventListener("click", closeEditor);
+
+  saveBtn.addEventListener("click", async () => {
+    error.hidden = true;
+    Object.values(els).forEach((el) => el.removeAttribute("aria-invalid"));
+
+    const values = Object.fromEntries(
+      Object.entries(els).map(([name, el]) => [name, el.value])
+    );
+
+    const problem = field.validate(values);
+    if (problem) {
+      showError(problem);
+      Object.values(els)[0]?.focus();
+      return;
+    }
+
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    saveBtn.textContent = "Guardando…";
+
+    try {
+      const patch = field.collect(values);
+      const { error: dbError } = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", currentUserId);
+      if (dbError) throw dbError;
+
+      Object.assign(profileData, patch);
+      closeEditor();
+      syncProfileHeader();
+      showToast("Listo, lo guardamos.", "success");
+    } catch (err) {
+      console.error("Error al guardar el perfil", err);
+      saveBtn.disabled = false;
+      cancelBtn.disabled = false;
+      saveBtn.textContent = "Guardar";
+      showError(err.message || "No se pudo guardar. Probá de nuevo.");
+    }
+  });
+
+  // Enter guarda, Escape cancela: sin esto, editar con el teclado obliga a
+  // tabular hasta el botón.
+  editRow.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.tagName !== "SELECT") {
+      e.preventDefault();
+      saveBtn.click();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeEditor();
+    }
+  });
+
+  row.replaceWith(editRow);
+  openEditorKey = field.key;
+  Object.values(els)[0]?.focus();
+}
+
+function renderDatosRows() {
+  const containers = {
+    "datos-personales": document.getElementById("datos-personales"),
+    "datos-contacto": document.getElementById("datos-contacto"),
+  };
+  Object.values(containers).forEach((el) => {
+    if (el) el.textContent = "";
+  });
+  PROFILE_FIELDS.forEach((field) => {
+    containers[field.container]?.appendChild(buildDisplayRow(field));
+  });
+  updateCompletionNudge();
+}
+
+/** El encabezado grande tiene que seguir al nombre recién editado. */
+function syncProfileHeader() {
+  if (sidebarName && profileData.full_name) {
+    sidebarName.textContent = profileData.full_name;
+    removeSkeleton(sidebarName);
+  }
+  // La foto no se toca acá: la repintan sus propios botones. Repintarla con
+  // profileData.avatar_url borraría la de Google, que no está en esa columna.
+}
+
+/** Pinta el avatar en el encabezado, en la fila de foto y en el navbar. */
+function paintAvatar(url) {
+  displayedAvatarUrl = url || null;
+  const targets = [sidebarAvatar, document.getElementById("datos-avatar")];
+  targets.forEach((target) => {
+    if (!target) return;
+    removeSkeleton(target);
+    target.textContent = "";
+    if (url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "Tu foto de perfil";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;";
+      img.onerror = () => {
+        target.textContent = "";
+        const icon = document.createElement("i");
+        icon.className = "fa-regular fa-user";
+        target.appendChild(icon);
+      };
+      target.appendChild(img);
+    } else {
+      const icon = document.createElement("i");
+      icon.className = "fa-regular fa-user";
+      target.appendChild(icon);
+    }
+  });
+
+  // "Quitar" solo si la foto es una que subimos nosotros: la de Google se ve
+  // igual, pero no es nuestra para borrar.
+  const removeBtn = document.getElementById("btn-avatar-remove");
+  if (removeBtn) removeBtn.hidden = !profileData.avatar_url;
+
+  try {
+    if (url) localStorage.setItem("bl_avatar_url", url);
+    else localStorage.removeItem("bl_avatar_url");
+  } catch { /* modo privado: no pasa nada, es solo cache del navbar */ }
+}
+
+// --- Foto de perfil ---
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const AVATAR_PUBLIC_PREFIX = "/storage/v1/object/public/avatars/";
+
+/**
+ * Borra del bucket la foto anterior. Sin esto se acumulan objetos que nadie
+ * referencia y que igual se pagan -- es el mismo problema que ya está
+ * anotado como pendiente para las fotos de producto; acá se evita de entrada
+ * porque la ruta la controlamos nosotros.
+ */
+async function deleteStoredAvatar(url) {
+  if (!url || !url.includes(AVATAR_PUBLIC_PREFIX)) return;
+  const path = decodeURIComponent(url.split(AVATAR_PUBLIC_PREFIX)[1].split("?")[0]);
+  if (!path) return;
+  const { error } = await supabase.storage.from("avatars").remove([path]);
+  if (error) console.warn("No se pudo borrar la foto anterior:", error.message);
+}
+
+function setupAvatarControls() {
+  const pickBtn = document.getElementById("btn-avatar-pick");
+  const removeBtn = document.getElementById("btn-avatar-remove");
+  const fileInput = document.getElementById("avatar-file");
+  const errorEl = document.getElementById("avatar-error");
+  if (!pickBtn || !fileInput) return;
+
+  const fail = (msg) => {
+    if (!errorEl) return;
+    errorEl.textContent = msg;
+    errorEl.hidden = false;
+  };
+  const clearFail = () => { if (errorEl) errorEl.hidden = true; };
+
+  pickBtn.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    clearFail();
+
+    if (file.size > MAX_AVATAR_BYTES) {
+      fail("Esa imagen pesa más de 2 MB. Probá con una más liviana.");
+      fileInput.value = "";
+      return;
+    }
+
+    pickBtn.disabled = true;
+    pickBtn.textContent = "Subiendo…";
+    const previousUrl = profileData.avatar_url;
+
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").replace(/[^a-zA-Z0-9]/g, "").slice(0, 5);
+      // La carpeta tiene que ser el uid: es lo que exige la policy del bucket.
+      const path = `${currentUserId}/${Date.now()}.${ext || "jpg"}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { contentType: file.type || "image/jpeg" });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = pub?.publicUrl;
+      if (!publicUrl) throw new Error("No se pudo obtener la URL de la foto.");
+
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", currentUserId);
+      if (dbErr) throw dbErr;
+
+      profileData.avatar_url = publicUrl;
+      paintAvatar(publicUrl);
+      updateCompletionNudge();
+      await deleteStoredAvatar(previousUrl);
+      showToast("Listo, cambiamos tu foto.", "success");
+    } catch (err) {
+      console.error("Error al subir la foto", err);
+      fail(err.message || "No pudimos subir la foto. Probá de nuevo.");
+    } finally {
+      pickBtn.disabled = false;
+      pickBtn.textContent = "Cambiar foto";
+      fileInput.value = "";
+    }
+  });
+
+  removeBtn?.addEventListener("click", async () => {
+    if (!confirm("¿Sacamos tu foto de perfil?")) return;
+    clearFail();
+    removeBtn.disabled = true;
+    const previousUrl = profileData.avatar_url;
+    try {
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: null })
+        .eq("id", currentUserId);
+      if (dbErr) throw dbErr;
+      profileData.avatar_url = null;
+      paintAvatar(null);
+      updateCompletionNudge();
+      await deleteStoredAvatar(previousUrl);
+      showToast("Sacamos tu foto.", "success");
+    } catch (err) {
+      console.error("Error al quitar la foto", err);
+      fail(err.message || "No pudimos sacar la foto. Probá de nuevo.");
+    } finally {
+      removeBtn.disabled = false;
+    }
+  });
+}
+
+// --- Seguridad / cuenta ---
+const PROVIDER_LABELS = {
+  google: "Google",
+  email: "Correo y contraseña",
+};
+
+function renderAccountRows(user) {
+  // Email verificado: si Supabase nunca confirmó el mail, no lo decimos.
+  const verified = document.getElementById("email-verified");
+  if (verified) verified.hidden = !(user.email_confirmed_at || user.confirmed_at);
+
+  const providers = user.app_metadata?.providers || [user.app_metadata?.provider].filter(Boolean);
+  const providerEl = document.getElementById("login-provider");
+  if (providerEl) {
+    providerEl.textContent = providers.length
+      ? providers.map((p) => PROVIDER_LABELS[p] || p).join(" y ")
+      : "Correo y contraseña";
+  }
+
+  // Con Google no hay contraseña nuestra que cambiar.
+  const onlyGoogle = providers.length === 1 && providers[0] === "google";
+  const passBtn = document.getElementById("btn-change-password");
+  const passValue = document.getElementById("password-value");
+  const passHint = document.getElementById("password-hint");
+  if (onlyGoogle) {
+    if (passBtn) passBtn.hidden = true;
+    if (passValue) passValue.textContent = "La maneja Google";
+    if (passHint) passHint.textContent = "Entrás con tu cuenta de Google, así que tu contraseña se cambia desde ahí.";
+  }
+
+  if (cardMemberSince && profileData.created_at) {
+    const since = new Date(profileData.created_at)
+      .toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+    cardMemberSince.textContent = since.charAt(0).toUpperCase() + since.slice(1);
+  }
+
+  passBtn?.addEventListener("click", async () => {
+    passBtn.disabled = true;
+    passBtn.textContent = "Enviando…";
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/pages/login.html`,
+      });
+      if (error) throw error;
+      showToast(`Te mandamos un correo a ${user.email} con el link para cambiarla.`, "success");
+    } catch (err) {
+      console.error("Error al pedir el cambio de contraseña", err);
+      showToast("No pudimos enviar el correo. Probá de nuevo en un rato.", "error");
+    } finally {
+      passBtn.disabled = false;
+      passBtn.textContent = "Cambiar";
+    }
+  });
+}
+
+// --- Privacidad (Ley 25.326: acceso y supresión de los datos propios) ---
+function setupPrivacyActions(user) {
+  const downloadBtn = document.getElementById("btn-download-data");
+  const deleteBtn = document.getElementById("btn-delete-account");
+
+  downloadBtn?.addEventListener("click", async () => {
+    downloadBtn.disabled = true;
+    const originalText = downloadBtn.textContent;
+    downloadBtn.textContent = "Juntando tus datos…";
+    try {
+      // Todo sale por RLS: cada consulta devuelve solo lo del propio usuario.
+      const [perfil, direcciones, pedidos, favoritos, resenas] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("user_addresses").select("*").eq("user_id", user.id),
+        supabase.from("orders").select("*, order_items(*)").eq("client_id", user.id),
+        supabase.from("favorites").select("*").eq("user_id", user.id),
+        supabase.from("reviews").select("*").eq("client_id", user.id),
+      ]);
+
+      const payload = {
+        exportado_el: new Date().toISOString(),
+        cuenta: { id: user.id, email: user.email, creada_el: user.created_at },
+        perfil: perfil.data ?? null,
+        direcciones: direcciones.data ?? [],
+        pedidos: pedidos.data ?? [],
+        favoritos: favoritos.data ?? [],
+        resenas: resenas.data ?? [],
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mis-datos-baradero-local-${todayISO()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("Descargamos tus datos en un archivo.", "success");
+    } catch (err) {
+      console.error("Error al exportar los datos", err);
+      showToast("No pudimos armar el archivo. Probá de nuevo.", "error");
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = originalText;
+    }
+  });
+
+  deleteBtn?.addEventListener("click", async () => {
+    // Borrar la cuenta de auth de verdad necesita la service role key, que no
+    // puede vivir en el navegador: se abre un pedido por el mismo canal de
+    // soporte que ya usa el resto de la app y lo procesa un admin.
+    const ok = confirm(
+      "Vas a pedir que borremos tu cuenta y todos tus datos.\n\n" +
+      "Se pierden tus pedidos, tus favoritos y tus direcciones. No se puede deshacer.\n\n" +
+      "¿Seguimos?"
+    );
+    if (!ok) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Enviando el pedido…";
+    try {
+      await submitSupportTicket(
+        "Pedido de eliminación de cuenta",
+        `El usuario ${user.email} (${user.id}) pidió eliminar su cuenta y sus datos ` +
+        `desde "Información de tu perfil".`
+      );
+      showToast("Recibimos tu pedido. Te vamos a escribir por correo para confirmarlo.", "success");
+    } catch (err) {
+      console.error("Error al pedir la baja de la cuenta", err);
+      showToast("No pudimos registrar el pedido. Escribinos desde Soporte, por favor.", "error");
+    } finally {
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = "Eliminar mi cuenta";
+    }
+  });
+}
+
 // --- Renderizar perfil completo ---
 async function renderFullProfile(user) {
   currentUserId = user.id;
@@ -913,23 +1466,25 @@ async function renderFullProfile(user) {
 
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
     if (sidebarName && nameToUse) sidebarName.textContent = nameToUse;
-    if (cardEmail) cardEmail.textContent = emailToUse;
-    if (cardName && nameToUse) cardName.textContent = nameToUse;
+    if (cardEmail) { cardEmail.textContent = emailToUse; removeSkeleton(cardEmail); }
     if (cardRole) cardRole.textContent = roleFromDB.charAt(0).toUpperCase() + roleFromDB.slice(1);
 
-    // Renderizar avatar
-    if (sidebarAvatar && profile.avatar_url) {
-      removeSkeleton(sidebarAvatar);
-      sidebarAvatar.innerHTML = ""; 
-      const img = document.createElement("img");
-      img.src = profile.avatar_url;
-      img.alt = profile.full_name || "Avatar";
-      img.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: 50%;";
-      img.onerror = () => { sidebarAvatar.innerHTML = '<i class="fa-regular fa-user"></i>'; };
-      sidebarAvatar.appendChild(img);
-    } else if (sidebarAvatar) {
-      removeSkeleton(sidebarAvatar);
-    }
+    // "Información de tu perfil": filas editables + foto + seguridad + privacidad.
+    profileData = { ...profile };
+
+    // La foto va primero: la barra de "perfil completo" la cuenta, y la de
+    // Google se muestra aunque no esté copiada en profiles (ver paintAvatar).
+    paintAvatar(
+      profile.avatar_url
+      || user.user_metadata?.avatar_url
+      || user.user_metadata?.picture
+      || null
+    );
+
+    renderDatosRows();
+    setupAvatarControls();
+    renderAccountRows(user);
+    setupPrivacyActions(user);
 
     // Llenar formularios de otras pestañas
     loadAddresses(user.id);

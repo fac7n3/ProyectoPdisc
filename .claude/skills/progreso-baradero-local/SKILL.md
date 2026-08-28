@@ -1030,3 +1030,89 @@ markup interno todavía). Sin migración en ninguno de los 3 commits — 100% fr
 - ✅ **BUG F0-03 (resuelto):** `validate_cart_prices` leía `products.name`/`products.price` (inexistentes) → fallaba en runtime. Recreada con `title`/`price` en migración 12; columnas migradas de centavos a pesos.
 - Funciones en la DB: `approve_seller_request`, `handle_new_user`, `prevent_role_update_on_profile` (protección de rol activa), `rls_auto_enable`, `set_updated_at`, `update_user_carts_modtime`, `validate_cart_prices`.
 - `seller_requests` tiene columnas extra (`cuit`, `address`, `category_slug`, `phone`) → migración 05 aplicada.
+
+## Rediseño de "Información de tu perfil" (2026-08-28)
+
+Rama `mi-perfil-info-personal`. Pedido del usuario: rediseñar ese apartado con "todos los
+apartados de una página seria, no solo correo nombre y apellido", con diseño orgánico "que no
+parezca IA".
+
+**De qué se partía:** el panel `tab-mis-datos` eran dos `.perfil-card` con tres datos de sólo
+lectura (nombre, email, rol) y una frase de relleno sobre los beneficios de comprar local. No
+había forma de completar ni corregir ningún dato propio desde la app — el teléfono solo se podía
+cargar adentro de una dirección, y el nombre solo llegaba desde Google.
+
+**Migración 61 (`61_profile_personal_data.sql`, aplicada y verificada en la base real):**
+- `profiles.birth_date` (date), `doc_type` (text), `doc_number` (text).
+- CHECKs: `doc_type` en {DNI, LC, LE, CI, Pasaporte}; tipo y número van juntos o ninguno
+  (`(doc_type is null) = (doc_number is null)` — un número suelto no identifica a nadie);
+  `birth_date` ni futura ni de hace más de 120 años (ataja el dedazo 1902/2002).
+- Bucket **`avatars`** nuevo (público, porque la foto se ve en reseñas y navbar) con policies de
+  escritura restringidas a la carpeta `{uid}/` — antes solo se podía tener foto entrando con
+  Google; quien se registró con email no tenía manera de ponerse una.
+- `full_name` se dejó como un solo campo **a propósito**: partirlo en nombre/apellido obligaba a
+  migrar datos y tocar navbar, órdenes, reseñas y panel de vendedor para ganar muy poco.
+
+**Estructura nueva** (`pages/perfil.html`): intro + aviso de perfil incompleto con barra de
+progreso + grupos "Tu foto", "Datos personales", "Contacto", "Seguridad", "Tu cuenta" y, separado
+por una línea al final, "Tus datos son tuyos" (descargar mis datos / eliminar mi cuenta,
+Ley 25.326).
+
+**Decisiones de diseño (el pedido de "que no parezca IA"):**
+- **Filas con divisores, no una grilla de tarjetas.** Cada dato es una fila con su acción
+  discreta a la derecha, como la pantalla de datos de Mercado Libre / Amazon / ajustes de iOS.
+  Una grilla de cajas iguales es justo lo que delata una UI generada.
+- **Deliberadamente NO se reusa `.perfil-card`.** Esa clase tiene hover-lift, que está bien para
+  algo en lo que hacés click entero (las tarjetas del hub) pero mal para una lista donde cada
+  fila tiene su propio botón: si el contenedor se mueve, el botón se te escapa del cursor.
+- **Títulos de grupo sin ícono**, en gris chico afuera del panel. Los íconos quedan en el hub;
+  así el hub y el detalle no compiten.
+- **Edición fila por fila** (progressive disclosure), una sola abierta a la vez: abrir un
+  formulario de seis campos para corregir el teléfono es pedirle al usuario que revise todo para
+  tocar uno. Enter guarda, Escape cancela.
+- **Un solo botón primario visible a la vez** (el "Guardar" de la fila abierta).
+- Copy rioplatense y concreto ("Para que el comercio o el repartidor te avisen si hay una
+  demora"), no genérico tipo "Gestioná la configuración de tu cuenta".
+
+**Verificación** (medida en el navegador, no a ojo): los 10 botones dan exactamente 44px de alto;
+inputs en 16px (evita el zoom automático de iOS) y 44px de alto; sin scroll horizontal ni en
+1265px ni en 375px; en móvil las filas pasan a columna y la acción baja debajo del dato. Contraste
+WCAG AA en todos los estados de color: aviso 7.11, ícono del aviso 4.83, tag "Verificado" 5.21,
+título de grupo 5.31, botón primario 9.98, botón "Editar" 9.98, botón de peligro 6.04. El texto de
+ayuda usa un gris propio (`--bl-perfil-hint`, ~5.7:1) porque `--bl-perfil-text-sec` llega solo a
+~3.5:1 y no pasaba AA para texto que hay que leer.
+
+**Gotchas resueltos:**
+- `formatBirthDate` parsea el string a mano en vez de `new Date('1994-03-12')`: eso último es UTC
+  y en Argentina (UTC-3) mostraba **el día anterior**. Hay test para esto.
+- `syncProfileHeader()` NO repinta el avatar: hacerlo con `profileData.avatar_url` borraba la foto
+  de Google, que no vive en esa columna.
+- La barra de "perfil completo" cuenta la foto de Google como foto puesta (vía
+  `displayedAvatarUrl`), si no mostraba una foto y a la vez "te falta una foto".
+- El botón "Quitar" de la foto solo aparece si la foto es una que subimos nosotros — la de Google
+  se ve igual pero no es nuestra para borrar.
+- `deleteStoredAvatar()` borra el objeto anterior del bucket al reemplazar o quitar la foto, así
+  este bucket no arrastra el problema de **fotos huérfanas** que sí tiene el de productos. Sirve
+  de modelo para cuando se arregle aquel.
+
+**Baja de cuenta:** borrar de verdad el usuario de `auth.users` necesita la service role key, que
+no puede vivir en el navegador (haría falta una Edge Function). Se reusa `submitSupportTicket()`
+para abrir un pedido que procesa un admin — mismo canal que ya usa el resto de la app, sin inventar
+uno nuevo. **Ojo:** hoy nadie tiene rol admin en producción, así que esos tickets no los está
+mirando nadie todavía.
+
+**Descargar mis datos** sí es completo y client-side: junta perfil, direcciones, pedidos (con
+items), favoritos y reseñas — todo sale filtrado por RLS, así que cada consulta devuelve solo lo
+del propio usuario — y lo baja como JSON.
+
+**`js/profile-fields.js` (archivo nuevo):** los 4 campos editables se declaran una sola vez
+(display / inputs / collect / validate) y un único renderer arma tanto la fila de lectura como la
+de edición. Escribir las cuatro filas a mano era el mismo bloque copiado cuatro veces, con cuatro
+lugares donde olvidarse el `aria-label`. No toca DOM ni Supabase a propósito: eso permite correr
+`node js/profile-fields.test.mjs` (16 chequeos con `node:assert`, sin framework — el proyecto
+sigue sin runner de tests, F10-02 diferido) sobre lo que se rompe en silencio: el desfase de zona
+horaria y los regex de documento y teléfono.
+
+**Limpieza:** se borraron `.detail-list`, `.detail-item`, `.detail-value` y `.level-badge` de
+`perfil-custom.css` — esta pantalla era la única que las usaba. Sobrevive `.detail-label`, que
+todavía usa el formulario de direcciones.
