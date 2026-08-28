@@ -546,6 +546,131 @@ body {
   background: var(--bl-perfil-border);
 }
 
+/* === Favoritos: buscador ===
+   Antes era un <input class="form-input"> pelado: esa clase solo existe inline
+   en vender.html y repartidor.html, así que en esta página no aplicaba nada y
+   se veía el input crudo del navegador. */
+.fav-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.875rem;
+}
+
+.fav-search__icon {
+  position: absolute;
+  left: 0.85rem;
+  font-size: 0.875rem;
+  color: var(--bl-perfil-hint);
+  pointer-events: none;
+}
+
+.fav-search__input {
+  width: 100%;
+  min-height: 44px;
+  /* Espacio a los costados para el ícono y el botón de borrar. */
+  padding: 0.6rem 2.6rem 0.6rem 2.4rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--bl-radius-pill, 50rem);
+  background: var(--bl-perfil-surface);
+  font-family: inherit;
+  font-size: 1rem; /* 16px: evita el zoom automático de iOS */
+  color: var(--bl-perfil-text-main);
+  transition: border-color var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
+}
+
+.fav-search__input::placeholder { color: var(--bl-perfil-hint); }
+
+.fav-search__input:focus {
+  outline: none;
+  border-color: var(--bl-perfil-primary);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
+}
+
+/* La "x" nativa de type=search la dibuja cada navegador a su manera; se usa
+   la propia, que además es un objetivo táctil de verdad. */
+.fav-search__input::-webkit-search-cancel-button { display: none; }
+
+.fav-search__clear {
+  position: absolute;
+  right: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--bl-perfil-hint);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) ease, color var(--duration-normal) ease;
+}
+
+.fav-search__clear:hover {
+  background: var(--bl-perfil-bg);
+  color: var(--bl-perfil-text-main);
+}
+
+.fav-search__clear:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.fav-search__clear[hidden] { display: none; }
+
+/* === Favoritos: filtro por categoría === */
+.fav-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.fav-chips:empty,
+.fav-chips[hidden] { display: none; }
+
+.fav-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--bl-radius-pill, 50rem);
+  background: var(--bl-perfil-surface);
+  color: var(--bl-perfil-text-main);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--duration-normal) ease, background-color var(--duration-normal) ease, color var(--duration-normal) ease;
+}
+
+.fav-chip:hover { border-color: var(--bl-perfil-primary); }
+
+.fav-chip:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.fav-chip--active {
+  background: var(--bl-perfil-primary);
+  border-color: var(--bl-perfil-primary);
+  color: #fff;
+}
+
+/* El conteo se apoya en el color del chip, pero no depende solo de él: el
+   número está entre paréntesis, se lee igual sin distinguir el gris. */
+.fav-chip__count {
+  color: var(--bl-perfil-hint);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.fav-chip--active .fav-chip__count { color: rgba(255, 255, 255, 0.75); }
+
 /* === Favoritos: sub-pestañas productos/comercios (P1-9) === */
 .fav-subtab-btn {
   padding: 0.5rem 1.1rem;

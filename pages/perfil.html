@@ -290,7 +290,18 @@
               <button type="button" id="fav-subtab-products" class="fav-subtab-btn fav-subtab-btn--active" data-fav-target="favoritos-container">Productos</button>
               <button type="button" id="fav-subtab-stores" class="fav-subtab-btn" data-fav-target="favoritos-stores-container">Comercios</button>
             </div>
-            <input type="text" id="fav-filter-input" class="form-input" placeholder="Buscar en mis favoritos..." style="margin-bottom: 1rem;" />
+            <div class="fav-search">
+              <i class="fa-solid fa-magnifying-glass fav-search__icon" aria-hidden="true"></i>
+              <label class="sr-only" for="fav-filter-input">Buscar en mis favoritos</label>
+              <input type="search" id="fav-filter-input" class="fav-search__input" placeholder="Buscar en mis favoritos" autocomplete="off" />
+              <button type="button" class="fav-search__clear" id="fav-filter-clear" aria-label="Borrar la búsqueda" hidden>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <!-- Filtro por categoría. Solo aplica a productos; lo arma el JS con
+                 las categorías que el usuario realmente tiene en favoritos. -->
+            <div class="fav-chips" id="fav-categories" role="group" aria-label="Filtrar por categoría"></div>
             <div id="favoritos-container" class="favoritos-grid">
               <!-- Renderizado por JS -->
               <p style="color: var(--bl-perfil-text-sec);">Cargando tus favoritos...</p>

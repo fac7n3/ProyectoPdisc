@@ -1291,3 +1291,50 @@ El input nativo sufría lo mismo, no lo causó este cambio.
 devuelve 0 y todos los `getBoundingClientRect()` colapsan (la zona "medía" 124px de alto y el
 contenedor 151px). Hay que forzar un viewport con `resize_window` antes de medir o de sacar
 capturas; con 1100x900 los números dieron bien (zona de 60px, botón de 44px).
+
+## Buscador propio + filtro por categoría en Favoritos (2026-08-28)
+
+Rama `favoritos-filtro-categoria`. El usuario pidió sacar el buscador nativo de "Mis favoritos" y
+sumar filtrado por categoría de producto. (De paso confirmó que el apilado en móvil de
+`.compra-item` del cambio anterior queda como está.)
+
+**Por qué se veía pelado:** el input era `<input class="form-input">`, pero **`.form-input` solo
+existe inline en `vender.html` y `repartidor.html`** — `perfil.html` carga `home.css`,
+`carrito.css` y `perfil-custom.css`, ninguna la define. O sea que la clase no aplicaba nada y se
+veía el input crudo del navegador. Era el único caso en la página (el formulario de direcciones usa
+`.bl-input`, que sí está definida ahí).
+
+Ahora es un campo tipo píldora con lupa a la izquierda y botón de limpiar a la derecha, que aparece
+solo cuando hay texto. Se oculta la "x" nativa de `type=search`
+(`::-webkit-search-cancel-button { display: none }`) porque cada navegador la dibuja distinto y no
+es un objetivo táctil de verdad; la propia mide 36px. Escape también limpia.
+
+**Filtro por categoría** (`renderFavCategoryChips`): chips con la categoría y el conteo, armados
+con las categorías que el usuario **realmente tiene** en favoritos, no las 14 del sitio — ofrecer
+"Panadería" a alguien sin nada de panadería es mandarlo a un filtro vacío. Ordenados por cantidad
+descendente. Decisiones:
+- Se ocultan si hay **menos de 2** categorías: con una sola no filtran nada.
+- Se ocultan en la pestaña **Comercios**: el filtro es de categoría de producto (lo pedido).
+- Los productos sin `category_id` se agrupan en un chip **"Sin categoría"**.
+- Volver a tocar la categoría activa la desactiva.
+- El texto y la categoría se combinan (AND).
+- El mensaje de vacío distingue "no tenés nada" de "tu filtro no dio nada" — decirle "todavía no
+  agregaste favoritos" a alguien que sí tiene pero filtrados es mentirle.
+
+El dato sale de `products.category_id` → `categories(name)`, embebido en la query que ya existía
+(`categories_select_public` tiene `qual: true`, así que el join no vuelve vacío por RLS).
+
+**Gotcha que se corrigió sobre la marcha:** la rama de "menos de 2 categorías" reseteaba
+`favCategory` a 'todas' sin volver a aplicar el filtro. Como `renderFavCategoryChips` corre **al
+final** de `applyFavFilter`, eso dejaba la grilla mostrando un recorte y los chips diciendo otra
+cosa. Se sacó el reseteo (es inalcanzable hoy, pero era una trampa para el próximo que toque esto).
+
+**Verificado** con los 9 escenarios combinados: filtro por categoría (3 de 7), categoría + texto
+(1), cruce vacío con el mensaje correcto, limpiar la búsqueda conservando la categoría, toggle de
+la categoría activa, "Sin categoría", y los chips ocultándose al pasar a Comercios y volviendo al
+volver. En móvil: 375px sin scroll horizontal, input de 44px con fuente de 16px, chips de 36px
+envolviendo en 3 filas. Contraste ≥9.98 en chips activos e inactivos.
+
+**Gotcha de medición (otra vez):** capturar una referencia a un `.fav-chip` **antes** de disparar
+un filtrado da medidas en 0 — `applyFavFilter` reconstruye los chips y el nodo viejo queda
+desconectado del DOM. Hay que volver a consultarlo después del re-render.
