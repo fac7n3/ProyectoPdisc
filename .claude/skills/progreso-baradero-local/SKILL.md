@@ -1509,3 +1509,43 @@ composición) y cuelga el script hasta el timeout; usar `setTimeout` para espera
 **Estado de los selects nativos:** quedan dos, los dos fuera de lo pedido hasta ahora —
 `delivery-address-select` (elegir dirección en el carrito) y `role-switcher` (cambiar de rol en el
 perfil, solo visible para admin/moderador).
+
+## Dirección del carrito sin select (2026-08-28)
+
+Rama `direccion-sin-select`. Distinto de los anteriores: las opciones son **dinámicas** (las
+direcciones guardadas del usuario, 0..N) más una de "usar otra".
+
+**No se usó `.catpick`** (la grilla de las altas) sino una lista propia `.addr-option` con el
+**radio visible**: acá conviven a dos centímetros de los radios de retiro/envío, y tenían que
+leerse como el mismo tipo de elección. Cada opción muestra la etiqueta ("Casa"), la dirección
+completa y el tag "Predeterminada" si corresponde.
+
+**El motivo real del cambio, más allá de la estética:** una dirección es un texto largo
+("Avenida Presidente Juan Domingo Perón 4587 esquina Los Aromos") y el `<select>` la recortaba en
+una sola línea. Ahora envuelve (`overflow-wrap: anywhere`) y se lee entera — verificado que no
+desborda en 375px.
+
+**Bug de orden asíncrono arreglado de paso:** `loadAddressSelector()` es async y
+`initDeliveryEvents()` decide qué mostrar según si hay direcciones. Con el `<select>` el chequeo era
+`options.length > 2` sobre un elemento que se poblaba en el lugar; con la lista nueva pasó a ser
+`savedAddresses.length`, una variable que empieza vacía. Si el usuario elegía "envío" antes de que
+resolviera el fetch, veía el campo libre y **sus direcciones guardadas nunca aparecían**. Se agregó
+`refreshDeliveryUI` (referencia a `updateMethod` que expone `initDeliveryEvents`), que
+`loadAddressSelector` llama al terminar. Verificado ese caso puntual.
+
+El listener va **delegado** en el contenedor, no en cada radio: las opciones se inyectan después,
+así que engancharse a cada una en `initDeliveryEvents` llegaría antes de que existan.
+
+**Adyacente:** los radios de retiro/envío salían con el violeta por defecto del navegador, que no
+es de la paleta y desentonaba con las opciones de dirección de abajo. Se les puso
+`accent-color: var(--bl-primary)`.
+
+**Verificado** en previsualización con las hojas reales (el carrito necesita sesión para traer las
+direcciones), 6 escenarios: sin direcciones cargadas todavía → campo libre; al llegar → lista
+visible con la predeterminada ya elegida y puesta en `shippingAddress`; elegir otra → se actualiza;
+"usar otra dirección" → aparece el campo libre, se limpia y toma el foco; volver a retiro → se
+esconde todo; volver a envío → la lista vuelve conservando el estado. En 375px: sin scroll
+horizontal, opciones de 68px, texto largo envuelto.
+
+**Estado de los selects nativos:** queda **uno solo** en todo el proyecto, `role-switcher` en
+`perfil.html` (cambiar de rol, visible únicamente para admin/moderador).
