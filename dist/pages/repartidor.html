@@ -150,14 +150,14 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/repartidor-DgSzt7IY.js"></script>
+    <script type="module" crossorigin src="/assets/repartidor-CwBpKi_Y.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-DIWrPmBA.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CivoFhuJ.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-CrxHU93G.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-Xp8Z9a0l.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-yz6nn6om.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-CsGBJYfe.css">
   </head>
   <body>
     <!-- Loading screen -->
@@ -204,12 +204,29 @@
                 <input type="text" id="delivery-phone" class="form-input" placeholder="Código de área + Número" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="delivery-vehicle-type">Vehículo</label>
-                <select id="delivery-vehicle-type" class="form-input" required>
-                  <option value="bicicleta">Bicicleta</option>
-                  <option value="moto">Moto</option>
-                  <option value="auto">Auto</option>
-                </select>
+                <fieldset class="catpick">
+                  <legend class="form-label">Vehículo</legend>
+                  <div class="catpick__grid" id="delivery-vehicle-options">
+                    <label class="catpick__opt">
+                      <input type="radio" name="delivery-vehicle-type" value="bicicleta" class="catpick__input" required />
+                      <i class="fa-solid fa-bicycle catpick__icon" aria-hidden="true"></i>
+                      <span class="catpick__name">Bicicleta</span>
+                      <i class="fa-solid fa-check catpick__check" aria-hidden="true"></i>
+                    </label>
+                    <label class="catpick__opt">
+                      <input type="radio" name="delivery-vehicle-type" value="moto" class="catpick__input" required />
+                      <i class="fa-solid fa-motorcycle catpick__icon" aria-hidden="true"></i>
+                      <span class="catpick__name">Moto</span>
+                      <i class="fa-solid fa-check catpick__check" aria-hidden="true"></i>
+                    </label>
+                    <label class="catpick__opt">
+                      <input type="radio" name="delivery-vehicle-type" value="auto" class="catpick__input" required />
+                      <i class="fa-solid fa-car catpick__icon" aria-hidden="true"></i>
+                      <span class="catpick__name">Auto</span>
+                      <i class="fa-solid fa-check catpick__check" aria-hidden="true"></i>
+                    </label>
+                  </div>
+                </fieldset>
               </div>
               <div class="form-group" id="delivery-plate-group">
                 <label class="form-label" for="delivery-plate">Patente</label>
