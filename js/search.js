@@ -6,7 +6,7 @@
 // estado sin resultados con recuperación.
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
-import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState } from './cart-utils.js';
+import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell } from './nav-utils.js';
 
 const PAGE_SIZE = 24;
@@ -34,6 +34,79 @@ async function loadShippingThresholds(products) {
   const { data, error } = await supabase.from('stores').select('id, free_shipping_threshold').in('id', missingIds);
   if (error) return; // el badge es cosmético: si falla, simplemente no se muestra
   data.forEach((s) => storeShippingById.set(s.id, s.free_shipping_threshold));
+}
+
+// ── Comercios que coinciden con la búsqueda ─────────────────
+// Si alguien escribe "Don Pedro" está buscando el comercio, no un producto que
+// se llame así; antes la búsqueda solo miraba productos y no lo encontraba.
+//
+// Se traen los comercios aprobados una sola vez y se filtran en memoria, en
+// vez de consultar por cada tecla: son pocos (14 al 2026-08) y así el filtro
+// puede ignorar acentos, que un `ilike` del servidor no hace.
+// ponytail: se cargan todos; si algún día son miles, pasar a un RPC con unaccent.
+let storesCache = null;
+
+/** "Panadería" -> "panaderia", para que "panaderia" encuentre "Panadería". */
+function normalizeText(text) {
+  return (text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+async function getStores() {
+  if (storesCache) return storesCache;
+  const { data, error } = await supabase
+    .from('stores')
+    .select('id, name, logo_url, zone, description')
+    .eq('status', 'approved')
+    .order('name');
+  if (error) {
+    console.error('No se pudieron cargar los comercios:', error);
+    storesCache = []; // no se reintenta por tecla: la sección es un extra
+    return storesCache;
+  }
+  storesCache = data || [];
+  return storesCache;
+}
+
+async function renderStoreResults() {
+  const section = document.getElementById('store-results');
+  const storesGrid = document.getElementById('stores-grid');
+  const titleEl2 = document.getElementById('store-results-title');
+  if (!section || !storesGrid) return;
+
+  const q = normalizeText(filterState.query).trim();
+
+  // Solo con texto escrito: filtrar comercios por precio o por categoría de
+  // producto no tiene sentido, y sin consulta la lista sería "todos".
+  if (!q) {
+    section.hidden = true;
+    storesGrid.textContent = '';
+    return 0;
+  }
+
+  const stores = await getStores();
+  const matches = stores.filter((s) =>
+    normalizeText(s.name).includes(q) || normalizeText(s.description).includes(q)
+  );
+
+  storesGrid.textContent = '';
+  if (!matches.length) {
+    section.hidden = true;
+    return 0;
+  }
+
+  if (titleEl2) {
+    titleEl2.textContent = matches.length === 1 ? 'Comercio' : 'Comercios';
+    const count = document.createElement('span');
+    count.textContent = ` (${matches.length})`;
+    titleEl2.appendChild(count);
+  }
+
+  matches.forEach((s) => storesGrid.appendChild(buildStoreCard(s)));
+  section.hidden = false;
+  return matches.length;
 }
 
 // --- Referencias DOM ---
@@ -94,8 +167,11 @@ async function runSearch({ append = false } = {}) {
     renderHeader();
     renderChips();
 
+    // Los comercios no se paginan: solo se recalculan en una búsqueda nueva.
+    const storeMatches = append ? 0 : await renderStoreResults();
+
     if ((!products || products.length === 0) && !append) {
-      renderNoResults();
+      renderNoResults(storeMatches);
       updateLoadMore();
       return;
     }
@@ -201,7 +277,7 @@ function renderChips() {
 }
 
 // ── Estado sin resultados con recuperación ──────────────────
-function renderNoResults() {
+function renderNoResults(storeMatches = 0) {
   grid.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'no-results';
@@ -211,11 +287,20 @@ function renderNoResults() {
   wrap.appendChild(icon);
 
   const h3 = document.createElement('h3');
-  h3.textContent = filterState.query ? `Sin resultados para "${filterState.query}"` : 'No encontramos productos con estos filtros';
+  // Con un comercio encontrado arriba, decir "sin resultados" sería mentira:
+  // hubo resultado, solo que no es un producto.
+  if (storeMatches > 0) {
+    h3.textContent = `No encontramos productos para "${filterState.query}", pero sí ${storeMatches === 1 ? 'el comercio de arriba' : 'los comercios de arriba'}`;
+  } else {
+    h3.textContent = filterState.query ? `Sin resultados para "${filterState.query}"` : 'No encontramos productos con estos filtros';
+  }
   wrap.appendChild(h3);
 
   const tips = document.createElement('ul');
-  ['Probá con términos más generales'].forEach((t) => {
+  const consejo = storeMatches > 0
+    ? 'Entrá al comercio para ver todo lo que vende'
+    : 'Probá con términos más generales';
+  [consejo].forEach((t) => {
     const li = document.createElement('li');
     li.textContent = t;
     tips.appendChild(li);
