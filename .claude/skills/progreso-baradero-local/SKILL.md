@@ -1338,3 +1338,43 @@ envolviendo en 3 filas. Contraste ≥9.98 en chips activos e inactivos.
 **Gotcha de medición (otra vez):** capturar una referencia a un `.fav-chip` **antes** de disparar
 un filtrado da medidas en 0 — `applyFavFilter` reconstruye los chips y el nodo viejo queda
 desconectado del DOM. Hay que volver a consultarlo después del re-render.
+
+## Selector de categoría del alta de producto (2026-08-28)
+
+Rama `categoria-alta-producto`. Se sacó el `<select id="prod-category">` nativo.
+
+**Decisión: radios nativos estilados, no botones + input oculto.** Son 14 categorías con ícono, así
+que una grilla que las muestra todas es más rápida que desplegar una lista. Y usando
+`<input type="radio">` de verdad, la plataforma sigue dando gratis: navegación con flechas dentro
+del grupo, `required`, `form.reset()` y el anuncio "opción 3 de 14" del lector de pantalla. La
+alternativa (botones + un select escondido como fuente de verdad) hubiera obligado a reimplementar
+todo eso a mano.
+
+**Gotcha central:** el radio se oculta con `position:absolute; opacity:0`, **nunca `display:none`**.
+Con `display:none` sale del orden de tabulación y el navegador no puede enfocarlo para mostrar el
+aviso de campo obligatorio — el envío quedaría bloqueado sin que el usuario vea por qué. Verificado
+que con esta técnica `checkValidity()` da false y el mensaje nativo es "Selecciona una de estas
+opciones".
+
+Estado elegido: borde + fondo tenue + negrita **+ tilde**, para no depender solo del color.
+Selección y foco se resuelven con `:has()` en CSS, sin JS.
+
+**De paso se sacó un acoplamiento:** `prod-category` se armaba copiando el `innerHTML` del select
+de rubros del alta de comercio (`categorySelect.innerHTML = placeholder + baseCategorySelect.innerHTML`).
+Eso ataba un control al otro y dependía de cuál se inicializara primero — si el formulario de
+producto se armaba antes de que resolviera el fetch de `loadCategories()`, quedaba solo con el
+placeholder. Ahora los dos salen de `categoriesCache` y `loadCategories()` re-dibuja la grilla al
+terminar, así que el orden deja de importar.
+
+Tres puntos de lectura migrados: `setProductCategorySlug()` al editar (antes `.value = slug`),
+`getProductCategorySlug()` en el submit (antes `.value`), y el armado. El `icon` de la tabla
+`categories` se acota con un regex a caracteres de clase CSS antes de meterlo en `className`.
+
+**Móvil:** el mínimo de la grilla es 130px, no 150px. Es el valor más chico que entra dos veces en
+un teléfono de 375px sin cortar "Carnicería" (se midió `scrollWidth > clientWidth` con cada valor):
+2 columnas y 356px de alto, contra 14 filas y ~730px con una sola columna. En desktop quedan 5
+columnas. Una línea en vez de un media query.
+
+**Verificado:** 14 opciones, sin categoría el form es inválido con el mensaje nativo y el radio es
+enfocable, con categoría es válido y el submit lee el slug correcto, `form.reset()` desmarca, el
+re-dibujado conserva la elegida, y en 375px no hay scroll horizontal con opciones de 44px.

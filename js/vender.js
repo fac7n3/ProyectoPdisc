@@ -90,27 +90,97 @@ async function checkSellerState(user) {
 }
 
 // --- Inicializar formulario y eventos ---
+
+/**
+ * Categorías del sitio. Se cachean porque las usan dos controles distintos
+ * --el select de rubros del alta de comercio y la grilla de categoría del alta
+ * de producto-- y antes el segundo se armaba copiando el HTML del primero, lo
+ * que ataba uno al otro y dependía de cuál se inicializara antes.
+ */
+let categoriesCache = [];
+
 async function loadCategories() {
   const select = document.getElementById('shop-category');
-  if (!select) return;
 
   const { data: categories, error } = await supabase
     .from('categories')
-    .select('name, slug')
+    .select('name, slug, icon')
     .order('name');
 
   if (error || !categories) {
-    select.innerHTML = '<option value="">Error al cargar rubros</option>';
+    if (select) select.innerHTML = '<option value="">Error al cargar rubros</option>';
     return;
   }
 
-  select.innerHTML = '';
+  categoriesCache = categories;
 
-  categories.forEach(c => {
-    const option = document.createElement('option');
-    option.value = c.slug;
-    option.textContent = c.name;
-    select.appendChild(option);
+  if (select) {
+    select.innerHTML = '';
+    categories.forEach(c => {
+      const option = document.createElement('option');
+      option.value = c.slug;
+      option.textContent = c.name;
+      select.appendChild(option);
+    });
+  }
+
+  // El alta de producto puede haberse armado antes de que resolviera este
+  // fetch; se re-dibuja acá para que no dependa del orden.
+  renderProductCategoryOptions();
+}
+
+/** Grilla de categorías del alta de producto (radios estilados). */
+function renderProductCategoryOptions() {
+  const grid = document.getElementById('prod-category-options');
+  if (!grid || !categoriesCache.length) return;
+
+  // Conservar la elegida si ya había uno seleccionado (ej. al re-dibujar).
+  const previo = getProductCategorySlug();
+
+  grid.textContent = '';
+
+  categoriesCache.forEach((c) => {
+    const label = document.createElement('label');
+    label.className = 'catpick__opt';
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'prod-category';
+    input.value = c.slug;
+    input.className = 'catpick__input';
+    input.required = true;
+    if (c.slug === previo) input.checked = true;
+    label.appendChild(input);
+
+    const icon = document.createElement('i');
+    // El ícono viene de la DB; se acota a clases de Font Awesome por las dudas.
+    icon.className = `${(c.icon || 'fa-solid fa-tag').replace(/[^a-zA-Z0-9 -]/g, '')} catpick__icon`;
+    icon.setAttribute('aria-hidden', 'true');
+    label.appendChild(icon);
+
+    const name = document.createElement('span');
+    name.className = 'catpick__name';
+    name.textContent = c.name;
+    label.appendChild(name);
+
+    const check = document.createElement('i');
+    check.className = 'fa-solid fa-check catpick__check';
+    check.setAttribute('aria-hidden', 'true');
+    label.appendChild(check);
+
+    grid.appendChild(label);
+  });
+}
+
+/** Slug de la categoría elegida en el alta de producto ('' si ninguna). */
+function getProductCategorySlug() {
+  return document.querySelector('input[name="prod-category"]:checked')?.value || '';
+}
+
+/** Marca una categoría (se usa al editar un producto ya guardado). */
+function setProductCategorySlug(slug) {
+  document.querySelectorAll('input[name="prod-category"]').forEach((r) => {
+    r.checked = r.value === slug;
   });
 }
 
@@ -1843,7 +1913,7 @@ async function openEditProductForm(productId) {
   document.getElementById('prod-compare-price').value = product.compare_at_price ?? '';
   document.getElementById('prod-offer-expires').value = product.offer_expires_at ?? '';
   document.getElementById('prod-desc').value = product.description || '';
-  document.getElementById('prod-category').value = product.categories?.slug || '';
+  setProductCategorySlug(product.categories?.slug || '');
 
   const formTitle = document.getElementById('add-product-form-title');
   if (formTitle) formTitle.textContent = 'Editar producto';
@@ -2187,15 +2257,10 @@ function setupDashboardEvents() {
   const btnCancelAdd = document.getElementById('btn-cancel-add-product');
   const addForm = document.getElementById('add-product-form');
 
-  // Llenar categorías del form
-  const categorySelect = document.getElementById('prod-category');
-  const baseCategorySelect = document.getElementById('shop-category');
-  if (categorySelect && baseCategorySelect) {
-    // prod-category es single-select (un producto va en una sola categoría);
-    // a diferencia de shop-category (P2-10, ahora multiple) necesita un
-    // placeholder vacío para no arrancar con la primera categoría preseleccionada.
-    categorySelect.innerHTML = '<option value="">Seleccioná una categoría...</option>' + baseCategorySelect.innerHTML;
-  }
+  // Grilla de categorías. Antes se armaba copiando el innerHTML del select de
+  // rubros del alta de comercio, lo que ataba un control al otro y dependía de
+  // cuál se inicializara primero; ahora los dos salen de categoriesCache.
+  renderProductCategoryOptions();
 
   function resetProductForm() {
     editingProductId = null;
@@ -2307,7 +2372,7 @@ function setupDashboardEvents() {
     };
 
     // El select guarda el slug de la categoría; hay que resolver el UUID real
-    const slug = document.getElementById('prod-category').value;
+    const slug = getProductCategorySlug();
     const { data: catData } = await supabase.from('categories').select('id').eq('slug', slug).single();
     if (catData) productData.category_id = catData.id;
 
