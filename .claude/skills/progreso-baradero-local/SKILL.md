@@ -1378,3 +1378,58 @@ columnas. Una línea en vez de un media query.
 **Verificado:** 14 opciones, sin categoría el form es inválido con el mensaje nativo y el radio es
 enfocable, con categoría es válido y el submit lee el slug correcto, `form.reset()` desmarca, el
 re-dibujado conserva la elegida, y en 375px no hay scroll horizontal con opciones de 44px.
+
+## Rubros con checkbox + comercios en los resultados de búsqueda (2026-08-28)
+
+Rama `rubros-y-comercios-en-busqueda`. Dos pedidos del usuario.
+
+### 1. Select de rubros del alta de comercio
+
+Era `<select multiple required>` con la ayuda "Mantené Ctrl (o Cmd en Mac) para elegir más de uno"
+— un patrón que además **no existe en un teléfono**. Pasa a grilla de checkbox, reusando las clases
+`.catpick` del selector de categoría de producto (creadas el mismo día): el marcado es idéntico,
+solo cambia `type`. Se generalizó a `renderCategoryPicker(gridId, { name, type, required })` en vez
+de duplicar los ~30 líneas.
+
+**Gotcha:** los checkbox **no** llevan `required`. En un grupo de checkbox el `required` es por
+casilla, o sea que obligaría a marcarlas **todas**. El mínimo de un rubro lo valida el submit, que
+ya lo hacía (`categoriesInput.length === 0` → showToast).
+
+De paso, `loadCategories()` ya no deja un "Cargando rubros..." eterno si el fetch falla: escribe un
+mensaje de error en las dos grillas.
+
+### 2. Tarjeta de comercio en los resultados de búsqueda
+
+`buildStoreCard` **ya existía** en `comercios.js` y hacía exactamente lo pedido (una
+`<a class="product-card">` que va a `comercio.html?id=`). Se movió a `cart-utils.js` —el módulo de
+UI compartida, donde ya viven `buildPriceRow`/`renderErrorState`— y ahora la usan las dos páginas,
+en vez de duplicarla.
+
+Los comercios se traen una sola vez y se filtran en memoria (son 14): así el filtro puede **ignorar
+acentos** con `normalize('NFD')`, cosa que un `ilike` del servidor no hace — buscar "carniceria"
+encuentra "Carnicería El Novillo". Hay un `ponytail:` marcando el techo (si algún día son miles, un
+RPC con unaccent). Solo se muestran con texto escrito: filtrar comercios por precio o por categoría
+de producto no tiene sentido.
+
+Si no hay productos pero **sí** un comercio, el estado vacío ya no dice "Sin resultados" —sería
+mentira, hubo resultado, solo que no es un producto— sino "No encontramos productos para X, pero sí
+el comercio de arriba".
+
+**BUG ENCONTRADO AL PROBAR (importante):** la tarjeta no navegaba. `initProductModal()` en
+`product-modal.js` engancha un listener a cada `.products__grid` y hace `preventDefault()` +
+`openProductModal()` sobre cualquier `.product-card` — y la tarjeta de comercio reusa esa clase.
+En `comercios.html` nunca se notó porque esa página no carga `product-modal.js`. Arreglo de causa
+raíz: el listener ahora ignora los clicks que caen dentro de un `a[href]`, porque un enlace tiene
+que navegar. Es seguro: **todas** las tarjetas de producto son `<article>` (home.js, search.js,
+comercio.js), solo la de comercio es `<a>`. Verificado que el modal de producto sigue abriendo.
+
+**Gotcha de verificación:** los clicks por coordenada fallaban porque la captura viene **escalada**
+(799px de ancho para un viewport de 1200px) y `computer left_click` usa coordenadas de la captura,
+no de la página. Los clicks por `ref_N` (de `find`) no tienen ese problema — usar esos.
+
+**Verificado contra la base real** (la búsqueda es pública, no hizo falta sesión): buscar
+"carniceria" sin tilde muestra la sección "Comercio (1)" con Carnicería El Novillo arriba de los
+productos, y al hacerle click lleva a `comercio.html?id=03738e21…` con su ficha cargada. Los rubros
+se probaron en previsualización: 14 checkbox, selección múltiple, desmarcado, el submit lee los
+slugs, el re-dibujado conserva lo marcado y sin ninguno el form es válido a nivel navegador (lo
+ataja el submit).

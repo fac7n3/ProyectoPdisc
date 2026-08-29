@@ -1293,6 +1293,28 @@ button.coupon-chip:hover {
   color: var(--bl-primary);
 }
 
+/* Comercios que coinciden con la búsqueda, arriba de los productos. Se separa
+   con una línea para que no se lea como si fueran productos más. */
+.store-results {
+  margin-bottom: 2rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--bl-border);
+}
+
+.store-results[hidden] { display: none; }
+
+.store-results__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--bl-text);
+  margin-bottom: 1rem;
+}
+
+.store-results__title span {
+  font-weight: 500;
+  color: var(--bl-text-muted);
+}
+
 .active-filters {
   display: flex;
   flex-wrap: wrap;

@@ -100,42 +100,44 @@ async function checkSellerState(user) {
 let categoriesCache = [];
 
 async function loadCategories() {
-  const select = document.getElementById('shop-category');
-
   const { data: categories, error } = await supabase
     .from('categories')
     .select('name, slug, icon')
     .order('name');
 
   if (error || !categories) {
-    if (select) select.innerHTML = '<option value="">Error al cargar rubros</option>';
+    console.error('No se pudieron cargar las categorías:', error);
+    // Sin categorías no se puede completar ninguno de los dos formularios:
+    // conviene decirlo, antes quedaba un "Cargando rubros..." para siempre.
+    ['prod-category-options', 'shop-category-options'].forEach((id) => {
+      const grid = document.getElementById(id);
+      if (grid) grid.textContent = 'No se pudieron cargar los rubros. Recargá la página.';
+    });
     return;
   }
 
   categoriesCache = categories;
 
-  if (select) {
-    select.innerHTML = '';
-    categories.forEach(c => {
-      const option = document.createElement('option');
-      option.value = c.slug;
-      option.textContent = c.name;
-      select.appendChild(option);
-    });
-  }
-
-  // El alta de producto puede haberse armado antes de que resolviera este
-  // fetch; se re-dibuja acá para que no dependa del orden.
+  // Los dos controles de categoría se re-dibujan acá: cualquiera de los dos
+  // formularios puede haberse armado antes de que resolviera este fetch, así
+  // que el orden de inicialización deja de importar.
   renderProductCategoryOptions();
+  renderShopCategoryOptions();
 }
 
-/** Grilla de categorías del alta de producto (radios estilados). */
-function renderProductCategoryOptions() {
-  const grid = document.getElementById('prod-category-options');
+/**
+ * Grilla de categorías. La usan el alta de producto (radio: una sola) y el
+ * alta de comercio (checkbox: uno o más rubros); el marcado y los estilos son
+ * los mismos, solo cambia el tipo de input.
+ */
+function renderCategoryPicker(gridId, { name, type, required = false }) {
+  const grid = document.getElementById(gridId);
   if (!grid || !categoriesCache.length) return;
 
-  // Conservar la elegida si ya había uno seleccionado (ej. al re-dibujar).
-  const previo = getProductCategorySlug();
+  // Conservar lo elegido si ya había algo marcado (ej. al re-dibujar).
+  const previos = new Set(
+    [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value)
+  );
 
   grid.textContent = '';
 
@@ -144,12 +146,12 @@ function renderProductCategoryOptions() {
     label.className = 'catpick__opt';
 
     const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = 'prod-category';
+    input.type = type;
+    input.name = name;
     input.value = c.slug;
     input.className = 'catpick__input';
-    input.required = true;
-    if (c.slug === previo) input.checked = true;
+    if (required) input.required = true;
+    if (previos.has(c.slug)) input.checked = true;
     label.appendChild(input);
 
     const icon = document.createElement('i');
@@ -158,10 +160,10 @@ function renderProductCategoryOptions() {
     icon.setAttribute('aria-hidden', 'true');
     label.appendChild(icon);
 
-    const name = document.createElement('span');
-    name.className = 'catpick__name';
-    name.textContent = c.name;
-    label.appendChild(name);
+    const nameEl = document.createElement('span');
+    nameEl.className = 'catpick__name';
+    nameEl.textContent = c.name;
+    label.appendChild(nameEl);
 
     const check = document.createElement('i');
     check.className = 'fa-solid fa-check catpick__check';
@@ -169,6 +171,24 @@ function renderProductCategoryOptions() {
     label.appendChild(check);
 
     grid.appendChild(label);
+  });
+}
+
+/** Alta de producto: una sola categoría. */
+function renderProductCategoryOptions() {
+  renderCategoryPicker('prod-category-options', {
+    name: 'prod-category', type: 'radio', required: true,
+  });
+}
+
+/**
+ * Alta de comercio: uno o más rubros. Sin `required` en los checkbox: en un
+ * grupo de checkbox el required es por casilla (obligaría a marcarlas TODAS),
+ * así que el mínimo de uno lo valida el submit, como ya lo hacía.
+ */
+function renderShopCategoryOptions() {
+  renderCategoryPicker('shop-category-options', {
+    name: 'shop-category', type: 'checkbox',
   });
 }
 
@@ -182,6 +202,11 @@ function setProductCategorySlug(slug) {
   document.querySelectorAll('input[name="prod-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+}
+
+/** Rubros marcados en el alta de comercio. */
+function getShopCategorySlugs() {
+  return [...document.querySelectorAll('input[name="shop-category"]:checked')].map((i) => i.value);
 }
 
 function initVenderPage(user) {
@@ -200,8 +225,9 @@ function initVenderPage(user) {
     
     const nameInput = document.getElementById('shop-name').value.trim();
     const cuitInput = document.getElementById('shop-cuit').value.trim();
-    // P2-10: shop-category ahora es <select multiple> -- se puede elegir más de un rubro.
-    const categoriesInput = [...document.getElementById('shop-category').selectedOptions].map((o) => o.value).filter(Boolean);
+    // P2-10: se puede elegir más de un rubro (era un <select multiple>, ahora
+    // una grilla de checkbox -- el Ctrl+click no existía en un teléfono).
+    const categoriesInput = getShopCategorySlugs();
     const addressInput = document.getElementById('shop-address').value.trim();
     const phoneInput = document.getElementById('shop-phone').value.trim();
 

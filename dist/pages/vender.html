@@ -486,14 +486,14 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Fm2FPb5j.js"></script>
+    <script type="module" crossorigin src="/assets/vender-Bmy8KymZ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BP5N-NBo.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DIWrPmBA.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-CrxHU93G.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/auth-Xp8Z9a0l.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DpC9GIj-.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Ced0fwLe.css">
   </head>
   <body>
     <!-- Loading screen -->
@@ -541,11 +541,11 @@
                 <input type="text" id="shop-cuit" class="form-input" placeholder="Sin guiones" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="shop-category">Rubro(s)</label>
-                <select id="shop-category" class="form-input" multiple required>
-                  <option value="">Cargando rubros...</option>
-                </select>
-                <small style="color: var(--bl-text-muted); display: block; margin-top: 0.25rem;">Mantené Ctrl (o Cmd en Mac) para elegir más de uno.</small>
+                <fieldset class="catpick">
+                  <legend class="form-label">Rubro(s)</legend>
+                  <small style="color: var(--bl-text-muted); display: block; margin-bottom: 0.25rem;">Podés elegir más de uno.</small>
+                  <div class="catpick__grid" id="shop-category-options"></div>
+                </fieldset>
               </div>
               <div class="form-group">
                 <label class="form-label" for="shop-address">Dirección del Local</label>
