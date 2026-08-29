@@ -337,15 +337,22 @@ function initRepartidorPage(user) {
 
   const form = document.getElementById('delivery-form');
   const submitBtn = form?.querySelector('button[type="submit"]');
-  const vehicleTypeSelect = document.getElementById('delivery-vehicle-type');
+  const vehicleRadios = document.querySelectorAll('input[name="delivery-vehicle-type"]');
   const plateGroup = document.getElementById('delivery-plate-group');
   const plateInput = document.getElementById('delivery-plate');
 
+  /** Vehículo elegido ('' si todavía no eligió ninguno). */
+  const getVehicleType = () =>
+    document.querySelector('input[name="delivery-vehicle-type"]:checked')?.value || '';
+
   function updatePlateVisibility() {
-    const needsPlate = vehicleTypeSelect.value !== 'bicicleta';
-    plateGroup.style.display = needsPlate ? 'block' : 'none';
+    // La patente aparece solo con un vehículo que la lleve. Antes el <select>
+    // arrancaba en "bicicleta" y quedaba oculta; ahora no hay nada elegido de
+    // entrada, así que se pide recién cuando corresponde.
+    const tipo = getVehicleType();
+    plateGroup.style.display = tipo && tipo !== 'bicicleta' ? 'block' : 'none';
   }
-  vehicleTypeSelect?.addEventListener('change', updatePlateVisibility);
+  vehicleRadios.forEach((r) => r.addEventListener('change', updatePlateVisibility));
   updatePlateVisibility();
 
   form?.addEventListener('submit', async (e) => {
@@ -353,7 +360,7 @@ function initRepartidorPage(user) {
 
     const fullName = document.getElementById('delivery-name').value.trim();
     const phone = document.getElementById('delivery-phone').value.trim();
-    const vehicleType = vehicleTypeSelect.value;
+    const vehicleType = getVehicleType();
     const vehiclePlate = plateInput.value.trim();
 
     if (fullName.length < 3) {
