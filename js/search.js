@@ -423,12 +423,10 @@ function syncPriceInputs() {
   if (maxEl) maxEl.value = filterState.maxPrice ?? '';
 }
 
+/** Refleja en los dos desplegables lo que dice filterState. */
 function syncPills() {
-  const label = document.getElementById('cat-filter-label');
-  if (label) label.textContent = categoryNameBySlug[filterState.category] || 'Todas';
-  document.querySelectorAll('.cat-filter-dropdown__item').forEach((item) => {
-    item.classList.toggle('cat-filter-dropdown__item--active', item.dataset.cat === filterState.category);
-  });
+  catDropdown?.sync();
+  sortDropdown?.sync();
 }
 
 function clearAllFilters() {
@@ -440,64 +438,117 @@ function clearAllFilters() {
   syncInputs();
   syncPriceInputs();
   syncPills();
-  const sortSel = document.getElementById('filter-sort');
-  if (sortSel) sortSel.value = 'relevancia';
   commit();
 }
+
+// ── Desplegables propios del sidebar (categoría y orden) ────
+// Los dos usan el mismo marcado y la misma mecánica --abrir, cerrar al hacer
+// click afuera, cerrar con Escape, marcar la opción activa-- así que se
+// cablean con una sola función en vez de tenerla copiada dos veces.
+//
+// `options` es [{ value, label }]. El de categoría las carga después (llegan
+// de la DB), de ahí setOptions().
+function initFilterDropdown({ rootId, triggerId, menuId, labelId, options = [], getValue, onSelect }) {
+  const root = document.getElementById(rootId);
+  const trigger = document.getElementById(triggerId);
+  const menu = document.getElementById(menuId);
+  const label = document.getElementById(labelId);
+  if (!root || !trigger || !menu) return null;
+
+  let current = options;
+
+  const open = () => {
+    menu.hidden = false;
+    root.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+  };
+  const close = () => {
+    menu.hidden = true;
+    root.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  function sync() {
+    const value = getValue();
+    const elegida = current.find((o) => o.value === value);
+    if (label) label.textContent = elegida?.label ?? current[0]?.label ?? '';
+    menu.querySelectorAll('.cat-filter-dropdown__item').forEach((item) => {
+      const activa = item.dataset.value === value;
+      item.classList.toggle('cat-filter-dropdown__item--active', activa);
+      // role="option" sin aria-selected no le dice nada al lector de pantalla.
+      item.setAttribute('aria-selected', String(activa));
+    });
+  }
+
+  function render() {
+    menu.textContent = '';
+    current.forEach((op) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'cat-filter-dropdown__item';
+      item.dataset.value = op.value;
+      item.setAttribute('role', 'option');
+      item.textContent = op.label;
+      item.addEventListener('click', () => {
+        onSelect(op.value);
+        close();
+      });
+      menu.appendChild(item);
+    });
+    sync();
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden ? open() : close();
+  });
+  document.addEventListener('click', (e) => {
+    if (!root.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
+
+  render();
+  return { sync, close, setOptions: (next) => { current = next; render(); } };
+}
+
+const SORT_OPTIONS = [
+  { value: 'relevancia', label: 'Más relevantes' },
+  { value: 'precio-asc', label: 'Menor precio' },
+  { value: 'precio-desc', label: 'Mayor precio' },
+  { value: 'recientes', label: 'Más recientes' },
+  { value: 'nombre', label: 'Nombre (A-Z)' },
+];
+
+let catDropdown = null;
+let sortDropdown = null;
 
 // ── Filtro de categoría: botón desplegable con todas las categorías
 //    (antes se listaban todas las pills una al lado de otra en el sidebar) ──
 async function renderCategoryPills() {
-  const dropdown = document.getElementById('filter-categories');
-  const trigger = document.getElementById('cat-filter-trigger');
-  const menu = document.getElementById('cat-filter-menu');
-  if (!dropdown || !trigger || !menu) return;
+  catDropdown = initFilterDropdown({
+    rootId: 'filter-categories',
+    triggerId: 'cat-filter-trigger',
+    menuId: 'cat-filter-menu',
+    labelId: 'cat-filter-label',
+    getValue: () => filterState.category,
+    onSelect: (value) => {
+      filterState.category = value;
+      syncPills();
+      commit();
+    },
+  });
+  if (!catDropdown) return;
 
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
   categoryNameBySlug['ofertas'] = 'Ofertas';
 
-  menu.textContent = '';
-  const options = [{ slug: 'todas', name: 'Todas' }, ...categories];
-  options.forEach((cat) => {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'cat-filter-dropdown__item';
-    item.dataset.cat = cat.slug;
-    item.setAttribute('role', 'option');
-    item.textContent = cat.name;
-    item.addEventListener('click', () => {
-      filterState.category = cat.slug;
-      syncPills();
-      closeCatDropdown();
-      commit();
-    });
-    menu.appendChild(item);
-  });
-
-  function openCatDropdown() {
-    menu.hidden = false;
-    dropdown.classList.add('is-open');
-    trigger.setAttribute('aria-expanded', 'true');
-  }
-  function closeCatDropdown() {
-    menu.hidden = true;
-    dropdown.classList.remove('is-open');
-    trigger.setAttribute('aria-expanded', 'false');
-  }
-
-  trigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.hidden ? openCatDropdown() : closeCatDropdown();
-  });
-  document.addEventListener('click', (e) => {
-    if (!dropdown.contains(e.target)) closeCatDropdown();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeCatDropdown();
-  });
-
-  syncPills();
+  catDropdown.setOptions([
+    { value: 'todas', label: 'Todas' },
+    ...categories.map((c) => ({ value: c.slug, label: c.name })),
+  ]);
 }
 
 // ── Filtros avanzados (sidebar) ─────────────────────────────
@@ -505,12 +556,23 @@ function initSidebarFilters() {
   const sidebarInput = document.getElementById('sidebar-search-input');
   const minEl = document.getElementById('filter-price-min');
   const maxEl = document.getElementById('filter-price-max');
-  const sortSel = document.getElementById('filter-sort');
   const mobileBtn = document.getElementById('mobile-filters-btn');
   const sidebarClose = document.getElementById('filters-sidebar-close');
   const sidebar = document.getElementById('filters-sidebar');
 
-  if (sortSel) sortSel.value = filterState.sortBy;
+  sortDropdown = initFilterDropdown({
+    rootId: 'filter-sort',
+    triggerId: 'sort-filter-trigger',
+    menuId: 'sort-filter-menu',
+    labelId: 'sort-filter-label',
+    options: SORT_OPTIONS,
+    getValue: () => filterState.sortBy,
+    onSelect: (value) => {
+      filterState.sortBy = value;
+      syncPills();
+      commit();
+    },
+  });
 
   let searchTimer = null;
   sidebarInput?.addEventListener('input', (e) => {
@@ -531,11 +593,6 @@ function initSidebarFilters() {
   };
   minEl?.addEventListener('input', onPrice);
   maxEl?.addEventListener('input', onPrice);
-
-  sortSel?.addEventListener('change', (e) => {
-    filterState.sortBy = e.target.value;
-    commit();
-  });
 
   mobileBtn?.addEventListener('click', () => sidebar?.classList.add('is-open'));
   sidebarClose?.addEventListener('click', () => sidebar?.classList.remove('is-open'));
