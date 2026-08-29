@@ -115,16 +115,15 @@
             </div>
 
             <div class="filter-group">
-              <label for="filter-sort" class="filter-group__title">Ordenar por</label>
-              <div class="filter-select-wrapper">
-                <select class="filter-select" id="filter-sort">
-                  <option value="relevancia">Más relevantes</option>
-                  <option value="precio-asc">Menor precio</option>
-                  <option value="precio-desc">Mayor precio</option>
-                  <option value="recientes">Más recientes</option>
-                  <option value="nombre">Nombre (A-Z)</option>
-                </select>
-                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+              <h4 class="filter-group__title" id="sort-group-label">Ordenar por</h4>
+              <!-- Mismo desplegable propio que el de Categoría, en vez de un
+                   <select> nativo. Las opciones las pone search.js. -->
+              <div class="cat-filter-dropdown" id="filter-sort">
+                <button type="button" class="cat-filter-dropdown__trigger" id="sort-filter-trigger" aria-haspopup="true" aria-expanded="false" aria-labelledby="sort-group-label">
+                  <span id="sort-filter-label">Más relevantes</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="cat-filter-dropdown__menu" id="sort-filter-menu" role="listbox" hidden></div>
               </div>
             </div>
 

@@ -1115,36 +1115,9 @@ button.coupon-chip:hover {
   box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
 }
 
-.filter-select-wrapper {
-  position: relative;
-}
-
-.filter-select {
-  width: 100%;
-  padding: 0.625rem 2rem 0.625rem 0.75rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-md);
-  font-size: 0.875rem;
-  font-family: inherit;
-  appearance: none;
-  background: var(--bl-surface);
-  cursor: pointer;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--bl-primary);
-}
-
-.filter-select-wrapper i {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--bl-text-muted);
-  font-size: 0.75rem;
-}
+/* Las clases .filter-select / .filter-select-wrapper se borraron al pasar el
+   "Ordenar por" del sidebar a .cat-filter-dropdown: envolvían al último
+   <select> nativo que quedaba en la búsqueda y ninguna otra página las usaba. */
 
 /* ── Filtro de categoría: dropdown en vez de todas las pills inline ── */
 .cat-filter-dropdown {
@@ -1156,6 +1129,7 @@ button.coupon-chip:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 44px; /* objetivo táctil mínimo: daba 38px */
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--bl-border);
   border-radius: var(--bl-radius-md);
@@ -1198,8 +1172,10 @@ button.coupon-chip:hover {
 }
 
 .cat-filter-dropdown__item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-height: 44px; /* objetivo táctil mínimo: daba 33px */
   padding: 0.5rem 0.625rem;
   border: none;
   background: none;
@@ -1208,6 +1184,11 @@ button.coupon-chip:hover {
   color: var(--bl-text);
   text-align: left;
   cursor: pointer;
+}
+
+.cat-filter-dropdown__item:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -2px;
 }
 
 .cat-filter-dropdown__item:hover {

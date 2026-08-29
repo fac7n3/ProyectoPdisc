@@ -1433,3 +1433,39 @@ productos, y al hacerle click lleva a `comercio.html?id=03738e21…` con su fich
 se probaron en previsualización: 14 checkbox, selección múltiple, desmarcado, el submit lee los
 slugs, el re-dibujado conserva lo marcado y sin ninguno el form es válido a nivel navegador (lo
 ataja el submit).
+
+## "Ordenar por" sin select nativo (2026-08-28)
+
+Rama `orden-sin-select`. Último `<select>` que quedaba en la página de búsqueda.
+
+**No se inventó un control nuevo:** justo al lado, en el mismo sidebar, ya existía el desplegable
+propio de Categoría (`.cat-filter-dropdown`: trigger + menú `role="listbox"`). El de orden reusa ese
+marcado y esos estilos, así que los dos filtros se ven y se comportan igual.
+
+Para no tener la mecánica copiada dos veces (abrir, cerrar al click afuera, cerrar con Escape,
+marcar la activa eran ~40 líneas dentro de `renderCategoryPills`), se extrajo
+`initFilterDropdown({ rootId, triggerId, menuId, labelId, options, getValue, onSelect })`, que
+devuelve `{ sync, close, setOptions }`. El de categoría usa `setOptions()` porque sus opciones
+llegan de la DB después; el de orden las tiene fijas en `SORT_OPTIONS`.
+
+De paso, al unificar:
+- Las opciones ahora llevan **`aria-selected`**. Tenían `role="option"` sin él, que para un lector
+  de pantalla no dice cuál está elegida.
+- `syncPills()` pasó de manipular el DOM a mano a delegar en los dos desplegables.
+- `clearAllFilters()` ya no necesita tocar el select por id.
+- Se borraron `.filter-select` y `.filter-select-wrapper` de `home.css`: envolvían a ese select y
+  ninguna otra página las usaba.
+
+**Arreglo adyacente (accesibilidad):** el trigger daba 38px de alto y las opciones 33px, por debajo
+del mínimo táctil de 44px. Como es CSS compartido, se corrigieron **los dos** desplegables (el de
+orden y el de categoría, que ya estaba así de antes). También se les agregó anillo de foco visible.
+
+**Verificado contra la base real** (la búsqueda es pública): 0 `<select>` en la página; el
+desplegable de orden abre, lista las 5 opciones, marca la activa con `aria-selected="true"`, cierra
+al elegir y escribe `?sort=precio-desc` en la URL; el orden **realmente reordena** (65000 → 55000 →
+42000 → 35000). El de categoría sigue intacto tras el refactor: 15 opciones, filtra a "Bebidas",
+combina con el orden en la URL, y cierra con Escape y con click afuera. En 375px los dos dan 44px
+de trigger y de opción, sin scroll horizontal.
+
+**Gotcha:** en móvil el sidebar está oculto detrás del botón "Filtros", así que medir sin abrirlo
+primero da 0 en todo (`getBoundingClientRect` sobre un ancestro con `display:none`).
