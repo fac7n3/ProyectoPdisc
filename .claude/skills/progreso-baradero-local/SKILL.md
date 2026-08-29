@@ -1469,3 +1469,43 @@ de trigger y de opción, sin scroll horizontal.
 
 **Gotcha:** en móvil el sidebar está oculto detrás del botón "Filtros", así que medir sin abrirlo
 primero da 0 en todo (`getBoundingClientRect` sobre un ancestro con `display:none`).
+
+## Vehículo del alta de repartidor sin select (2026-08-28)
+
+Rama `vehiculo-sin-select`. Tres opciones (bicicleta/moto/auto), así que radios estilados con
+íconos, mismo patrón que las otras dos altas.
+
+**Los estilos `.catpick` se movieron de inline en `vender.html` a `home.css`.** Los usan ya tres
+formularios (categoría de producto, rubros de comercio, vehículo de repartidor) y las tres páginas
+cargan `home.css`; tenerlos duplicados en cada `<style>` inline era pedir que se desincronizaran.
+
+**Cómo convive con el acento del panel vendedor:** `.catpick` define
+`--catpick-accent: var(--bl-vendor-accent, var(--bl-primary))` y su par `-rgb`. En `vender.html`,
+que declara `--bl-vendor-accent` en su `:root`, la grilla sigue saliendo con el azul del panel
+(#2f5aa8); en `repartidor.html`, que no lo declara, cae al azul de marca (#284175). Verificado en
+las dos configuraciones.
+
+**Cambio de comportamiento a propósito:** el `<select>` arrancaba en "bicicleta" (primera opción),
+así que el campo "Patente" nacía oculto y el usuario podía enviar sin elegir vehículo nunca,
+quedando como ciclista por omisión. Con radios no hay nada preseleccionado: "Patente" aparece
+**solo** al elegir moto o auto, y el `required` obliga a elegir. `getVehicleType()` devuelve `''`
+si no hay nada marcado, y la condición de la patente es `tipo && tipo !== 'bicicleta'` — sin ese
+`tipo &&`, con nada elegido `'' !== 'bicicleta'` daba true y la patente aparecía de entrada.
+
+**Verificado** (el formulario pide sesión, así que se probó en previsualización cargando las hojas
+reales `home.css` + `auth.css`): 0 selects, 3 opciones de 44px, la patente oculta al inicio y con
+bicicleta, visible con moto y auto, y oculta otra vez al volver a bicicleta; sin vehículo el form
+es inválido con el mensaje nativo y el radio es enfocable.
+
+**Gotcha de medición (nuevo):** `getComputedStyle` devuelve valores **obsoletos** para propiedades
+que dependen de `:has()` **en el elemento sujeto** (el borde y el fondo de la opción marcada
+seguían leyéndose como los de reposo), aunque las reglas de sus **descendientes** sí se leían bien
+(el ícono). Lo que se pinta está correcto — se confirmó por captura. O sea: para estados con
+`:has()`, creerle a la captura, no a `getComputedStyle`.
+
+También: `requestAnimationFrame` **no dispara** con el panel del navegador oculto (no hay
+composición) y cuelga el script hasta el timeout; usar `setTimeout` para esperar un recálculo.
+
+**Estado de los selects nativos:** quedan dos, los dos fuera de lo pedido hasta ahora —
+`delivery-address-select` (elegir dirección en el carrito) y `role-switcher` (cambiar de rol en el
+perfil, solo visible para admin/moderador).
