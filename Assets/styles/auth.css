@@ -25,6 +25,14 @@ body {
   flex-direction: column;
 }
 
+/* Checkbox nativo: cada navegador lo dibuja con su propio color por defecto
+   (el violeta/azul del sistema). Con accent-color se tiñe del azul de marca
+   sin perder nada del checkbox real -- teclado, foco, lector de pantalla,
+   ninguna reimplementación en JS. */
+input[type="checkbox"] {
+  accent-color: var(--auth-primary);
+}
+
 .auth-layout {
   flex: 1;
   display: flex;

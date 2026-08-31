@@ -1751,3 +1751,33 @@ valor y marcan `aria-invalid`.
 hacía **sobresalir de la pantalla** en un teléfono (scroll horizontal + calendario cortado). Un
 calendario cortado es peor que una celda chica: quedó `width: max(100%, 17rem)` (nunca más ancho
 que el campo) y el alto de la celda fijo en 40px, que es lo que sí se puede garantizar para el dedo.
+
+## Alcance acotado: solo checkboxes con accent-color, no text/email/password/number (2026-08-31)
+
+Rama `checkbox-accent-color`. El pedido era sacar "los inputs de todos los tipos que sean
+nativos". Se frenó antes de ejecutar: eso incluía ~55 inputs `text`/`email`/`password`/`number`/
+`url`/`search`, que son cajas simples ya estilables con CSS puro. Reimplementarlos con JS
+rompe el autocompletado del navegador, el gestor de contraseñas, y en el celular pierde el teclado
+específico por tipo (`@` para email, numérico para tel/number) — degradación real para nada, no
+había ningún problema visual que resolver ahí. Se le presentó la disyuntiva al usuario con
+`AskUserQuestion` y eligió el alcance acotado: solo unificar el color de los checkboxes.
+
+**Inventario:** 3 checkboxes en todo el proyecto (`address-default` en perfil, `terms-checkbox` en
+register, `store-accepts-contact` en vender). Al mirarlos, **2 de los 3 ya tenían su propio
+estilo**: `terms-checkbox` está oculto (`opacity:0`) detrás de una reconstrucción completa con
+`:has()` (`.auth-terms__custom-check`), y `store-accepts-contact` ya tenía
+`accent-color: var(--bl-vendor-accent)` explícito. El único sin ningún estilo era
+`address-default`, que salía con el violeta por defecto del navegador.
+
+**El arreglo:** una sola línea, `input[type="checkbox"] { accent-color: var(--bl-primary); }`, en
+`home.css` (con el equivalente `--auth-primary` en `auth.css`, porque `register.html` no carga
+`home.css`). Sin JS, sin perder nada del checkbox nativo (teclado, foco, lector de pantalla). Por
+especificidad de selector, las reglas más específicas que ya existían (`.auth-terms
+input[type="checkbox"]`, `.pf-check input`) siguen ganando, así que no hizo falta tocar nada más:
+se verificó que ninguno de los dos checkboxes ya estilados cambiara.
+
+**Verificado:** en `register.html` (público) el checkbox de términos se sigue viendo igual que
+antes, azul de marca al tildarlo. En previsualización con `home.css` real, `address-default` pasó
+de violeta del sistema a `rgb(40, 65, 117)` (#284175, el ancla de marca) — confirmado por
+`getComputedStyle` (acá sí es confiable, no depende de `:has()` sobre el propio elemento) y por
+captura.
