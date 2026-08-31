@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta name="description" content="Farmacias de turno en Baradero — la de hoy y la de toda la semana, con dirección, horarios y cómo llegar." />
+    <title>Farmacias de turno - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      .fx-page { max-width: 720px; margin: 2rem auto 3rem; padding: 0 1rem; }
+      .fx-title { font-size: 1.75rem; color: var(--bl-primary-deeper); margin-bottom: 1.25rem; }
+      .fx-muted { color: var(--bl-text-secondary); font-size: 0.875rem; }
+
+      /* --- Bloque de la farmacia de turno --- */
+      .fx-hero {
+        background: var(--bl-surface);
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-xl);
+        box-shadow: var(--bl-shadow-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .fx-hero--empty { text-align: center; }
+      .fx-hero__empty-icon { font-size: 2.25rem; color: var(--bl-text-secondary); margin-bottom: 0.75rem; }
+      .fx-hero__head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+      .fx-chip {
+        font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.7rem;
+        border-radius: var(--bl-radius-pill); background: var(--bl-surface-alt); color: var(--bl-text-secondary);
+      }
+      .fx-chip--ok { background: #dcfce7; color: #166534; }
+      .fx-hero__body { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+      .fx-hero__main { flex: 1 1 260px; min-width: 0; }
+      .fx-hero__name { font-size: 1.5rem; color: var(--bl-text); margin-bottom: 0.35rem; }
+      .fx-hero__status { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.9375rem; }
+      .fx-dot { font-size: 0.5rem; color: #16a34a; }
+
+      .fx-row { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.3rem 0; font-size: 0.9375rem; color: var(--bl-text); }
+      .fx-row i { color: var(--bl-text-secondary); margin-top: 0.2rem; width: 1rem; text-align: center; flex-shrink: 0; }
+
+      /* --- Tarjeta de ubicación (no es un mapa embebido: la CSP bloquea los
+             tiles externos, ver db/schema/67_pharmacies.sql) --- */
+      .fx-map {
+        flex: 0 0 200px; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 0.4rem; text-align: center; text-decoration: none;
+        padding: 1.1rem 0.9rem; border: 1px dashed var(--bl-border);
+        border-radius: var(--bl-radius-md); background: var(--bl-surface-alt);
+        color: var(--bl-text); transition: border-color .2s, background .2s;
+      }
+      .fx-map:hover { border-color: var(--bl-primary); background: var(--bl-surface); }
+      .fx-map__icon { font-size: 1.75rem; color: var(--bl-primary); }
+      .fx-map__addr { font-size: 0.875rem; }
+      .fx-map__cta { font-size: 0.8125rem; font-weight: 600; color: var(--bl-primary); }
+
+      /* --- Botones de contacto --- */
+      .fx-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+      .fx-btn {
+        display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem;
+        border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);
+        font-size: 0.875rem; font-weight: 600; text-decoration: none;
+        color: var(--bl-text); background: var(--bl-surface); transition: all .2s;
+      }
+      .fx-btn:hover { border-color: var(--bl-primary); color: var(--bl-primary); }
+      .fx-btn--primary { background: var(--bl-primary); border-color: var(--bl-primary); color: #fff; }
+      .fx-btn--primary:hover { background: var(--bl-primary-dark); color: #fff; }
+      .fx-actions--big .fx-btn { padding: 0.7rem 1.25rem; font-size: 0.9375rem; }
+
+      /* --- Lista de la semana --- */
+      .fx-week-title { font-size: 0.875rem; color: var(--bl-text-secondary); margin: 0 0 0.6rem 0.2rem; }
+      .fx-week {
+        background: var(--bl-surface); border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-lg); overflow: hidden;
+      }
+      .fx-item + .fx-item { border-top: 1px solid var(--bl-border); }
+      .fx-item.is-open { background: var(--bl-surface-alt); }
+      .fx-item__head {
+        display: flex; align-items: center; gap: 0.9rem; width: 100%;
+        padding: 0.85rem 1rem; background: none; border: none; font: inherit;
+        text-align: left; cursor: pointer; color: var(--bl-text);
+      }
+      .fx-item__head:hover { background: var(--bl-surface-alt); }
+      .fx-item__date { display: flex; flex-direction: column; align-items: center; width: 2.6rem; flex-shrink: 0; }
+      .fx-item__dow { font-size: 0.7rem; color: var(--bl-text-secondary); }
+      .fx-item__day { font-size: 1.05rem; font-weight: 700; line-height: 1.1; }
+      .fx-item__summary { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+      .fx-item__name { font-weight: 600; }
+      .fx-item__chev { color: var(--bl-text-secondary); flex-shrink: 0; }
+      .fx-item__detail { padding: 0 1rem 1rem 4.5rem; }
+
+      /* --- Aviso de última actualización --- */
+      .fx-note {
+        display: flex; align-items: flex-start; gap: 0.6rem; margin-top: 1.25rem;
+        padding: 0.85rem 1rem; border-radius: var(--bl-radius-md);
+        background: #fef9c3; color: #854d0e; font-size: 0.875rem; line-height: 1.5;
+      }
+      .fx-note--stale { background: #fee2e2; color: #991b1b; font-weight: 600; }
+      .fx-note i { margin-top: 0.15rem; flex-shrink: 0; }
+
+      @media (max-width: 768px) {
+        .fx-page { margin: 1rem auto 2rem; }
+        .fx-title { font-size: 1.4rem; }
+        .fx-hero { padding: 1.1rem; }
+        .fx-hero__name { font-size: 1.25rem; }
+        .fx-map { flex: 1 1 100%; }
+        .fx-actions--big .fx-btn { flex: 1 1 auto; justify-content: center; }
+        .fx-item__detail { padding-left: 1rem; }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/farmacias-DAtlaKqd.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
+    <link rel="stylesheet" crossorigin href="/assets/home-CsGBJYfe.css">
+  </head>
+  <body>
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+      <div class="navbar__top">
+        <a href="./home.html" class="navbar__logo">
+          <img src="/assets/logoazulpng-BmcneNO6.png" alt="Baradero Local" class="navbar__logo-img" />
+          <div class="navbar__logo-text">
+            <span class="navbar__logo-title">Baradero Local</span>
+            <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+          </div>
+        </a>
+        <div class="navbar__actions">
+          <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left"></i></a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="fx-page">
+      <h1 class="fx-title">Farmacias de turno</h1>
+
+      <!-- Farmacia de turno en este momento. Poblado por js/farmacias.js -->
+      <div id="fx-hero-container"></div>
+
+      <p class="fx-week-title" id="fx-week-title" hidden>Próximos turnos</p>
+      <div class="fx-week" id="fx-week-container"></div>
+
+      <!-- Aviso de última actualización de los datos -->
+      <div id="fx-note-container"></div>
+    </main>
+
+  </body>
+</html>
