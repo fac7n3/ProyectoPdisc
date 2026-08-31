@@ -102,11 +102,11 @@
           <span class="account-card__title">Vendé en Baradero Local</span>
           <span class="account-card__desc">Publicá los productos de tu comercio.</span>
         </a>
-        <a href="./repartidor.html" class="account-card">
-          <i class="fa-solid fa-truck-fast account-card__icon"></i>
-          <span class="account-card__title">Repartí con nosotros</span>
-          <span class="account-card__desc">Sumate como repartidor de la zona.</span>
-        </a>
+        <button type="button" class="account-card" data-target="tab-ajustes">
+          <i class="fa-solid fa-gear account-card__icon"></i>
+          <span class="account-card__title">Ajustes</span>
+          <span class="account-card__desc">Preferencias de tu cuenta.</span>
+        </button>
       </div>
 
       <!-- Panel de la sección abierta -->
@@ -386,6 +386,18 @@
               <i class="fa-solid fa-headset"></i> Soporte
             </h2>
             <div id="support-container"></div>
+          </article>
+        </div>
+
+        <!-- ======================= -->
+        <!-- PESTAÑA: AJUSTES        -->
+        <!-- ======================= -->
+        <div id="tab-ajustes" class="tab-pane">
+          <article class="perfil-card">
+            <h2 class="perfil-card__title">
+              <i class="fa-solid fa-gear"></i> Ajustes
+            </h2>
+            <p style="color: var(--bl-perfil-text-sec);">Próximamente vas a poder configurar tus preferencias acá.</p>
           </article>
         </div>
 

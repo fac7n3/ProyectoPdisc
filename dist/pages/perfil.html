@@ -12,15 +12,15 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-DPshQXio.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DKmwduw6.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BHUWVnmq.js">
+    <script type="module" crossorigin src="/assets/perfil-BBZZsRyO.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-Cl4Bi9MC.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/hints-utils-DTDijmQ7.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-5xJhNltS.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-d3wNflvh.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-DDv7hQOn.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-DKACMEPD.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-CrxHU93G.js">
     <link rel="stylesheet" crossorigin href="/assets/perfil-Be4pZQ17.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-ByagdQ1B.css">
@@ -111,11 +111,11 @@
           <span class="account-card__title">Vendé en Baradero Local</span>
           <span class="account-card__desc">Publicá los productos de tu comercio.</span>
         </a>
-        <a href="./repartidor.html" class="account-card">
-          <i class="fa-solid fa-truck-fast account-card__icon"></i>
-          <span class="account-card__title">Repartí con nosotros</span>
-          <span class="account-card__desc">Sumate como repartidor de la zona.</span>
-        </a>
+        <button type="button" class="account-card" data-target="tab-ajustes">
+          <i class="fa-solid fa-gear account-card__icon"></i>
+          <span class="account-card__title">Ajustes</span>
+          <span class="account-card__desc">Preferencias de tu cuenta.</span>
+        </button>
       </div>
 
       <!-- Panel de la sección abierta -->
@@ -395,6 +395,18 @@
               <i class="fa-solid fa-headset"></i> Soporte
             </h2>
             <div id="support-container"></div>
+          </article>
+        </div>
+
+        <!-- ======================= -->
+        <!-- PESTAÑA: AJUSTES        -->
+        <!-- ======================= -->
+        <div id="tab-ajustes" class="tab-pane">
+          <article class="perfil-card">
+            <h2 class="perfil-card__title">
+              <i class="fa-solid fa-gear"></i> Ajustes
+            </h2>
+            <p style="color: var(--bl-perfil-text-sec);">Próximamente vas a poder configurar tus preferencias acá.</p>
           </article>
         </div>
 
