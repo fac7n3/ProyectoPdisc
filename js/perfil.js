@@ -8,6 +8,7 @@ import { initNotificationsBell } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects } from "./storage-utils.js";
 import { buildDropdown } from "./dropdown.js";
+import { buildDatePicker } from "./datepicker.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -1329,6 +1330,13 @@ function openRowEditor(field) {
     el.setAttribute("aria-label", spec.aria);
     els[spec.name] = el;
     editWrap.appendChild(el);
+
+    if (spec.type === "date") {
+      // El nativo se cambia por el propio. buildDatePicker lo convierte en
+      // hidden y lo envuelve, así que `el.value` sigue devolviendo el ISO y
+      // el resto del editor (guardar, validar) no se entera.
+      buildDatePicker({ input: el, max: spec.max || "", ariaLabel: spec.aria });
+    }
   });
 
   main.appendChild(editWrap);

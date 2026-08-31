@@ -1119,6 +1119,189 @@ button.coupon-chip:hover {
    "Ordenar por" del sidebar a .cat-filter-dropdown: envolvían al último
    <select> nativo que quedaba en la búsqueda y ninguna otra página las usaba. */
 
+/* ── .bl-date: selector de fecha propio en lugar de <input type="date"> ──
+   Lo arma js/datepicker.js. Campo de texto con máscara dd/mm/aaaa (escribir es
+   lo más rápido para una fecha lejana) más un calendario para navegar. */
+.bl-date {
+  position: relative;
+  display: block;
+}
+
+.bl-date__field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.bl-date__field:focus-within {
+  border-color: var(--bl-primary);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
+}
+
+.bl-date__text {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: inherit;
+  background: none;
+  font-family: inherit;
+  font-size: 1rem; /* 16px: evita el zoom automático de iOS */
+  color: var(--bl-text);
+  /* Los dígitos de ancho fijo evitan que el campo "tiemble" al tipear. */
+  font-variant-numeric: tabular-nums;
+}
+
+.bl-date__text:focus { outline: none; }
+
+.bl-date__text[aria-invalid="true"] { color: var(--bl-danger); }
+
+.bl-date__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--bl-text-muted);
+  cursor: pointer;
+  border-radius: var(--bl-radius-md);
+}
+
+.bl-date__btn:hover { color: var(--bl-primary); }
+
+.bl-date__btn:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -2px;
+}
+
+.bl-date.is-open .bl-date__btn { color: var(--bl-primary); }
+
+/* --- Calendario --- */
+.bl-date__pop {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 70;
+  /* Nunca más ancho que el campo: fijarle 21rem lo hacía sobresalir de la
+     pantalla en un teléfono (aparecía scroll horizontal y el calendario
+     quedaba cortado). Un calendario cortado es peor que una celda chica. El
+     piso de 17rem es para que no se aplaste dentro de un campo muy angosto. */
+  width: max(100%, 17rem);
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem;
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  box-shadow: var(--bl-shadow-lg);
+}
+
+.bl-date__pop[hidden] { display: none; }
+
+.bl-date__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.bl-date__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bl-text);
+  text-transform: capitalize;
+}
+
+.bl-date__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--bl-text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.bl-date__nav:hover { background: var(--bl-surface-alt); color: var(--bl-primary); }
+
+.bl-date__nav:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -2px;
+}
+
+.bl-date__week,
+.bl-date__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.bl-date__week span {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--bl-text-muted);
+  padding: 0.25rem 0;
+}
+
+.bl-date__day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Alto fijo en vez de aspect-ratio: el ancho lo decide la grilla de 7
+     columnas, y en un teléfono eso dejaba celdas de 35px. El alto es lo que
+     se puede garantizar para el dedo. */
+  min-height: 40px;
+  border: none;
+  border-radius: var(--bl-radius-sm);
+  background: none;
+  color: var(--bl-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.bl-date__day:hover:not(:disabled) { background: var(--bl-surface-alt); }
+
+.bl-date__day:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -2px;
+}
+
+.bl-date__day--empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Hoy se marca con un anillo; la elegida, con relleno. Así se distinguen aun
+   cuando son el mismo día. */
+.bl-date__day--today { box-shadow: inset 0 0 0 1px var(--bl-border); font-weight: 600; }
+
+.bl-date__day--selected,
+.bl-date__day--selected:hover {
+  background: var(--bl-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.bl-date__day:disabled {
+  color: var(--bl-text-muted);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── .bl-dropdown: desplegable propio en lugar de un <select> ──
    Lo arma js/dropdown.js. Compacto a propósito: se usa dentro de filas de
    tabla (panel de admin) y de editores inline (perfil). */

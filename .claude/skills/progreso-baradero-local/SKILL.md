@@ -1702,3 +1702,52 @@ re-dispara. Todo a 44px.
 **Recordatorio (tercera vez que muerde):** `getComputedStyle` devuelve valores **obsoletos** para
 propiedades que dependen de `:has()`. Reportaba las estrellas sin rellenar cuando la captura
 mostraba las 4 en ámbar. Para estados con `:has()`, confiar en la captura.
+
+## Selector de fecha propio: cero `<input type="date">` a la vista (2026-08-31)
+
+Rama `sin-fechas-nativas`. Cuatro casos: vencimiento de cupón (admin), vencimiento de cupón
+(vendedor), vencimiento de oferta (producto) y fecha de nacimiento (perfil, declarado en
+`profile-fields.js` — no aparece grepeando `type="date"` en el HTML).
+
+**Salvedad honesta:** este es el caso donde el control nativo tiene más a favor, sobre todo en
+teléfonos, donde el navegador muestra su propio selector (rueda/calendario del sistema) que es muy
+bueno. Se reemplazó igual porque el pedido fue sacarlos y porque el nativo se dibuja distinto en
+cada navegador, pero es un intercambio real, no una mejora pura.
+
+**`js/datepicker.js` nuevo.** Dos formas de cargar la fecha, porque sirven para cosas distintas:
+escribir con máscara `dd/mm/aaaa` (lo único razonable para una fecha de nacimiento: nadie retrocede
+400 meses en un calendario) y el calendario para "el mes que viene".
+
+**Cómo no rompe el código existente:** el `<input type="date">` original se convierte en
+`type="hidden"` **conservando su id**, y sigue llevando el valor en ISO. Así los cuatro lugares que
+hacen `getElementById(id).value` no se tocaron. `upgradeDateInputs()` los convierte a todos de una.
+El `type="date"` queda en el HTML a propósito: es el selector que los encuentra y, si el JS
+fallara, el usuario ve un campo de fecha funcional en vez de nada.
+
+**BUG encontrado al probar `reset()`:** en un input `hidden`, asignar `.value` escribe el
+**atributo** value (su modo de valor es "default" según el spec), así que `form.reset()` lo
+restaura... a sí mismo. Con el `<input type="date">` original sí se limpiaba. Efecto real: después
+de crear un cupón, **el siguiente heredaba en silencio la fecha de vencimiento del anterior**. Se
+arregla guardando el valor inicial al construir y volviendo a él en el evento `reset` (con
+`setTimeout`, porque el evento llega antes de que se apliquen los valores por defecto). El arreglo
+va dentro del componente, no en los tres formularios que llaman a `reset()`.
+
+**Zona horaria:** nada de `new Date(iso)` para parsear — eso interpreta el string como UTC y en
+Argentina devuelve el día anterior. Toda la aritmética es sobre `{año, mes, día}` o `Date.UTC`.
+
+**20 chequeos** en `node js/datepicker.test.mjs`: bisiestos incluida la regla de los siglos (1900
+no, 2000 sí), fechas inexistentes (31/02, 29/02 en año común, 31 de abril), ida y vuelta ISO↔display
+sin corrimiento, la máscara, los límites inclusive, la grilla del mes (siempre 42 celdas para que no
+salte el alto, el 1 alineado al día de semana correcto con semana de lunes) y el cruce de año al
+navegar meses.
+
+**Verificado en el navegador** con el módulo real: 0 campos de fecha nativos visibles, escribir
+carga el ISO, el calendario abre en el mes de la fecha cargada, elegir un día actualiza y cierra,
+las fechas fuera de rango quedan deshabilitadas en la grilla (en agosto 2026 con `min` = hoy, solo
+el 31 quedaba habilitado), y las inválidas (31/02, antes del mínimo, nacimiento futuro) vacían el
+valor y marcan `aria-invalid`.
+
+**Gotcha de layout:** fijarle 21rem de ancho al calendario para que las celdas llegaran a 44px lo
+hacía **sobresalir de la pantalla** en un teléfono (scroll horizontal + calendario cortado). Un
+calendario cortado es peor que una celda chica: quedó `width: max(100%, 17rem)` (nunca más ancho
+que el campo) y el alto de la celda fijo en 40px, que es lo que sí se puede garantizar para el dedo.
