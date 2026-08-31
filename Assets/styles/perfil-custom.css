@@ -378,9 +378,37 @@ body {
 .compra-items-list {
   list-style: none;
   padding: 0;
-  margin: 0.25rem 0 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.compra-item-line {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.compra-item-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--bl-perfil-border);
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.compra-item-text {
   font-size: 0.8125rem;
   color: var(--bl-perfil-text-sec);
+  text-decoration: none;
+}
+
+a.compra-item-text:hover {
+  color: var(--bl-perfil-primary);
+  text-decoration: underline;
 }
 
 /* === Comprobante de transferencia (F2-04) === */

@@ -719,11 +719,28 @@ function buildCompraItem(order, reviewByRepartidorId) {
     itemsList.className = 'compra-items-list';
     order.order_items.forEach((oi) => {
       const li = document.createElement('li');
+      li.className = 'compra-item-line';
+
+      const img = document.createElement('img');
+      img.className = 'compra-item-thumb';
+      img.src = oi.products?.image_url || '/img/no-image.svg';
+      img.alt = '';
+      img.loading = 'lazy';
+      li.appendChild(img);
+
       // Título "congelado" al momento de la compra (order_items.title), no
       // un join en vivo a products: si el vendedor lo desactiva o lo borra
-      // después, el recibo del cliente no debe desaparecer (F2-06).
+      // después, el recibo del cliente no debe desaparecer (F2-06). El link
+      // a la ficha sí usa product_id en vivo -- products_select_purchased
+      // (migración 68) permite verla aunque el vendedor la haya pausado.
       const title = oi.title || 'Producto';
-      li.textContent = `${oi.quantity}x ${title} — ${formatPrice(oi.price * oi.quantity)}`;
+      const text = `${oi.quantity}x ${title} — ${formatPrice(oi.price * oi.quantity)}`;
+      const textEl = document.createElement(oi.product_id ? 'a' : 'span');
+      textEl.className = 'compra-item-text';
+      if (oi.product_id) textEl.href = `./producto.html?id=${encodeURIComponent(oi.product_id)}`;
+      textEl.textContent = text;
+      li.appendChild(textEl);
+
       itemsList.appendChild(li);
     });
     info.appendChild(itemsList);
@@ -1122,7 +1139,7 @@ async function loadCompras(userId) {
       .select(`
         id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
         stores ( name ),
-        order_items ( quantity, price, title ),
+        order_items ( quantity, price, title, product_id, products ( image_url ) ),
         payment_proofs ( status, created_at ),
         deliveries ( status, repartidor_id )
       `)

@@ -1781,3 +1781,38 @@ antes, azul de marca al tildarlo. En previsualización con `home.css` real, `add
 de violeta del sistema a `rgb(40, 65, 117)` (#284175, el ancla de marca) — confirmado por
 `getComputedStyle` (acá sí es confiable, no depende de `:has()` sobre el propio elemento) y por
 captura.
+
+## Tarjetas de "Mi historial de compras": miniatura + link a la ficha aunque esté pausada (2026-08-31)
+
+Rama `purchase-history-cards`. Cada línea de producto dentro de una orden (`buildCompraItem` en
+`js/perfil.js`) ahora muestra una miniatura de 40x40 (`oi.products?.image_url`, con fallback a
+`/img/no-image.svg`) y linkea a `producto.html?id=...` cuando `order_items.product_id` sigue
+existiendo. El texto (`Nx Título — $precio`) sigue usando `order_items.title` congelado (F2-06),
+no el título en vivo — solo el link y la imagen vienen del join a `products`.
+
+**El problema real no era de UI:** ni `producto.html` ni el embed `order_items -> products` podían
+ver un producto que el vendedor pausó (`is_active = false`) después de la venta —
+`products_select_public_active` exige `is_active = true` y `products_select_own` exige ser el
+vendedor. Ninguna cubre "cliente viendo lo que ya compró", así que antes de esta tarea visitar la
+ficha de un producto pausado desde el historial daba "Producto no encontrado" (RLS bloqueaba el
+`.single()`), y el embed en el historial llegaba `null` (sin imagen).
+
+**Fix:** migración `68_products_select_purchased.sql` — nueva policy RLS de SELECT en `products`,
+aditiva a las que ya existían (Postgres las combina con OR), que permite ver el producto si existe
+un `order_items` del comprador (`orders.client_id = auth.uid()`) apuntando a ese `product_id`.
+Aplicada directo a producción con el MCP de Supabase (`otzhdwuaffcplrveuadc`), a pedido explícito
+del usuario en la misma sesión — no quedó como pendiente sin aplicar (a diferencia de la migración
+66).
+
+**Verificado con SQL, no con navegador** (no había credenciales de una cuenta real con compras en
+esta sesión): dentro de una transacción con rollback, se puso `is_active = false` en un producto
+con compras reales, se simuló el rol `authenticated` con `set local request.jwt.claims` usando el
+`client_id` real de esa orden — la fila SÍ aparece (comprador ve su propio producto pausado); con
+un `sub` random no relacionado, la fila NO aparece (RLS sigue bloqueando a terceros). `get_advisors`
+después de aplicar: sin lints nuevos. Sin datos de producción tocados (rollback).
+
+No se agregó ningún gate de `is_active` en `producto.js` para el botón "Agregar al carrito": ya
+existe un guard server-side (`create_order` RPC valida `is_active = true` antes de crear el
+`order_item`, ver `18_create_order_rpc.sql` y las versiones posteriores) — un comprador que reabre
+un producto pausado desde su historial y aprieta "agregar al carrito" fallaría recién al pagar, no
+es un agujero de seguridad, solo una UX subóptima fuera del alcance de este pedido.
