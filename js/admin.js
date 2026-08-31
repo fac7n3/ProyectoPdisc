@@ -1,5 +1,6 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
 import { statusLabel as supportStatusLabel } from './support-utils.js';
+import { buildDropdown } from './dropdown.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -1123,34 +1124,29 @@ async function fetchSupportTickets() {
     tr.appendChild(tdMessage);
 
     const tdStatus = document.createElement('td');
-    const statusSelect = document.createElement('select');
-    statusSelect.style.cssText = 'padding: 0.35rem; width: auto;';
-    SUPPORT_STATUSES.forEach((s) => {
-      const opt = document.createElement('option');
-      opt.value = s;
-      opt.textContent = supportStatusLabel(s);
-      if (s === ticket.status) opt.selected = true;
-      statusSelect.appendChild(opt);
-    });
-    statusSelect.addEventListener('change', async () => {
-      const newStatus = statusSelect.value;
-      statusSelect.disabled = true;
-      const { error: updateError } = await supabase
-        .from('support_tickets')
-        .update({ status: newStatus })
-        .eq('id', ticket.id);
+    const statusDropdown = buildDropdown({
+      options: SUPPORT_STATUSES.map((s) => ({ value: s, label: supportStatusLabel(s) })),
+      value: ticket.status,
+      ariaLabel: 'Estado del reclamo',
+      onSelect: async (newStatus) => {
+        statusDropdown.setDisabled(true);
+        const { error: updateError } = await supabase
+          .from('support_tickets')
+          .update({ status: newStatus })
+          .eq('id', ticket.id);
 
-      if (updateError) {
-        console.error('Error al actualizar el estado del reclamo:', updateError);
-        showToast('No se pudo actualizar el estado.', 'error');
-        statusSelect.value = ticket.status;
-      } else {
-        ticket.status = newStatus;
-        showToast('Estado actualizado.', 'success');
-      }
-      statusSelect.disabled = false;
+        if (updateError) {
+          console.error('Error al actualizar el estado del reclamo:', updateError);
+          showToast('No se pudo actualizar el estado.', 'error');
+          statusDropdown.setValue(ticket.status); // volver a lo que hay en la DB
+        } else {
+          ticket.status = newStatus;
+          showToast('Estado actualizado.', 'success');
+        }
+        statusDropdown.setDisabled(false);
+      },
     });
-    tdStatus.appendChild(statusSelect);
+    tdStatus.appendChild(statusDropdown.element);
     tr.appendChild(tdStatus);
 
     const tdActions = document.createElement('td');

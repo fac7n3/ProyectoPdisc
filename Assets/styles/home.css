@@ -1119,6 +1119,160 @@ button.coupon-chip:hover {
    "Ordenar por" del sidebar a .cat-filter-dropdown: envolvían al último
    <select> nativo que quedaba en la búsqueda y ninguna otra página las usaba. */
 
+/* ── .bl-dropdown: desplegable propio en lugar de un <select> ──
+   Lo arma js/dropdown.js. Compacto a propósito: se usa dentro de filas de
+   tabla (panel de admin) y de editores inline (perfil). */
+.bl-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.bl-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px;
+  width: 100%;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+  color: var(--bl-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.bl-dropdown__trigger:hover,
+.bl-dropdown.is-open .bl-dropdown__trigger { border-color: var(--bl-primary); }
+
+.bl-dropdown__trigger:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+
+.bl-dropdown__trigger[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bl-dropdown__caret {
+  font-size: 0.7rem;
+  color: var(--bl-text-muted);
+  transition: transform 0.2s;
+}
+
+.bl-dropdown.is-open .bl-dropdown__caret { transform: rotate(180deg); }
+
+.bl-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 15rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.25rem;
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  box-shadow: var(--bl-shadow-lg);
+  z-index: 60;
+}
+
+.bl-dropdown__menu[hidden] { display: none; }
+
+.bl-dropdown__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  border-radius: var(--bl-radius-sm);
+  background: none;
+  color: var(--bl-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bl-dropdown__item:hover { background: var(--bl-surface-alt); }
+
+.bl-dropdown__item:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -2px;
+}
+
+.bl-dropdown__item--active {
+  color: var(--bl-primary);
+  font-weight: 600;
+}
+
+/* ── .bl-stars: calificación de 1 a 5 ──
+   Las estrellas se pintan en orden inverso (5→1) y se muestran con
+   row-reverse, así "la elegida y las de menor puntaje" se pueden expresar con
+   el selector de hermanos `~`, sin JS. */
+.bl-stars {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+.bl-stars__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px de objetivo táctil sin que las estrellas queden gigantes. */
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.bl-stars__input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.bl-stars__icon {
+  font-size: 1.35rem;
+  color: var(--bl-border);
+  transition: color 0.12s, transform 0.12s;
+}
+
+/* Elegida + todas las de menor puntaje (sus hermanas siguientes en el DOM). */
+.bl-stars__opt:has(.bl-stars__input:checked) .bl-stars__icon,
+.bl-stars__opt:has(.bl-stars__input:checked) ~ .bl-stars__opt .bl-stars__icon {
+  color: var(--bl-accent);
+}
+
+.bl-stars__opt:hover .bl-stars__icon,
+.bl-stars__opt:hover ~ .bl-stars__opt .bl-stars__icon {
+  color: var(--bl-accent-hover);
+  transform: scale(1.1);
+}
+
+.bl-stars__opt:has(.bl-stars__input:focus-visible) {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: -4px;
+  border-radius: var(--bl-radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-stars__icon { transition: none; }
+  .bl-stars__opt:hover .bl-stars__icon { transform: none; }
+}
+
 /* ── .catpick: grilla de opciones en lugar de un <select> ──
    Radios (o checkbox) nativos estilados. La usan el alta de producto, el alta
    de comercio y el alta de repartidor; vive acá y no inline en cada página

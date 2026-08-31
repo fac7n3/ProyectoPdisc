@@ -1,11 +1,12 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice, clearCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
-import { submitReview } from "./reviews-utils.js";
+import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects } from "./storage-utils.js";
+import { buildDropdown } from "./dropdown.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -19,8 +20,7 @@ const cardMemberSince = document.getElementById("card-member-since");
 
 const logoutBtn = document.getElementById("logout-btn");
 const mainContent = document.getElementById("main-content");
-const roleSwitcherWrap = document.getElementById("role-switcher-wrap");
-const roleSwitcher = document.getElementById("role-switcher");
+const rolePanelLink = document.getElementById("role-panel-link");
 
 // Direcciones (multi-address book, P0-2)
 const addressesList = document.getElementById("addresses-list");
@@ -119,25 +119,17 @@ function renderQuickProfile(user) {
     }
   }
 
-  // Cambiar de rol (cliente/vendedor -> administrador/moderador): el rol real
-  // que evalúa la RLS/el gate de admin.html vive en app_metadata (JWT), no en
-  // profiles.role -- mismo campo que arregló guardPage en F12-17. Solo se
-  // ofrece la opción de administrador/moderador si el JWT realmente lo tiene
-  // (nunca es un selector libre -- elegir una opción solo navega, no cambia
-  // ningún permiso; los permisos ya los decide el JWT solo).
+  // Acceso al panel elevado. El rol real que evalúa la RLS/el gate de
+  // admin.html vive en app_metadata (JWT), no en profiles.role -- mismo campo
+  // que arregló guardPage en F12-17. El link solo aparece si el JWT realmente
+  // trae el rol: no otorga ningún permiso, solo lleva a la página.
   const jwtRole = user.app_metadata?.role;
-  if (roleSwitcherWrap && roleSwitcher && (jwtRole === 'admin' || jwtRole === 'moderador')) {
-    const elevatedOption = document.createElement('option');
-    elevatedOption.value = 'elevated';
-    elevatedOption.textContent = jwtRole === 'admin' ? 'Administrador' : 'Moderador';
-    roleSwitcher.appendChild(elevatedOption);
-    roleSwitcherWrap.hidden = false;
-
-    roleSwitcher.addEventListener('change', () => {
-      if (roleSwitcher.value === 'elevated') {
-        window.location.href = './admin.html';
-      }
-    });
+  if (rolePanelLink && (jwtRole === 'admin' || jwtRole === 'moderador')) {
+    const label = document.getElementById('role-panel-label');
+    if (label) {
+      label.textContent = jwtRole === 'admin' ? 'Panel de administración' : 'Panel de moderación';
+    }
+    rolePanelLink.hidden = false;
   }
 }
 
@@ -1053,17 +1045,11 @@ function buildRepartidorRatingSection(order, reviewByRepartidorId) {
   label.textContent = ownReview ? 'Tu calificación del repartidor:' : 'Calificá al repartidor:';
   form.appendChild(label);
 
-  const ratingSelect = document.createElement('select');
-  ratingSelect.required = true;
-  ratingSelect.style.cssText = 'padding: 0.35rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-sm);';
-  [5, 4, 3, 2, 1].forEach((n) => {
-    const opt = document.createElement('option');
-    opt.value = String(n);
-    opt.textContent = `${'★'.repeat(n)}${'☆'.repeat(5 - n)}`;
-    ratingSelect.appendChild(opt);
+  const stars = buildStarRating({
+    value: ownReview?.rating ?? 0,
+    ariaLabel: 'Calificación del repartidor',
   });
-  if (ownReview) ratingSelect.value = String(ownReview.rating);
-  form.appendChild(ratingSelect);
+  form.appendChild(stars.element);
 
   const submitBtn = document.createElement('button');
   submitBtn.type = 'submit';
@@ -1075,7 +1061,7 @@ function buildRepartidorRatingSection(order, reviewByRepartidorId) {
     e.preventDefault();
     submitBtn.disabled = true;
     try {
-      await submitReview('repartidor', repartidorId, parseInt(ratingSelect.value, 10), null);
+      await submitReview('repartidor', repartidorId, stars.getValue(), null);
       showToast('¡Gracias por calificar al repartidor!', 'success');
       await loadCompras(order.client_id);
     } catch (err) {
@@ -1273,24 +1259,33 @@ function openRowEditor(field) {
   const els = {};
 
   field.inputs(profileData).forEach((spec) => {
-    let el;
     if (spec.el === "select") {
-      el = document.createElement("select");
-      spec.options.forEach((opt) => {
-        const o = document.createElement("option");
-        o.value = opt;
-        o.textContent = opt;
-        el.appendChild(o);
+      // Desplegable propio: el <select> nativo no se puede estilar y quedaba
+      // fuera de tono al lado de los inputs de la fila.
+      const dd = buildDropdown({
+        options: spec.options.map((o) => ({ value: o, label: o })),
+        value: spec.value,
+        ariaLabel: spec.aria,
       });
-    } else {
-      el = document.createElement("input");
-      el.type = spec.type;
-      if (spec.placeholder) el.placeholder = spec.placeholder;
-      if (spec.autocomplete) el.autocomplete = spec.autocomplete;
-      if (spec.inputMode) el.inputMode = spec.inputMode;
-      if (spec.maxLength) el.maxLength = spec.maxLength;
-      if (spec.max) el.max = spec.max;
+      // Se guarda con la misma forma mínima que un input (value / focus /
+      // aria-invalid) para que guardar y validar no tengan que distinguirlo.
+      els[spec.name] = {
+        get value() { return dd.getValue(); },
+        focus: () => dd.element.querySelector(".bl-dropdown__trigger")?.focus(),
+        setAttribute: (attr, val) => dd.element.setAttribute(attr, val),
+        removeAttribute: (attr) => dd.element.removeAttribute(attr),
+      };
+      editWrap.appendChild(dd.element);
+      return;
     }
+
+    const el = document.createElement("input");
+    el.type = spec.type;
+    if (spec.placeholder) el.placeholder = spec.placeholder;
+    if (spec.autocomplete) el.autocomplete = spec.autocomplete;
+    if (spec.inputMode) el.inputMode = spec.inputMode;
+    if (spec.maxLength) el.maxLength = spec.maxLength;
+    if (spec.max) el.max = spec.max;
     el.className = spec.className;
     el.value = spec.value;
     el.setAttribute("aria-label", spec.aria);
@@ -1781,14 +1776,6 @@ async function renderFullProfile(user) {
     // renderQuickProfile desde el JWT (el nombre de Google, o el email como
     // último recurso): pisarlo con "-" era cambiar un dato bueno por uno peor.
     const nameToUse = profile.full_name?.trim() || null;
-
-    // "Cambiar de rol": la opción "own" del selector representa el rol base
-    // real (cliente/vendedor/repartidor, tabla profiles) -- separado del rol
-    // elevado (admin/moderador) que ya se agregó en renderQuickProfile.
-    const ownOption = roleSwitcher?.querySelector('option[value="own"]');
-    if (ownOption) {
-      ownOption.textContent = `Mi cuenta (${roleFromDB.charAt(0).toUpperCase() + roleFromDB.slice(1)})`;
-    }
 
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
     if (sidebarName && nameToUse) sidebarName.textContent = nameToUse;
