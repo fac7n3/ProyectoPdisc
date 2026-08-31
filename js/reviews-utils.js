@@ -1,5 +1,60 @@
 import { supabase } from './auth-utils.js';
 
+let starSeq = 0;
+
+/**
+ * Selector de estrellas (1 a 5). Reemplaza al `<select>` con opciones "★★★☆☆"
+ * que estaba copiado igual acá y en perfil.js (calificar al repartidor):
+ * elegir una calificación con un desplegable obliga a abrirlo y leer cinco
+ * cadenas casi idénticas, cuando el gesto natural es tocar la tercera estrella.
+ *
+ * Son radios nativos: el teclado (flechas), el `required` y el envío del
+ * formulario los sigue manejando el navegador. El relleno hasta la estrella
+ * elegida se hace solo con CSS -- por eso las estrellas se pintan en orden
+ * inverso (5→1) y se muestran con `row-reverse`: así "la elegida y las
+ * anteriores" son "la elegida y sus hermanas siguientes", que sí se puede
+ * expresar con el selector `~`.
+ *
+ * @returns {{ element, getValue }}
+ */
+export function buildStarRating({ value = 0, ariaLabel = 'Calificación', doc = document } = {}) {
+  const name = `bl-stars-${++starSeq}`;
+
+  const wrap = doc.createElement('div');
+  wrap.className = 'bl-stars';
+  wrap.setAttribute('role', 'radiogroup');
+  wrap.setAttribute('aria-label', ariaLabel);
+
+  [5, 4, 3, 2, 1].forEach((n) => {
+    const opt = doc.createElement('label');
+    opt.className = 'bl-stars__opt';
+    opt.title = n === 1 ? '1 estrella' : `${n} estrellas`;
+
+    const input = doc.createElement('input');
+    input.type = 'radio';
+    input.name = name;
+    input.value = String(n);
+    input.required = true;
+    input.className = 'bl-stars__input';
+    if (Number(value) === n) input.checked = true;
+    // El lector de pantalla no ve la estrella dibujada.
+    input.setAttribute('aria-label', opt.title);
+    opt.appendChild(input);
+
+    const icon = doc.createElement('i');
+    icon.className = 'fa-solid fa-star bl-stars__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    opt.appendChild(icon);
+
+    wrap.appendChild(opt);
+  });
+
+  return {
+    element: wrap,
+    getValue: () => Number(wrap.querySelector(`input[name="${name}"]:checked`)?.value || 0),
+  };
+}
+
 /** Promedio y cantidad de reseñas visibles (no ocultas) de un producto o comercio. */
 export async function fetchReviewsSummary(targetType, targetId) {
   const { data, error } = await supabase
@@ -173,17 +228,11 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
   label.textContent = ownReview ? 'Editar tu reseña' : 'Dejar una reseña';
   form.appendChild(label);
 
-  const ratingSelect = document.createElement('select');
-  ratingSelect.required = true;
-  ratingSelect.style.cssText = 'padding: 0.5rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-sm);';
-  [5, 4, 3, 2, 1].forEach((n) => {
-    const opt = document.createElement('option');
-    opt.value = String(n);
-    opt.textContent = `${'★'.repeat(n)}${'☆'.repeat(5 - n)}`;
-    ratingSelect.appendChild(opt);
+  const stars = buildStarRating({
+    value: ownReview?.rating ?? 0,
+    ariaLabel: 'Tu calificación',
   });
-  if (ownReview) ratingSelect.value = String(ownReview.rating);
-  form.appendChild(ratingSelect);
+  form.appendChild(stars.element);
 
   const commentInput = document.createElement('textarea');
   commentInput.placeholder = 'Comentario (opcional)';
@@ -201,7 +250,7 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await submitReview(targetType, targetId, parseInt(ratingSelect.value, 10), commentInput.value.trim());
+      await submitReview(targetType, targetId, stars.getValue(), commentInput.value.trim());
       await onSubmitted();
     } catch (err) {
       alert(err.message || 'No se pudo guardar la reseña. ¿Iniciaste sesión?');

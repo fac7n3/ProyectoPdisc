@@ -1549,3 +1549,60 @@ horizontal, opciones de 68px, texto largo envuelto.
 
 **Estado de los selects nativos:** queda **uno solo** en todo el proyecto, `role-switcher` en
 `perfil.html` (cambiar de rol, visible únicamente para admin/moderador).
+
+## Barrido final: cero `<select>` nativos en el proyecto (2026-08-31)
+
+Rama `sin-selects-nativos`. El usuario pidió sacarlos "de todos lados". Quedaban cinco, tres de
+ellos **creados desde JS** (no se ven grepeando el HTML — hay que buscar también
+`createElement('select')`).
+
+Tres soluciones distintas, según lo que cada uno era en realidad:
+
+### 1. Calificación por estrellas (2 casos, era el mismo código duplicado)
+`reviews-utils.js` (reseña de producto/comercio) y `perfil.js` (calificar al repartidor) tenían
+**el mismo bloque copiado**: un `<select>` con opciones "★★★☆☆". Elegir una calificación abriendo
+un desplegable y leyendo cinco cadenas casi idénticas es lo contrario del gesto natural, que es
+tocar la tercera estrella.
+
+Se extrajo `buildStarRating()` a `reviews-utils.js` (que `perfil.js` ya importaba). Son radios
+nativos: teclado, `required` y envío los sigue manejando el navegador.
+
+**Truco central:** el relleno "hasta la estrella elegida" se hace **solo con CSS**, sin JS. Para
+eso las estrellas se pintan en orden **inverso** (5→1) y se muestran con `flex-direction:
+row-reverse`. Así "la elegida y las de menor puntaje" queda expresable como "la elegida y sus
+hermanas siguientes" (`~`), que es lo único que CSS permite. Visualmente se leen 1→5.
+
+### 2. Desplegable propio reusable (2 casos)
+`js/dropdown.js` nuevo: `buildDropdown({ options, value, onSelect, ariaLabel })` →
+`{ element, getValue, setValue, setDisabled }`. Se arma solo, sin depender de ids, porque va dentro
+de filas de tabla (estado de reclamo en el panel de admin) y de editores inline (tipo de documento
+en el perfil), donde puede haber muchos a la vez. No importa nada, así que es testeable.
+
+Detalle que importa: **elegir la misma opción no dispara `onSelect`**. En el panel de admin eso
+evitaba una escritura inútil a la DB cada vez que el admin abría y cerraba el desplegable sin
+cambiar nada.
+
+El del sidebar de búsqueda **no** se migró a este módulo: su marcado ya vive en `search.html` y su
+helper (`initFilterDropdown`) cablea DOM existente en vez de crearlo. Son formas distintas; unificar
+por unificar habría agregado riesgo sin ganancia.
+
+En `perfil.js`, el desplegable se guarda en `els[spec.name]` con la **misma forma mínima que un
+input** (`value` como getter, `focus`, `setAttribute`, `removeAttribute`) para que guardar y validar
+no tengan que distinguir si la fila tiene un input o un desplegable.
+
+### 3. `role-switcher` → un link
+Era un `<select>` cuya única opción distinta a la actual **navegaba a admin.html**; elegir la otra
+no hacía nada. O sea, un control de navegación disfrazado de campo de formulario. Se reemplazó por
+un `<a href="./admin.html">` que solo aparece si el JWT trae rol admin/moderador, con la etiqueta
+correcta ("Panel de administración" / "Panel de moderación"). Menos código y más honesto.
+
+**Verificado:** las estrellas se probaron **en la página real de producto** (es pública): orden DOM
+5→1 pero visual 1→5, opciones de 44×44, y al elegir 4 se rellenan 4 en ámbar y queda 1 gris
+(confirmado por captura). El desplegable se probó con el módulo real: abre/cierra, aria-expanded,
+la activa marcada con `aria-selected`, foco de vuelta al trigger al elegir, Escape y click afuera
+cierran, `setDisabled` impide abrir, dos instancias independientes, y elegir la misma opción no
+re-dispara. Todo a 44px.
+
+**Recordatorio (tercera vez que muerde):** `getComputedStyle` devuelve valores **obsoletos** para
+propiedades que dependen de `:has()`. Reportaba las estrellas sin rellenar cuando la captura
+mostraba las 4 en ámbar. Para estados con `:has()`, confiar en la captura.

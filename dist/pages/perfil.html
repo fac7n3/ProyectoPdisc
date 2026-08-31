@@ -12,15 +12,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-DseHIQPe.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-K_9l8mOA.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-DIWrPmBA.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CivoFhuJ.js">
+    <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-DDv7hQOn.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-CrxHU93G.js">
     <link rel="stylesheet" crossorigin href="/assets/perfil-RY9j9nkb.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-DrSc7Mg2.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-CsGBJYfe.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Rv-5dxrp.css">
   </head>
   <body>
     <!-- ====== BARRA DE NAVEGACIÓN (Consistente con el resto del sitio) ====== -->
@@ -217,12 +218,13 @@
                   <span class="datos-row__label">Tipo de cuenta</span>
                   <span class="datos-row__value" id="card-role">Cargando…</span>
                 </div>
-                <div id="role-switcher-wrap" hidden>
-                  <label for="role-switcher" class="sr-only">Cambiar de rol</label>
-                  <select id="role-switcher" class="datos-input datos-input--compact">
-                    <option value="own">Mi cuenta (cliente/vendedor)</option>
-                  </select>
-                </div>
+                <!-- Solo para admin/moderador. Era un <select> cuya única
+                     opción distinta navegaba a admin.html: un link dice lo
+                     mismo sin disfrazarse de campo de formulario. -->
+                <a href="./admin.html" class="datos-btn" id="role-panel-link" hidden>
+                  <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                  <span id="role-panel-label">Panel</span>
+                </a>
               </div>
               <div class="datos-row datos-row--static">
                 <div class="datos-row__main">
