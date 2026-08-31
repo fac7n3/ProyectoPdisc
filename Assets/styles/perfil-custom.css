@@ -1213,6 +1213,8 @@ a.compra-item-text:hover {
 /* Respetar "reducir movimiento" del sistema. */
 @media (prefers-reduced-motion: reduce) {
   .datos-progress__bar { transition: none; }
+}
+
 /* ===========================================================
    PREFERENCIAS (Mis datos) — ej. ayudas del carrito
    =========================================================== */
