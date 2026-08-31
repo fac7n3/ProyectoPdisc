@@ -1,6 +1,7 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
 import { statusLabel as supportStatusLabel } from './support-utils.js';
 import { buildDropdown } from './dropdown.js';
+import { upgradeDateInputs } from './datepicker.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -1485,6 +1486,10 @@ guardPage({
   requireRole: ['admin', 'moderador'],
   onReady: (user) => {
     applyRoleVisibility(user?.app_metadata?.role);
+    // Cambia los <input type="date"> por el selector propio. El valor sigue
+    // viajando en ISO por un input oculto con el mismo id, así que las
+    // lecturas (getElementById(...).value) no cambian.
+    upgradeDateInputs();
     initAdminPage();
   }
 });
