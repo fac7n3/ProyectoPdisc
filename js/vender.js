@@ -6,6 +6,7 @@ import { renderSupportSection } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { removeStoredObjects } from './storage-utils.js';
+import { upgradeDateInputs } from './datepicker.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -98,6 +99,9 @@ async function checkSellerState(user) {
  * que ataba uno al otro y dependía de cuál se inicializara antes.
  */
 let categoriesCache = [];
+
+/** Selectores de fecha propios, por id. Los arma upgradeDateInputs(). */
+let datePickers = {};
 
 async function loadCategories() {
   const { data: categories, error } = await supabase
@@ -1937,7 +1941,9 @@ async function openEditProductForm(productId) {
   document.getElementById('prod-price').value = product.price ?? '';
   document.getElementById('prod-stock').value = product.stock ?? '';
   document.getElementById('prod-compare-price').value = product.compare_at_price ?? '';
-  document.getElementById('prod-offer-expires').value = product.offer_expires_at ?? '';
+  // Vía el picker, no por .value: escribir el input oculto directo cargaría el
+  // valor pero dejaría el campo visible en blanco.
+  datePickers['prod-offer-expires']?.setValue(product.offer_expires_at ?? '');
   document.getElementById('prod-desc').value = product.description || '';
   setProductCategorySlug(product.categories?.slug || '');
 
@@ -2449,6 +2455,11 @@ function setupDashboardEvents() {
 guardPage({
   requireAuth: true,
   onReady: (user) => {
+    // Cambia los <input type="date"> por el selector propio. El valor sigue
+    // viajando en ISO por un input oculto con el mismo id, así que las
+    // lecturas (getElementById(...).value) no cambian. Se guardan los pickers
+    // porque el alta de producto escribe la fecha desde afuera al editar.
+    datePickers = upgradeDateInputs();
     initVenderPage(user);
   },
 });
