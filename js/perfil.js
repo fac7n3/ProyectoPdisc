@@ -1,5 +1,6 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
-import { formatPrice, clearCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
+import { formatPrice, clearPurchasedFromCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
+import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
@@ -131,6 +132,43 @@ function renderQuickProfile(user) {
     }
     rolePanelLink.hidden = false;
   }
+}
+
+/**
+ * Preferencia "Mostrar ayudas en el carrito" (migración 66).
+ *
+ * Se pinta primero con la cache local para que la casilla nunca aparezca
+ * marcada por default y salte de estado un segundo después, cuando llega el
+ * perfil real. `renderFullProfile` la corrige si la cuenta dice otra cosa.
+ */
+function initCartHintsPref() {
+  const toggle = document.getElementById("pref-cart-hints");
+  if (!toggle) return;
+
+  toggle.checked = areHintsEnabled();
+
+  toggle.addEventListener("change", async () => {
+    const enabled = toggle.checked;
+    const { persisted } = await setHintsEnabled(enabled);
+
+    // La preferencia ya quedó aplicada localmente aunque la base no la haya
+    // aceptado (ej. la migración 66 todavía sin aplicar): se avisa que en otro
+    // dispositivo va a seguir como estaba, en vez de mentir con un "listo".
+    if (!persisted) {
+      showToast("Preferencia guardada solo en este dispositivo.", "error");
+      return;
+    }
+    showToast(enabled ? "Ayudas del carrito activadas." : "Ayudas del carrito desactivadas.", "success");
+  });
+}
+
+/** Refleja en la casilla lo que dice la cuenta (fuente de verdad). */
+function syncCartHintsPref(profile) {
+  const toggle = document.getElementById("pref-cart-hints");
+  // `undefined` = la migración 66 no está aplicada todavía: se deja lo que ya
+  // muestra la cache local en vez de forzar un valor inventado.
+  if (!toggle || profile?.cart_hints_enabled == null) return;
+  toggle.checked = profile.cart_hints_enabled;
 }
 
 // --- Direcciones: Cargar y Guardar ---
@@ -1777,6 +1815,8 @@ async function renderFullProfile(user) {
     // último recurso): pisarlo con "-" era cambiar un dato bueno por uno peor.
     const nameToUse = profile.full_name?.trim() || null;
 
+    syncCartHintsPref(profile);
+
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
     if (sidebarName && nameToUse) sidebarName.textContent = nameToUse;
     if (cardEmail) { cardEmail.textContent = emailToUse; removeSkeleton(cardEmail); }
@@ -1848,7 +1888,9 @@ function handleMercadoPagoReturn() {
   const status = params.get('mp');
   if (status !== 'success' && status !== 'pending') return;
 
-  clearCart();
+  // Solo lo comprado: si el usuario había dejado productos en pendiente en el
+  // carrito, no los pagó y tienen que seguir ahí (ver cart-utils.js).
+  clearPurchasedFromCart();
   updateCartBadge();
   showToast(
     status === 'success'
@@ -1870,6 +1912,7 @@ guardPage({
   requireAuth: true,
   onReady: (user) => {
     renderQuickProfile(user);
+    initCartHintsPref();
     renderFullProfile(user);
     handleMercadoPagoReturn();
   },
