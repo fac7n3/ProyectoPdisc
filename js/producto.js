@@ -165,11 +165,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     info.appendChild(actionsDiv);
 
+    // Etiqueta de stock (cantidad en verde/amarillo, "Sin stock" en rojo) +,
+    // si está agotado, el botón de avisar (F12-09) a su derecha.
+    const stockRow = document.createElement('div');
+    stockRow.className = 'product-stock-row';
+
+    const stockBadge = document.createElement('span');
+    const LOW_STOCK_THRESHOLD = 5;
+    if (outOfStock) {
+      stockBadge.className = 'product-stock-badge product-stock-badge--out';
+      stockBadge.textContent = 'Sin stock';
+    } else if (product.stock <= LOW_STOCK_THRESHOLD) {
+      stockBadge.className = 'product-stock-badge product-stock-badge--low';
+      stockBadge.textContent = `Stock: ${product.stock}`;
+    } else {
+      stockBadge.className = 'product-stock-badge product-stock-badge--ok';
+      stockBadge.textContent = `Stock: ${product.stock}`;
+    }
+    stockRow.appendChild(stockBadge);
+    info.appendChild(stockRow);
+
     // F12-09: producto agotado -> ofrecer avisar cuando vuelva el stock.
     if (outOfStock) {
-      const alertWrap = document.createElement('div');
-      alertWrap.style.cssText = 'margin-top: 0.75rem;';
-      info.appendChild(alertWrap);
+      const alertWrap = document.createElement('span');
+      stockRow.appendChild(alertWrap);
       renderStockAlertWidget(alertWrap, product.id);
     }
 
