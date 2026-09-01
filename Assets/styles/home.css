@@ -2655,13 +2655,15 @@ button.coupon-chip:hover {
   position: relative;
   padding: 0.85rem 1rem;
   border: 1px solid var(--bl-border);
+  /* --notif-tone la fija notifications-utils.js según el tipo de aviso
+     (pedido, reseña, rechazo...) -- ver TYPE_TONE. Sin tono, gris neutro. */
+  border-left: 3px solid var(--notif-tone, var(--bl-border));
   border-radius: var(--bl-radius-lg);
   background: var(--bl-surface);
   box-shadow: var(--bl-shadow-sm);
 }
 .notif-item--unread {
   background: var(--bl-surface-alt);
-  border-left: 3px solid var(--bl-primary);
 }
 
 .notif-item__title {
@@ -2685,7 +2687,7 @@ button.coupon-chip:hover {
   margin-top: 0.2rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--bl-primary);
+  color: var(--notif-tone, var(--bl-primary));
 }
 .notif-item__link:hover {
   text-decoration: underline;
