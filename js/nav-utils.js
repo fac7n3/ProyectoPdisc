@@ -831,6 +831,29 @@ export async function initAccountMenu() {
   });
 }
 
+/**
+ * Botón "Volver" con flecha (A113-311): history.back() si hay desde dónde
+ * volver, si no cae a home.html -- en vez de un link fijo a otra pantalla
+ * que no es necesariamente de dónde vino la persona. Usado en el título de
+ * la sección Tienda (comercio.js) y Usuario (perfil.html).
+ * @param {string} [label='Volver']
+ * @returns {HTMLButtonElement}
+ */
+export function buildSectionBackButton(label = 'Volver') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'section-back';
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-arrow-left';
+  btn.appendChild(icon);
+  btn.append(' ' + label);
+  btn.addEventListener('click', () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = './home.html';
+  });
+  return btn;
+}
+
 // ── Helpers de scroll compartidos ───────────────────────────
 export function initScrollTop() {
   const btn = document.getElementById('scroll-top-btn');

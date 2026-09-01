@@ -1,7 +1,7 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, buildSectionBackButton } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     header.appendChild(actionsRow);
 
+    mainContent.appendChild(buildSectionBackButton('Volver'));
     mainContent.appendChild(header);
 
     const section = document.createElement('section');
