@@ -20,16 +20,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/home-BsWzBqac.js"></script>
+    <script type="module" crossorigin src="/assets/home-B1KPOxHV.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-1mL_M7PA.js">
     <link rel="modulepreload" crossorigin href="/assets/product-modal-DbuAEmu3.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-D5bBNcmp.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-S5HZSzq1.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Dj1Uv7eC.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-kccHB_QY.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-0tZ5exD0.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -53,8 +53,8 @@
         <div class="navbar__actions">
           <div id="nav-notifications-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-          <a href="./perfil.html" class="navbar__action-circle" id="nav-profile" aria-label="Mi cuenta"><i class="fa-regular fa-user" style="font-size: 0.875rem;"></i></a>
-          <script>(function(){try{var u=localStorage.getItem('bl_avatar_url');var n=document.getElementById('nav-profile');if(u&&n){var i=document.createElement('img');i.src=u;i.alt='Mi perfil';i.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';n.innerHTML='';n.appendChild(i);}}catch(e){}})();</script>
+          <div id="nav-account-wrap"></div>
+          <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
             <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
             <span class="cart-badge" id="cart-badge"></span>

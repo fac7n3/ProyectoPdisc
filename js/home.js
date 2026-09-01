@@ -1,7 +1,7 @@
 // Interacciones de la página principal
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
-import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onSubmit: (term) => { window.location.href = `./search.html?q=${encodeURIComponent(term)}`; },
   });
   initNotificationsBell();
+  initAccountMenu();
 
   // Cargar datos dinámicos
   loadStores();

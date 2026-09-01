@@ -7,7 +7,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, buildStoreCard } from './cart-utils.js';
-import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -626,6 +626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   });
   initNotificationsBell();
+  initAccountMenu();
 
   initSidebarFilters();
   syncInputs();

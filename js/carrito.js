@@ -5,7 +5,7 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons, isItemSelected, getSelectedItems } from './cart-utils.js';
 import { getPaymentProvider } from './payment-providers.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
 
 // --- Estado del Carrito ---
@@ -1354,6 +1354,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCart();
   updateCartBadge();
   initNotificationsBell();
+  initAccountMenu();
   initCartEvents();
   initClearCartModal();
   // La preferencia real vive en la cuenta; hasta que resuelva manda la cache

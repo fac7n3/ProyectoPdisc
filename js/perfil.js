@@ -4,7 +4,7 @@ import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
-import { initNotificationsBell } from "./nav-utils.js";
+import { initNotificationsBell, initAccountMenu } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects } from "./storage-utils.js";
 import { buildDropdown } from "./dropdown.js";
@@ -1949,6 +1949,7 @@ async function renderFullProfile(user) {
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
+  initAccountMenu();
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer.
   const notifCardBadge = document.getElementById("notif-card-badge");

@@ -1,12 +1,13 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, updateCartBadge, showToast, formatPrice, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initCategoryBar, initSearchBox, initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateCartBadge();
   initNotificationsBell();
+  initAccountMenu();
   initCategoryBar({ activeSlug: 'inicio' });
 
   // Buscador con autocompletado (compartido)

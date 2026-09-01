@@ -9,7 +9,7 @@
  */
 import { supabase } from './auth-utils.js';
 import { updateCartBadge, renderErrorState, renderEmptyState, buildStoreCard } from './cart-utils.js';
-import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import './speed-insights.js';
 
 const grid = document.getElementById('stores-grid');
@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollTop();
   initNavbarScroll();
   initNotificationsBell();
+  initAccountMenu();
 
   initCategoryBar({ activeSlug: 'inicio' });
   initSearchBox({
