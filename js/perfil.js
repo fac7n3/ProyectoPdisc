@@ -100,6 +100,22 @@ function renderQuickProfile(user) {
     removeSkeleton(cardRole);
   }
 
+  // Badge de rol junto al nombre (A113-269): mismo rol que ya viene en el
+  // JWT (app_metadata.role), pero visible de un vistazo en el encabezado.
+  const roleBadge = document.getElementById("profile-role-badge");
+  if (roleBadge) {
+    const roleLabels = {
+      cliente: "Cliente",
+      vendedor: "Vendedor",
+      repartidor: "Repartidor",
+      admin: "Administrador",
+      moderador: "Moderador",
+    };
+    roleBadge.textContent = roleLabels[quickRole] || (quickRole.charAt(0).toUpperCase() + quickRole.slice(1));
+    roleBadge.className = `role-badge role-badge--${quickRole}`;
+    roleBadge.hidden = false;
+  }
+
   // Avatar al instante: evita que la foto grande "desaparezca" (quede en el
   // skeleton) hasta que resuelva el fetch del perfil. Fuente inmediata: el JWT
   // (avatar de Google) o, si no, la cache del navbar (bl_avatar_url).
