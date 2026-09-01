@@ -466,12 +466,13 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-CvHihhiH.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DKmwduw6.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BHUWVnmq.js">
+    <script type="module" crossorigin src="/assets/vender-CCZD-6lS.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-zsBLdqiZ.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-w_bzcoJe.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-DKACMEPD.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-BLIsPuno.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-DYpzPteV.css">
@@ -668,6 +669,20 @@
                     <div class="pf-field">
                       <label class="form-label" for="store-free-shipping-threshold">Envío gratis a partir de ($)</label>
                       <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- A113-299: sin esto el cliente elegía "Transferencia bancaria" en el
+                     carrito y no tenía forma de saber a dónde mandar la plata -- el pedido
+                     quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Transferencia bancaria</h3>
+                  <p class="pf-card__hint">Se le muestra al cliente en el carrito apenas elige pagar por transferencia. Sin esto, no va a saber a dónde transferir.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-transfer-info">CBU, alias o datos de tu cuenta</label>
+                      <textarea id="store-transfer-info" class="form-input" rows="2" placeholder="Ej: Banco Nación — Alias: MIVENTA.BARADERO — CBU: 0000003100000000000000"></textarea>
                     </div>
                   </div>
                 </div>
