@@ -743,6 +743,18 @@ a.compra-item-text:hover {
   color: #fff;
 }
 
+/* A113-291: "Servicios" visible pero deshabilitada -- todavía no hay esa
+   feature en la app, se muestra grisada para dejar en claro que está
+   pensada pero no lista, en vez de esconderla del todo. */
+.fav-subtab-btn--disabled,
+.fav-subtab-btn--disabled:hover {
+  background: var(--bl-perfil-bg);
+  border-color: var(--bl-perfil-border);
+  color: var(--bl-perfil-text-sec);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* === Favoritos Grid === */
 .favoritos-grid {
   display: grid;
