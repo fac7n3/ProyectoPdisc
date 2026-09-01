@@ -7,6 +7,7 @@ import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects } from "./storage-utils.js";
+import { isValidPhone } from "./validation-utils.js";
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -358,8 +359,24 @@ if (addressForm) {
     if (!currentUserId) return;
 
     const addr = inputAddress.value.trim();
+    const phone = inputPhone.value.trim();
+
+    // A113-293: dirección y teléfono obligatorios -- sin el teléfono el
+    // repartidor no tiene forma de avisar si no encuentra la dirección o
+    // coordinar la entrega en la puerta.
     if (!addr) {
-      showToast('La dirección es obligatoria.', 'error');
+      showToast('La dirección es obligatoria. La necesitamos para coordinar la entrega.', 'error');
+      inputAddress.focus();
+      return;
+    }
+    if (!phone) {
+      showToast('El teléfono es obligatorio. Lo necesitamos para coordinar la entrega.', 'error');
+      inputPhone.focus();
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      showToast('El teléfono ingresado no es válido.', 'error');
+      inputPhone.focus();
       return;
     }
 
@@ -368,7 +385,7 @@ if (addressForm) {
       label: addressLabel.value.trim() || 'Casa',
       address: addr,
       details: inputDetails.value.trim() || null,
-      phone: inputPhone.value.trim() || null,
+      phone,
       is_default: addressDefault.checked,
     };
 
