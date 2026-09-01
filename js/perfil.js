@@ -400,10 +400,26 @@ let favCategory = 'todas';
 /** Sub-pestaña abierta: el filtro por categoría solo aplica a productos. */
 let favTab = 'productos';
 
+/**
+ * A113-292: antes esta tarjeta era un <a> que navegaba a producto.html --
+ * una página aparte, sin botón de favorito ni "productos relacionados",
+ * visualmente distinta del resto del sitio. Ahora abre el mismo modal que
+ * usan home/búsqueda/comercio (product-modal.js, cargado en perfil.html).
+ * El href se conserva como fallback real: click con Ctrl/Cmd/rueda del
+ * mouse (nueva pestaña) sigue funcionando y llega a la página standalone.
+ */
 function buildFavProductCard(p) {
   const card = document.createElement('a');
   card.className = "fav-card";
   card.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
+  card.id = p.id;
+
+  card.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (typeof window.openProductModal !== 'function') return; // fallback: navega a producto.html
+    e.preventDefault();
+    window.openProductModal(card);
+  });
 
   const img = document.createElement('img');
   img.src = p.image_url || '/img/no-image.svg';
@@ -690,7 +706,7 @@ const DELIVERY_STATUS_LABELS = {
  * se tratan como no confiables — mismo criterio que F1-01 en comercio.js/
  * producto.js.
  */
-function buildCompraItem(order, reviewByRepartidorId) {
+function buildCompraItem(order, reviewByRepartidorId, transferInfoByStoreId) {
   const date = new Date(order.created_at).toLocaleDateString('es-AR');
   const shortId = order.id.split('-')[0].toUpperCase();
   const statusText = ORDER_STATUS_LABELS[order.status] || order.status;
@@ -698,6 +714,7 @@ function buildCompraItem(order, reviewByRepartidorId) {
 
   const item = document.createElement('div');
   item.className = 'compra-item';
+  item.id = `order-${order.id}`;
 
   const info = document.createElement('div');
   info.className = 'compra-info';
@@ -766,7 +783,7 @@ function buildCompraItem(order, reviewByRepartidorId) {
     info.appendChild(deliverySpan);
   }
 
-  const proofSection = buildPaymentProofSection(order);
+  const proofSection = buildPaymentProofSection(order, transferInfoByStoreId);
   if (proofSection) info.appendChild(proofSection);
 
   const revocationSection = buildRevocationSection(order);
@@ -941,13 +958,28 @@ function buildProofPicker() {
  * estado del último comprobante (si hay uno) y un selector para subir uno
  * nuevo. El vendedor lo confirma/rechaza desde vender.js.
  */
-function buildPaymentProofSection(order) {
+function buildPaymentProofSection(order, transferInfoByStoreId) {
   if (order.payment_method !== 'transferencia' || order.payment_status !== 'pending') {
     return null;
   }
 
   const wrap = document.createElement('div');
   wrap.className = 'compra-proof';
+
+  // A113-299: los datos de transferencia del comercio, a mano acá también --
+  // no solo en el carrito al momento de comprar -- por si el cliente vuelve
+  // más tarde a subir el comprobante y ya no se acuerda a dónde transfirió.
+  const transferInfo = transferInfoByStoreId?.get(order.store_id);
+  const infoP = document.createElement('p');
+  infoP.className = 'compra-proof__message';
+  if (transferInfo) {
+    infoP.style.whiteSpace = 'pre-line';
+    infoP.textContent = `Datos para transferir: ${transferInfo}`;
+  } else {
+    infoP.className = 'compra-proof__message compra-proof__message--error';
+    infoP.textContent = `${order.stores?.name || 'El comercio'} todavía no cargó sus datos para transferencia. Contactalo para coordinar el pago.`;
+  }
+  wrap.appendChild(infoP);
 
   const proofs = order.payment_proofs || [];
   const latestProof = [...proofs].sort(
@@ -1137,7 +1169,7 @@ async function loadCompras(userId) {
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
-        id, client_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
+        id, client_id, store_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
         stores ( name ),
         order_items ( quantity, price, title, product_id, products ( image_url ) ),
         payment_proofs ( status, created_at ),
@@ -1147,6 +1179,29 @@ async function loadCompras(userId) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // A113-299: aparte de la query de arriba a propósito (ver por qué en
+    // carrito.js/loadTransferInfo) -- `stores.transfer_info` puede no existir
+    // todavía si la migración 66 no se aplicó, y no queremos que ESO tumbe
+    // toda "Mis compras". Solo hace falta para pedidos por transferencia
+    // todavía pendientes (los únicos con el picker de comprobante).
+    const pendingTransferStoreIds = [...new Set(
+      (orders || [])
+        .filter((o) => o.payment_method === 'transferencia' && o.payment_status === 'pending' && o.store_id)
+        .map((o) => o.store_id)
+    )];
+    let transferInfoByStoreId = new Map();
+    if (pendingTransferStoreIds.length > 0) {
+      const { data: transferRows, error: transferError } = await supabase
+        .from('stores')
+        .select('id, transfer_info')
+        .in('id', pendingTransferStoreIds);
+      if (transferError) {
+        console.error('Error al cargar los datos de transferencia:', transferError);
+      } else {
+        transferInfoByStoreId = new Map((transferRows || []).map((s) => [s.id, s.transfer_info || null]));
+      }
+    }
 
     comprasContainer.textContent = '';
 
@@ -1178,7 +1233,7 @@ async function loadCompras(userId) {
     const reviewByRepartidorId = new Map((ownRepartidorReviews || []).map((r) => [r.target_id, r]));
 
     orders.forEach((order) => {
-      comprasContainer.appendChild(buildCompraItem(order, reviewByRepartidorId));
+      comprasContainer.appendChild(buildCompraItem(order, reviewByRepartidorId, transferInfoByStoreId));
     });
   } catch (err) {
     console.error("Error loading orders", err);
@@ -1874,7 +1929,7 @@ async function renderFullProfile(user) {
   // Cargar las colecciones asíncronamente
   setupFavSubtabs();
   loadFavoritos(user.id);
-  loadCompras(user.id);
+  const comprasPromise = loadCompras(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
@@ -1887,6 +1942,38 @@ async function renderFullProfile(user) {
   }
   const supportContainer = document.getElementById("support-container");
   if (supportContainer) renderSupportSection(supportContainer);
+
+  // A113-271: click en una notificación (pedido/ticket) navega a acá con
+  // ?tab=compras&order=<id> (o ?tab=soporte) -- abre la sección y resalta la fila.
+  await comprasPromise;
+  handleNotificationDeepLink();
+}
+
+function flashHighlight(el) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.style.transition = 'background-color 0.3s ease, box-shadow 0.3s ease';
+  el.style.boxShadow = '0 0 0 3px var(--bl-perfil-primary, var(--bl-primary))';
+  setTimeout(() => { el.style.boxShadow = ''; }, 2200);
+}
+
+function handleNotificationDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  const orderId = params.get('order');
+
+  if (tab) openSection(`tab-${tab}`);
+
+  if (orderId) {
+    flashHighlight(document.getElementById(`order-${orderId}`));
+  }
+
+  if (tab || orderId) {
+    const url = new URL(window.location);
+    url.searchParams.delete('tab');
+    url.searchParams.delete('order');
+    window.history.replaceState({}, '', url);
+  }
 }
 
 // --- Cerrar sesión ---

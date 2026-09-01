@@ -588,6 +588,35 @@
   accent-color: var(--bl-primary);
 }
 
+/* A113-299: datos de transferencia por comercio, debajo del radio de
+   "Transferencia bancaria". */
+.transfer-info-box {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bl-surface-alt, #f1f5f9);
+  border: 1px dashed var(--bl-border, #cbd5e1);
+  border-radius: var(--bl-radius-md, 0.5rem);
+  font-size: 0.8125rem;
+  color: var(--bl-text);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transfer-info-box__store {
+  font-weight: 700;
+}
+
+.transfer-info-box__data {
+  white-space: pre-line;
+  color: var(--bl-text-secondary, #4a5568);
+}
+
+.transfer-info-box__missing {
+  color: var(--bl-danger, #dc2626);
+  font-weight: 600;
+}
+
 /* ── Direcciones guardadas ──
    Reemplazan al <select> que recortaba el texto de cada dirección. El radio va
    visible (no oculto como en .catpick) porque acá conviven con los radios de

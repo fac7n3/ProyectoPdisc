@@ -160,6 +160,7 @@ export async function renderSupportSection(container) {
   for (const t of tickets) {
     const row = document.createElement('div');
     row.className = 'tkt-item';
+    row.id = `ticket-${t.id}`;
 
     const top = document.createElement('div');
     top.className = 'tkt-item__top';
@@ -223,6 +224,23 @@ export async function renderSupportSection(container) {
   }
 
   container.appendChild(list);
+
+  // A113-271: click en una notificación de soporte trae acá con ?ticket=<id>
+  // -- abre el hilo de ese reclamo puntual y lo lleva a la vista.
+  const ticketIdParam = new URLSearchParams(window.location.search).get('ticket');
+  if (ticketIdParam) {
+    const targetRow = list.querySelector(`#ticket-${CSS.escape(ticketIdParam)}`);
+    if (targetRow) {
+      targetRow.querySelector('.tkt-item__top')?.click();
+      targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetRow.style.transition = 'box-shadow 0.3s ease';
+      targetRow.style.boxShadow = '0 0 0 3px var(--bl-primary)';
+      setTimeout(() => { targetRow.style.boxShadow = ''; }, 2200);
+    }
+    const url = new URL(window.location);
+    url.searchParams.delete('ticket');
+    window.history.replaceState({}, '', url);
+  }
 }
 
 async function renderTicketThread(threadEl, ticket, myId, container) {

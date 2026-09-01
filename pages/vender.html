@@ -665,6 +665,20 @@
                   </div>
                 </div>
 
+                <!-- A113-299: sin esto el cliente elegía "Transferencia bancaria" en el
+                     carrito y no tenía forma de saber a dónde mandar la plata -- el pedido
+                     quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Transferencia bancaria</h3>
+                  <p class="pf-card__hint">Se le muestra al cliente en el carrito apenas elige pagar por transferencia. Sin esto, no va a saber a dónde transferir.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-transfer-info">CBU, alias o datos de tu cuenta</label>
+                      <textarea id="store-transfer-info" class="form-input" rows="2" placeholder="Ej: Banco Nación — Alias: MIVENTA.BARADERO — CBU: 0000003100000000000000"></textarea>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="pf-actions">
                   <button type="submit" class="form-btn">Guardar perfil</button>
                 </div>

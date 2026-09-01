@@ -191,12 +191,23 @@ async function initMensajesPage(user) {
   const params = new URLSearchParams(window.location.search);
   const storeParam = params.get('store');
   const productParam = params.get('product');
+  // A113-271: la notificación de "Tenés un mensaje nuevo" trae acá con
+  // ?conversation_id=<id> -- selecciona directo esa conversación.
+  const conversationParam = params.get('conversation_id');
 
   if (storeParam) {
     await ensureConversation(storeParam, productParam);
+  } else if (conversationParam) {
+    activeConversationId = conversationParam;
   }
 
   await loadConversations();
+
+  if (conversationParam) {
+    const url = new URL(window.location);
+    url.searchParams.delete('conversation_id');
+    window.history.replaceState({}, '', url);
+  }
 }
 
 guardPage({

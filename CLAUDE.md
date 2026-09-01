@@ -84,6 +84,14 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   sin aplicar **a pedido del usuario** (la aplica él). Hasta entonces la preferencia funciona solo
   por dispositivo (cache en localStorage) — la app no se rompe. **Los números 61-65 están
   reservados por la rama sin mergear `feature/logistica-terceros`**: no reusarlos.
+- **Resuelto 2026-09-01** — A113-266: reparados 6 bugs reales de la tarea de corrección de errores
+  (el resto de las 12 subtareas de bug ya estaban resueltas en commits previos). Notificaciones sin
+  link a su detalle, formato de precios sin pasar por `formatPrice` en `admin.js`, el vendedor veía
+  reseña/contactar/carrito en su propio producto, hover de relacionados cortado, favoritos abría
+  una vista de producto rota, y transferencia bancaria sin forma de mostrar el CBU/alias del
+  comercio (agrega `stores.transfer_info`, migración `69_store_transfer_info.sql`, ya aplicada a
+  producción). Detalle en el commit `1e384e6` (rama `feature/logistica-terceros`, cherry-pickeado
+  a `main`).
 - **Instalación de `codebase-memory-mcp` en máquina nueva** — el paso "correr `codebase-memory-mcp install`" ya está documentado arriba, pero falta documentar de dónde se descarga el binario en sí (`~/.local/bin/codebase-memory-mcp.exe`, versión 0.9.0 al 2026-08-11) — no se encontró referencia en el repo ni en la sesión que lo instaló originalmente.
 - **F8-02/F8-03** — Notificaciones por Email/WhatsApp bloqueadas: falta credenciales de un proveedor externo (Resend/Meta Business) **y** escribir el código de integración (verificado 2026-08-03: ninguna edge function llama a Resend ni a la API de WhatsApp/Meta todavía — solo existen las de Mercado Pago). Plantillas de WhatsApp ya redactadas en `docs/WHATSAPP_TEMPLATES.md`.
 - **F11-04** — Dominio propio: requiere que el usuario compre un dominio (decisión de costo). Hoy corre en `proyectopdisc.vercel.app`. Pasos para cuando se compre uno, en `docs/DEPLOY.md`.
