@@ -1,4 +1,5 @@
 import { supabase } from './auth-utils.js';
+import { formatPrice } from './cart-utils.js';
 
 const TYPE_LABELS = {
   order_created: 'Nuevo pedido recibido',
@@ -25,6 +26,83 @@ const SUPPORT_TICKET_STATUS_LABELS = {
   in_progress: 'En progreso',
   resolved: 'Resuelto',
 };
+
+/**
+ * Color de cada tipo de notificación (barra izquierda + link "Ver ___"), para
+ * distinguir de un vistazo qué clase de aviso es sin tener que leer el
+ * título entero. Reutiliza los tokens que ya existen en home.css -- no se
+ * suman colores nuevos al sistema.
+ *   success (verde, --bl-success): algo avanzó/se aprobó.
+ *   danger  (rojo,  --bl-danger):  un rechazo o algo que necesita reversa.
+ *   accent  (ámbar, --bl-accent):  una oportunidad/aviso para actuar.
+ *   info    (azul,  --bl-primary): comunicación (mensajes, reseñas).
+ */
+const TYPE_TONE = {
+  order_created: 'success',
+  order_paid: 'success',
+  order_shipped: 'success',
+  order_delivered: 'success',
+  seller_request_approved: 'success',
+  delivery_request_approved: 'success',
+  provider_approved: 'success',
+  courier_added: 'success',
+  delivery_assigned: 'success',
+  payment_rejected: 'danger',
+  seller_request_rejected: 'danger',
+  delivery_request_rejected: 'danger',
+  revocation_requested: 'danger',
+  stock_alert: 'accent',
+  favorite_price_drop: 'accent',
+  mp_split_needs_review: 'accent',
+  support_ticket_status_change: 'accent',
+  new_review: 'info',
+  new_message: 'info',
+  support_ticket_message: 'info',
+};
+
+const TONE_COLOR_VAR = {
+  success: 'var(--bl-success)',
+  danger: 'var(--bl-danger)',
+  accent: 'var(--bl-accent)',
+  info: 'var(--bl-primary)',
+};
+
+/**
+ * Vista previa de contenido para los tipos cuyo payload no la trae directo
+ * (a diferencia de stock_alert/favorite_price_drop, que ya tienen
+ * product_title, o support_ticket_message, que ya trae el texto). Recibe los
+ * mapas ya resueltos por reviewId/messageId/orderId (ver renderNotificationsSection)
+ * para no pedirle a cada notificación su propio round-trip.
+ */
+function buildPreviewText(n, { reviewMap, messageMap, orderAmountMap }) {
+  const p = n.payload || {};
+  switch (n.type) {
+    case 'new_review': {
+      const review = p.review_id ? reviewMap[p.review_id] : null;
+      const rating = review?.rating ?? p.rating;
+      const stars = rating ? '★'.repeat(rating) + '☆'.repeat(5 - rating) : '';
+      const comment = review?.comment?.trim();
+      if (comment) return stars ? `${stars} — ${comment}` : comment;
+      return stars || null;
+    }
+    case 'new_message': {
+      const body = p.message_id ? messageMap[p.message_id] : null;
+      return body || null;
+    }
+    case 'order_created':
+      return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
+    case 'order_paid':
+    case 'order_shipped':
+    case 'order_delivered':
+    case 'payment_rejected':
+    case 'revocation_requested': {
+      const total = p.order_id ? orderAmountMap[p.order_id] : null;
+      return total ? `Pedido por ${formatPrice(total)}` : null;
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * A113-271: a cada notificación le arma el link "Ver ___" hacia el apartado
@@ -144,6 +222,30 @@ export async function renderNotificationsSection(container, userId) {
     return;
   }
 
+  // El payload de cada notificación no siempre trae el texto para la vista
+  // previa (ej. new_review sólo trae el review_id) -- se junta todo lo que
+  // falta y se pide en 3 consultas en lote como mucho, no una por fila.
+  const reviewIds = [...new Set(notifications.filter((n) => n.type === 'new_review' && n.payload?.review_id).map((n) => n.payload.review_id))];
+  const messageIds = [...new Set(notifications.filter((n) => n.type === 'new_message' && n.payload?.message_id).map((n) => n.payload.message_id))];
+  const orderIds = [...new Set(
+    notifications
+      .filter((n) => ['order_paid', 'order_shipped', 'order_delivered', 'payment_rejected', 'revocation_requested'].includes(n.type) && n.payload?.order_id)
+      .map((n) => n.payload.order_id)
+  )];
+
+  const reviewMap = {};
+  const messageMap = {};
+  const orderAmountMap = {};
+
+  const [reviewsRes, messagesRes, ordersRes] = await Promise.all([
+    reviewIds.length ? supabase.from('reviews').select('id, comment, rating').in('id', reviewIds) : Promise.resolve({ data: [] }),
+    messageIds.length ? supabase.from('messages').select('id, body').in('id', messageIds) : Promise.resolve({ data: [] }),
+    orderIds.length ? supabase.from('orders').select('id, total_price').in('id', orderIds) : Promise.resolve({ data: [] }),
+  ]);
+  (reviewsRes.data || []).forEach((r) => { reviewMap[r.id] = r; });
+  (messagesRes.data || []).forEach((m) => { messageMap[m.id] = m.body; });
+  (ordersRes.data || []).forEach((o) => { orderAmountMap[o.id] = o.total_price; });
+
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   if (unreadCount > 0) {
     const toolbar = document.createElement('div');
@@ -166,6 +268,7 @@ export async function renderNotificationsSection(container, userId) {
   notifications.forEach((n) => {
     const row = document.createElement('div');
     row.className = n.read_at ? 'notif-item' : 'notif-item notif-item--unread';
+    row.style.setProperty('--notif-tone', TONE_COLOR_VAR[TYPE_TONE[n.type]] || 'var(--bl-border)');
 
     const title = document.createElement('strong');
     title.className = 'notif-item__title';
@@ -191,6 +294,19 @@ export async function renderNotificationsSection(container, userId) {
       title.textContent = TYPE_LABELS[n.type] || n.type;
     }
     row.appendChild(title);
+
+    // support_ticket_message ya arma su propia preview arriba (el texto
+    // viene directo en el payload); el resto de los tipos con contenido
+    // "de otra tabla" (reseña, mensaje, pedido) usa los mapas en lote.
+    if (n.type !== 'support_ticket_message') {
+      const previewText = buildPreviewText(n, { reviewMap, messageMap, orderAmountMap });
+      if (previewText) {
+        const preview = document.createElement('p');
+        preview.className = 'notif-item__preview';
+        preview.textContent = previewText;
+        row.appendChild(preview);
+      }
+    }
 
     const notifLink = buildNotificationLink(n);
     if (notifLink) {
