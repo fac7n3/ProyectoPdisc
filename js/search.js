@@ -7,7 +7,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, buildStoreCard } from './cart-utils.js';
-import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -127,8 +127,12 @@ async function runSearch({ append = false } = {}) {
     filterState.page = 0;
     // Primera carga: dejamos los skeletons del HTML (ya reservan el layout, no
     // hay salto). En cambios de filtro posteriores ya no quedan skeletons →
-    // ahí sí mostramos el spinner de "Buscando productos...".
+    // ahí sí mostramos el spinner. A113-289: los filtros se aplican solos (sin
+    // botón "Aplicar filtros"), así que este es el único aviso de que la
+    // búsqueda está en curso -- texto distinto si ya había resultados antes
+    // (fue un cambio de filtro) que si es la carga inicial.
     if (!grid.querySelector('.skeleton-card')) {
+      const isFilterUpdate = grid.querySelector('.product-card') !== null;
       grid.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'bl-loading-block';
@@ -136,7 +140,7 @@ async function runSearch({ append = false } = {}) {
       spinner.className = 'bl-spinner';
       loading.appendChild(spinner);
       const loadingText = document.createElement('span');
-      loadingText.textContent = 'Buscando productos...';
+      loadingText.textContent = isFilterUpdate ? 'Actualizando resultados...' : 'Buscando productos...';
       loading.appendChild(loadingText);
       grid.appendChild(loading);
     }
@@ -622,6 +626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   });
   initNotificationsBell();
+  initAccountMenu();
 
   initSidebarFilters();
   syncInputs();

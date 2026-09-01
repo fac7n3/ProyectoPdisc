@@ -56,6 +56,13 @@ body {
   min-width: 0;
 }
 
+.profile-header__name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .profile-header__name {
   font-size: 1.375rem;
   font-weight: 600;
@@ -68,6 +75,26 @@ body {
   color: var(--bl-perfil-text-sec);
   margin: 0.35rem 0 0;
 }
+
+/* Badge de rol (A113-269): mismo patrón "fondo tintado + texto sólido"
+   que .datos-tag, un color por rol para distinguirlos de un vistazo. */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--bl-radius-pill, 50rem);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #e6ecf9;
+  color: var(--bl-perfil-primary);
+}
+
+.role-badge--vendedor { background: #fef3e2; color: #b45309; }
+.role-badge--repartidor { background: #ecfdf5; color: #047857; }
+.role-badge--admin,
+.role-badge--moderador { background: #fee2e2; color: #b91c1c; }
 
 @media (max-width: 600px) {
   .profile-header {
@@ -714,6 +741,18 @@ a.compra-item-text:hover {
   background: var(--bl-primary);
   border-color: var(--bl-primary);
   color: #fff;
+}
+
+/* A113-291: "Servicios" visible pero deshabilitada -- todavía no hay esa
+   feature en la app, se muestra grisada para dejar en claro que está
+   pensada pero no lista, en vez de esconderla del todo. */
+.fav-subtab-btn--disabled,
+.fav-subtab-btn--disabled:hover {
+  background: var(--bl-perfil-bg);
+  border-color: var(--bl-perfil-border);
+  color: var(--bl-perfil-text-sec);
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* === Favoritos Grid === */

@@ -198,6 +198,16 @@ export function checkUrlErrors() {
   }
 }
 
+// --- Destino post-login según el rol (A113-270) ---
+// El vendedor arranca en su panel (vender.html) en vez de home.html; el
+// resto de los roles sigue yendo a home.html como siempre. Solo se aplica
+// cuando el caller no pidió explícitamente otro destino (redirectTo).
+function resolvePostLoginRedirect(user, explicitRedirectTo) {
+  if (explicitRedirectTo) return explicitRedirectTo;
+  const role = user?.app_metadata?.role;
+  return role === "vendedor" ? "../pages/vender.html" : "../pages/home.html";
+}
+
 // --- Listener Global de Sesión ---
 let isHandlingRedirect = false;
 
@@ -211,7 +221,7 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
       window.location.replace("../pages/login.html");
     } else if (event === "SIGNED_IN" && redirectIfSession) {
       isHandlingRedirect = true;
-      window.location.replace("../pages/home.html");
+      window.location.replace(resolvePostLoginRedirect(session?.user));
     }
   });
 
@@ -220,7 +230,7 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
     if (!session && redirectIfNoSession) {
       window.location.replace("../pages/login.html");
     } else if (session && redirectIfSession) {
-      window.location.replace("../pages/home.html");
+      window.location.replace(resolvePostLoginRedirect(session?.user));
     }
   }).catch((err) => {
     console.warn("Session check failed:", err?.message || err);
@@ -288,8 +298,9 @@ export async function guardPage({
     }
 
     if (user && redirectIfAuth) {
-      // Autenticado en página de login/register → a home
-      window.location.replace(redirectTo || '../pages/home.html');
+      // Autenticado en página de login/register → a home (o a vender.html
+      // si es vendedor, A113-270)
+      window.location.replace(resolvePostLoginRedirect(user, redirectTo));
       return null;
     }
 
@@ -334,7 +345,7 @@ export async function guardPage({
     }
 
     // 6. Configurar listener para cambios de sesión en tiempo real
-    supabase.auth.onAuthStateChange((event) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       if (isHandlingRedirect) return;
 
       if (event === "SIGNED_OUT" && requireAuth) {
@@ -342,7 +353,7 @@ export async function guardPage({
         window.location.replace(redirectTo || '../pages/login.html');
       } else if (event === "SIGNED_IN" && redirectIfAuth) {
         isHandlingRedirect = true;
-        window.location.replace(redirectTo || '../pages/home.html');
+        window.location.replace(resolvePostLoginRedirect(session?.user, redirectTo));
       }
     });
 

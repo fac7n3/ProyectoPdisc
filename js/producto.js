@@ -1,12 +1,13 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initSearchBox, initNotificationsBell, initCategoryBar } from './nav-utils.js';
+import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
   updateCartBadge();
   initNotificationsBell();
+  initAccountMenu();
   initCategoryBar({ activeSlug: 'inicio' });
 
   initSearchBox({

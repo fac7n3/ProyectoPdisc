@@ -12,22 +12,23 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-Dmc7EFyR.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-zsBLdqiZ.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Bk_9lbXM.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-CpATaay3.js">
+    <script type="module" crossorigin src="/assets/perfil-BcDkffPi.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-1mL_M7PA.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-DbuAEmu3.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/hints-utils-d3wNflvh.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BuQoswn1.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-CjusrjGp.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DoM6ADgs.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BLIsPuno.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-BSxpg7aC.js">
+    <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-B7-nbuU7.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-BoMXYWYm.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-Dj1Uv7eC.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-kccHB_QY.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-B4DWvmFP.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -50,10 +51,8 @@
           </a>
           <div id="nav-notifications-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-          <a href="./perfil.html" class="navbar__action-circle" id="nav-profile" aria-label="Mi cuenta">
-            <i class="fa-solid fa-user" style="font-size: 0.875rem;"></i>
-          </a>
-          <script>(function(){try{var u=localStorage.getItem('bl_avatar_url');var n=document.getElementById('nav-profile');if(u&&n){var i=document.createElement('img');i.src=u;i.alt='Mi perfil';i.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';n.innerHTML='';n.appendChild(i);}}catch(e){}})();</script>
+          <div id="nav-account-wrap"></div>
+          <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
             <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
             <span class="cart-badge" id="cart-badge"></span>
@@ -71,7 +70,10 @@
           <i class="fa-regular fa-user"></i>
         </div>
         <div class="profile-header__info">
-          <h1 class="profile-header__name skeleton skeleton-text" id="sidebar-name">Cargando...</h1>
+          <div class="profile-header__name-row">
+            <h1 class="profile-header__name skeleton skeleton-text" id="sidebar-name">Cargando...</h1>
+            <span class="role-badge" id="profile-role-badge" hidden></span>
+          </div>
           <p class="profile-header__email skeleton skeleton-text skeleton-text-short" id="sidebar-email"></p>
         </div>
       </header>
@@ -302,11 +304,14 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-heart" style="color: #ef4444;"></i> Mis favoritos
             </h2>
-            <!-- P1-9: 2 secciones (productos/comercios) -- "servicios" queda fuera de
-                 alcance a propósito, no existe esa feature en la app todavía. -->
+            <!-- P1-9 + A113-291: Productos y Comercios funcionan; Servicios queda
+                 visible pero deshabilitada -- todavía no existe esa feature en la
+                 app, pero conviene que la persona sepa que va a llegar en vez de
+                 que la sección "desaparezca" sin explicación. -->
             <div class="fav-subtabs" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
               <button type="button" id="fav-subtab-products" class="fav-subtab-btn fav-subtab-btn--active" data-fav-target="favoritos-container">Productos</button>
               <button type="button" id="fav-subtab-stores" class="fav-subtab-btn" data-fav-target="favoritos-stores-container">Comercios</button>
+              <button type="button" id="fav-subtab-services" class="fav-subtab-btn fav-subtab-btn--disabled" disabled title="Próximamente">Servicios</button>
             </div>
             <div class="fav-search">
               <i class="fa-solid fa-magnifying-glass fav-search__icon" aria-hidden="true"></i>
@@ -351,14 +356,16 @@
               <div class="form-group">
                 <label for="address-main" class="detail-label">Dirección (Calle y Número)</label>
                 <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" required />
+                <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div class="form-group">
                 <label for="address-details" class="detail-label">Detalles (Piso, depto, indicaciones)</label>
                 <input type="text" id="address-details" class="bl-input" placeholder="Ej: Piso 2, depto B, puerta negra" />
               </div>
               <div class="form-group">
-                <label for="address-phone" class="detail-label">Teléfono (opcional)</label>
-                <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" />
+                <label for="address-phone" class="detail-label">Teléfono de contacto</label>
+                <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required />
+                <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; cursor: pointer;">

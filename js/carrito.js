@@ -5,7 +5,7 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons, isItemSelected, getSelectedItems } from './cart-utils.js';
 import { getPaymentProvider } from './payment-providers.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
 
 // --- Estado del Carrito ---
@@ -835,8 +835,20 @@ function initCouponEvents() {
 
   let debounceTimer = null;
 
+  // A113-298: una vez aplicado, el botón pasa a ser una X compacta (en vez
+  // del texto "Quitar") -- más intuitivo para sacar el cupón de un vistazo,
+  // sin tener que leer la etiqueta.
   function setIdleBtnState() {
-    applyBtn.textContent = appliedCouponCode ? 'Quitar' : 'Aplicar';
+    applyBtn.innerHTML = '';
+    if (appliedCouponCode) {
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-xmark';
+      applyBtn.appendChild(icon);
+      applyBtn.setAttribute('aria-label', 'Quitar cupón');
+    } else {
+      applyBtn.append('Aplicar');
+      applyBtn.removeAttribute('aria-label');
+    }
     applyBtn.classList.toggle('coupon-btn--remove', Boolean(appliedCouponCode));
   }
 
@@ -1354,6 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCart();
   updateCartBadge();
   initNotificationsBell();
+  initAccountMenu();
   initCartEvents();
   initClearCartModal();
   // La preferencia real vive en la cuenta; hasta que resuelva manda la cache

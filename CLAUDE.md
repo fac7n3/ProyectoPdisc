@@ -2,8 +2,9 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-08-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
-> (facturación/AFIP, fuera de alcance). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
+> Última actualización: 2026-09-01. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 completas en
+> `feature/mejorasGrupo` (sin mergear a `main` todavía). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
 > (se carga solo cuando hace falta consultar el historial). Pendientes que sí necesitan quedar
 > siempre visibles: ver sección "Pendientes activos" más abajo.
@@ -79,6 +80,29 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-01** — Las 18 subtareas [MEJORA] de **A113-266** (rama
+  `feature/mejorasGrupo`, todavía sin mergear a `main`), una por una con
+  commit y push individual. Con código nuevo: badge de rol en el perfil
+  (269), redirect post-login del vendedor a `vender.html` (270), botón
+  "Aplicar filtros" reemplazado por auto-apply + "Actualizando
+  resultados..." (289), menú de usuario de la navbar reorganizado en
+  dropdown por secciones (290), botón "Volver" (history.back() + fallback)
+  en Tienda y Usuario (311), skeleton + footer oculto mientras carga la
+  sección Tienda (281, con 284/285 cerradas como duplicado exacto), teléfono
+  y dirección obligatorios al agregar una dirección (293), pestaña
+  "Servicios" visible-pero-deshabilitada en Favoritos (291), toasts nuevos
+  de notificaciones abajo a la derecha/abajo en celular -- capa nueva
+  `js/toast-utils.js` con polling simple cada 30s sobre `notifications`, no
+  hay suscripción realtime en el proyecto todavía (268), y el botón "Quitar"
+  del cupón del carrito pasó a ser una X (298, el auto-apply ya existía de
+  antes bajo "P1-7"). Las otras 7 ya estaban resueltas bajo otro nombre
+  (P1-x/P2-x/F12-x) y solo hizo falta comentar y cerrar en Jira sin tocar
+  código: envío gratis en tarjetas de listado (279, ya era P2-4), modal de
+  producto no cierra por click afuera (306, decisión de accesibilidad ya
+  tomada), toggle de "aceptar contacto" del vendedor (296), multi-rubro en
+  el alta de vendedor (305, P2-10), pausar/reactivar producto (309),
+  cancelar reclamo + admin responde (295). Falta mergear la rama a `main`
+  cuando el usuario lo confirme.
 - **Migración 66 sin aplicar** (`db/schema/66_cart_hints_preference.sql`, 2026-08-16) — agrega
   `profiles.cart_hints_enabled` para la preferencia "Mostrar ayudas en el carrito". Se dejó escrita
   sin aplicar **a pedido del usuario** (la aplica él). Hasta entonces la preferencia funciona solo

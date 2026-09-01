@@ -13,9 +13,10 @@
  * Todo con DOM API (anti-XSS): los datos de la DB nunca van por innerHTML.
  */
 
-import { supabase } from './auth-utils.js';
+import { supabase, showToast } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { renderNotificationsSection, fetchUnreadCount } from './notifications-utils.js';
+import { initNotificationToasts } from './toast-utils.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -639,6 +640,225 @@ export async function initNotificationsBell() {
   });
 
   refreshBadge(); // en bg: espera la sesión adentro, no bloquea el render del botón
+
+  // A113-268: toasts de notificaciones nuevas -- se enganchan acá porque
+  // esta función ya corre en todas las páginas con navbar y ya resuelve la
+  // sesión (sessionReady), así que no hace falta que cada página la llame
+  // por separado.
+  sessionReady.then((s) => { if (s) initNotificationToasts(s.user.id); });
+}
+
+/**
+ * Menú desplegable de cuenta para la navbar (A113-290): antes #nav-profile
+ * era un link directo a perfil.html; ahora es un botón que abre un dropdown
+ * con las opciones agrupadas en secciones (Cuenta / Actividad / Vender o
+ * Repartir o Administración según el rol) en vez de tener que entrar a
+ * perfil.html para ver todo en una lista plana. Mismo patrón que
+ * initNotificationsBell: requiere un contenedor `<div id="nav-account-wrap">`
+ * en el HTML (reemplaza al viejo `<a id="nav-profile">` + su script inline
+ * de avatar).
+ */
+export async function initAccountMenu() {
+  const wrap = document.getElementById('nav-account-wrap');
+  if (!wrap) return;
+
+  let session = null;
+  const sessionReady = supabase.auth.getSession().then(({ data }) => {
+    session = data.session;
+    return session;
+  });
+
+  wrap.innerHTML = '';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'navbar__action-circle';
+  btn.id = 'nav-profile';
+  btn.setAttribute('aria-label', 'Mi cuenta');
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  const userIcon = document.createElement('i');
+  userIcon.className = 'fa-regular fa-user';
+  userIcon.style.fontSize = '0.875rem';
+  btn.appendChild(userIcon);
+
+  // Avatar en cache (mismo criterio que antes tenía el script inline de cada
+  // página): si hay una foto guardada, se muestra en vez del ícono genérico.
+  try {
+    const avatarUrl = localStorage.getItem('bl_avatar_url');
+    if (avatarUrl) {
+      const img = document.createElement('img');
+      img.src = avatarUrl;
+      img.alt = 'Mi perfil';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+      btn.innerHTML = '';
+      btn.appendChild(img);
+    }
+  } catch { /* localStorage puede fallar (navegación privada, etc.) */ }
+
+  wrap.appendChild(btn);
+
+  const panel = document.createElement('div');
+  panel.className = 'account-dropdown';
+  panel.hidden = true;
+  panel.setAttribute('role', 'region');
+  panel.setAttribute('aria-label', 'Mi cuenta');
+  wrap.appendChild(panel);
+
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function buildItem({ href, icon, label, onClick, danger = false }) {
+    const el = document.createElement(onClick ? 'button' : 'a');
+    el.className = 'account-dropdown__item' + (danger ? ' account-dropdown__item--danger' : '');
+    if (href) el.href = href;
+    if (onClick) {
+      el.type = 'button';
+      el.addEventListener('click', onClick);
+    }
+    const i = document.createElement('i');
+    i.className = icon;
+    el.appendChild(i);
+    el.append(label);
+    return el;
+  }
+
+  function buildSection(title, items) {
+    const section = document.createElement('div');
+    section.className = 'account-dropdown__section';
+    if (title) {
+      const h = document.createElement('p');
+      h.className = 'account-dropdown__section-title';
+      h.textContent = title;
+      section.appendChild(h);
+    }
+    items.forEach((item) => section.appendChild(buildItem(item)));
+    return section;
+  }
+
+  async function open() {
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    panel.textContent = '';
+
+    await sessionReady;
+
+    if (!session) {
+      const msg = document.createElement('p');
+      msg.className = 'notif-dropdown__guest';
+      msg.textContent = 'Iniciá sesión para ver tu cuenta.';
+      panel.appendChild(msg);
+      const loginLink = document.createElement('a');
+      loginLink.href = './login.html';
+      loginLink.className = 'notif-dropdown__login';
+      loginLink.textContent = 'Iniciar sesión';
+      panel.appendChild(loginLink);
+      return;
+    }
+
+    const user = session.user;
+    const role = user.app_metadata?.role || 'cliente';
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email;
+
+    const header = document.createElement('div');
+    header.className = 'account-dropdown__name';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'account-dropdown__name-text';
+    nameEl.textContent = name || 'Mi cuenta';
+    header.appendChild(nameEl);
+    if (user.email) {
+      const emailEl = document.createElement('span');
+      emailEl.className = 'account-dropdown__name-email';
+      emailEl.textContent = user.email;
+      header.appendChild(emailEl);
+    }
+    panel.appendChild(header);
+
+    // Deep links con ?tab=... -- ya soportados por perfil.js
+    // (handleNotificationDeepLink -> openSection('tab-' + tab)).
+    panel.appendChild(buildSection('Cuenta', [
+      { href: './perfil.html?tab=mis-datos', icon: 'fa-regular fa-id-card', label: 'Mi perfil' },
+      { href: './perfil.html?tab=direcciones', icon: 'fa-solid fa-location-dot', label: 'Direcciones' },
+      { href: './perfil.html?tab=ajustes', icon: 'fa-solid fa-gear', label: 'Ajustes' },
+    ]));
+
+    panel.appendChild(buildSection('Actividad', [
+      { href: './perfil.html?tab=compras', icon: 'fa-solid fa-box-open', label: 'Mis compras' },
+      { href: './perfil.html?tab=favoritos', icon: 'fa-regular fa-heart', label: 'Favoritos' },
+      { href: './perfil.html?tab=notificaciones', icon: 'fa-regular fa-bell', label: 'Notificaciones' },
+      { href: './perfil.html?tab=soporte', icon: 'fa-regular fa-comment', label: 'Soporte' },
+    ]));
+
+    if (role === 'vendedor') {
+      panel.appendChild(buildSection('Vender', [
+        { href: './vender.html', icon: 'fa-solid fa-shop', label: 'Panel de vendedor' },
+      ]));
+    } else if (role === 'repartidor') {
+      panel.appendChild(buildSection('Repartir', [
+        { href: './repartidor.html', icon: 'fa-solid fa-truck-fast', label: 'Panel de repartidor' },
+      ]));
+    } else if (role === 'admin' || role === 'moderador') {
+      panel.appendChild(buildSection(role === 'admin' ? 'Administración' : 'Moderación', [
+        {
+          href: './admin.html',
+          icon: 'fa-solid fa-user-shield',
+          label: role === 'admin' ? 'Panel de administración' : 'Panel de moderación',
+        },
+      ]));
+    }
+
+    panel.appendChild(buildSection(null, [
+      {
+        icon: 'fa-solid fa-right-from-bracket',
+        label: 'Cerrar sesión',
+        danger: true,
+        onClick: () => {
+          close();
+          showToast('Cerrando sesión...', 'success');
+          setTimeout(async () => {
+            await supabase.auth.signOut();
+            window.location.href = './home.html';
+          }, 600);
+        },
+      },
+    ]));
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (panel.hidden) open(); else close();
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !panel.hidden) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) close();
+  });
+}
+
+/**
+ * Botón "Volver" con flecha (A113-311): history.back() si hay desde dónde
+ * volver, si no cae a home.html -- en vez de un link fijo a otra pantalla
+ * que no es necesariamente de dónde vino la persona. Usado en el título de
+ * la sección Tienda (comercio.js) y Usuario (perfil.html).
+ * @param {string} [label='Volver']
+ * @returns {HTMLButtonElement}
+ */
+export function buildSectionBackButton(label = 'Volver') {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'section-back';
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-arrow-left';
+  btn.appendChild(icon);
+  btn.append(' ' + label);
+  btn.addEventListener('click', () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = './home.html';
+  });
+  return btn;
 }
 
 // ── Helpers de scroll compartidos ───────────────────────────

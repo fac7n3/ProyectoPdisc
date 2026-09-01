@@ -84,16 +84,16 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BF7EEiMt.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-zsBLdqiZ.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Bk_9lbXM.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-CpATaay3.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BuQoswn1.js">
+    <script type="module" crossorigin src="/assets/comercio-D_Q6pzD2.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-1mL_M7PA.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-DbuAEmu3.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DoM6ADgs.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-Dj1Uv7eC.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-kccHB_QY.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-B4DWvmFP.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -114,8 +114,8 @@
           <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
           <div id="nav-notifications-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-          <a href="./perfil.html" class="navbar__action-circle" id="nav-profile" aria-label="Mi cuenta"><i class="fa-regular fa-user"></i></a>
-          <script>(function(){try{var u=localStorage.getItem('bl_avatar_url');var n=document.getElementById('nav-profile');if(u&&n){var i=document.createElement('img');i.src=u;i.alt='Mi perfil';i.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';n.innerHTML='';n.appendChild(i);}}catch(e){}})();</script>
+          <div id="nav-account-wrap"></div>
+          <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
             <i class="fa-solid fa-cart-shopping"></i>
             <span class="cart-badge" id="cart-badge"></span>
@@ -137,14 +137,58 @@
 
     <main id="main-content" tabindex="-1">
       <h1 class="sr-only" id="page-h1">Cargando comercio</h1>
-      <div class="store-loading">
-        <div class="store-loading__spinner"></div>
-        <span>Cargando comercio...</span>
+      <!-- Skeleton (A113-281/284/285): reemplaza al spinner mientras se
+           resuelve el fetch de la tienda, mismo lenguaje visual que los
+           skeletons de tarjeta de producto (home/search). -->
+      <div class="store-skeleton" role="status" aria-label="Cargando comercio">
+        <div class="store-skeleton__header">
+          <div class="store-skeleton__bar store-skeleton__back"></div>
+          <div class="store-skeleton__bar store-skeleton__title"></div>
+          <div class="store-skeleton__bar store-skeleton__desc"></div>
+          <div class="store-skeleton__bar store-skeleton__meta"></div>
+        </div>
+        <div class="products__grid store-skeleton__grid">
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
     <!-- ====== PIE DE PÁGINA ====== -->
-    <footer class="footer">
+    <!-- Oculto hasta que comercio.js resuelve el fetch de la tienda
+         (A113-281/284/285) -- evita el salto de layout de un footer pegado
+         arriba de la página mientras el skeleton todavía ocupa el resto. -->
+    <footer class="footer" hidden>
       <div class="footer__inner">
         <div class="footer__brand-container">
           <div class="footer__brand-logo-text">

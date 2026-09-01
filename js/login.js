@@ -86,7 +86,11 @@ async function loginWithGoogle() {
   setLoading(googleLoginBtn, true, "Iniciar sesión con Google");
 
   try {
-    const redirectTo = `${window.location.origin}/pages/home.html`;
+    // Vuelve a login.html (no directo a home.html) para que el guard de esa
+    // página decida el destino según el rol -- el vendedor entra a
+    // vender.html en vez de home.html (A113-270), igual que con el login
+    // local. Ver resolvePostLoginRedirect en auth-utils.js.
+    const redirectTo = `${window.location.origin}/pages/login.html`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       // Sin esto, si el navegador ya tiene una sesión de Google activa,

@@ -4,9 +4,10 @@ import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
-import { initNotificationsBell } from "./nav-utils.js";
+import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects } from "./storage-utils.js";
+import { isValidPhone } from "./validation-utils.js";
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -92,12 +93,37 @@ function renderQuickProfile(user) {
 
   if (mainContent) mainContent.style.display = "block";
 
+  // A113-311: botón "Volver" arriba del encabezado -- history.back() con
+  // fallback a home.html, en vez de depender del link fijo de la navbar.
+  // renderQuickProfile corre una sola vez por carga de página (guardPage.onReady).
+  if (mainContent) {
+    const backBtn = buildSectionBackButton('Volver');
+    backBtn.id = 'profile-back-btn';
+    mainContent.insertBefore(backBtn, mainContent.firstChild);
+  }
+
   if (sidebarName) { sidebarName.textContent = quickName || "-"; removeSkeleton(sidebarName); }
   if (sidebarEmail) { sidebarEmail.textContent = user.email || "sin email"; removeSkeleton(sidebarEmail); }
   if (cardEmail) { cardEmail.textContent = user.email || "sin email"; removeSkeleton(cardEmail); }
   if (cardRole) {
     cardRole.textContent = quickRole.charAt(0).toUpperCase() + quickRole.slice(1);
     removeSkeleton(cardRole);
+  }
+
+  // Badge de rol junto al nombre (A113-269): mismo rol que ya viene en el
+  // JWT (app_metadata.role), pero visible de un vistazo en el encabezado.
+  const roleBadge = document.getElementById("profile-role-badge");
+  if (roleBadge) {
+    const roleLabels = {
+      cliente: "Cliente",
+      vendedor: "Vendedor",
+      repartidor: "Repartidor",
+      admin: "Administrador",
+      moderador: "Moderador",
+    };
+    roleBadge.textContent = roleLabels[quickRole] || (quickRole.charAt(0).toUpperCase() + quickRole.slice(1));
+    roleBadge.className = `role-badge role-badge--${quickRole}`;
+    roleBadge.hidden = false;
   }
 
   // Avatar al instante: evita que la foto grande "desaparezca" (quede en el
@@ -333,8 +359,24 @@ if (addressForm) {
     if (!currentUserId) return;
 
     const addr = inputAddress.value.trim();
+    const phone = inputPhone.value.trim();
+
+    // A113-293: dirección y teléfono obligatorios -- sin el teléfono el
+    // repartidor no tiene forma de avisar si no encuentra la dirección o
+    // coordinar la entrega en la puerta.
     if (!addr) {
-      showToast('La dirección es obligatoria.', 'error');
+      showToast('La dirección es obligatoria. La necesitamos para coordinar la entrega.', 'error');
+      inputAddress.focus();
+      return;
+    }
+    if (!phone) {
+      showToast('El teléfono es obligatorio. Lo necesitamos para coordinar la entrega.', 'error');
+      inputPhone.focus();
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      showToast('El teléfono ingresado no es válido.', 'error');
+      inputPhone.focus();
       return;
     }
 
@@ -343,7 +385,7 @@ if (addressForm) {
       label: addressLabel.value.trim() || 'Casa',
       address: addr,
       details: inputDetails.value.trim() || null,
-      phone: inputPhone.value.trim() || null,
+      phone,
       is_default: addressDefault.checked,
     };
 
@@ -1933,6 +1975,7 @@ async function renderFullProfile(user) {
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
+  initAccountMenu();
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer.
   const notifCardBadge = document.getElementById("notif-card-badge");

@@ -166,6 +166,35 @@ function buildNotificationLink(n) {
   }
 }
 
+/**
+ * Título corto de una notificación (mismo texto que ya arma el centro de
+ * notificaciones para cada tipo). Factorizado acá para que el centro de
+ * notificaciones (renderNotificationsSection) y los toasts de A113-268
+ * (js/toast-utils.js) muestren siempre el mismo texto, sin duplicar el
+ * switch en dos archivos.
+ */
+export function buildNotificationTitle(n) {
+  // F12-09: a diferencia del resto (siempre texto genérico), un aviso de
+  // stock sin decir de qué producto es casi inútil -- el cliente puede
+  // tener varios pendientes en productos distintos.
+  if (n.type === 'stock_alert' && n.payload?.product_title) {
+    return `¡Volvió el stock de "${n.payload.product_title}"!`;
+  }
+  if (n.type === 'favorite_price_drop' && n.payload?.product_title) {
+    return `¡Bajó de precio "${n.payload.product_title}"!`;
+  }
+  if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
+    const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
+    return `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
+  }
+  if (n.type === 'support_ticket_message' && n.payload?.subject) {
+    return `Soporte respondió a tu reclamo "${n.payload.subject}"`;
+  }
+  return TYPE_LABELS[n.type] || n.type;
+}
+
+export { buildNotificationLink };
+
 export async function fetchNotifications(userId) {
   const { data, error } = await supabase
     .from('notifications')
@@ -272,28 +301,18 @@ export async function renderNotificationsSection(container, userId) {
 
     const title = document.createElement('strong');
     title.className = 'notif-item__title';
-    // F12-09: a diferencia del resto (siempre texto genérico, ver arriba),
-    // un aviso de stock sin decir de qué producto es casi inútil -- el
-    // cliente puede tener varios pendientes en productos distintos.
-    if (n.type === 'stock_alert' && n.payload?.product_title) {
-      title.textContent = `¡Volvió el stock de "${n.payload.product_title}"!`;
-    } else if (n.type === 'favorite_price_drop' && n.payload?.product_title) {
-      title.textContent = `¡Bajó de precio "${n.payload.product_title}"!`;
-    } else if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
-      const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
-      title.textContent = `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
-    } else if (n.type === 'support_ticket_message' && n.payload?.subject) {
-      title.textContent = `Soporte respondió a tu reclamo "${n.payload.subject}"`;
-      if (n.payload?.message) {
-        const preview = document.createElement('p');
-        preview.className = 'notif-item__preview';
-        preview.textContent = n.payload.message;
-        row.appendChild(preview);
-      }
-    } else {
-      title.textContent = TYPE_LABELS[n.type] || n.type;
-    }
+    title.textContent = buildNotificationTitle(n);
     row.appendChild(title);
+
+    // support_ticket_message trae el texto de la respuesta directo en el
+    // payload -- se muestra como preview acá (no lo cubre buildNotificationTitle,
+    // que solo arma el título corto para el ítem del centro y los toasts).
+    if (n.type === 'support_ticket_message' && n.payload?.message) {
+      const preview = document.createElement('p');
+      preview.className = 'notif-item__preview';
+      preview.textContent = n.payload.message;
+      row.appendChild(preview);
+    }
 
     // support_ticket_message ya arma su propia preview arriba (el texto
     // viene directo en el payload); el resto de los tipos con contenido
