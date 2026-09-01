@@ -16,6 +16,7 @@
 import { supabase, showToast } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { renderNotificationsSection, fetchUnreadCount } from './notifications-utils.js';
+import { initNotificationToasts } from './toast-utils.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -639,6 +640,12 @@ export async function initNotificationsBell() {
   });
 
   refreshBadge(); // en bg: espera la sesión adentro, no bloquea el render del botón
+
+  // A113-268: toasts de notificaciones nuevas -- se enganchan acá porque
+  // esta función ya corre en todas las páginas con navbar y ya resuelve la
+  // sesión (sessionReady), así que no hace falta que cada página la llame
+  // por separado.
+  sessionReady.then((s) => { if (s) initNotificationToasts(s.user.id); });
 }
 
 /**
