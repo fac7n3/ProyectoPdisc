@@ -136,7 +136,7 @@ export function buildStarsText(rating) {
  * Arma la sección completa de reseñas (resumen + lista + form propio) dentro
  * de `container`. No usa innerHTML con datos de la DB (todo vía DOM API).
  */
-export async function renderReviewsSection(container, targetType, targetId) {
+export async function renderReviewsSection(container, targetType, targetId, { hideForm = false } = {}) {
   container.textContent = '';
 
   const title = document.createElement('h2');
@@ -214,7 +214,12 @@ export async function renderReviewsSection(container, targetType, targetId) {
     });
   }
 
-  buildReviewForm(formWrap, targetType, targetId, ownReview, () => renderReviewsSection(container, targetType, targetId));
+  // A113-273: el dueño del producto/comercio no puede dejarse una reseña a
+  // sí mismo -- lo decide quien llama (product-modal.js/producto.js) según
+  // si el usuario logueado es el owner.
+  if (!hideForm) {
+    buildReviewForm(formWrap, targetType, targetId, ownReview, () => renderReviewsSection(container, targetType, targetId, { hideForm }));
+  }
 }
 
 function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted) {

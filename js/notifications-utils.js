@@ -20,14 +20,73 @@ const TYPE_LABELS = {
   mp_split_needs_review: 'Tu vinculación con Mercado Pago necesita revisión',
 };
 
-// Tipos que llevan un link a "Ver producto" (comparten el mismo payload.product_id).
-const PRODUCT_LINK_TYPES = new Set(['stock_alert', 'favorite_price_drop']);
-
 const SUPPORT_TICKET_STATUS_LABELS = {
   open: 'Abierto',
   in_progress: 'En progreso',
   resolved: 'Resuelto',
 };
+
+/**
+ * A113-271: a cada notificación le arma el link "Ver ___" hacia el apartado
+ * relacionado, según su `type`/`payload`. Antes solo `stock_alert` y
+ * `favorite_price_drop` (las únicas con payload.product_id) tenían link --
+ * el resto (pedidos, mensajes, reclamos, reseñas...) no llevaba a ningún
+ * lado. Devuelve `{ href, label }` o `null` si el tipo no tiene un destino
+ * conocido (ej. avisos que ya se resuelven solos, como los de cadetería).
+ */
+function buildNotificationLink(n) {
+  const p = n.payload || {};
+  switch (n.type) {
+    case 'stock_alert':
+    case 'favorite_price_drop':
+      return p.product_id ? { href: `./producto.html?id=${encodeURIComponent(p.product_id)}`, label: 'Ver producto' } : null;
+
+    // Recibidas por el dueño del comercio -- van a "Ventas" de su panel,
+    // con el N° de pedido precargado en el buscador que ya existe ahí.
+    case 'order_created':
+    case 'revocation_requested':
+      return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#ventas`, label: 'Ver pedido' } : null;
+    case 'mp_split_needs_review': {
+      const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
+      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#ventas`, label: 'Ver pedido' } : { href: './vender.html#pagos', label: 'Revisar' };
+    }
+
+    // Recibidas por el cliente -- van a "Mis compras" en su perfil.
+    case 'order_paid':
+    case 'payment_rejected':
+    case 'order_shipped':
+    case 'order_delivered':
+      return p.order_id ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' } : null;
+
+    case 'new_message':
+      return p.conversation_id ? { href: `./mensajes.html?conversation_id=${encodeURIComponent(p.conversation_id)}`, label: 'Ver mensaje' } : null;
+
+    case 'new_review':
+      if (p.target_type === 'product' && p.target_id) return { href: `./producto.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver producto' };
+      if (p.target_type === 'store' && p.target_id) return { href: `./comercio.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver comercio' };
+      return null;
+
+    case 'support_ticket_status_change':
+    case 'support_ticket_message':
+      return p.ticket_id ? { href: `./perfil.html?tab=soporte&ticket=${encodeURIComponent(p.ticket_id)}`, label: 'Ver reclamo' } : null;
+
+    case 'seller_request_approved':
+    case 'seller_request_rejected':
+      return { href: './vender.html', label: 'Ir a mi comercio' };
+
+    case 'delivery_request_approved':
+    case 'delivery_request_rejected':
+    case 'courier_added':
+    case 'delivery_assigned':
+      return { href: './repartidor.html', label: n.type === 'delivery_assigned' ? 'Ver entrega' : 'Ver' };
+
+    case 'provider_approved':
+      return { href: './logistica.html', label: 'Ver' };
+
+    default:
+      return null;
+  }
+}
 
 export async function fetchNotifications(userId) {
   const { data, error } = await supabase
@@ -133,11 +192,17 @@ export async function renderNotificationsSection(container, userId) {
     }
     row.appendChild(title);
 
-    if (PRODUCT_LINK_TYPES.has(n.type) && n.payload?.product_id) {
+    const notifLink = buildNotificationLink(n);
+    if (notifLink) {
       const link = document.createElement('a');
-      link.href = `./producto.html?id=${encodeURIComponent(n.payload.product_id)}`;
+      link.href = notifLink.href;
       link.className = 'notif-item__link';
-      link.textContent = 'Ver producto';
+      link.textContent = notifLink.label;
+      if (!n.read_at) {
+        // Al abrir el detalle ya la dio por vista -- no hace falta un
+        // segundo click en "Marcar como leída".
+        link.addEventListener('click', () => { markNotificationRead(n.id); }, { once: true });
+      }
       row.appendChild(link);
     }
 

@@ -2,6 +2,7 @@ import { supabase, showToast, guardPage } from './auth-utils.js';
 import { statusLabel as supportStatusLabel } from './support-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { upgradeDateInputs } from './datepicker.js';
+import { formatPrice } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -330,7 +331,7 @@ async function loadGlobalMetrics() {
     { label: 'Repartidores', value: roleCounts.repartidor || 0, icon: 'fa-motorcycle', color: '#7c3aed' },
     { label: 'Comercios aprobados', value: storeCounts.approved || 0, icon: 'fa-circle-check', color: '#10b981' },
     { label: 'Comercios suspendidos', value: storeCounts.suspended || 0, icon: 'fa-ban', color: '#ef4444' },
-    { label: 'Ventas totales', value: `$${totalSales.toLocaleString('es-AR')}`, icon: 'fa-sack-dollar', color: '#f59e0b' },
+    { label: 'Ventas totales', value: formatPrice(totalSales), icon: 'fa-sack-dollar', color: '#f59e0b' },
     { label: 'Entregas en curso', value: (deliveryCounts.assigned || 0) + (deliveryCounts.picked_up || 0), icon: 'fa-truck-fast', color: '#3b82f6' },
     { label: 'Entregas completadas', value: deliveryCounts.delivered || 0, icon: 'fa-flag-checkered', color: '#059669' },
   ];
@@ -810,7 +811,7 @@ async function fetchPendingProofsAdmin() {
     tr.appendChild(tdStore);
 
     const tdAmount = document.createElement('td');
-    tdAmount.textContent = order ? `$${order.total_price.toLocaleString('es-AR')}` : '-';
+    tdAmount.textContent = order ? formatPrice(order.total_price) : '-';
     tr.appendChild(tdAmount);
 
     const tdActions = document.createElement('td');
@@ -1214,7 +1215,7 @@ async function fetchRevocationRequests() {
     tr.appendChild(tdStore);
 
     const tdTotal = document.createElement('td');
-    tdTotal.textContent = `$${order.total_price.toLocaleString('es-AR')}`;
+    tdTotal.textContent = formatPrice(order.total_price);
     tr.appendChild(tdTotal);
 
     const tdRequested = document.createElement('td');

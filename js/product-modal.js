@@ -26,13 +26,14 @@ function escapeHTML(str) {
 
 // ── Datos reales del producto (Supabase) ────────────────────
 async function fetchProductData(productId) {
-  const [{ data: product, error }, reviewSummary] = await Promise.all([
+  const [{ data: product, error }, reviewSummary, { data: { session } }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, delivery_fee, free_shipping_threshold), product_images(url, position), product_variants(id, name, price, stock)')
+      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, owner_id, delivery_fee, free_shipping_threshold), product_images(url, position), product_variants(id, name, price, stock)')
       .eq('id', productId)
       .single(),
     fetchReviewsSummary('product', productId),
+    supabase.auth.getSession(),
   ]);
 
   if (error || !product) throw error || new Error('Producto no encontrado');
@@ -78,8 +79,14 @@ async function fetchProductData(productId) {
   const halfStars = rating && rating - Math.floor(rating) >= 0.5 ? 1 : 0;
   const emptyStars = Math.max(0, 5 - fullStars - halfStars);
 
+  // A113-273: el vendedor viendo su propio producto no necesita "Agregar al
+  // carrito"/"Contactar al vendedor"/"Dejar una reseña" -- son acciones de
+  // comprador sobre lo suyo.
+  const isOwner = !!(session?.user?.id && store.owner_id && session.user.id === store.owner_id);
+
   return {
     id: product.id,
+    isOwner,
     price: product.price,
     name: escapeHTML(product.title || 'Producto'),
     description: escapeHTML(product.description || ''),
@@ -338,6 +345,11 @@ function buildModalHTML(data) {
           </div>
 
           <!-- Actions -->
+          ${data.isOwner ? `
+          <div class="pm-actions">
+            <p class="pm-owner-notice"><i class="fa-solid fa-store" aria-hidden="true"></i> Este es tu producto -- así lo ven tus clientes.</p>
+          </div>
+          ` : `
           <div class="pm-actions">
             ${stockDisabled ? `
             <button class="pm-btn pm-btn--cart" id="pm-add-cart" disabled>
@@ -352,6 +364,7 @@ function buildModalHTML(data) {
             </button>
             `}
           </div>
+          `}
 
         </div>
       </div>
@@ -408,8 +421,16 @@ function buildModalHTML(data) {
         <!-- Related Products -->
         <div class="pm-related">
           <h3 class="pm-related__title">Productos relacionados</h3>
-          <div class="pm-related__scroll">
-            ${relatedHTML}
+          <div class="pm-related__carousel">
+            <button type="button" class="pm-related__nav pm-related__nav--prev" aria-label="Ver productos relacionados anteriores">
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="pm-related__scroll">
+              ${relatedHTML}
+            </div>
+            <button type="button" class="pm-related__nav pm-related__nav--next" aria-label="Ver más productos relacionados">
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
           </div>
         </div>
       ` : ''}
@@ -773,7 +794,7 @@ function bindModalEvents(overlay, data) {
       if (target === 'reviews' && !reviewsLoaded) {
         reviewsLoaded = true;
         const reviewsContainer = overlay.querySelector('#pm-reviews-container');
-        if (reviewsContainer) renderReviewsSection(reviewsContainer, 'product', data.id);
+        if (reviewsContainer) renderReviewsSection(reviewsContainer, 'product', data.id, { hideForm: data.isOwner });
       }
     });
   });
@@ -796,6 +817,30 @@ function bindModalEvents(overlay, data) {
       }
     });
   });
+
+  // Productos relacionados — flechas de navegación lateral (A113-277: en
+  // desktop no había forma de mover el carrusel sin rueda/touchpad horizontal).
+  const relatedScroll = overlay.querySelector('.pm-related__scroll');
+  if (relatedScroll) {
+    const prevBtn = overlay.querySelector('.pm-related__nav--prev');
+    const nextBtn = overlay.querySelector('.pm-related__nav--next');
+    const scrollByCards = (dir) => {
+      const card = relatedScroll.querySelector('.pm-related-card');
+      const step = card ? card.getBoundingClientRect().width + 14 : 174; // ancho + gap
+      relatedScroll.scrollBy({ left: dir * step * 2, behavior: 'smooth' });
+    };
+    const updateNavState = () => {
+      const maxScroll = relatedScroll.scrollWidth - relatedScroll.clientWidth;
+      const atStart = relatedScroll.scrollLeft <= 4;
+      const atEnd = relatedScroll.scrollLeft >= maxScroll - 4;
+      if (prevBtn) prevBtn.disabled = atStart;
+      if (nextBtn) nextBtn.disabled = maxScroll <= 4 || atEnd;
+    };
+    prevBtn?.addEventListener('click', () => scrollByCards(-1));
+    nextBtn?.addEventListener('click', () => scrollByCards(1));
+    relatedScroll.addEventListener('scroll', updateNavState, { passive: true });
+    updateNavState();
+  }
 
   // Focus trap
   const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';

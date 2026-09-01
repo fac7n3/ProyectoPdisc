@@ -23,11 +23,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const { data: product, error } = await supabase
-      .from('products')
-      .select('*, stores(name, id, accepts_contact), product_images(url, position), product_variants(id, name, price, stock)')
-      .eq('id', productId)
-      .single();
+    const [{ data: product, error }, { data: { session } }] = await Promise.all([
+      supabase
+        .from('products')
+        .select('*, stores(name, id, accepts_contact, owner_id), product_images(url, position), product_variants(id, name, price, stock)')
+        .eq('id', productId)
+        .single(),
+      supabase.auth.getSession(),
+    ]);
 
     if (error || !product) throw error || new Error('Producto no encontrado');
 
@@ -36,10 +39,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // para el salto por encabezados: sin esto queda en "Cargando producto".
     const pageH1 = document.getElementById('page-h1');
     if (pageH1) pageH1.textContent = product.title;
-    
+
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';
     const imgUrl = product.image_url || '/img/no-image.svg';
+    // A113-273: el vendedor viendo su propio producto no necesita comprar,
+    // contactarse a sí mismo ni dejarse una reseña.
+    const isOwner = !!(session?.user?.id && product.stores?.owner_id && session.user.id === product.stores.owner_id);
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     container.innerHTML = '';
@@ -137,30 +143,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'product-actions';
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn-add-cart';
-    addBtn.id = 'btn-add-cart';
-    const cartIcon = document.createElement('i');
-    cartIcon.className = 'fa-solid fa-cart-plus';
-    addBtn.appendChild(cartIcon);
-    addBtn.append(' Agregar al carrito');
-
     const outOfStock = product.stock <= 0;
-    if (outOfStock) {
-      addBtn.disabled = true;
-      addBtn.style.cssText = 'opacity: 0.5; cursor: not-allowed;';
-      addBtn.title = 'Producto sin stock';
-    }
-    actionsDiv.appendChild(addBtn);
 
-    // F7-02: contactar al vendedor con contexto de este producto.
-    // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
-    if (product.stores?.accepts_contact !== false) {
-      const contactLink = document.createElement('a');
-      contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
-      contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
-      contactLink.textContent = 'Contactar al vendedor';
-      actionsDiv.appendChild(contactLink);
+    if (isOwner) {
+      const ownerNotice = document.createElement('p');
+      ownerNotice.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; background: var(--bl-surface-alt, #f1f5f9); border: 1px dashed var(--bl-border, #cbd5e1); border-radius: var(--bl-radius-md); color: var(--bl-text-secondary, #4a5568); font-size: 0.875rem; font-weight: 500;';
+      ownerNotice.innerHTML = '<i class="fa-solid fa-store" aria-hidden="true"></i> Este es tu producto -- así lo ven tus clientes.';
+      actionsDiv.appendChild(ownerNotice);
+    } else {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-cart';
+      addBtn.id = 'btn-add-cart';
+      const cartIcon = document.createElement('i');
+      cartIcon.className = 'fa-solid fa-cart-plus';
+      addBtn.appendChild(cartIcon);
+      addBtn.append(' Agregar al carrito');
+
+      if (outOfStock) {
+        addBtn.disabled = true;
+        addBtn.style.cssText = 'opacity: 0.5; cursor: not-allowed;';
+        addBtn.title = 'Producto sin stock';
+      }
+      actionsDiv.appendChild(addBtn);
+
+      // F7-02: contactar al vendedor con contexto de este producto.
+      // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
+      if (product.stores?.accepts_contact !== false) {
+        const contactLink = document.createElement('a');
+        contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
+        contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
+        contactLink.textContent = 'Contactar al vendedor';
+        actionsDiv.appendChild(contactLink);
+      }
     }
 
     info.appendChild(actionsDiv);
@@ -186,7 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     info.appendChild(stockRow);
 
     // F12-09: producto agotado -> ofrecer avisar cuando vuelva el stock.
-    if (outOfStock) {
+    // A113-273: el dueño no necesita que le avisen cuando vuelva el stock
+    // de su propio producto.
+    if (outOfStock && !isOwner) {
       const alertWrap = document.createElement('span');
       stockRow.appendChild(alertWrap);
       renderStockAlertWidget(alertWrap, product.id);
@@ -198,39 +214,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reviewsSection = document.createElement('section');
     reviewsSection.style.cssText = 'grid-column: 1/-1; max-width: 700px; margin-top: 2rem;';
     container.appendChild(reviewsSection);
-    renderReviewsSection(reviewsSection, 'product', product.id);
+    renderReviewsSection(reviewsSection, 'product', product.id, { hideForm: isOwner });
 
-    // Bind Add to Cart
+    // Bind Add to Cart (no existe si isOwner -- no hay botón que cablear)
     const btnAdd = document.getElementById('btn-add-cart');
-    btnAdd.addEventListener('click', () => {
-      const cart = getCart();
-      const existing = cart.find(item => item.id === product.id);
+    if (btnAdd) {
+      btnAdd.addEventListener('click', () => {
+        const cart = getCart();
+        const existing = cart.find(item => item.id === product.id);
 
-      if (existing) {
-        existing.qty++;
-        existing.selected = true; // vuelve a entrar en la compra (ver cart-utils)
-      } else {
-        cart.push({
-          id: product.id,
-          name: product.title,
-          shop: storeName,
-          price: product.price,
-          priceOld: null,
-          image: imgUrl,
-          qty: 1,
-          selected: true // un producto recién agregado entra tildado
-        });
-      }
+        if (existing) {
+          existing.qty++;
+          existing.selected = true; // vuelve a entrar en la compra (ver cart-utils)
+        } else {
+          cart.push({
+            id: product.id,
+            name: product.title,
+            shop: storeName,
+            price: product.price,
+            priceOld: null,
+            image: imgUrl,
+            qty: 1,
+            selected: true // un producto recién agregado entra tildado
+          });
+        }
 
-      saveCart(cart);
-      
-      // Animation
-      btnAdd.style.transform = 'scale(0.95)';
-      setTimeout(() => { btnAdd.style.transform = ''; }, 100);
-      
-      updateCartBadge();
-      showToast(`${product.title} agregado al carrito`, 'success');
-    });
+        saveCart(cart);
+
+        // Animation
+        btnAdd.style.transform = 'scale(0.95)';
+        setTimeout(() => { btnAdd.style.transform = ''; }, 100);
+
+        updateCartBadge();
+        showToast(`${product.title} agregado al carrito`, 'success');
+      });
+    }
 
   } catch (err) {
     console.error('Error fetching product:', err);

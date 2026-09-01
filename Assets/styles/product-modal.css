@@ -475,6 +475,21 @@
   margin-bottom: 1.25rem;
 }
 
+/* A113-273: aviso al vendedor viendo su propio producto, en vez de los
+   botones de compra. */
+.pm-owner-notice {
+  width: 100%;
+  margin: 0;
+  padding: 0.875rem 1rem;
+  background: var(--bl-surface-alt);
+  border: 1px dashed var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  color: var(--bl-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
 .pm-btn {
   flex: 1;
   display: flex;
@@ -715,18 +730,75 @@
   letter-spacing: -0.01em;
 }
 
-/* Grilla que envuelve en varias filas: en desktop el carrusel horizontal no se
-   podía mover sin rueda/touchpad, así que los relacionados se leen scrolleando
-   el modal hacia abajo como cualquier otra sección. */
+/* A113-277: carrusel horizontal con flechas (antes era una rueda/touchpad
+   horizontal sin controles, así que en desktop quedaba inmóvil). El
+   contenedor .pm-related__carousel posiciona las flechas; .pm-related__scroll
+   es la franja que scrollea. El padding vertical/horizontal generoso evita
+   que el overflow-x recorte el hover (translateY + box-shadow) de las
+   tarjetas de los extremos. */
+.pm-related__carousel {
+  position: relative;
+}
+
 .pm-related__scroll {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
   gap: 0.875rem;
-  padding: 0.75rem 0.25rem 0.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  padding: 0.75rem 0.5rem 1.25rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pm-related__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pm-related__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bl-text-secondary);
+  border: 1px solid var(--bl-border);
+  background: var(--bl-surface);
+  box-shadow: var(--bl-shadow-md);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.pm-related__nav:hover {
+  background: var(--bl-surface-alt);
+  color: var(--bl-primary);
+  border-color: var(--bl-primary);
+}
+
+.pm-related__nav:disabled {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pm-related__nav--prev {
+  left: -0.75rem;
+}
+
+.pm-related__nav--next {
+  right: -0.75rem;
 }
 
 /* Mini tarjeta de producto relacionado */
 .pm-related-card {
+  flex: 0 0 160px;
+  scroll-snap-align: start;
   background: var(--bl-surface);
   border: 1px solid var(--bl-border);
   border-radius: var(--bl-radius-lg);
@@ -852,6 +924,16 @@
     padding: 1.5rem;
   }
 
+  /* En mobile el scroll horizontal ya es táctil (swipe nativo): las flechas
+     no aportan y ocupan espacio encima de las tarjetas. */
+  .pm-related__nav {
+    display: none;
+  }
+
+  .pm-related-card {
+    flex-basis: 140px;
+  }
+
   .pm-topbar {
     padding: 0.875rem 1.25rem;
   }
@@ -902,8 +984,8 @@
     font-size: 0.8125rem;
   }
 
-  .pm-related__scroll {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  .pm-related-card {
+    flex-basis: 128px;
   }
 
   .pm-related-card__img {

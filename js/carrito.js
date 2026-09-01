@@ -63,6 +63,13 @@ const storeShippingById = new Map();
 // split payments). Poblado por validateCartFreshness junto al resto.
 const storeMpEligibleById = new Map();
 
+// A113-299: CBU/alias/banco de cada tienda del carrito, para mostrárselo al
+// cliente apenas elige "Transferencia bancaria" -- antes no se mostraba en
+// ningún lado y el pedido quedaba pending para siempre porque no había forma
+// de saber a dónde transferir. Poblado por validateCartFreshness.
+const storeTransferInfoById = new Map();
+const storeNameById = new Map();
+
 /**
  * Agrupa el carrito por tienda y calcula el envío real de cada una (post-descuento).
  * Recibe SOLO los ítems tildados: un producto en pendiente no viaja a
@@ -688,6 +695,84 @@ function initPaymentMethodEvents() {
 function syncPaymentMethod() {
   const transferenciaRadio = document.getElementById('payment-transferencia');
   paymentMethod = transferenciaRadio?.checked ? 'transferencia' : 'mercadopago';
+  renderTransferInfo();
+}
+
+/**
+ * A113-299: trae el CBU/alias de cada comercio del carrito, en un fetch
+ * aparte del de validateCartFreshness a propósito -- `stores.transfer_info`
+ * es una columna nueva (migración 69_store_transfer_info.sql) que puede no
+ * estar aplicada todavía en algunas bases. Si se pidiera junto con precio/
+ * stock/envío, un 400 acá tumbaría la revalidación de TODO el carrito; así,
+ * en el peor caso, solo este cuadro queda vacío.
+ */
+async function loadTransferInfo() {
+  const storeIds = [...new Set(productStoreId.values())];
+  if (storeIds.length === 0) {
+    storeTransferInfoById.clear();
+    renderTransferInfo();
+    return;
+  }
+
+  const { data, error } = await supabase.from('stores').select('id, transfer_info').in('id', storeIds);
+  if (error) {
+    console.error('Error al cargar los datos de transferencia:', error);
+  } else {
+    storeTransferInfoById.clear();
+    (data || []).forEach((s) => storeTransferInfoById.set(s.id, s.transfer_info || null));
+  }
+  renderTransferInfo();
+}
+
+/**
+ * A113-299: muestra el CBU/alias de cada comercio del carrito apenas se
+ * elige "Transferencia bancaria" -- antes no se mostraba en ningún lado, así
+ * que el cliente no tenía forma de saber a dónde transferir y el pedido
+ * quedaba pending para siempre. Se llama tanto al cambiar de método de pago
+ * como al terminar loadTransferInfo(), porque cualquiera de las dos puede
+ * pasar primero.
+ */
+function renderTransferInfo() {
+  const box = document.getElementById('transfer-info-box');
+  if (!box) return;
+
+  if (paymentMethod !== 'transferencia') {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+
+  const storeIds = [...new Set(productStoreId.values())];
+  box.textContent = '';
+
+  if (storeIds.length === 0) {
+    box.hidden = true;
+    return;
+  }
+
+  storeIds.forEach((storeId) => {
+    const row = document.createElement('div');
+
+    const storeName = document.createElement('div');
+    storeName.className = 'transfer-info-box__store';
+    storeName.textContent = storeNameById.get(storeId) || 'Comercio';
+    row.appendChild(storeName);
+
+    const info = storeTransferInfoById.get(storeId);
+    const dataEl = document.createElement('div');
+    if (info) {
+      dataEl.className = 'transfer-info-box__data';
+      dataEl.textContent = info;
+    } else {
+      dataEl.className = 'transfer-info-box__missing';
+      dataEl.textContent = 'Este comercio todavía no cargó sus datos para transferencia. Contactalo antes de pagar así, o elegí Mercado Pago.';
+    }
+    row.appendChild(dataEl);
+
+    box.appendChild(row);
+  });
+
+  box.hidden = false;
 }
 
 /**
@@ -1172,7 +1257,7 @@ async function validateCartFreshness() {
 
   const { data: products, error } = await supabase
     .from('products')
-    .select('id, price, stock, is_active, store_id, stores(delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
+    .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
     .in('id', cart.map((item) => item.id));
 
   if (error) {
@@ -1188,6 +1273,8 @@ async function validateCartFreshness() {
   productStoreId.clear();
   storeShippingById.clear();
   storeMpEligibleById.clear();
+  storeTransferInfoById.clear();
+  storeNameById.clear();
   (products || []).forEach((p) => {
     if (!p.store_id) return;
     productStoreId.set(p.id, p.store_id);
@@ -1199,9 +1286,11 @@ async function validateCartFreshness() {
       // P0-6: piloto de split payments -- MP solo se ofrece si la tienda
       // tiene split_pilot activo Y ya vinculó su cuenta (collector_id real).
       storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_split_pilot && p.stores.mp_collector_id));
+      storeNameById.set(p.store_id, p.stores.name || 'el comercio');
     }
   });
   updateMpAvailability();
+  loadTransferInfo();
 
   const removedNames = [];
   const adjustedNames = [];

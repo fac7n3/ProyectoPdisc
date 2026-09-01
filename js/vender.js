@@ -409,6 +409,33 @@ async function loadDashboard(user, staffStoreId) {
   if (isStoreOwner) {
     await Promise.all([renderMyCoupons(), renderStoreStaff()]);
   }
+
+  applyOrderDeepLink();
+}
+
+/**
+ * A113-271: al venir de una notificación de pedido (`vender.html?order=<id>#ventas`)
+ * precarga el buscador de "Ventas" con el N° corto del pedido, reusando el
+ * filtro que ya existe ahí -- no hace falta un anchor por fila.
+ */
+function applyOrderDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get('order');
+  if (!orderId) return;
+
+  const shortId = orderId.split('-')[0].toUpperCase();
+  const searchInput = document.getElementById('ventas-search');
+  if (searchInput) searchInput.value = shortId;
+  ordSearch = shortId;
+  ordStatus = 'all';
+  document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((c) => {
+    c.classList.toggle('is-active', c.dataset.status === 'all');
+  });
+  renderVentas();
+
+  const url = new URL(window.location);
+  url.searchParams.delete('order');
+  window.history.replaceState({}, '', url);
 }
 
 // --- F5-06: gestión de pedidos ---
@@ -684,6 +711,7 @@ function fillStoreProfileForm(store) {
   const deliveryFeeInput = document.getElementById('store-delivery-fee');
   const freeShippingInput = document.getElementById('store-free-shipping-threshold');
   const acceptsContactInput = document.getElementById('store-accepts-contact');
+  const transferInfoInput = document.getElementById('store-transfer-info');
 
   if (logoInput) logoInput.value = store.logo_url || '';
   if (addressInput) addressInput.value = store.address || '';
@@ -697,6 +725,20 @@ function fillStoreProfileForm(store) {
   if (freeShippingInput) freeShippingInput.value = store.free_shipping_threshold ?? 5000;
   // P1-12: default true si la columna todavía no llegó desde el select (no debería pasar).
   if (acceptsContactInput) acceptsContactInput.checked = store.accepts_contact !== false;
+
+  // A113-299: texto libre (CBU/alias/banco) que ve el cliente al elegir
+  // transferencia. Fetch aparte (no en STORE_SELECT_COLUMNS) a propósito: la
+  // columna `stores.transfer_info` viene de una migración nueva
+  // (66_store_transfer_info.sql) que puede no estar aplicada todavía en
+  // algunas bases -- si se pidiera en el select principal, un 400 ahí
+  // tumbaría TODO el dashboard del vendedor en vez de dejar este campo vacío.
+  if (transferInfoInput) {
+    supabase.from('stores').select('transfer_info').eq('id', store.id).single()
+      .then(({ data, error }) => {
+        if (error) { console.error('Error al cargar los datos de transferencia:', error); return; }
+        transferInfoInput.value = data?.transfer_info || '';
+      });
+  }
 }
 
 function setupStoreProfileForm() {
@@ -734,6 +776,15 @@ function setupStoreProfileForm() {
         accepts_contact: document.getElementById('store-accepts-contact').checked,
       })
       .eq('id', currentStoreId);
+
+    // A113-299: aparte del resto (ver por qué en fillStoreProfileForm) -- si
+    // la migración 66 todavía no está aplicada, que falle esto solo y no
+    // todo el guardado del perfil.
+    const { error: transferError } = await supabase
+      .from('stores')
+      .update({ transfer_info: document.getElementById('store-transfer-info').value.trim() || null })
+      .eq('id', currentStoreId);
+    if (transferError) console.error('Error al guardar los datos de transferencia:', transferError);
 
     if (error) {
       console.error('Error al guardar el perfil del comercio:', error);

@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="../Assets/styles/carrito.css" />
     <link rel="stylesheet" href="../Assets/styles/perfil-custom.css" />
+    <link rel="stylesheet" href="../Assets/styles/product-modal.css" />
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -409,6 +410,10 @@
     <!-- Notificación Toast -->
     <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
+    <!-- A113-292: "Mis favoritos" abre el detalle en el mismo modal que
+         home/búsqueda/comercio (antes mandaba a la página producto.html
+         standalone, sin favorito ni relacionados). -->
+    <script type="module" src="../js/product-modal.js"></script>
     <script type="module" src="../js/perfil.js"></script>
   </body>
 </html>
