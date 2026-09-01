@@ -84,7 +84,7 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BbFsdDQG.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-DuzrIcnm.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-1mL_M7PA.js">
@@ -93,7 +93,7 @@
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Dj1Uv7eC.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-cGtd1It5.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-g_AypJts.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -137,14 +137,58 @@
 
     <main id="main-content" tabindex="-1">
       <h1 class="sr-only" id="page-h1">Cargando comercio</h1>
-      <div class="store-loading">
-        <div class="store-loading__spinner"></div>
-        <span>Cargando comercio...</span>
+      <!-- Skeleton (A113-281/284/285): reemplaza al spinner mientras se
+           resuelve el fetch de la tienda, mismo lenguaje visual que los
+           skeletons de tarjeta de producto (home/search). -->
+      <div class="store-skeleton" role="status" aria-label="Cargando comercio">
+        <div class="store-skeleton__header">
+          <div class="store-skeleton__bar store-skeleton__back"></div>
+          <div class="store-skeleton__bar store-skeleton__title"></div>
+          <div class="store-skeleton__bar store-skeleton__desc"></div>
+          <div class="store-skeleton__bar store-skeleton__meta"></div>
+        </div>
+        <div class="products__grid store-skeleton__grid">
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
     <!-- ====== PIE DE PÁGINA ====== -->
-    <footer class="footer">
+    <!-- Oculto hasta que comercio.js resuelve el fetch de la tienda
+         (A113-281/284/285) -- evita el salto de layout de un footer pegado
+         arriba de la página mientras el skeleton todavía ocupa el resto. -->
+    <footer class="footer" hidden>
       <div class="footer__inner">
         <div class="footer__brand-container">
           <div class="footer__brand-logo-text">

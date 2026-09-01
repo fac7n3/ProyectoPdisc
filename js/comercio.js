@@ -19,8 +19,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const storeId = params.get('id');
 
+  // A113-281/284/285: el footer queda oculto (atributo `hidden` en el HTML)
+  // hasta que se resuelve el fetch de la tienda, para no mostrar un layout
+  // "roto" con el footer pegado arriba mientras el skeleton todavía ocupa
+  // el resto del alto de la página.
+  const footer = document.querySelector('footer.footer');
+  const showFooter = () => { if (footer) footer.hidden = false; };
+
   if (!storeId) {
     mainContent.innerHTML = '<div style="text-align: center; padding: 4rem; color: #ef4444;">No se especificó un comercio.</div>';
+    showFooter();
     return;
   }
 
@@ -226,5 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (err) {
     console.error('Error fetching store:', err);
     renderErrorState(mainContent, 'No se pudo cargar la información del comercio.', () => window.location.reload());
+  } finally {
+    showFooter();
   }
 });
