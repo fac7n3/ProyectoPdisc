@@ -835,8 +835,20 @@ function initCouponEvents() {
 
   let debounceTimer = null;
 
+  // A113-298: una vez aplicado, el botón pasa a ser una X compacta (en vez
+  // del texto "Quitar") -- más intuitivo para sacar el cupón de un vistazo,
+  // sin tener que leer la etiqueta.
   function setIdleBtnState() {
-    applyBtn.textContent = appliedCouponCode ? 'Quitar' : 'Aplicar';
+    applyBtn.innerHTML = '';
+    if (appliedCouponCode) {
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-xmark';
+      applyBtn.appendChild(icon);
+      applyBtn.setAttribute('aria-label', 'Quitar cupón');
+    } else {
+      applyBtn.append('Aplicar');
+      applyBtn.removeAttribute('aria-label');
+    }
     applyBtn.classList.toggle('coupon-btn--remove', Boolean(appliedCouponCode));
   }
 
