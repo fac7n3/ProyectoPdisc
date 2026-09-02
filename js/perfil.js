@@ -2000,12 +2000,18 @@ function flashHighlight(el) {
   setTimeout(() => { el.style.boxShadow = ''; }, 2200);
 }
 
+// A113-290 (botones directos): el cambio de sección va aparte del highlight
+// de pedido para poder correrlo apenas arranca onReady -- antes de esperar
+// compras/favoritos/direcciones -- y que el navbar nunca pase por el hub.
+function openDeepLinkSection() {
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  if (tab) openSection(`tab-${tab}`);
+}
+
 function handleNotificationDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get('tab');
   const orderId = params.get('order');
-
-  if (tab) openSection(`tab-${tab}`);
 
   if (orderId) {
     flashHighlight(document.getElementById(`order-${orderId}`));
@@ -2067,6 +2073,7 @@ guardPage({
   requireAuth: true,
   onReady: (user) => {
     renderQuickProfile(user);
+    openDeepLinkSection();
     initCartHintsPref();
     renderFullProfile(user);
     handleMercadoPagoReturn();
