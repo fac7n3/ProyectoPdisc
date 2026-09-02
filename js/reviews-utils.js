@@ -202,10 +202,14 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
     : 'Todavía no hay reseñas.';
 
   if (reviews.length === 0) {
-    const empty = document.createElement('p');
-    empty.style.cssText = 'color: var(--bl-text-muted); font-size: 0.9rem;';
-    empty.textContent = 'Sé el primero en dejar una reseña.';
-    listEl.appendChild(empty);
+    // hideForm = el dueño del producto/comercio está viendo esto -- no tiene
+    // sentido invitarlo a "ser el primero en dejar una reseña" a sí mismo.
+    if (!hideForm) {
+      const empty = document.createElement('p');
+      empty.style.cssText = 'color: var(--bl-text-muted); font-size: 0.9rem;';
+      empty.textContent = 'Sé el primero en dejar una reseña.';
+      listEl.appendChild(empty);
+    }
   } else {
     reviews.forEach((review) => {
       const isOwn = !!(ownReview && review.id === ownReview.id);
