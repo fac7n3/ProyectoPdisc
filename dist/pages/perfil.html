@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-CD09EoCU.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-Ctxe8zd3.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DT6Gw6Ig.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-BUbmojIg.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Co--NLEJ.js">
@@ -286,9 +286,16 @@
         <!-- ======================= -->
         <div id="tab-compras" class="tab-pane">
           <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-box-open"></i> Mi historial de compras
-            </h2>
+            <h2 class="perfil-card__title">Mi historial de compras</h2>
+            <div class="fav-search">
+              <i class="fa-solid fa-magnifying-glass fav-search__icon" aria-hidden="true"></i>
+              <label class="sr-only" for="compras-filter-input">Buscar en mis compras</label>
+              <input type="search" id="compras-filter-input" class="fav-search__input" placeholder="Buscar por comercio o producto" autocomplete="off" />
+              <button type="button" class="fav-search__clear" id="compras-filter-clear" aria-label="Borrar la búsqueda" hidden>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="fav-chips" id="compras-status-chips" role="group" aria-label="Filtrar por estado"></div>
             <div id="compras-container" class="compras-list">
               <!-- Renderizado por JS -->
               <p style="color: var(--bl-perfil-text-sec);">Cargando tus compras...</p>

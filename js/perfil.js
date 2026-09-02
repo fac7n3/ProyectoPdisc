@@ -40,6 +40,7 @@ const btnCancelAddress = document.getElementById("btn-cancel-address");
 
 // Contenedores
 const comprasContainer = document.getElementById("compras-container");
+const comprasFilterInput = document.getElementById("compras-filter-input");
 const favoritosContainer = document.getElementById("favoritos-container");
 const favoritosStoresContainer = document.getElementById("favoritos-stores-container");
 const favFilterInput = document.getElementById("fav-filter-input");
@@ -844,6 +845,117 @@ function buildCompraItem(order, reviewByRepartidorId, transferInfoByStoreId) {
   return item;
 }
 
+/** true si el pedido coincide con el texto buscado (n° de orden, comercio o producto). */
+function orderMatchesQuery(order, q) {
+  const shortId = order.id.split('-')[0].toLowerCase();
+  if (shortId.includes(q)) return true;
+  if ((order.stores?.name || '').toLowerCase().includes(q)) return true;
+  return (order.order_items || []).some((oi) => (oi.title || '').toLowerCase().includes(q));
+}
+
+/** Chips de estado (Pendiente/Pagado/...) con el conteo de cada uno, mismo patrón que renderFavCategoryChips. */
+function renderComprasStatusChips() {
+  const wrap = document.getElementById('compras-status-chips');
+  if (!wrap) return;
+  wrap.textContent = '';
+
+  const counts = new Map();
+  comprasCache.forEach((o) => counts.set(o.status, (counts.get(o.status) || 0) + 1));
+
+  // Con un solo estado presente el filtro no filtra nada.
+  if (counts.size < 2) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+
+  const opciones = [
+    { key: 'todas', label: 'Todas', count: comprasCache.length },
+    ...[...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([status, count]) => ({ key: status, label: ORDER_STATUS_LABELS[status] || status, count })),
+  ];
+
+  opciones.forEach((op) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'fav-chip' + (comprasStatusFilter === op.key ? ' fav-chip--active' : '');
+    chip.setAttribute('aria-pressed', String(comprasStatusFilter === op.key));
+
+    const label = document.createElement('span');
+    label.textContent = op.label;
+    chip.appendChild(label);
+
+    const count = document.createElement('span');
+    count.className = 'fav-chip__count';
+    count.textContent = `(${op.count})`;
+    chip.appendChild(count);
+
+    chip.addEventListener('click', () => {
+      comprasStatusFilter = comprasStatusFilter === op.key ? 'todas' : op.key;
+      applyComprasFilter();
+    });
+
+    wrap.appendChild(chip);
+  });
+}
+
+/** Filtro client-side por texto + por estado, sobre lo que ya trajo loadCompras. */
+function applyComprasFilter() {
+  const q = (comprasFilterInput?.value || '').trim().toLowerCase();
+
+  const clearBtn = document.getElementById('compras-filter-clear');
+  if (clearBtn) clearBtn.hidden = !q;
+
+  let orders = comprasStatusFilter === 'todas'
+    ? comprasCache
+    : comprasCache.filter((o) => o.status === comprasStatusFilter);
+  if (q) orders = orders.filter((o) => orderMatchesQuery(o, q));
+
+  comprasContainer.textContent = '';
+
+  if (comprasCache.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-perfil-text-sec)';
+    emptyMsg.textContent = 'Aún no realizaste ninguna compra.';
+    comprasContainer.appendChild(emptyMsg);
+  } else if (orders.length === 0) {
+    // Distingue "no tenés nada" de "tu filtro no dio nada".
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.color = 'var(--bl-perfil-text-sec)';
+    emptyMsg.textContent = 'No hay compras que coincidan con lo que buscás.';
+    comprasContainer.appendChild(emptyMsg);
+  } else {
+    orders.forEach((order) => {
+      comprasContainer.appendChild(buildCompraItem(order, comprasReviewByRepartidorId, comprasTransferInfoByStoreId));
+    });
+  }
+
+  renderComprasStatusChips();
+}
+
+function setupComprasFilter() {
+  comprasFilterInput?.addEventListener('input', applyComprasFilter);
+
+  const clearBtn = document.getElementById('compras-filter-clear');
+  clearBtn?.addEventListener('click', () => {
+    if (comprasFilterInput) {
+      comprasFilterInput.value = '';
+      comprasFilterInput.focus();
+    }
+    applyComprasFilter();
+  });
+
+  // Escape limpia la búsqueda sin tener que ir hasta la "x".
+  comprasFilterInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && comprasFilterInput.value) {
+      e.preventDefault();
+      comprasFilterInput.value = '';
+      applyComprasFilter();
+    }
+  });
+}
+
 const MAX_PROOF_BYTES = 10 * 1024 * 1024;
 
 /** 1536000 -> "1,5 MB". Para que el peso se lea, no se calcule. */
@@ -1205,6 +1317,12 @@ function buildRepartidorRatingSection(order, reviewByRepartidorId) {
   return wrap;
 }
 
+/** Caché de la última carga, para poder filtrar sin volver a pegarle a la DB. */
+let comprasCache = [];
+let comprasReviewByRepartidorId = new Map();
+let comprasTransferInfoByStoreId = new Map();
+let comprasStatusFilter = 'todas';
+
 async function loadCompras(userId) {
   if (!comprasContainer) return;
   try {
@@ -1245,13 +1363,12 @@ async function loadCompras(userId) {
       }
     }
 
-    comprasContainer.textContent = '';
+    comprasCache = orders || [];
+    comprasTransferInfoByStoreId = transferInfoByStoreId;
 
-    if (!orders || orders.length === 0) {
-      const emptyMsg = document.createElement('p');
-      emptyMsg.style.color = 'var(--bl-perfil-text-sec)';
-      emptyMsg.textContent = 'Aún no realizaste ninguna compra.';
-      comprasContainer.appendChild(emptyMsg);
+    if (comprasCache.length === 0) {
+      comprasReviewByRepartidorId = new Map();
+      applyComprasFilter();
       return;
     }
 
@@ -1260,7 +1377,7 @@ async function loadCompras(userId) {
     // cada repartidor que entregó algo, igual que el patrón de F12-05 (fono
     // del cliente) con phoneByClientId.
     const deliveredRepartidorIds = [...new Set(
-      orders
+      comprasCache
         .filter((o) => o.deliveries?.status === 'delivered' && o.deliveries?.repartidor_id)
         .map((o) => o.deliveries.repartidor_id)
     )];
@@ -1272,11 +1389,9 @@ async function loadCompras(userId) {
           .eq('client_id', userId)
           .in('target_id', deliveredRepartidorIds)
       : { data: [] };
-    const reviewByRepartidorId = new Map((ownRepartidorReviews || []).map((r) => [r.target_id, r]));
+    comprasReviewByRepartidorId = new Map((ownRepartidorReviews || []).map((r) => [r.target_id, r]));
 
-    orders.forEach((order) => {
-      comprasContainer.appendChild(buildCompraItem(order, reviewByRepartidorId, transferInfoByStoreId));
-    });
+    applyComprasFilter();
   } catch (err) {
     console.error("Error loading orders", err);
     comprasContainer.textContent = '';
@@ -1973,6 +2088,7 @@ async function renderFullProfile(user) {
   // Cargar las colecciones asíncronamente
   setupFavSubtabs();
   loadFavoritos(user.id);
+  setupComprasFilter();
   const comprasPromise = loadCompras(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
