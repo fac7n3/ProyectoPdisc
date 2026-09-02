@@ -778,11 +778,16 @@ export async function initAccountMenu() {
 
     // Deep links con ?tab=... -- ya soportados por perfil.js
     // (handleNotificationDeepLink -> openSection('tab-' + tab)).
-    panel.appendChild(buildSection('Cuenta', [
+    const cuentaItems = [];
+    if (role === 'admin' || role === 'moderador') {
+      cuentaItems.push({ href: './perfil.html', icon: 'fa-solid fa-user-shield', label: 'Panel de administración' });
+    }
+    cuentaItems.push(
       { href: './perfil.html?tab=mis-datos', icon: 'fa-regular fa-id-card', label: 'Mi perfil' },
       { href: './perfil.html?tab=direcciones', icon: 'fa-solid fa-location-dot', label: 'Direcciones' },
       { href: './perfil.html?tab=ajustes', icon: 'fa-solid fa-gear', label: 'Ajustes' },
-    ]));
+    );
+    panel.appendChild(buildSection('Cuenta', cuentaItems));
 
     panel.appendChild(buildSection('Actividad', [
       { href: './perfil.html?tab=compras', icon: 'fa-solid fa-box-open', label: 'Mis compras' },
