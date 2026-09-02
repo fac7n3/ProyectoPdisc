@@ -1,4 +1,4 @@
-import{s as e}from"./speed-insights-Jgaq4W7Q.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal--db_dWgm.js";import{d as t,g as n,h as r,n as i,t as a,u as o,x as s}from"./cart-utils-DL6dXif4.js";import{a as c,c as l,i as u,l as d,o as f,s as p}from"./nav-utils-DxDEzbk8.js";async function m(){let s=document.getElementById(`products-grid`);if(s)try{let{data:n,error:c}=await e.from(`products`).select(`
+import{s as e}from"./speed-insights-DT6Gw6Ig.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-D_Xvfl31.js";import{d as t,g as n,h as r,n as i,t as a,u as o,x as s}from"./cart-utils-BUbmojIg.js";import{a as c,c as l,i as u,l as d,o as f,s as p}from"./nav-utils-CWSNyMCd.js";async function m(){let s=document.getElementById(`products-grid`);if(s)try{let{data:n,error:c}=await e.from(`products`).select(`
         id,
         title,
         price,

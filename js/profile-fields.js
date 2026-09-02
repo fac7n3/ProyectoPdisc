@@ -8,6 +8,8 @@
  * `node js/profile-fields.test.mjs`.
  */
 
+import { PHONE_COUNTRY_OPTIONS, splitPhone } from "./phone-countries.js";
+
 export const DOC_TYPES = ["DNI", "LC", "LE", "CI", "Pasaporte"];
 
 /**
@@ -108,12 +110,24 @@ export const PROFILE_FIELDS = [
     label: "Teléfono",
     hint: "Para que el comercio o el repartidor te avisen si hay una demora.",
     display: (p) => p.phone,
-    inputs: (p) => [{
-      el: "input", name: "phone", type: "tel", value: p.phone || "",
-      placeholder: "Ej: 3329 123456", autocomplete: "tel", maxLength: 30,
-      className: "datos-input datos-input--grow", aria: "Teléfono",
-    }],
-    collect: (v) => ({ phone: v.phone.trim() || null }),
+    inputs: (p) => {
+      const { dial, number } = splitPhone(p.phone);
+      return [
+        {
+          el: "select", name: "phone_country", value: dial, options: PHONE_COUNTRY_OPTIONS,
+          className: "datos-input datos-input--compact", aria: "Característica de país",
+        },
+        {
+          el: "input", name: "phone", type: "tel", value: number,
+          placeholder: "Ej: 3329 123456", autocomplete: "tel", maxLength: 20,
+          className: "datos-input datos-input--grow", aria: "Teléfono",
+        },
+      ];
+    },
+    collect: (v) => {
+      const number = v.phone.trim();
+      return { phone: number ? `${v.phone_country} ${number}` : null };
+    },
     validate: (v) => {
       const digits = v.phone.replace(/\D/g, "");
       if (!digits) return null;

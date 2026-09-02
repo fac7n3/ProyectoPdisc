@@ -89,7 +89,26 @@ check("rechaza un número corto y uno absurdamente largo", () => {
 
 check("vacío es válido y se guarda como null", () => {
   assert.equal(phone.validate({ phone: "" }), null);
-  assert.deepEqual(phone.collect({ phone: "  " }), { phone: null });
+  assert.deepEqual(phone.collect({ phone: "  ", phone_country: "+54" }), { phone: null });
+});
+
+check("guarda el número junto con la característica elegida", () => {
+  assert.deepEqual(
+    phone.collect({ phone_country: "+598", phone: "99 123 456" }),
+    { phone: "+598 99 123 456" }
+  );
+});
+
+check("un dato viejo sin característica se edita asumiendo Argentina", () => {
+  const inputs = phone.inputs({ phone: "3329616554" });
+  assert.equal(inputs.find((i) => i.name === "phone_country").value, "+54");
+  assert.equal(inputs.find((i) => i.name === "phone").value, "3329616554");
+});
+
+check("un teléfono guardado con característica la reconoce al editar", () => {
+  const inputs = phone.inputs({ phone: "+598 99123456" });
+  assert.equal(inputs.find((i) => i.name === "phone_country").value, "+598");
+  assert.equal(inputs.find((i) => i.name === "phone").value, "99123456");
 });
 
 console.log("fecha de nacimiento");
