@@ -836,6 +836,11 @@ a.compra-item-text:hover {
   box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
 }
 
+.bl-input[readonly] {
+  background: var(--bl-perfil-border, #e2e8f0);
+  cursor: default;
+}
+
 .bl-btn {
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-md);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Mi Perfil - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
@@ -336,9 +336,10 @@
                 <label for="address-label" class="detail-label">Nombre (Ej: Casa, Trabajo)</label>
                 <input type="text" id="address-label" class="bl-input" placeholder="Casa" maxlength="30" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="position: relative;">
                 <label for="address-main" class="detail-label">Dirección (Calle y Número)</label>
-                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" required />
+                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" autocomplete="off" required />
+                <div id="address-suggest" class="search-suggest" hidden role="listbox"></div>
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div class="form-group">
@@ -347,12 +348,15 @@
               </div>
               <div class="form-group">
                 <label for="address-phone" class="detail-label">Teléfono de contacto</label>
+                <label id="address-phone-mine-wrap" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;" hidden>
+                  <input type="checkbox" id="address-phone-use-mine" /> Usar mi teléfono (<span id="address-phone-mine-value"></span>)
+                </label>
                 <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required />
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; cursor: pointer;">
-                  <input type="checkbox" id="address-default" /> Establecer como predeterminada
+                  <input type="checkbox" id="address-default" checked /> Establecer como predeterminada
                 </label>
               </div>
               <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">

@@ -32,8 +32,12 @@ const addressEditId = document.getElementById("address-edit-id");
 const addressLabel = document.getElementById("address-label");
 const inputPhone = document.getElementById("address-phone");
 const inputAddress = document.getElementById("address-main");
+const addressSuggest = document.getElementById("address-suggest");
 const inputDetails = document.getElementById("address-details");
 const addressDefault = document.getElementById("address-default");
+const phoneUseMineWrap = document.getElementById("address-phone-mine-wrap");
+const phoneUseMine = document.getElementById("address-phone-use-mine");
+const phoneMineValue = document.getElementById("address-phone-mine-value");
 const btnSaveAddress = document.getElementById("btn-save-address");
 const btnAddAddress = document.getElementById("btn-add-address");
 const btnCancelAddress = document.getElementById("btn-cancel-address");
@@ -322,6 +326,164 @@ async function loadAddresses(userId) {
   });
 }
 
+// Preselecciona "usar mi teléfono" (Información de tu perfil) salvo que la
+// dirección ya tenga guardado un teléfono distinto. Si el perfil no tiene
+// teléfono cargado, la opción ni se muestra -- no hay nada que ofrecer.
+function setupPhoneChoice(existingPhone) {
+  const myPhone = (profileData?.phone || '').trim();
+  if (!myPhone) {
+    if (phoneUseMineWrap) phoneUseMineWrap.hidden = true;
+    inputPhone.value = existingPhone;
+    inputPhone.readOnly = false;
+    return;
+  }
+  if (phoneUseMineWrap) phoneUseMineWrap.hidden = false;
+  if (phoneMineValue) phoneMineValue.textContent = myPhone;
+  const useMine = !existingPhone || existingPhone === myPhone;
+  if (phoneUseMine) phoneUseMine.checked = useMine;
+  inputPhone.value = useMine ? myPhone : existingPhone;
+  inputPhone.readOnly = useMine;
+}
+
+if (phoneUseMine) {
+  phoneUseMine.addEventListener('change', () => {
+    if (phoneUseMine.checked) {
+      inputPhone.value = (profileData?.phone || '').trim();
+      inputPhone.readOnly = true;
+    } else {
+      inputPhone.value = '';
+      inputPhone.readOnly = false;
+      inputPhone.focus();
+    }
+  });
+}
+
+// --- Autocompletado de dirección (Nominatim/OpenStreetMap, sin API key) ---
+let addressSuggestItems = [];
+let addressSuggestActive = -1;
+let addressSuggestTimer = null;
+let addressSuggestToken = 0;
+
+function closeAddressSuggest() {
+  if (!addressSuggest) return;
+  addressSuggest.hidden = true;
+  addressSuggest.textContent = '';
+  addressSuggestItems = [];
+  addressSuggestActive = -1;
+}
+
+function setAddressSuggestActive(idx) {
+  addressSuggestItems.forEach((el) => el.classList.remove('is-active'));
+  addressSuggestActive = idx;
+  if (idx >= 0 && addressSuggestItems[idx]) {
+    addressSuggestItems[idx].classList.add('is-active');
+    addressSuggestItems[idx].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function addressSuggestionLabel(item) {
+  const a = item.address || {};
+  const street = a.road || a.pedestrian || a.footway || a.residential || '';
+  const num = a.house_number || '';
+  if (street) return num ? `${street} ${num}` : street;
+  return item.display_name.split(',')[0];
+}
+
+function pickAddressSuggestion(item) {
+  inputAddress.value = addressSuggestionLabel(item);
+  closeAddressSuggest();
+}
+
+async function renderAddressSuggestions(query) {
+  const q = query.trim();
+  if (q.length < 3) { closeAddressSuggest(); return; }
+
+  const token = ++addressSuggestToken;
+  let results = [];
+  try {
+    // Todo el comercio es de Baradero -- sesgar la búsqueda a la ciudad evita
+    // que aparezcan calles homónimas de otra provincia.
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=ar&q=${encodeURIComponent(q + ', Baradero, Buenos Aires, Argentina')}`;
+    const res = await fetch(url);
+    if (res.ok) results = await res.json();
+  } catch (err) {
+    console.error('Error buscando direcciones:', err);
+  }
+  if (token !== addressSuggestToken || !addressSuggest) return;
+
+  addressSuggest.textContent = '';
+  addressSuggestItems = [];
+
+  if (!results.length) {
+    const empty = document.createElement('p');
+    empty.className = 'search-suggest__empty';
+    empty.textContent = 'Sin sugerencias. Podés escribir la dirección igual.';
+    addressSuggest.appendChild(empty);
+    addressSuggest.hidden = false;
+    return;
+  }
+
+  results.forEach((item) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'search-suggest__row';
+    row.setAttribute('role', 'option');
+
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-location-dot search-suggest__icon';
+    row.appendChild(icon);
+
+    const textWrap = document.createElement('span');
+    textWrap.className = 'search-suggest__text';
+    const main = document.createElement('span');
+    main.className = 'search-suggest__main';
+    main.textContent = addressSuggestionLabel(item);
+    textWrap.appendChild(main);
+    const meta = document.createElement('span');
+    meta.className = 'search-suggest__meta';
+    meta.textContent = item.display_name;
+    textWrap.appendChild(meta);
+    row.appendChild(textWrap);
+
+    row.addEventListener('click', (e) => { e.preventDefault(); pickAddressSuggestion(item); });
+    addressSuggest.appendChild(row);
+    addressSuggestItems.push(row);
+  });
+
+  addressSuggest.hidden = false;
+  addressSuggestActive = -1;
+}
+
+if (inputAddress && addressSuggest) {
+  inputAddress.addEventListener('input', () => {
+    clearTimeout(addressSuggestTimer);
+    const val = inputAddress.value;
+    addressSuggestTimer = setTimeout(() => renderAddressSuggestions(val), 400);
+  });
+
+  inputAddress.addEventListener('keydown', (e) => {
+    if (addressSuggest.hidden) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setAddressSuggestActive(Math.min(addressSuggestActive + 1, addressSuggestItems.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setAddressSuggestActive(Math.max(addressSuggestActive - 1, -1));
+    } else if (e.key === 'Enter') {
+      if (addressSuggestActive >= 0 && addressSuggestItems[addressSuggestActive]) {
+        e.preventDefault();
+        addressSuggestItems[addressSuggestActive].click();
+      }
+    } else if (e.key === 'Escape') {
+      closeAddressSuggest();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!inputAddress.contains(e.target) && !addressSuggest.contains(e.target)) closeAddressSuggest();
+  });
+}
+
 function openAddressForm(addr = null) {
   if (!addressForm) return;
   addressForm.style.display = '';
@@ -329,8 +491,11 @@ function openAddressForm(addr = null) {
   addressLabel.value = addr?.label || '';
   inputAddress.value = addr?.address || '';
   inputDetails.value = addr?.details || '';
-  inputPhone.value = addr?.phone || '';
-  addressDefault.checked = addr?.is_default || false;
+  setupPhoneChoice(addr?.phone || '');
+  // Al agregar la primera dirección (o cualquiera desde cero) tiene más
+  // sentido arrancar con "predeterminada" tildado que forzar a destildarla.
+  addressDefault.checked = addr ? !!addr.is_default : true;
+  closeAddressSuggest();
   addressLabel.focus();
 }
 
@@ -342,7 +507,10 @@ function closeAddressForm() {
   inputAddress.value = '';
   inputDetails.value = '';
   inputPhone.value = '';
-  addressDefault.checked = false;
+  inputPhone.readOnly = false;
+  if (phoneUseMine) phoneUseMine.checked = false;
+  addressDefault.checked = true;
+  closeAddressSuggest();
 }
 
 if (btnAddAddress) {

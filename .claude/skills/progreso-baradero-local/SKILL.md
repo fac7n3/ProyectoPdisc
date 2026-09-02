@@ -1816,3 +1816,41 @@ existe un guard server-side (`create_order` RPC valida `is_active = true` antes 
 `order_item`, ver `18_create_order_rpc.sql` y las versiones posteriores) — un comprador que reabre
 un producto pausado desde su historial y aprieta "agregar al carrito" fallaría recién al pagar, no
 es un agujero de seguridad, solo una UX subóptima fuera del alcance de este pedido.
+
+## Formulario de "Agregar dirección" (perfil): autocompletado, teléfono propio y default tildado (2026-09-02)
+
+Rama `claude/address-autocomplete-phone-aa4827`. Pedido del usuario sobre la sección "Direcciones
+de envío" del perfil (`js/perfil.js` + `pages/perfil.html`), sin clave de Jira (tarea ad hoc, no
+del roadmap F0-F12).
+
+**Autocompletado de "Dirección (Calle y Número)":** sin API key, vía Nominatim (OpenStreetMap,
+`nominatim.openstreetmap.org/search`), sesgado a Baradero concatenando ", Baradero, Buenos Aires,
+Argentina" a lo que escribe el usuario (todo el comercio es de esa ciudad, no hacía falta pedir
+geolocalización ni un `viewbox`). Reutiliza el markup/CSS `.search-suggest*` que ya existía para el
+buscador de la navbar (`home.css`, ver `initSearchBox` en `js/nav-utils.js`) en vez de escribir
+estilos nuevos — mismo look, debounce (400ms), navegación por teclado (flechas/Enter/Escape) y
+guard de respuestas viejas (`token`) copiados de ese mismo patrón. Requirió sumar
+`https://nominatim.openstreetmap.org` al `connect-src` de la Content-Security-Policy de
+`perfil.html` (es la única página con el formulario de direcciones); si se reusa este patrón en
+otra página (`vender.js` para la dirección del comercio, por ejemplo) hay que agregarlo a su CSP
+también.
+
+**Teléfono de contacto:** nuevo checkbox "Usar mi teléfono ({{profile.phone}})" arriba del input,
+tildado por default si el perfil tiene teléfono cargado (columna `profiles.phone`, la de
+"Información de tu perfil", migración 61) y la dirección no tiene uno propio distinto ya guardado.
+Tildado deja el input en `readOnly` con el valor del perfil; destildado lo limpia y habilita
+edición libre. Si el perfil no tiene teléfono cargado, el checkbox ni se muestra.
+
+**"Establecer como predeterminada":** ahora arranca tildado al agregar una dirección nueva (antes
+arrancaba destildado, aunque la primera dirección se termina forzando a default igual en el
+`submit`). Al editar una dirección existente sigue reflejando su `is_default` real — forzarlo
+tildado ahí sería engañoso (parecería que ya es la default sin serlo).
+
+**Verificación:** `npm run build` sin errores. La query a Nominatim se probó por fuera del
+navegador (`curl` directo a la API) confirmando que devuelve calles reales de Baradero
+correctamente sesgadas. **No se pudo probar el flujo completo logueado en el navegador**: crear una
+cuenta de prueba nueva chocó primero con el rate-limit de registro de Supabase y después con
+`over_email_send_rate_limit` (cuota de emails de confirmación del proyecto, compartida entre todas
+las sesiones/worktrees en paralelo) — no hay forma de loguearse sin credenciales reales ni de
+esquivar ese límite reintentando. Pendiente confirmar interactivamente cuando el usuario (u otra
+sesión con una cuenta ya logueada) lo prueba a mano.
