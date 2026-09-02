@@ -125,3 +125,18 @@ summary:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* Mismo efecto, pero pedido a mano desde Perfil → Ajustes ("Reducir
+   animaciones") — para quien le molesta el movimiento pero no tiene tocada la
+   opción del sistema operativo, que es donde vive el media query de arriba.
+   La clase la pone `applyDevicePreferences()` (js/settings-utils.js) en cada
+   página. No se puede meter dentro del @media: son dos condiciones distintas
+   con el mismo cuerpo. */
+html.bl-reduce-motion *,
+html.bl-reduce-motion *::before,
+html.bl-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

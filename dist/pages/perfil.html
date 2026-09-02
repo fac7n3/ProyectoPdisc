@@ -12,21 +12,21 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-Cb_uAHKs.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-_TeQbE_P.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal--db_dWgm.js">
+    <script type="module" crossorigin src="/assets/perfil-zgKtUz_i.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-ChZXgx55.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-8R-_cou0.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-C_QXYLDq.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/hints-utils-CjusrjGp.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BVBxoo_j.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-BmvWwaMe.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DN9tcUUB.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BSxpg7aC.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-ESZ2vxFq.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-sE8rSOZO.css">
-    <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-Cqz2-Epg.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DkHAB1xd.css">
   </head>
@@ -114,7 +114,7 @@
         <button type="button" class="account-card" data-target="tab-ajustes">
           <i class="fa-solid fa-gear account-card__icon"></i>
           <span class="account-card__title">Ajustes</span>
-          <span class="account-card__desc">Preferencias de tu cuenta.</span>
+          <span class="account-card__desc">Preferencias, sesión y privacidad.</span>
         </button>
       </div>
 
@@ -239,23 +239,6 @@
                   <span class="datos-row__value" id="card-member-since">—</span>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <!-- ---------- Privacidad: separado a propósito del resto ---------- -->
-          <section class="datos-group datos-group--privacy">
-            <h3 class="datos-group__title">Tus datos son tuyos</h3>
-            <p class="datos-privacy__lead">
-              Podés llevarte una copia de todo lo que guardamos, o borrar tu cuenta cuando quieras
-              (Ley 25.326 de Protección de Datos Personales).
-            </p>
-            <div class="datos-privacy__actions">
-              <button type="button" class="datos-btn" id="btn-download-data">
-                <i class="fa-solid fa-download" aria-hidden="true"></i> Descargar mis datos
-              </button>
-              <button type="button" class="datos-btn datos-btn--danger" id="btn-delete-account">
-                Eliminar mi cuenta
-              </button>
             </div>
           </section>
 
@@ -425,6 +408,8 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-gear"></i> Ajustes
             </h2>
+
+            <!-- ---------- Preferencias de uso ---------- -->
             <section class="datos-group">
               <h3 class="datos-group__title">Preferencias</h3>
               <div class="datos-panel">
@@ -436,7 +421,63 @@
                       <span class="pref-toggle__desc">Mensajes cortos que explican qué pasa al marcar o desmarcar un producto. Si ya le agarraste la mano, apagalos.</span>
                     </span>
                   </label>
+                  <label class="pref-toggle" for="pref-notif-toasts">
+                    <input type="checkbox" id="pref-notif-toasts" checked />
+                    <span class="pref-toggle__text">
+                      <span class="pref-toggle__title">Avisos emergentes de notificaciones</span>
+                      <span class="pref-toggle__desc">El cartelito que aparece en una esquina cuando llega algo nuevo. Si lo apagás seguís viendo todo igual en la campanita y en Notificaciones.</span>
+                      <span class="pref-toggle__where">Solo en este dispositivo</span>
+                    </span>
+                  </label>
+                  <label class="pref-toggle" for="pref-reduce-motion">
+                    <input type="checkbox" id="pref-reduce-motion" />
+                    <span class="pref-toggle__text">
+                      <span class="pref-toggle__title">Reducir animaciones</span>
+                      <span class="pref-toggle__desc">Saca los deslizamientos y las transiciones de todo el sitio. Sirve si el movimiento te marea o si la página te va lenta.</span>
+                      <span class="pref-toggle__where">Solo en este dispositivo</span>
+                    </span>
+                  </label>
                 </div>
+              </div>
+            </section>
+
+            <!-- ---------- Sesión y seguridad ---------- -->
+            <section class="datos-group">
+              <h3 class="datos-group__title">Sesión y seguridad</h3>
+              <div class="datos-panel">
+                <div class="datos-row datos-row--static">
+                  <div class="datos-row__main">
+                    <span class="datos-row__label">Contraseña y forma de ingreso</span>
+                    <span class="datos-row__hint">Se manejan junto al resto de tus datos, en "Información de tu perfil".</span>
+                  </div>
+                  <!-- data-target: mismo mecanismo que las tarjetas del hub, no
+                       hace falta un handler propio (ver perfil.js). -->
+                  <button type="button" class="datos-btn" data-target="tab-mis-datos">Ver</button>
+                </div>
+                <div class="datos-row datos-row--static">
+                  <div class="datos-row__main">
+                    <span class="datos-row__label">Cerrar sesión en todos los dispositivos</span>
+                    <span class="datos-row__hint">Te saca de tu cuenta acá y en cualquier otro lado donde hayas entrado: el celular, una compu prestada, otro navegador. Después vas a tener que ingresar de nuevo.</span>
+                  </div>
+                  <button type="button" class="datos-btn" id="btn-signout-all">Cerrar en todos</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ---------- Privacidad: separado a propósito del resto ---------- -->
+            <section class="datos-group datos-group--privacy">
+              <h3 class="datos-group__title">Tus datos son tuyos</h3>
+              <p class="datos-privacy__lead">
+                Podés llevarte una copia de todo lo que guardamos, o borrar tu cuenta cuando quieras
+                (Ley 25.326 de Protección de Datos Personales).
+              </p>
+              <div class="datos-privacy__actions">
+                <button type="button" class="datos-btn" id="btn-download-data">
+                  <i class="fa-solid fa-download" aria-hidden="true"></i> Descargar mis datos
+                </button>
+                <button type="button" class="datos-btn datos-btn--danger" id="btn-delete-account">
+                  Eliminar mi cuenta
+                </button>
               </div>
             </section>
           </article>

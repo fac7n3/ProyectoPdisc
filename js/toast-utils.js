@@ -22,6 +22,7 @@
  * inundar de golpe con avisos viejos.
  */
 import { fetchNotifications, buildNotificationTitle, buildNotificationLink } from './notifications-utils.js';
+import { getPref } from './settings-utils.js';
 
 const MAX_TOASTS = 3;
 const AUTO_DISMISS_MS = 5000;
@@ -102,6 +103,15 @@ export function showNotificationToast({ title, href = null }) {
 }
 
 async function pollOnce(userId) {
+  // Apagados desde Perfil → Ajustes: no se consulta nada (ahorra un fetch cada
+  // 30s) y el cambio se siente al instante, sin recargar la página. Se borra
+  // el puntero de "la última que mostré" para que al volver a encenderlos se
+  // arranque de cero, en vez de llegar de golpe todas las de mientras.
+  if (!getPref('notifToasts')) {
+    try { localStorage.removeItem(LAST_SEEN_KEY); } catch { /* no-op */ }
+    return;
+  }
+
   let notifications;
   try {
     notifications = await fetchNotifications(userId);
