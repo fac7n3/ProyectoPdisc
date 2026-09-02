@@ -317,7 +317,11 @@ function buildProductSearchRow({ isOwner, onSearch }) {
   searchBox.appendChild(searchIcon);
 
   const input = document.createElement('input');
-  input.type = 'search';
+  // type="text", no "search": type="search" agrega su propia "X" nativa en
+  // Chrome/Safari que se superponía con el botón de limpiar propio (dos X
+  // distintas en la misma barra).
+  input.type = 'text';
+  input.autocomplete = 'off';
   input.placeholder = isOwner ? 'Buscar productos' : '¿Qué producto buscás?';
   input.setAttribute('aria-label', isOwner ? 'Buscar productos' : '¿Qué producto buscás?');
   searchBox.appendChild(input);
