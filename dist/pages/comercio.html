@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <meta name="description" content="Conocé los comercios locales de Baradero: productos, ubicación y horarios." />
     <title>Cargando comercio... — Baradero Local</title>
     <meta property="og:type" content="website" />
@@ -19,37 +19,269 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
+      /* ====== Header de la tienda (vista vendedor/cliente) ======
+         Fondo y color de letra son personalizables por el dueño (columnas
+         stores.header_bg_color/header_text_color). Por defecto (sin color
+         elegido) usan el color de fondo de la página, con un divisor MUY
+         suave entre el bloque de título y la barra de datos -- por eso el
+         valor de --sh-bg/--sh-fg lo pone comercio.js vía style.setProperty
+         solo cuando el dueño eligió algo, y estas reglas caen al fallback. */
       .store-header {
-        background: var(--bl-surface);
-        padding: 3rem 1.5rem;
+        position: relative;
+        background: var(--sh-bg, var(--bl-bg));
+        color: var(--sh-fg, var(--bl-text));
         margin-bottom: 2rem;
-        border-bottom: 1px solid var(--bl-border);
+      }
+      .store-header__top {
+        padding: 3rem 4.5rem 1.75rem 1.5rem;
         text-align: center;
+        border-bottom: 1px solid color-mix(in srgb, var(--sh-fg, var(--bl-text)) 12%, transparent);
       }
       .store-header__title {
         font-size: 2.5rem;
-        color: var(--bl-text);
+        color: inherit;
         margin: 0 0 0.5rem 0;
         font-weight: 800;
       }
       .store-header__description {
-        color: var(--bl-text-light);
+        color: inherit;
+        opacity: 0.85;
         max-width: 600px;
         margin: 0 auto 1.5rem auto;
       }
-      .store-header__meta {
+      .store-header__contact {
+        display: inline-block;
+        padding: 0.6rem 1.25rem;
+        border: 2px solid var(--bl-primary);
+        color: var(--bl-primary);
+        background: var(--bl-surface);
+        border-radius: var(--bl-radius-md);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      /* Barra de datos (dirección, categoría, cantidad de productos, horarios) */
+      .store-header__info-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 2rem;
+        padding: 1.25rem 1.5rem;
+        font-size: 0.875rem;
+      }
+      .store-header__meta-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        min-width: 8rem;
+        text-align: center;
+      }
+      .store-header__meta-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        opacity: 0.75;
+      }
+      .store-header__meta-value {
+        font-weight: 600;
+        white-space: pre-line;
+      }
+      .store-header__map-link {
+        color: inherit;
+        text-decoration: underline;
+        font-size: 0.8rem;
+        opacity: 0.9;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        font: inherit;
+      }
+      /* Botón circular arriba a la derecha del header: lápiz (vendedor,
+         editar color) o corazón (cliente, favorito). Transparente a
+         propósito -- toma el color de fondo que haya elegido el vendedor. */
+      .store-header__icon-btn {
+        position: absolute;
+        top: 1.1rem;
+        right: 1.25rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: inherit;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 1.5rem;
-        color: var(--bl-text-light);
-        font-size: 0.875rem;
+        cursor: pointer;
+        font-size: 1.05rem;
+        transition: background 0.15s;
       }
-      .store-header__meta span i {
-        color: var(--bl-primary);
-        margin-right: 0.5rem;
+      .store-header__icon-btn:hover {
+        background: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 10%, transparent);
+      }
+      .store-header__icon-btn.is-favorite {
+        color: #ef4444;
+      }
+
+      /* Popover de color (solo vendedor) */
+      .store-color-popover {
+        display: none;
+        position: absolute;
+        top: 3.6rem;
+        right: 1.25rem;
+        background: var(--bl-surface);
+        color: var(--bl-text);
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-md);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        padding: 0.5rem;
+        min-width: 200px;
+        z-index: 20;
+      }
+      .store-color-popover.is-open { display: block; }
+      .store-color-popover__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.55rem 0.6rem;
+        border-radius: var(--bl-radius-sm);
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      .store-color-popover__row:hover { background: var(--bl-surface-hover); }
+      .store-color-popover__row input[type="color"] {
+        width: 1.75rem;
+        height: 1.75rem;
+        padding: 0;
+        border: 1px solid var(--bl-border);
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
+        background: none;
+      }
+      .store-color-popover__reset {
+        width: 100%;
+        text-align: left;
+        padding: 0.55rem 0.6rem;
+        border: none;
+        background: none;
+        color: var(--bl-text-muted);
+        font-size: 0.85rem;
+        cursor: pointer;
+        border-radius: var(--bl-radius-sm);
+        border-top: 1px solid var(--bl-border-light);
+        margin-top: 0.25rem;
+      }
+      .store-color-popover__reset:hover { background: var(--bl-surface-hover); }
+
+      /* Editar perfil (lápiz arriba de la grilla de productos, solo vendedor) */
+      .store-search-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+      }
+      .store-search {
+        position: relative;
+        flex: 1;
+        max-width: 420px;
+      }
+      .store-search input {
+        width: 100%;
+        padding: 0.65rem 2.25rem 0.65rem 2.5rem;
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-pill);
+        font-size: 0.9rem;
+      }
+      .store-search__icon {
+        position: absolute;
+        left: 0.9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--bl-text-muted);
+        font-size: 0.85rem;
+      }
+      .store-search__clear {
+        display: none;
+        position: absolute;
+        right: 0.7rem;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: none;
+        color: var(--bl-text-muted);
+        cursor: pointer;
+        font-size: 0.85rem;
+        padding: 0.2rem;
+      }
+      .store-search__clear.is-visible { display: block; }
+      .store-edit-profile-btn {
+        margin-left: auto;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        border: 1px solid var(--bl-border);
+        background: var(--bl-surface);
+        color: var(--bl-text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Modal de mapa (dirección) -- misma familia visual que el modal de producto */
+      .store-map-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 600;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+      .store-map-overlay.is-open { display: flex; }
+      .store-map-modal {
+        width: 100%;
+        max-width: 640px;
+        background: var(--bl-surface);
+        border-radius: var(--bl-radius-lg);
+        overflow: hidden;
+        box-shadow: 0 25px 80px rgba(0,0,0,0.25);
+      }
+      .store-map-modal__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--bl-border);
+      }
+      .store-map-modal__top h2 {
+        font-size: 1.05rem;
+        margin: 0;
+      }
+      .store-map-modal__close {
+        border: none;
+        background: none;
+        font-size: 1.1rem;
+        color: var(--bl-text-muted);
+        cursor: pointer;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+      }
+      .store-map-modal__close:hover { background: var(--bl-surface-hover); }
+      .store-map-modal iframe {
+        width: 100%;
+        height: 360px;
+        border: none;
+        display: block;
       }
       .store-products {
         max-width: 1200px;
@@ -84,12 +316,12 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BprwnGR8.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DT6Gw6Ig.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-BUbmojIg.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-BwVLd2Yi.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-Bs3C-Rat.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CWSNyMCd.js">
+    <script type="module" crossorigin src="/assets/comercio-_kKq6M7G.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CnyEW8rd.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-LB3t1zc3.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DxDEzbk8.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
@@ -209,6 +441,17 @@
 
     <!-- Notificación Toast -->
     <div class="toast" id="toast" aria-live="polite" role="status"></div>
-
+
+    <!-- Modal de mapa (dirección del comercio) -- comercio.js completa el iframe -->
+    <div class="store-map-overlay" id="store-map-overlay">
+      <div class="store-map-modal" role="dialog" aria-modal="true" aria-labelledby="store-map-title">
+        <div class="store-map-modal__top">
+          <h2 id="store-map-title">Cómo llegar</h2>
+          <button type="button" class="store-map-modal__close" id="store-map-close" aria-label="Cerrar mapa"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="store-map-frame-wrap"></div>
+      </div>
+    </div>
+
   </body>
 </html>
