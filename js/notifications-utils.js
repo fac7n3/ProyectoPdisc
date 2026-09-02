@@ -68,6 +68,17 @@ const TONE_COLOR_VAR = {
 };
 
 /**
+ * "Importante" = tonos danger/accent (un rechazo, algo que necesita reversa,
+ * o una oportunidad que vence si no se actúa). success/info son avisos de
+ * curso normal (un pedido que avanzó bien, un mensaje). Reusa TYPE_TONE en
+ * vez de mantener un segundo mapa por tipo.
+ */
+const IMPORTANT_TONES = new Set(['danger', 'accent']);
+function isImportant(n) {
+  return IMPORTANT_TONES.has(TYPE_TONE[n.type]);
+}
+
+/**
  * Vista previa de contenido para los tipos cuyo payload no la trae directo
  * (a diferencia de stock_alert/favorite_price_drop, que ya tienen
  * product_title, o support_ticket_message, que ya trae el texto). Recibe los
@@ -222,6 +233,10 @@ export async function markAllNotificationsRead(userId) {
     .is('read_at', null);
 }
 
+export async function deleteNotification(id) {
+  await supabase.from('notifications').delete().eq('id', id);
+}
+
 /** Cantidad de no leídas -- liviano (head:true), para el badge de la campanita. */
 export async function fetchUnreadCount(userId) {
   const { count, error } = await supabase
@@ -235,6 +250,108 @@ export async function fetchUnreadCount(userId) {
     return 0;
   }
   return count || 0;
+}
+
+/** Texto sobre el que busca el buscador del centro de notificaciones: título + preview. */
+function buildSearchableText(n, maps) {
+  const parts = [buildNotificationTitle(n)];
+  if (n.type === 'support_ticket_message' && n.payload?.message) {
+    parts.push(n.payload.message);
+  } else {
+    const preview = buildPreviewText(n, maps);
+    if (preview) parts.push(preview);
+  }
+  return parts.join(' ').toLowerCase();
+}
+
+/** Arma una fila del centro de notificaciones (DOM API, sin innerHTML). */
+function buildNotificationRow(n, maps, { onChange }) {
+  const row = document.createElement('div');
+  row.className = n.read_at ? 'notif-item' : 'notif-item notif-item--unread';
+  row.style.setProperty('--notif-tone', TONE_COLOR_VAR[TYPE_TONE[n.type]] || 'var(--bl-border)');
+
+  if (isImportant(n)) {
+    const badge = document.createElement('span');
+    badge.className = 'notif-item__badge';
+    badge.textContent = 'Importante';
+    row.appendChild(badge);
+  }
+
+  const title = document.createElement('strong');
+  title.className = 'notif-item__title';
+  title.textContent = buildNotificationTitle(n);
+  row.appendChild(title);
+
+  // support_ticket_message trae el texto de la respuesta directo en el
+  // payload -- se muestra como preview acá (no lo cubre buildNotificationTitle,
+  // que solo arma el título corto para el ítem del centro y los toasts).
+  if (n.type === 'support_ticket_message' && n.payload?.message) {
+    const preview = document.createElement('p');
+    preview.className = 'notif-item__preview';
+    preview.textContent = n.payload.message;
+    row.appendChild(preview);
+  }
+
+  // support_ticket_message ya arma su propia preview arriba (el texto
+  // viene directo en el payload); el resto de los tipos con contenido
+  // "de otra tabla" (reseña, mensaje, pedido) usa los mapas en lote.
+  if (n.type !== 'support_ticket_message') {
+    const previewText = buildPreviewText(n, maps);
+    if (previewText) {
+      const preview = document.createElement('p');
+      preview.className = 'notif-item__preview';
+      preview.textContent = previewText;
+      row.appendChild(preview);
+    }
+  }
+
+  const notifLink = buildNotificationLink(n);
+  if (notifLink) {
+    const link = document.createElement('a');
+    link.href = notifLink.href;
+    link.className = 'notif-item__link';
+    link.textContent = notifLink.label;
+    if (!n.read_at) {
+      // Al abrir el detalle ya la dio por vista -- no hace falta un
+      // segundo click en "Marcar como leída".
+      link.addEventListener('click', () => { markNotificationRead(n.id); }, { once: true });
+    }
+    row.appendChild(link);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'notif-item__meta';
+  meta.textContent = new Date(n.created_at).toLocaleString('es-AR');
+  row.appendChild(meta);
+
+  const actions = document.createElement('div');
+  actions.className = 'notif-item__actions';
+
+  if (!n.read_at) {
+    const markBtn = document.createElement('button');
+    markBtn.type = 'button';
+    markBtn.className = 'notif-item__mark';
+    markBtn.textContent = 'Marcar como leída';
+    markBtn.addEventListener('click', async () => {
+      await markNotificationRead(n.id);
+      onChange();
+    });
+    actions.appendChild(markBtn);
+  }
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'notif-item__delete';
+  deleteBtn.textContent = 'Borrar';
+  deleteBtn.addEventListener('click', async () => {
+    await deleteNotification(n.id);
+    onChange();
+  });
+  actions.appendChild(deleteBtn);
+
+  row.appendChild(actions);
+
+  return row;
 }
 
 /** Arma el centro de notificaciones dentro de `container` (DOM API, sin innerHTML). */
@@ -275,91 +392,81 @@ export async function renderNotificationsSection(container, userId) {
   (messagesRes.data || []).forEach((m) => { messageMap[m.id] = m.body; });
   (ordersRes.data || []).forEach((o) => { orderAmountMap[o.id] = o.total_price; });
 
+  const maps = { reviewMap, messageMap, orderAmountMap };
+
+  // onChange: mark/delete cambian el estado en el servidor -- se vuelve a
+  // pedir todo en vez de mantener un segundo estado local sincronizado
+  // (mismo patrón que ya usaban "marcar como leída"/"marcar todas").
+  const onChange = () => renderNotificationsSection(container, userId);
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'notif-toolbar';
+
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.className = 'notif-search';
+  searchInput.placeholder = 'Buscar en tus notificaciones...';
+  searchInput.setAttribute('aria-label', 'Buscar notificaciones');
+  toolbar.appendChild(searchInput);
+
+  const filterSelect = document.createElement('select');
+  filterSelect.className = 'notif-filter';
+  filterSelect.setAttribute('aria-label', 'Filtrar notificaciones');
+  [
+    ['all', 'Todas'],
+    ['unread', 'No leídas'],
+    ['important', 'Importantes'],
+  ].forEach(([value, label]) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    filterSelect.appendChild(opt);
+  });
+  toolbar.appendChild(filterSelect);
+
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   if (unreadCount > 0) {
-    const toolbar = document.createElement('div');
-    toolbar.className = 'notif-toolbar';
     const markAllBtn = document.createElement('button');
     markAllBtn.type = 'button';
     markAllBtn.className = 'notif-mark-all';
     markAllBtn.textContent = `Marcar las ${unreadCount} como leídas`;
     markAllBtn.addEventListener('click', async () => {
       await markAllNotificationsRead(userId);
-      renderNotificationsSection(container, userId);
+      onChange();
     });
     toolbar.appendChild(markAllBtn);
-    container.appendChild(toolbar);
   }
+
+  container.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'notif-list';
-
-  notifications.forEach((n) => {
-    const row = document.createElement('div');
-    row.className = n.read_at ? 'notif-item' : 'notif-item notif-item--unread';
-    row.style.setProperty('--notif-tone', TONE_COLOR_VAR[TYPE_TONE[n.type]] || 'var(--bl-border)');
-
-    const title = document.createElement('strong');
-    title.className = 'notif-item__title';
-    title.textContent = buildNotificationTitle(n);
-    row.appendChild(title);
-
-    // support_ticket_message trae el texto de la respuesta directo en el
-    // payload -- se muestra como preview acá (no lo cubre buildNotificationTitle,
-    // que solo arma el título corto para el ítem del centro y los toasts).
-    if (n.type === 'support_ticket_message' && n.payload?.message) {
-      const preview = document.createElement('p');
-      preview.className = 'notif-item__preview';
-      preview.textContent = n.payload.message;
-      row.appendChild(preview);
-    }
-
-    // support_ticket_message ya arma su propia preview arriba (el texto
-    // viene directo en el payload); el resto de los tipos con contenido
-    // "de otra tabla" (reseña, mensaje, pedido) usa los mapas en lote.
-    if (n.type !== 'support_ticket_message') {
-      const previewText = buildPreviewText(n, { reviewMap, messageMap, orderAmountMap });
-      if (previewText) {
-        const preview = document.createElement('p');
-        preview.className = 'notif-item__preview';
-        preview.textContent = previewText;
-        row.appendChild(preview);
-      }
-    }
-
-    const notifLink = buildNotificationLink(n);
-    if (notifLink) {
-      const link = document.createElement('a');
-      link.href = notifLink.href;
-      link.className = 'notif-item__link';
-      link.textContent = notifLink.label;
-      if (!n.read_at) {
-        // Al abrir el detalle ya la dio por vista -- no hace falta un
-        // segundo click en "Marcar como leída".
-        link.addEventListener('click', () => { markNotificationRead(n.id); }, { once: true });
-      }
-      row.appendChild(link);
-    }
-
-    const meta = document.createElement('div');
-    meta.className = 'notif-item__meta';
-    meta.textContent = new Date(n.created_at).toLocaleString('es-AR');
-    row.appendChild(meta);
-
-    if (!n.read_at) {
-      const markBtn = document.createElement('button');
-      markBtn.type = 'button';
-      markBtn.className = 'notif-item__mark';
-      markBtn.textContent = 'Marcar como leída';
-      markBtn.addEventListener('click', async () => {
-        await markNotificationRead(n.id);
-        renderNotificationsSection(container, userId);
-      });
-      row.appendChild(markBtn);
-    }
-
-    list.appendChild(row);
-  });
-
   container.appendChild(list);
+
+  function applyFilters() {
+    const search = searchInput.value.trim().toLowerCase();
+    const mode = filterSelect.value;
+
+    const filtered = notifications.filter((n) => {
+      if (mode === 'unread' && n.read_at) return false;
+      if (mode === 'important' && !isImportant(n)) return false;
+      if (search && !buildSearchableText(n, maps).includes(search)) return false;
+      return true;
+    });
+
+    list.textContent = '';
+    if (filtered.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'notif-empty';
+      empty.textContent = 'No se encontraron notificaciones con ese criterio.';
+      list.appendChild(empty);
+      return;
+    }
+    filtered.forEach((n) => list.appendChild(buildNotificationRow(n, maps, { onChange })));
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  filterSelect.addEventListener('change', applyFilters);
+
+  applyFilters();
 }
