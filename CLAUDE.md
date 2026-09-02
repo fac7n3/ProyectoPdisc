@@ -2,9 +2,9 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-01. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
-> (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 completas en
-> `feature/mejorasGrupo` (sin mergear a `main` todavía). Detalle línea por línea de cada fase/tarea (F0-F12, bugs
+> Última actualización: 2026-09-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
+> ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
 > (se carga solo cuando hace falta consultar el historial). Pendientes que sí necesitan quedar
 > siempre visibles: ver sección "Pendientes activos" más abajo.
@@ -81,7 +81,8 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
 - **Resuelto 2026-09-01** — Las 18 subtareas [MEJORA] de **A113-266** (rama
-  `feature/mejorasGrupo`, todavía sin mergear a `main`), una por una con
+  `feature/mejorasGrupo`, mergeada a `main` el 2026-09-02 junto con el resto de
+  las ramas `claude/*` pendientes), una por una con
   commit y push individual. Con código nuevo: badge de rol en el perfil
   (269), redirect post-login del vendedor a `vender.html` (270), botón
   "Aplicar filtros" reemplazado por auto-apply + "Actualizando
@@ -101,8 +102,15 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   producto no cierra por click afuera (306, decisión de accesibilidad ya
   tomada), toggle de "aceptar contacto" del vendedor (296), multi-rubro en
   el alta de vendedor (305, P2-10), pausar/reactivar producto (309),
-  cancelar reclamo + admin responde (295). Falta mergear la rama a `main`
-  cuando el usuario lo confirme.
+  cancelar reclamo + admin responde (295).
+- **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — split de pagos de Mercado Pago sin andar**:
+  la vinculación OAuth de la cuenta de MP del vendedor (`mp-oauth-callback`,
+  `store_mp_credentials`, `stores.mp_collector_id`, piloto P0-6) se dejó pausada
+  porque no se pudo hacer andar. Mientras tanto, **todo pago con Mercado Pago
+  entra a la cuenta de la plataforma** (`MP_ACCESS_TOKEN` global en
+  `mp-create-preference`), no directo al vendedor. Falta diagnosticar el
+  motivo (revisar `redirect_uri`, `MP_CLIENT_ID`/`MP_CLIENT_SECRET`, permisos
+  de la app en Mercado Pago) antes del lanzamiento real.
 - **Migración 66 sin aplicar** (`db/schema/66_cart_hints_preference.sql`, 2026-08-16) — agrega
   `profiles.cart_hints_enabled` para la preferencia "Mostrar ayudas en el carrito". Se dejó escrita
   sin aplicar **a pedido del usuario** (la aplica él). Hasta entonces la preferencia funciona solo
