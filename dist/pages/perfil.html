@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Mi Perfil - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
@@ -12,20 +12,20 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-CaJ5zoxi.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DT6Gw6Ig.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-BUbmojIg.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Co--NLEJ.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-D_Xvfl31.js">
+    <script type="module" crossorigin src="/assets/perfil-Cb_uAHKs.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-_TeQbE_P.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal--db_dWgm.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/hints-utils-CdznnFdD.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-Em6504z1.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-CjusrjGp.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BVBxoo_j.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bg4ofj5J.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-DDyS16bd.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-BSxpg7aC.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-BoMXYWYm.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-sE8rSOZO.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DkHAB1xd.css">
@@ -281,9 +281,16 @@
         <!-- ======================= -->
         <div id="tab-compras" class="tab-pane">
           <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-box-open"></i> Mi historial de compras
-            </h2>
+            <h2 class="perfil-card__title">Mi historial de compras</h2>
+            <div class="fav-search">
+              <i class="fa-solid fa-magnifying-glass fav-search__icon" aria-hidden="true"></i>
+              <label class="sr-only" for="compras-filter-input">Buscar en mis compras</label>
+              <input type="search" id="compras-filter-input" class="fav-search__input" placeholder="Buscar por comercio o producto" autocomplete="off" />
+              <button type="button" class="fav-search__clear" id="compras-filter-clear" aria-label="Borrar la búsqueda" hidden>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="fav-chips" id="compras-status-chips" role="group" aria-label="Filtrar por estado"></div>
             <div id="compras-container" class="compras-list">
               <!-- Renderizado por JS -->
               <p style="color: var(--bl-perfil-text-sec);">Cargando tus compras...</p>
@@ -296,9 +303,7 @@
         <!-- ======================= -->
         <div id="tab-favoritos" class="tab-pane">
           <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-heart" style="color: #ef4444;"></i> Mis favoritos
-            </h2>
+            <h2 class="perfil-card__title">Mis favoritos</h2>
             <!-- P1-9 + A113-291: Productos y Comercios funcionan; Servicios queda
                  visible pero deshabilitada -- todavía no existe esa feature en la
                  app, pero conviene que la persona sepa que va a llegar en vez de
@@ -315,6 +320,27 @@
               <button type="button" class="fav-search__clear" id="fav-filter-clear" aria-label="Borrar la búsqueda" hidden>
                 <i class="fa-solid fa-xmark" aria-hidden="true"></i>
               </button>
+            </div>
+
+            <!-- Filtro por fecha en que se agregó a favoritos: presets de período
+                 + rango personalizado. Elegir un preset carga los dos <input
+                 type="date">; tocar los inputs a mano pasa el select a "Personalizado". -->
+            <div class="fav-date-filter">
+              <label class="sr-only" for="fav-period-select">Filtrar por período</label>
+              <select id="fav-period-select" class="fav-period-select">
+                <option value="todas">Cualquier fecha</option>
+                <option value="hoy">Hoy</option>
+                <option value="7dias">Últimos 7 días</option>
+                <option value="30dias">Últimos 30 días</option>
+                <option value="3meses">Últimos 3 meses</option>
+                <option value="anio">Este año</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
+              <label class="sr-only" for="fav-date-from">Desde</label>
+              <input type="date" id="fav-date-from" class="fav-date-input" />
+              <span class="fav-date-filter__sep">–</span>
+              <label class="sr-only" for="fav-date-to">Hasta</label>
+              <input type="date" id="fav-date-to" class="fav-date-input" />
             </div>
 
             <!-- Filtro por categoría. Solo aplica a productos; lo arma el JS con
@@ -348,9 +374,10 @@
                 <label for="address-label" class="detail-label">Nombre (Ej: Casa, Trabajo)</label>
                 <input type="text" id="address-label" class="bl-input" placeholder="Casa" maxlength="30" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="position: relative;">
                 <label for="address-main" class="detail-label">Dirección (Calle y Número)</label>
-                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" required />
+                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" autocomplete="off" required />
+                <div id="address-suggest" class="search-suggest" hidden role="listbox"></div>
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div class="form-group">
@@ -359,12 +386,15 @@
               </div>
               <div class="form-group">
                 <label for="address-phone" class="detail-label">Teléfono de contacto</label>
+                <label id="address-phone-mine-wrap" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;" hidden>
+                  <input type="checkbox" id="address-phone-use-mine" /> Usar mi teléfono (<span id="address-phone-mine-value"></span>)
+                </label>
                 <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required />
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; cursor: pointer;">
-                  <input type="checkbox" id="address-default" /> Establecer como predeterminada
+                  <input type="checkbox" id="address-default" checked /> Establecer como predeterminada
                 </label>
               </div>
               <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
