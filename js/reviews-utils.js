@@ -2,6 +2,27 @@ import { supabase } from './auth-utils.js';
 
 let starSeq = 0;
 
+// Estilos del menú de tres puntos (reseña propia): se inyectan una sola vez
+// por documento en vez de repetir cssText largo por cada reseña renderizada.
+let _reviewMenuStylesInjected = false;
+function ensureReviewMenuStyles() {
+  if (_reviewMenuStylesInjected) return;
+  _reviewMenuStylesInjected = true;
+  const style = document.createElement('style');
+  style.textContent = `
+    .bl-review-menu-btn { width: 1.75rem; height: 1.75rem; border-radius: 50%; border: none; background: none; color: var(--bl-text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .bl-review-menu-btn.is-active { background: var(--bl-border-light); color: #111827; }
+  `;
+  document.head.appendChild(style);
+}
+
+/** Cierra todos los menús de tres puntos abiertos en reseñas (cualquier sección de la página). */
+function closeAllReviewMenus() {
+  document.querySelectorAll('[data-review-menu]').forEach((el) => { el.style.display = 'none'; });
+  document.querySelectorAll('.bl-review-menu-btn.is-active').forEach((btn) => btn.classList.remove('is-active'));
+}
+document.addEventListener('click', closeAllReviewMenus);
+
 /**
  * Selector de estrellas (1 a 5). Reemplaza al `<select>` con opciones "★★★☆☆"
  * que estaba copiado igual acá y en perfil.js (calificar al repartidor):
@@ -126,6 +147,21 @@ export async function submitReview(targetType, targetId, rating, comment) {
   if (error) throw error;
 }
 
+/** Borra la reseña propia (reviews_delete_own_or_admin ya cubre la policy). */
+export async function deleteOwnReview(targetType, targetId) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Debés iniciar sesión.');
+
+  const { error } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('target_type', targetType)
+    .eq('target_id', targetId)
+    .eq('client_id', session.user.id);
+
+  if (error) throw error;
+}
+
 /** Construye las estrellas (llenas/vacías) de un rating, como texto simple. */
 export function buildStarsText(rating) {
   const rounded = Math.round(rating);
@@ -172,8 +208,10 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
     listEl.appendChild(empty);
   } else {
     reviews.forEach((review) => {
+      const isOwn = !!(ownReview && review.id === ownReview.id);
+
       const row = document.createElement('div');
-      row.style.cssText = 'padding: 0.75rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);';
+      row.style.cssText = 'padding: 0.75rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); position: relative;';
 
       const starsLine = document.createElement('div');
       starsLine.style.cssText = 'color: #f59e0b; font-weight: 700;';
@@ -193,21 +231,83 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
       dateSpan.textContent = `Cliente · ${new Date(review.created_at).toLocaleDateString('es-AR')}`;
       meta.appendChild(dateSpan);
 
-      const reportBtn = document.createElement('button');
-      reportBtn.type = 'button';
-      reportBtn.style.cssText = 'background: none; border: none; color: var(--bl-text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
-      reportBtn.textContent = 'Reportar';
-      reportBtn.addEventListener('click', async () => {
-        const reason = prompt('¿Por qué querés reportar esta reseña?');
-        if (reason === null) return;
-        const { error } = await supabase.rpc('report_review', { p_review_id: review.id, p_reason: reason });
-        if (error) {
-          alert(error.message || 'No se pudo reportar la reseña.');
-          return;
-        }
-        alert('Reseña reportada. El equipo la va a revisar.');
-      });
-      meta.appendChild(reportBtn);
+      if (isOwn) {
+        // Reseña propia: en vez de "Reportar", un menú de tres puntos con
+        // Editar (salta al form de abajo, que ya queda en modo "Editar tu
+        // reseña" porque existe ownReview) y Eliminar.
+        const menuWrap = document.createElement('div');
+        menuWrap.style.cssText = 'position: absolute; top: 0.6rem; right: 0.6rem;';
+
+        ensureReviewMenuStyles();
+        const menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
+        menuBtn.className = 'bl-review-menu-btn';
+        menuBtn.setAttribute('aria-label', 'Opciones de tu reseña');
+        menuBtn.setAttribute('aria-haspopup', 'true');
+        const menuIcon = document.createElement('i');
+        menuIcon.className = 'fa-solid fa-ellipsis';
+        menuBtn.appendChild(menuIcon);
+        menuWrap.appendChild(menuBtn);
+
+        const menuList = document.createElement('div');
+        menuList.style.cssText = 'display: none; position: absolute; top: 2.1rem; right: 0; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.12); min-width: 140px; overflow: hidden; z-index: 5;';
+
+        const editItem = document.createElement('button');
+        editItem.type = 'button';
+        editItem.textContent = 'Editar reseña';
+        editItem.style.cssText = 'display: block; width: 100%; text-align: left; padding: 0.6rem 0.85rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: var(--bl-text);';
+        editItem.addEventListener('click', () => {
+          menuList.style.display = 'none';
+          menuBtn.classList.remove('is-active');
+          formWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          formWrap.querySelector('textarea')?.focus();
+        });
+        menuList.appendChild(editItem);
+
+        const deleteItem = document.createElement('button');
+        deleteItem.type = 'button';
+        deleteItem.textContent = 'Eliminar reseña';
+        deleteItem.style.cssText = 'display: block; width: 100%; text-align: left; padding: 0.6rem 0.85rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: #ef4444;';
+        deleteItem.addEventListener('click', async () => {
+          if (!confirm('¿Eliminar tu reseña? Esta acción no se puede deshacer.')) return;
+          try {
+            await deleteOwnReview(targetType, targetId);
+            await renderReviewsSection(container, targetType, targetId, { hideForm });
+          } catch (err) {
+            alert(err.message || 'No se pudo eliminar la reseña.');
+          }
+        });
+        menuList.appendChild(deleteItem);
+
+        menuWrap.appendChild(menuList);
+
+        menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpen = menuList.style.display === 'block';
+          closeAllReviewMenus();
+          menuList.style.display = isOpen ? 'none' : 'block';
+          menuBtn.classList.toggle('is-active', !isOpen);
+        });
+        menuList.dataset.reviewMenu = 'true';
+
+        row.appendChild(menuWrap);
+      } else {
+        const reportBtn = document.createElement('button');
+        reportBtn.type = 'button';
+        reportBtn.style.cssText = 'background: none; border: none; color: var(--bl-text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
+        reportBtn.textContent = 'Reportar';
+        reportBtn.addEventListener('click', async () => {
+          const reason = prompt('¿Por qué querés reportar esta reseña?');
+          if (reason === null) return;
+          const { error } = await supabase.rpc('report_review', { p_review_id: review.id, p_reason: reason });
+          if (error) {
+            alert(error.message || 'No se pudo reportar la reseña.');
+            return;
+          }
+          alert('Reseña reportada. El equipo la va a revisar.');
+        });
+        meta.appendChild(reportBtn);
+      }
 
       row.appendChild(meta);
       listEl.appendChild(row);
