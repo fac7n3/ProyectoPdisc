@@ -269,9 +269,16 @@
         <!-- ======================= -->
         <div id="tab-compras" class="tab-pane">
           <article class="perfil-card">
-            <h2 class="perfil-card__title">
-              <i class="fa-solid fa-box-open"></i> Mi historial de compras
-            </h2>
+            <h2 class="perfil-card__title">Mi historial de compras</h2>
+            <div class="fav-search">
+              <i class="fa-solid fa-magnifying-glass fav-search__icon" aria-hidden="true"></i>
+              <label class="sr-only" for="compras-filter-input">Buscar en mis compras</label>
+              <input type="search" id="compras-filter-input" class="fav-search__input" placeholder="Buscar por comercio o producto" autocomplete="off" />
+              <button type="button" class="fav-search__clear" id="compras-filter-clear" aria-label="Borrar la búsqueda" hidden>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="fav-chips" id="compras-status-chips" role="group" aria-label="Filtrar por estado"></div>
             <div id="compras-container" class="compras-list">
               <!-- Renderizado por JS -->
               <p style="color: var(--bl-perfil-text-sec);">Cargando tus compras...</p>
