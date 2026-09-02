@@ -1,5 +1,5 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
-import { formatPrice, clearPurchasedFromCart, updateCartBadge, getFavoriteStoreIds } from "./cart-utils.js";
+import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
@@ -608,6 +608,9 @@ let favProductsCache = [];
 let favStoresCache = [];
 /** Categoría elegida en el filtro ('todas' = sin filtrar). */
 let favCategory = 'todas';
+/** Rango de fechas del filtro por fecha en que se agregó a favoritos ('' = sin límite). */
+let favDateFrom = '';
+let favDateTo = '';
 /** Sub-pestaña abierta: el filtro por categoría solo aplica a productos. */
 let favTab = 'productos';
 
@@ -761,7 +764,17 @@ function renderFavCategoryChips() {
   });
 }
 
-/** Filtro client-side por texto (P1-9) + por categoría de producto. */
+/** true si favorited_at (created_at de la fila de favoritos) cae dentro de [favDateFrom, favDateTo]. */
+function matchesFavDateFilter(favoritedAt) {
+  if (!favDateFrom && !favDateTo) return true;
+  if (!favoritedAt) return false;
+  const t = new Date(favoritedAt).getTime();
+  if (favDateFrom && t < new Date(`${favDateFrom}T00:00:00`).getTime()) return false;
+  if (favDateTo && t > new Date(`${favDateTo}T23:59:59.999`).getTime()) return false;
+  return true;
+}
+
+/** Filtro client-side por texto (P1-9) + por categoría de producto + por fecha agregado. */
 function applyFavFilter() {
   const q = (favFilterInput?.value || '').trim().toLowerCase();
 
@@ -775,23 +788,49 @@ function applyFavFilter() {
     products = products.filter((p) => favCategoryOf(p) === favCategory);
   }
   if (q) products = products.filter((p) => p.title.toLowerCase().includes(q));
+  products = products.filter((p) => matchesFavDateFilter(p.favorited_at));
 
-  const stores = q ? favStoresCache.filter((s) => s.name.toLowerCase().includes(q)) : favStoresCache;
+  let stores = q ? favStoresCache.filter((s) => s.name.toLowerCase().includes(q)) : favStoresCache;
+  stores = stores.filter((s) => matchesFavDateFilter(s.favorited_at));
 
   // El mensaje de vacío distingue "no tenés nada" de "tu filtro no dio nada":
   // decirle "todavía no agregaste favoritos" a alguien que sí tiene, pero
   // filtrados, es mentirle.
-  const filtrando = !!q || favCategory !== 'todas';
+  const filtrando = !!q || favCategory !== 'todas' || !!favDateFrom || !!favDateTo;
   renderFavList(
     favoritosContainer, products, buildFavProductCard,
     filtrando ? 'No hay favoritos que coincidan con lo que buscás.' : 'Aún no agregaste productos a tus favoritos.'
   );
   renderFavList(
     favoritosStoresContainer, stores, buildFavStoreCard,
-    q ? 'No hay comercios que coincidan con lo que buscás.' : 'Aún no agregaste comercios a tus favoritos.'
+    filtrando ? 'No hay comercios que coincidan con lo que buscás.' : 'Aún no agregaste comercios a tus favoritos.'
   );
 
   renderFavCategoryChips();
+}
+
+/** Fecha local (no UTC) en formato yyyy-mm-dd, para el value de <input type="date">. */
+function toDateInputValue(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Rango [desde, hasta] para cada preset del select de período. */
+function periodToRange(period) {
+  const hoy = new Date();
+  const hastaStr = toDateInputValue(hoy);
+  const desde = new Date(hoy);
+  switch (period) {
+    case 'hoy': break;
+    case '7dias': desde.setDate(desde.getDate() - 6); break;
+    case '30dias': desde.setDate(desde.getDate() - 29); break;
+    case '3meses': desde.setMonth(desde.getMonth() - 3); break;
+    case 'anio': desde.setMonth(0, 1); break;
+    default: return { desde: '', hasta: '' };
+  }
+  return { desde: toDateInputValue(desde), hasta: hastaStr };
 }
 
 /** Sub-pestañas Productos/Comercios dentro de "Mis favoritos" (P1-9). */
@@ -831,6 +870,32 @@ function setupFavSubtabs() {
       applyFavFilter();
     }
   });
+
+  const periodSelect = document.getElementById('fav-period-select');
+  const dateFromInput = document.getElementById('fav-date-from');
+  const dateToInput = document.getElementById('fav-date-to');
+
+  periodSelect?.addEventListener('change', () => {
+    const { desde, hasta } = periodToRange(periodSelect.value);
+    // "Personalizado" no toca los inputs: son los que el usuario ya venía llenando.
+    if (periodSelect.value !== 'personalizado') {
+      favDateFrom = desde;
+      favDateTo = hasta;
+      if (dateFromInput) dateFromInput.value = desde;
+      if (dateToInput) dateToInput.value = hasta;
+    }
+    applyFavFilter();
+  });
+
+  // Tocar los inputs de fecha a mano equivale a elegir "Personalizado".
+  [dateFromInput, dateToInput].forEach((input) => {
+    input?.addEventListener('change', () => {
+      favDateFrom = dateFromInput?.value || '';
+      favDateTo = dateToInput?.value || '';
+      if (periodSelect) periodSelect.value = (favDateFrom || favDateTo) ? 'personalizado' : 'todas';
+      applyFavFilter();
+    });
+  });
 }
 
 async function loadFavoritos(userId) {
@@ -839,11 +904,12 @@ async function loadFavoritos(userId) {
   try {
     const { data: favRows, error: favError } = await supabase
       .from('favorites')
-      .select('product_id')
+      .select('product_id, created_at')
       .eq('user_id', userId);
     if (favError) throw favError;
 
     const wishlist = (favRows || []).map((f) => f.product_id);
+    const favoritedAtByProduct = new Map((favRows || []).map((f) => [f.product_id, f.created_at]));
     let products = [];
     if (wishlist.length > 0) {
       const { data, error } = await supabase
@@ -854,7 +920,9 @@ async function loadFavoritos(userId) {
         .in('id', wishlist)
         .eq('is_active', true);
       if (error) throw error;
-      products = data || [];
+      // favorited_at: fecha en que se agregó a favoritos (created_at de la
+      // fila de favorites), para el filtro por fecha/período.
+      products = (data || []).map((p) => ({ ...p, favorited_at: favoritedAtByProduct.get(p.id) }));
     }
     favProductsCache = products;
   } catch (err) {
@@ -864,7 +932,17 @@ async function loadFavoritos(userId) {
   }
 
   try {
-    const storeIds = await getFavoriteStoreIds();
+    // Consulta directa en vez de getFavoriteStoreIds() (cart-utils.js): esa
+    // función devuelve solo los ids, acá hace falta también created_at para
+    // el filtro por fecha.
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: favStoreRows, error: favStoreError } = session
+      ? await supabase.from('favorite_stores').select('store_id, created_at').eq('client_id', session.user.id)
+      : { data: [], error: null };
+    if (favStoreError) throw favStoreError;
+
+    const storeIds = (favStoreRows || []).map((f) => f.store_id);
+    const favoritedAtByStore = new Map((favStoreRows || []).map((f) => [f.store_id, f.created_at]));
     let stores = [];
     if (storeIds.length > 0) {
       const { data, error } = await supabase
@@ -872,7 +950,7 @@ async function loadFavoritos(userId) {
         .select('id, name, logo_url')
         .in('id', storeIds);
       if (error) throw error;
-      stores = data || [];
+      stores = (data || []).map((s) => ({ ...s, favorited_at: favoritedAtByStore.get(s.id) }));
     }
     favStoresCache = stores;
   } catch (err) {

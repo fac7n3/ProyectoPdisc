@@ -726,6 +726,36 @@ a.compra-item-text:hover {
 
 .fav-chip--active .fav-chip__count { color: rgba(255, 255, 255, 0.75); }
 
+/* === Favoritos: filtro por fecha/período === */
+.fav-date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.fav-period-select,
+.fav-date-input {
+  min-height: 40px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+  background: var(--bl-perfil-surface);
+  color: var(--bl-perfil-text-main);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.fav-period-select:focus,
+.fav-date-input:focus {
+  outline: none;
+  border-color: var(--bl-perfil-primary);
+  box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.12);
+}
+
+.fav-date-filter__sep { color: var(--bl-perfil-hint); }
+
 /* === Favoritos: sub-pestañas productos/comercios (P1-9) === */
 .fav-subtab-btn {
   padding: 0.5rem 1.1rem;
