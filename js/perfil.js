@@ -97,7 +97,7 @@ function renderQuickProfile(user) {
   // fallback a home.html, en vez de depender del link fijo de la navbar.
   // renderQuickProfile corre una sola vez por carga de página (guardPage.onReady).
   if (mainContent) {
-    const backBtn = buildSectionBackButton('Volver');
+    const backBtn = buildSectionBackButton('Volver a principal');
     backBtn.id = 'profile-back-btn';
     mainContent.insertBefore(backBtn, mainContent.firstChild);
   }
