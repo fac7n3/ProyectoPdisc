@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Mi Perfil - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-CD09EoCU.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-CO2w1v0Q.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DT6Gw6Ig.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-BUbmojIg.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Co--NLEJ.js">
@@ -25,7 +25,7 @@
     <link rel="modulepreload" crossorigin href="/assets/support-utils-DDyS16bd.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-BoMXYWYm.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-DIJpcixh.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
     <link rel="stylesheet" crossorigin href="/assets/home-B4DWvmFP.css">
@@ -353,9 +353,10 @@
                 <label for="address-label" class="detail-label">Nombre (Ej: Casa, Trabajo)</label>
                 <input type="text" id="address-label" class="bl-input" placeholder="Casa" maxlength="30" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="position: relative;">
                 <label for="address-main" class="detail-label">Dirección (Calle y Número)</label>
-                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" required />
+                <input type="text" id="address-main" class="bl-input" placeholder="Ej: San Martín 1234" autocomplete="off" required />
+                <div id="address-suggest" class="search-suggest" hidden role="listbox"></div>
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div class="form-group">
@@ -364,12 +365,15 @@
               </div>
               <div class="form-group">
                 <label for="address-phone" class="detail-label">Teléfono de contacto</label>
+                <label id="address-phone-mine-wrap" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;" hidden>
+                  <input type="checkbox" id="address-phone-use-mine" /> Usar mi teléfono (<span id="address-phone-mine-value"></span>)
+                </label>
                 <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required />
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
                 <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; cursor: pointer;">
-                  <input type="checkbox" id="address-default" /> Establecer como predeterminada
+                  <input type="checkbox" id="address-default" checked /> Establecer como predeterminada
                 </label>
               </div>
               <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
