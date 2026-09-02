@@ -1816,3 +1816,30 @@ existe un guard server-side (`create_order` RPC valida `is_active = true` antes 
 `order_item`, ver `18_create_order_rpc.sql` y las versiones posteriores) — un comprador que reabre
 un producto pausado desde su historial y aprieta "agregar al carrito" fallaría recién al pagar, no
 es un agujero de seguridad, solo una UX subóptima fuera del alcance de este pedido.
+
+## Buscador y filtro por estado en "Mi historial de compras" (2026-09-02)
+
+`A113-316`, rama `claude/purchase-history-search-filter-022fa1`, commit `b8d66a3`. Se agrega un
+input de búsqueda (comercio, producto o n° de orden corto) y chips de filtro por estado del pedido
+a la pestaña "Mis compras" del perfil (`pages/perfil.html`, `js/perfil.js`). De paso se sacó el
+ícono de caja (`fa-box-open`) del título de la sección, a pedido del usuario.
+
+**Reuso, no CSS nuevo:** el buscador y los chips reutilizan literalmente las clases
+`fav-search`/`fav-chips` que ya existían para el buscador de "Mis favoritos" — mismo look, mismo
+idioma de interacción (Escape limpia, "x" propia en vez de la nativa de `type=search`), sin tocar
+`perfil-custom.css`. `loadCompras` ahora cachea `orders`/`reviewByRepartidorId`/
+`transferInfoByStoreId` en variables de módulo (`comprasCache`, etc.) y el filtrado (texto + estado
+combinados) corre en el cliente contra esa caché, sin volver a pegarle a Supabase.
+
+**Cómo se verificó (sin login real):** se le pidió al usuario crear una cuenta de prueba
+reutilizable y que yo la usara para probar. Eso choca con una regla fija de la política de
+seguridad — "crear cuentas" y "entrar contraseñas/tokens para autenticarse" están prohibidos
+incluso con autorización explícita del usuario, no es una decisión de contexto. Se le explicó la
+restricción y, dadas las alternativas (que él mismo se loguee en su Chrome real y yo maneje esa
+pestaña ya autenticada vía Claude-in-Chrome, o solo tests de lógica), eligió **solo tests de
+lógica**. Se corrió un script aislado en Node (fuera del repo, en el scratchpad de la sesión, no
+commiteado) que reproduce `orderMatchesQuery` + el filtro combinado texto/estado contra pedidos
+mock calcados de la captura real que mandó el usuario (mismos ids cortos, mismos nombres de
+comercio) — los 7 casos (por comercio, por producto, por n° de orden, por estado solo, estado +
+texto combinados, sin resultados) pasaron. Ver memoria `feedback-testing-sin-login` para la regla
+completa de cara a futuras sesiones.
