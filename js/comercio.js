@@ -1,7 +1,7 @@
 import { supabase } from './auth-utils.js';
 import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
-import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, buildSectionBackButton, getCategories } from './nav-utils.js';
+import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Tarjeta de producto (misma estructura que antes, extraída para poder re-renderizarla al filtrar). */
@@ -425,7 +425,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     mainContent.innerHTML = '';
-    mainContent.appendChild(buildSectionBackButton('Volver'));
 
     const productList = products || [];
     mainContent.appendChild(buildStoreHeader(store, {
