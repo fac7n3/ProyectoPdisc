@@ -438,6 +438,88 @@
       .pub-wrap.is-editing .pub-toolbar,
       .pub-wrap.is-editing .pub-list { display: none; }
 
+      /* --- Pedidos (stats + torta de estados + tabla) --- */
+      .pd-wrap { margin-top: 0.5rem; }
+      .pd-header { margin-bottom: 1.25rem; }
+      .pd-header__title { font-size: 1.4rem; font-weight: 700; color: var(--bl-text); display: flex; align-items: center; gap: 0.6rem; }
+      .pd-header__title i { color: var(--bl-vendor-accent); font-size: 1.15rem; }
+      .pd-header__sub { color: var(--bl-text-secondary); margin: 0.3rem 0 0; font-size: 0.92rem; }
+
+      .pd-dash { display: grid; grid-template-columns: repeat(5, 1fr) 1.6fr; gap: 0.85rem; margin-bottom: 1.25rem; }
+      .pd-stat { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
+      .pd-stat__top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
+      .pd-stat__icon { width: 30px; height: 30px; border-radius: var(--bl-radius-md); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+      .pd-stat__icon--total { background: #ede9fe; color: #7c3aed; }
+      .pd-stat__icon--pending { background: #fef3c7; color: #b45309; }
+      .pd-stat__icon--shipping { background: #dbeafe; color: #2563eb; }
+      .pd-stat__icon--completed { background: #dcfce7; color: #16a34a; }
+      .pd-stat__icon--cancelled { background: #fee2e2; color: #dc2626; }
+      .pd-stat__title { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; }
+      .pd-stat__value { font-size: 1.25rem; font-weight: 700; color: var(--bl-text); line-height: 1.15; }
+      .pd-stat__sub { font-size: 0.72rem; color: var(--bl-text-muted); margin-top: 0.2rem; }
+
+      .pd-chart { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
+      .pd-chart__label { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; margin-bottom: 0.2rem; }
+
+      .pd-body { display: grid; grid-template-columns: 1fr 260px; gap: 1.25rem; align-items: start; }
+      .pd-main { min-width: 0; }
+
+      .pd-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; position: relative; }
+      .pd-filters-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border: 1px solid var(--bl-border); background: var(--bl-surface); border-radius: var(--bl-radius-md); font: inherit; font-size: 0.88rem; color: var(--bl-text); cursor: pointer; flex-shrink: 0; }
+      .pd-filters-btn:hover, .pd-filters-btn.is-active { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
+      .pd-filters-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); box-shadow: var(--bl-shadow-lg); padding: 0.9rem; min-width: 220px; }
+      .pd-filters-menu[hidden] { display: none; }
+      .pd-filters-menu__group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.9rem; }
+      .pd-filters-menu__group:last-child { margin-bottom: 0; }
+      .pd-filters-menu__label { font-size: 0.76rem; font-weight: 700; color: var(--bl-text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem; }
+      .pd-filters-menu label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.86rem; color: var(--bl-text); cursor: pointer; }
+
+      .pd-tabs { display: flex; gap: 1.25rem; border-bottom: 1px solid var(--bl-border); margin-bottom: 1rem; overflow-x: auto; }
+      .pd-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.15rem 0.1rem 0.75rem; font: inherit; font-size: 0.9rem; color: var(--bl-text-secondary); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
+      .pd-tab:hover { color: var(--bl-text); }
+      .pd-tab.is-active { color: var(--bl-vendor-accent); border-bottom-color: var(--bl-vendor-accent); font-weight: 700; }
+      .pd-tab__count { color: var(--bl-text-muted); font-size: 0.82rem; }
+      .pd-tab.is-active .pd-tab__count { color: var(--bl-vendor-accent); }
+
+      .pd-table-wrap { overflow-x: auto; }
+      .pd-table { width: 100%; border-collapse: collapse; }
+      .pd-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bl-text-muted); padding: 0 0.75rem 0.6rem; font-weight: 700; }
+      .pd-table td { padding: 0.75rem; border-top: 1px solid var(--bl-border-light); vertical-align: middle; }
+      .pd-table tr:hover td { background: var(--bl-surface-alt); }
+      .pd-cell-order { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
+      .pd-cell-product { display: flex; align-items: center; gap: 0.6rem; min-width: 190px; }
+      .pd-cell-product__thumb { width: 40px; height: 40px; border-radius: var(--bl-radius-sm); object-fit: cover; background: var(--bl-surface-alt); flex-shrink: 0; }
+      .pd-cell-product__name { font-weight: 600; color: var(--bl-text); display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pd-cell-product__sub { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .pd-cell-buyer { display: flex; align-items: center; gap: 0.55rem; }
+      .pd-cell-buyer__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bl-vendor-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+      .pd-cell-buyer__name { font-weight: 600; color: var(--bl-text); display: block; }
+      .pd-cell-buyer__loc { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .pd-cell-total { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
+      .pd-cell-date { color: var(--bl-text-secondary); font-size: 0.88rem; white-space: nowrap; }
+      .pd-detail-btn { background: none; border: 1px solid var(--bl-border); color: var(--bl-vendor-accent); padding: 0.4rem 0.8rem; border-radius: var(--bl-radius-md); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+      .pd-detail-btn:hover { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.06); }
+      .pd-row-actions { display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end; }
+
+      .pd-aside { position: sticky; top: 1rem; }
+      .pd-tips { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.1rem; box-shadow: var(--bl-shadow-card); }
+      .pd-tips__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.75rem; }
+      .pd-tips__list { list-style: none; margin: 0 0 0.75rem; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+      .pd-tips__list li { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.86rem; color: var(--bl-text-secondary); line-height: 1.4; }
+      .pd-tips__list i { color: var(--bl-vendor-accent); margin-top: 0.2rem; flex-shrink: 0; }
+
+      @media (max-width: 1100px) {
+        .pd-dash { grid-template-columns: repeat(3, 1fr); }
+        .pd-chart { grid-column: 1 / -1; }
+      }
+      @media (max-width: 900px) {
+        .pd-body { grid-template-columns: 1fr; }
+        .pd-aside { position: static; }
+      }
+      @media (max-width: 640px) {
+        .pd-dash { grid-template-columns: repeat(2, 1fr); }
+      }
+
       .pubform { max-width: 860px; }
       .pubform[hidden] { display: none; }
       .pubform__head { margin-bottom: 1.25rem; }
@@ -618,10 +700,12 @@
               <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-tag mc-navicon"></i> Ventas <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
-                <button type="button" class="mc-navitem" data-section="publicaciones">Publicaciones</button>
-                <button type="button" class="mc-navitem" data-section="ventas">Ventas</button>
-                <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
+                <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="all">Pedidos</button>
                 <button type="button" class="mc-navitem" data-section="envios">Envíos en curso</button>
+                <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
+                <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas completadas</button>
+                <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="cancelled">Ventas canceladas</button>
+                <button type="button" class="mc-navitem" data-section="publicaciones">Publicaciones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
@@ -804,31 +888,76 @@
             <!-- === Ventas (pedidos) === -->
             <!-- Gestión de pedidos (F5-06), rediseño estilo ML (mismo patrón que Publicaciones,
                  reusa las clases pub-* -- lista + filtros + menú de acciones por fila). -->
-            <section class="mc-section" data-section="ventas" hidden>
-            <div class="pub-wrap">
-              <div class="pub-header">
-                <h2 class="pub-title">Ventas</h2>
+            <section class="mc-section" data-section="pedidos" hidden>
+            <div class="pd-wrap">
+              <div class="pd-header">
+                <div class="pd-header__title"><i class="fa-solid fa-clipboard-list"></i> Pedidos</div>
+                <p class="pd-header__sub">Gestioná tus ventas, envíos y pagos en un solo lugar.</p>
               </div>
 
-              <div class="pub-toolbar" id="ventas-toolbar">
-                <div class="pub-search">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="search" id="ventas-search" aria-label="Buscar ventas por número de pedido o teléfono" placeholder="Buscar por N° de pedido o teléfono" autocomplete="off" />
-                </div>
-                <div class="pub-chips">
-                  <button type="button" class="pub-chip is-active" data-status="all">Todas</button>
-                  <button type="button" class="pub-chip" data-status="pending">Pendiente</button>
-                  <button type="button" class="pub-chip" data-status="paid">Pagado</button>
-                  <button type="button" class="pub-chip" data-status="ready_for_pickup">Listo para retirar</button>
-                  <button type="button" class="pub-chip" data-status="shipped">Enviado</button>
-                  <button type="button" class="pub-chip" data-status="completed">Completado</button>
-                  <button type="button" class="pub-chip" data-status="cancelled">Cancelado</button>
-                </div>
-                <span class="pub-count" id="ventas-count"></span>
-              </div>
+              <div class="pd-dash" id="pedidos-dash"></div>
 
-              <div class="pub-list" id="ventas-list">
-                <!-- Pedidos cargados con JS -->
+              <div class="pd-body">
+                <div class="pd-main">
+                  <div class="pd-toolbar">
+                    <div class="pub-search">
+                      <i class="fa-solid fa-magnifying-glass"></i>
+                      <input type="text" id="pedidos-search" aria-label="Buscar pedido, comprador o producto" placeholder="Buscar pedido, comprador o producto..." autocomplete="off" />
+                    </div>
+                    <button type="button" class="pd-filters-btn" id="pedidos-filters-btn" aria-haspopup="true" aria-expanded="false">
+                      <i class="fa-solid fa-sliders"></i> Filtros
+                    </button>
+                    <div class="pd-filters-menu" id="pedidos-filters-menu" hidden>
+                      <div class="pd-filters-menu__group">
+                        <span class="pd-filters-menu__label">Ordenar por</span>
+                        <label><input type="radio" name="pd-sort" value="recent" checked /> Fecha: más reciente</label>
+                        <label><input type="radio" name="pd-sort" value="oldest" /> Fecha: más antigua</label>
+                        <label><input type="radio" name="pd-sort" value="amount_desc" /> Monto: mayor a menor</label>
+                        <label><input type="radio" name="pd-sort" value="amount_asc" /> Monto: menor a mayor</label>
+                      </div>
+                      <div class="pd-filters-menu__group">
+                        <span class="pd-filters-menu__label">Entrega</span>
+                        <label><input type="radio" name="pd-delivery" value="all" checked /> Todas</label>
+                        <label><input type="radio" name="pd-delivery" value="pickup" /> Retiro en el local</label>
+                        <label><input type="radio" name="pd-delivery" value="delivery" /> Envío</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pd-tabs" id="pedidos-tabs">
+                    <button type="button" class="pd-tab is-active" data-tab="all">Todos</button>
+                    <button type="button" class="pd-tab" data-tab="pending_payment">Pendientes de pago <span class="pd-tab__count" id="pd-tab-count-pending_payment"></span></button>
+                    <button type="button" class="pd-tab" data-tab="shipping">Envíos en curso <span class="pd-tab__count" id="pd-tab-count-shipping"></span></button>
+                    <button type="button" class="pd-tab" data-tab="completed">Completados <span class="pd-tab__count" id="pd-tab-count-completed"></span></button>
+                    <button type="button" class="pd-tab" data-tab="cancelled">Cancelados <span class="pd-tab__count" id="pd-tab-count-cancelled"></span></button>
+                  </div>
+
+                  <div class="pd-table-wrap">
+                    <table class="pd-table">
+                      <thead>
+                        <tr>
+                          <th>Pedido</th>
+                          <th>Producto</th>
+                          <th>Comprador</th>
+                          <th>Estado</th>
+                          <th>Fecha</th>
+                          <th>Total</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="pedidos-tbody"></tbody>
+                    </table>
+                    <div id="pedidos-empty" hidden></div>
+                  </div>
+                </div>
+
+                <aside class="pd-aside">
+                  <div class="pd-tips">
+                    <div class="pd-tips__title">Recordá</div>
+                    <ul class="pd-tips__list" id="pedidos-tips"></ul>
+                    <a class="rs-link" href="./info.html">Ver consejos para vender más ›</a>
+                  </div>
+                </aside>
               </div>
             </div>
 
