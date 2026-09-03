@@ -102,8 +102,15 @@
       }
       /* Botón circular arriba a la derecha del header: lápiz (vendedor,
          editar color) o corazón (cliente, favorito). Transparente a
-         propósito -- toma el color de fondo que haya elegido el vendedor. */
-      .store-header__icon-btn {
+         propósito -- toma el color de fondo que haya elegido el vendedor.
+         Selector calificado con "button" (no solo la clase): en el build
+         de producción Vite reordena el <link> a home.css DESPUÉS de este
+         <style> (al revés que en el fuente), así que [data-tooltip]{position:
+         relative} de home.css empataba en especificidad con esta clase y le
+         ganaba por orden de aparición, tirando el botón al flujo normal del
+         documento en vez de dejarlo arriba a la derecha. Con "button." la
+         especificidad es mayor y gana siempre, sin depender del orden. */
+      button.store-header__icon-btn {
         position: absolute;
         top: 1.1rem;
         right: 1.25rem;
