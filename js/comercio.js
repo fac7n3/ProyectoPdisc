@@ -201,8 +201,8 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const editColorBtn = document.createElement('button');
     editColorBtn.type = 'button';
     editColorBtn.className = 'store-header__icon-btn';
-    editColorBtn.title = 'Editar el color de tu perfil';
-    editColorBtn.setAttribute('aria-label', 'Editar el color de tu perfil');
+    editColorBtn.title = 'Editar color';
+    editColorBtn.setAttribute('aria-label', 'Editar color');
     const pencilIcon = document.createElement('i');
     pencilIcon.className = 'fa-solid fa-pen';
     editColorBtn.appendChild(pencilIcon);

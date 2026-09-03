@@ -563,6 +563,10 @@
                  el dueño): href se completa en loadDashboard() cuando se conoce el id. -->
             <a class="mc-navlink" href="#" id="preview-store-link"><i class="fa-solid fa-eye mc-navicon"></i> Vista previa de tu local</a>
 
+            <!-- Perfil de mi comercio (F5-08): estándar top-level, no dentro de "Ventas"
+                 -- oculto para empleados (F12-16, mc-navitem--owner) igual que antes. -->
+            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="perfil-comercio"><i class="fa-solid fa-pen mc-navicon"></i> Perfil de mi comercio</button>
+
             <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-bag-shopping mc-navicon"></i> Compras</a>
 
             <div class="mc-group is-open">
@@ -575,7 +579,6 @@
                 <button type="button" class="mc-navitem" data-section="envios">Envíos en curso</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
-                <button type="button" class="mc-navitem mc-navitem--owner" data-section="perfil-comercio">Perfil de mi comercio</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
                 <button type="button" class="mc-navitem" data-section="soporte">Soporte</button>
               </div>
