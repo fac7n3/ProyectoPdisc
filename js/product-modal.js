@@ -340,21 +340,24 @@ function buildModalHTML(data) {
 
           ${variantsHTML}
 
-          <!-- Quantity: no tiene sentido para el dueño viendo su propia vista previa -->
-          ${!data.isOwner ? `
+          <!-- Quantity: se muestra siempre, pero el dueño viendo su propia vista
+               previa no puede sumar/restar (es solo una vista previa, no una compra) -->
           <div class="pm-quantity">
             <span class="pm-quantity__label">Cantidad:</span>
             <div class="pm-quantity__controls">
+              ${!data.isOwner ? `
               <button class="pm-quantity__btn" id="pm-qty-minus" aria-label="Reducir cantidad" disabled>
                 <i class="fa-solid fa-minus"></i>
               </button>
-              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(data.stock, 1)}" aria-label="Cantidad" ${stockDisabled ? 'disabled' : ''} />
+              ` : ''}
+              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(data.stock, 1)}" aria-label="Cantidad" ${stockDisabled || data.isOwner ? 'disabled' : ''} />
+              ${!data.isOwner ? `
               <button class="pm-quantity__btn" id="pm-qty-plus" aria-label="Aumentar cantidad" ${stockDisabled ? 'disabled' : ''}>
                 <i class="fa-solid fa-plus"></i>
               </button>
+              ` : ''}
             </div>
           </div>
-          ` : ''}
 
           <!-- Actions -->
           ${data.isOwner ? `

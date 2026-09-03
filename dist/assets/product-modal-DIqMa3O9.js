@@ -126,21 +126,24 @@ import{s as e}from"./speed-insights-Jgaq4W7Q.js";import{_ as t,a as n,o as r,p a
 
           ${g}
 
-          <!-- Quantity: no tiene sentido para el dueño viendo su propia vista previa -->
-          ${e.isOwner?``:`
+          <!-- Quantity: se muestra siempre, pero el dueño viendo su propia vista
+               previa no puede sumar/restar (es solo una vista previa, no una compra) -->
           <div class="pm-quantity">
             <span class="pm-quantity__label">Cantidad:</span>
             <div class="pm-quantity__controls">
+              ${e.isOwner?``:`
               <button class="pm-quantity__btn" id="pm-qty-minus" aria-label="Reducir cantidad" disabled>
                 <i class="fa-solid fa-minus"></i>
               </button>
-              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(e.stock,1)}" aria-label="Cantidad" ${r?`disabled`:``} />
+              `}
+              <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(e.stock,1)}" aria-label="Cantidad" ${r||e.isOwner?`disabled`:``} />
+              ${e.isOwner?``:`
               <button class="pm-quantity__btn" id="pm-qty-plus" aria-label="Aumentar cantidad" ${r?`disabled`:``}>
                 <i class="fa-solid fa-plus"></i>
               </button>
+              `}
             </div>
           </div>
-          `}
 
           <!-- Actions -->
           ${e.isOwner?`
