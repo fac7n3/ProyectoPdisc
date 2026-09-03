@@ -111,6 +111,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `mp-create-preference`), no directo al vendedor. Falta diagnosticar el
   motivo (revisar `redirect_uri`, `MP_CLIENT_ID`/`MP_CLIENT_SECRET`, permisos
   de la app en Mercado Pago) antes del lanzamiento real.
+- **Migración 73 sin aplicar** (`db/schema/73_support_ticket_attachments.sql`, 2026-09-03) — agrega
+  `support_tickets.attachments` (text[], tope de 5 por check) y el bucket privado
+  `support-attachments` con sus policies, para adjuntar capturas/PDF al enviar un reclamo. El
+  código es defensivo: las dos consultas de tickets usan `select('*')` y la columna solo viaja en el
+  insert si hay archivos, así que **hasta que se aplique la sección de reclamos sigue funcionando
+  sin adjuntos** (lo que falla es la subida al bucket). La aplica el usuario, igual que la 66.
 - **Migración 66 sin aplicar** (`db/schema/66_cart_hints_preference.sql`, 2026-08-16) — agrega
   `profiles.cart_hints_enabled` para la preferencia "Mostrar ayudas en el carrito". Se dejó escrita
   sin aplicar **a pedido del usuario** (la aplica él). Hasta entonces la preferencia funciona solo
