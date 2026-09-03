@@ -12,16 +12,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-DGJJGuaF.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-ChZXgx55.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-8R-_cou0.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-CHoZKs8x.js">
+    <script type="module" crossorigin src="/assets/perfil-BWs9Wb5b.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-MmxUqVqK.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-SNBWhIhL.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/hints-utils-BmvWwaMe.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DispNkx0.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BWP_PFMC.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-BJgD7jSM.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DPmN-O_0.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-OuLWwAGa.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-DzNsUeom.css">
     <link rel="stylesheet" crossorigin href="/assets/perfil-Cqz2-Epg.css">
@@ -376,7 +376,10 @@
                 <label id="address-phone-mine-wrap" style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;" hidden>
                   <input type="checkbox" id="address-phone-use-mine" /> Usar mi teléfono (<span id="address-phone-mine-value"></span>)
                 </label>
-                <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required />
+                <div style="display: flex; gap: 0.5rem;">
+                  <div id="address-phone-dial-slot" style="flex: 0 0 auto;"></div>
+                  <input type="text" id="address-phone" class="bl-input" placeholder="Ej: 3329 123456" required style="flex: 1; min-width: 0;" />
+                </div>
                 <span class="datos-row__hint">Lo necesitamos para coordinar la entrega.</span>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
