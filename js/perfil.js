@@ -9,6 +9,7 @@ import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
 import { removeStoredObjects, formatFileSize } from "./storage-utils.js";
 import { isValidPhone } from "./validation-utils.js";
+import { houseNumberFrom, areaOf, suggestionLabel, dedupeByStreet } from "./address-suggest-utils.js";
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -447,17 +448,17 @@ function setAddressSuggestActive(idx) {
   }
 }
 
-function addressSuggestionLabel(item) {
-  const a = item.address || {};
-  const street = a.road || a.pedestrian || a.footway || a.residential || '';
-  const num = a.house_number || '';
-  if (street) return num ? `${street} ${num}` : street;
-  return item.display_name.split(',')[0];
-}
-
 function pickAddressSuggestion(item) {
-  inputAddress.value = addressSuggestionLabel(item);
+  // OSM no tiene la altura de las casas de Baradero: si la persona ya escribió
+  // el número, elegir la sugerencia tiene que conservarlo y no pisarlo con el
+  // nombre pelado de la calle. Si todavía no lo escribió, dejamos el cursor al
+  // final (con un espacio) para que lo tipee sin tener que reubicarse.
+  const num = houseNumberFrom(inputAddress.value);
+  inputAddress.value = suggestionLabel(item, num) + (num ? '' : ' ');
   closeAddressSuggest();
+  inputAddress.focus();
+  const end = inputAddress.value.length;
+  inputAddress.setSelectionRange(end, end);
 }
 
 async function renderAddressSuggestions(query) {
@@ -469,9 +470,11 @@ async function renderAddressSuggestions(query) {
   try {
     // Todo el comercio es de Baradero -- sesgar la búsqueda a la ciudad evita
     // que aparezcan calles homónimas de otra provincia.
-    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=ar&q=${encodeURIComponent(q + ', Baradero, Buenos Aires, Argentina')}`;
+    // limit=10 porque después deduplicamos: Nominatim devuelve la misma calle
+    // una vez por cada tramo mapeado, y pidiendo 5 quedaban una o dos filas.
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&countrycodes=ar&q=${encodeURIComponent(q + ', Baradero, Buenos Aires, Argentina')}`;
     const res = await fetch(url);
-    if (res.ok) results = await res.json();
+    if (res.ok) results = dedupeByStreet(await res.json());
   } catch (err) {
     console.error('Error buscando direcciones:', err);
   }
@@ -503,11 +506,13 @@ async function renderAddressSuggestions(query) {
     textWrap.className = 'search-suggest__text';
     const main = document.createElement('span');
     main.className = 'search-suggest__main';
-    main.textContent = addressSuggestionLabel(item);
+    main.textContent = suggestionLabel(item, houseNumberFrom(q));
     textWrap.appendChild(main);
     const meta = document.createElement('span');
     meta.className = 'search-suggest__meta';
-    meta.textContent = item.display_name;
+    // El display_name entero repetía "Partido de Baradero, Buenos Aires, CP,
+    // Argentina" en cada fila; con barrio + localidad alcanza para distinguir.
+    meta.textContent = areaOf(item) || item.display_name;
     textWrap.appendChild(meta);
     row.appendChild(textWrap);
 

@@ -103,6 +103,15 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   tomada), toggle de "aceptar contacto" del vendedor (296), multi-rubro en
   el alta de vendedor (305, P2-10), pausar/reactivar producto (309),
   cancelar reclamo + admin responde (295).
+- **Resuelto 2026-09-03** — **el autocompletado de direcciones (Mi perfil → Direcciones) borraba el
+  número de la puerta**. OSM no tiene mapeada la altura de las casas de Baradero: Nominatim devuelve
+  la calle sin `house_number` y la repite una vez por cada tramo mapeado, así que "Mitre 1234"
+  mostraba dos filas idénticas ("Mitre" y "Mitre") y al elegir cualquiera el input quedaba en
+  "Mitre" pelado. Ahora las filas se deduplican por calle + barrio, el número tipeado se conserva al
+  elegir y el subtítulo de cada fila es barrio + localidad en vez del `display_name` entero con CP y
+  país. Lógica pura en `js/address-suggest-utils.js` (`node js/address-suggest-utils.test.mjs`).
+  **Gotcha:** la política de uso de Nominatim desalienta el autocompletado (1 req/s, User-Agent
+  identificable) — si algún día empieza a dar 403, hay que mover la búsqueda a otro geocoder.
 - **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — split de pagos de Mercado Pago sin andar**:
   la vinculación OAuth de la cuenta de MP del vendedor (`mp-oauth-callback`,
   `store_mp_credentials`, `stores.mp_collector_id`, piloto P0-6) se dejó pausada
