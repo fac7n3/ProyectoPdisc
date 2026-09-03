@@ -349,11 +349,13 @@ function buildProductSearchRow({ isOwner, onSearch }) {
   row.appendChild(searchBox);
 
   if (isOwner) {
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
+    // Lleva a la sección "Perfil de mi comercio" del panel de vendedor (el
+    // shell "Mi cuenta" de vender.html navega por hash, ver vender-shell.js).
+    const editBtn = document.createElement('a');
+    editBtn.href = './vender.html#perfil-comercio';
     editBtn.className = 'store-edit-profile-btn';
-    editBtn.title = 'Editar perfil';
-    editBtn.setAttribute('aria-label', 'Editar perfil');
+    editBtn.title = 'Editar mi perfil';
+    editBtn.setAttribute('aria-label', 'Editar mi perfil');
     const pencilIcon = document.createElement('i');
     pencilIcon.className = 'fa-solid fa-pen';
     editBtn.appendChild(pencilIcon);
