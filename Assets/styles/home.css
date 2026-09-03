@@ -3248,3 +3248,40 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   background: var(--bl-surface-alt);
   border: 1px solid var(--bl-border);
 }
+
+/* ===== Tooltip propio (data-tooltip) =====
+   Reemplaza el mousehover nativo del navegador (atributo `title`, no
+   estilable) en botones de solo ícono. Fondo blanco, letra gris por
+   defecto, borde fino gris, bordes redondeados -- mismos tokens que el
+   resto del sitio. El elemento con [data-tooltip] necesita `position:
+   relative` propio (ya lo tienen los botones que lo usan). */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--bl-surface);
+  color: var(--bl-text-secondary);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-sm);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 50;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
