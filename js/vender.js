@@ -311,12 +311,16 @@ let pubSalesByProduct = new Map();
 let pubSearch = '';
 let pubStatus = 'all'; // 'all' | 'active' | 'inactive'
 
-// Sección "Ventas" (mismo rediseño ML): pedidos cacheados + estado de los
-// filtros client-side (búsqueda por N° de pedido / teléfono, chip de estado).
+// Sección "Pedidos" (stats + tabs + tabla): pedidos cacheados (con sus
+// order_items/producto) + estado de los filtros client-side (búsqueda,
+// pestaña de estado, orden, filtro de entrega del menú "Filtros").
 let ordCache = [];
 let ordPhoneByClientId = new Map();
+let ordNameByClientId = new Map();
 let ordSearch = '';
-let ordStatus = 'all';
+let pedidosTab = 'all'; // 'all' | 'pending_payment' | 'shipping' | 'completed' | 'cancelled'
+let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
+let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
 const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, accepts_contact';
 
@@ -382,7 +386,7 @@ async function loadDashboard(user, staffStoreId) {
   // Cablear el shell YA (sidebar interactivo + mostrar la sección correcta del
   // hash al instante), ANTES de la cadena de renders de datos. Antes esto era lo
   // último: el sidebar aparecía pero no respondía a clicks hasta que resolvían
-  // ~10 fetches, y un deep-link (#ventas) mostraba "Resumen" y saltaba. Ambas
+  // ~10 fetches, y un deep-link (#pedidos) mostraba "Resumen" y saltaba. Ambas
   // funciones solo cablean listeners/nav sobre DOM estático; cada sección
   // rellena su propio placeholder por detrás a medida que llega su data.
   setupDashboardEvents();
@@ -421,8 +425,8 @@ async function loadDashboard(user, staffStoreId) {
 }
 
 /**
- * A113-271: al venir de una notificación de pedido (`vender.html?order=<id>#ventas`)
- * precarga el buscador de "Ventas" con el N° corto del pedido, reusando el
+ * A113-271: al venir de una notificación de pedido (`vender.html?order=<id>#pedidos`)
+ * precarga el buscador de "Pedidos" con el N° corto del pedido, reusando el
  * filtro que ya existe ahí -- no hace falta un anchor por fila.
  */
 function applyOrderDeepLink() {
@@ -431,14 +435,10 @@ function applyOrderDeepLink() {
   if (!orderId) return;
 
   const shortId = orderId.split('-')[0].toUpperCase();
-  const searchInput = document.getElementById('ventas-search');
+  const searchInput = document.getElementById('pedidos-search');
   if (searchInput) searchInput.value = shortId;
   ordSearch = shortId;
-  ordStatus = 'all';
-  document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((c) => {
-    c.classList.toggle('is-active', c.dataset.status === 'all');
-  });
-  renderVentas();
+  setPedidosTab('all');
 
   const url = new URL(window.location);
   url.searchParams.delete('order');
@@ -470,7 +470,7 @@ async function renderAllOrders() {
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at')
+    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, products(title, image_url))')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -478,7 +478,7 @@ async function renderAllOrders() {
   if (error) {
     console.error('Error al cargar pedidos:', error);
     ordCache = [];
-    renderVentas();
+    renderPedidos();
     return;
   }
 
@@ -490,83 +490,110 @@ async function renderAllOrders() {
   // es la que permite verlo: solo clientes que efectivamente compraron acá.
   const clientIds = [...new Set(ordCache.map((o) => o.client_id).filter(Boolean))];
   const { data: clientProfiles } = clientIds.length
-    ? await supabase.from('profiles').select('id, phone').in('id', clientIds)
+    ? await supabase.from('profiles').select('id, phone, full_name').in('id', clientIds)
     : { data: [] };
   ordPhoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
+  ordNameByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.full_name]));
 
-  renderVentas();
+  renderPedidos();
 }
 
-/** Fila de pedido estilo ML (mismas clases pub-* que Publicaciones): ícono + info/cliente + fecha + estado + acciones. */
-function buildOrderRow(order, clientPhone) {
-  const row = document.createElement('div');
-  row.className = 'pub-row';
+/** Ícono + nombre del primer producto del pedido, con "· N productos" si tiene más de uno. */
+function buildPedidoProductCell(order) {
+  const cell = document.createElement('div');
+  cell.className = 'pd-cell-product';
+  const items = order.order_items || [];
+  const first = items[0];
 
-  const icon = document.createElement('div');
-  icon.className = 'pub-row__thumb pub-row__thumb--icon';
-  const iconEl = document.createElement('i');
-  iconEl.className = order.delivery_method === 'delivery' ? 'fa-solid fa-truck' : 'fa-solid fa-store';
-  icon.appendChild(iconEl);
-  row.appendChild(icon);
+  const thumb = document.createElement('img');
+  thumb.className = 'pd-cell-product__thumb';
+  thumb.src = first?.products?.image_url || '/img/no-image.svg';
+  thumb.alt = '';
+  thumb.loading = 'lazy';
+  cell.appendChild(thumb);
 
-  const main = document.createElement('div');
-  main.className = 'pub-row__main';
-  const title = document.createElement('span');
-  title.className = 'pub-row__title';
-  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-  main.appendChild(title);
-
+  const info = document.createElement('div');
+  const name = document.createElement('span');
+  name.className = 'pd-cell-product__name';
+  name.textContent = first?.products?.title || 'Producto eliminado';
+  info.appendChild(name);
   const sub = document.createElement('span');
-  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
-  const methodLabel = order.delivery_method === 'delivery' ? 'Envío' : 'Retiro en el local';
-  sub.textContent = `${formatPrice(order.total_price)} · ${methodLabel}`;
-  main.appendChild(sub);
+  sub.className = 'pd-cell-product__sub';
+  sub.textContent = items.length > 1 ? `${items.length} productos` : '1 producto';
+  info.appendChild(sub);
+  cell.appendChild(info);
 
-  // F12-05: teléfono del cliente, para coordinar retiro/envío -- solo
-  // visible si lo cargó en su perfil (RLS ya lo permite ver, F12-05).
-  if (clientPhone) {
-    const phoneSpan = document.createElement('span');
-    phoneSpan.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.8rem; margin-top: 0.1rem;';
-    const phoneIcon = document.createElement('i');
-    phoneIcon.className = 'fa-solid fa-phone';
-    phoneSpan.appendChild(phoneIcon);
-    phoneSpan.append(` ${clientPhone}`);
-    main.appendChild(phoneSpan);
-  }
+  return cell;
+}
 
-  // Botón de arrepentimiento (Ley 24.240 / Res. 424/2020): el cliente lo
-  // solicitó desde "Mis compras" (request_order_revocation) -- el vendedor
-  // tiene que coordinar la devolución y usar "Cancelar" (menú de acciones) una vez resuelta.
+function buildPedidoBuyerCell(order) {
+  const cell = document.createElement('div');
+  cell.className = 'pd-cell-buyer';
+  const name = ordNameByClientId.get(order.client_id) || 'Comprador';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'pd-cell-buyer__avatar';
+  avatar.textContent = name.trim().charAt(0).toUpperCase() || '?';
+  cell.appendChild(avatar);
+
+  const info = document.createElement('div');
+  info.appendChild(rsEl('span', 'pd-cell-buyer__name', name));
+  info.appendChild(rsEl('span', 'pd-cell-buyer__loc', 'Baradero'));
+  cell.appendChild(info);
+
+  return cell;
+}
+
+/** Fila de la tabla de Pedidos: N°, producto, comprador, estado, fecha, total, acciones. */
+function buildPedidoRow(order) {
+  const tr = document.createElement('tr');
+
+  const orderCell = document.createElement('td');
+  orderCell.appendChild(rsEl('span', 'pd-cell-order', `#BL-${order.id.split('-')[0].slice(0, 5).toUpperCase()}`));
   if (order.revocation_requested_at) {
-    const revocationBadge = document.createElement('div');
-    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.2rem 0.55rem; border-radius: var(--bl-radius-md); font-size: 0.75rem; font-weight: 600; margin-top: 0.3rem; display: inline-block;';
-    revocationBadge.textContent = '⚠ Arrepentimiento solicitado por el cliente';
-    main.appendChild(revocationBadge);
+    const revocationBadge = rsEl('div', null, '⚠ Arrepentimiento solicitado');
+    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.15rem 0.5rem; border-radius: var(--bl-radius-md); font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; display: inline-block;';
+    orderCell.appendChild(revocationBadge);
   }
+  tr.appendChild(orderCell);
 
-  row.appendChild(main);
+  const productCell = document.createElement('td');
+  productCell.appendChild(buildPedidoProductCell(order));
+  tr.appendChild(productCell);
 
-  const dateCell = document.createElement('div');
-  dateCell.className = 'pub-row__cell';
-  dateCell.appendChild(pubCellLabel('Fecha'));
-  const dateVal = document.createElement('span');
-  dateVal.className = 'pub-row__cell-val';
-  dateVal.textContent = new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
-  dateCell.appendChild(dateVal);
-  row.appendChild(dateCell);
+  const buyerCell = document.createElement('td');
+  buyerCell.appendChild(buildPedidoBuyerCell(order));
+  tr.appendChild(buyerCell);
 
-  const statusCell = document.createElement('div');
-  statusCell.className = 'pub-row__cell';
-  const badge = document.createElement('span');
-  badge.className = `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`;
-  badge.textContent = ORDER_STATUS_LABELS_VENDER[order.status] || order.status;
+  const statusCell = document.createElement('td');
+  const badge = rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS_VENDER[order.status] || order.status);
   statusCell.appendChild(badge);
-  row.appendChild(statusCell);
+  tr.appendChild(statusCell);
 
-  const actions = buildOrdActions(order);
-  if (actions) row.appendChild(actions);
+  const dateCell = document.createElement('td');
+  dateCell.className = 'pd-cell-date';
+  dateCell.textContent = new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  tr.appendChild(dateCell);
 
-  return row;
+  const totalCell = document.createElement('td');
+  totalCell.className = 'pd-cell-total';
+  totalCell.textContent = formatPrice(order.total_price);
+  tr.appendChild(totalCell);
+
+  const actionsCell = document.createElement('td');
+  const actionsWrap = rsEl('div', 'pd-row-actions');
+  const detailBtn = rsEl('button', 'pd-detail-btn', 'Ver detalle');
+  detailBtn.type = 'button';
+  detailBtn.addEventListener('click', () => {
+    showToast('La vista de detalle del pedido llega pronto. Mientras tanto usá el menú de acciones (⋮) para gestionarlo.', 'success');
+  });
+  actionsWrap.appendChild(detailBtn);
+  const kebab = buildOrdActions(order);
+  if (kebab) actionsWrap.appendChild(kebab);
+  actionsCell.appendChild(actionsWrap);
+  tr.appendChild(actionsCell);
+
+  return tr;
 }
 
 /** Menú de acciones (⋮) del pedido -- mismo componente que buildPubActions, sin kebab si no hay ninguna acción disponible. */
@@ -623,75 +650,209 @@ function buildOrdActions(order) {
   return wrap;
 }
 
-function renderVentasEmpty(list) {
-  const box = document.createElement('div');
-  box.className = 'pub-empty';
-  const icon = document.createElement('i');
-  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
-  box.appendChild(icon);
-  const title = document.createElement('p');
-  title.className = 'pub-empty__title';
-  title.textContent = 'Todavía no tenés pedidos';
-  box.appendChild(title);
-  const sub = document.createElement('p');
-  sub.className = 'pub-empty__sub';
-  sub.textContent = 'Cuando alguien te compre, vas a verlo acá.';
-  box.appendChild(sub);
-  list.appendChild(box);
+function pedidosTabMatches(order, tab) {
+  switch (tab) {
+    case 'pending_payment': return order.payment_status === 'pending';
+    case 'shipping': return order.delivery_method === 'delivery' && (order.status === 'paid' || order.status === 'shipped');
+    case 'completed': return order.status === 'completed';
+    case 'cancelled': return order.status === 'cancelled';
+    default: return true;
+  }
 }
 
-/** Aplica los filtros client-side (búsqueda por N° de pedido/teléfono + estado) sobre ordCache y renderiza. */
-function renderVentas() {
-  const list = document.getElementById('ventas-list');
-  if (!list) return;
-  list.textContent = '';
+function sortPedidos(list, sort) {
+  const copy = [...list];
+  if (sort === 'oldest') return copy.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  if (sort === 'amount_desc') return copy.sort((a, b) => b.total_price - a.total_price);
+  if (sort === 'amount_asc') return copy.sort((a, b) => a.total_price - b.total_price);
+  return copy.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
 
-  const countEl = document.getElementById('ventas-count');
+function renderPedidosEmptyState(title, sub) {
+  const table = document.getElementById('pedidos-table');
+  const box = document.getElementById('pedidos-empty');
+  if (table) table.hidden = true;
+  if (!box) return;
+  box.hidden = false;
+  box.className = 'pub-empty';
+  box.innerHTML = '';
+  box.appendChild(rsEl('i', 'fa-regular fa-rectangle-list pub-empty__icon'));
+  box.appendChild(rsEl('p', 'pub-empty__title', title));
+  box.appendChild(rsEl('p', 'pub-empty__sub', sub));
+}
+
+function pdStat(icon, variant, title, value, sub) {
+  const card = rsEl('div', 'pd-stat');
+  const top = rsEl('div', 'pd-stat__top');
+  const iconEl = rsEl('div', `pd-stat__icon pd-stat__icon--${variant}`);
+  iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+  top.appendChild(iconEl);
+  top.appendChild(rsEl('div', 'pd-stat__title', title));
+  card.appendChild(top);
+  card.appendChild(rsEl('div', 'pd-stat__value', value));
+  if (sub) card.appendChild(rsEl('div', 'pd-stat__sub', sub));
+  return card;
+}
+
+/** Franja de stats + torta de "Ventas de los últimos 7 días" (misma línea SVG que Resumen) + contadores de las pestañas. */
+function renderPedidosStats() {
+  const dash = document.getElementById('pedidos-dash');
+  if (!dash) return;
+  dash.textContent = '';
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const total30d = ordCache.filter((o) => new Date(o.created_at) >= thirtyDaysAgo);
+  const pendingPayment = ordCache.filter((o) => pedidosTabMatches(o, 'pending_payment'));
+  const shipping = ordCache.filter((o) => pedidosTabMatches(o, 'shipping'));
+  const completed = ordCache.filter((o) => pedidosTabMatches(o, 'completed'));
+  const cancelled = ordCache.filter((o) => pedidosTabMatches(o, 'cancelled'));
+  const sum = (arr) => arr.reduce((s, o) => s + o.total_price, 0);
+
+  dash.appendChild(pdStat('fa-bag-shopping', 'total', 'Total de pedidos', String(total30d.length), 'Últimos 30 días'));
+  dash.appendChild(pdStat('fa-hourglass-half', 'pending', 'Pendientes de pago', String(pendingPayment.length), formatPrice(sum(pendingPayment))));
+  dash.appendChild(pdStat('fa-truck', 'shipping', 'Envíos en curso', String(shipping.length), formatPrice(sum(shipping))));
+  dash.appendChild(pdStat('fa-circle-check', 'completed', 'Completados', String(completed.length), formatPrice(sum(completed))));
+  dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(cancelled.length), formatPrice(sum(cancelled))));
+
+  const chartCard = rsEl('div', 'pd-chart');
+  chartCard.appendChild(rsEl('div', 'pd-chart__label', 'Ventas de los últimos 7 días'));
+  const dailyTotals = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(sevenDaysAgo);
+    day.setDate(day.getDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    const total = ordCache
+      .filter((o) => o.payment_status === 'paid' && o.created_at.slice(0, 10) === key)
+      .reduce((s, o) => s + o.total_price, 0);
+    dailyTotals.push({ day, total });
+  }
+  chartCard.appendChild(rsLineChart(dailyTotals));
+  dash.appendChild(chartCard);
+
+  ['pending_payment', 'shipping', 'completed', 'cancelled'].forEach((tab) => {
+    const el = document.getElementById(`pd-tab-count-${tab}`);
+    if (!el) return;
+    const map = { pending_payment: pendingPayment, shipping, completed, cancelled };
+    el.textContent = map[tab].length ? `(${map[tab].length})` : '';
+  });
+}
+
+function renderPedidosTips() {
+  const list = document.getElementById('pedidos-tips');
+  if (!list || list.childElementCount) return; // contenido estático: se arma una sola vez
+  [
+    'Enviá tus pedidos a tiempo: mantené una buena reputación.',
+    'Confirmá los pagos por transferencia para liberar tus ventas.',
+    'Ofrecé una buena atención a tus compradores.',
+  ].forEach((text) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<i class="fa-solid fa-circle-check"></i> ';
+    li.appendChild(document.createTextNode(text));
+    list.appendChild(li);
+  });
+}
+
+/** Aplica pestaña + filtros del menú "Filtros" + búsqueda (N° de pedido, comprador o producto) sobre ordCache y renderiza la tabla. */
+function renderPedidos() {
+  renderPedidosStats();
+
+  const tbody = document.getElementById('pedidos-tbody');
+  const table = document.getElementById('pedidos-table');
+  if (!tbody) return;
+  tbody.textContent = '';
 
   if (!ordCache.length) {
-    if (countEl) countEl.textContent = '0 pedidos';
-    renderVentasEmpty(list);
+    renderPedidosEmptyState('Todavía no tenés pedidos', 'Cuando alguien te compre, vas a verlo acá.');
     return;
   }
+
+  let filtered = ordCache.filter((o) => pedidosTabMatches(o, pedidosTab));
+  if (pedidosDeliveryFilter !== 'all') filtered = filtered.filter((o) => o.delivery_method === pedidosDeliveryFilter);
 
   const term = ordSearch.trim().toLowerCase();
-  const filtered = ordCache.filter((o) => {
-    if (ordStatus !== 'all' && o.status !== ordStatus) return false;
-    if (term) {
+  if (term) {
+    filtered = filtered.filter((o) => {
       const idMatch = o.id.split('-')[0].toLowerCase().includes(term);
       const phone = (ordPhoneByClientId.get(o.client_id) || '').toLowerCase();
-      if (!idMatch && !phone.includes(term)) return false;
-    }
-    return true;
-  });
+      const name = (ordNameByClientId.get(o.client_id) || '').toLowerCase();
+      const productMatch = (o.order_items || []).some((it) => (it.products?.title || '').toLowerCase().includes(term));
+      return idMatch || phone.includes(term) || name.includes(term) || productMatch;
+    });
+  }
 
-  if (countEl) countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'pedido' : 'pedidos'}`;
+  filtered = sortPedidos(filtered, pedidosSort);
 
   if (!filtered.length) {
-    const note = document.createElement('p');
-    note.className = 'pub-nomatch';
-    note.textContent = 'No hay pedidos que coincidan con el filtro.';
-    list.appendChild(note);
+    renderPedidosEmptyState('No hay pedidos que coincidan', 'Probá con otra búsqueda o filtro.');
     return;
   }
 
-  filtered.forEach((o) => list.appendChild(buildOrderRow(o, ordPhoneByClientId.get(o.client_id))));
+  if (table) table.hidden = false;
+  const emptyBox = document.getElementById('pedidos-empty');
+  if (emptyBox) emptyBox.hidden = true;
+  filtered.forEach((o) => tbody.appendChild(buildPedidoRow(o)));
 }
 
-/** Wire de los controles de la sección Ventas (búsqueda + chips de estado). Una sola vez. */
-function initVentasControls() {
-  document.getElementById('ventas-search')?.addEventListener('input', (e) => {
+/** Navega a "Pedidos" con una pestaña puntual ya seleccionada (usado desde Resumen). */
+function goToPedidos(tab) {
+  location.hash = 'pedidos';
+  setPedidosTab(tab);
+}
+
+function setPedidosTab(tab) {
+  pedidosTab = tab;
+  document.querySelectorAll('#pedidos-tabs .pd-tab').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
+  document.querySelectorAll('.mc-navitem[data-section="pedidos"]').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.pedidosTab === tab));
+  renderPedidos();
+}
+
+/** Wire de los controles de la sección Pedidos (búsqueda, pestañas, menú Filtros, atajos del sidebar). Una sola vez. */
+function initPedidosControls() {
+  document.getElementById('pedidos-search')?.addEventListener('input', (e) => {
     ordSearch = e.target.value;
-    renderVentas();
+    renderPedidos();
   });
 
-  document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      ordStatus = chip.dataset.status;
-      document.querySelectorAll('#ventas-toolbar .pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
-      renderVentas();
-    });
+  document.querySelectorAll('#pedidos-tabs .pd-tab').forEach((tab) => {
+    tab.addEventListener('click', () => setPedidosTab(tab.dataset.tab));
   });
+
+  const filtersBtn = document.getElementById('pedidos-filters-btn');
+  const filtersMenu = document.getElementById('pedidos-filters-menu');
+  filtersBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = filtersMenu.hidden;
+    filtersMenu.hidden = !willOpen;
+    filtersBtn.setAttribute('aria-expanded', String(willOpen));
+    filtersBtn.classList.toggle('is-active', willOpen);
+  });
+  document.addEventListener('click', (e) => {
+    if (filtersMenu && !filtersMenu.hidden && !filtersMenu.contains(e.target) && e.target !== filtersBtn) {
+      filtersMenu.hidden = true;
+      filtersBtn?.setAttribute('aria-expanded', 'false');
+      filtersBtn?.classList.remove('is-active');
+    }
+  });
+  filtersMenu?.querySelectorAll('input[name="pd-sort"]').forEach((input) => {
+    input.addEventListener('change', () => { pedidosSort = input.value; renderPedidos(); });
+  });
+  filtersMenu?.querySelectorAll('input[name="pd-delivery"]').forEach((input) => {
+    input.addEventListener('change', () => { pedidosDeliveryFilter = input.value; renderPedidos(); });
+  });
+
+  // Atajos del sidebar hacia una pestaña específica de Pedidos (p. ej. "Ventas completadas").
+  document.querySelectorAll('.mc-navitem[data-section="pedidos"]').forEach((item) => {
+    item.addEventListener('click', () => setPedidosTab(item.dataset.pedidosTab || 'all'));
+  });
+
+  renderPedidosTips();
 }
 
 async function updateOrderStatus(orderId, newStatus) {
@@ -1223,6 +1384,7 @@ function rsPendingCard(title, icon, area, rows, footer) {
     const row = rsEl('div', 'rs-pending-row');
     row.addEventListener('click', () => {
       if (r.href) window.location.href = r.href;
+      else if (r.section === 'pedidos') goToPedidos(r.tab || 'all');
       else location.hash = r.section;
     });
     row.appendChild(rsEl('span', 'rs-pending-row__label', r.label));
@@ -1538,7 +1700,7 @@ async function renderResumen() {
   dash.appendChild(rsStatCard({
     area: 's4', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
     value: String(orders30dCount), sub: 'Últimos 30 días',
-    action: { label: 'Ver detalle', onClick: () => { location.hash = 'ventas'; } },
+    action: { label: 'Ver detalle', onClick: () => goToPedidos('all') },
   }));
   dash.appendChild(rsPromoCard());
 
@@ -1550,8 +1712,8 @@ async function renderResumen() {
   dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
     { label: 'Envíos en curso', count: shipmentsInProgress, section: 'envios' },
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pagos', alert: pendingPayCount > 0 },
-    { label: 'Ventas para calificar', count: salesToRate, section: 'ventas' },
-  ], { label: 'Ir a ventas', section: 'ventas' }));
+    { label: 'Ventas para calificar', count: salesToRate, section: 'pedidos', tab: 'completed' },
+  ], { label: 'Ir a pedidos', section: 'pedidos' }));
 
   // Novedades / ¿Necesitás ayuda?
   grid2.textContent = '';
@@ -2189,9 +2351,9 @@ function initPublicacionesControls() {
     renderPublicaciones();
   });
 
-  // Scopeado a #pub-toolbar: la sección Ventas reusa la misma clase .pub-chip
-  // para su propio filtro de estado (initVentasControls) -- sin este scope,
-  // ambos filtros se pisarían entre sí.
+  // Scopeado a #pub-toolbar: ningún otro filtro de la página usa .pub-chip
+  // fuera de acá (Pedidos usa sus propias .pd-tab), pero se deja el scope
+  // por si alguna sección futura reutiliza la clase.
   document.querySelectorAll('#pub-toolbar .pub-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       pubStatus = chip.dataset.status;
@@ -2522,7 +2684,7 @@ function setupDashboardEvents() {
   setupMyCouponForm();
   setupStoreStaffForm();
   initPublicacionesControls();
-  initVentasControls();
+  initPedidosControls();
 
   // F5-03: alta de variante para el producto que se está editando.
   document.getElementById('btn-add-variant')?.addEventListener('click', async () => {

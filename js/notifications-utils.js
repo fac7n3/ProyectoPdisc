@@ -130,14 +130,14 @@ function buildNotificationLink(n) {
     case 'favorite_price_drop':
       return p.product_id ? { href: `./producto.html?id=${encodeURIComponent(p.product_id)}`, label: 'Ver producto' } : null;
 
-    // Recibidas por el dueño del comercio -- van a "Ventas" de su panel,
+    // Recibidas por el dueño del comercio -- van a "Pedidos" de su panel,
     // con el N° de pedido precargado en el buscador que ya existe ahí.
     case 'order_created':
     case 'revocation_requested':
-      return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#ventas`, label: 'Ver pedido' } : null;
+      return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
-      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#ventas`, label: 'Ver pedido' } : { href: './vender.html#pagos', label: 'Revisar' };
+      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pagos', label: 'Revisar' };
     }
 
     // Recibidas por el cliente -- van a "Mis compras" en su perfil.

@@ -1,8 +1,12 @@
+<<<<<<< HEAD:dist/assets/home-VFNiV96v.js
 <<<<<<<< HEAD:dist/assets/home-VFNiV96v.js
 import{s as e}from"./speed-insights-Jgaq4W7Q.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-DIqMa3O9.js";import{d as t,g as n,h as r,n as i,t as a,u as o,x as s}from"./cart-utils-DL6dXif4.js";import{a as c,c as l,i as u,l as d,o as f,s as p}from"./nav-utils-BVBxoo_j.js";async function m(){let s=document.getElementById(`products-grid`);if(s)try{let{data:n,error:c}=await e.from(`products`).select(`
 ========
 import{s as e}from"./speed-insights-CGQ9u1QN.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-C_QXYLDq.js";import{d as t,g as n,h as r,n as i,t as a,u as o,x as s}from"./cart-utils-ChZXgx55.js";import{a as c,c as l,i as u,l as d,o as f,s as p}from"./nav-utils-DN9tcUUB.js";async function m(){let s=document.getElementById(`products-grid`);if(s)try{let{data:n,error:c}=await e.from(`products`).select(`
 >>>>>>>> claude/settings-page-features-a5928b:dist/assets/home-B1ocOrvO.js
+=======
+import{s as e}from"./speed-insights-Jgaq4W7Q.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-DIqMa3O9.js";import{d as t,g as n,h as r,n as i,t as a,u as o,x as s}from"./cart-utils-DL6dXif4.js";import{a as c,c as l,i as u,l as d,o as f,s as p}from"./nav-utils-C68f2Yky.js";async function m(){let s=document.getElementById(`products-grid`);if(s)try{let{data:n,error:c}=await e.from(`products`).select(`
+>>>>>>> origin/A113-panel-vendedor-pedidos:dist/assets/home-DDbt5XNy.js
         id,
         title,
         price,
