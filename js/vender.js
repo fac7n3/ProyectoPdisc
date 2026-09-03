@@ -1186,6 +1186,85 @@ function rsPendingCard(title, rows) {
   return card;
 }
 
+const RS_REP_LEVELS = [
+  { label: 'Inicial', icon: 'fa-seedling', color: '#94a3b8' },
+  { label: 'Verde', icon: 'fa-leaf', color: '#22c55e' },
+  { label: 'Azul', icon: 'fa-gem', color: '#2563eb' },
+  { label: 'Oro', icon: 'fa-medal', color: '#f59e0b' },
+  { label: 'Platino', icon: 'fa-crown', color: '#7c3aed' },
+];
+
+function rsReputationLevel(avgRating, reviewCount) {
+  if (reviewCount >= 30 && avgRating >= 4.5) return 4;
+  if (reviewCount >= 15 && avgRating >= 4) return 3;
+  if (reviewCount >= 5 && avgRating >= 3.5) return 2;
+  if (reviewCount >= 1 && avgRating >= 3) return 1;
+  return 0;
+}
+
+function rsReputationCard(avgRating, reviewCount, salesYear) {
+  const card = rsEl('div', 'rs-card');
+  card.appendChild(rsEl('div', 'rs-card__title', 'Reputación'));
+
+  const levelIdx = rsReputationLevel(avgRating, reviewCount);
+  const stepper = rsEl('div', 'rs-rep-stepper');
+  RS_REP_LEVELS.forEach((lvl, i) => {
+    const active = i === levelIdx;
+    const step = rsEl('div', 'rs-rep-step' + (active ? ' rs-rep-step--active' : ''));
+    if (active) step.style.setProperty('--rs-step-color', lvl.color);
+    const icon = rsEl('div', 'rs-rep-step__icon');
+    icon.innerHTML = `<i class="fa-solid ${lvl.icon}"></i>`;
+    step.appendChild(icon);
+    step.appendChild(rsEl('div', 'rs-rep-step__label', lvl.label));
+    stepper.appendChild(step);
+  });
+  card.appendChild(stepper);
+
+  const statusText = reviewCount
+    ? `Nivel ${RS_REP_LEVELS[levelIdx].label} · ${avgRating.toFixed(1)} de 5 · ${reviewCount} reseña${reviewCount === 1 ? '' : 's'} · ${salesYear} venta${salesYear === 1 ? '' : 's'} en 365 días`
+    : 'Aún no tenés color. Mantené buenas ventas y calificaciones para alcanzar el nivel verde.';
+  card.appendChild(rsEl('div', 'rs-strip__sub', statusText));
+
+  const explain = rsEl('div', 'rs-rep-explain',
+    'Tu nivel de reputación sube con tus ventas confirmadas y las calificaciones que recibís de tus compradores. ' +
+    'A medida que sumes ventas y buenas reseñas vas a ir pasando de Inicial a Verde, Azul, Oro y Platino.');
+  explain.hidden = true;
+  card.appendChild(explain);
+
+  const link = rsEl('button', 'rs-link', 'Cómo funciona ›');
+  link.type = 'button';
+  link.addEventListener('click', () => { explain.hidden = !explain.hidden; });
+  card.appendChild(link);
+
+  return card;
+}
+
+function rsPromoCard() {
+  const card = rsEl('div', 'rs-promo');
+
+  const nextBtn = rsEl('button', 'rs-promo__next');
+  nextBtn.type = 'button';
+  nextBtn.setAttribute('aria-label', 'Ver más promociones');
+  nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+  nextBtn.addEventListener('click', () => showToast('Por ahora tenés una sola promoción disponible.', 'success'));
+  card.appendChild(nextBtn);
+
+  const icon = rsEl('div', 'rs-promo__icon');
+  icon.innerHTML = '<i class="fa-solid fa-store"></i>';
+  card.appendChild(icon);
+
+  const body = rsEl('div', 'rs-promo__body');
+  body.appendChild(rsEl('div', 'rs-promo__title', 'Impulsá tus ventas'));
+  body.appendChild(rsEl('div', 'rs-promo__text', 'Destacá tus publicaciones y llegá a más compradores en Baradero.'));
+  const btn = rsEl('button', 'rs-promo__btn', 'Promocionar mis publicaciones');
+  btn.type = 'button';
+  btn.addEventListener('click', () => showToast('Muy pronto vas a poder promocionar tus publicaciones desde acá.', 'success'));
+  body.appendChild(btn);
+  card.appendChild(body);
+
+  return card;
+}
+
 function rsBusinessMetricsCard(paidOrders, catItems, sevenDaysAgo) {
   const card = rsEl('div', 'rs-card rs-card--wide');
   card.appendChild(rsEl('div', 'rs-card__title', 'Métricas de negocio'));
@@ -1315,15 +1394,9 @@ async function renderResumen() {
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pagos', alert: pendingPayCount > 0 },
   ]));
 
-  const repCard = rsEl('div', 'rs-card');
-  repCard.appendChild(rsEl('div', 'rs-card__title', 'Reputación'));
-  if (reviewCount) {
-    repCard.appendChild(rsEl('div', 'rs-stars', rsStars(avgRating)));
-    repCard.appendChild(rsEl('div', 'rs-strip__sub', `${avgRating.toFixed(1)} de 5 · ${reviewCount} reseña${reviewCount === 1 ? '' : 's'} · ${salesYear} venta${salesYear === 1 ? '' : 's'} en 365 días`));
-  } else {
-    repCard.appendChild(rsEl('div', 'rs-empty', 'Aún no tenés color. Vas a tener reputación cuando lleguen tus primeras reseñas.'));
-  }
-  grid.appendChild(repCard);
+  grid.appendChild(rsPromoCard());
+
+  grid.appendChild(rsReputationCard(avgRating, reviewCount, salesYear));
 
   const novCard = rsEl('div', 'rs-card');
   novCard.appendChild(rsEl('div', 'rs-card__title', 'Novedades'));
