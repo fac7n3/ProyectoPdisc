@@ -336,9 +336,14 @@
               <i class="fa-solid fa-location-dot"></i> Direcciones de envío
             </h2>
             <div id="addresses-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;"></div>
-            <button type="button" class="bl-btn bl-btn-primary" id="btn-add-address" style="width: fit-content;">
-              <i class="fa-solid fa-plus"></i> Agregar dirección
-            </button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="bl-btn bl-btn-primary" id="btn-add-address" style="width: fit-content;">
+                <i class="fa-solid fa-plus"></i> Agregar dirección
+              </button>
+              <button type="button" class="bl-btn" id="btn-use-location" style="width: fit-content; background: var(--bl-border, #e2e8f0);">
+                <i class="fa-solid fa-location-crosshairs"></i> Usar mi ubicación
+              </button>
+            </div>
             <form id="address-form" class="direcciones-form" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: var(--bl-radius-md, 0.5rem);">
               <input type="hidden" id="address-edit-id" />
               <div class="form-group">

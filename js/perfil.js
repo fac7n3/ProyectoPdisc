@@ -42,6 +42,7 @@ const phoneUseMine = document.getElementById("address-phone-use-mine");
 const phoneMineValue = document.getElementById("address-phone-mine-value");
 const btnSaveAddress = document.getElementById("btn-save-address");
 const btnAddAddress = document.getElementById("btn-add-address");
+const btnUseLocation = document.getElementById("btn-use-location");
 const btnCancelAddress = document.getElementById("btn-cancel-address");
 
 // Contenedores
@@ -586,6 +587,52 @@ function closeAddressForm() {
 
 if (btnAddAddress) {
   btnAddAddress.addEventListener('click', () => openAddressForm());
+}
+
+if (btnUseLocation) {
+  btnUseLocation.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      showToast('Tu navegador no soporta geolocalización', 'error');
+      return;
+    }
+    openAddressForm();
+    const originalHtml = btnUseLocation.innerHTML;
+    btnUseLocation.disabled = true;
+    btnUseLocation.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+    const restoreButton = () => {
+      btnUseLocation.disabled = false;
+      btnUseLocation.innerHTML = originalHtml;
+    };
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          // Mismo servicio (Nominatim) que el autocompletado, en modo inverso: coordenadas -> dirección.
+          const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${coords.latitude}&lon=${coords.longitude}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data?.address) {
+            // Misma salida que elegir una sugerencia: OSM tampoco trae la altura en
+            // el reverse, así que queda la calle con el cursor al final para
+            // que la persona escriba el número.
+            pickAddressSuggestion(data);
+          } else {
+            showToast('No pudimos identificar tu dirección', 'error');
+          }
+        } catch (err) {
+          console.error('Error al obtener la dirección desde la ubicación:', err);
+          showToast('No pudimos identificar tu dirección', 'error');
+        } finally {
+          restoreButton();
+        }
+      },
+      (err) => {
+        console.error('Error de geolocalización:', err);
+        showToast(err.code === err.PERMISSION_DENIED ? 'Activá el permiso de ubicación para usar esta opción' : 'No pudimos obtener tu ubicación', 'error');
+        restoreButton();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
 }
 
 if (btnCancelAddress) {

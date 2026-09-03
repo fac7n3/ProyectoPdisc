@@ -103,6 +103,13 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   tomada), toggle de "aceptar contacto" del vendedor (296), multi-rubro en
   el alta de vendedor (305, P2-10), pausar/reactivar producto (309),
   cancelar reclamo + admin responde (295).
+- **Resuelto 2026-09-03** — mergeado `claude/location-button-feature-9511de`: botón **"Usar mi
+  ubicación"** en Mi perfil → Direcciones (geolocalización del navegador + reverse geocoding contra
+  Nominatim). **Gotcha del merge:** la rama llamaba a `addressSuggestionLabel()`, la función que el
+  fix del autocompletado había eliminado — git mergeaba limpio (hunks separados) y el botón tiraba
+  ReferenceError en runtime. Ahora llama a `pickAddressSuggestion(data)`, así el reverse geocoding
+  se comporta igual que elegir una sugerencia: como OSM tampoco trae la altura, deja la calle con
+  el cursor al final para que la persona escriba el número.
 - **Resuelto 2026-09-03** — **el autocompletado de direcciones (Mi perfil → Direcciones) borraba el
   número de la puerta**. OSM no tiene mapeada la altura de las casas de Baradero: Nominatim devuelve
   la calle sin `house_number` y la repite una vez por cada tramo mapeado, así que "Mitre 1234"

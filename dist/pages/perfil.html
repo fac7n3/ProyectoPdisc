@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-B2CefH6t.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-DGJJGuaF.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-ChZXgx55.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-8R-_cou0.js">
@@ -347,9 +347,14 @@
               <i class="fa-solid fa-location-dot"></i> Direcciones de envío
             </h2>
             <div id="addresses-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;"></div>
-            <button type="button" class="bl-btn bl-btn-primary" id="btn-add-address" style="width: fit-content;">
-              <i class="fa-solid fa-plus"></i> Agregar dirección
-            </button>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="bl-btn bl-btn-primary" id="btn-add-address" style="width: fit-content;">
+                <i class="fa-solid fa-plus"></i> Agregar dirección
+              </button>
+              <button type="button" class="bl-btn" id="btn-use-location" style="width: fit-content; background: var(--bl-border, #e2e8f0);">
+                <i class="fa-solid fa-location-crosshairs"></i> Usar mi ubicación
+              </button>
+            </div>
             <form id="address-form" class="direcciones-form" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: var(--bl-radius-md, 0.5rem);">
               <input type="hidden" id="address-edit-id" />
               <div class="form-group">
