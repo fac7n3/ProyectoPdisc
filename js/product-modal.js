@@ -286,9 +286,19 @@ function buildModalHTML(data) {
         <div class="pm-gallery-col">
           <div class="pm-gallery" id="pm-gallery">
             ${badgeHTML}
+            ${!data.isOwner ? `
             <button class="pm-gallery__fav" id="pm-fav-btn" aria-label="Agregar a favoritos">
               <i class="fa-regular fa-heart"></i>
             </button>
+            ` : ''}
+            ${data.images.length > 1 ? `
+            <button class="pm-gallery__nav pm-gallery__nav--prev" id="pm-gallery-prev" aria-label="Imagen anterior">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button class="pm-gallery__nav pm-gallery__nav--next" id="pm-gallery-next" aria-label="Imagen siguiente">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            ` : ''}
             <img class="pm-gallery__img" id="pm-gallery-img" src="${encodeURI(data.imgSrc)}" alt="${data.imgAlt}" />
           </div>
           ${thumbsHTML}
@@ -330,7 +340,8 @@ function buildModalHTML(data) {
 
           ${variantsHTML}
 
-          <!-- Quantity -->
+          <!-- Quantity: no tiene sentido para el dueño viendo su propia vista previa -->
+          ${!data.isOwner ? `
           <div class="pm-quantity">
             <span class="pm-quantity__label">Cantidad:</span>
             <div class="pm-quantity__controls">
@@ -343,6 +354,7 @@ function buildModalHTML(data) {
               </button>
             </div>
           </div>
+          ` : ''}
 
           <!-- Actions -->
           ${data.isOwner ? `
@@ -583,20 +595,32 @@ function bindModalEvents(overlay, data) {
   // Zoom de imagen
   const gallery = overlay.querySelector('#pm-gallery');
   gallery?.addEventListener('click', (e) => {
-    if (e.target.closest('.pm-gallery__fav')) return;
+    if (e.target.closest('.pm-gallery__fav') || e.target.closest('.pm-gallery__nav')) return;
     gallery.classList.toggle('is-zoomed');
   });
 
-  // F5-04: miniaturas reales -- clic cambia la imagen principal.
+  // F5-04 + flechas: miniaturas y flechas comparten el mismo índice de
+  // imagen actual -- clic en cualquiera de las dos actualiza la imagen
+  // principal y marca la miniatura correspondiente como activa.
   const galleryImg = overlay.querySelector('#pm-gallery-img');
-  overlay.querySelectorAll('.pm-thumb').forEach((thumb) => {
-    thumb.addEventListener('click', () => {
-      const src = thumb.dataset.thumbSrc;
-      if (galleryImg && src) galleryImg.src = src;
-      overlay.querySelectorAll('.pm-thumb').forEach((t) => t.classList.remove('is-active'));
-      thumb.classList.add('is-active');
-    });
+  const thumbs = Array.from(overlay.querySelectorAll('.pm-thumb'));
+  let currentImgIndex = 0;
+
+  function showImage(index) {
+    const total = data.images.length;
+    if (total === 0) return;
+    currentImgIndex = ((index % total) + total) % total;
+    const src = data.images[currentImgIndex];
+    if (galleryImg && src) galleryImg.src = encodeURI(src);
+    thumbs.forEach((t, i) => t.classList.toggle('is-active', i === currentImgIndex));
+  }
+
+  thumbs.forEach((thumb, i) => {
+    thumb.addEventListener('click', () => showImage(i));
   });
+
+  overlay.querySelector('#pm-gallery-prev')?.addEventListener('click', () => showImage(currentImgIndex - 1));
+  overlay.querySelector('#pm-gallery-next')?.addEventListener('click', () => showImage(currentImgIndex + 1));
 
   // Ir a la tienda real (antes "Ver tienda" y el nombre del comercio no hacían nada).
   if (data.shopId) {
