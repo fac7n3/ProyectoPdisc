@@ -1,5 +1,5 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
-import { statusLabel as supportStatusLabel } from './support-utils.js';
+import { statusLabel as supportStatusLabel, buildAttachmentChips } from './support-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { formatPrice } from './cart-utils.js';
@@ -1320,9 +1320,11 @@ async function fetchSupportTickets() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando reclamos...</td></tr>';
 
+  // select('*') y no la lista de columnas: trae los adjuntos (migración 73)
+  // sin que el panel se rompa donde esa migración todavía no corrió.
   const { data, error } = await supabase
     .from('support_tickets')
-    .select('id, user_id, subject, message, status, created_at')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -1415,6 +1417,11 @@ async function toggleAdminTicketThread(tr, ticket) {
   const threadCell = document.createElement('td');
   threadCell.colSpan = 6;
   threadCell.style.cssText = 'padding: 1rem; background: var(--bl-surface-alt, #f0f4f8);';
+
+  // Las capturas que mandó el usuario, antes del hilo: el bucket es privado,
+  // así que cada una se abre con su signed URL (misma pieza que ve el usuario).
+  const chips = buildAttachmentChips(ticket.attachments);
+  if (chips) threadCell.appendChild(chips);
 
   const threadDiv = document.createElement('div');
   threadDiv.style.cssText = 'max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem;';

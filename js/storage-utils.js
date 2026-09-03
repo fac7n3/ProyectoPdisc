@@ -62,3 +62,25 @@ export async function removeStoredObjects(supabase, bucket, urls) {
   }
   return paths;
 }
+
+/**
+ * 1536000 -> "1,5 MB". Para que el peso de un archivo se lea, no se calcule.
+ * Vive acá (y no en la página que lo estrenó) porque ya lo usan dos flujos de
+ * subida distintos: el comprobante de transferencia y los adjuntos de un
+ * reclamo.
+ */
+export function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString("es-AR", { maximumFractionDigits: 1 })} MB`;
+}
+
+/**
+ * "uid/1756000000-captura.png" -> "captura.png". Los adjuntos se guardan con
+ * un timestamp adelante para que dos archivos con el mismo nombre no se pisen;
+ * al mostrarlos ese prefijo es ruido.
+ */
+export function storedFileName(path) {
+  const base = String(path ?? "").split("/").pop() || "";
+  return base.replace(/^\d+-/, "") || base;
+}
