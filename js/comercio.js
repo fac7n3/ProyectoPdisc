@@ -486,9 +486,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const reviewsSection = document.createElement('section');
     reviewsSection.className = 'store-products';
+    reviewsSection.id = 'store-reviews';
     mainContent.appendChild(reviewsSection);
     // El dueño no puede dejarse una reseña a sí mismo (mismo criterio que producto.js).
     renderReviewsSection(reviewsSection, 'store', storeId, { hideForm: isOwner });
+    // Deep-link desde el panel del vendedor ("Reputación → Ver detalle"): la sección
+    // recién existe después de este render, por eso no alcanza con el scroll nativo del navegador.
+    if (window.location.hash === '#store-reviews') {
+      reviewsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     if (typeof initProductModal === 'function') initProductModal();
 

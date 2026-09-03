@@ -300,6 +300,8 @@ let editingProductId = null; // F5-02: null = alta nueva, id = editando ese prod
 let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardingChecklist
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
+let currentUserFirstName = 'vendedor'; // Resumen: nombre para el saludo "¡Hola, {nombre}!"
+let currentUserId = null; // Resumen: para detectar preguntas sin responder (último mensaje no es mío)
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
 
 // Sección "Publicaciones" (rediseño ML): productos cacheados + ventas por producto
@@ -357,8 +359,11 @@ async function loadDashboard(user, staffStoreId) {
   const shopLabel = isStoreOwner ? store.name : `${store.name} (como empleado)`;
   if (shopNameEl) shopNameEl.textContent = shopLabel;
   try { localStorage.setItem(SHOP_NAME_KEY, shopLabel); } catch { /* ignore */ }
-  const welcomeStoreName = document.getElementById('welcome-store-name');
-  if (welcomeStoreName) welcomeStoreName.textContent = store.name;
+  currentUserId = user.id;
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || store.name;
+  currentUserFirstName = fullName ? fullName.trim().split(/\s+/)[0] : 'vendedor';
+  const greetingName = document.getElementById('resumen-greeting-name');
+  if (greetingName) greetingName.textContent = currentUserFirstName;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
   ['store-profile-section', 'my-coupons-section', 'store-staff-section'].forEach((id) => {
@@ -1143,9 +1148,11 @@ function setupStoreStaffForm() {
 }
 
 /**
- * Sección "Resumen" (rediseño ML con paleta propia): franja superior (reputación /
- * ventas brutas 7d / dinero cobrado) + grilla de cards (pendientes, reputación,
- * novedades, métricas de negocio con barras 7d + torta por categoría). Datos reales.
+ * Sección "Resumen" (rediseño ML con paleta propia): saludo + fila de 4 stats
+ * (reputación / ventas brutas 7d / dinero disponible / ventas totales 30d) +
+ * card "Impulsá tus ventas" + pendientes (publicaciones/ventas) + Novedades +
+ * "¿Necesitás ayuda?" + Métricas de negocio (línea 7d + torta por categoría
+ * 30d). Datos reales -- vacíos hasta que haya reseñas/ventas/mensajes.
  * Reemplaza loadDashboardStats + el insights provisional (F12-13).
  */
 function rsEl(tag, cls, text) {
@@ -1155,87 +1162,83 @@ function rsEl(tag, cls, text) {
   return n;
 }
 
-function rsStars(avg) {
-  const full = Math.round(avg);
-  return '★'.repeat(full) + '☆'.repeat(5 - full);
+function rsReputationLabel(avgRating, reviewCount) {
+  if (!reviewCount) return 'Sin calificar aún';
+  if (avgRating >= 4.5) return 'Excelente';
+  if (avgRating >= 4) return 'Muy buena';
+  if (avgRating >= 3) return 'Buena';
+  if (avgRating >= 2) return 'Regular';
+  return 'Mala';
 }
 
-function rsStripCell(label, value, sub, valueIsStars) {
-  const cell = rsEl('div', 'rs-strip__cell');
-  cell.appendChild(rsEl('div', 'rs-strip__label', label));
-  cell.appendChild(rsEl('div', valueIsStars ? 'rs-strip__value rs-stars' : 'rs-strip__value', value));
-  if (sub) cell.appendChild(rsEl('div', 'rs-strip__sub', sub));
-  return cell;
-}
+function rsStatCard({ area, icon, iconVariant, title, value, sub, delta, action }) {
+  const card = rsEl('div', 'rs-card rs-stat');
+  card.style.gridArea = area;
 
-function rsPendingCard(title, rows) {
-  const card = rsEl('div', 'rs-card');
-  card.appendChild(rsEl('div', 'rs-card__title', title));
-  rows.forEach((r) => {
-    const row = rsEl('div', 'rs-pending-row');
-    row.addEventListener('click', () => { location.hash = r.section; });
-    row.appendChild(rsEl('span', 'rs-pending-row__label', r.label));
-    const right = rsEl('span', 'rs-pending-row__right');
-    right.appendChild(rsEl('span', 'rs-badge' + (r.alert ? ' rs-badge--alert' : ''), String(r.count)));
-    const chev = rsEl('i', 'fa-solid fa-chevron-right');
-    chev.style.fontSize = '0.75rem';
-    right.appendChild(chev);
-    row.appendChild(right);
-    card.appendChild(row);
-  });
+  const top = rsEl('div', 'rs-stat__top');
+  const iconEl = rsEl('div', `rs-stat__icon rs-stat__icon--${iconVariant}`);
+  iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+  top.appendChild(iconEl);
+  top.appendChild(rsEl('div', 'rs-stat__title', title));
+  card.appendChild(top);
+
+  card.appendChild(rsEl('div', 'rs-stat__value', value));
+  if (sub) card.appendChild(rsEl('div', 'rs-stat__sub', sub));
+
+  if (delta) {
+    const deltaEl = rsEl('div', 'rs-stat__delta' + (delta.positive === false ? ' rs-stat__delta--down' : ''));
+    deltaEl.innerHTML = `<i class="fa-solid fa-arrow-${delta.positive === false ? 'down' : 'up'}"></i> `;
+    deltaEl.appendChild(document.createTextNode(delta.text));
+    card.appendChild(deltaEl);
+  }
+
+  if (action) {
+    let control;
+    if (action.href) {
+      control = document.createElement('a');
+      control.href = action.href;
+    } else {
+      control = document.createElement('button');
+      control.type = 'button';
+      control.addEventListener('click', action.onClick);
+    }
+    control.className = 'rs-link';
+    control.appendChild(document.createTextNode(action.label + ' '));
+    control.appendChild(rsEl('i', 'fa-solid fa-chevron-right'));
+    card.appendChild(control);
+  }
+
   return card;
 }
 
-const RS_REP_LEVELS = [
-  { label: 'Inicial', icon: 'fa-seedling', color: '#94a3b8' },
-  { label: 'Verde', icon: 'fa-leaf', color: '#22c55e' },
-  { label: 'Azul', icon: 'fa-gem', color: '#2563eb' },
-  { label: 'Oro', icon: 'fa-medal', color: '#f59e0b' },
-  { label: 'Platino', icon: 'fa-crown', color: '#7c3aed' },
-];
+function rsPendingCard(title, icon, area, rows, footer) {
+  const card = rsEl('div', 'rs-card rs-pend');
+  card.style.gridArea = area;
+  const titleEl = rsEl('div', 'rs-card__title');
+  titleEl.innerHTML = `<i class="fa-solid ${icon}"></i> `;
+  titleEl.appendChild(document.createTextNode(title));
+  card.appendChild(titleEl);
 
-function rsReputationLevel(avgRating, reviewCount) {
-  if (reviewCount >= 30 && avgRating >= 4.5) return 4;
-  if (reviewCount >= 15 && avgRating >= 4) return 3;
-  if (reviewCount >= 5 && avgRating >= 3.5) return 2;
-  if (reviewCount >= 1 && avgRating >= 3) return 1;
-  return 0;
-}
-
-function rsReputationCard(avgRating, reviewCount, salesYear) {
-  const card = rsEl('div', 'rs-card');
-  card.appendChild(rsEl('div', 'rs-card__title', 'Reputación'));
-
-  const levelIdx = rsReputationLevel(avgRating, reviewCount);
-  const stepper = rsEl('div', 'rs-rep-stepper');
-  RS_REP_LEVELS.forEach((lvl, i) => {
-    const active = i === levelIdx;
-    const step = rsEl('div', 'rs-rep-step' + (active ? ' rs-rep-step--active' : ''));
-    if (active) step.style.setProperty('--rs-step-color', lvl.color);
-    const icon = rsEl('div', 'rs-rep-step__icon');
-    icon.innerHTML = `<i class="fa-solid ${lvl.icon}"></i>`;
-    step.appendChild(icon);
-    step.appendChild(rsEl('div', 'rs-rep-step__label', lvl.label));
-    stepper.appendChild(step);
+  rows.forEach((r) => {
+    const row = rsEl('div', 'rs-pending-row');
+    row.addEventListener('click', () => {
+      if (r.href) window.location.href = r.href;
+      else location.hash = r.section;
+    });
+    row.appendChild(rsEl('span', 'rs-pending-row__label', r.label));
+    const right = rsEl('span', 'rs-pending-row__right');
+    right.appendChild(rsEl('span', 'rs-badge' + (r.alert ? ' rs-badge--alert' : ''), String(r.count)));
+    right.appendChild(rsEl('i', 'fa-solid fa-chevron-right'));
+    row.appendChild(right);
+    card.appendChild(row);
   });
-  card.appendChild(stepper);
 
-  const statusText = reviewCount
-    ? `Nivel ${RS_REP_LEVELS[levelIdx].label} · ${avgRating.toFixed(1)} de 5 · ${reviewCount} reseña${reviewCount === 1 ? '' : 's'} · ${salesYear} venta${salesYear === 1 ? '' : 's'} en 365 días`
-    : 'Aún no tenés color. Mantené buenas ventas y calificaciones para alcanzar el nivel verde.';
-  card.appendChild(rsEl('div', 'rs-strip__sub', statusText));
-
-  const explain = rsEl('div', 'rs-rep-explain',
-    'Tu nivel de reputación sube con tus ventas confirmadas y las calificaciones que recibís de tus compradores. ' +
-    'A medida que sumes ventas y buenas reseñas vas a ir pasando de Inicial a Verde, Azul, Oro y Platino.');
-  explain.hidden = true;
-  card.appendChild(explain);
-
-  const link = rsEl('button', 'rs-link', 'Cómo funciona ›');
-  link.type = 'button';
-  link.addEventListener('click', () => { explain.hidden = !explain.hidden; });
-  card.appendChild(link);
-
+  if (footer) {
+    const link = rsEl('button', 'rs-link', footer.label + ' ›');
+    link.type = 'button';
+    link.addEventListener('click', () => { location.hash = footer.section; });
+    card.appendChild(link);
+  }
   return card;
 }
 
@@ -1253,25 +1256,256 @@ function rsPromoCard() {
   icon.innerHTML = '<i class="fa-solid fa-store"></i>';
   card.appendChild(icon);
 
-  const body = rsEl('div', 'rs-promo__body');
-  body.appendChild(rsEl('div', 'rs-promo__title', 'Impulsá tus ventas'));
-  body.appendChild(rsEl('div', 'rs-promo__text', 'Destacá tus publicaciones y llegá a más compradores en Baradero.'));
+  card.appendChild(rsEl('div', 'rs-promo__title', 'Impulsá tus ventas'));
+  card.appendChild(rsEl('div', 'rs-promo__text', 'Destacá tus publicaciones y llegá a más compradores en Baradero.'));
   const btn = rsEl('button', 'rs-promo__btn', 'Promocionar mis publicaciones');
   btn.type = 'button';
   btn.addEventListener('click', () => showToast('Muy pronto vas a poder promocionar tus publicaciones desde acá.', 'success'));
-  body.appendChild(btn);
-  card.appendChild(body);
+  card.appendChild(btn);
 
   return card;
 }
 
-function rsBusinessMetricsCard(paidOrders, catItems, sevenDaysAgo) {
-  const card = rsEl('div', 'rs-card rs-card--wide');
-  card.appendChild(rsEl('div', 'rs-card__title', 'Métricas de negocio'));
+function rsNoveltyCard() {
+  const card = rsEl('div', 'rs-card');
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-solid fa-bell"></i> ';
+  title.appendChild(document.createTextNode('Novedades'));
+  card.appendChild(title);
+  card.appendChild(rsEl('div', 'rs-empty', 'Aún no tenés novedades. Acá vas a ver los comunicados del equipo cuando estén disponibles.'));
+  return card;
+}
 
-  const barsLabel = rsEl('div', 'rs-strip__label', 'Ventas brutas de los últimos 7 días');
-  barsLabel.style.marginBottom = '0.5rem';
-  card.appendChild(barsLabel);
+function rsHelpCard() {
+  const card = rsEl('div', 'rs-card');
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-solid fa-headset"></i> ';
+  title.appendChild(document.createTextNode('¿Necesitás ayuda?'));
+  card.appendChild(title);
+  card.appendChild(rsEl('div', 'rs-empty', 'Nuestro equipo está para ayudarte.'));
+
+  const rows = [
+    { title: 'Chat en vivo', sub: 'Muy pronto', onClick: () => showToast('El chat en vivo va a estar disponible próximamente. Mientras tanto, podés escribirnos por correo o dejarnos un reclamo en Soporte.', 'success') },
+    { title: 'Centro de ayuda', sub: 'Preguntas frecuentes', href: './info.html' },
+    { title: 'Soporte por correo', sub: 'soporte@baraderolocal.com.ar', href: 'mailto:soporte@baraderolocal.com.ar' },
+  ];
+  rows.forEach((r) => {
+    const row = rsEl('div', 'rs-help-row');
+    if (r.href) {
+      row.addEventListener('click', () => { window.location.href = r.href; });
+    } else {
+      row.addEventListener('click', r.onClick);
+    }
+    const left = rsEl('div');
+    left.appendChild(rsEl('div', 'rs-help-row__title', r.title));
+    left.appendChild(rsEl('div', 'rs-help-row__sub', r.sub));
+    row.appendChild(left);
+    row.appendChild(rsEl('i', 'fa-solid fa-chevron-right'));
+    card.appendChild(row);
+  });
+  return card;
+}
+
+/** Línea de ventas brutas de los últimos 7 días (SVG, sin librería). */
+function rsLineChart(dailyTotals) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const W = 480, H = 160, padL = 46, padR = 8, padT = 10, padB = 22;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const maxTotal = Math.max(1, ...dailyTotals.map((d) => d.total));
+  const n = dailyTotals.length;
+  const stepX = n > 1 ? chartW / (n - 1) : 0;
+  const points = dailyTotals.map((d, i) => ({
+    x: padL + stepX * i,
+    y: padT + chartH - (d.total / maxTotal) * chartH,
+    d,
+  }));
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class', 'rs-line');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  [0, 0.5, 1].forEach((frac) => {
+    const y = padT + chartH * (1 - frac);
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('class', 'rs-line__grid');
+    line.setAttribute('x1', String(padL));
+    line.setAttribute('x2', String(W - padR));
+    line.setAttribute('y1', y.toFixed(1));
+    line.setAttribute('y2', y.toFixed(1));
+    svg.appendChild(line);
+
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('class', 'rs-line__axis');
+    label.setAttribute('x', '2');
+    label.setAttribute('y', (y + 3).toFixed(1));
+    label.textContent = formatPrice(Math.round(maxTotal * frac));
+    svg.appendChild(label);
+  });
+
+  points.forEach((p) => {
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('class', 'rs-line__axis');
+    label.setAttribute('x', p.x.toFixed(1));
+    label.setAttribute('y', String(H - 4));
+    label.setAttribute('text-anchor', 'middle');
+    label.textContent = p.d.day.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    svg.appendChild(label);
+  });
+
+  const baseline = (padT + chartH).toFixed(1);
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaD = `${pathD} L${points[points.length - 1].x.toFixed(1)},${baseline} L${points[0].x.toFixed(1)},${baseline} Z`;
+
+  const area = document.createElementNS(svgNS, 'path');
+  area.setAttribute('class', 'rs-line__area');
+  area.setAttribute('d', areaD);
+  svg.appendChild(area);
+
+  const path = document.createElementNS(svgNS, 'path');
+  path.setAttribute('class', 'rs-line__path');
+  path.setAttribute('d', pathD);
+  svg.appendChild(path);
+
+  points.forEach((p) => {
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('class', 'rs-line__dot');
+    dot.setAttribute('cx', p.x.toFixed(1));
+    dot.setAttribute('cy', p.y.toFixed(1));
+    dot.setAttribute('r', '3');
+    svg.appendChild(dot);
+  });
+
+  return svg;
+}
+
+function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
+  const card = rsEl('div', 'rs-card');
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-solid fa-chart-line"></i> ';
+  title.appendChild(document.createTextNode('Métricas de negocio'));
+  card.appendChild(title);
+
+  const metrics = rsEl('div', 'rs-metrics');
+
+  // Columna izquierda: ventas brutas de los últimos 7 días (línea)
+  const left = rsEl('div');
+  left.appendChild(rsEl('div', 'rs-metrics__label', 'Ventas brutas de los últimos 7 días'));
+  left.appendChild(rsEl('div', 'rs-metrics__figure', formatPrice(sales7d)));
+  if (pctChange !== null) {
+    const delta = rsEl('div', 'rs-stat__delta' + (pctChange < 0 ? ' rs-stat__delta--down' : ''));
+    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}"></i> `;
+    delta.appendChild(document.createTextNode(`${Math.abs(pctChange)}% vs. semana anterior`));
+    left.appendChild(delta);
+  }
+  left.appendChild(rsLineChart(dailyTotals));
+  metrics.appendChild(left);
+
+  // Columna derecha: torta por categoría (últimos 30 días)
+  const right = rsEl('div');
+  right.appendChild(rsEl('div', 'rs-metrics__label', 'Ventas por categoría (últimos 30 días)'));
+
+  const byCat = new Map();
+  catItems30d.forEach((it) => {
+    const name = it.products?.categories?.name || 'Otros';
+    byCat.set(name, (byCat.get(name) || 0) + it.quantity * it.price);
+  });
+  const entries = [...byCat.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+
+  if (!entries.length) {
+    right.appendChild(rsEl('div', 'rs-empty', 'Todavía no hay ventas en los últimos 30 días para mostrar el desglose por categoría.'));
+  } else {
+    const total = entries.reduce((s, [, v]) => s + v, 0);
+    const palette = ['#0e7490', '#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b'];
+    const top = entries.slice(0, 6);
+    const restVal = entries.slice(6).reduce((s, [, v]) => s + v, 0);
+    const slices = restVal > 0 ? [...top, ['Otras', restVal]] : top;
+
+    let acc = 0;
+    const stops = slices.map(([, v], i) => {
+      const start = (acc / total) * 360;
+      acc += v;
+      const end = (acc / total) * 360;
+      return `${palette[i % palette.length]} ${start}deg ${end}deg`;
+    });
+
+    const pieWrap = rsEl('div', 'rs-pie');
+    const chartWrap = rsEl('div', 'rs-pie__chart-wrap');
+    const chart = rsEl('div', 'rs-pie__chart');
+    chart.style.background = `conic-gradient(${stops.join(', ')})`;
+    chartWrap.appendChild(chart);
+    chartWrap.appendChild(rsEl('div', 'rs-pie__hole'));
+    pieWrap.appendChild(chartWrap);
+
+    const legend = rsEl('div', 'rs-pie__legend');
+    slices.forEach(([name, v], i) => {
+      const item = rsEl('div', 'rs-pie__item');
+      const dot = rsEl('span', 'rs-pie__dot');
+      dot.style.background = palette[i % palette.length];
+      item.appendChild(dot);
+      item.appendChild(rsEl('span', 'rs-pie__name', name));
+      item.appendChild(rsEl('span', 'rs-pie__pct', `${Math.round((v / total) * 100)}%`));
+      item.appendChild(rsEl('span', 'rs-pie__amount', formatPrice(v)));
+      legend.appendChild(item);
+    });
+    pieWrap.appendChild(legend);
+    right.appendChild(pieWrap);
+  }
+  metrics.appendChild(right);
+
+  card.appendChild(metrics);
+  return card;
+}
+
+async function renderResumen() {
+  const dash = document.getElementById('resumen-dash');
+  const grid2 = document.getElementById('resumen-grid2');
+  const metricsContainer = document.getElementById('resumen-metrics');
+  if (!dash || !grid2 || !metricsContainer || !currentStoreId) return;
+
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const prevSevenDaysAgo = new Date(sevenDaysAgo);
+  prevSevenDaysAgo.setDate(prevSevenDaysAgo.getDate() - 7);
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  const [rev, ord, cat, pay, msg] = await Promise.all([
+    supabase.from('reviews').select('rating, client_id').eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
+    supabase.from('orders').select('total_price, created_at, delivery_method, status, client_id').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
+    supabase.from('order_items').select('quantity, price, products(categories(name)), orders!inner(store_id, payment_status, created_at)').eq('orders.store_id', currentStoreId).eq('orders.payment_status', 'paid'),
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId).eq('payment_method', 'transferencia').eq('payment_status', 'pending'),
+    supabase.from('messages').select('conversation_id, sender_id, created_at, conversations!inner(store_id)').eq('conversations.store_id', currentStoreId).order('created_at', { ascending: false }),
+  ]);
+
+  const reviews = rev.data || [];
+  const paidOrders = ord.data || [];
+  const catItems = cat.data || [];
+  const pendingPayCount = pay.count || 0;
+  const messages = msg.data || [];
+
+  // Preguntas sin responder: última respuesta de cada conversación no fue mía.
+  const lastSenderByConv = new Map();
+  messages.forEach((m) => { if (!lastSenderByConv.has(m.conversation_id)) lastSenderByConv.set(m.conversation_id, m.sender_id); });
+  const questionCount = [...lastSenderByConv.values()].filter((senderId) => senderId !== currentUserId).length;
+
+  const reviewCount = reviews.length;
+  const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
+  const reviewedClientIds = new Set(reviews.map((r) => r.client_id).filter(Boolean));
+  const salesToRate = paidOrders.filter((o) => o.status === 'completed' && o.client_id && !reviewedClientIds.has(o.client_id)).length;
+
+  const sales7d = paidOrders.filter((o) => new Date(o.created_at) >= sevenDaysAgo).reduce((s, o) => s + o.total_price, 0);
+  const salesPrev7d = paidOrders
+    .filter((o) => { const d = new Date(o.created_at); return d >= prevSevenDaysAgo && d < sevenDaysAgo; })
+    .reduce((s, o) => s + o.total_price, 0);
+  const pctChange = salesPrev7d > 0 ? Math.round(((sales7d - salesPrev7d) / salesPrev7d) * 100) : null;
+
+  const incomeTotal = paidOrders.reduce((s, o) => s + o.total_price, 0);
+  const orders30dCount = paidOrders.filter((o) => new Date(o.created_at) >= thirtyDaysAgo).length;
+  const shipmentsInProgress = paidOrders.filter((o) => o.delivery_method === 'delivery' && (o.status === 'paid' || o.status === 'shipped')).length;
 
   const dailyTotals = [];
   for (let i = 0; i < 7; i++) {
@@ -1281,129 +1515,52 @@ function rsBusinessMetricsCard(paidOrders, catItems, sevenDaysAgo) {
     const total = paidOrders.filter((o) => o.created_at.slice(0, 10) === key).reduce((s, o) => s + o.total_price, 0);
     dailyTotals.push({ day, total });
   }
-  const maxTotal = Math.max(1, ...dailyTotals.map((d) => d.total));
-  const bars = rsEl('div', 'rs-bars');
-  dailyTotals.forEach(({ day, total }) => {
-    const row = rsEl('div', 'rs-bars__row');
-    row.appendChild(rsEl('span', 'rs-bars__label', day.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })));
-    const track = rsEl('div', 'rs-bars__track');
-    const fill = rsEl('div', 'rs-bars__fill');
-    fill.style.width = Math.round((total / maxTotal) * 100) + '%';
-    track.appendChild(fill);
-    row.appendChild(track);
-    row.appendChild(rsEl('span', 'rs-bars__value', formatPrice(total)));
-    bars.appendChild(row);
-  });
-  card.appendChild(bars);
+  const catItems30d = catItems.filter((it) => it.orders?.created_at && new Date(it.orders.created_at) >= thirtyDaysAgo);
 
-  // Torta por categoría (conic-gradient, sin librería)
-  const pieLabel = rsEl('div', 'rs-strip__label', 'Ventas por categoría');
-  pieLabel.style.margin = '1.25rem 0 0.6rem';
-  card.appendChild(pieLabel);
+  // Fila superior: 4 stats + "Impulsá tus ventas"
+  dash.textContent = '';
+  dash.appendChild(rsStatCard({
+    area: 's1', icon: 'fa-star', iconVariant: 'rep', title: 'Reputación',
+    value: rsReputationLabel(avgRating, reviewCount),
+    sub: reviewCount ? `${avgRating.toFixed(1)} / 5 ★ · ${reviewCount} reseña${reviewCount === 1 ? '' : 's'}` : 'Sumá tus primeras reseñas',
+    action: { label: 'Ver detalle', href: `./comercio.html?id=${currentStoreId}#store-reviews` },
+  }));
+  dash.appendChild(rsStatCard({
+    area: 's2', icon: 'fa-sack-dollar', iconVariant: 'sales', title: 'Ventas brutas',
+    value: formatPrice(sales7d), sub: 'Últimos 7 días',
+    delta: pctChange !== null ? { text: `${Math.abs(pctChange)}% vs. semana anterior`, positive: pctChange >= 0 } : null,
+  }));
+  dash.appendChild(rsStatCard({
+    area: 's3', icon: 'fa-wallet', iconVariant: 'money', title: 'Dinero disponible',
+    value: formatPrice(incomeTotal), sub: 'Para retirar',
+    action: { label: 'Retirar dinero', onClick: () => showToast('Muy pronto vas a poder retirar tu dinero desde acá.', 'success') },
+  }));
+  dash.appendChild(rsStatCard({
+    area: 's4', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
+    value: String(orders30dCount), sub: 'Últimos 30 días',
+    action: { label: 'Ver detalle', onClick: () => { location.hash = 'ventas'; } },
+  }));
+  dash.appendChild(rsPromoCard());
 
-  const byCat = new Map();
-  catItems.forEach((it) => {
-    const name = it.products?.categories?.name || 'Otros';
-    byCat.set(name, (byCat.get(name) || 0) + it.quantity * it.price);
-  });
-  const entries = [...byCat.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  if (!entries.length) {
-    card.appendChild(rsEl('div', 'rs-empty', 'Todavía no hay ventas para mostrar el desglose por categoría.'));
-    return card;
-  }
-  const total = entries.reduce((s, [, v]) => s + v, 0);
-  const palette = ['#0e7490', '#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#64748b'];
-  const top = entries.slice(0, 6);
-  const restVal = entries.slice(6).reduce((s, [, v]) => s + v, 0);
-  const slices = restVal > 0 ? [...top, ['Otras', restVal]] : top;
-
-  let acc = 0;
-  const stops = slices.map(([, v], i) => {
-    const start = (acc / total) * 360;
-    acc += v;
-    const end = (acc / total) * 360;
-    return `${palette[i % palette.length]} ${start}deg ${end}deg`;
-  });
-
-  const pieWrap = rsEl('div', 'rs-pie');
-  const chart = rsEl('div', 'rs-pie__chart');
-  chart.style.background = `conic-gradient(${stops.join(', ')})`;
-  pieWrap.appendChild(chart);
-  const legend = rsEl('div', 'rs-pie__legend');
-  slices.forEach(([name, v], i) => {
-    const item = rsEl('div', 'rs-pie__item');
-    const dot = rsEl('span', 'rs-pie__dot');
-    dot.style.background = palette[i % palette.length];
-    item.appendChild(dot);
-    item.appendChild(rsEl('span', null, `${name} — ${Math.round((v / total) * 100)}%`));
-    legend.appendChild(item);
-  });
-  pieWrap.appendChild(legend);
-  card.appendChild(pieWrap);
-  return card;
-}
-
-async function renderResumen() {
-  const strip = document.getElementById('resumen-strip');
-  const grid = document.getElementById('resumen-grid');
-  if (!strip || !grid || !currentStoreId) return;
-
-  const now = new Date();
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(now.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
-  const yearAgo = new Date(now);
-  yearAgo.setFullYear(now.getFullYear() - 1);
-
-  const [rev, ord, cat, pay, conv] = await Promise.all([
-    supabase.from('reviews').select('rating').eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
-    supabase.from('orders').select('total_price, created_at, delivery_method, status').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
-    supabase.from('order_items').select('quantity, price, products(categories(name)), orders!inner(store_id, payment_status)').eq('orders.store_id', currentStoreId).eq('orders.payment_status', 'paid'),
-    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId).eq('payment_method', 'transferencia').eq('payment_status', 'pending'),
-    supabase.from('conversations').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId),
-  ]);
-
-  const reviews = rev.data || [];
-  const paidOrders = ord.data || [];
-  const catItems = cat.data || [];
-  const pendingPayCount = pay.count || 0;
-  const questionCount = conv.count || 0;
-
-  const reviewCount = reviews.length;
-  const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
-  const salesYear = paidOrders.filter((o) => new Date(o.created_at) >= yearAgo).length;
-  const sales7d = paidOrders.filter((o) => new Date(o.created_at) >= sevenDaysAgo).reduce((s, o) => s + o.total_price, 0);
-  const incomeTotal = paidOrders.reduce((s, o) => s + o.total_price, 0);
-  const shipmentsInProgress = paidOrders.filter((o) => o.delivery_method === 'delivery' && (o.status === 'paid' || o.status === 'shipped')).length;
-
-  // Franja superior
-  strip.textContent = '';
-  strip.appendChild(rsStripCell('Tu reputación', reviewCount ? rsStars(avgRating) : 'Aún no tenés reseñas',
-    reviewCount ? `${avgRating.toFixed(1)} · ${reviewCount} reseña${reviewCount === 1 ? '' : 's'}` : 'Sumá tus primeras ventas', reviewCount > 0));
-  strip.appendChild(rsStripCell('Ventas brutas', formatPrice(sales7d), 'Últimos 7 días'));
-  strip.appendChild(rsStripCell('Tu dinero cobrado', formatPrice(incomeTotal), 'Total acreditado'));
-
-  // Grilla de cards
-  grid.textContent = '';
-  grid.appendChild(rsPendingCard('Pendientes en tus publicaciones', [
+  dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
-    { label: 'Preguntas', count: questionCount, section: 'preguntas' },
-  ]));
-  grid.appendChild(rsPendingCard('Pendientes en tus ventas', [
+    { label: 'Preguntas sin responder', count: questionCount, href: './mensajes.html', alert: questionCount > 0 },
+  ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
+
+  dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
     { label: 'Envíos en curso', count: shipmentsInProgress, section: 'envios' },
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pagos', alert: pendingPayCount > 0 },
-  ]));
+    { label: 'Ventas para calificar', count: salesToRate, section: 'ventas' },
+  ], { label: 'Ir a ventas', section: 'ventas' }));
 
-  grid.appendChild(rsPromoCard());
+  // Novedades / ¿Necesitás ayuda?
+  grid2.textContent = '';
+  grid2.appendChild(rsNoveltyCard());
+  grid2.appendChild(rsHelpCard());
 
-  grid.appendChild(rsReputationCard(avgRating, reviewCount, salesYear));
-
-  const novCard = rsEl('div', 'rs-card');
-  novCard.appendChild(rsEl('div', 'rs-card__title', 'Novedades'));
-  novCard.appendChild(rsEl('div', 'rs-empty', 'Aún no tenés novedades. Acá vas a ver los comunicados del equipo cuando estén disponibles.'));
-  grid.appendChild(novCard);
-
-  grid.appendChild(rsBusinessMetricsCard(paidOrders, catItems, sevenDaysAgo));
+  // Métricas de negocio
+  metricsContainer.textContent = '';
+  metricsContainer.appendChild(rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d));
 }
 
 // (El insights provisional F12-13 se reemplazó por renderResumen, arriba.)
