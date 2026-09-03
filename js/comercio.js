@@ -201,7 +201,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const editColorBtn = document.createElement('button');
     editColorBtn.type = 'button';
     editColorBtn.className = 'store-header__icon-btn';
-    editColorBtn.title = 'Editar color';
+    editColorBtn.dataset.tooltip = 'Editar color';
     editColorBtn.setAttribute('aria-label', 'Editar color');
     const pencilIcon = document.createElement('i');
     pencilIcon.className = 'fa-solid fa-pen';
@@ -222,7 +222,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const favBtn = document.createElement('button');
     favBtn.type = 'button';
     favBtn.className = 'store-header__icon-btn';
-    favBtn.title = 'Agregar comercio a favoritos';
+    favBtn.dataset.tooltip = 'Agregar comercio a favoritos';
     favBtn.setAttribute('aria-label', 'Agregar comercio a favoritos');
     const favIcon = document.createElement('i');
     favIcon.className = 'fa-regular fa-heart';
@@ -354,7 +354,7 @@ function buildProductSearchRow({ isOwner, onSearch }) {
     const editBtn = document.createElement('a');
     editBtn.href = './vender.html#perfil-comercio';
     editBtn.className = 'store-edit-profile-btn';
-    editBtn.title = 'Editar mi perfil';
+    editBtn.dataset.tooltip = 'Editar mi perfil';
     editBtn.setAttribute('aria-label', 'Editar mi perfil');
     const pencilIcon = document.createElement('i');
     pencilIcon.className = 'fa-solid fa-pen';
