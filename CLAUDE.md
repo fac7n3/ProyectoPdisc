@@ -111,6 +111,14 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `mp-create-preference`), no directo al vendedor. Falta diagnosticar el
   motivo (revisar `redirect_uri`, `MP_CLIENT_ID`/`MP_CLIENT_SECRET`, permisos
   de la app en Mercado Pago) antes del lanzamiento real.
+- **Resuelto 2026-09-03** — mergeado `feature/home-restructura` (rediseño del home: buscador en la
+  misma fila del navbar, carrusel en el hero, dos mosaicos de promos, mapa de comercios cerca y las
+  grillas de Ofertas y Esenciales con paginado de a 4). Venía de ~30 commits atrás; al resolver los
+  conflictos **no volvió** el `initFarmaciaLink()` con la farmacia, la dirección y el teléfono
+  inventados: el bloque queda dentro del hero pero apunta a `farmacias.html`. La franja de valor de
+  F9-01 (envío dentro de Baradero / comercios verificados / apoyo al barrio) se sacó a pedido del
+  usuario. La tira de categorías del home la reemplaza la fila de acciones de la rama; el mega-menú
+  sigue montado en el navbar (`nav-categories-slot`).
 - **Migración 73 sin aplicar** (`db/schema/73_support_ticket_attachments.sql`, 2026-09-03) — agrega
   `support_tickets.attachments` (text[], tope de 5 por check) y el bucket privado
   `support-attachments` con sus policies, para adjuntar capturas/PDF al enviar un reclamo. El
