@@ -351,6 +351,8 @@ async function loadDashboard(user, staffStoreId) {
   }
 
   currentStoreId = store.id;
+  const previewLink = document.getElementById('preview-store-link');
+  if (previewLink) previewLink.href = `./comercio.html?id=${store.id}`;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
   const shopLabel = isStoreOwner ? store.name : `${store.name} (como empleado)`;
   if (shopNameEl) shopNameEl.textContent = shopLabel;
