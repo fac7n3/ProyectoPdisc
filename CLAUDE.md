@@ -114,7 +114,10 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **Migración 66 sin aplicar** (`db/schema/66_cart_hints_preference.sql`, 2026-08-16) — agrega
   `profiles.cart_hints_enabled` para la preferencia "Mostrar ayudas en el carrito". Se dejó escrita
   sin aplicar **a pedido del usuario** (la aplica él). Hasta entonces la preferencia funciona solo
-  por dispositivo (cache en localStorage) — la app no se rompe. **Los números 61-65 están
+  por dispositivo (cache en localStorage) — la app no se rompe. **Mientras siga pendiente,
+  las preferencias nuevas de Ajustes se guardan solo en el navegador a propósito** (ver
+  `js/settings-utils.js`): no tiene sentido sumar columnas a `profiles` que tampoco van a
+  persistir. **Los números 61-65 están
   reservados por la rama sin mergear `feature/logistica-terceros`**: no reusarlos.
 - **Resuelto 2026-09-01** — A113-266: reparados 6 bugs reales de la tarea de corrección de errores
   (el resto de las 12 subtareas de bug ya estaban resueltas en commits previos). Notificaciones sin

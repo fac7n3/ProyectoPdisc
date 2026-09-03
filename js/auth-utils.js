@@ -1,6 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
 import { initErrorLogging } from "./error-logger.js";
+import { applyDevicePreferences } from "./settings-utils.js";
+
+// Preferencias visuales elegidas en Perfil → Ajustes (hoy: "Reducir
+// animaciones"). Va acá porque este módulo lo importa cualquier página del
+// sitio: es el único punto que corre en todas sin repetir la llamada. Y va
+// ANTES de createClient a propósito: si falta la config de Supabase eso tira
+// y corta el módulo, y no tiene por qué llevarse puesta una preferencia de
+// accesibilidad que no depende de la red.
+applyDevicePreferences();
 
 // Inicializar Supabase
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);

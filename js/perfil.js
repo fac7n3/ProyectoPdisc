@@ -1,6 +1,7 @@
 import { supabase, guardPage, showToast } from "./auth-utils.js";
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
+import { getPref, setPref } from "./settings-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
@@ -50,7 +51,10 @@ const favoritosStoresContainer = document.getElementById("favoritos-stores-conta
 const favFilterInput = document.getElementById("fav-filter-input");
 
 // Hub de secciones (grilla de tarjetas) y panel de la sección abierta
-const accountCards = document.querySelectorAll(".account-card[data-target]");
+// Cualquier elemento con data-target="tab-..." abre esa sección: las tarjetas
+// del hub y también los accesos directos de adentro de una sección (ej. el
+// botón "Ver" de Ajustes → Información de tu perfil).
+const sectionLinks = document.querySelectorAll("[data-target^='tab-']");
 const tabPanes = document.querySelectorAll(".tab-pane");
 const accountHub = document.getElementById("account-hub");
 const sectionsWrap = document.getElementById("profile-sections");
@@ -78,8 +82,8 @@ function closeSection() {
   if (accountHub) accountHub.style.display = "grid";
 }
 
-accountCards.forEach((card) => {
-  card.addEventListener("click", () => openSection(card.dataset.target));
+sectionLinks.forEach((el) => {
+  el.addEventListener("click", () => openSection(el.dataset.target));
 });
 
 if (sectionBack) sectionBack.addEventListener("click", closeSection);
@@ -201,6 +205,67 @@ function syncCartHintsPref(profile) {
   // muestra la cache local en vez de forzar un valor inventado.
   if (!toggle || profile?.cart_hints_enabled == null) return;
   toggle.checked = profile.cart_hints_enabled;
+}
+
+/**
+ * Preferencias que se guardan en el navegador y no en la cuenta
+ * (js/settings-utils.js). Son decisiones del dispositivo -- "no me tires
+ * carteles en la compra de la oficina", "esta pantalla me marea" -- y encima
+ * no dependen de ninguna migración pendiente, así que guardan siempre.
+ */
+function bindDevicePref(inputId, prefName) {
+  const toggle = document.getElementById(inputId);
+  if (!toggle) return;
+
+  toggle.checked = getPref(prefName);
+  toggle.addEventListener("change", () => {
+    setPref(prefName, toggle.checked);
+    showToast("Preferencia guardada en este dispositivo.", "success");
+  });
+}
+
+/**
+ * "Cerrar sesión en todos los dispositivos": revoca todos los refresh tokens
+ * de la cuenta, no solo el de esta pestaña. Es la salida para quien entró en
+ * una compu prestada y ya no la tiene a mano.
+ */
+function initSignOutAll() {
+  const btn = document.getElementById("btn-signout-all");
+  if (!btn) return;
+
+  btn.addEventListener("click", async () => {
+    const ok = confirm(
+      "Vas a cerrar la sesión en todos los dispositivos donde entraste con esta cuenta.\n\n" +
+      "No se borra nada: tus compras, tus favoritos y tus direcciones quedan igual. " +
+      "Solo vas a tener que ingresar de nuevo.\n\n¿Seguimos?"
+    );
+    if (!ok) return;
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = "Cerrando…";
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "global" });
+      if (error) throw error;
+      // El redirect a login lo hace el listener de SIGNED_OUT que ya monta
+      // guardPage -- por eso el botón no se re-habilita en el camino feliz.
+      showToast("Listo, cerramos la sesión en todos lados.", "success");
+    } catch (err) {
+      console.error("Error al cerrar la sesión en todos los dispositivos", err);
+      showToast("No pudimos cerrar las otras sesiones. Probá de nuevo en un rato.", "error");
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
+}
+
+/** Todo lo que vive en la pestaña "Ajustes". */
+function initSettings() {
+  initCartHintsPref();
+  bindDevicePref("pref-notif-toasts", "notifToasts");
+  bindDevicePref("pref-reduce-motion", "reduceMotion");
+  initSignOutAll();
 }
 
 // --- Direcciones: Cargar y Guardar ---
@@ -2438,7 +2503,7 @@ guardPage({
   onReady: (user) => {
     renderQuickProfile(user);
     openDeepLinkSection();
-    initCartHintsPref();
+    initSettings();
     renderFullProfile(user);
     handleMercadoPagoReturn();
   },

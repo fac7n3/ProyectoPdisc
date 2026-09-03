@@ -1332,3 +1332,21 @@ a.compra-item-text:hover {
   line-height: 1.45;
   color: var(--bl-perfil-text-sec);
 }
+
+/* Con varias preferencias apiladas, una línea fina evita que los textos largos
+   de una se lean como parte de la de abajo. */
+.pref-toggle + .pref-toggle {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--bl-perfil-border);
+}
+
+/* "Solo en este dispositivo": aclara cuáles preferencias NO viajan con la
+   cuenta, para que nadie se sorprenda de encontrarlas distintas en el celular. */
+.pref-toggle__where {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bl-perfil-hint);
+}

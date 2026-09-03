@@ -2,7 +2,7 @@
 --
 -- La guía son los mensajes de una línea que explican qué hace cada casilla del
 -- carrito ("Producto en pendiente, este no se agregará a su compra", etc.,
--- ver js/hints-utils.js). Se pueden apagar desde Perfil → Mis datos.
+-- ver js/hints-utils.js). Se pueden apagar desde Perfil → Ajustes.
 --
 -- Por qué una columna en `profiles` y no solo localStorage: es una decisión de
 -- la persona, no del navegador. Quien ya entendió cómo funciona el carrito y
@@ -25,4 +25,4 @@ alter table public.profiles
   add column if not exists cart_hints_enabled boolean not null default true;
 
 comment on column public.profiles.cart_hints_enabled is
-  'Si false, el carrito no muestra los mensajes de ayuda de la selección por comercio. Se edita desde Perfil → Mis datos.';
+  'Si false, el carrito no muestra los mensajes de ayuda de la selección por comercio. Se edita desde Perfil → Ajustes.';

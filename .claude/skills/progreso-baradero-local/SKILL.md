@@ -1881,3 +1881,61 @@ mock calcados de la captura real que mandó el usuario (mismos ids cortos, mismo
 comercio) — los 7 casos (por comercio, por producto, por n° de orden, por estado solo, estado +
 texto combinados, sin resultados) pasaron. Ver memoria `feedback-testing-sin-login` para la regla
 completa de cara a futuras sesiones.
+
+## Página de Ajustes completa (2026-09-02)
+
+Rama `claude/settings-page-features-a5928b`. La pestaña "Ajustes" del perfil tenía una sola
+casilla ("Mostrar ayudas en el carrito") y nada más. Ahora tiene tres grupos:
+
+- **Preferencias** — las ayudas del carrito (ya existía, sincronizada con la cuenta vía
+  `profiles.cart_hints_enabled`) + dos nuevas: "Avisos emergentes de notificaciones" y
+  "Reducir animaciones".
+- **Sesión y seguridad** — un acceso directo a "Información de tu perfil" (donde viven la
+  contraseña y la forma de ingreso) y **"Cerrar sesión en todos los dispositivos"**
+  (`supabase.auth.signOut({ scope: "global" })`, revoca todos los refresh tokens de la cuenta).
+- **Tus datos son tuyos** — "Descargar mis datos" + "Eliminar mi cuenta", **movidos** desde
+  "Información de tu perfil". Es un movimiento de HTML puro: los ids (`btn-download-data`,
+  `btn-delete-account`) no cambiaron, así que `setupPrivacyActions()` los sigue enganchando sin
+  tocar una línea de JS.
+
+**Por qué las dos preferencias nuevas son por dispositivo y no por cuenta:** la migración 66
+(`cart_hints_enabled`) sigue sin aplicar, así que sumar más columnas a `profiles` habría sumado
+más preferencias que no persisten. Además son genuinamente decisiones del dispositivo ("no me
+tires carteles en la compu de la oficina", "esta pantalla me marea"). Viven en
+`js/settings-utils.js`: una tabla chica `PREFS` (clave de localStorage + default) con
+`getPref`/`setPref`/`applyDevicePreferences`, sin imports, con `node js/settings-utils.test.mjs`.
+
+**Reducir animaciones** no inventa CSS: `applyDevicePreferences()` pone la clase
+`bl-reduce-motion` en `<html>` y `Assets/styles/a11y.css` repite ahí el mismo cuerpo que ya tenía
+el `@media (prefers-reduced-motion: reduce)` (no se pueden fusionar: son dos condiciones distintas
+con el mismo efecto). La llamada vive en `js/auth-utils.js`, el único módulo que importa
+prácticamente todo el sitio.
+
+**Gotcha que apareció al verificarlo:** la llamada estaba puesta *después* de
+`createClient(SUPABASE_URL, ...)`. Sin `.env` local eso tira `supabaseUrl is required`, corta la
+evaluación del módulo y la clase nunca se aplicaba. Se movió **arriba** de `createClient`: una
+preferencia de accesibilidad no tiene por qué depender de que la config de Supabase esté bien.
+
+**Avisos emergentes**: el gate está dentro de `pollOnce` en `js/toast-utils.js`, antes del fetch —
+apagado no consulta nada (se ahorra un request cada 30s) y el cambio se siente sin recargar. Al
+apagarlos se borra `bl_toast_last_notif_id`, así que al volver a encenderlos se arranca de cero en
+vez de recibir de golpe todas las de mientras.
+
+**Navegación:** el selector `.account-card[data-target]` de `perfil.js` pasó a
+`[data-target^="tab-"]`, así cualquier botón de adentro de una sección puede abrir otra sección
+sin handler propio (lo usa el botón "Ver" de Sesión y seguridad).
+
+**Cómo se verificó (sin login, ver memoria `feedback-testing-sin-login`):** `perfil.html` exige
+sesión, así que (a) `node js/settings-utils.test.mjs` cubre defaults, round-trip, clave inexistente
+y localStorage bloqueado; (b) "Reducir animaciones" se probó de punta a punta en `home.html` (que
+es pública): con la preferencia en `1` el `<html>` queda con `bl-reduce-motion` y la
+`transition-duration` de un botón del navbar pasa de `0.15s` a `1e-05s`; en `0` vuelve a `0.15s`;
+(c) el render del panel se verificó inyectando el `#tab-ajustes` real de `perfil.html` (vía fetch +
+DOMParser) junto con `perfil-custom.css`/`carrito.css` reales en una página pública, y sacando
+captura — los tres toggles, los separadores, las etiquetas "Solo en este dispositivo" y las dos
+filas de sesión se ven bien.
+
+**Lo que NO se hizo, a propósito:** tema oscuro (habría que reescribir los colores de las 6 hojas
+de estilo, no es un ajuste sino un proyecto), preferencias de notificación por tipo (necesitan
+migración nueva y hoy solo existe el canal in-app: F8-02/F8-03 siguen bloqueadas), y tamaño de
+texto (el zoom nativo del navegador ya lo cubre).
