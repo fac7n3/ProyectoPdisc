@@ -7,6 +7,7 @@ import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
+import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from "./phone-countries.js";
 import { removeStoredObjects, formatFileSize } from "./storage-utils.js";
 import { isValidPhone } from "./validation-utils.js";
 import { buildDropdown } from "./dropdown.js";
@@ -42,6 +43,14 @@ const phoneMineValue = document.getElementById("address-phone-mine-value");
 const btnSaveAddress = document.getElementById("btn-save-address");
 const btnAddAddress = document.getElementById("btn-add-address");
 const btnCancelAddress = document.getElementById("btn-cancel-address");
+
+// Selector de característica de país para el teléfono de la dirección
+// (mismo componente y misma lista que "Información de tu perfil").
+const phoneDialSlot = document.getElementById("address-phone-dial-slot");
+const phoneDial = phoneDialSlot
+  ? buildDropdown({ options: PHONE_COUNTRY_OPTIONS, value: DEFAULT_PHONE_DIAL, ariaLabel: "Característica de país" })
+  : null;
+if (phoneDial) phoneDialSlot.appendChild(phoneDial.element);
 
 // Contenedores
 const comprasContainer = document.getElementById("compras-container");
@@ -399,7 +408,9 @@ function setupPhoneChoice(existingPhone) {
   const myPhone = (profileData?.phone || '').trim();
   if (!myPhone) {
     if (phoneUseMineWrap) phoneUseMineWrap.hidden = true;
-    inputPhone.value = existingPhone;
+    const { dial, number } = splitPhone(existingPhone);
+    if (phoneDial) phoneDial.setValue(existingPhone ? dial : DEFAULT_PHONE_DIAL);
+    inputPhone.value = existingPhone ? number : '';
     inputPhone.readOnly = false;
     return;
   }
@@ -407,16 +418,27 @@ function setupPhoneChoice(existingPhone) {
   if (phoneMineValue) phoneMineValue.textContent = myPhone;
   const useMine = !existingPhone || existingPhone === myPhone;
   if (phoneUseMine) phoneUseMine.checked = useMine;
-  inputPhone.value = useMine ? myPhone : existingPhone;
+  const { dial, number } = splitPhone(useMine ? myPhone : existingPhone);
+  if (phoneDial) {
+    phoneDial.setValue(dial);
+    phoneDial.setDisabled(useMine);
+  }
+  inputPhone.value = number;
   inputPhone.readOnly = useMine;
 }
 
 if (phoneUseMine) {
   phoneUseMine.addEventListener('change', () => {
     if (phoneUseMine.checked) {
-      inputPhone.value = (profileData?.phone || '').trim();
+      const { dial, number } = splitPhone((profileData?.phone || '').trim());
+      if (phoneDial) {
+        phoneDial.setValue(dial);
+        phoneDial.setDisabled(true);
+      }
+      inputPhone.value = number;
       inputPhone.readOnly = true;
     } else {
+      if (phoneDial) phoneDial.setDisabled(false);
       inputPhone.value = '';
       inputPhone.readOnly = false;
       inputPhone.focus();
@@ -574,6 +596,10 @@ function closeAddressForm() {
   inputDetails.value = '';
   inputPhone.value = '';
   inputPhone.readOnly = false;
+  if (phoneDial) {
+    phoneDial.setValue(DEFAULT_PHONE_DIAL);
+    phoneDial.setDisabled(false);
+  }
   if (phoneUseMine) phoneUseMine.checked = false;
   addressDefault.checked = true;
   closeAddressSuggest();
@@ -593,7 +619,8 @@ if (addressForm) {
     if (!currentUserId) return;
 
     const addr = inputAddress.value.trim();
-    const phone = inputPhone.value.trim();
+    const phoneNumber = inputPhone.value.trim();
+    const phone = phoneNumber ? `${phoneDial ? phoneDial.getValue() : DEFAULT_PHONE_DIAL} ${phoneNumber}` : '';
 
     // A113-293: dirección y teléfono obligatorios -- sin el teléfono el
     // repartidor no tiene forma de avisar si no encuentra la dirección o
