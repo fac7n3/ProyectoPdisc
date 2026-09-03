@@ -1163,7 +1163,7 @@ function rsEl(tag, cls, text) {
 }
 
 function rsReputationLabel(avgRating, reviewCount) {
-  if (!reviewCount) return 'Sin calificar aún';
+  if (!reviewCount) return 'Sin calificar';
   if (avgRating >= 4.5) return 'Excelente';
   if (avgRating >= 4) return 'Muy buena';
   if (avgRating >= 3) return 'Buena';
