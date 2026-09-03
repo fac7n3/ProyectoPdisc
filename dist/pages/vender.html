@@ -281,15 +281,35 @@
       }
 
       /* --- Sección Resumen (diseño ML con paleta propia) --- */
-      .rs-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-      .rs-strip__cell { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.1rem 1.25rem; box-shadow: var(--bl-shadow-card); }
-      .rs-strip__label { font-size: 0.8rem; color: var(--bl-text-secondary); margin-bottom: 0.35rem; }
-      .rs-strip__value { font-size: 1.5rem; font-weight: 700; color: var(--bl-text); line-height: 1.1; }
-      .rs-strip__sub { font-size: 0.78rem; color: var(--bl-text-muted); margin-top: 0.3rem; }
-      .rs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; }
+      .rs-greeting { text-align: left; margin-bottom: 1.25rem; }
+      .rs-greeting__title { font-size: 1.5rem; color: var(--bl-text); margin: 0 0 0.3rem; }
+      .rs-greeting__sub { color: var(--bl-text-secondary); font-size: 0.95rem; margin: 0; }
       .rs-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.25rem; box-shadow: var(--bl-shadow-card); }
-      .rs-card--wide { grid-column: 1 / -1; }
-      .rs-card__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.9rem; }
+      .rs-card__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+      .rs-card__title i { color: var(--bl-vendor-accent); font-size: 0.9rem; }
+      .rs-empty { color: var(--bl-text-muted); font-size: 0.88rem; }
+      .rs-link { color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.85rem; cursor: pointer; background: none; border: none; padding: 0; margin-top: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; }
+      .rs-link:hover { text-decoration: underline; }
+
+      /* Fila superior: 4 stats + promo (grid-template-areas, responsive) */
+      .rs-dash {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) 1.3fr;
+        grid-template-areas: "s1 s2 s3 s4 promo" "p1 p1 p2 p2 promo";
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .rs-stat__top { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.7rem; }
+      .rs-stat__icon { width: 38px; height: 38px; border-radius: var(--bl-radius-md); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+      .rs-stat__icon--rep { background: #ede9fe; color: #7c3aed; }
+      .rs-stat__icon--sales { background: #dcfce7; color: #16a34a; }
+      .rs-stat__icon--money { background: #dbeafe; color: #2563eb; }
+      .rs-stat__icon--orders { background: #fef3c7; color: #d97706; }
+      .rs-stat__title { font-size: 0.85rem; color: var(--bl-text-secondary); font-weight: 600; }
+      .rs-stat__value { font-size: 1.4rem; font-weight: 700; color: var(--bl-text); line-height: 1.15; }
+      .rs-stat__sub { font-size: 0.78rem; color: var(--bl-text-muted); margin-top: 0.3rem; }
+      .rs-stat__delta { font-size: 0.78rem; font-weight: 600; margin-top: 0.3rem; display: flex; align-items: center; gap: 0.3rem; color: #16a34a; }
+      .rs-stat__delta--down { color: #dc2626; }
       .rs-pending-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
       .rs-pending-row:last-child { border-bottom: none; }
       .rs-pending-row:hover .rs-pending-row__label { color: var(--bl-vendor-accent); }
@@ -297,40 +317,53 @@
       .rs-pending-row__right { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--bl-text-muted); }
       .rs-badge { min-width: 1.5rem; text-align: center; background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); padding: 0.1rem 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--bl-text); }
       .rs-badge--alert { background: var(--bl-vendor-accent); color: #fff; }
-      .rs-stars { color: var(--bl-accent); letter-spacing: 2px; font-size: 1.1rem; }
-      .rs-empty { color: var(--bl-text-muted); font-size: 0.88rem; }
-      .rs-link { color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.85rem; cursor: pointer; background: none; border: none; padding: 0; margin-top: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem; }
-      .rs-link:hover { text-decoration: underline; }
+
+      .rs-promo { grid-area: promo; position: relative; background: linear-gradient(160deg, var(--bl-vendor-accent) 0%, var(--bl-vendor-accent-dark) 100%); border-radius: var(--bl-radius-lg); padding: 1.5rem 1.5rem 1.75rem; color: #fff; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--bl-shadow-card); }
+      .rs-promo__icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; margin-bottom: 1rem; }
+      .rs-promo__title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
+      .rs-promo__text { font-size: 0.86rem; color: rgba(255, 255, 255, 0.85); margin-bottom: 1.1rem; line-height: 1.4; flex: 1; }
+      .rs-promo__btn { background: #fff; color: var(--bl-vendor-accent); border: none; border-radius: var(--bl-radius-pill); padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; align-self: flex-start; }
+      .rs-promo__btn:hover { background: var(--bl-bg); }
+      .rs-promo__next { position: absolute; top: 0.9rem; right: 0.9rem; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; }
+      .rs-promo__next:hover { background: rgba(255, 255, 255, 0.24); }
+
+      /* Novedades / ¿Necesitás ayuda? */
+      .rs-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; margin-bottom: 1rem; }
+      .rs-help-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
+      .rs-help-row:last-child { border-bottom: none; }
+      .rs-help-row:hover .rs-help-row__title { color: var(--bl-vendor-accent); }
+      .rs-help-row__title { color: var(--bl-text); font-size: 0.92rem; font-weight: 600; }
+      .rs-help-row__sub { color: var(--bl-text-muted); font-size: 0.78rem; margin-top: 0.15rem; }
+
+      /* Métricas de negocio: línea (7 días) + torta por categoría (30 días) */
+      .rs-metrics { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.75rem; }
+      .rs-metrics__label { font-size: 0.82rem; color: var(--bl-text-secondary); margin-bottom: 0.3rem; }
+      .rs-metrics__figure { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
+      .rs-line { width: 100%; height: auto; margin-top: 0.75rem; }
+      .rs-line__grid { stroke: var(--bl-border-light); stroke-width: 1; }
+      .rs-line__axis { fill: var(--bl-text-muted); font-size: 9px; }
+      .rs-line__path { fill: none; stroke: var(--bl-vendor-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+      .rs-line__area { fill: rgba(var(--bl-vendor-accent-rgb), 0.08); }
+      .rs-line__dot { fill: var(--bl-vendor-accent); }
       .rs-pie { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
-      .rs-pie__chart { width: 130px; height: 130px; border-radius: 50%; flex-shrink: 0; }
-      .rs-pie__legend { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.84rem; min-width: 0; }
+      .rs-pie__chart-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+      .rs-pie__chart { width: 130px; height: 130px; border-radius: 50%; }
+      .rs-pie__hole { position: absolute; inset: 30px; border-radius: 50%; background: var(--bl-surface); }
+      .rs-pie__legend { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.84rem; min-width: 0; flex: 1; }
       .rs-pie__item { display: flex; align-items: center; gap: 0.5rem; color: var(--bl-text-secondary); }
       .rs-pie__dot { width: 0.72rem; height: 0.72rem; border-radius: 50%; flex-shrink: 0; }
-      .rs-bars { display: flex; flex-direction: column; gap: 0.4rem; }
-      .rs-bars__row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
-      .rs-bars__label { width: 3.5rem; color: var(--bl-text-secondary); flex-shrink: 0; }
-      .rs-bars__track { flex: 1; background: var(--bl-border-light); border-radius: 4px; height: 10px; overflow: hidden; }
-      .rs-bars__fill { background: var(--bl-vendor-accent); height: 100%; border-radius: 4px; }
-      .rs-bars__value { width: 5.5rem; text-align: right; font-weight: 600; flex-shrink: 0; }
-      .rs-rep-stepper { display: flex; align-items: flex-start; justify-content: space-between; position: relative; margin: 0.15rem 0 0.9rem; }
-      .rs-rep-stepper::before { content: ''; position: absolute; top: 19px; left: 19px; right: 19px; height: 2px; background: var(--bl-border); z-index: 0; }
-      .rs-rep-step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex: 1; }
-      .rs-rep-step__icon { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bl-surface-alt); border: 2px solid var(--bl-border); color: var(--bl-text-muted); font-size: 0.95rem; }
-      .rs-rep-step__label { font-size: 0.7rem; color: var(--bl-text-muted); text-align: center; }
-      .rs-rep-step--active .rs-rep-step__icon { background: var(--rs-step-color, var(--bl-vendor-accent)); border-color: var(--rs-step-color, var(--bl-vendor-accent)); color: #fff; }
-      .rs-rep-step--active .rs-rep-step__label { color: var(--bl-text); font-weight: 700; }
-      .rs-rep-explain { font-size: 0.82rem; color: var(--bl-text-secondary); background: var(--bl-surface-alt); border-radius: var(--bl-radius-md); padding: 0.75rem 0.9rem; margin-top: 0.5rem; line-height: 1.5; }
-      .rs-rep-explain[hidden] { display: none; }
-      .rs-promo { grid-column: 1 / -1; position: relative; background: linear-gradient(135deg, var(--bl-vendor-accent) 0%, var(--bl-vendor-accent-dark) 100%); border-radius: var(--bl-radius-lg); padding: 1.5rem 1.75rem; color: #fff; display: flex; align-items: center; gap: 1.5rem; overflow: hidden; box-shadow: var(--bl-shadow-card); }
-      .rs-promo__icon { width: 64px; height: 64px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; flex-shrink: 0; }
-      .rs-promo__body { flex: 1; min-width: 0; }
-      .rs-promo__title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.35rem; }
-      .rs-promo__text { font-size: 0.88rem; color: rgba(255, 255, 255, 0.85); margin-bottom: 1rem; line-height: 1.4; }
-      .rs-promo__btn { background: #fff; color: var(--bl-vendor-accent); border: none; border-radius: var(--bl-radius-pill); padding: 0.6rem 1.25rem; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
-      .rs-promo__btn:hover { background: var(--bl-bg); }
-      .rs-promo__next { position: absolute; top: 0.9rem; right: 0.9rem; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
-      .rs-promo__next:hover { background: rgba(255, 255, 255, 0.24); }
-      @media (max-width: 640px) { .rs-strip, .rs-grid { grid-template-columns: 1fr; } .rs-promo { flex-direction: column; text-align: center; } .rs-promo__next { top: 0.6rem; right: 0.6rem; } }
+      .rs-pie__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rs-pie__pct { color: var(--bl-text-muted); width: 2.6rem; flex-shrink: 0; }
+      .rs-pie__amount { font-weight: 600; color: var(--bl-text); width: 5rem; text-align: right; flex-shrink: 0; }
+
+      @media (max-width: 900px) {
+        .rs-dash { grid-template-columns: repeat(2, 1fr); grid-template-areas: "s1 s2" "s3 s4" "promo promo" "p1 p1" "p2 p2"; }
+        .rs-grid2 { grid-template-columns: 1fr; }
+        .rs-metrics { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 640px) {
+        .rs-dash { grid-template-columns: 1fr; grid-template-areas: "s1" "s2" "s3" "s4" "promo" "p1" "p2"; }
+      }
 
       /* --- Sección Publicaciones (diseño ML "Mis publicaciones") --- */
       .pub-wrap { margin-top: 0.5rem; }
@@ -484,7 +517,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-NiUomTYZ.js"></script>
+    <script type="module" crossorigin src="/assets/vender-CPLxRlXr.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -614,17 +647,19 @@
 
             <!-- === Resumen === -->
             <section class="mc-section" data-section="resumen">
-              <div class="vender-header" style="text-align:left; margin-bottom:1.5rem;">
-                <h2 style="font-size:1.5rem;">Resumen</h2>
-                <p>Bienvenido, <strong id="welcome-store-name">tu comercio</strong></p>
+              <div class="rs-greeting">
+                <h2 class="rs-greeting__title">¡Hola, <span id="resumen-greeting-name">vendedor</span>! 👋</h2>
+                <p class="rs-greeting__sub">Este es el resumen de tu actividad como vendedor.</p>
               </div>
 
             <!-- Onboarding (F12-15): solo se muestra hasta completar el perfil + primer producto -->
             <div id="onboarding-container" style="display: none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem;"></div>
 
-            <!-- Franja superior + grilla de cards (diseño ML). Poblado por renderResumen(). -->
-            <div id="resumen-strip" class="rs-strip"></div>
-            <div id="resumen-grid" class="rs-grid"></div>
+            <!-- Fila superior: 4 stats + card "Impulsá tus ventas". Fila de pendientes.
+                 Fila Novedades/Ayuda. Métricas de negocio. Poblado por renderResumen(). -->
+            <div id="resumen-dash" class="rs-dash"></div>
+            <div id="resumen-grid2" class="rs-grid2"></div>
+            <div id="resumen-metrics"></div>
 
             </section>
 
