@@ -155,13 +155,16 @@ function writeCatBarCache(categories, featured) {
  * fetch resuelve) y refresca el cache en background para la próxima. Sin cache
  * (primera visita), espera el fetch y dibuja una vez.
  */
-export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6 } = {}) {
+export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6, megaMountId = null } = {}) {
   const inner = document.getElementById('category-bar-inner');
-  if (!inner) return;
+  // Sin #category-bar-inner no hay tira de categorías que dibujar, pero puede
+  // seguir habiendo mega-menú si la página lo montó en otro lado (home).
+  const hasMegaMount = megaMountId && document.getElementById(megaMountId);
+  if (!inner && !hasMegaMount) return;
 
   const cached = readCatBarCache();
   if (cached) {
-    renderCategoryBar(inner, cached.categories, cached.featured, activeSlug);
+    renderCategoryBar(inner, cached.categories, cached.featured, activeSlug, megaMountId);
     // Refresco silencioso para la próxima navegación (sin re-render: las
     // categorías casi nunca cambian; si cambian, se ve al siguiente load).
     Promise.all([getCategories(), getFeaturedCategories(featuredLimit)])
@@ -172,12 +175,17 @@ export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6
 
   const categories = await getCategories();
   const featured = await getFeaturedCategories(featuredLimit);
-  renderCategoryBar(inner, categories, featured, activeSlug);
+  renderCategoryBar(inner, categories, featured, activeSlug, megaMountId);
   writeCatBarCache(categories, featured);
 }
 
-function renderCategoryBar(inner, categories, featured, activeSlug) {
-  inner.textContent = '';
+function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId = null) {
+  if (inner) inner.textContent = '';
+
+  // Por defecto el botón "Categorías" va en la barra de categorías. Si la
+  // página pasa `megaMountId`, se monta ahí (ej: home lo lleva al navbar).
+  const megaMount = megaMountId ? document.getElementById(megaMountId) : null;
+  if (megaMount) megaMount.textContent = '';
 
   // --- Botón mega-menú "Categorías" (fijo, no scrollea) ---
   const mega = document.createElement('div');
@@ -191,7 +199,12 @@ function renderCategoryBar(inner, categories, featured, activeSlug) {
   const barsIcon = document.createElement('i');
   barsIcon.className = 'fa-solid fa-bars';
   trigger.appendChild(barsIcon);
-  trigger.append(' Categorías ');
+  // En un <span> y no como texto suelto, para que el CSS pueda ocultar la
+  // palabra y dejar solo el ícono (navbar del home en teléfono).
+  const megaLabel = document.createElement('span');
+  megaLabel.className = 'cat-mega__label';
+  megaLabel.textContent = 'Categorías';
+  trigger.appendChild(megaLabel);
   const caret = document.createElement('i');
   caret.className = 'fa-solid fa-chevron-down cat-mega__caret';
   trigger.appendChild(caret);
@@ -245,7 +258,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug) {
   });
   panel.appendChild(megaFooter);
   mega.appendChild(panel);
-  inner.appendChild(mega);
+  (megaMount || inner).appendChild(mega);
+  if (megaMount) mega.classList.add('cat-mega--in-navbar');
 
   // Toggle del mega-menú (click, no solo hover -> mejor en mobile y accesible)
   const openMega = () => { panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); mega.classList.add('is-open'); };
@@ -262,7 +276,10 @@ function renderCategoryBar(inner, categories, featured, activeSlug) {
   });
 
   // --- Tira de acceso rápido: Inicio + Ofertas + solo las categorías
-  //     destacadas (no las 14). El resto vive en el mega-menú de arriba. ---
+  //     destacadas (no las 14). El resto vive en el mega-menú de arriba.
+  //     El home no la usa: esa fila la ocupa con sus propios botones. ---
+  if (!inner) return;
+
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 

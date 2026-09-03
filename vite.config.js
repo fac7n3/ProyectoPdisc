@@ -10,7 +10,9 @@ function securityHeadersPlugin() {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        // geolocation=(self): el home la usa (mapa "Comercios cerca tuyo").
+        // camera/microphone siguen sin uso en el sitio, quedan bloqueadas.
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
         next();
       });
     },

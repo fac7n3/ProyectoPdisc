@@ -6,12 +6,14 @@
 > son decisiones de diseño finales, son placeholders honestos.
 
 ## F9-01 — Sistema de diseño (más contraste, calidez y personalidad)
-**Estado:** placeholder mínimo aplicado, no un rediseño.
+**Estado:** el placeholder ya fue reemplazado por indicación del usuario (2026-08-19).
 
-- `pages/home.html` / `Assets/styles/home.css`: franja "franja de valor" debajo del hero
+- ~~`pages/home.html` / `Assets/styles/home.css`: franja "franja de valor" debajo del hero
   (`.value-strip`), 3 frases cortas con ícono en el acento cálido ya existente de la
-  paleta (`--bl-accent: #f59e0b`, definido desde el inicio del proyecto pero casi sin uso
-  real fuera de los badges de descuento).
+  paleta (`--bl-accent: #f59e0b`).~~ **Eliminada** en la reestructuración del home: el
+  usuario pidió sacarla y pegar la banda de "Farmacia de turno" al pie del banner,
+  compartiendo su mismo ancho. `.value-strip` ya no existe ni en el HTML ni en el CSS
+  (recuperable del historial de git si alguna vez se quiere volver atrás).
 - No se tocó la paleta de colores en sí, ni la tipografía, ni la estructura de ninguna
   página existente — sería prematuro sin ver primero los diseños reales del usuario.
 
