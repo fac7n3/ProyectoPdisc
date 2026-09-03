@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <meta name="description" content="Baradero Local — Comprá productos de comercios locales de Baradero y recibilos en tu casa. Almacén, panadería, verdulería y mucho más." />
     <title>Baradero Local — Tu mercado online de Baradero</title>
     <meta property="og:type" content="website" />
@@ -19,20 +19,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/home-C9OLWA52.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script type="module" crossorigin src="/assets/home-DPh1IyoB.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DFDjlVMP.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-O4_6O7mL.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DlzacEfc.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CivoFhuJ.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-eI849PvZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-BXHksA8P.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-hgIgZIpS.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-Bwp3lmXO.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DpC9GIj-.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-CXd5Kb4d.css">
   </head>
   <body>
 
     <!-- ====== BARRA DE NAVEGACIÓN ====== -->
-    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+    <!-- navbar--single-row: variante de una sola fila, por ahora SOLO en el
+         home. El resto de las páginas sigue con las dos filas de siempre. -->
+    <nav class="navbar navbar--single-row" role="navigation" aria-label="Navegación principal">
       <div class="navbar__top">
         <!-- Logo -->
         <a href="./home.html" class="navbar__logo" id="navbar-logo">
@@ -42,6 +44,19 @@
             <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
           </div>
         </a>
+
+        <!-- Botón "Categorías": lo monta nav-utils.js acá (mismo mega-menú
+             que antes vivía en la barra de abajo) -->
+        <div id="nav-categories-slot" class="navbar__categories-slot"></div>
+
+        <!-- Búsqueda: ahora en la misma fila -->
+        <div class="navbar__search-wrapper">
+          <div class="navbar__search">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
+            <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
+          </div>
+        </div>
 
         <!-- Acciones -->
         <div class="navbar__actions">
@@ -55,61 +70,83 @@
           </a>
         </div>
       </div>
-
-      <!-- Búsqueda -->
-      <div class="navbar__search-wrapper">
-        <div class="navbar__search">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
-          <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
-        </div>
-      </div>
     </nav>
 
-    <!-- ====== BARRA DE CATEGORÍAS (mega-menú + acceso rápido, poblada por nav-utils.js) ====== -->
-    <div class="category-bar" role="navigation" aria-label="Categorías">
-      <div class="category-bar__inner" id="category-bar-inner"></div>
+    <!-- ====== FILA DE ACCESOS DEL HOME ======
+         Reemplaza a la tira de categorías (que en el home vive en el mega-menú
+         del navbar). Los tres botones todavía no llevan a ningún lado: falta
+         definir su destino. -->
+    <div class="category-bar">
+      <div class="category-bar__inner category-bar__inner--home-actions">
+        <button type="button" class="home-action">Vender</button>
+        <button type="button" class="home-action">Contratar</button>
+        <button type="button" class="home-action">Ayuda</button>
+      </div>
     </div>
 
     <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <main>
 
-      <!-- Banner Principal -->
-      <section class="hero" aria-label="Banner promocional">
-        <div class="hero__banner">
-          <img src="/assets/hero_banner-CU_tAwg2.webp" alt="Productos frescos de Baradero" loading="eager" />
-          <div class="hero__banner-overlay">
-            <h1 class="hero__banner-title">Comprá local,<br />recibí en casa</h1>
-            <p class="hero__banner-subtitle">Productos frescos de los comercios de Baradero directo a tu puerta.</p>
-            <a href="#productos" class="hero__banner-cta">
-              Explorar productos <i class="fa-solid fa-arrow-right"></i>
-            </a>
+      <!-- Banner Principal: carrusel de promociones.
+           A futuro cada diapositiva es una promo de un comercio; por ahora las
+           dos últimas son provisionales y enlazan a categorías reales. -->
+      <section class="hero" aria-label="Promociones destacadas">
+        <div class="hero__carousel">
+          <div class="hero__track" id="hero-track" aria-roledescription="carrusel" aria-label="Promociones destacadas">
+
+            <article class="hero__slide" aria-roledescription="diapositiva" aria-label="1 de 3">
+              <img src="/assets/hero_banner-CU_tAwg2.webp" alt="Productos frescos de Baradero" loading="eager" />
+              <div class="hero__banner-overlay">
+                <h1 class="hero__banner-title">Comprá local,<br />recibí en casa</h1>
+                <p class="hero__banner-subtitle">Productos frescos de los comercios de Baradero directo a tu puerta.</p>
+                <a href="#productos" class="hero__banner-cta">
+                  Explorar productos <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="hero__slide" aria-roledescription="diapositiva" aria-label="2 de 3">
+              <img src="/assets/hero_banner_2-COZgEKLD.webp" alt="Panificados de las panaderías de Baradero" loading="lazy" />
+              <div class="hero__banner-overlay">
+                <h2 class="hero__banner-title">Pan recién hecho,<br />a la vuelta de tu casa</h2>
+                <p class="hero__banner-subtitle">Las panaderías del pueblo, ahora también a domicilio.</p>
+                <a href="./search.html?cat=panaderia" class="hero__banner-cta">
+                  Ver panaderías <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="hero__slide" aria-roledescription="diapositiva" aria-label="3 de 3">
+              <img src="/assets/hero_banner_3-BAn7OOHx.webp" alt="Productos de limpieza de los comercios de Baradero" loading="lazy" />
+              <div class="hero__banner-overlay">
+                <h2 class="hero__banner-title">Todo para tu casa,<br />sin salir de ella</h2>
+                <p class="hero__banner-subtitle">Artículos de limpieza de los comercios de Baradero, a un par de clics.</p>
+                <a href="./search.html?cat=limpieza" class="hero__banner-cta">
+                  Ver limpieza <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              </div>
+            </article>
+
           </div>
+
+          <!-- Flechas: solo en escritorio. En teléfono se desliza con el dedo. -->
+          <button type="button" class="hero__arrow hero__arrow--prev" id="hero-prev" aria-label="Promoción anterior">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button type="button" class="hero__arrow hero__arrow--next" id="hero-next" aria-label="Promoción siguiente">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+
+          <!-- Puntitos: única señal de "hay más" en teléfono, donde no hay flechas -->
+          <div class="hero__dots" id="hero-dots"></div>
+        </div>
+
+        <!-- Farmacia de turno: va dentro del hero para quedar pegada al pie
+             del banner y compartir exactamente su ancho -->
+        <div class="farmacia-turno">
+          <strong>Farmacia de turno hoy:</strong> Consultá la farmacia de turno de Baradero | <a href="#" id="farmacia-link" style="color: inherit; text-decoration: underline;">Ver más info</a>
         </div>
       </section>
-
-      <!-- F9-01 (provisional): franja de valor con el acento cálido de la
-           paleta -- placeholder hasta que llegue un diseño real, ver
-           docs/DISENOS_PROVISIONALES.md -->
-      <div class="value-strip" aria-label="Por qué comprar en Baradero Local">
-        <div class="value-strip__item">
-          <i class="fa-solid fa-truck-fast"></i>
-          <span>Envío dentro de Baradero</span>
-        </div>
-        <div class="value-strip__item">
-          <i class="fa-solid fa-shop"></i>
-          <span>Comercios verificados</span>
-        </div>
-        <div class="value-strip__item">
-          <i class="fa-solid fa-heart"></i>
-          <span>100% apoyo a tu barrio</span>
-        </div>
-      </div>
-
-      <!-- Farmacia de turno -->
-      <div class="farmacia-turno">
-        <strong>Farmacia de turno hoy:</strong> Consultá la farmacia de turno de Baradero | <a href="#" id="farmacia-link" style="color: inherit; text-decoration: underline;">Ver más info</a>
-      </div>
 
       <!-- Locales Destacados (Carrusel Horizontal) -->
       <section class="stores-carousel-section" aria-label="Locales destacados">
@@ -123,6 +160,26 @@
           <div class="store-logo-skeleton skeleton"></div>
           <div class="store-logo-skeleton skeleton"></div>
           <div class="store-logo-skeleton skeleton"></div>
+        </div>
+      </section>
+
+      <!-- Mosaico de banners promocionales. Sin destino todavía.
+           Color plano, sin ilustración: ver charla con el usuario sobre por
+           qué no hay foto de marca de terceros acá. -->
+      <section class="promo-mosaic" aria-label="Promociones">
+        <div class="promo-mosaic__grid">
+          <div class="promo-banner promo-banner--large promo-banner--a">
+            <span class="promo-banner__eyebrow">Promoción</span>
+            <span class="promo-banner__title">Bebidas para el verano</span>
+          </div>
+          <div class="promo-banner promo-banner--b">
+            <span class="promo-banner__eyebrow">Combos</span>
+            <span class="promo-banner__title">Combo hamburguesas</span>
+          </div>
+          <div class="promo-banner promo-banner--c">
+            <span class="promo-banner__eyebrow">Oferta del día</span>
+            <span class="promo-banner__title">2x1 en gaseosas</span>
+          </div>
         </div>
       </section>
 
@@ -166,6 +223,158 @@
               <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
               <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comercios cerca tuyo: geolocalización del navegador (sin Google de
+           por medio) + mapa embebido de Google (sin API key, técnica
+           output=embed) centrado en esa ubicación. El botón de abajo abre
+           Google Maps de verdad en otra pestaña, ahí sí con los comercios
+           reales de alrededor. -->
+      <section class="nearby-map" aria-label="Comercios cerca tuyo">
+        <div class="section-header">
+          <h2 class="section-header__title">Comercios cerca tuyo</h2>
+        </div>
+
+        <div class="nearby-map__panel" id="nearby-map-panel">
+          <div class="nearby-map__prompt" id="nearby-map-prompt">
+            <i class="fa-solid fa-location-dot"></i>
+            <p>Activá tu ubicación para ver el mapa centrado donde estás.</p>
+            <button type="button" class="nearby-map__btn" id="nearby-map-locate">
+              Usar mi ubicación
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Esenciales para tu casa: productos de las categorías de consumo
+           del hogar (almacén, limpieza, lácteos) - filtro real por
+           categoría, no una selección manual inventada. Carrusel de a 4,
+           igual que Ofertas: ver initGridPager() en home.js. -->
+      <section class="products" id="esenciales" aria-label="Esenciales para tu casa">
+
+        <div class="section-header">
+          <h2 class="section-header__title">Esenciales para tu casa</h2>
+          <div class="section-header__nav">
+            <button type="button" class="section-header__arrow" id="essentials-prev" aria-label="Anteriores">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="section-header__arrow" id="essentials-next" aria-label="Siguientes">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="products__grid products__grid--paged" id="essentials-grid">
+          <!-- skeleton -->
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ofertas: mismo criterio de "oferta" que ya usa el resto del sitio
+           (compare_at_price > price, sin vencer) - ver buildPriceRow() en
+           cart-utils.js. No es una curaduría manual, es un filtro real.
+           Carrusel de a 4, igual que Esenciales. -->
+      <section class="products" id="ofertas" aria-label="Ofertas">
+
+        <div class="section-header">
+          <h2 class="section-header__title">Ofertas</h2>
+          <div class="section-header__nav">
+            <button type="button" class="section-header__arrow" id="offers-prev" aria-label="Anteriores">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" class="section-header__arrow" id="offers-next" aria-label="Siguientes">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="products__grid products__grid--paged" id="offers-grid">
+          <!-- skeleton -->
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+          <div class="product-card skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-body" style="padding: 1rem;">
+              <div class="skeleton-text" style="width: 60%; height: 12px; margin-bottom: 0.5rem; background: #e2e8f0; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
+              <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Segundo mosaico de banners: mismo estilo de color plano que el de
+           arriba (promo-mosaic), pero distribución distinta a propósito —
+           uno ancho arriba + dos parejas abajo, en vez de uno grande a un
+           costado + dos apiladas al otro. Sin destino ni imagen todavía. -->
+      <section class="promo-mosaic-2" aria-label="Más promociones">
+        <div class="promo-mosaic-2__grid">
+          <div class="promo-banner-2 promo-banner-2--wide promo-banner-2--d">
+            <span class="promo-banner__eyebrow">Novedades</span>
+            <span class="promo-banner__title">Espacio ancho para una promo</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--e">
+            <span class="promo-banner__eyebrow">Envíos</span>
+            <span class="promo-banner__title">Espacio para un banner</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--f">
+            <span class="promo-banner__eyebrow">Comercios</span>
+            <span class="promo-banner__title">Espacio para otro banner</span>
           </div>
         </div>
       </section>
@@ -246,6 +455,6 @@
         border: 0;
       }
     </style>
-
+
   </body>
 </html>

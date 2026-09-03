@@ -108,6 +108,135 @@ ul, ol {
   padding: 0.75rem 1.5rem;
 }
 
+/* ── Variante de una sola fila (por ahora solo home.html) ──
+   Logo · Categorías · Buscador · Acciones, todo en .navbar__top.
+   Para llevarla a otra página: agregarle la clase navbar--single-row al <nav>,
+   mover el .navbar__search-wrapper adentro de .navbar__top, sumar el div
+   #nav-categories-slot y pasarle megaMountId a initCategoryBar(). */
+/* gap 8px = mismo hueco que hay entre notificaciones/perfil/carrito (ver
+   .navbar__actions más abajo). Así categorías→buscador y buscador→acciones
+   quedan igual de separados que los íconos entre sí. */
+.navbar--single-row .navbar__top {
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+/* Entre 769 y 900px entran los cuatro elementos con el rótulo "Categorías",
+   pero justo: se achica la separación para que el buscador conserve el ancho
+   que necesita su texto en vez de tener que esconder la palabra. */
+@media (max-width: 900px) {
+  .navbar--single-row .navbar__top {
+    gap: 0.625rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* El buscador se come todo el espacio sobrante entre categorías y acciones.
+   min-width: sin esto se encoge hasta cortar el texto del placeholder (medido:
+   necesita 161px de texto + 56px de padding e ícono). */
+.navbar--single-row .navbar__search-wrapper {
+  flex: 1;
+  min-width: 14rem;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar--single-row .navbar__actions {
+  flex-shrink: 0;
+}
+
+/* Alturas: los controles medían 44px contra 36 del bloque del logo, y se
+   notaba el desfasaje. Bajan a 40px y el texto del logo sube a ~40 separando
+   sus dos renglones, así los tres quedan a la misma altura. */
+.navbar--single-row .navbar__search-input {
+  height: 2.5rem;
+}
+
+/* El botón de Categorías comparte esos 40px, pero solo en computadora: en
+   min-width para que no compita con la variante circular de 36px de
+   teléfono (misma especificidad, sin este freno el óvalo ganaba fuera del
+   hover porque esta regla no estaba condicionada por ningún ancho). */
+@media (min-width: 769px) {
+  .navbar--single-row .cat-mega--in-navbar .cat-mega__trigger {
+    height: 2.5rem;
+  }
+}
+
+.navbar--single-row .navbar__logo-text {
+  gap: 0.25rem;
+}
+
+/* El texto pegado al isotipo: gana aire contra el botón de categorías y el
+   nav queda menos cargado. */
+.navbar--single-row .navbar__logo {
+  gap: 0.375rem;
+}
+
+.navbar__categories-slot {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+/* Los 8px del gap de la fila más estos 16 dejan el mismo hueco de 24px que hay
+   entre el borde del nav y el logo, y entre los iconos y el borde derecho.
+   Corre a Categorías y al buscador juntos; las acciones no se mueven. */
+.navbar--single-row .navbar__categories-slot {
+  margin-left: 1rem;
+}
+
+/* En teléfono los cinco elementos no entran en una línea, así que se parte
+   en dos renglones:
+     1) logo a la izquierda · notificaciones, perfil, carrito y categorías
+        a la derecha (categorías queda solo con su ícono)
+     2) buscador ocupando todo el ancho
+   El margin-right:auto del logo empuja al resto contra el borde derecho, y el
+   flex-basis:100% del buscador lo obliga a bajar de renglón. */
+@media (max-width: 768px) {
+  .navbar--single-row .navbar__top {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    row-gap: 0.625rem;
+  }
+
+  .navbar--single-row .navbar__logo {
+    order: 1;
+    margin-right: auto;
+    min-width: 0; /* permite que ceda si el ancho no alcanza */
+  }
+
+  /* Sin esto los tres iconos quedan pegados entre sí: la regla general de
+     teléfono les pone gap 0. Misma separación que usa la fila. */
+  .navbar--single-row .navbar__actions {
+    order: 2;
+    gap: 0.375rem;
+  }
+
+  /* margin-left:0: en teléfono Categorías va pegada a las acciones (no al
+     logo), así que el margen de 16px del desktop sobra acá y desparejaría el
+     gap de 6px que ya tienen los íconos entre sí. */
+  .navbar--single-row .navbar__categories-slot {
+    order: 3;
+    margin-left: 0;
+  }
+
+  .navbar--single-row .navbar__search-wrapper {
+    order: 4;
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  /* Solo el isotipo: con el texto el logo mide 215px y el primer renglón
+     necesita 376px sobre 327 disponibles; sin él son 36px y entra todo con
+     lugar de sobra. El nombre no se pierde para lectores de pantalla: el
+     <img> ya tiene alt="Baradero Local". */
+  .navbar--single-row .navbar__logo-text {
+    display: none;
+  }
+}
+
 /* Logo */
 .navbar__logo {
   display: flex;
@@ -453,6 +582,54 @@ ul, ol {
   min-height: 3rem;
 }
 
+/* ── Fila de accesos del home (Vender · Contratar · Ayuda) ──
+   Ocupa el lugar de la tira de categorías. Los tres se reparten el ancho en
+   partes iguales (flex: 1). */
+.category-bar__inner--home-actions {
+  /* stretch + sin padding vertical: los botones llegan al borde de arriba y
+     de abajo de la fila, sin franja visible entre uno y otra. */
+  align-items: stretch;
+  gap: 0;
+  /* De borde a borde: sin el ancho máximo ni los gutters de 1.5rem que usa el
+     resto de la barra, los tres botones cubren la fila entera. */
+  max-width: none;
+  padding: 0;
+  min-height: 2.25rem; /* la fila era de 3rem */
+}
+
+.home-action {
+  flex: 1;
+  min-width: 0;
+  height: auto; /* lo define el alto de la fila */
+  padding: 0 1rem;
+  /* Solo una línea divisoria entre botones: los bordes de arriba y abajo
+     duplicaban el borde que ya trae la fila. */
+  border: none;
+  border-right: 1px solid var(--bl-border);
+  border-radius: 0;
+  background: var(--bl-surface);
+  color: var(--bl-primary-dark);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.home-action:last-child {
+  border-right: none;
+}
+
+/* Al pasar el puntero se pinta el botón entero, no el borde. */
+.home-action:hover {
+  background: var(--bl-primary-dark);
+  color: #fff;
+}
+
+.home-action:active {
+  background: var(--bl-primary-deeper);
+}
+
 /* Tira de acceso rápido (scrollea horizontal; el mega-menú queda fijo) */
 .category-bar__quick {
   flex: 1;
@@ -603,6 +780,73 @@ ul, ol {
   }
 }
 
+/* ── Mega-menú montado en el navbar (home) ──
+   Va después de las reglas .cat-mega de arriba a propósito: con la misma
+   especificidad gana la última, así que si este bloque se mueve más arriba
+   vuelve a aparecer el separador vertical y se pierde el color. */
+.cat-mega--in-navbar {
+  /* En la barra de categorías este borde separa del resto de los accesos;
+     en el navbar quedaba como una línea suelta a la derecha del botón. */
+  border-right: none;
+}
+
+/* Botón contorneado: relleno blanco, borde y texto en el azul de la banda de
+   farmacia. Los estados van en la regla de abajo.
+   Sin `height` a propósito: ese valor lo pone la regla de arriba (2.5rem,
+   en .navbar--single-row .cat-mega--in-navbar .cat-mega__trigger). Repetirlo
+   acá con :hover generaba un empate de especificidad que el navegador
+   resolvía por orden de aparición, y como este bloque viene después, el
+   botón "crecía" 4px al pasar el mouse. */
+.cat-mega--in-navbar .cat-mega__trigger,
+.cat-mega--in-navbar .cat-mega__trigger:hover,
+.cat-mega--in-navbar.is-open .cat-mega__trigger {
+  background: var(--bl-surface);
+  color: var(--bl-primary-dark);
+  border: 1px solid var(--bl-primary-dark);
+  border-radius: var(--bl-radius-md);
+  padding: 0 1rem;
+}
+
+/* Al pasar el puntero y con el menú abierto se invierte, igual que los tres
+   botones de la fila de abajo. */
+.cat-mega--in-navbar .cat-mega__trigger:hover,
+.cat-mega--in-navbar.is-open .cat-mega__trigger {
+  background: var(--bl-primary-dark);
+  color: #fff;
+}
+
+.cat-mega--in-navbar .cat-mega__caret {
+  opacity: 0.85;
+}
+
+/* En teléfono es un botón redondo más, al lado de campana/perfil/carrito.
+   En computadora conserva siempre la palabra "Categorías". */
+@media (max-width: 768px) {
+  /* Solo el ícono: acá el botón es un círculo de 36px y la palabra no entra. */
+  .cat-mega--in-navbar .cat-mega__label,
+  .cat-mega--in-navbar .cat-mega__caret {
+    display: none;
+  }
+
+  .cat-mega--in-navbar .cat-mega__trigger,
+  .cat-mega--in-navbar .cat-mega__trigger:hover,
+  .cat-mega--in-navbar.is-open .cat-mega__trigger {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* Anclado a la derecha para no salirse de pantalla. */
+  .cat-mega--in-navbar .cat-mega__panel {
+    left: auto;
+    right: 0;
+    width: min(640px, calc(100vw - 2rem));
+  }
+}
+
 .category-bar__item {
   position: relative;
   padding: 0.75rem 1rem;
@@ -713,19 +957,111 @@ ul, ol {
   padding: 0 1.5rem;
 }
 
-.hero__banner {
+/* Carrusel de promociones. Marco fijo: recorta las diapositivas y redondea
+   solo las esquinas de arriba (abajo cierra la banda de farmacia). */
+.hero__carousel {
   position: relative;
   width: 100%;
   height: 280px;
-  border-radius: var(--bl-radius-xl);
+  border-radius: var(--bl-radius-md) var(--bl-radius-md) 0 0;
   overflow: hidden;
   background: linear-gradient(135deg, var(--bl-primary-deeper) 0%, var(--bl-primary) 100%);
 }
 
-.hero__banner img {
+/* Pista deslizable: en teléfono se arrastra con el dedo (scroll nativo con
+   scroll-snap); en escritorio la mueven las flechas vía scrollTo(). */
+.hero__track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.hero__track::-webkit-scrollbar {
+  display: none; /* Chrome */
+}
+
+.hero__slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+
+.hero__slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+/* ── Flechas (solo escritorio) ── */
+.hero__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--bl-primary-deeper);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--bl-shadow-md);
+  transition: background 0.15s, transform 0.15s, opacity 0.15s;
+}
+
+.hero__arrow:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.07);
+}
+
+.hero__arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.hero__arrow--prev { left: 1rem; }
+.hero__arrow--next { right: 1rem; }
+
+/* ── Puntitos de posición ── */
+.hero__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.75rem;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.hero__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50rem;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: background 0.2s, width 0.2s;
+}
+
+.hero__dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.hero__dot--active {
+  width: 22px;
+  background: #fff;
 }
 
 .hero__banner-overlay {
@@ -735,7 +1071,9 @@ ul, ol {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 2.5rem 3rem;
+  /* El lateral deja libre la franja de las flechas (16px de borde + 44px de
+     botón) para que no se monten sobre el texto de la promo. */
+  padding: 2.5rem 4.5rem;
 }
 
 .hero__banner-title {
@@ -773,51 +1111,19 @@ ul, ol {
   transform: translateY(-1px);
 }
 
-/* F9-01 (provisional): franja de valor con el acento cálido de la paleta --
-   placeholder hasta que llegue un diseño real, ver docs/DISENOS_PROVISIONALES.md */
-.value-strip {
-  max-width: 1320px;
-  margin: 1rem auto 0;
-  padding: 0 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  justify-content: center;
-}
-
-.value-strip__item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--bl-text-secondary);
-}
-
-.value-strip__item i {
-  color: var(--bl-accent);
-  font-size: 1rem;
-}
-
-@media (max-width: 640px) {
-  .value-strip {
-    gap: 0.75rem 1rem;
-  }
-  .value-strip__item {
-    font-size: 0.8125rem;
-  }
-}
-
 /* ===========================================================
    FARMACIA DE TURNO
    =========================================================== */
 
+/* Vive dentro de .hero, pegada al pie del banner: hereda su ancho exacto y
+   cierra el bloque con las esquinas inferiores redondeadas. */
 .farmacia-turno {
-  max-width: 1320px;
-  margin: 1rem auto 0;
-  background: #4f74d4;
+  margin: 0;
+  /* El azul más oscuro de la paleta (#1f3460). Ojo: pese al nombre,
+     --bl-primary-deeper (#1e3a5f) es más claro que este. */
+  background: var(--bl-primary-dark);
   color: #fff;
-  border-radius: 50rem;
+  border-radius: 0 0 var(--bl-radius-md) var(--bl-radius-md);
   padding: 0.625rem 1.5rem;
   text-align: center;
   font-size: 0.875rem;
@@ -1011,6 +1317,255 @@ button.coupon-chip:hover {
 
 .section-header__link:hover {
   color: var(--bl-primary-dark);
+}
+
+/* Flechas del carrusel de a 4 (Esenciales / Ofertas) */
+.section-header__nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.section-header__arrow {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--bl-border);
+  background: var(--bl-surface);
+  color: var(--bl-text-secondary);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.section-header__arrow:hover:not(:disabled) {
+  background: var(--bl-primary);
+  color: #fff;
+  border-color: var(--bl-primary);
+}
+
+/* Sin más páginas de ese lado: se ve pero no se puede tocar, en vez de
+   desaparecer (evita que el layout salte al llegar al final). */
+.section-header__arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ===========================================================
+   MOSAICO DE BANNERS PROMOCIONALES
+   =========================================================== */
+
+.promo-mosaic {
+  max-width: 1320px;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+/* Mosaico asimétrico: A grande a la izquierda ocupando las dos filas,
+   B y C apiladas a la derecha, cada una la mitad de alta que A. */
+.promo-mosaic__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-rows: repeat(2, 9rem);
+  gap: 1rem;
+}
+
+.promo-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  border-radius: var(--bl-radius-md);
+  color: #fff;
+}
+
+.promo-banner--large {
+  grid-row: span 2;
+}
+
+.promo-banner--a {
+  background: #e63946;
+}
+
+.promo-banner--b {
+  background: #ffb703;
+}
+
+.promo-banner--c {
+  background: #06a77d;
+}
+
+.promo-banner__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.promo-banner__title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.promo-banner--large .promo-banner__title {
+  font-size: 1.375rem;
+}
+
+@media (max-width: 640px) {
+  /* Se apilan: A arriba a todo el ancho, B y C debajo una al lado de la otra. */
+  .promo-mosaic__grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 8rem 6.5rem;
+  }
+
+  .promo-banner--large {
+    grid-column: span 2;
+    grid-row: 1;
+  }
+
+  .promo-banner--b,
+  .promo-banner--c {
+    grid-row: 2;
+  }
+}
+
+/* ===========================================================
+   SEGUNDO MOSAICO DE BANNERS (distribución en T, distinta a la de arriba)
+   =========================================================== */
+
+.promo-mosaic-2 {
+  max-width: 1320px;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+/* Fila 1: un banner ancho ocupando las dos columnas. Fila 2: dos banners
+   parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
+   uno grande a un costado en vez de arriba). */
+.promo-mosaic-2__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 8rem 8rem;
+  gap: 1rem;
+}
+
+.promo-banner-2 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  border-radius: var(--bl-radius-md);
+  color: #fff;
+}
+
+.promo-banner-2--wide {
+  grid-column: span 2;
+}
+
+/* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
+   no se lea como una repetición de la misma sección. */
+.promo-banner-2--d {
+  background: #7209b7;
+}
+
+.promo-banner-2--e {
+  background: #14213d;
+}
+
+.promo-banner-2--f {
+  background: #d90368;
+}
+
+@media (max-width: 640px) {
+  .promo-mosaic-2__grid {
+    grid-template-rows: 7rem 6.5rem;
+  }
+}
+
+/* ===========================================================
+   COMERCIOS CERCA TUYO (mapa embebido de Google, sin API key)
+   =========================================================== */
+
+.nearby-map {
+  max-width: 1320px;
+  margin: 2rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.nearby-map__panel {
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-xl);
+  overflow: hidden;
+  background: var(--bl-surface);
+}
+
+.nearby-map__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--bl-text-secondary);
+}
+
+.nearby-map__prompt i {
+  font-size: 1.75rem;
+  color: var(--bl-primary);
+}
+
+.nearby-map__prompt p {
+  max-width: 24rem;
+  font-size: 0.9375rem;
+}
+
+.nearby-map__btn {
+  padding: 0.625rem 1.5rem;
+  background: var(--bl-primary);
+  color: #fff;
+  border-radius: var(--bl-radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.nearby-map__btn:hover {
+  background: var(--bl-primary-dark);
+}
+
+.nearby-map__iframe {
+  display: block;
+  width: 100%;
+  height: 360px;
+  border: none;
+}
+
+.nearby-map__open-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  background: var(--bl-surface-alt);
+  border-top: 1px solid var(--bl-border);
+  color: var(--bl-primary-dark);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.nearby-map__open-link:hover {
+  background: var(--bl-border-light);
+}
+
+@media (max-width: 640px) {
+  .nearby-map__iframe {
+    height: 280px;
+  }
 }
 
 /* ===========================================================
@@ -1454,6 +2009,21 @@ button.coupon-chip:hover {
   gap: 1rem;
 }
 
+/* Carrusel de a 4 (Esenciales / Ofertas): a diferencia de "Productos
+   recomendados" (auto-fill, muestra todo lo que entre), acá siempre se ven
+   4 tarjetas y las flechas del header paginan el resto - ver
+   initGridPager() en home.js. Selector compuesto para ganarle en
+   especificidad a los @media de .products__grid de más abajo. */
+.products__grid.products__grid--paged {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .products__grid.products__grid--paged {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Responsive para sidebar */
 @media (max-width: 992px) {
   .catalog-layout {
@@ -1618,16 +2188,19 @@ button.coupon-chip:hover {
   font-size: 0.625rem;
 }
 
+/* Una sola línea con "...": antes clampeaba a 2 líneas, así que un nombre
+   corto (1 línea) y uno largo (2 líneas) dejaban todo lo de abajo — precio,
+   envío, botón — a una altura distinta según la tarjeta. Una sola línea fija
+   ese primer desnivel. */
 .product-card__name {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--bl-text);
   line-height: 1.35;
   margin-bottom: 0.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-card__price-row {
@@ -1692,13 +2265,17 @@ button.coupon-chip:hover {
   color: var(--bl-text-muted);
 }
 
-/* Botón agregar al carrito */
+/* Botón agregar al carrito.
+   margin-top:auto lo pega siempre al borde inferior de la tarjeta (el body
+   es flex-column): así queda en el mismo lugar en todas, tengan o no badge
+   de envío gratis arriba, en vez de quedar más arriba o más abajo según
+   cuánto contenido haya antes. */
 .product-card__add {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  margin-top: 0.75rem;
+  margin-top: auto;
   padding: 0.5rem;
   background: var(--bl-primary);
   color: #fff;
@@ -1987,8 +2564,14 @@ button.coupon-chip:hover {
     display: none;
   }
 
-  .hero__banner {
+  .hero__carousel {
     height: 200px;
+  }
+
+  /* En teléfono el carrusel se desliza con el dedo: las flechas sobran y
+     además taparían el texto de la promo. */
+  .hero__arrow {
+    display: none;
   }
 
   .hero__banner-overlay {
@@ -2049,9 +2632,13 @@ button.coupon-chip:hover {
 }
 
 @media (max-width: 480px) {
-  .hero__banner {
+  .hero__carousel {
     height: 160px;
-    border-radius: var(--bl-radius-lg);
+    border-radius: var(--bl-radius-sm) var(--bl-radius-sm) 0 0;
+  }
+
+  .farmacia-turno {
+    border-radius: 0 0 var(--bl-radius-sm) var(--bl-radius-sm);
   }
 
   .hero__banner-title {
