@@ -443,6 +443,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const section = document.createElement('section');
     section.className = 'store-products';
 
+    const gridBox = document.createElement('div');
+    gridBox.className = 'store-products-box';
+
     const grid = document.createElement('div');
     grid.className = 'products__grid';
     grid.id = 'store-products-grid';
@@ -474,8 +477,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderGrid(!q ? productList : productList.filter((p) => p.title.toLowerCase().includes(q)));
       },
     });
+    gridBox.appendChild(grid);
     section.appendChild(searchRow);
-    section.appendChild(grid);
+    section.appendChild(gridBox);
     renderGrid(productList);
 
     mainContent.appendChild(section);
