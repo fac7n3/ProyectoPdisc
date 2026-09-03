@@ -6,6 +6,23 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
+// Comercios sin logo_url: se les asigna uno de estos diseños genéricos ya
+// existentes en el proyecto (ficticios, sin marca real - ver
+// public/img/logo-*.webp), rotando entre ellos. Provisorio a pedido del
+// usuario: repetir el mismo diseño en más de un comercio está bien por ahora.
+const STORE_LOGO_FALLBACKS = [
+  '/img/logo-farmacia.webp',
+  '/img/logo-ferreteria.webp',
+  '/img/logo-kiosco.webp',
+  '/img/logo-panaderia.webp',
+  '/img/logo-bebidas.webp',
+  '/img/logo-limpieza.webp',
+  '/img/logo-moda.webp',
+  '/img/logo-petshop.webp',
+  '/img/logo-tecno.webp',
+  '/img/logo-deportes.webp',
+];
+
 const PRODUCT_SELECT = `
   id,
   title,
@@ -443,27 +460,38 @@ async function loadStores() {
       return;
     }
 
+    let fallbackIndex = 0;
     stores.forEach(store => {
       const link = document.createElement('a');
       link.href = `./comercio.html?id=${store.id}`;
       link.className = 'store-logo-link';
       link.setAttribute('aria-label', `Ir a ${store.name}`);
 
+      const img = document.createElement('img');
+      img.className = 'store-logo-img';
+      img.loading = 'lazy';
       if (store.logo_url) {
-        const img = document.createElement('img');
         img.src = store.logo_url;
         img.alt = store.name;
-        img.className = 'store-logo-img';
-        img.loading = 'lazy';
-        link.appendChild(img);
+        // Al menos un comercio tiene guardada una URL rota como logo_url
+        // (una página de resultados de búsqueda, no una imagen — se ve como
+        // error de CSP en consola). Si falla la carga, cae al genérico en
+        // vez de quedar como ícono roto.
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = STORE_LOGO_FALLBACKS[fallbackIndex % STORE_LOGO_FALLBACKS.length];
+          img.alt = '';
+          fallbackIndex += 1;
+        };
       } else {
-        // Fallback si no tiene logo
-        const text = document.createElement('span');
-        text.className = 'store-logo-text';
-        // Mostrar solo las primeras letras/palabras
-        text.textContent = store.name.substring(0, 15) + (store.name.length > 15 ? '...' : '');
-        link.appendChild(text);
+        // Sin logo cargado: diseño de logo genérico ya existente en el
+        // proyecto (provisorio a pedido del usuario — repetir está bien
+        // hasta que cada comercio suba el suyo real).
+        img.src = STORE_LOGO_FALLBACKS[fallbackIndex % STORE_LOGO_FALLBACKS.length];
+        img.alt = '';
+        fallbackIndex += 1;
       }
+      link.appendChild(img);
 
       carousel.appendChild(link);
     });
@@ -473,6 +501,23 @@ async function loadStores() {
     carousel.innerHTML = '';
     carousel.style.display = 'none'; // Ocultar carrusel en caso de error (no es contenido crítico)
   }
+}
+
+/** Flechas del carrusel de comercios: scroll nativo, sin reimplementar nada
+ *  (mismo criterio que el carrusel del hero). Cada click mueve casi una
+ *  pantalla completa de logos. */
+function initStoresCarouselArrows() {
+  const carousel = document.getElementById('stores-carousel');
+  const prevBtn = document.getElementById('stores-prev');
+  const nextBtn = document.getElementById('stores-next');
+  if (!carousel || !prevBtn || !nextBtn) return;
+
+  const scrollByPage = (dir) => {
+    carousel.scrollBy({ left: dir * carousel.clientWidth * 0.9, behavior: 'smooth' });
+  };
+
+  prevBtn.addEventListener('click', () => scrollByPage(-1));
+  nextBtn.addEventListener('click', () => scrollByPage(1));
 }
 
 // Inicializar todo
@@ -495,6 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Cargar datos dinámicos
   loadStores();
+  initStoresCarouselArrows();
   loadProducts();
   loadOffers();
   loadEssentials();
