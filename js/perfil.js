@@ -6,7 +6,7 @@ import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
 import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
-import { removeStoredObjects } from "./storage-utils.js";
+import { removeStoredObjects, formatFileSize } from "./storage-utils.js";
 import { isValidPhone } from "./validation-utils.js";
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
@@ -1203,13 +1203,6 @@ function setupComprasFilter() {
 }
 
 const MAX_PROOF_BYTES = 10 * 1024 * 1024;
-
-/** 1536000 -> "1,5 MB". Para que el peso se lea, no se calcule. */
-function formatFileSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toLocaleString('es-AR', { maximumFractionDigits: 1 })} MB`;
-}
 
 /**
  * Selector de comprobante con el estilo del sitio.

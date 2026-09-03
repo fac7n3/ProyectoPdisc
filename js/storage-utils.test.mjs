@@ -7,7 +7,7 @@
  * paga (el bug que este módulo vino a arreglar).
  */
 import assert from "node:assert/strict";
-import { publicUrlToStoragePath, removeStoredObjects } from "./storage-utils.js";
+import { publicUrlToStoragePath, removeStoredObjects, formatFileSize, storedFileName } from "./storage-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -143,6 +143,28 @@ await checkAsync("tolera lista vacía o ausente", async () => {
   const sb = fakeSupabase();
   assert.deepEqual(await removeStoredObjects(sb, "avatars", []), []);
   assert.deepEqual(await removeStoredObjects(sb, "avatars", null), []);
+});
+
+console.log("formatFileSize");
+
+check("elige la unidad según el peso", () => {
+  assert.equal(formatFileSize(0), "0 B");
+  assert.equal(formatFileSize(900), "900 B");
+  assert.equal(formatFileSize(1024), "1 KB");
+  assert.equal(formatFileSize(1536 * 1000), "1,5 MB");
+  // El tope de un adjunto de reclamo, tal como se lee en el mensaje de error.
+  assert.equal(formatFileSize(5 * 1024 * 1024), "5 MB");
+});
+
+console.log("storedFileName");
+
+check("saca el timestamp que va adelante del nombre", () => {
+  assert.equal(storedFileName("uid-1/1756000000-captura.png"), "captura.png");
+  assert.equal(storedFileName("uid-1/1756000000-informe_2026-01.pdf"), "informe_2026-01.pdf");
+  // Sin prefijo (o basura) devuelve lo que haya, nunca vacío.
+  assert.equal(storedFileName("uid-1/captura.png"), "captura.png");
+  assert.equal(storedFileName("1756000000-"), "1756000000-");
+  assert.equal(storedFileName(null), "");
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");
