@@ -289,6 +289,24 @@
         margin: 0 auto;
         padding: 0 1.5rem 4rem 1.5rem;
       }
+      /* Caja de productos: borde fino y suave (apenas se nota), puntas
+         redondeadas, alto máximo con scroll PROPIO adentro -- así la
+         grilla no empuja el alto de toda la página. Mismos colores de
+         scroll que el de la página (barra = fondo de la página, pulgar
+         gris) para que se vea integrado. */
+      .store-products-box {
+        border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-lg);
+        padding: 1.25rem;
+        max-height: 640px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--bl-text-muted) var(--bl-bg);
+      }
+      .store-products-box::-webkit-scrollbar { width: 10px; }
+      .store-products-box::-webkit-scrollbar-track { background: var(--bl-bg); }
+      .store-products-box::-webkit-scrollbar-thumb { background: var(--bl-text-muted); border-radius: var(--bl-radius-sm); }
+      .store-products-box::-webkit-scrollbar-thumb:hover { background: var(--bl-text-secondary); }
       /* P2-5: estado de carga -- evita que #main-content quede vacío (0 de
          altura) mientras comercio.js hace el fetch async, lo que hacía que
          el footer saltara al tope de la página por un instante. Mismo
@@ -317,7 +335,7 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BJC2p9P_.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-DFbK03Xa.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Jgaq4W7Q.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-DL6dXif4.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-_TeQbE_P.js">
@@ -326,7 +344,7 @@
     <link rel="stylesheet" crossorigin href="/assets/product-modal-MqQIEKoe.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B2aK6CFr.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BWOzLc1d.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BwxegX2N.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-DfsNBZ3Z.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de

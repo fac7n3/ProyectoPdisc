@@ -65,6 +65,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Scroll de la página: barra fina, fondo del mismo color que la página
+   (se ve "integrada") y pulgar gris. `scrollbar-gutter: stable` reserva
+   ese espacio siempre -- sin esto, una página sin scroll y otra con
+   scroll quedan corridas unos pixeles entre sí y el contenido centrado
+   "salta". */
+html {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bl-text-muted) var(--bl-bg);
+}
+html::-webkit-scrollbar { width: 10px; }
+html::-webkit-scrollbar-track { background: var(--bl-bg); }
+html::-webkit-scrollbar-thumb { background: var(--bl-text-muted); border-radius: var(--bl-radius-sm); }
+html::-webkit-scrollbar-thumb:hover { background: var(--bl-text-secondary); }
+
 /* Checkbox nativo: cada navegador lo dibuja con su propio color por defecto
    (el violeta/azul del sistema). Con accent-color se tiñe del azul de marca
    sin perder nada del checkbox real -- teclado, foco, lector de pantalla,
