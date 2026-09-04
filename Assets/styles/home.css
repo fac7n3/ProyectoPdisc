@@ -1617,12 +1617,12 @@ button.coupon-chip:hover {
    parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
    uno grande a un costado en vez de arriba). La fila 1 mide "auto": el
    banner ancho tiene foto propia y se dimensiona solo por su aspect-ratio
-   (ver .promo-banner-2--wide); la fila 2 sigue con alto fijo, son los dos
-   banners de color plano que todavía no tienen imagen. */
+   chico, como los otros dos de al lado -- una franja angosta, no un banner
+   grande. */
 .promo-mosaic-2__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 8rem;
+  grid-template-rows: 8rem 8rem;
   gap: 1rem;
 }
 
@@ -1636,12 +1636,13 @@ button.coupon-chip:hover {
   color: #fff;
 }
 
-/* Igual que en el mosaico de arriba: la tarjeta mide lo mismo que la foto
-   (1600x900) para que se vea entera, sin recortarse ni dejar franjas. */
+/* A diferencia de los banners del primer mosaico, éste es una franja angosta
+   (8rem, como los banners chicos de al lado) -- con esa proporción tan
+   ancha y baja no entra la foto entera sin dejar franjas enormes a los
+   costados, así que acá sí se recorta con cover, centrada en los frascos. */
 .promo-banner-2--wide {
   grid-column: span 2;
-  aspect-ratio: 1600 / 900;
-  background-size: contain;
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   cursor: pointer;
@@ -1673,7 +1674,7 @@ button.coupon-chip:hover {
 
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
-    grid-template-rows: auto 6.5rem;
+    grid-template-rows: 7rem 6.5rem;
   }
 }
 
