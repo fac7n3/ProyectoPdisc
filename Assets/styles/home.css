@@ -1617,12 +1617,13 @@ button.coupon-chip:hover {
    parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
    uno grande a un costado en vez de arriba). La fila 1 mide "auto": el
    banner ancho tiene foto propia y se dimensiona solo por su aspect-ratio
-   chico, como los otros dos de al lado -- una franja angosta, no un banner
-   grande. */
+   chico -- una franja, no un banner grande -- pero un poco más alta que los
+   otros dos de al lado (13rem contra 8rem) para que la foto entre completa
+   sin recortarse (ver .promo-banner-2--wide). */
 .promo-mosaic-2__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 8rem 8rem;
+  grid-template-rows: 13rem 8rem;
   gap: 1rem;
 }
 
@@ -1636,15 +1637,17 @@ button.coupon-chip:hover {
   color: #fff;
 }
 
-/* A diferencia de los banners del primer mosaico, éste es una franja angosta
-   (8rem, como los banners chicos de al lado) -- con esa proporción tan
-   ancha y baja no entra la foto entera sin dejar franjas enormes a los
-   costados, así que acá sí se recorta con cover, centrada en los frascos. */
+/* Foto completa (sin recortar) pegada al borde derecho de la franja --
+   contain + background-position a la derecha, en vez de cover. El color
+   plano se degrada de sólido a la izquierda (donde va "Novedades") a
+   transparente donde arranca la foto, así no queda una franja de color
+   enorme y vacía si se centrara la imagen en una caja tan ancha y baja. */
 .promo-banner-2--wide {
   grid-column: span 2;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-image: linear-gradient(90deg, #7209b7 0%, #7209b7 45%, rgba(114, 9, 183, 0) 78%), url('../images/banners/promo-dulce-de-leche.webp');
+  background-size: 100% 100%, contain;
+  background-position: 0 0, right center;
+  background-repeat: no-repeat, no-repeat;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
@@ -1656,14 +1659,9 @@ button.coupon-chip:hover {
 }
 
 /* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
-   no se lea como una repetición de la misma sección. El degradé del banner
-   ancho es el mismo criterio que los de arriba: liviano, solo abajo, para
-   que se distinga el texto del sitio sin tapar la foto. */
-.promo-banner-2--d {
-  background-color: #7209b7;
-  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
-}
-
+   no se lea como una repetición de la misma sección. El morado de "d" ya
+   queda puesto en el degradé de .promo-banner-2--wide (van siempre juntas
+   en el mismo elemento); acá solo quedan los otros dos, todavía sin foto. */
 .promo-banner-2--e {
   background: #14213d;
 }
@@ -1674,7 +1672,7 @@ button.coupon-chip:hover {
 
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
-    grid-template-rows: 7rem 6.5rem;
+    grid-template-rows: 9rem 6.5rem;
   }
 }
 
