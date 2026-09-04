@@ -1532,8 +1532,8 @@ button.coupon-chip:hover {
   padding: 1.25rem;
   border-radius: var(--bl-radius-md);
   color: #fff;
-  background-size: cover;
-  background-position: 50% 42%;
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
 }
 
@@ -1541,19 +1541,30 @@ button.coupon-chip:hover {
   grid-row: span 2;
 }
 
-/* Foto de fondo + degradé del color de la promo (más oscuro abajo, donde
-   va el texto) para que "Promoción"/"Combos"/"Oferta del día" se sigan
-   leyendo bien encima de la foto. */
+/* Foto completa (background-size: contain, sin recortar -- se ve entera con
+   su propio texto) sobre el color plano de la promo, que queda de "marco"
+   en el espacio que sobra a los costados. */
 .promo-banner--a {
-  background-image: linear-gradient(180deg, rgba(140, 20, 28, 0.15) 0%, rgba(107, 15, 22, 0.92) 100%), url('../images/banners/promo-aguas.webp');
+  background-color: #e63946;
+  background-image: url('../images/banners/promo-aguas.webp');
 }
 
 .promo-banner--b {
-  background-image: linear-gradient(180deg, rgba(140, 90, 0, 0.1) 0%, rgba(133, 84, 0, 0.9) 100%), url('../images/banners/promo-hamburguesas.webp');
+  background-color: #ffb703;
+  background-image: url('../images/banners/promo-hamburguesas.webp');
 }
 
 .promo-banner--c {
-  background-image: linear-gradient(180deg, rgba(2, 60, 47, 0.15) 0%, rgba(2, 60, 47, 0.9) 100%), url('../images/banners/promo-gaseosas.webp');
+  background-color: #06a77d;
+  background-image: url('../images/banners/promo-gaseosas.webp');
+}
+
+/* Sombra para que "Promoción"/"Combos"/"Oferta del día" y el título se
+   lean bien caiga donde caiga el texto de la tarjeta encima de la foto,
+   sin tener que oscurecerla con un degradé (la foto se ve entera y clara). */
+.promo-banner__eyebrow,
+.promo-banner__title {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .promo-banner__eyebrow {
