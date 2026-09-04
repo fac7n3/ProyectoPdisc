@@ -1532,22 +1532,28 @@ button.coupon-chip:hover {
   padding: 1.25rem;
   border-radius: var(--bl-radius-md);
   color: #fff;
+  background-size: cover;
+  background-position: 50% 42%;
+  background-repeat: no-repeat;
 }
 
 .promo-banner--large {
   grid-row: span 2;
 }
 
+/* Foto de fondo + degradé del color de la promo (más oscuro abajo, donde
+   va el texto) para que "Promoción"/"Combos"/"Oferta del día" se sigan
+   leyendo bien encima de la foto. */
 .promo-banner--a {
-  background: #e63946;
+  background-image: linear-gradient(180deg, rgba(140, 20, 28, 0.15) 0%, rgba(107, 15, 22, 0.92) 100%), url('../images/banners/promo-aguas.webp');
 }
 
 .promo-banner--b {
-  background: #ffb703;
+  background-image: linear-gradient(180deg, rgba(140, 90, 0, 0.1) 0%, rgba(133, 84, 0, 0.9) 100%), url('../images/banners/promo-hamburguesas.webp');
 }
 
 .promo-banner--c {
-  background: #06a77d;
+  background-image: linear-gradient(180deg, rgba(2, 60, 47, 0.15) 0%, rgba(2, 60, 47, 0.9) 100%), url('../images/banners/promo-gaseosas.webp');
 }
 
 .promo-banner__eyebrow {
