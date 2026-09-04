@@ -534,12 +534,76 @@ function initHeroExploreCta() {
   });
 }
 
+/**
+ * Saca la URL de la foto de un banner leyendo su `background-image` ya
+ * resuelto por el navegador (el último `url(...)` de la pila -- el degradé
+ * de color va primero). Así el lightbox siempre muestra exactamente la
+ * misma imagen que el banner, con el hash que le puso Vite al buildear, sin
+ * tener que repetir la ruta a mano en un atributo aparte (que en el build
+ * final no se reescribe y termina apuntando a un archivo que no existe).
+ */
+function getBannerImageUrl(banner) {
+  const bg = getComputedStyle(banner).backgroundImage;
+  const matches = [...bg.matchAll(/url\((['"]?)(.*?)\1\)/g)];
+  return matches.length ? matches[matches.length - 1][2] : '';
+}
+
+/**
+ * Lightbox de los banners promocionales del home: click/Enter/Espacio en un
+ * banner con foto abre la imagen ampliada (ver .promo-lightbox-overlay en
+ * home.css). Los banners de color plano sin `data-lightbox-alt` (todavía sin
+ * imagen) quedan afuera, no son clickeables.
+ */
+function initPromoBannerLightbox() {
+  const overlay = document.getElementById('promo-lightbox');
+  const img = document.getElementById('promo-lightbox-img');
+  const closeBtn = document.getElementById('promo-lightbox-close');
+  const banners = document.querySelectorAll('[data-lightbox-alt]');
+  if (!overlay || !img || !closeBtn || !banners.length) return;
+
+  let lastTrigger = null;
+
+  const openLightbox = (banner) => {
+    lastTrigger = banner;
+    img.src = getBannerImageUrl(banner);
+    img.alt = banner.dataset.lightboxAlt || '';
+    overlay.classList.add('is-open');
+    closeBtn.focus();
+  };
+
+  const closeLightbox = () => {
+    overlay.classList.remove('is-open');
+    img.src = '';
+    if (lastTrigger) lastTrigger.focus();
+  };
+
+  banners.forEach((banner) => {
+    banner.addEventListener('click', () => openLightbox(banner));
+    banner.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openLightbox(banner);
+      }
+    });
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+  // Click en el fondo (afuera de la imagen/botón) también cierra.
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeLightbox();
+  });
+}
+
 // Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
   initScrollTop();
   initNavbarScroll();
   initHeroCarousel();
   initHeroExploreCta();
+  initPromoBannerLightbox();
   initNearbyMap();
   updateCartBadge();
 

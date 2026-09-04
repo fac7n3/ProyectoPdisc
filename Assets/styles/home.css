@@ -1515,12 +1515,12 @@ button.coupon-chip:hover {
   padding: 0 1.5rem;
 }
 
-/* Mosaico asimétrico: A grande a la izquierda ocupando las dos filas,
-   B y C apiladas a la derecha, cada una la mitad de alta que A. */
+/* Los tres banners miden lo mismo (1fr cada uno) con el mismo aspect-ratio
+   que las fotos (900x507) -- así cada foto llena la tarjeta entera sin
+   recortarse ni dejar franjas del color de sobra a los costados. */
 .promo-mosaic__grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  grid-template-rows: repeat(2, 9rem);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
@@ -1532,22 +1532,47 @@ button.coupon-chip:hover {
   padding: 1.25rem;
   border-radius: var(--bl-radius-md);
   color: #fff;
+  aspect-ratio: 900 / 507;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
-.promo-banner--large {
-  grid-row: span 2;
+/* Mini rebote al pasar el mouse/tocar con foco -- invita a que hagan click
+   para ver la imagen ampliada (initPromoBannerLightbox en home.js). */
+.promo-banner:hover,
+.promo-banner:focus-visible {
+  transform: scale(1.035);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
+/* Foto completa (background-size: contain, sin recortar -- se ve entera con
+   su propio texto), con un degradé liviano del color de la promo solo en la
+   franja de abajo -- lo justo para que "Promoción"/el título se distingan
+   sin taparle el texto propio a la foto (que se sigue viendo arriba, clara). */
 .promo-banner--a {
-  background: #e63946;
+  background-color: #e63946;
+  background-image: linear-gradient(180deg, rgba(230, 57, 70, 0) 0%, rgba(230, 57, 70, 0) 40%, rgba(230, 57, 70, 0.15) 55%, rgba(230, 57, 70, 0.35) 75%, rgba(230, 57, 70, 0.6) 100%), url('../images/banners/promo-aguas.webp');
 }
 
 .promo-banner--b {
-  background: #ffb703;
+  background-color: #ffb703;
+  background-image: linear-gradient(180deg, rgba(255, 183, 3, 0) 0%, rgba(255, 183, 3, 0) 40%, rgba(255, 183, 3, 0.15) 55%, rgba(255, 183, 3, 0.35) 75%, rgba(255, 183, 3, 0.6) 100%), url('../images/banners/promo-hamburguesas.webp');
 }
 
 .promo-banner--c {
-  background: #06a77d;
+  background-color: #06a77d;
+  background-image: linear-gradient(180deg, rgba(6, 167, 125, 0) 0%, rgba(6, 167, 125, 0) 40%, rgba(6, 167, 125, 0.15) 55%, rgba(6, 167, 125, 0.35) 75%, rgba(6, 167, 125, 0.6) 100%), url('../images/banners/promo-gaseosas.webp');
+}
+
+/* Sombra extra encima del degradé, para que "Promoción"/"Combos"/"Oferta
+   del día" y el título se lean bien caiga donde caiga el texto de la
+   tarjeta sobre la foto. */
+.promo-banner__eyebrow,
+.promo-banner__title {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 .promo-banner__eyebrow {
@@ -1561,25 +1586,11 @@ button.coupon-chip:hover {
   font-weight: 700;
 }
 
-.promo-banner--large .promo-banner__title {
-  font-size: 1.375rem;
-}
-
 @media (max-width: 640px) {
-  /* Se apilan: A arriba a todo el ancho, B y C debajo una al lado de la otra. */
+  /* Se apilan en una sola columna -- el aspect-ratio de cada tarjeta ya
+     resuelve el alto solo, no hace falta pisarlo acá. */
   .promo-mosaic__grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 8rem 6.5rem;
-  }
-
-  .promo-banner--large {
-    grid-column: span 2;
-    grid-row: 1;
-  }
-
-  .promo-banner--b,
-  .promo-banner--c {
-    grid-row: 2;
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1595,11 +1606,14 @@ button.coupon-chip:hover {
 
 /* Fila 1: un banner ancho ocupando las dos columnas. Fila 2: dos banners
    parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
-   uno grande a un costado en vez de arriba). */
+   uno grande a un costado en vez de arriba). La fila 1 mide "auto": el
+   banner ancho tiene foto propia y se dimensiona solo por su aspect-ratio
+   (ver .promo-banner-2--wide); la fila 2 sigue con alto fijo, son los dos
+   banners de color plano que todavía no tienen imagen. */
 .promo-mosaic-2__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 8rem 8rem;
+  grid-template-rows: auto 8rem;
   gap: 1rem;
 }
 
@@ -1613,14 +1627,31 @@ button.coupon-chip:hover {
   color: #fff;
 }
 
+/* Igual que en el mosaico de arriba: la tarjeta mide lo mismo que la foto
+   (1600x900) para que se vea entera, sin recortarse ni dejar franjas. */
 .promo-banner-2--wide {
   grid-column: span 2;
+  aspect-ratio: 1600 / 900;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.promo-banner-2--wide:hover,
+.promo-banner-2--wide:focus-visible {
+  transform: scale(1.02);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
 /* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
-   no se lea como una repetición de la misma sección. */
+   no se lea como una repetición de la misma sección. El degradé del banner
+   ancho es el mismo criterio que los de arriba: liviano, solo abajo, para
+   que se distinga el texto del sitio sin tapar la foto. */
 .promo-banner-2--d {
-  background: #7209b7;
+  background-color: #7209b7;
+  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
 }
 
 .promo-banner-2--e {
@@ -1633,7 +1664,86 @@ button.coupon-chip:hover {
 
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
-    grid-template-rows: 7rem 6.5rem;
+    grid-template-rows: auto 6.5rem;
+  }
+}
+
+/* ===========================================================
+   LIGHTBOX DE BANNERS PROMOCIONALES (ver imagen ampliada al hacer click)
+   Mismo criterio que product-modal.css: overlay con blur, tarjeta con
+   fade+scale. initPromoBannerLightbox() en home.js.
+   =========================================================== */
+
+.promo-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem 1rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.promo-lightbox-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.promo-lightbox {
+  position: relative;
+  max-width: min(960px, 100%);
+  max-height: 100%;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.promo-lightbox-overlay.is-open .promo-lightbox {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.promo-lightbox__img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 6rem);
+  border-radius: var(--bl-radius-md);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+}
+
+.promo-lightbox__close {
+  position: absolute;
+  top: -1rem;
+  right: -1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.promo-lightbox__close:hover {
+  transform: scale(1.08);
+}
+
+@media (max-width: 640px) {
+  .promo-lightbox__close {
+    top: 0;
+    right: 0;
   }
 }
 
