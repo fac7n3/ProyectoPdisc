@@ -2,6 +2,7 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { getPref } from './settings-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -518,11 +519,27 @@ function initStoresCarouselArrows() {
   nextBtn.addEventListener('click', () => scrollByPage(1));
 }
 
+/** "Explorar productos" del primer slide del hero: baja con scroll suave en vez de saltar de golpe. */
+function initHeroExploreCta() {
+  const cta = document.querySelector('a.hero__banner-cta[href="#productos"]');
+  const target = document.getElementById('productos');
+  if (!cta || !target) return;
+  cta.addEventListener('click', (e) => {
+    e.preventDefault();
+    // scrollIntoView({behavior:'smooth'}) ignora el scroll-behavior de CSS,
+    // así que "Reducir animaciones" (Ajustes o prefers-reduced-motion del
+    // sistema) hay que respetarlo acá a mano -- mismo criterio que a11y.css.
+    const reduceMotion = getPref('reduceMotion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  });
+}
+
 // Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
   initScrollTop();
   initNavbarScroll();
   initHeroCarousel();
+  initHeroExploreCta();
   initNearbyMap();
   updateCartBadge();
 
