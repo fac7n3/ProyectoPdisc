@@ -1717,8 +1717,8 @@ async function renderResumen() {
 
   // Novedades / ¿Necesitás ayuda?
   grid2.textContent = '';
-  grid2.appendChild(rsNoveltyCard());
   grid2.appendChild(rsHelpCard());
+  grid2.appendChild(rsNoveltyCard());
 
   // Métricas de negocio
   metricsContainer.textContent = '';
