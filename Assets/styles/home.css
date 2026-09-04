@@ -1509,6 +1509,11 @@ button.coupon-chip:hover {
    MOSAICO DE BANNERS PROMOCIONALES
    =========================================================== */
 
+/* Mismo max-width/padding que el resto de las secciones de la página (no
+   los 760px de una vuelta anterior): así el borde izquierdo del mosaico
+   queda alineado con todo lo demás, en vez de quedar centrado como un
+   bloque aparte más angosto. Lo que se achica es el grid de adentro, no
+   este contenedor. */
 .promo-mosaic {
   max-width: 1320px;
   margin: 1.5rem auto 0;
@@ -1520,11 +1525,15 @@ button.coupon-chip:hover {
    proporción 2fr/1fr no es arbitraria: con las tres fotos midiendo lo mismo
    que su propio aspect-ratio (900x507, ver .promo-banner) es la que hace
    que el bloque grande y la columna apilada terminen midiendo más o menos
-   lo mismo de alto solas, sin tener que forzar ningún recorte. */
+   lo mismo de alto solas, sin tener que forzar ningún recorte. Achicado
+   (712px, no los 1272px disponibles) para que no ocupe media pantalla, y
+   pegado al borde izquierdo (margin:0, no auto) en vez de centrado. */
 .promo-mosaic__grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1rem;
+  max-width: 712px;
+  margin: 0;
 }
 
 .promo-mosaic__side {
