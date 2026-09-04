@@ -1515,12 +1515,21 @@ button.coupon-chip:hover {
   padding: 0 1.5rem;
 }
 
-/* Los tres banners miden lo mismo (1fr cada uno) con el mismo aspect-ratio
-   que las fotos (900x507) -- así cada foto llena la tarjeta entera sin
-   recortarse ni dejar franjas del color de sobra a los costados. */
+/* Bloque grande (aguas) a la izquierda + los otros dos apilados a la
+   derecha, más chicos -- en vez de las tres columnas parejas de antes. La
+   proporción 2fr/1fr no es arbitraria: con las tres fotos midiendo lo mismo
+   que su propio aspect-ratio (900x507, ver .promo-banner) es la que hace
+   que el bloque grande y la columna apilada terminen midiendo más o menos
+   lo mismo de alto solas, sin tener que forzar ningún recorte. */
 .promo-mosaic__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.promo-mosaic__side {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
