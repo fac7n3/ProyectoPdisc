@@ -1515,12 +1515,12 @@ button.coupon-chip:hover {
   padding: 0 1.5rem;
 }
 
-/* Mosaico asimétrico: A grande a la izquierda ocupando las dos filas,
-   B y C apiladas a la derecha, cada una la mitad de alta que A. */
+/* Los tres banners miden lo mismo (1fr cada uno) con el mismo aspect-ratio
+   que las fotos (900x507) -- así cada foto llena la tarjeta entera sin
+   recortarse ni dejar franjas del color de sobra a los costados. */
 .promo-mosaic__grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  grid-template-rows: repeat(2, 9rem);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
@@ -1532,13 +1532,10 @@ button.coupon-chip:hover {
   padding: 1.25rem;
   border-radius: var(--bl-radius-md);
   color: #fff;
+  aspect-ratio: 900 / 507;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-.promo-banner--large {
-  grid-row: span 2;
 }
 
 /* Foto completa (background-size: contain, sin recortar -- se ve entera con
@@ -1578,25 +1575,11 @@ button.coupon-chip:hover {
   font-weight: 700;
 }
 
-.promo-banner--large .promo-banner__title {
-  font-size: 1.375rem;
-}
-
 @media (max-width: 640px) {
-  /* Se apilan: A arriba a todo el ancho, B y C debajo una al lado de la otra. */
+  /* Se apilan en una sola columna -- el aspect-ratio de cada tarjeta ya
+     resuelve el alto solo, no hace falta pisarlo acá. */
   .promo-mosaic__grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 8rem 6.5rem;
-  }
-
-  .promo-banner--large {
-    grid-column: span 2;
-    grid-row: 1;
-  }
-
-  .promo-banner--b,
-  .promo-banner--c {
-    grid-row: 2;
+    grid-template-columns: 1fr;
   }
 }
 
