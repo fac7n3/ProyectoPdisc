@@ -1515,12 +1515,21 @@ button.coupon-chip:hover {
   padding: 0 1.5rem;
 }
 
-/* Los tres banners miden lo mismo (1fr cada uno) con el mismo aspect-ratio
-   que las fotos (900x507) -- así cada foto llena la tarjeta entera sin
-   recortarse ni dejar franjas del color de sobra a los costados. */
+/* Bloque grande (aguas) a la izquierda + los otros dos apilados a la
+   derecha, más chicos -- en vez de las tres columnas parejas de antes. La
+   proporción 2fr/1fr no es arbitraria: con las tres fotos midiendo lo mismo
+   que su propio aspect-ratio (900x507, ver .promo-banner) es la que hace
+   que el bloque grande y la columna apilada terminen midiendo más o menos
+   lo mismo de alto solas, sin tener que forzar ningún recorte. */
 .promo-mosaic__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.promo-mosaic__side {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
@@ -1608,12 +1617,13 @@ button.coupon-chip:hover {
    parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
    uno grande a un costado en vez de arriba). La fila 1 mide "auto": el
    banner ancho tiene foto propia y se dimensiona solo por su aspect-ratio
-   (ver .promo-banner-2--wide); la fila 2 sigue con alto fijo, son los dos
-   banners de color plano que todavía no tienen imagen. */
+   chico -- una franja, no un banner grande -- pero un poco más alta que los
+   otros dos de al lado (13rem contra 8rem) para que la foto entre completa
+   sin recortarse (ver .promo-banner-2--wide). */
 .promo-mosaic-2__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 8rem;
+  grid-template-rows: 13rem 8rem;
   gap: 1rem;
 }
 
@@ -1627,14 +1637,17 @@ button.coupon-chip:hover {
   color: #fff;
 }
 
-/* Igual que en el mosaico de arriba: la tarjeta mide lo mismo que la foto
-   (1600x900) para que se vea entera, sin recortarse ni dejar franjas. */
+/* Foto completa (sin recortar) pegada al borde derecho de la franja --
+   contain + background-position a la derecha, en vez de cover. El color
+   plano se degrada de sólido a la izquierda (donde va "Novedades") a
+   transparente donde arranca la foto, así no queda una franja de color
+   enorme y vacía si se centrara la imagen en una caja tan ancha y baja. */
 .promo-banner-2--wide {
   grid-column: span 2;
-  aspect-ratio: 1600 / 900;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-image: linear-gradient(90deg, #7209b7 0%, #7209b7 45%, rgba(114, 9, 183, 0) 78%), url('../images/banners/promo-dulce-de-leche.webp');
+  background-size: 100% 100%, contain;
+  background-position: 0 0, right center;
+  background-repeat: no-repeat, no-repeat;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
@@ -1646,14 +1659,9 @@ button.coupon-chip:hover {
 }
 
 /* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
-   no se lea como una repetición de la misma sección. El degradé del banner
-   ancho es el mismo criterio que los de arriba: liviano, solo abajo, para
-   que se distinga el texto del sitio sin tapar la foto. */
-.promo-banner-2--d {
-  background-color: #7209b7;
-  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
-}
-
+   no se lea como una repetición de la misma sección. El morado de "d" ya
+   queda puesto en el degradé de .promo-banner-2--wide (van siempre juntas
+   en el mismo elemento); acá solo quedan los otros dos, todavía sin foto. */
 .promo-banner-2--e {
   background: #14213d;
 }
@@ -1664,7 +1672,7 @@ button.coupon-chip:hover {
 
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
-    grid-template-rows: auto 6.5rem;
+    grid-template-rows: 9rem 6.5rem;
   }
 }
 
