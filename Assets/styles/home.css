@@ -1509,8 +1509,14 @@ button.coupon-chip:hover {
    MOSAICO DE BANNERS PROMOCIONALES
    =========================================================== */
 
+/* Más angosto que el resto de las secciones (1320px) a propósito: con las
+   fotos a su propio aspect-ratio (900x507, sin recortar), un contenedor tan
+   ancho como el resto de la página hacía que el banner de aguas terminara
+   ocupando casi media pantalla. Con max-width:760px queda del tamaño de un
+   banner más de la página, no una sección gigante -- y como el margin ya
+   tenía "auto", queda centrado solo. */
 .promo-mosaic {
-  max-width: 1320px;
+  max-width: 760px;
   margin: 1.5rem auto 0;
   padding: 0 1.5rem;
 }
