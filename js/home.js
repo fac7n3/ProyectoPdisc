@@ -339,6 +339,23 @@ function initHeroCarousel() {
  *  facturación, a diferencia de la Maps JavaScript API. El botón de abajo
  *  abre Google Maps real en otra pestaña, centrado ahí, donde el usuario ve
  *  los comercios reales que existen alrededor (no los de nuestra base). */
+const NEARBY_LOCATION_KEY = 'bl_nearby_location';
+
+function saveNearbyLocation(lat, lng) {
+  try {
+    sessionStorage.setItem(NEARBY_LOCATION_KEY, JSON.stringify({ lat, lng }));
+  } catch (_) { /* sessionStorage no disponible (privado/bloqueado): sin persistencia, no rompe nada */ }
+}
+
+function loadNearbyLocation() {
+  try {
+    const raw = sessionStorage.getItem(NEARBY_LOCATION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function initNearbyMap() {
   const panel = document.getElementById('nearby-map-panel');
   const locateBtn = document.getElementById('nearby-map-locate');
@@ -415,6 +432,7 @@ function initNearbyMap() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        saveNearbyLocation(position.coords.latitude, position.coords.longitude);
         renderMap(position.coords.latitude, position.coords.longitude);
       },
       (error) => {
@@ -436,6 +454,9 @@ function initNearbyMap() {
   }
 
   locateBtn.addEventListener('click', requestLocation);
+
+  const saved = loadNearbyLocation();
+  if (saved) renderMap(saved.lat, saved.lng);
 }
 
 /** Obtener locales destacados de Supabase para el carrusel */
