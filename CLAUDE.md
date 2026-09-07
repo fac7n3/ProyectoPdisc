@@ -80,6 +80,42 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-06** — Auditoría de seguridad con el advisor de Supabase:
+  `approve_seller_request()` (RPC `SECURITY DEFINER`) no verificaba el rol del
+  que llama -- cualquier usuario autenticado podía auto-aprobarse como
+  vendedor invocando el RPC directamente, saltando la aprobación manual del
+  admin. Parcheado en producción y en `db/schema/74_fix_approve_seller_request_admin_check.sql`
+  con el mismo chequeo de rol que ya usan `admin_set_product_active` /
+  `approve_delivery_request`. De paso se confirmó que el aislamiento
+  dueño-vendedor (uno no puede editar el comercio de otro) ya estaba bien
+  resuelto por RLS (`stores_update_own`, `products_update_seller`,
+  `store_staff`) -- no dependía solo de ocultar botones en el cliente. El
+  resto del advisor (varias funciones `SECURITY DEFINER` marcadas WARN,
+  `store_mp_credentials` con RLS sin policies) se revisó una por una: todas
+  tenían su propio chequeo de rol/dueño adentro o son de acceso exclusivo por
+  service role -- falsos positivos del linter genérico, no hace falta tocarlos.
+  Pendiente aparte (no de código): activar "Leaked Password Protection" en
+  Supabase Auth (Dashboard → Authentication → Policies), deshabilitado hoy.
+- **Resuelto 2026-09-06** — En `perfil.html` (sección "Tus datos son tuyos")
+  se sacó el botón "Descargar mis datos" a pedido del usuario -- queda solo
+  "Eliminar mi cuenta" (con su lógica completa en `perfil.js`, sin cambios:
+  Edge Function `delete-account`, fallback a ticket de soporte si esa función
+  no está desplegada). Primer intento de la tarea lo había dejado al revés
+  (sacó "Eliminar mi cuenta" y dejó "Descargar mis datos") por una lectura
+  apresurada del pedido original -- corregido en el mismo día.
+- **Resuelto 2026-09-06** — `vender.html` mostraba un flash del formulario
+  "Crear mi tienda" (o ambas vistas superpuestas) al entrar, incluso para
+  cuentas que ya tenían comercio: `register-view`/`dashboard-view` no tenían
+  un estado inicial oculto y `guardPage` revela `#contenido-principal` antes
+  de que `checkSellerState()` (js/vender.js) termine de consultar la DB.
+  Se agregó un spinner "Cargando tu comercio…" (`#vender-state-loading`) que
+  tapa esa transición.
+- **Resuelto 2026-09-06** — Se completaron los links de la fila "Vender /
+  Contratar / Ayuda" del home (`category-bar__inner--home-actions`, ya
+  construida en CSS/HTML pero sin destino). Vender → `vender.html`, Ayuda →
+  `info.html` (mismo destino que "Ayuda" del footer), Contratar → página
+  nueva `contratar.html` ("muy pronto", todavía no existe una sección de
+  servicios separada de productos).
 - **Resuelto 2026-09-01** — Las 18 subtareas [MEJORA] de **A113-266** (rama
   `feature/mejorasGrupo`, mergeada a `main` el 2026-09-02 junto con el resto de
   las ramas `claude/*` pendientes), una por una con

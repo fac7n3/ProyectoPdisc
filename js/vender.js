@@ -13,7 +13,19 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 async function checkSellerState(user) {
   const registerView = document.getElementById('register-view');
   const dashboardView = document.getElementById('dashboard-view');
+  const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
+
+  // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
+  // esto, register-view/dashboard-view quedaban visibles por defecto (guardPage
+  // ya destapó #contenido-principal antes de que esta función termine de
+  // consultar la DB) y se veía el alta de comercio de más incluso para quien
+  // ya tenía uno.
+  const reveal = (view) => {
+    if (stateLoader) stateLoader.style.display = 'none';
+    registerView.style.display = view === 'register' ? 'block' : 'none';
+    dashboardView.style.display = view === 'dashboard' ? 'flex' : 'none';
+  };
 
   if (!user) return; // guardPage ya se encarga de redirigir
 
@@ -35,8 +47,7 @@ async function checkSellerState(user) {
   }
 
   if (isSeller) {
-    registerView.style.display = 'none';
-    dashboardView.style.display = 'flex'; // shell "Mi cuenta" (sidebar + contenido)
+    reveal('dashboard'); // shell "Mi cuenta" (sidebar + contenido)
     await loadDashboard(user);
     return;
   }
@@ -49,8 +60,7 @@ async function checkSellerState(user) {
     .maybeSingle();
 
   if (staffRow) {
-    registerView.style.display = 'none';
-    dashboardView.style.display = 'flex'; // shell "Mi cuenta"
+    reveal('dashboard'); // shell "Mi cuenta"
     await loadDashboard(user, staffRow.store_id);
     return;
   }
@@ -63,8 +73,7 @@ async function checkSellerState(user) {
     .maybeSingle();
 
   if (req) {
-    registerView.style.display = 'none';
-    dashboardView.style.display = 'flex';
+    reveal('dashboard');
 
     // Solicitud APROBADA: es vendedor aunque profiles.role no lo refleje (desincronización
     // de rol) -- mostrar el panel real, no el aviso de "pendiente".
@@ -85,8 +94,7 @@ async function checkSellerState(user) {
       notice.textContent = `Tu solicitud para "${req.shop_name}" está en estado: ${req.status}. Te avisaremos cuando esté aprobada.`;
     }
   } else {
-    registerView.style.display = 'block';
-    dashboardView.style.display = 'none';
+    reveal('register');
   }
 }
 

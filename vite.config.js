@@ -42,6 +42,7 @@ export default defineConfig({
         farmacias: resolve(__dirname, 'pages/farmacias.html'),
         repartidor: resolve(__dirname, 'pages/repartidor.html'),
         mensajes: resolve(__dirname, 'pages/mensajes.html'),
+        contratar: resolve(__dirname, 'pages/contratar.html'),
       }
     }
   }

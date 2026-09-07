@@ -766,6 +766,12 @@ ul, ol {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  /* Son <a>, no <button>: sin esto el texto queda pegado a la izquierda y
+     subrayado en vez de centrado como el resto de la fila. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .home-action:last-child {
