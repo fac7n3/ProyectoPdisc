@@ -3547,14 +3547,17 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   display: flex;
   gap: 1.25rem;
   overflow-x: auto;
-  padding: 0.5rem 1.5rem 1rem 1.5rem;
+  /* Laterales a 3.25rem (no 1.5rem como el resto de las secciones): les deja
+     lugar a las flechas (2.25rem + 0.5rem de separación) sin que se
+     superpongan a la primera/última tarjeta. */
+  padding: 0.5rem 3.25rem 1rem 3.25rem;
   scroll-snap-type: x mandatory;
   /* Sin esto, scroll-snap-align:start en los logos hace que el navegador
-     arranque el carrusel ya scrolleado esos mismos 24px hacia la derecha al
-     cargar (se "come" el padding-left) — por eso se desalineaba del banner
-     de arriba. scroll-padding le dice al snap dónde está el borde real. */
-  scroll-padding-left: 1.5rem;
-  scroll-padding-right: 1.5rem;
+     arranque el carrusel ya scrolleado ese mismo padding hacia la derecha al
+     cargar (se "come" el padding-left). scroll-padding le dice al snap dónde
+     está el borde real. */
+  scroll-padding-left: 3.25rem;
+  scroll-padding-right: 3.25rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* Firefox */
 }
