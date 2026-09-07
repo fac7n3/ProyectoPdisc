@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="view-transition" content="same-origin"/>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
-  <meta name="description" content="Información sobre Baradero Local: cómo funciona, envíos y contacto." />
-  <title>Información — Baradero Local</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+  <meta name="description" content="Contratar servicios de comercios de Baradero: muy pronto en Baradero Local." />
+  <title>Contratar — Baradero Local</title>
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Información — Baradero Local" />
-  <meta property="og:description" content="Información sobre Baradero Local: cómo funciona, envíos y contacto." />
+  <meta property="og:title" content="Contratar — Baradero Local" />
+  <meta property="og:description" content="Contratar servicios de comercios de Baradero: muy pronto en Baradero Local." />
   <meta property="og:image" content="/og-image.png" />
   <meta name="twitter:card" content="summary" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -23,30 +23,41 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
-    .info-container {
-      max-width: 800px;
+    .soon-container {
+      max-width: 640px;
       margin: 4rem auto;
-      padding: 2rem;
+      padding: 3rem 2.5rem;
       background: white;
       border-radius: 1rem;
       box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      text-align: center;
     }
-    .info-container h1 {
+    .soon-container .soon-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: var(--bl-primary-light, #eef1f8);
       color: var(--bl-primary);
-      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin: 0 auto 1.25rem;
     }
-    .info-container h2 {
-      color: var(--bl-text);
-      margin-top: 2rem;
-      margin-bottom: 0.5rem;
+    .soon-container h1 {
+      color: var(--bl-primary);
+      margin-bottom: 0.75rem;
+      font-size: 1.75rem;
+      font-weight: 800;
     }
-    .info-container p {
+    .soon-container p {
       color: var(--bl-text-secondary);
-      line-height: 1.6;
-      margin-bottom: 1rem;
+      line-height: 1.7;
+      margin-bottom: 1.75rem;
+      font-size: 0.95rem;
     }
     .btn-outline {
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1.25rem;
       border: 1.5px solid var(--bl-primary);
       color: var(--bl-primary);
       border-radius: var(--bl-radius-md);
@@ -59,20 +70,37 @@
       align-items: center;
       justify-content: center;
       text-decoration: none;
+      margin: 0 0.35rem;
     }
     .btn-outline:hover {
       background: var(--bl-primary);
       color: white;
+    }
+    .btn-solid {
+      padding: 0.6rem 1.25rem;
+      border: 1.5px solid var(--bl-primary);
+      background: var(--bl-primary);
+      color: white;
+      border-radius: var(--bl-radius-md);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      margin: 0 0.35rem;
+    }
+    .btn-solid:hover {
+      opacity: 0.9;
     }
   </style>
   <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
   <link rel="stylesheet" crossorigin href="/assets/home-O28IFI7V.css">
 </head>
 <body class="bl-bg">
-    <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
-         categorias, que en TalkBack son mas de 20 pasos en cada pagina. -->
-    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
-
+  <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
 
   <!-- Navbar Simple -->
   <nav class="navbar" style="position: static; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -90,31 +118,25 @@
     </div>
   </nav>
 
-  <main id="contenido-principal" tabindex="-1" class="info-container">
-    <h1>Información Útil</h1>
-    <p>Bienvenido al centro de ayuda e información legal de Baradero Local. Seleccioná una sección para conocer más.</p>
-
-    <h2>Preguntas Frecuentes (FAQ)</h2>
-    <p><strong>¿Cómo compro en Baradero Local?</strong><br>
-    Buscá el producto que necesitás, agregalo al carrito y seguí los pasos. Cada comercio maneja sus propios envíos y retiros.</p>
-    <p><strong>¿Cómo vendo mis productos?</strong><br>
-    Podés registrar tu comercio desde la sección <a href="./vender.html">Vender</a>. Validaremos tus datos y podrás cargar tu catálogo.</p>
-
-    <h2>Devoluciones y botón de arrepentimiento</h2>
-    <p>Además de la política de devolución particular de cada comercio, tenés derecho a arrepentirte de cualquier compra dentro de los 10 días hábiles posteriores, sin dar explicaciones (Ley 24.240 y Res. 424/2020). Podés ejercerlo desde <a href="./perfil.html">"Mis compras"</a>, con el botón "Solicitar arrepentimiento" en cada pedido pagado.</p>
-
-    <h2>Términos y Condiciones</h2>
-    <p>Baradero Local actúa como intermediario tecnológico conectando comercios locales con compradores. Ver el detalle completo en <a href="./terminos.html">Términos y Condiciones</a> y en la <a href="./privacidad.html">Política de Privacidad</a>.</p>
-
-    <h2>Contacto</h2>
-    <p>Si necesitás ayuda técnica con la plataforma, escribinos a: <strong>soporte@baraderolocal.com.ar</strong></p>
+  <main id="contenido-principal" tabindex="-1" class="soon-container">
+    <div class="soon-icon" aria-hidden="true"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+    <h1>Contratar servicios, muy pronto</h1>
+    <p>
+      Estamos trabajando para que también puedas contratar servicios de los
+      comercios y profesionales de Baradero desde acá — plomería, electricidad,
+      clases, y más. Todavía no está disponible, pero ya lo estamos armando.
+    </p>
+    <div>
+      <a href="./home.html" class="btn-solid">Volver al inicio</a>
+      <a href="./search.html" class="btn-outline">Ver productos</a>
+    </div>
   </main>
 
   <footer class="footer">
     <div class="footer__container" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
       <p style="text-align:center; color:white; width:100%; opacity:0.8; margin: 0;">&copy; 2026 Baradero Local. Todos los derechos reservados.</p>
       <a href="./terminos.html" class="footer__terms-link" style="margin-top: 0;">Términos y condiciones</a>
-          <a href="./privacidad.html" class="footer__terms-link" style="margin-top: 0;">Política de privacidad</a>
+      <a href="./privacidad.html" class="footer__terms-link" style="margin-top: 0;">Política de privacidad</a>
     </div>
   </footer>
 
