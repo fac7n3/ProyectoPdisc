@@ -80,12 +80,34 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-07** — Se mergearon a `main` las 7 ramas con trabajo real
+  que quedaban sueltas (5 `claude/*` de otras sesiones/worktrees + 2 `A113-*`):
+  el parche de seguridad de `approve_seller_request` (ver entrada de abajo),
+  flechas del carrusel de comercios separadas de las tarjetas, dropdown propio
+  en vez de `<select>` nativo en el filtro de notificaciones, ubicación de
+  "Comercios cerca tuyo" persistida en sessionStorage, y el saludo del
+  resumen del vendedor sin emoji. Otras 9 ramas locales/remotas resultaron
+  redundantes (contenido ya mergeado a `main` por otro camino, ej. la misma
+  foto de portada del hero llegó por PR #24 mientras la rama
+  `A113-home-banner-foto-portada` seguía sin mergear con el mismo cambio) o
+  simplemente viejas (branch sin commits propios, ya ancestro de `main`) --
+  se borraron sin tocar nada. **Gotcha:** todos los conflictos de merge caen
+  en `dist/` (hashes de build no deterministas, ver
+  [[project-dist-merge-conflicts]] en memoria) -- se resuelven quedándose con
+  la versión de `HEAD` y reconstruyendo el build una sola vez al final, nunca
+  mergeando `dist/` rama por rama. **Gotcha 2:** dos ramas mergeadas en
+  paralelo (esta tarea y `A113-store-logo-upload`) habían usado el mismo
+  número de migración `74` para cosas distintas -- la de seguridad se
+  renombró a `75_fix_approve_seller_request_admin_check.sql` al mergear
+  (el archivo ya estaba aplicado en producción bajo el nombre viejo, el
+  rename es solo prolijidad del repo, no hace falta reaplicarlo).
 - **Resuelto 2026-09-06** — Auditoría de seguridad con el advisor de Supabase:
   `approve_seller_request()` (RPC `SECURITY DEFINER`) no verificaba el rol del
   que llama -- cualquier usuario autenticado podía auto-aprobarse como
   vendedor invocando el RPC directamente, saltando la aprobación manual del
-  admin. Parcheado en producción y en `db/schema/74_fix_approve_seller_request_admin_check.sql`
-  con el mismo chequeo de rol que ya usan `admin_set_product_active` /
+  admin. Parcheado en producción y en `db/schema/75_fix_approve_seller_request_admin_check.sql`
+  (renombrada de 74 a 75 al mergear, ver entrada de arriba) con el mismo
+  chequeo de rol que ya usan `admin_set_product_active` /
   `approve_delivery_request`. De paso se confirmó que el aislamiento
   dueño-vendedor (uno no puede editar el comercio de otro) ya estaba bien
   resuelto por RLS (`stores_update_own`, `products_update_seller`,
