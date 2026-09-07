@@ -3651,15 +3651,6 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   font-size: 0.85rem;
 }
 
-.notif-filter {
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-md);
-  background: var(--bl-surface);
-  color: var(--bl-text);
-  font-size: 0.8125rem;
-}
-
 .notif-mark-all {
   background: var(--bl-surface);
   border: 1px solid var(--bl-border);
