@@ -49,6 +49,56 @@
         margin: 0 0 0.5rem 0;
         font-weight: 800;
       }
+      /* Logo del comercio, arriba del título. Solo el dueño la puede
+         subir/cambiar (buildStoreHeader en comercio.js) -- si no hay logo
+         cargado, un cliente no ve nada acá (ni un cuadro vacío). */
+      .store-header__logo-wrap {
+        position: relative;
+        width: 84px;
+        height: 84px;
+        margin: 0 auto 1rem;
+      }
+      .store-header__logo,
+      .store-header__logo--placeholder {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        display: block;
+      }
+      .store-header__logo {
+        object-fit: cover;
+        border: 3px solid var(--bl-surface);
+        box-shadow: var(--bl-shadow-sm);
+        background: var(--bl-surface);
+      }
+      .store-header__logo--placeholder {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed color-mix(in srgb, var(--sh-fg, var(--bl-text)) 30%, transparent);
+        color: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 45%, transparent);
+        font-size: 1.4rem;
+      }
+      .store-header__logo-wrap.is-editable {
+        cursor: pointer;
+      }
+      .store-header__logo-edit {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 50%;
+        border: 2px solid var(--bl-surface);
+        background: var(--bl-primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.75rem;
+      }
       .store-header__description {
         color: inherit;
         opacity: 0.85;

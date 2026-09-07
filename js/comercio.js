@@ -2,7 +2,10 @@ import { supabase } from './auth-utils.js';
 import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
+import { removeStoredObjects } from './storage-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
+
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 /** Tarjeta de producto (misma estructura que antes, extraída para poder re-renderizarla al filtrar). */
 function buildProductCard(product, store) {
@@ -166,6 +169,114 @@ function buildColorPopover(store, header) {
   return popover;
 }
 
+/** Sube el archivo elegido a store-logos/{uid del dueño}/ y actualiza stores.logo_url. */
+async function uploadStoreLogo(file, store) {
+  const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+  // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del
+  // bucket (storage no sabe qué tienda es dueño cada usuario).
+  const path = `${store.owner_id}/${Date.now()}.${ext || 'jpg'}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('store-logos')
+    .upload(path, file, { contentType: file.type || 'image/jpeg' });
+  if (upErr) throw upErr;
+
+  const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
+  const publicUrl = pub?.publicUrl;
+  if (!publicUrl) throw new Error('No se pudo obtener la URL del logo.');
+
+  const { error: dbErr } = await supabase.from('stores').update({ logo_url: publicUrl }).eq('id', store.id);
+  if (dbErr) throw dbErr;
+
+  return publicUrl;
+}
+
+/** Logo del comercio, arriba del título -- solo lo ve un cliente si el
+ *  dueño cargó uno; el dueño siempre ve el espacio (con foto o con un
+ *  placeholder para subirla), y solo él puede subirla/cambiarla, desde
+ *  esta misma vista. */
+function buildStoreLogo(store, isOwner) {
+  if (!store.logo_url && !isOwner) return null;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'store-header__logo-wrap';
+
+  const img = document.createElement('img');
+  img.className = 'store-header__logo';
+  img.alt = `Logo de ${store.name}`;
+  img.hidden = !store.logo_url;
+  if (store.logo_url) img.src = store.logo_url;
+  wrap.appendChild(img);
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'store-header__logo--placeholder';
+  placeholder.hidden = !!store.logo_url;
+  const placeholderIcon = document.createElement('i');
+  placeholderIcon.className = 'fa-solid fa-camera';
+  placeholder.appendChild(placeholderIcon);
+  wrap.appendChild(placeholder);
+
+  if (!isOwner) return wrap;
+
+  wrap.classList.add('is-editable');
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.hidden = true;
+  wrap.appendChild(fileInput);
+
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'store-header__logo-edit';
+  const setEditLabel = () => {
+    const label = store.logo_url ? 'Cambiar logo' : 'Agregar logo';
+    editBtn.dataset.tooltip = label;
+    editBtn.setAttribute('aria-label', label);
+  };
+  setEditLabel();
+  const editIcon = document.createElement('i');
+  editIcon.className = 'fa-solid fa-camera';
+  editBtn.appendChild(editIcon);
+  wrap.appendChild(editBtn);
+
+  const openPicker = () => fileInput.click();
+  editBtn.addEventListener('click', (e) => { e.stopPropagation(); openPicker(); });
+  wrap.addEventListener('click', openPicker);
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_LOGO_BYTES) {
+      showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    const previousUrl = store.logo_url;
+    editBtn.disabled = true;
+    try {
+      const publicUrl = await uploadStoreLogo(file, store);
+      store.logo_url = publicUrl;
+      img.src = publicUrl;
+      img.hidden = false;
+      placeholder.hidden = true;
+      setEditLabel();
+      if (previousUrl) await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Listo, guardamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al subir el logo del comercio:', err);
+      showToast('No pudimos subir el logo. Probá de nuevo.', 'error');
+    } finally {
+      editBtn.disabled = false;
+      fileInput.value = '';
+    }
+  });
+
+  return wrap;
+}
+
 /** Header de la tienda: título/descripción + barra de datos, con el ícono
  *  (lápiz de color para el dueño, corazón de favorito para el cliente). */
 function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount }) {
@@ -173,9 +284,12 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
   header.className = 'store-header';
   applyHeaderColors(header, store.header_bg_color, store.header_text_color);
 
-  // --- Bloque superior: título + descripción + ícono ---
+  // --- Bloque superior: logo + título + descripción + ícono ---
   const top = document.createElement('div');
   top.className = 'store-header__top';
+
+  const logo = buildStoreLogo(store, isOwner);
+  if (logo) top.appendChild(logo);
 
   const title = document.createElement('h1');
   title.className = 'store-header__title';
