@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
+import { buildDropdown } from './dropdown.js';
 
 const TYPE_LABELS = {
   order_created: 'Nuevo pedido recibido',
@@ -409,20 +410,17 @@ export async function renderNotificationsSection(container, userId) {
   searchInput.setAttribute('aria-label', 'Buscar notificaciones');
   toolbar.appendChild(searchInput);
 
-  const filterSelect = document.createElement('select');
-  filterSelect.className = 'notif-filter';
-  filterSelect.setAttribute('aria-label', 'Filtrar notificaciones');
-  [
-    ['all', 'Todas'],
-    ['unread', 'No leídas'],
-    ['important', 'Importantes'],
-  ].forEach(([value, label]) => {
-    const opt = document.createElement('option');
-    opt.value = value;
-    opt.textContent = label;
-    filterSelect.appendChild(opt);
+  const filterDropdown = buildDropdown({
+    options: [
+      { value: 'all', label: 'Todas' },
+      { value: 'unread', label: 'No leídas' },
+      { value: 'important', label: 'Importantes' },
+    ],
+    value: 'all',
+    ariaLabel: 'Filtrar notificaciones',
+    onSelect: applyFilters,
   });
-  toolbar.appendChild(filterSelect);
+  toolbar.appendChild(filterDropdown.element);
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   if (unreadCount > 0) {
@@ -445,7 +443,7 @@ export async function renderNotificationsSection(container, userId) {
 
   function applyFilters() {
     const search = searchInput.value.trim().toLowerCase();
-    const mode = filterSelect.value;
+    const mode = filterDropdown.getValue();
 
     const filtered = notifications.filter((n) => {
       if (mode === 'unread' && n.read_at) return false;
@@ -466,7 +464,6 @@ export async function renderNotificationsSection(container, userId) {
   }
 
   searchInput.addEventListener('input', applyFilters);
-  filterSelect.addEventListener('change', applyFilters);
 
   applyFilters();
 }
