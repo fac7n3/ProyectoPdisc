@@ -639,8 +639,18 @@
       </nav>
 
       <main id="contenido-principal" tabindex="-1">
+        <!-- Se ve mientras checkSellerState() (js/vender.js) resuelve si esta
+             cuenta ya tiene comercio/es empleada o todavía no -- sin esto,
+             register-view y dashboard-view no tienen un estado inicial oculto
+             y se ven las dos superpuestas (o el alta de comercio de más) hasta
+             que resuelve esa consulta. -->
+        <div id="vender-state-loading" class="bl-loading-block">
+          <div class="bl-spinner" aria-hidden="true"></div>
+          <span>Cargando tu comercio…</span>
+        </div>
+
         <!-- Vista de Registro (card centrada, sin sidebar) -->
-        <div id="register-view" class="vender-container">
+        <div id="register-view" class="vender-container" style="display: none;">
             <div class="vender-header">
               <h2>Empezá a vender en Baradero</h2>
               <p>Completá los datos de tu comercio y sumate a la red local.</p>
@@ -674,7 +684,7 @@
         </div>
 
         <!-- Vista del Panel: shell "Mi cuenta" (sidebar + contenido) -->
-        <div id="dashboard-view" class="mc-shell">
+        <div id="dashboard-view" class="mc-shell" style="display: none;">
           <div class="mc-backdrop" id="mc-backdrop" hidden></div>
 
           <aside class="mc-sidebar" id="mc-sidebar">

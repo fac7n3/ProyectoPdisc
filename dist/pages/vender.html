@@ -601,7 +601,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Cv09K8U-.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DgafevCh.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-MmxUqVqK.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -610,7 +610,7 @@
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-DYpzPteV.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-CBIqfdoZ.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-CvTmSIVv.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -646,8 +646,18 @@
       </nav>
 
       <main id="contenido-principal" tabindex="-1">
+        <!-- Se ve mientras checkSellerState() (js/vender.js) resuelve si esta
+             cuenta ya tiene comercio/es empleada o todavía no -- sin esto,
+             register-view y dashboard-view no tienen un estado inicial oculto
+             y se ven las dos superpuestas (o el alta de comercio de más) hasta
+             que resuelve esa consulta. -->
+        <div id="vender-state-loading" class="bl-loading-block">
+          <div class="bl-spinner" aria-hidden="true"></div>
+          <span>Cargando tu comercio…</span>
+        </div>
+
         <!-- Vista de Registro (card centrada, sin sidebar) -->
-        <div id="register-view" class="vender-container">
+        <div id="register-view" class="vender-container" style="display: none;">
             <div class="vender-header">
               <h2>Empezá a vender en Baradero</h2>
               <p>Completá los datos de tu comercio y sumate a la red local.</p>
@@ -681,7 +691,7 @@
         </div>
 
         <!-- Vista del Panel: shell "Mi cuenta" (sidebar + contenido) -->
-        <div id="dashboard-view" class="mc-shell">
+        <div id="dashboard-view" class="mc-shell" style="display: none;">
           <div class="mc-backdrop" id="mc-backdrop" hidden></div>
 
           <aside class="mc-sidebar" id="mc-sidebar">

@@ -6,7 +6,7 @@ import { renderNotificationsSection, fetchUnreadCount } from "./notifications-ut
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
-import { PROFILE_FIELDS, todayISO } from "./profile-fields.js";
+import { PROFILE_FIELDS } from "./profile-fields.js";
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from "./phone-countries.js";
 import { removeStoredObjects, formatFileSize } from "./storage-utils.js";
 import { isValidPhone } from "./validation-utils.js";
@@ -2276,7 +2276,7 @@ function renderAccountRows(user) {
   });
 }
 
-// --- Privacidad (Ley 25.326: acceso y supresión de los datos propios) ---
+// --- Privacidad (Ley 25.326: supresión de los datos propios) ---
 
 /**
  * Lee el cuerpo del error de una Edge Function. `functions.invoke` no lo
@@ -2313,51 +2313,7 @@ async function requestDeletionByTicket(user) {
 }
 
 function setupPrivacyActions(user) {
-  const downloadBtn = document.getElementById("btn-download-data");
   const deleteBtn = document.getElementById("btn-delete-account");
-
-  downloadBtn?.addEventListener("click", async () => {
-    downloadBtn.disabled = true;
-    const originalText = downloadBtn.textContent;
-    downloadBtn.textContent = "Juntando tus datos…";
-    try {
-      // Todo sale por RLS: cada consulta devuelve solo lo del propio usuario.
-      const [perfil, direcciones, pedidos, favoritos, resenas] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase.from("user_addresses").select("*").eq("user_id", user.id),
-        supabase.from("orders").select("*, order_items(*)").eq("client_id", user.id),
-        supabase.from("favorites").select("*").eq("user_id", user.id),
-        supabase.from("reviews").select("*").eq("client_id", user.id),
-      ]);
-
-      const payload = {
-        exportado_el: new Date().toISOString(),
-        cuenta: { id: user.id, email: user.email, creada_el: user.created_at },
-        perfil: perfil.data ?? null,
-        direcciones: direcciones.data ?? [],
-        pedidos: pedidos.data ?? [],
-        favoritos: favoritos.data ?? [],
-        resenas: resenas.data ?? [],
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `mis-datos-baradero-local-${todayISO()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showToast("Descargamos tus datos en un archivo.", "success");
-    } catch (err) {
-      console.error("Error al exportar los datos", err);
-      showToast("No pudimos armar el archivo. Probá de nuevo.", "error");
-    } finally {
-      downloadBtn.disabled = false;
-      downloadBtn.textContent = originalText;
-    }
-  });
 
   deleteBtn?.addEventListener("click", async () => {
     const ok = confirm(
