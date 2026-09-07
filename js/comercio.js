@@ -104,10 +104,10 @@ function applyHeaderColors(header, bg, fg) {
 /** Popover de color del header (solo lo ve el dueño del comercio). */
 function buildColorPopover(store, header) {
   const popover = document.createElement('div');
-  popover.className = 'store-color-popover';
+  popover.className = 'store-popover store-color-popover';
 
   const bgRow = document.createElement('label');
-  bgRow.className = 'store-color-popover__row';
+  bgRow.className = 'store-popover__row';
   const bgLabel = document.createElement('span');
   bgLabel.textContent = 'Cambiar color';
   bgRow.appendChild(bgLabel);
@@ -118,7 +118,7 @@ function buildColorPopover(store, header) {
   popover.appendChild(bgRow);
 
   const fgRow = document.createElement('label');
-  fgRow.className = 'store-color-popover__row';
+  fgRow.className = 'store-popover__row';
   const fgLabel = document.createElement('span');
   fgLabel.textContent = 'Cambiar color de la letra';
   fgRow.appendChild(fgLabel);
@@ -130,7 +130,7 @@ function buildColorPopover(store, header) {
 
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
-  resetBtn.className = 'store-color-popover__reset';
+  resetBtn.className = 'store-popover__reset';
   resetBtn.textContent = 'Quitar color';
   popover.appendChild(resetBtn);
 
@@ -192,9 +192,12 @@ async function uploadStoreLogo(file, store) {
 }
 
 /** Logo del comercio, arriba del título -- solo lo ve un cliente si el
- *  dueño cargó uno; el dueño siempre ve el espacio (con foto o con un
- *  placeholder para subirla), y solo él puede subirla/cambiarla haciendo
- *  click en el círculo (no hay un botón aparte), desde esta misma vista. */
+ *  dueño cargó uno; el dueño siempre ve el espacio (con foto o, si nunca
+ *  cargó una o se la acaba de sacar, un círculo vacío sin nada adentro) y
+ *  solo él puede subirla/sacarla, desde esta misma vista. El click en el
+ *  círculo abre un cartelito con "Añadir imagen" / "Eliminar imagen" (este
+ *  último solo si hay una foto puesta) en vez de ir directo al selector de
+ *  archivo -- mismo componente que el popover de color del header. */
 function buildStoreLogo(store, isOwner) {
   if (!store.logo_url && !isOwner) return null;
 
@@ -210,7 +213,6 @@ function buildStoreLogo(store, isOwner) {
 
   const placeholder = document.createElement('div');
   placeholder.className = 'store-header__logo--placeholder';
-  placeholder.textContent = 'Añadir logo';
   wrap.appendChild(placeholder);
 
   if (!isOwner) return wrap;
@@ -218,12 +220,8 @@ function buildStoreLogo(store, isOwner) {
   wrap.classList.add('is-editable');
   wrap.setAttribute('role', 'button');
   wrap.tabIndex = 0;
-  const setLabel = () => {
-    const label = store.logo_url ? 'Cambiar logo' : 'Agregar logo';
-    wrap.dataset.tooltip = label;
-    wrap.setAttribute('aria-label', label);
-  };
-  setLabel();
+  wrap.dataset.tooltip = 'Logo del comercio';
+  wrap.setAttribute('aria-label', 'Logo del comercio');
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -231,13 +229,67 @@ function buildStoreLogo(store, isOwner) {
   fileInput.hidden = true;
   wrap.appendChild(fileInput);
 
-  const openPicker = () => fileInput.click();
-  wrap.addEventListener('click', openPicker);
+  const popover = document.createElement('div');
+  popover.className = 'store-popover store-logo-popover';
+
+  const addRow = document.createElement('button');
+  addRow.type = 'button';
+  addRow.className = 'store-popover__row';
+  addRow.textContent = 'Añadir imagen';
+  popover.appendChild(addRow);
+
+  const removeRow = document.createElement('button');
+  removeRow.type = 'button';
+  removeRow.className = 'store-popover__reset';
+  removeRow.textContent = 'Eliminar imagen';
+  removeRow.hidden = !store.logo_url;
+  popover.appendChild(removeRow);
+
+  wrap.appendChild(popover);
+
+  const closePopover = () => popover.classList.remove('is-open');
+
+  addRow.addEventListener('click', () => {
+    closePopover();
+    fileInput.click();
+  });
+
+  removeRow.addEventListener('click', async () => {
+    closePopover();
+    if (!confirm('¿Eliminamos el logo del comercio?')) return;
+    const previousUrl = store.logo_url;
+    try {
+      const { error } = await supabase.from('stores').update({ logo_url: null }).eq('id', store.id);
+      if (error) throw error;
+      store.logo_url = null;
+      img.removeAttribute('src');
+      wrap.classList.remove('has-logo');
+      removeRow.hidden = true;
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Sacamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al sacar el logo del comercio:', err);
+      showToast('No pudimos sacar el logo. Probá de nuevo.', 'error');
+    }
+  });
+
+  wrap.addEventListener('click', (e) => {
+    // Lo maneja el handler de la fila -- ojo con fileInput: el click nativo
+    // que dispara solo (fileInput.click(), desde "Añadir imagen") también
+    // burbujea hasta acá y si no se lo ignora reabre el cartelito que la
+    // fila recién cerró.
+    if (popover.contains(e.target) || e.target === fileInput) return;
+    e.stopPropagation();
+    popover.classList.toggle('is-open');
+  });
   wrap.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openPicker();
+      popover.classList.toggle('is-open');
     }
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closePopover();
   });
 
   fileInput.addEventListener('change', async () => {
@@ -256,7 +308,7 @@ function buildStoreLogo(store, isOwner) {
       store.logo_url = publicUrl;
       img.src = publicUrl;
       wrap.classList.add('has-logo');
-      setLabel();
+      removeRow.hidden = false;
       if (previousUrl) await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
       showToast('Listo, guardamos el logo.', 'success');
     } catch (err) {
