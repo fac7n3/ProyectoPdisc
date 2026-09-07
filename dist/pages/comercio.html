@@ -46,8 +46,15 @@
         font-weight: 800;
       }
       /* Logo del comercio, arriba del título. Solo el dueño la puede
-         subir/cambiar (buildStoreHeader en comercio.js) -- si no hay logo
-         cargado, un cliente no ve nada acá (ni un cuadro vacío). */
+         subir/cambiar (buildStoreHeader en comercio.js, click en el círculo
+         entero, sin botón aparte) -- si no hay logo cargado, un cliente no
+         ve nada acá (ni un cuadro vacío).
+         El círculo alterna foto/placeholder con la clase .has-logo en el
+         wrap (no con el atributo "hidden" en cada uno por separado): con
+         "hidden" nomás, la regla de abajo de .store-header__logo--placeholder
+         (display:flex, viene de una clase de autor) le gana en la cascada a
+         la del user-agent para [hidden] y el placeholder quedaba visible
+         igual encima de la foto real. */
       .store-header__logo-wrap {
         position: relative;
         width: 84px;
@@ -59,41 +66,39 @@
         width: 84px;
         height: 84px;
         border-radius: 50%;
-        display: block;
+        box-sizing: border-box;
       }
       .store-header__logo {
+        display: none;
         object-fit: cover;
         border: 3px solid var(--bl-surface);
         box-shadow: var(--bl-shadow-sm);
         background: var(--bl-surface);
       }
+      .store-header__logo-wrap.has-logo .store-header__logo {
+        display: block;
+      }
+      /* Vacío: el borde toma el color de fondo del header (no un gris
+         genérico) para que se note que es "parte" del header y no un error
+         de carga; el texto centrado es lo que realmente invita al click. */
       .store-header__logo--placeholder {
-        box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px dashed color-mix(in srgb, var(--sh-fg, var(--bl-text)) 30%, transparent);
-        color: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 45%, transparent);
-        font-size: 1.4rem;
+        text-align: center;
+        padding: 0 0.5rem;
+        border: 2px solid var(--sh-bg, var(--bl-bg));
+        background: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 8%, transparent);
+        color: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 65%, transparent);
+        font-size: 0.7rem;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .store-header__logo-wrap.has-logo .store-header__logo--placeholder {
+        display: none;
       }
       .store-header__logo-wrap.is-editable {
         cursor: pointer;
-      }
-      .store-header__logo-edit {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        width: 1.9rem;
-        height: 1.9rem;
-        border-radius: 50%;
-        border: 2px solid var(--bl-surface);
-        background: var(--bl-primary);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 0.75rem;
       }
       .store-header__description {
         color: inherit;
@@ -392,7 +397,7 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-DQ-3V2bX.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-DkcjDXbH.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-MmxUqVqK.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">

@@ -193,32 +193,37 @@ async function uploadStoreLogo(file, store) {
 
 /** Logo del comercio, arriba del título -- solo lo ve un cliente si el
  *  dueño cargó uno; el dueño siempre ve el espacio (con foto o con un
- *  placeholder para subirla), y solo él puede subirla/cambiarla, desde
- *  esta misma vista. */
+ *  placeholder para subirla), y solo él puede subirla/cambiarla haciendo
+ *  click en el círculo (no hay un botón aparte), desde esta misma vista. */
 function buildStoreLogo(store, isOwner) {
   if (!store.logo_url && !isOwner) return null;
 
   const wrap = document.createElement('div');
   wrap.className = 'store-header__logo-wrap';
+  wrap.classList.toggle('has-logo', !!store.logo_url);
 
   const img = document.createElement('img');
   img.className = 'store-header__logo';
   img.alt = `Logo de ${store.name}`;
-  img.hidden = !store.logo_url;
   if (store.logo_url) img.src = store.logo_url;
   wrap.appendChild(img);
 
   const placeholder = document.createElement('div');
   placeholder.className = 'store-header__logo--placeholder';
-  placeholder.hidden = !!store.logo_url;
-  const placeholderIcon = document.createElement('i');
-  placeholderIcon.className = 'fa-solid fa-camera';
-  placeholder.appendChild(placeholderIcon);
+  placeholder.textContent = 'Añadir logo';
   wrap.appendChild(placeholder);
 
   if (!isOwner) return wrap;
 
   wrap.classList.add('is-editable');
+  wrap.setAttribute('role', 'button');
+  wrap.tabIndex = 0;
+  const setLabel = () => {
+    const label = store.logo_url ? 'Cambiar logo' : 'Agregar logo';
+    wrap.dataset.tooltip = label;
+    wrap.setAttribute('aria-label', label);
+  };
+  setLabel();
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -226,23 +231,14 @@ function buildStoreLogo(store, isOwner) {
   fileInput.hidden = true;
   wrap.appendChild(fileInput);
 
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.className = 'store-header__logo-edit';
-  const setEditLabel = () => {
-    const label = store.logo_url ? 'Cambiar logo' : 'Agregar logo';
-    editBtn.dataset.tooltip = label;
-    editBtn.setAttribute('aria-label', label);
-  };
-  setEditLabel();
-  const editIcon = document.createElement('i');
-  editIcon.className = 'fa-solid fa-camera';
-  editBtn.appendChild(editIcon);
-  wrap.appendChild(editBtn);
-
   const openPicker = () => fileInput.click();
-  editBtn.addEventListener('click', (e) => { e.stopPropagation(); openPicker(); });
   wrap.addEventListener('click', openPicker);
+  wrap.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPicker();
+    }
+  });
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
@@ -255,21 +251,18 @@ function buildStoreLogo(store, isOwner) {
     }
 
     const previousUrl = store.logo_url;
-    editBtn.disabled = true;
     try {
       const publicUrl = await uploadStoreLogo(file, store);
       store.logo_url = publicUrl;
       img.src = publicUrl;
-      img.hidden = false;
-      placeholder.hidden = true;
-      setEditLabel();
+      wrap.classList.add('has-logo');
+      setLabel();
       if (previousUrl) await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
       showToast('Listo, guardamos el logo.', 'success');
     } catch (err) {
       console.error('Error al subir el logo del comercio:', err);
       showToast('No pudimos subir el logo. Probá de nuevo.', 'error');
     } finally {
-      editBtn.disabled = false;
       fileInput.value = '';
     }
   });
