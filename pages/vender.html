@@ -194,9 +194,9 @@
         border-bottom: 1px solid var(--bl-border);
         margin-bottom: 0.5rem;
       }
-      .mc-sidebar__titles { display: flex; flex-direction: column; line-height: 1.2; }
+      .mc-sidebar__titles { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
       .mc-sidebar__title { font-weight: 700; color: var(--bl-text); }
-      .mc-store-name { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .mc-store-name { font-size: 0.78rem; color: var(--bl-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .mc-close {
         display: none;
         margin-left: auto;
