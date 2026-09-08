@@ -9,9 +9,9 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/admin-D0-oyu_G.js"></script>
+    <script type="module" crossorigin src="/assets/admin-CW9Mt0qO.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DiNs99rX.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -80,6 +80,9 @@
               </button>
               <button type="button" class="admin-nav__item" data-target="pharmacies">
                 <i class="fa-solid fa-prescription-bottle-medical" aria-hidden="true"></i><span>Farmacias</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="emergency-contacts">
+                <i class="fa-solid fa-phone-volume" aria-hidden="true"></i><span>Servicios</span>
               </button>
             </div>
 
@@ -393,6 +396,61 @@
                 </div>
               </section>
 
+              <!-- ===== Servicios / números de emergencia (home → "Servicios") ===== -->
+              <section class="admin-section" data-section="emergency-contacts">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Servicios</h2>
+                    <p class="admin-section__subtitle">Cargá los números de emergencia y servicios que se muestran en "Servicios" del home, agrupados por tipo.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-emergency-contacts"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+                <form class="admin-inline-form" id="emergency-contact-form">
+                  <div class="form-group">
+                    <label for="ec-category">Tipo</label>
+                    <select id="ec-category" required>
+                      <option value="emergencias">Emergencias (policía, hospital, ambulancia, etc.)</option>
+                      <option value="veterinarias">Veterinarias (de turno o urgencias)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="ec-name">Nombre</label>
+                    <input type="text" id="ec-name" placeholder="Ej: Policía / Comisaría Baradero" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ec-phone">Teléfono</label>
+                    <input type="text" id="ec-phone" placeholder="Ej: 911 o 3329 42-3456" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ec-notes">Aclaración (opcional)</label>
+                    <input type="text" id="ec-notes" placeholder="Ej: Turno esta semana" />
+                  </div>
+                  <div class="form-group">
+                    <label for="ec-order">Orden</label>
+                    <input type="number" id="ec-order" placeholder="0" value="0" />
+                  </div>
+                  <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-plus"></i> Agregar</button>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Tipo</th>
+                          <th>Nombre</th>
+                          <th>Teléfono</th>
+                          <th>Aclaración</th>
+                          <th>Orden</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="emergency-contacts-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
               <!-- ===== Moderación · Comercios ===== -->
               <section class="admin-section" data-section="stores-mod">
                 <div class="admin-section__head">
@@ -644,6 +702,6 @@
       <!-- Notificación Toast -->
       <div class="toast" id="toast" aria-live="polite" role="status"></div>
     </div>
-
+
   </body>
 </html>

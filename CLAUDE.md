@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-08. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-08** — el botón "Ayuda" de la fila de acciones del home
+  (Vender / Contratar / Ayuda) pasó a ser **"Servicios"** y lleva a una página
+  nueva (`pages/servicios.html`) con números de emergencia de Baradero
+  agrupados por tipo (Emergencias: policía/hospital/ambulancia/etc. ·
+  Veterinarias: de turno o de urgencias). Tabla nueva `emergency_contacts`
+  (migración `76_emergency_contacts.sql`, aplicada a producción), con el
+  mismo patrón de RLS que `pharmacies` (lectura pública, escritura solo
+  admin). El admin los carga/edita desde una sección nueva "Servicios" en el
+  panel. Detalle completo, incluido por qué es una sola tabla y no dos como
+  farmacias, en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-07** — Se mergearon a `main` las 7 ramas con trabajo real
   que quedaban sueltas (5 `claude/*` de otras sesiones/worktrees + 2 `A113-*`):
   el parche de seguridad de `approve_seller_request` (ver entrada de abajo),

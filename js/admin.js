@@ -1105,6 +1105,138 @@ async function loadPharmaciesSection() {
   await fetchShifts();
 }
 
+// --- Servicios / números de emergencia (home → "Servicios") ---
+
+const EMERGENCY_CATEGORY_LABELS = {
+  emergencias: 'Emergencias',
+  veterinarias: 'Veterinarias',
+};
+
+async function fetchEmergencyContacts() {
+  const tbody = document.getElementById('emergency-contacts-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando servicios...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('emergency_contacts')
+    .select('id, category, name, phone, notes, display_order, is_active')
+    .order('category')
+    .order('display_order');
+
+  if (error) {
+    console.error('Error al cargar los servicios:', error);
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#ef4444;">Error al cargar los servicios.</td></tr>';
+    return;
+  }
+
+  const contacts = data || [];
+
+  if (contacts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay números cargados todavía.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  contacts.forEach((contact) => {
+    const tr = document.createElement('tr');
+
+    const tdCategory = document.createElement('td');
+    tdCategory.textContent = EMERGENCY_CATEGORY_LABELS[contact.category] || contact.category;
+    tr.appendChild(tdCategory);
+
+    const tdName = document.createElement('td');
+    tdName.textContent = contact.name;
+    tr.appendChild(tdName);
+
+    const tdPhone = document.createElement('td');
+    tdPhone.textContent = contact.phone;
+    tr.appendChild(tdPhone);
+
+    const tdNotes = document.createElement('td');
+    tdNotes.textContent = contact.notes || '-';
+    tr.appendChild(tdNotes);
+
+    const tdOrder = document.createElement('td');
+    tdOrder.textContent = String(contact.display_order);
+    tr.appendChild(tdOrder);
+
+    const tdStatus = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = `status-badge ${contact.is_active ? 'status-approved' : 'status-suspended'}`;
+    badge.textContent = contact.is_active ? 'Activo' : 'Inactivo';
+    tdStatus.appendChild(badge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${contact.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
+    toggleBtn.textContent = contact.is_active ? 'Desactivar' : 'Activar';
+    toggleBtn.addEventListener('click', async () => {
+      const { error: updErr } = await supabase
+        .from('emergency_contacts')
+        .update({ is_active: !contact.is_active })
+        .eq('id', contact.id);
+      if (updErr) {
+        showToast(updErr.message || 'No se pudo actualizar el servicio.', 'error');
+        return;
+      }
+      fetchEmergencyContacts();
+    });
+    tdActions.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn btn-reject';
+    deleteBtn.title = 'Borrar';
+    const trashIcon = document.createElement('i');
+    trashIcon.className = 'fa-solid fa-trash';
+    deleteBtn.appendChild(trashIcon);
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Borrar "${contact.name}"?`)) return;
+      const { error: delErr } = await supabase.from('emergency_contacts').delete().eq('id', contact.id);
+      if (delErr) {
+        showToast(delErr.message || 'No se pudo borrar el servicio.', 'error');
+        return;
+      }
+      showToast('Servicio borrado.', 'success');
+      fetchEmergencyContacts();
+    });
+    tdActions.appendChild(deleteBtn);
+
+    tr.appendChild(tdActions);
+    tbody.appendChild(tr);
+  });
+}
+
+function setupEmergencyContactForm() {
+  const form = document.getElementById('emergency-contact-form');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+
+    const { error } = await supabase.from('emergency_contacts').insert({
+      category: document.getElementById('ec-category').value,
+      name: document.getElementById('ec-name').value.trim(),
+      phone: document.getElementById('ec-phone').value.trim(),
+      notes: document.getElementById('ec-notes').value.trim() || null,
+      display_order: Number(document.getElementById('ec-order').value) || 0,
+    });
+
+    btn.disabled = false;
+
+    if (error) {
+      console.error('Error al agregar el servicio:', error);
+      showToast(error.message || 'No se pudo agregar el servicio.', 'error');
+      return;
+    }
+
+    showToast('Servicio agregado.', 'success');
+    form.reset();
+    document.getElementById('ec-order').value = '0';
+    fetchEmergencyContacts();
+  });
+}
+
 // --- F7-03: moderación de reseñas reportadas ---
 
 async function fetchReportedReviews() {
@@ -1597,6 +1729,7 @@ const SECTION_LOADERS = {
   'categories': fetchCategories,
   'coupons': fetchCoupons,
   'pharmacies': loadPharmaciesSection,
+  'emergency-contacts': fetchEmergencyContacts,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
   'repartidores-mod': fetchRepartidoresForModeration,
@@ -1677,6 +1810,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-categories').addEventListener('click', fetchCategories);
   document.getElementById('btn-refresh-coupons').addEventListener('click', fetchCoupons);
   document.getElementById('btn-refresh-pharmacies').addEventListener('click', loadPharmaciesSection);
+  document.getElementById('btn-refresh-emergency-contacts').addEventListener('click', fetchEmergencyContacts);
   document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
   document.getElementById('btn-refresh-repartidores-mod').addEventListener('click', fetchRepartidoresForModeration);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
@@ -1689,6 +1823,7 @@ function initAdminPage() {
   setupCategoryForm();
   setupCouponForm();
   setupPharmacyForms();
+  setupEmergencyContactForm();
   setupProductSearch();
   setupSectionNav();
 
@@ -1706,7 +1841,7 @@ function initAdminPage() {
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'delivery-requests', 'metrics', 'categories', 'coupons',
-  'pharmacies',
+  'pharmacies', 'emergency-contacts',
   'stores-mod', 'products-mod', 'repartidores-mod', 'proofs',
   'revocations', 'error-logs', 'audit-log',
 ];

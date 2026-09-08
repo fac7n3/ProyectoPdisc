@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta name="description" content="Servicios y números de emergencia de Baradero: policía, hospital, ambulancia, veterinarias de turno y más." />
+    <title>Servicios - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      .sv-page { max-width: 720px; margin: 2rem auto 3rem; padding: 0 1rem; }
+      .sv-title { font-size: 1.75rem; color: var(--bl-primary-deeper); margin-bottom: 0.35rem; }
+      .sv-subtitle { color: var(--bl-text-secondary); font-size: 0.9375rem; margin-bottom: 1.75rem; }
+      .sv-muted { color: var(--bl-text-secondary); font-size: 0.875rem; }
+
+      .sv-group { margin-bottom: 1.75rem; }
+      .sv-group__title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; color: var(--bl-text); margin-bottom: 0.75rem; }
+      .sv-group__title i { color: var(--bl-primary); }
+
+      .sv-list {
+        background: var(--bl-surface); border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-lg); overflow: hidden;
+      }
+      .sv-item + .sv-item { border-top: 1px solid var(--bl-border); }
+      .sv-item {
+        display: flex; align-items: center; gap: 0.9rem;
+        padding: 0.9rem 1rem;
+      }
+      .sv-item__body { flex: 1; min-width: 0; }
+      .sv-item__name { font-weight: 600; color: var(--bl-text); }
+      .sv-item__notes { font-size: 0.8125rem; color: var(--bl-text-secondary); margin-top: 0.15rem; }
+      .sv-item__call {
+        display: inline-flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+        padding: 0.5rem 0.9rem; border-radius: var(--bl-radius-md);
+        background: var(--bl-primary); color: #fff; text-decoration: none;
+        font-size: 0.875rem; font-weight: 600; white-space: nowrap;
+      }
+      .sv-item__call:hover { background: var(--bl-primary-dark); }
+
+      .sv-empty {
+        text-align: center; padding: 2rem 1rem; color: var(--bl-text-secondary);
+        background: var(--bl-surface); border: 1px dashed var(--bl-border);
+        border-radius: var(--bl-radius-lg); font-size: 0.9375rem;
+      }
+
+      @media (max-width: 480px) {
+        .sv-item { flex-wrap: wrap; }
+        .sv-item__call { margin-left: auto; }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/servicios-BDykADAr.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
+    <link rel="stylesheet" crossorigin href="/assets/home-O28IFI7V.css">
+  </head>
+  <body>
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
+      <div class="navbar__top">
+        <a href="./home.html" class="navbar__logo">
+          <img src="/assets/logoazulpng-BmcneNO6.png" alt="Baradero Local" class="navbar__logo-img" />
+          <div class="navbar__logo-text">
+            <span class="navbar__logo-title">Baradero Local</span>
+            <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+          </div>
+        </a>
+        <div class="navbar__actions">
+          <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left"></i></a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="sv-page">
+      <h1 class="sv-title">Servicios</h1>
+      <p class="sv-subtitle">Números útiles de Baradero, a mano para cuando hacen falta.</p>
+
+      <!-- Poblado por js/servicios.js -->
+      <div id="sv-content"></div>
+    </main>
+
+  </body>
+</html>

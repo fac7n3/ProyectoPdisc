@@ -1939,3 +1939,39 @@ filas de sesión se ven bien.
 de estilo, no es un ajuste sino un proyecto), preferencias de notificación por tipo (necesitan
 migración nueva y hoy solo existe el canal in-app: F8-02/F8-03 siguen bloqueadas), y tamaño de
 texto (el zoom nativo del navegador ya lo cubre).
+
+## "Servicios": números de emergencia en el home (2026-09-08)
+
+Rama `claude/emergency-services-section-8g6e35`. El botón "Ayuda" de la fila
+`category-bar__inner--home-actions` del home (Vender / Contratar / Ayuda) pasó a ser **"Servicios"**
+y ahora lleva a una página nueva (`pages/servicios.html`) con los números de emergencia de
+Baradero, agrupados por tipo: **Emergencias** (policía, bomberos, hospital, ambulancia, etc.) y
+**Veterinarias** (de turno o de urgencias). El link "Ayuda" del footer NO se tocó -- sigue
+apuntando a `info.html`, es un elemento distinto.
+
+**Diseño de la tabla, más simple que farmacias a propósito:** `pharmacies`/`pharmacy_shifts`
+(migración 67) están separadas en dos tablas porque el turno de farmacia rota todos los días y
+hay que resolver del lado del cliente "a las 3am el turno vigente es el de ayer". Acá no hay esa
+rotación automática: "veterinaria de turno" es, para esta sección, un contacto más que el admin
+actualiza a mano cuando cambia (mismo criterio que ya usa para el resto de los teléfonos). Por eso
+es una sola tabla, `emergency_contacts` (migración `76_emergency_contacts.sql`, aplicada a
+producción con el MCP de Supabase en esta misma sesión): `category` (check `emergencias` /
+`veterinarias`), `name`, `phone`, `notes` (aclaración opcional, ej. "Turno esta semana"),
+`display_order`, `is_active`. RLS: lectura pública (`anon`+`authenticated`, solo activos) +
+`for all` solo `admin` -- calco exacto de `pharmacies_select_public`/`pharmacies_all_admin`, con
+el mismo trigger de auditoría (`log_admin_action`) que el resto de las tablas que edita el admin.
+
+**Admin:** nueva sección "Servicios" en el panel (`data-target="emergency-contacts"`), en el grupo
+"Catálogo" al lado de "Farmacias". Un form de alta (tipo/nombre/teléfono/aclaración/orden) + tabla
+con activar/desactivar (no borra el registro, igual que farmacias) y borrar. Oculta para el rol
+`moderador`, mismo criterio que categorías/cupones/farmacias (no es moderación de contenido de
+usuarios, es configuración). Carga perezosa vía `SECTION_LOADERS['emergency-contacts']`.
+
+**Página pública:** sin `guardPage`, sin sesión requerida -- misma decisión que `farmacias.html`
+(información de utilidad pública). Si no hay contactos cargados en una categoría, esa categoría
+directamente no se dibuja (no se muestra un grupo vacío); si no hay ninguno, un mensaje explícito
+en vez de una página en blanco. Botón "Llamar" con `tel:` armado a partir del teléfono cargado.
+
+**Gotcha de build:** `pages/servicios.html` necesitó agregarse a `rollupOptions.input` en
+`vite.config.js` (como cada página nueva del sitio) -- sin eso Vite no la incluye en `dist/` aunque
+el archivo exista y el link del home funcione en dev.
