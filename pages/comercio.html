@@ -385,8 +385,14 @@
       .store-cat-row__track::-webkit-scrollbar {
         display: none;
       }
+      /* Mismo ancho de tarjeta que usa el home en su grilla responsive
+         (.products__grid, minmax de 220px por defecto) -- antes quedaban
+         más finas (46%/190px) que las del resto del sitio. El porcentaje se
+         resuelve contra el content-box del track (SIN el padding lateral
+         que le deja lugar a las flechas), por eso hace falta un % bastante
+         más alto que "quiero que ocupe la mitad de la fila". */
       .store-cat-row__track .product-card {
-        flex: 0 0 min(46%, 190px);
+        flex: 0 0 min(80%, 220px);
         scroll-snap-align: start;
       }
       /* Mismo lenguaje visual que las flechas del carrusel de comercios del
