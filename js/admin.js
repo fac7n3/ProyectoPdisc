@@ -302,6 +302,236 @@ async function rejectDeliveryRequest(id) {
   }
 }
 
+// --- Profesionales / técnicos (directorio "Contratar" del home) ---
+//
+// A diferencia de approve_seller_request, acá aprobar NO necesita un RPC
+// SECURITY DEFINER: no hay que tocar profiles.role ni auth.users (publicarse
+// como profesional no cambia el rol de la cuenta). El admin ya tiene RLS
+// "for all" en las dos tablas, así que aprobar es un insert en
+// `professionals` + un update en `professional_requests`, ambas llamadas
+// comunes desde el cliente (ver db/schema/77_professionals.sql).
+
+async function fetchProfessionalRequests() {
+  const tbody = document.getElementById('professional-requests-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('professional_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar solicitudes de profesionales:', error);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error al cargar las solicitudes.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay solicitudes registradas.</td></tr>';
+    return;
+  }
+
+  const STATUS_LABEL = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
+  const STATUS_CLASS = { pending: 'status-pending', approved: 'status-approved', rejected: 'status-rejected' };
+
+  tbody.innerHTML = '';
+  data.forEach((req) => {
+    const tr = document.createElement('tr');
+
+    const tdDate = document.createElement('td');
+    tdDate.textContent = new Date(req.created_at).toLocaleDateString('es-AR');
+    tr.appendChild(tdDate);
+
+    const tdName = document.createElement('td');
+    tdName.textContent = req.full_name;
+    tr.appendChild(tdName);
+
+    const tdSpecialty = document.createElement('td');
+    tdSpecialty.textContent = req.specialty;
+    tr.appendChild(tdSpecialty);
+
+    const tdContact = document.createElement('td');
+    tdContact.textContent = [req.phone, req.whatsapp].filter(Boolean).join(' · ');
+    tr.appendChild(tdContact);
+
+    const tdStatus = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = `status-badge ${STATUS_CLASS[req.status]}`;
+    badge.textContent = STATUS_LABEL[req.status];
+    tdStatus.appendChild(badge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+    if (req.status === 'pending') {
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'action-btn btn-approve';
+      approveBtn.title = 'Aprobar';
+      const checkIcon = document.createElement('i');
+      checkIcon.className = 'fa-solid fa-check';
+      approveBtn.appendChild(checkIcon);
+      approveBtn.addEventListener('click', async () => {
+        if (!confirm(`¿Publicar a "${req.full_name}" en Contratar?`)) return;
+        await approveProfessionalRequest(req);
+      });
+      tdActions.appendChild(approveBtn);
+
+      const rejectBtn = document.createElement('button');
+      rejectBtn.className = 'action-btn btn-reject';
+      rejectBtn.title = 'Rechazar';
+      const xIcon = document.createElement('i');
+      xIcon.className = 'fa-solid fa-xmark';
+      rejectBtn.appendChild(xIcon);
+      rejectBtn.addEventListener('click', async () => {
+        if (!confirm(`¿Rechazar la solicitud de "${req.full_name}"?`)) return;
+        await rejectProfessionalRequest(req.id);
+      });
+      tdActions.appendChild(rejectBtn);
+    } else {
+      tdActions.textContent = '-';
+    }
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function approveProfessionalRequest(req) {
+  const { error: insertError } = await supabase.from('professionals').insert({
+    owner_id: req.user_id,
+    full_name: req.full_name,
+    specialty: req.specialty,
+    description: req.description,
+    phone: req.phone,
+    whatsapp: req.whatsapp,
+  });
+
+  if (insertError) {
+    console.error('Error al publicar profesional:', insertError);
+    showToast(insertError.message || 'No se pudo publicar al profesional.', 'error');
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('professional_requests')
+    .update({ status: 'approved' })
+    .eq('id', req.id);
+
+  if (updateError) {
+    console.error('Error al marcar la solicitud como aprobada:', updateError);
+    showToast('Se publicó, pero no se pudo actualizar el estado de la solicitud.', 'error');
+  } else {
+    showToast('Profesional publicado en Contratar.', 'success');
+  }
+
+  loadProfessionalsSection();
+}
+
+async function rejectProfessionalRequest(id) {
+  const { error } = await supabase
+    .from('professional_requests')
+    .update({ status: 'rejected' })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error al rechazar solicitud de profesional:', error);
+    showToast(error.message || 'No se pudo rechazar la solicitud.', 'error');
+    return;
+  }
+
+  showToast('Solicitud rechazada.', 'success');
+  fetchProfessionalRequests();
+}
+
+async function fetchProfessionals() {
+  const tbody = document.getElementById('professionals-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando profesionales...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('professionals')
+    .select('id, full_name, specialty, phone, whatsapp, is_active')
+    .order('full_name');
+
+  if (error) {
+    console.error('Error al cargar profesionales:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los profesionales.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Todavía no hay nadie publicado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((pro) => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = pro.full_name;
+    tr.appendChild(tdName);
+
+    const tdSpecialty = document.createElement('td');
+    tdSpecialty.textContent = pro.specialty;
+    tr.appendChild(tdSpecialty);
+
+    const tdContact = document.createElement('td');
+    tdContact.textContent = [pro.phone, pro.whatsapp].filter(Boolean).join(' · ');
+    tr.appendChild(tdContact);
+
+    const tdStatus = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = `status-badge ${pro.is_active ? 'status-approved' : 'status-suspended'}`;
+    badge.textContent = pro.is_active ? 'Activo' : 'Inactivo';
+    tdStatus.appendChild(badge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${pro.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
+    toggleBtn.textContent = pro.is_active ? 'Desactivar' : 'Activar';
+    toggleBtn.addEventListener('click', async () => {
+      const { error: updErr } = await supabase
+        .from('professionals')
+        .update({ is_active: !pro.is_active })
+        .eq('id', pro.id);
+      if (updErr) {
+        showToast(updErr.message || 'No se pudo actualizar.', 'error');
+        return;
+      }
+      fetchProfessionals();
+    });
+    tdActions.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'action-btn btn-reject';
+    deleteBtn.title = 'Borrar';
+    const trashIcon = document.createElement('i');
+    trashIcon.className = 'fa-solid fa-trash';
+    deleteBtn.appendChild(trashIcon);
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`¿Borrar a "${pro.full_name}" del directorio?`)) return;
+      const { error: delErr } = await supabase.from('professionals').delete().eq('id', pro.id);
+      if (delErr) {
+        showToast(delErr.message || 'No se pudo borrar.', 'error');
+        return;
+      }
+      showToast('Profesional borrado.', 'success');
+      fetchProfessionals();
+    });
+    tdActions.appendChild(deleteBtn);
+
+    tr.appendChild(tdActions);
+    tbody.appendChild(tr);
+  });
+}
+
+/** Las dos tablas de la sección se cargan juntas. */
+async function loadProfessionalsSection() {
+  await fetchProfessionalRequests();
+  await fetchProfessionals();
+}
+
 // --- F6-05: métricas globales ---
 
 async function loadGlobalMetrics() {
@@ -1726,6 +1956,7 @@ const SECTION_LOADERS = {
   'metrics': loadGlobalMetrics,
   'seller-requests': fetchRequests,
   'delivery-requests': fetchDeliveryRequests,
+  'professionals': loadProfessionalsSection,
   'categories': fetchCategories,
   'coupons': fetchCoupons,
   'pharmacies': loadPharmaciesSection,
@@ -1806,6 +2037,7 @@ function initAdminPage() {
 
   document.getElementById('btn-refresh').addEventListener('click', fetchRequests);
   document.getElementById('btn-refresh-delivery').addEventListener('click', fetchDeliveryRequests);
+  document.getElementById('btn-refresh-professionals').addEventListener('click', loadProfessionalsSection);
   document.getElementById('btn-refresh-metrics').addEventListener('click', loadGlobalMetrics);
   document.getElementById('btn-refresh-categories').addEventListener('click', fetchCategories);
   document.getElementById('btn-refresh-coupons').addEventListener('click', fetchCoupons);
@@ -1840,7 +2072,7 @@ function initAdminPage() {
 // oculta la UI que un moderador no puede usar, para que no vea opciones
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
-  'seller-requests', 'delivery-requests', 'metrics', 'categories', 'coupons',
+  'seller-requests', 'delivery-requests', 'professionals', 'metrics', 'categories', 'coupons',
   'pharmacies', 'emergency-contacts',
   'stores-mod', 'products-mod', 'repartidores-mod', 'proofs',
   'revocations', 'error-logs', 'audit-log',

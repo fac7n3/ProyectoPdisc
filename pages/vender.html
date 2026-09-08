@@ -120,6 +120,27 @@
         background: var(--bl-vendor-accent-dark);
       }
 
+      /* Selector "Vender productos" / "Ofrecer un servicio" en la vista de
+         alta -- decide qué formulario se muestra (js/vender.js). */
+      .register-type-toggle {
+        display: flex; gap: 0.5rem; padding: 0.3rem;
+        background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill);
+        margin-bottom: 2rem;
+      }
+      .register-type-toggle__btn {
+        flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        padding: 0.65rem 1rem; border: none; border-radius: var(--bl-radius-pill);
+        background: transparent; color: var(--bl-text-secondary);
+        font-weight: 600; font-size: 0.9375rem; cursor: pointer; transition: all 0.15s;
+      }
+      .register-type-toggle__btn.is-active {
+        background: var(--bl-surface); color: var(--bl-vendor-accent);
+        box-shadow: var(--bl-shadow-sm);
+      }
+      @media (max-width: 480px) {
+        .register-type-toggle__btn span { display: none; }
+      }
+
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -651,36 +672,89 @@
 
         <!-- Vista de Registro (card centrada, sin sidebar) -->
         <div id="register-view" class="vender-container" style="display: none;">
-            <div class="vender-header">
-              <h2>Empezá a vender en Baradero</h2>
-              <p>Completá los datos de tu comercio y sumate a la red local.</p>
+            <div class="register-type-toggle" role="tablist" aria-label="Qué querés hacer">
+              <button type="button" class="register-type-toggle__btn is-active" id="toggle-comercio" role="tab" aria-selected="true">
+                <i class="fa-solid fa-store" aria-hidden="true"></i><span>Vender productos</span>
+              </button>
+              <button type="button" class="register-type-toggle__btn" id="toggle-profesional" role="tab" aria-selected="false">
+                <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i><span>Ofrecer un servicio</span>
+              </button>
             </div>
-            <form id="seller-form">
-              <div class="form-group">
-                <label class="form-label" for="shop-name">Nombre del Comercio</label>
-                <input type="text" id="shop-name" class="form-input" placeholder="Ej: Panadería La Espiga" required />
+
+            <div id="comercio-form-wrap">
+              <div class="vender-header">
+                <h2>Empezá a vender en Baradero</h2>
+                <p>Completá los datos de tu comercio y sumate a la red local.</p>
               </div>
-              <div class="form-group">
-                <label class="form-label" for="shop-cuit">CUIT / CUIL</label>
-                <input type="text" id="shop-cuit" class="form-input" placeholder="Sin guiones" required />
+              <form id="seller-form">
+                <div class="form-group">
+                  <label class="form-label" for="shop-name">Nombre del Comercio</label>
+                  <input type="text" id="shop-name" class="form-input" placeholder="Ej: Panadería La Espiga" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="shop-cuit">CUIT / CUIL</label>
+                  <input type="text" id="shop-cuit" class="form-input" placeholder="Sin guiones" required />
+                </div>
+                <div class="form-group">
+                  <fieldset class="catpick">
+                    <legend class="form-label">Rubro(s)</legend>
+                    <small style="color: var(--bl-text-muted); display: block; margin-bottom: 0.25rem;">Podés elegir más de uno.</small>
+                    <div class="catpick__grid" id="shop-category-options"></div>
+                  </fieldset>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="shop-address">Dirección del Local</label>
+                  <input type="text" id="shop-address" class="form-input" placeholder="Calle y número" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="shop-phone">Teléfono de Contacto</label>
+                  <input type="text" id="shop-phone" class="form-input" placeholder="Código de área + Número" required />
+                </div>
+                <button type="submit" class="form-btn">Crear mi tienda</button>
+              </form>
+            </div>
+
+            <!-- Alta de profesional/técnico ("Contratar" del home): directorio
+                 informativo por WhatsApp/teléfono, sin catálogo ni pedidos --
+                 por eso el formulario es más corto que el de comercio. -->
+            <div id="profesional-form-wrap" style="display: none;">
+              <div class="vender-header">
+                <h2>Ofrecé tu oficio o servicio</h2>
+                <p>Quedás publicado en "Contratar" para que te escriban por WhatsApp o te llamen.</p>
               </div>
-              <div class="form-group">
-                <fieldset class="catpick">
-                  <legend class="form-label">Rubro(s)</legend>
-                  <small style="color: var(--bl-text-muted); display: block; margin-bottom: 0.25rem;">Podés elegir más de uno.</small>
-                  <div class="catpick__grid" id="shop-category-options"></div>
-                </fieldset>
+              <form id="professional-form">
+                <div class="form-group">
+                  <label class="form-label" for="prof-name">Nombre y apellido</label>
+                  <input type="text" id="prof-name" class="form-input" placeholder="Ej: Juan Pérez" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="prof-specialty">Oficio o especialidad</label>
+                  <input type="text" id="prof-specialty" class="form-input" placeholder="Ej: Plomero, Electricista, Clases de inglés" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="prof-description">Descripción breve (opcional)</label>
+                  <textarea id="prof-description" class="form-input" rows="3" placeholder="Contá tu experiencia o qué servicios ofrecés"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="prof-phone">Teléfono</label>
+                  <input type="text" id="prof-phone" class="form-input" placeholder="Código de área + Número" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="prof-whatsapp">WhatsApp (si es distinto del teléfono)</label>
+                  <input type="text" id="prof-whatsapp" class="form-input" placeholder="Código de país + Número, ej: 5493329123456" />
+                </div>
+                <button type="submit" class="form-btn">Enviar solicitud</button>
+              </form>
+            </div>
+
+            <!-- Estado de la solicitud de profesional (pendiente/aprobada/rechazada).
+                 Sin dashboard propio -- es un directorio, no hay pedidos que gestionar. -->
+            <div id="professional-status-view" style="display: none;">
+              <div class="vender-header">
+                <h2 id="professional-status-title">Tu solicitud</h2>
               </div>
-              <div class="form-group">
-                <label class="form-label" for="shop-address">Dirección del Local</label>
-                <input type="text" id="shop-address" class="form-input" placeholder="Calle y número" required />
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="shop-phone">Teléfono de Contacto</label>
-                <input type="text" id="shop-phone" class="form-input" placeholder="Código de área + Número" required />
-              </div>
-              <button type="submit" class="form-btn">Crear mi tienda</button>
-            </form>
+              <div id="professional-status-body" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); text-align: center;"></div>
+            </div>
         </div>
 
         <!-- Vista del Panel: shell "Mi cuenta" (sidebar + contenido) -->

@@ -93,9 +93,73 @@ async function checkSellerState(user) {
       notice.style.display = 'block';
       notice.textContent = `Tu solicitud para "${req.shop_name}" está en estado: ${req.status}. Te avisaremos cuando esté aprobada.`;
     }
-  } else {
-    reveal('register');
+    return;
   }
+
+  // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional,
+  // o tiene una solicitud de profesional en curso? (directorio "Contratar",
+  // sin dashboard propio -- es informativo, no gestiona pedidos).
+  const { data: prof } = await supabase
+    .from('professionals')
+    .select('full_name, is_active')
+    .eq('owner_id', user.id)
+    .maybeSingle();
+
+  if (prof) {
+    reveal('register');
+    showProfessionalStatus(prof.is_active
+      ? `Ya estás publicado en "Contratar" como ${prof.full_name}. Si necesitás cambiar algún dato, escribinos por Soporte.`
+      : `Tu publicación como ${prof.full_name} está desactivada. Escribinos por Soporte si querés reactivarla.`);
+    return;
+  }
+
+  const { data: profReq } = await supabase
+    .from('professional_requests')
+    .select('status, full_name')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (profReq) {
+    reveal('register');
+    showProfessionalStatus(profReq.status === 'pending'
+      ? `Tu solicitud para publicarte como ${profReq.full_name} está pendiente de aprobación. Te avisaremos cuando esté lista.`
+      : `Tu solicitud para publicarte como ${profReq.full_name} fue rechazada. Escribinos por Soporte si tenés dudas.`);
+    return;
+  }
+
+  reveal('register');
+  showRegisterForms();
+}
+
+/** Alterna entre el toggle+formularios y el estado de una solicitud de profesional
+ *  ya enviada (pendiente/aprobada/rechazada) -- todo dentro de #register-view. */
+function showRegisterForms(defaultTab = 'comercio') {
+  const toggle = document.querySelector('.register-type-toggle');
+  if (toggle) toggle.style.display = 'flex';
+  document.getElementById('professional-status-view').style.display = 'none';
+  setRegisterTab(defaultTab);
+}
+
+function setRegisterTab(tab) {
+  const isComercio = tab === 'comercio';
+  document.getElementById('comercio-form-wrap').style.display = isComercio ? 'block' : 'none';
+  document.getElementById('profesional-form-wrap').style.display = isComercio ? 'none' : 'block';
+  const btnComercio = document.getElementById('toggle-comercio');
+  const btnProfesional = document.getElementById('toggle-profesional');
+  btnComercio?.classList.toggle('is-active', isComercio);
+  btnComercio?.setAttribute('aria-selected', String(isComercio));
+  btnProfesional?.classList.toggle('is-active', !isComercio);
+  btnProfesional?.setAttribute('aria-selected', String(!isComercio));
+}
+
+function showProfessionalStatus(message) {
+  const toggle = document.querySelector('.register-type-toggle');
+  if (toggle) toggle.style.display = 'none';
+  document.getElementById('comercio-form-wrap').style.display = 'none';
+  document.getElementById('profesional-form-wrap').style.display = 'none';
+  const statusView = document.getElementById('professional-status-view');
+  statusView.style.display = 'block';
+  document.getElementById('professional-status-body').textContent = message;
 }
 
 // --- Inicializar formulario y eventos ---
@@ -299,6 +363,71 @@ function initVenderPage(user) {
   // Manejar botón de volver al inicio
   logoutBtn?.addEventListener('click', () => {
     window.location.replace('./home.html');
+  });
+
+  // Toggle "Vender productos" / "Ofrecer un servicio"
+  document.getElementById('toggle-comercio')?.addEventListener('click', () => setRegisterTab('comercio'));
+  document.getElementById('toggle-profesional')?.addEventListener('click', () => setRegisterTab('profesional'));
+
+  // Manejar alta de profesional/técnico
+  const profForm = document.getElementById('professional-form');
+  const profSubmitBtn = profForm?.querySelector('button[type="submit"]');
+  profForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nameInput = document.getElementById('prof-name').value.trim();
+    const specialtyInput = document.getElementById('prof-specialty').value.trim();
+    const descriptionInput = document.getElementById('prof-description').value.trim();
+    const phoneInput = document.getElementById('prof-phone').value.trim();
+    const whatsappInput = document.getElementById('prof-whatsapp').value.trim();
+
+    if (!isValidShopName(nameInput)) {
+      showToast("El nombre debe tener entre 3 y 100 caracteres.", "error");
+      return;
+    }
+    if (!isValidShopName(specialtyInput)) {
+      showToast("Contá tu oficio o especialidad (entre 3 y 100 caracteres).", "error");
+      return;
+    }
+    if (!isValidPhone(phoneInput)) {
+      showToast("El teléfono ingresado no es válido.", "error");
+      return;
+    }
+    if (whatsappInput && !isValidPhone(whatsappInput)) {
+      showToast("El WhatsApp ingresado no es válido.", "error");
+      return;
+    }
+
+    if (profSubmitBtn) setLoading(profSubmitBtn, true, "Enviar solicitud");
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+    if (!currentUser) {
+      showToast("Sesión inválida.", "error");
+      if (profSubmitBtn) setLoading(profSubmitBtn, false, "Enviar solicitud");
+      return;
+    }
+
+    const { error } = await supabase
+      .from('professional_requests')
+      .insert({
+        user_id: currentUser.id,
+        full_name: nameInput,
+        specialty: specialtyInput,
+        description: descriptionInput || null,
+        phone: phoneInput,
+        whatsapp: whatsappInput || null,
+      });
+
+    if (error) {
+      console.error("Error al solicitar publicarse como profesional:", error);
+      showToast("Hubo un error al procesar tu solicitud.", "error");
+    } else {
+      showToast("¡Solicitud enviada! Revisaremos tus datos antes de publicarte.", "success");
+      await checkSellerState(currentUser);
+    }
+
+    if (profSubmitBtn) setLoading(profSubmitBtn, false, "Enviar solicitud");
   });
 }
 

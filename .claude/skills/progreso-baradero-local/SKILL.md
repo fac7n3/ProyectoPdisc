@@ -1975,3 +1975,74 @@ en vez de una página en blanco. Botón "Llamar" con `tel:` armado a partir del 
 **Gotcha de build:** `pages/servicios.html` necesitó agregarse a `rollupOptions.input` en
 `vite.config.js` (como cada página nueva del sitio) -- sin eso Vite no la incluye en `dist/` aunque
 el archivo exista y el link del home funcione en dev.
+
+## "Contratar": directorio de profesionales y técnicos (2026-09-08)
+
+Misma sesión que "Servicios" de arriba, rama `main` (push directo, a pedido del usuario). El botón
+"Contratar" del home dejó de llevar a la página placeholder "muy pronto, estamos armando" y pasó a
+ser el directorio real: profesionales y técnicos de Baradero, informativo por WhatsApp/teléfono
+-- sin catálogo de productos ni pedidos, a diferencia de un comercio.
+
+**Alcance definido por el usuario, textual:** "es un directorio informativo por WhatsApp/teléfono,
+los profesionales se pueden cargar en el apartado de vender y se puede hacer un formulario simple
+de ingreso para ellos, similar al de comercio". De ahí las tres decisiones de diseño:
+
+1. **El alta vive en `vender.html`, no en una página nueva.** Arriba del formulario de "Crear mi
+   tienda" hay un selector nuevo (`.register-type-toggle`, una píldora de dos botones) que alterna
+   entre "Vender productos" (el form de siempre) y "Ofrecer un servicio" (form nuevo, más corto:
+   nombre, oficio/especialidad, descripción opcional, teléfono, WhatsApp opcional -- sin CUIT ni
+   dirección, no hace falta para un directorio de contacto). **Limitación conocida, a propósito:**
+   quien ya es vendedor (o empleado de un comercio) nunca ve el toggle -- `checkSellerState()`
+   revela el dashboard de comercio y vuelve antes de llegar a chequear nada de profesionales. No
+   se puede ser las dos cosas a la vez desde esta UI; no lo pidió el alcance y hubiera complicado
+   la función bastante.
+
+2. **Aprobación manual del admin, igual que un comercio -- pero SIN RPC `SECURITY DEFINER`.**
+   `approve_seller_request()` necesita correr con privilegios elevados porque escribe en
+   `profiles.role` y en `auth.users.raw_app_meta_data` (subir a alguien a rol `vendedor`).
+   Publicarse como profesional **no cambia el rol de la cuenta** -- sigue siendo `cliente`, no hay
+   panel de vendedor que dar. Por eso aprobar acá es un `insert` en `professionals` + un `update`
+   en `professional_requests`, dos llamadas comunes desde el cliente que ya cubre el RLS "for all"
+   del admin -- mismo patrón que farmacias/emergency_contacts, no el de seller_requests. Migración
+   `77_professionals.sql` (aplicada a producción con el MCP de Supabase en esta sesión): dos
+   tablas, RLS calcada de `seller_requests`/`pharmacies` (insert/select propio +
+   select/update admin en `professional_requests`; select público solo activos + "for all" admin en
+   `professionals`), triggers de `set_updated_at` y de auditoría (`log_admin_action`, que ya se
+   autolimita a filas tocadas por un admin real -- el insert que hace la propia persona al pedir
+   turno no queda en el log, solo el approve/reject).
+
+3. **Sin dashboard propio.** Un comercio tiene todo un shell "Mi cuenta" (pedidos, pagos, envíos,
+   publicaciones...) porque gestiona ventas reales. Un profesional publicado no gestiona nada del
+   lado de la plataforma -- por eso, después de registrarse, `vender.html` no lo manda a
+   `dashboard-view`: le muestra un estado simple dentro del mismo `register-view`
+   (`#professional-status-view`) con el texto "pendiente" / "ya estás publicado" / "rechazada",
+   calcado del `#mc-pending-notice` que ya existía para comercios pendientes. Tampoco hay UI de
+   autoedición todavía (cambiar el teléfono cargado, por ejemplo) -- no estaba en el alcance
+   pedido ("formulario simple de ingreso"); si hace falta más adelante, el owner ya tiene los datos
+   en `professionals.owner_id` para agregar RLS de auto-edición sin migración nueva.
+
+**Página pública (`pages/contratar.html` + `js/contratar.js`):** reemplaza el placeholder entero.
+Como `specialty` es texto libre (no una categoría fija -- hay demasiados oficios distintos para un
+enum, y con pocos profesionales cargados agrupar por categoría hubiera dejado grupos de un solo
+ítem, feo), el diseño NO repite las tarjetas por categoría de `servicios.html`: es una lista plana
+de tarjetas (`.ct-card`) con un buscador arriba (`#ct-search-input`, filtro client-side por
+nombre/oficio/descripción sobre el array ya cargado, sin ida y vuelta a la base por letra tipeada).
+Cada tarjeta muestra nombre + oficio como pill + descripción opcional + botón "Llamar" (siempre,
+`tel:`) y "WhatsApp" (solo si cargó uno, `wa.me`, verde `#25d366` -- único lugar del sitio con ese
+color, a propósito reconocible como WhatsApp y no como el verde de éxito del design system). Cierra
+con un CTA "¿Sos profesional o técnico? Sumate al directorio" -> `vender.html`, para no depender
+solo de que alguien encuentre el toggle por su cuenta.
+
+**Admin:** sección nueva "Profesionales" (grupo "Solicitudes" del nav, al lado de
+Comercios/Repartidores), con dos tablas como Farmacias: "1. Solicitudes" (aprobar/rechazar,
+igual que seller-requests pero con botones bindeados por fila en vez del querySelectorAll
+delegado global que usa esa sección vieja -- evita colisión de clases `.btn-approve`/`.btn-reject`
+sin tener que inventar sufijos nuevos) y "2. Publicados en Contratar" (activar/desactivar/borrar,
+igual que farmacias). Oculta para el rol `moderador`, mismo criterio que seller-requests.
+
+**Verificado visualmente con Playwright** (sin login real: `vender.html` exige sesión vía
+`guardPage`, así que se bloqueó la carga del bundle `vender-*.js` con `page.route` para que nunca
+corra el redirect a login, y se mostró/ocultó `register-view` a mano -- el resto de la página, CSS
+y navbar incluidos, carga por navegación real así que se ve exactamente como en producción). Los
+dos tabs del toggle y `contratar.html` con datos de ejemplo se ven bien, sin overflow ni recortes,
+en desktop.

@@ -80,6 +80,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-08** — "Contratar" (botón del home) dejó de ser un
+  placeholder "muy pronto" y pasó a ser el **directorio de profesionales y
+  técnicos** de Baradero, informativo por WhatsApp/teléfono (sin catálogo ni
+  pedidos). Alta desde `vender.html` (nuevo selector "Vender productos" /
+  "Ofrecer un servicio" arriba del formulario), con aprobación manual del
+  admin — mismo flujo que un comercio, pero sin RPC `SECURITY DEFINER`
+  porque publicarse no cambia el rol de la cuenta. Tablas nuevas
+  `professional_requests`/`professionals` (migración `77_professionals.sql`,
+  aplicada a producción), sección nueva "Profesionales" en el panel de
+  admin. Detalle completo en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-08** — el botón "Ayuda" de la fila de acciones del home
   (Vender / Contratar / Ayuda) pasó a ser **"Servicios"** y lleva a una página
   nueva (`pages/servicios.html`) con números de emergencia de Baradero

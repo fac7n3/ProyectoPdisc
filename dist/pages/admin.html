@@ -11,7 +11,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/admin-CW9Mt0qO.js"></script>
+    <script type="module" crossorigin src="/assets/admin-BWJUqH4R.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DiNs99rX.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -67,6 +67,9 @@
               </button>
               <button type="button" class="admin-nav__item" data-target="delivery-requests">
                 <i class="fa-solid fa-motorcycle" aria-hidden="true"></i><span>Repartidores</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="professionals">
+                <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i><span>Profesionales</span>
               </button>
             </div>
 
@@ -214,6 +217,54 @@
                         </tr>
                       </thead>
                       <tbody id="delivery-requests-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Profesionales / técnicos (directorio "Contratar" del home) ===== -->
+              <section class="admin-section" data-section="professionals">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Profesionales</h2>
+                    <p class="admin-section__subtitle">Aprobá las solicitudes de quienes quieren publicarse en "Contratar" y gestioná el directorio.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-professionals"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
+                </div>
+
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem;">1. Solicitudes</h3>
+                <div class="admin-card" style="margin-bottom: 1.5rem;">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Nombre</th>
+                          <th>Oficio</th>
+                          <th>Contacto</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="professional-requests-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <h3 style="font-size: 1rem; margin: 0 0 0.5rem;">2. Publicados en "Contratar"</h3>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Nombre</th>
+                          <th>Oficio</th>
+                          <th>Contacto</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="professionals-tbody"></tbody>
                     </table>
                   </div>
                 </div>
