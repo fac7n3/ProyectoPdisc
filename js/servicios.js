@@ -8,8 +8,20 @@ import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const CATEGORIES = [
-  { key: 'emergencias', label: 'Emergencias', icon: 'fa-solid fa-truck-medical' },
-  { key: 'veterinarias', label: 'Veterinarias', icon: 'fa-solid fa-paw' },
+  {
+    key: 'emergencias',
+    label: 'Emergencias',
+    desc: 'Policía, bomberos, hospital y ambulancia',
+    icon: 'fa-solid fa-truck-medical',
+    modifier: 'sv-card--emergencias',
+  },
+  {
+    key: 'veterinarias',
+    label: 'Veterinarias',
+    desc: 'De turno o para urgencias',
+    icon: 'fa-solid fa-paw',
+    modifier: 'sv-card--veterinarias',
+  },
 ];
 
 function el(tag, className, text) {
@@ -19,40 +31,59 @@ function el(tag, className, text) {
   return node;
 }
 
-function buildItem(contact) {
-  const item = el('div', 'sv-item');
+function buildContact(contact) {
+  const row = el('div', 'sv-contact');
 
-  const body = el('div', 'sv-item__body');
-  body.appendChild(el('div', 'sv-item__name', contact.name));
-  if (contact.notes) body.appendChild(el('div', 'sv-item__notes', contact.notes));
-  item.appendChild(body);
+  const dot = el('span', 'sv-contact__dot');
+  dot.setAttribute('aria-hidden', 'true');
+  row.appendChild(dot);
 
-  const call = el('a', 'sv-item__call');
+  const info = el('div', 'sv-contact__info');
+  info.appendChild(el('span', 'sv-contact__name', contact.name));
+  if (contact.notes) info.appendChild(el('span', 'sv-contact__notes', contact.notes));
+  row.appendChild(info);
+
+  const call = el('a', 'sv-contact__call');
   call.href = `tel:${contact.phone.replace(/[^\d+]/g, '')}`;
   const icon = el('i', 'fa-solid fa-phone');
   icon.setAttribute('aria-hidden', 'true');
   call.appendChild(icon);
-  call.append(` ${contact.phone}`);
-  item.appendChild(call);
+  call.append(document.createTextNode(contact.phone));
+  row.appendChild(call);
 
-  return item;
+  return row;
 }
 
-function buildGroup(category, contacts) {
-  const group = el('div', 'sv-group');
+function buildCard(category, contacts) {
+  const card = el('section', `sv-card ${category.modifier}`);
 
-  const title = el('h2', 'sv-group__title');
+  const head = el('div', 'sv-card__head');
+  const iconWrap = el('span', 'sv-card__icon');
   const icon = el('i', category.icon);
   icon.setAttribute('aria-hidden', 'true');
-  title.appendChild(icon);
-  title.append(category.label);
-  group.appendChild(title);
+  iconWrap.appendChild(icon);
+  head.appendChild(iconWrap);
 
-  const list = el('div', 'sv-list');
-  contacts.forEach((c) => list.appendChild(buildItem(c)));
-  group.appendChild(list);
+  const titleBox = el('div');
+  titleBox.appendChild(el('h2', 'sv-card__title', category.label));
+  titleBox.appendChild(el('p', 'sv-card__desc', category.desc));
+  head.appendChild(titleBox);
+  card.appendChild(head);
 
-  return group;
+  const list = el('div', 'sv-card__list');
+  contacts.forEach((c) => list.appendChild(buildContact(c)));
+  card.appendChild(list);
+
+  return card;
+}
+
+function buildEmpty(message) {
+  const empty = el('div', 'sv-empty');
+  const icon = el('i', 'fa-regular fa-circle-question');
+  icon.setAttribute('aria-hidden', 'true');
+  empty.appendChild(icon);
+  empty.appendChild(el('p', null, message));
+  return empty;
 }
 
 async function loadServicios() {
@@ -67,22 +98,20 @@ async function loadServicios() {
 
   if (error) {
     console.error('Error al cargar los servicios:', error);
-    const empty = el('div', 'sv-empty', 'No pudimos cargar los números. Probá de nuevo en un rato.');
-    container.appendChild(empty);
+    container.appendChild(buildEmpty('No pudimos cargar los números. Probá de nuevo en un rato.'));
     return;
   }
 
   const contacts = data || [];
 
   if (contacts.length === 0) {
-    const empty = el('div', 'sv-empty', 'Todavía no cargamos números de servicios. Vas a encontrarlos acá pronto.');
-    container.appendChild(empty);
+    container.appendChild(buildEmpty('Todavía no cargamos números de servicios. Vas a encontrarlos acá pronto.'));
     return;
   }
 
   CATEGORIES.forEach((category) => {
     const inCategory = contacts.filter((c) => c.category === category.key);
-    if (inCategory.length > 0) container.appendChild(buildGroup(category, inCategory));
+    if (inCategory.length > 0) container.appendChild(buildCard(category, inCategory));
   });
 }
 
