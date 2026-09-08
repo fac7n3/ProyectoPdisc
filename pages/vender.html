@@ -442,11 +442,6 @@
       .pub-empty__btn { background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
       .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
 
-      /* --- Alta/edición de producto: el form reemplaza al listado --- */
-      .pub-wrap.is-editing .pub-header,
-      .pub-wrap.is-editing .pub-toolbar,
-      .pub-wrap.is-editing .pub-list { display: none; }
-
       /* --- Pedidos (stats + torta de estados + tabla) --- */
       .pd-wrap { margin-top: 0.5rem; }
       .pd-header { margin-bottom: 1.25rem; }
@@ -529,7 +524,10 @@
         .pd-dash { grid-template-columns: repeat(2, 1fr); }
       }
 
-      .pubform { max-width: 860px; }
+      /* margin-bottom + separador: el form va arriba del listado (A113), no
+         lo reemplaza -- necesita despegarse un poco de la primera fila de
+         productos que sigue abajo. */
+      .pubform { max-width: 860px; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--bl-border); }
       .pubform[hidden] { display: none; }
       .pubform__head { margin-bottom: 1.25rem; }
       .pubform__back { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.25rem 0; font: inherit; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer; margin-bottom: 0.5rem; }
@@ -1067,13 +1065,10 @@
                 <span class="pub-count" id="pub-count"></span>
               </div>
 
-              <!-- Lista de publicaciones (poblada por renderPublicaciones()) -->
-              <div class="pub-list" id="pub-list">
-                <!-- Publicaciones cargadas con JS -->
-              </div>
-
-              <!-- Formulario de alta/edición. Oculto por defecto; cuando se abre,
-                   .pub-wrap toma .is-editing y reemplaza al listado (no se apila debajo). -->
+              <!-- Formulario de alta/edición. Oculto por defecto. Va ANTES del
+                   listado a propósito (A113): al publicar/editar, los productos ya
+                   publicados se corren para abajo en vez de desaparecer -- el
+                   vendedor los sigue viendo mientras carga uno nuevo. -->
               <div id="add-product-form-container" class="pubform" hidden>
                 <div class="pubform__head">
                   <button type="button" class="pubform__back" id="btn-back-publicaciones">
@@ -1179,6 +1174,11 @@
                     <button type="submit" class="form-btn">Guardar producto</button>
                   </div>
                 </form>
+              </div>
+
+              <!-- Lista de publicaciones (poblada por renderPublicaciones()) -->
+              <div class="pub-list" id="pub-list">
+                <!-- Publicaciones cargadas con JS -->
               </div>
 
             </div>

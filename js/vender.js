@@ -2560,15 +2560,16 @@ function renderProductGallery() {
   });
 }
 
-/** Muestra el form ocultando el listado (una cosa a la vez). No hace scroll
- *  acá adentro a propósito: al editar, todavía falta cargar la galería y las
- *  variantes (async, con fotos reales de por medio) -- si el scroll "smooth"
- *  arranca antes de que termine ese trabajo, el cambio de alto de la página
- *  a mitad de la animación lo deja a mitad de camino en vez de arriba del
- *  todo. Cada lugar que llama a esta función hace su propio scroll al final,
- *  cuando ya no va a cambiar más el alto de la página. */
+/** Muestra el form. Va ANTES del listado en el HTML (no lo reemplaza): los
+ *  productos ya publicados se corren para abajo, el vendedor los sigue
+ *  viendo mientras carga uno nuevo. No hace scroll acá adentro a propósito:
+ *  al editar, todavía falta cargar la galería y las variantes (async, con
+ *  fotos reales de por medio) -- si el scroll "smooth" arranca antes de que
+ *  termine ese trabajo, el cambio de alto de la página a mitad de la
+ *  animación lo deja a mitad de camino en vez de arriba del todo. Cada lugar
+ *  que llama a esta función hace su propio scroll al final, cuando ya no va
+ *  a cambiar más el alto de la página. */
 function openProductForm() {
-  document.querySelector('.pub-wrap')?.classList.add('is-editing');
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
 }
@@ -2580,9 +2581,8 @@ function scrollToProductForm() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/** Vuelve al listado. */
+/** Vuelve al listado (que nunca se fue -- solo se oculta el form). */
 function closeProductForm() {
-  document.querySelector('.pub-wrap')?.classList.remove('is-editing');
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = true;
 }
