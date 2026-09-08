@@ -2412,6 +2412,10 @@ async function openEditProductForm(productId) {
   const variantsSection = document.getElementById('prod-variants-section');
   if (variantsSection) variantsSection.hidden = false;
   await renderVariantsManager(productId);
+
+  // Al final, no antes: la galería y las variantes todavía pueden cambiar el
+  // alto de la página (fotos que van cargando, variantes que se agregan).
+  scrollToProductForm();
 }
 
 /* --- Galería de fotos del form (portada + adicionales en una sola grilla) ---
@@ -2556,11 +2560,23 @@ function renderProductGallery() {
   });
 }
 
-/** Muestra el form ocultando el listado (una cosa a la vez). */
+/** Muestra el form ocultando el listado (una cosa a la vez). No hace scroll
+ *  acá adentro a propósito: al editar, todavía falta cargar la galería y las
+ *  variantes (async, con fotos reales de por medio) -- si el scroll "smooth"
+ *  arranca antes de que termine ese trabajo, el cambio de alto de la página
+ *  a mitad de la animación lo deja a mitad de camino en vez de arriba del
+ *  todo. Cada lugar que llama a esta función hace su propio scroll al final,
+ *  cuando ya no va a cambiar más el alto de la página. */
 function openProductForm() {
   document.querySelector('.pub-wrap')?.classList.add('is-editing');
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
+}
+
+/** Al alta o editar un producto: llevar el scroll arriba de todo, donde
+ *  arranca el formulario -- para que el vendedor no tenga que scrollear
+ *  manualmente desde donde estaba mirando la lista. */
+function scrollToProductForm() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2764,6 +2780,7 @@ function setupDashboardEvents() {
   btnShowAdd.addEventListener('click', () => {
     resetProductForm();
     openProductForm();
+    scrollToProductForm();
   });
 
   // Cancelar (abajo) y "Volver a publicaciones" (arriba) hacen lo mismo.
