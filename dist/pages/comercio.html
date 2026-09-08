@@ -133,6 +133,7 @@
         align-items: center;
         gap: 0.2rem;
         min-width: 8rem;
+        max-width: 100%;
         text-align: center;
       }
       .store-header__meta-label {
@@ -141,9 +142,13 @@
         letter-spacing: 0.03em;
         opacity: 0.75;
       }
+      /* overflow-wrap: un valor largo (ej. la dirección en desktop, donde se
+         muestra completa) baja de línea en vez de desbordar el ancho de la
+         columna. */
       .store-header__meta-value {
         font-weight: 600;
         white-space: pre-line;
+        overflow-wrap: anywhere;
       }
       .store-header__map-link {
         color: inherit;
@@ -444,6 +449,13 @@
         .store-header__meta-item {
           min-width: 6rem;
         }
+        /* La dirección completa se esconde acá: sin tope de ancho quedaba
+           mucho más alta que Categoría/Cantidad/Horarios y descuadraba toda
+           la fila. El link "ver en mapa" (justo abajo del label "Dirección")
+           ya alcanza para ubicarse -- en desktop la dirección sigue completa. */
+        .store-header__meta-item--address .store-header__meta-value {
+          display: none;
+        }
         button.store-header__icon-btn {
           top: 0.75rem;
           right: 0.75rem;
@@ -480,7 +492,7 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-BN_PzXLh.js"></script>
+    <script type="module" crossorigin src="/assets/comercio-BPkhqvZ9.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DIyjm4nF.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">
