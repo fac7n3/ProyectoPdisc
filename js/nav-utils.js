@@ -30,7 +30,7 @@ const CATEGORY_ICONS = {
   libreria: 'fa-book',
   limpieza: 'fa-spray-can-sparkles',
   panaderia: 'fa-bread-slice',
-  papeleria: 'fa-ribbon',
+  papeleria: 'fa-bag-shopping',
   ropa: 'fa-shirt',
   tecnologia: 'fa-laptop',
   verduleria: 'fa-carrot',
