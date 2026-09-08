@@ -234,6 +234,15 @@
         color: var(--bl-text-secondary);
         cursor: pointer;
         border-radius: var(--bl-radius-sm);
+      }
+      /* Achicado SOLO para los ítems de adentro de un grupo colapsable (ej.
+         "Ventas"): un accesos top-level como Publicaciones o Perfil de mi
+         comercio también lleva la clase mc-navitem (para que
+         vender-shell.js lo detecte como sección), pero antes heredaba este
+         mismo achique -- quedaba con letra más chica que sus vecinos
+         top-level (Compras, Mi perfil, etc.), todos con el mismo tamaño
+         "de fábrica" del sidebar. */
+      .mc-group__panel .mc-navitem {
         font-size: 0.92rem;
       }
       .mc-navitem:hover { background: var(--bl-surface-hover); color: var(--bl-text); }
@@ -704,6 +713,10 @@
                  -- oculto para empleados (F12-16, mc-navitem--owner) igual que antes. -->
             <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="perfil-comercio"><i class="fa-solid fa-pen mc-navicon"></i> Perfil de mi comercio</button>
 
+            <!-- Publicaciones: estándar top-level (antes dentro de "Ventas") -- es lo que
+                 más usa el vendedor día a día, un click menos para llegar. -->
+            <button type="button" class="mc-navlink mc-navitem" data-section="publicaciones"><i class="fa-solid fa-image mc-navicon"></i> Publicaciones</button>
+
             <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-bag-shopping mc-navicon"></i> Compras</a>
 
             <div class="mc-group is-open">
@@ -715,7 +728,6 @@
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas completadas</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="cancelled">Ventas canceladas</button>
-                <button type="button" class="mc-navitem" data-section="publicaciones">Publicaciones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
