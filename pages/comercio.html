@@ -137,6 +137,7 @@
         align-items: center;
         gap: 0.2rem;
         min-width: 8rem;
+        max-width: 100%;
         text-align: center;
       }
       .store-header__meta-label {
@@ -145,9 +146,13 @@
         letter-spacing: 0.03em;
         opacity: 0.75;
       }
+      /* overflow-wrap: un valor largo (ej. la dirección en desktop, donde se
+         muestra completa) baja de línea en vez de desbordar el ancho de la
+         columna. */
       .store-header__meta-value {
         font-weight: 600;
         white-space: pre-line;
+        overflow-wrap: anywhere;
       }
       .store-header__map-link {
         color: inherit;
@@ -442,11 +447,18 @@
           white-space: nowrap;
         }
         .store-header__info-bar {
-          gap: 1.25rem;
-          padding: 1rem;
+          gap: 1.5rem 1.25rem;
+          padding: 1.25rem 1rem;
         }
+        /* Tope de ancho parejo para las 4 columnas (antes solo tenían un
+           mínimo): sin esto, una dirección larga se estiraba mucho más ancha
+           que Categoría/Cantidad/Horarios y descuadraba toda la fila. Con el
+           tope, el texto de la dirección salta de línea (word-wrap normal)
+           en vez de desbordar -- ver también overflow-wrap más arriba. */
         .store-header__meta-item {
           min-width: 6rem;
+          max-width: 9.5rem;
+          gap: 0.35rem;
         }
         button.store-header__icon-btn {
           top: 0.75rem;
@@ -476,11 +488,12 @@
           font-size: 1.4rem;
         }
         .store-header__info-bar {
-          gap: 0.75rem;
-          padding: 0.85rem;
+          gap: 1.25rem 1rem;
+          padding: 1rem 0.85rem;
         }
         .store-header__meta-item {
           min-width: 5rem;
+          max-width: 8rem;
         }
       }
     </style>
