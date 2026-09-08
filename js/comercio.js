@@ -104,10 +104,10 @@ function applyHeaderColors(header, bg, fg) {
 /** Popover de color del header (solo lo ve el dueño del comercio). */
 function buildColorPopover(store, header) {
   const popover = document.createElement('div');
-  popover.className = 'store-color-popover';
+  popover.className = 'store-popover store-color-popover';
 
   const bgRow = document.createElement('label');
-  bgRow.className = 'store-color-popover__row';
+  bgRow.className = 'store-popover__row';
   const bgLabel = document.createElement('span');
   bgLabel.textContent = 'Cambiar color';
   bgRow.appendChild(bgLabel);
@@ -118,7 +118,7 @@ function buildColorPopover(store, header) {
   popover.appendChild(bgRow);
 
   const fgRow = document.createElement('label');
-  fgRow.className = 'store-color-popover__row';
+  fgRow.className = 'store-popover__row';
   const fgLabel = document.createElement('span');
   fgLabel.textContent = 'Cambiar color de la letra';
   fgRow.appendChild(fgLabel);
@@ -130,7 +130,7 @@ function buildColorPopover(store, header) {
 
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
-  resetBtn.className = 'store-color-popover__reset';
+  resetBtn.className = 'store-popover__reset';
   resetBtn.textContent = 'Quitar color';
   popover.appendChild(resetBtn);
 
@@ -192,33 +192,36 @@ async function uploadStoreLogo(file, store) {
 }
 
 /** Logo del comercio, arriba del título -- solo lo ve un cliente si el
- *  dueño cargó uno; el dueño siempre ve el espacio (con foto o con un
- *  placeholder para subirla), y solo él puede subirla/cambiarla, desde
- *  esta misma vista. */
+ *  dueño cargó uno; el dueño siempre ve el espacio (con foto o, si nunca
+ *  cargó una o se la acaba de sacar, un círculo vacío sin nada adentro) y
+ *  solo él puede subirla/sacarla, desde esta misma vista. El click en el
+ *  círculo abre un cartelito con "Añadir imagen" / "Eliminar imagen" (este
+ *  último solo si hay una foto puesta) en vez de ir directo al selector de
+ *  archivo -- mismo componente que el popover de color del header. */
 function buildStoreLogo(store, isOwner) {
   if (!store.logo_url && !isOwner) return null;
 
   const wrap = document.createElement('div');
   wrap.className = 'store-header__logo-wrap';
+  wrap.classList.toggle('has-logo', !!store.logo_url);
 
   const img = document.createElement('img');
   img.className = 'store-header__logo';
   img.alt = `Logo de ${store.name}`;
-  img.hidden = !store.logo_url;
   if (store.logo_url) img.src = store.logo_url;
   wrap.appendChild(img);
 
   const placeholder = document.createElement('div');
   placeholder.className = 'store-header__logo--placeholder';
-  placeholder.hidden = !!store.logo_url;
-  const placeholderIcon = document.createElement('i');
-  placeholderIcon.className = 'fa-solid fa-camera';
-  placeholder.appendChild(placeholderIcon);
   wrap.appendChild(placeholder);
 
   if (!isOwner) return wrap;
 
   wrap.classList.add('is-editable');
+  wrap.setAttribute('role', 'button');
+  wrap.tabIndex = 0;
+  wrap.dataset.tooltip = 'Logo del comercio';
+  wrap.setAttribute('aria-label', 'Logo del comercio');
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -226,23 +229,68 @@ function buildStoreLogo(store, isOwner) {
   fileInput.hidden = true;
   wrap.appendChild(fileInput);
 
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.className = 'store-header__logo-edit';
-  const setEditLabel = () => {
-    const label = store.logo_url ? 'Cambiar logo' : 'Agregar logo';
-    editBtn.dataset.tooltip = label;
-    editBtn.setAttribute('aria-label', label);
-  };
-  setEditLabel();
-  const editIcon = document.createElement('i');
-  editIcon.className = 'fa-solid fa-camera';
-  editBtn.appendChild(editIcon);
-  wrap.appendChild(editBtn);
+  const popover = document.createElement('div');
+  popover.className = 'store-popover store-logo-popover';
 
-  const openPicker = () => fileInput.click();
-  editBtn.addEventListener('click', (e) => { e.stopPropagation(); openPicker(); });
-  wrap.addEventListener('click', openPicker);
+  const addRow = document.createElement('button');
+  addRow.type = 'button';
+  addRow.className = 'store-popover__row';
+  addRow.textContent = 'Añadir imagen';
+  popover.appendChild(addRow);
+
+  const removeRow = document.createElement('button');
+  removeRow.type = 'button';
+  removeRow.className = 'store-popover__reset';
+  removeRow.textContent = 'Eliminar imagen';
+  removeRow.hidden = !store.logo_url;
+  popover.appendChild(removeRow);
+
+  wrap.appendChild(popover);
+
+  const closePopover = () => popover.classList.remove('is-open');
+
+  addRow.addEventListener('click', () => {
+    closePopover();
+    fileInput.click();
+  });
+
+  removeRow.addEventListener('click', async () => {
+    closePopover();
+    if (!confirm('¿Eliminamos el logo del comercio?')) return;
+    const previousUrl = store.logo_url;
+    try {
+      const { error } = await supabase.from('stores').update({ logo_url: null }).eq('id', store.id);
+      if (error) throw error;
+      store.logo_url = null;
+      img.removeAttribute('src');
+      wrap.classList.remove('has-logo');
+      removeRow.hidden = true;
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Sacamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al sacar el logo del comercio:', err);
+      showToast('No pudimos sacar el logo. Probá de nuevo.', 'error');
+    }
+  });
+
+  wrap.addEventListener('click', (e) => {
+    // Lo maneja el handler de la fila -- ojo con fileInput: el click nativo
+    // que dispara solo (fileInput.click(), desde "Añadir imagen") también
+    // burbujea hasta acá y si no se lo ignora reabre el cartelito que la
+    // fila recién cerró.
+    if (popover.contains(e.target) || e.target === fileInput) return;
+    e.stopPropagation();
+    popover.classList.toggle('is-open');
+  });
+  wrap.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      popover.classList.toggle('is-open');
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closePopover();
+  });
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
@@ -255,21 +303,18 @@ function buildStoreLogo(store, isOwner) {
     }
 
     const previousUrl = store.logo_url;
-    editBtn.disabled = true;
     try {
       const publicUrl = await uploadStoreLogo(file, store);
       store.logo_url = publicUrl;
       img.src = publicUrl;
-      img.hidden = false;
-      placeholder.hidden = true;
-      setEditLabel();
+      wrap.classList.add('has-logo');
+      removeRow.hidden = false;
       if (previousUrl) await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
       showToast('Listo, guardamos el logo.', 'success');
     } catch (err) {
       console.error('Error al subir el logo del comercio:', err);
       showToast('No pudimos subir el logo. Probá de nuevo.', 'error');
     } finally {
-      editBtn.disabled = false;
       fileInput.value = '';
     }
   });

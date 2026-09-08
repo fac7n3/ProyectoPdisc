@@ -50,8 +50,15 @@
         font-weight: 800;
       }
       /* Logo del comercio, arriba del título. Solo el dueño la puede
-         subir/cambiar (buildStoreHeader en comercio.js) -- si no hay logo
-         cargado, un cliente no ve nada acá (ni un cuadro vacío). */
+         subir/cambiar (buildStoreHeader en comercio.js, click en el círculo
+         entero, sin botón aparte) -- si no hay logo cargado, un cliente no
+         ve nada acá (ni un cuadro vacío).
+         El círculo alterna foto/placeholder con la clase .has-logo en el
+         wrap (no con el atributo "hidden" en cada uno por separado): con
+         "hidden" nomás, la regla de abajo de .store-header__logo--placeholder
+         (display:flex, viene de una clase de autor) le gana en la cascada a
+         la del user-agent para [hidden] y el placeholder quedaba visible
+         igual encima de la foto real. */
       .store-header__logo-wrap {
         position: relative;
         width: 84px;
@@ -63,41 +70,40 @@
         width: 84px;
         height: 84px;
         border-radius: 50%;
-        display: block;
+        box-sizing: border-box;
       }
       .store-header__logo {
+        display: none;
         object-fit: cover;
         border: 3px solid var(--bl-surface);
         box-shadow: var(--bl-shadow-sm);
         background: var(--bl-surface);
       }
+      .store-header__logo-wrap.has-logo .store-header__logo {
+        display: block;
+      }
+      /* Vacío (nunca tuvo logo, o se lo acaban de sacar): el borde toma el
+         color de fondo del header (no un gris genérico) para que se note
+         que es "parte" del header y no un error de carga -- sin ícono ni
+         texto adentro, "Añadir imagen"/"Eliminar imagen" viven en el
+         cartelito que abre el click (ver .store-logo-popover). */
       .store-header__logo--placeholder {
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px dashed color-mix(in srgb, var(--sh-fg, var(--bl-text)) 30%, transparent);
-        color: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 45%, transparent);
-        font-size: 1.4rem;
+        border: 2px solid var(--sh-bg, var(--bl-bg));
+        background: color-mix(in srgb, var(--sh-fg, var(--bl-text)) 8%, transparent);
+      }
+      .store-header__logo-wrap.has-logo .store-header__logo--placeholder {
+        display: none;
       }
       .store-header__logo-wrap.is-editable {
         cursor: pointer;
       }
-      .store-header__logo-edit {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        width: 1.9rem;
-        height: 1.9rem;
-        border-radius: 50%;
-        border: 2px solid var(--bl-surface);
-        background: var(--bl-primary);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 0.75rem;
+      /* Cartelito "Añadir imagen"/"Eliminar imagen", debajo del círculo --
+         mismo componente que .store-color-popover, ver más abajo. */
+      .store-logo-popover {
+        top: 92px;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 160px;
       }
       .store-header__description {
         color: inherit;
@@ -188,12 +194,13 @@
         color: #ef4444;
       }
 
-      /* Popover de color (solo vendedor) */
-      .store-color-popover {
+      /* Cartelito genérico (solo vendedor): color del header (lápiz arriba a
+         la derecha) y el de imagen/logo (click en el círculo) son el mismo
+         componente, con distinta posición -- .store-color-popover/
+         .store-logo-popover solo ponen el top/left. */
+      .store-popover {
         display: none;
         position: absolute;
-        top: 3.6rem;
-        right: 1.25rem;
         background: var(--bl-surface);
         color: var(--bl-text);
         border: 1px solid var(--bl-border);
@@ -203,19 +210,25 @@
         min-width: 200px;
         z-index: 20;
       }
-      .store-color-popover.is-open { display: block; }
-      .store-color-popover__row {
+      .store-popover.is-open { display: block; }
+      .store-popover__row {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
+        width: 100%;
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
         padding: 0.55rem 0.6rem;
         border-radius: var(--bl-radius-sm);
         cursor: pointer;
         font-size: 0.85rem;
       }
-      .store-color-popover__row:hover { background: var(--bl-surface-hover); }
-      .store-color-popover__row input[type="color"] {
+      .store-popover__row:hover { background: var(--bl-surface-hover); }
+      .store-popover__row input[type="color"] {
         width: 1.75rem;
         height: 1.75rem;
         padding: 0;
@@ -225,7 +238,7 @@
         cursor: pointer;
         background: none;
       }
-      .store-color-popover__reset {
+      .store-popover__reset {
         width: 100%;
         text-align: left;
         padding: 0.55rem 0.6rem;
@@ -238,7 +251,11 @@
         border-top: 1px solid var(--bl-border-light);
         margin-top: 0.25rem;
       }
-      .store-color-popover__reset:hover { background: var(--bl-surface-hover); }
+      .store-popover__reset:hover { background: var(--bl-surface-hover); }
+      .store-color-popover {
+        top: 3.6rem;
+        right: 1.25rem;
+      }
 
       /* Editar perfil (lápiz arriba de la grilla de productos, solo vendedor) */
       .store-search-row {
