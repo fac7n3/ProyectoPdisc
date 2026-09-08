@@ -215,9 +215,9 @@
         border-bottom: 1px solid var(--bl-border);
         margin-bottom: 0.5rem;
       }
-      .mc-sidebar__titles { display: flex; flex-direction: column; line-height: 1.2; }
+      .mc-sidebar__titles { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
       .mc-sidebar__title { font-weight: 700; color: var(--bl-text); }
-      .mc-store-name { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .mc-store-name { font-size: 0.78rem; color: var(--bl-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .mc-close {
         display: none;
         margin-left: auto;
@@ -255,6 +255,15 @@
         color: var(--bl-text-secondary);
         cursor: pointer;
         border-radius: var(--bl-radius-sm);
+      }
+      /* Achicado SOLO para los ítems de adentro de un grupo colapsable (ej.
+         "Ventas"): un accesos top-level como Publicaciones o Perfil de mi
+         comercio también lleva la clase mc-navitem (para que
+         vender-shell.js lo detecte como sección), pero antes heredaba este
+         mismo achique -- quedaba con letra más chica que sus vecinos
+         top-level (Compras, Mi perfil, etc.), todos con el mismo tamaño
+         "de fábrica" del sidebar. */
+      .mc-group__panel .mc-navitem {
         font-size: 0.92rem;
       }
       .mc-navitem:hover { background: var(--bl-surface-hover); color: var(--bl-text); }
@@ -454,11 +463,6 @@
       .pub-empty__btn { background: var(--bl-vendor-accent); color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: var(--bl-radius-md); font: inherit; font-weight: 700; cursor: pointer; }
       .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
 
-      /* --- Alta/edición de producto: el form reemplaza al listado --- */
-      .pub-wrap.is-editing .pub-header,
-      .pub-wrap.is-editing .pub-toolbar,
-      .pub-wrap.is-editing .pub-list { display: none; }
-
       /* --- Pedidos (stats + torta de estados + tabla) --- */
       .pd-wrap { margin-top: 0.5rem; }
       .pd-header { margin-bottom: 1.25rem; }
@@ -541,7 +545,10 @@
         .pd-dash { grid-template-columns: repeat(2, 1fr); }
       }
 
-      .pubform { max-width: 860px; }
+      /* margin-bottom + separador: el form va arriba del listado (A113), no
+         lo reemplaza -- necesita despegarse un poco de la primera fila de
+         productos que sigue abajo. */
+      .pubform { max-width: 860px; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--bl-border); }
       .pubform[hidden] { display: none; }
       .pubform__head { margin-bottom: 1.25rem; }
       .pubform__back { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.25rem 0; font: inherit; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer; margin-bottom: 0.5rem; }
@@ -778,6 +785,10 @@
                  -- oculto para empleados (F12-16, mc-navitem--owner) igual que antes. -->
             <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="perfil-comercio"><i class="fa-solid fa-pen mc-navicon"></i> Perfil de mi comercio</button>
 
+            <!-- Publicaciones: estándar top-level (antes dentro de "Ventas") -- es lo que
+                 más usa el vendedor día a día, un click menos para llegar. -->
+            <button type="button" class="mc-navlink mc-navitem" data-section="publicaciones"><i class="fa-solid fa-image mc-navicon"></i> Publicaciones</button>
+
             <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-bag-shopping mc-navicon"></i> Compras</a>
 
             <div class="mc-group is-open">
@@ -789,7 +800,6 @@
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas completadas</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="cancelled">Ventas canceladas</button>
-                <button type="button" class="mc-navitem" data-section="publicaciones">Publicaciones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
@@ -1129,13 +1139,10 @@
                 <span class="pub-count" id="pub-count"></span>
               </div>
 
-              <!-- Lista de publicaciones (poblada por renderPublicaciones()) -->
-              <div class="pub-list" id="pub-list">
-                <!-- Publicaciones cargadas con JS -->
-              </div>
-
-              <!-- Formulario de alta/edición. Oculto por defecto; cuando se abre,
-                   .pub-wrap toma .is-editing y reemplaza al listado (no se apila debajo). -->
+              <!-- Formulario de alta/edición. Oculto por defecto. Va ANTES del
+                   listado a propósito (A113): al publicar/editar, los productos ya
+                   publicados se corren para abajo en vez de desaparecer -- el
+                   vendedor los sigue viendo mientras carga uno nuevo. -->
               <div id="add-product-form-container" class="pubform" hidden>
                 <div class="pubform__head">
                   <button type="button" class="pubform__back" id="btn-back-publicaciones">
@@ -1241,6 +1248,11 @@
                     <button type="submit" class="form-btn">Guardar producto</button>
                   </div>
                 </form>
+              </div>
+
+              <!-- Lista de publicaciones (poblada por renderPublicaciones()) -->
+              <div class="pub-list" id="pub-list">
+                <!-- Publicaciones cargadas con JS -->
               </div>
 
             </div>
