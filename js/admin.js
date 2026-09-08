@@ -3,6 +3,7 @@ import { statusLabel as supportStatusLabel, buildAttachmentChips } from './suppo
 import { buildDropdown } from './dropdown.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { formatPrice } from './cart-utils.js';
+import { categoryLabel } from './professional-categories.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -311,9 +312,23 @@ async function rejectDeliveryRequest(id) {
 // `professionals` + un update en `professional_requests`, ambas llamadas
 // comunes desde el cliente (ver db/schema/77_professionals.sql).
 
+/** Miniatura circular de 32px, o "-" si no hay foto cargada. */
+function buildPhotoThumb(photoUrl, alt) {
+  if (!photoUrl) {
+    const dash = document.createElement('span');
+    dash.textContent = '-';
+    return dash;
+  }
+  const img = document.createElement('img');
+  img.src = photoUrl;
+  img.alt = alt || '';
+  img.style.cssText = 'width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; display: block;';
+  return img;
+}
+
 async function fetchProfessionalRequests() {
   const tbody = document.getElementById('professional-requests-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando solicitudes...</td></tr>';
 
   const { data, error } = await supabase
     .from('professional_requests')
@@ -322,12 +337,12 @@ async function fetchProfessionalRequests() {
 
   if (error) {
     console.error('Error al cargar solicitudes de profesionales:', error);
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error al cargar las solicitudes.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#ef4444;">Error al cargar las solicitudes.</td></tr>';
     return;
   }
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay solicitudes registradas.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No hay solicitudes registradas.</td></tr>';
     return;
   }
 
@@ -342,9 +357,17 @@ async function fetchProfessionalRequests() {
     tdDate.textContent = new Date(req.created_at).toLocaleDateString('es-AR');
     tr.appendChild(tdDate);
 
+    const tdPhoto = document.createElement('td');
+    tdPhoto.appendChild(buildPhotoThumb(req.photo_url, req.full_name));
+    tr.appendChild(tdPhoto);
+
     const tdName = document.createElement('td');
     tdName.textContent = req.full_name;
     tr.appendChild(tdName);
+
+    const tdCategory = document.createElement('td');
+    tdCategory.textContent = req.category ? categoryLabel(req.category) : '-';
+    tr.appendChild(tdCategory);
 
     const tdSpecialty = document.createElement('td');
     tdSpecialty.textContent = req.specialty;
@@ -399,10 +422,12 @@ async function approveProfessionalRequest(req) {
   const { error: insertError } = await supabase.from('professionals').insert({
     owner_id: req.user_id,
     full_name: req.full_name,
+    category: req.category,
     specialty: req.specialty,
     description: req.description,
     phone: req.phone,
     whatsapp: req.whatsapp,
+    photo_url: req.photo_url,
   });
 
   if (insertError) {
@@ -444,31 +469,55 @@ async function rejectProfessionalRequest(id) {
 
 async function fetchProfessionals() {
   const tbody = document.getElementById('professionals-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando profesionales...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando profesionales...</td></tr>';
 
   const { data, error } = await supabase
     .from('professionals')
-    .select('id, full_name, specialty, phone, whatsapp, is_active')
+    .select('id, full_name, category, specialty, phone, whatsapp, is_active, photo_url')
     .order('full_name');
 
   if (error) {
     console.error('Error al cargar profesionales:', error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Error al cargar los profesionales.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#ef4444;">Error al cargar los profesionales.</td></tr>';
     return;
   }
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Todavía no hay nadie publicado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Todavía no hay nadie publicado.</td></tr>';
     return;
   }
+
+  // Reseñas: una sola consulta para todos, agrupada acá en vez de una por fila.
+  const { data: reviewRows } = await supabase
+    .from('reviews')
+    .select('target_id, rating')
+    .eq('target_type', 'professional')
+    .eq('is_hidden', false)
+    .in('target_id', data.map((p) => p.id));
+
+  const reviewsByPro = new Map();
+  (reviewRows || []).forEach((r) => {
+    const entry = reviewsByPro.get(r.target_id) || { sum: 0, count: 0 };
+    entry.sum += r.rating;
+    entry.count += 1;
+    reviewsByPro.set(r.target_id, entry);
+  });
 
   tbody.innerHTML = '';
   data.forEach((pro) => {
     const tr = document.createElement('tr');
 
+    const tdPhoto = document.createElement('td');
+    tdPhoto.appendChild(buildPhotoThumb(pro.photo_url, pro.full_name));
+    tr.appendChild(tdPhoto);
+
     const tdName = document.createElement('td');
     tdName.textContent = pro.full_name;
     tr.appendChild(tdName);
+
+    const tdCategory = document.createElement('td');
+    tdCategory.textContent = pro.category ? categoryLabel(pro.category) : '-';
+    tr.appendChild(tdCategory);
 
     const tdSpecialty = document.createElement('td');
     tdSpecialty.textContent = pro.specialty;
@@ -477,6 +526,11 @@ async function fetchProfessionals() {
     const tdContact = document.createElement('td');
     tdContact.textContent = [pro.phone, pro.whatsapp].filter(Boolean).join(' · ');
     tr.appendChild(tdContact);
+
+    const tdReviews = document.createElement('td');
+    const stats = reviewsByPro.get(pro.id);
+    tdReviews.textContent = stats ? `★ ${(stats.sum / stats.count).toFixed(1)} (${stats.count})` : 'Sin reseñas';
+    tr.appendChild(tdReviews);
 
     const tdStatus = document.createElement('td');
     const badge = document.createElement('span');

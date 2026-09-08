@@ -109,6 +109,108 @@ async function renderStoreResults() {
   return matches.length;
 }
 
+// Profesionales/técnicos del directorio "Contratar" (mismo criterio que
+// getStores(): pocos registros, se cargan todos y se filtran en el cliente).
+let professionalsCache = null;
+
+async function getProfessionals() {
+  if (professionalsCache) return professionalsCache;
+  const { data, error } = await supabase
+    .from('professionals')
+    .select('id, full_name, specialty, description, photo_url')
+    .order('full_name');
+  if (error) {
+    console.error('No se pudieron cargar los profesionales:', error);
+    professionalsCache = [];
+    return professionalsCache;
+  }
+  professionalsCache = data || [];
+  return professionalsCache;
+}
+
+function buildProfessionalCard(pro) {
+  const card = document.createElement('a');
+  card.href = `./contratar.html?pro=${encodeURIComponent(pro.id)}`;
+  card.className = 'product-card';
+
+  const imageWrap = document.createElement('div');
+  imageWrap.className = 'product-card__image';
+  if (pro.photo_url) {
+    const img = document.createElement('img');
+    img.className = 'store-card__logo';
+    img.src = pro.photo_url;
+    img.alt = pro.full_name;
+    img.loading = 'lazy';
+    imageWrap.appendChild(img);
+  } else {
+    const fallback = document.createElement('span');
+    fallback.className = 'store-card__logo-fallback';
+    fallback.textContent = (pro.full_name || '?').trim().charAt(0).toUpperCase();
+    imageWrap.appendChild(fallback);
+  }
+  card.appendChild(imageWrap);
+
+  const body = document.createElement('div');
+  body.className = 'product-card__body';
+
+  const name = document.createElement('h3');
+  name.className = 'product-card__name';
+  name.textContent = pro.full_name;
+  body.appendChild(name);
+
+  const meta = document.createElement('div');
+  meta.className = 'store-card__meta';
+  const specialtyRow = document.createElement('span');
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-screwdriver-wrench';
+  specialtyRow.appendChild(icon);
+  specialtyRow.append(pro.specialty);
+  meta.appendChild(specialtyRow);
+  body.appendChild(meta);
+
+  card.appendChild(body);
+  return card;
+}
+
+async function renderProfessionalResults() {
+  const section = document.getElementById('professional-results');
+  const proGrid = document.getElementById('professionals-grid');
+  const titleEl3 = document.getElementById('professional-results-title');
+  if (!section || !proGrid) return 0;
+
+  const q = normalizeText(filterState.query).trim();
+
+  if (!q) {
+    section.hidden = true;
+    proGrid.textContent = '';
+    return 0;
+  }
+
+  const professionals = await getProfessionals();
+  const matches = professionals.filter((p) =>
+    normalizeText(p.full_name).includes(q) ||
+    normalizeText(p.specialty).includes(q) ||
+    normalizeText(p.description).includes(q)
+  );
+
+  proGrid.textContent = '';
+  if (!matches.length) {
+    section.hidden = true;
+    return 0;
+  }
+
+  if (titleEl3) {
+    titleEl3.textContent = matches.length === 1 ? 'Profesional' : 'Profesionales';
+    const count = document.createElement('span');
+    count.textContent = ` (${matches.length})`;
+    titleEl3.appendChild(count);
+  }
+
+  matches.forEach((p) => proGrid.appendChild(buildProfessionalCard(p)));
+  section.hidden = false;
+  return matches.length;
+}
+
 // --- Referencias DOM ---
 const grid = document.getElementById('products-grid');
 const countEl = document.getElementById('catalog-count');
@@ -171,11 +273,12 @@ async function runSearch({ append = false } = {}) {
     renderHeader();
     renderChips();
 
-    // Los comercios no se paginan: solo se recalculan en una búsqueda nueva.
+    // Los comercios y profesionales no se paginan: solo se recalculan en una búsqueda nueva.
     const storeMatches = append ? 0 : await renderStoreResults();
+    const proMatches = append ? 0 : await renderProfessionalResults();
 
     if ((!products || products.length === 0) && !append) {
-      renderNoResults(storeMatches);
+      renderNoResults(storeMatches, proMatches);
       updateLoadMore();
       return;
     }
@@ -281,7 +384,7 @@ function renderChips() {
 }
 
 // ── Estado sin resultados con recuperación ──────────────────
-function renderNoResults(storeMatches = 0) {
+function renderNoResults(storeMatches = 0, proMatches = 0) {
   grid.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'no-results';
@@ -291,18 +394,21 @@ function renderNoResults(storeMatches = 0) {
   wrap.appendChild(icon);
 
   const h3 = document.createElement('h3');
-  // Con un comercio encontrado arriba, decir "sin resultados" sería mentira:
-  // hubo resultado, solo que no es un producto.
-  if (storeMatches > 0) {
-    h3.textContent = `No encontramos productos para "${filterState.query}", pero sí ${storeMatches === 1 ? 'el comercio de arriba' : 'los comercios de arriba'}`;
+  // Con un comercio o profesional encontrado arriba, decir "sin resultados"
+  // sería mentira: hubo resultado, solo que no es un producto.
+  const extraLabels = [];
+  if (storeMatches > 0) extraLabels.push(storeMatches === 1 ? 'el comercio' : 'los comercios');
+  if (proMatches > 0) extraLabels.push(proMatches === 1 ? 'el profesional' : 'los profesionales');
+  if (extraLabels.length > 0) {
+    h3.textContent = `No encontramos productos para "${filterState.query}", pero sí ${extraLabels.join(' y ')} de arriba`;
   } else {
     h3.textContent = filterState.query ? `Sin resultados para "${filterState.query}"` : 'No encontramos productos con estos filtros';
   }
   wrap.appendChild(h3);
 
   const tips = document.createElement('ul');
-  const consejo = storeMatches > 0
-    ? 'Entrá al comercio para ver todo lo que vende'
+  const consejo = extraLabels.length > 0
+    ? 'Entrá para ver todo lo que ofrece'
     : 'Probá con términos más generales';
   [consejo].forEach((t) => {
     const li = document.createElement('li');

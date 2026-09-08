@@ -168,6 +168,17 @@
         </button>
       </section>
 
+      <!-- Profesionales destacados: directorio "Contratar", los mejor
+           calificados primero. Se oculta entera si todavía no hay nadie
+           publicado (ver loadFeaturedProfessionals en home.js). -->
+      <section class="products pro-highlight" id="pro-highlight-section" aria-label="Profesionales destacados" hidden>
+        <div class="section-header">
+          <h2 class="section-header__title">Profesionales destacados</h2>
+          <a href="./contratar.html" class="section-header__link">Ver todos</a>
+        </div>
+        <div class="pro-highlight__row" id="pro-highlight-row"></div>
+      </section>
+
       <!-- Mosaico de banners promocionales. Sin destino todavía (por ahora
            solo abren su imagen ampliada, ver initPromoBannerLightbox en
            home.js). -->

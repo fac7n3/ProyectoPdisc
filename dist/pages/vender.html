@@ -139,6 +139,17 @@
         .register-type-toggle__btn span { display: none; }
       }
 
+      /* Foto/logo opcional del alta de profesional. */
+      .prof-photo-picker { display: flex; align-items: center; gap: 1rem; }
+      .prof-photo-picker__preview {
+        flex-shrink: 0; width: 4rem; height: 4rem; border-radius: 50%;
+        background: var(--bl-surface-alt); border: 1px dashed var(--bl-border);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; color: var(--bl-text-muted); font-size: 1.25rem;
+      }
+      .prof-photo-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+      .prof-photo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -629,17 +640,18 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-CG0t6btt.js"></script>
+    <script type="module" crossorigin src="/assets/vender-D-qsKjW4.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DiNs99rX.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BHBc0FSk.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BBbPJMh4.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-mzq2aWBb.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-DYpzPteV.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-CKkH04k6.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-CwSLoaBd.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -743,12 +755,28 @@
                   <input type="text" id="prof-name" class="form-input" placeholder="Ej: Juan Pérez" required />
                 </div>
                 <div class="form-group">
+                  <label class="form-label" for="prof-category">Categoría</label>
+                  <select id="prof-category" class="form-input" required>
+                    <option value="" disabled selected>Elegí una categoría</option>
+                  </select>
+                </div>
+                <div class="form-group">
                   <label class="form-label" for="prof-specialty">Oficio o especialidad</label>
                   <input type="text" id="prof-specialty" class="form-input" placeholder="Ej: Plomero, Electricista, Clases de inglés" required />
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="prof-description">Descripción breve (opcional)</label>
-                  <textarea id="prof-description" class="form-input" rows="3" placeholder="Contá tu experiencia o qué servicios ofrecés"></textarea>
+                  <label class="form-label" for="prof-photo">Foto o logo (opcional)</label>
+                  <div class="prof-photo-picker">
+                    <div class="prof-photo-picker__preview" id="prof-photo-preview"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
+                    <div class="prof-photo-picker__field">
+                      <input type="file" id="prof-photo" accept="image/*" />
+                      <small style="color: var(--bl-text-muted);">Se muestra en tu tarjeta de "Contratar". Hasta 2 MB.</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="prof-description">Contanos más sobre lo que hacés (opcional)</label>
+                  <textarea id="prof-description" class="form-input" rows="4" placeholder="Experiencia, especialidades, zona en la que trabajás..."></textarea>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="prof-phone">Teléfono</label>

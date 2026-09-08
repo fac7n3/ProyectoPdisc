@@ -89,7 +89,16 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   porque publicarse no cambia el rol de la cuenta. Tablas nuevas
   `professional_requests`/`professionals` (migración `77_professionals.sql`,
   aplicada a producción), sección nueva "Profesionales" en el panel de
-  admin. Detalle completo en el skill `progreso-baradero-local`.
+  admin. **Ampliado el mismo día** (migración `78_professionals_extras.sql`,
+  también aplicada): categoría fija (6 valores, chips arriba de
+  `contratar.html`), foto/logo opcional (bucket `professional-photos`,
+  subida en el propio alta), calificación por estrellas reutilizando la
+  tabla `reviews` ya existente (`target_type='professional'`, mismo patrón
+  que `repartidor` en la migración 44 — cero tabla nueva, cero JS nuevo para
+  reseñas), tarjetas expandibles con reseñas, mini-sección "Profesionales
+  destacados" en el home (los mejor calificados) y resultados de
+  profesionales en el buscador principal (`search.html`, igual que ya pasa
+  con comercios). Detalle completo en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-08** — el botón "Ayuda" de la fila de acciones del home
   (Vender / Contratar / Ayuda) pasó a ser **"Servicios"** y lleva a una página
   nueva (`pages/servicios.html`) con números de emergencia de Baradero

@@ -154,6 +154,7 @@ function buildNotificationLink(n) {
     case 'new_review':
       if (p.target_type === 'product' && p.target_id) return { href: `./producto.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver producto' };
       if (p.target_type === 'store' && p.target_id) return { href: `./comercio.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver comercio' };
+      if (p.target_type === 'professional' && p.target_id) return { href: `./contratar.html?pro=${encodeURIComponent(p.target_id)}`, label: 'Ver tu publicación' };
       return null;
 
     case 'support_ticket_status_change':

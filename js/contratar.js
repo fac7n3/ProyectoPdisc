@@ -5,9 +5,15 @@
 // nunca con innerHTML — misma convención que js/servicios.js.
 
 import { supabase } from './auth-utils.js';
+import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
+import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let allProfessionals = [];
+let activeCategory = 'todos';
+let currentUserId = null;
+// Evita volver a pedir las reseñas si se cierra y reabre la misma tarjeta.
+const loadedReviewSections = new Set();
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -16,20 +22,108 @@ function el(tag, className, text) {
   return node;
 }
 
+function buildCategoryChips() {
+  const container = document.getElementById('ct-categories');
+  container.textContent = '';
+
+  const all = el('button', 'ct-chip is-active', 'Todos');
+  all.type = 'button';
+  all.dataset.category = 'todos';
+  container.appendChild(all);
+
+  PROFESSIONAL_CATEGORIES.forEach((cat) => {
+    const chip = el('button', 'ct-chip');
+    chip.type = 'button';
+    chip.dataset.category = cat.value;
+    const icon = el('i', cat.icon);
+    icon.setAttribute('aria-hidden', 'true');
+    chip.appendChild(icon);
+    chip.append(cat.label);
+    container.appendChild(chip);
+  });
+
+  container.addEventListener('click', (e) => {
+    const chip = e.target.closest('.ct-chip');
+    if (!chip) return;
+    activeCategory = chip.dataset.category;
+    container.querySelectorAll('.ct-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+    applyFilter();
+  });
+}
+
+function buildStarsSummary(pro) {
+  if (!pro._ratingCount) return el('span', 'ct-card__stars ct-card__stars--empty', 'Todavía sin reseñas');
+  const stars = el('span', 'ct-card__stars');
+  stars.textContent = `${buildStarsText(pro._ratingAvg)} ${pro._ratingAvg.toFixed(1)} (${pro._ratingCount})`;
+  return stars;
+}
+
+async function toggleCard(card, pro) {
+  const isOpen = card.classList.toggle('is-open');
+  const head = card.querySelector('.ct-card__head');
+  head.setAttribute('aria-expanded', String(isOpen));
+  const detail = card.querySelector('.ct-card__detail');
+  detail.hidden = !isOpen;
+  if (!isOpen || loadedReviewSections.has(pro.id)) return;
+
+  loadedReviewSections.add(pro.id);
+  const reviewsBox = detail.querySelector('.ct-card__reviews');
+  await renderReviewsSection(reviewsBox, 'professional', pro.id, { hideForm: currentUserId === pro.owner_id });
+}
+
 function buildCard(pro) {
   const card = el('div', 'ct-card');
+  card.id = `ct-pro-${pro.id}`;
 
-  const head = el('div', 'ct-card__head');
-  const nameBox = el('div');
-  nameBox.appendChild(el('div', 'ct-card__name', pro.full_name));
-  nameBox.appendChild(el('span', 'ct-card__specialty', pro.specialty));
-  head.appendChild(nameBox);
+  const head = el('button', 'ct-card__head');
+  head.type = 'button';
+  head.setAttribute('aria-expanded', 'false');
+
+  const photo = el('div', 'ct-card__photo');
+  if (pro.photo_url) {
+    const img = el('img');
+    img.src = pro.photo_url;
+    img.alt = '';
+    img.loading = 'lazy';
+    photo.appendChild(img);
+  } else {
+    const icon = el('i', 'fa-solid fa-user');
+    icon.setAttribute('aria-hidden', 'true');
+    photo.appendChild(icon);
+  }
+  head.appendChild(photo);
+
+  const main = el('div', 'ct-card__main');
+  main.appendChild(el('div', 'ct-card__name', pro.full_name));
+
+  const tags = el('div', 'ct-card__tags');
+  if (pro.category) {
+    const catTag = el('span', 'ct-card__category');
+    const catIcon = el('i', categoryIcon(pro.category));
+    catIcon.setAttribute('aria-hidden', 'true');
+    catTag.appendChild(catIcon);
+    catTag.append(categoryLabel(pro.category));
+    tags.appendChild(catTag);
+  }
+  tags.appendChild(el('span', 'ct-card__specialty', pro.specialty));
+  main.appendChild(tags);
+
+  main.appendChild(buildStarsSummary(pro));
+  head.appendChild(main);
+
+  const chevron = el('i', 'fa-solid fa-chevron-down ct-card__chevron');
+  chevron.setAttribute('aria-hidden', 'true');
+  head.appendChild(chevron);
+
+  head.addEventListener('click', () => toggleCard(card, pro));
   card.appendChild(head);
 
-  if (pro.description) card.appendChild(el('p', 'ct-card__desc', pro.description));
+  const detail = el('div', 'ct-card__detail');
+  detail.hidden = true;
+
+  if (pro.description) detail.appendChild(el('p', 'ct-card__desc', pro.description));
 
   const actions = el('div', 'ct-card__actions');
-
   const call = el('a', 'ct-btn ct-btn--call');
   call.href = `tel:${pro.phone.replace(/[^\d+]/g, '')}`;
   const callIcon = el('i', 'fa-solid fa-phone');
@@ -49,8 +143,11 @@ function buildCard(pro) {
     wsp.append(' WhatsApp');
     actions.appendChild(wsp);
   }
+  detail.appendChild(actions);
 
-  card.appendChild(actions);
+  detail.appendChild(el('div', 'ct-card__reviews'));
+  card.appendChild(detail);
+
   return card;
 }
 
@@ -77,28 +174,49 @@ function render(list) {
   const listBox = el('div', 'ct-list');
   list.forEach((pro) => listBox.appendChild(buildCard(pro)));
   container.appendChild(listBox);
+
+  // Deep link desde una notificación ("Ver tu publicación", ?pro=<id>):
+  // abre y desplaza a esa tarjeta puntual.
+  const proId = new URLSearchParams(window.location.search).get('pro');
+  if (proId) {
+    const card = document.getElementById(`ct-pro-${proId}`);
+    const pro = list.find((p) => p.id === proId);
+    if (card && pro && !card.classList.contains('is-open')) {
+      toggleCard(card, pro);
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
 }
 
-function applyFilter(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) return render(allProfessionals);
+function applyFilter() {
+  const q = normalize(document.getElementById('ct-search-input')?.value || '');
 
-  const filtered = allProfessionals.filter((pro) =>
-    pro.full_name.toLowerCase().includes(q) ||
-    pro.specialty.toLowerCase().includes(q) ||
-    (pro.description || '').toLowerCase().includes(q)
-  );
+  const filtered = allProfessionals.filter((pro) => {
+    const matchesCategory = activeCategory === 'todos' || pro.category === activeCategory;
+    if (!matchesCategory) return false;
+    if (!q) return true;
+    return normalize(pro.full_name).includes(q) ||
+      normalize(pro.specialty).includes(q) ||
+      normalize(pro.description || '').includes(q);
+  });
+
   render(filtered);
+}
+
+function normalize(text) {
+  return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 async function loadProfessionals() {
   const container = document.getElementById('ct-content');
   container.textContent = '';
 
+  const { data: { session } } = await supabase.auth.getSession();
+  currentUserId = session?.user?.id || null;
+
   const { data, error } = await supabase
     .from('professionals')
-    .select('id, full_name, specialty, description, phone, whatsapp')
-    .order('specialty', { ascending: true })
+    .select('id, owner_id, full_name, category, specialty, description, phone, whatsapp, photo_url')
     .order('full_name', { ascending: true });
 
   if (error) {
@@ -107,10 +225,50 @@ async function loadProfessionals() {
     return;
   }
 
-  allProfessionals = data || [];
-  render(allProfessionals);
+  const professionals = data || [];
+
+  if (professionals.length === 0) {
+    allProfessionals = [];
+    render([]);
+    return;
+  }
+
+  // Reseñas: una sola consulta para todos (no una por tarjeta), agregadas acá
+  // en promedio/cantidad -- "mientras más estrellas, mejor" ordena la lista.
+  const { data: reviewRows } = await supabase
+    .from('reviews')
+    .select('target_id, rating')
+    .eq('target_type', 'professional')
+    .eq('is_hidden', false)
+    .in('target_id', professionals.map((p) => p.id));
+
+  const reviewsByPro = new Map();
+  (reviewRows || []).forEach((r) => {
+    const entry = reviewsByPro.get(r.target_id) || { sum: 0, count: 0 };
+    entry.sum += r.rating;
+    entry.count += 1;
+    reviewsByPro.set(r.target_id, entry);
+  });
+
+  professionals.forEach((pro) => {
+    const stats = reviewsByPro.get(pro.id);
+    pro._ratingAvg = stats ? stats.sum / stats.count : 0;
+    pro._ratingCount = stats ? stats.count : 0;
+  });
+
+  professionals.sort((a, b) => {
+    if (b._ratingCount === 0 && a._ratingCount === 0) return a.full_name.localeCompare(b.full_name, 'es');
+    if (b._ratingCount === 0) return -1;
+    if (a._ratingCount === 0) return 1;
+    if (b._ratingAvg !== a._ratingAvg) return b._ratingAvg - a._ratingAvg;
+    return a.full_name.localeCompare(b.full_name, 'es');
+  });
+
+  allProfessionals = professionals;
+  applyFilter();
 }
 
-document.getElementById('ct-search-input')?.addEventListener('input', (e) => applyFilter(e.target.value));
+buildCategoryChips();
+document.getElementById('ct-search-input')?.addEventListener('input', () => applyFilter());
 
 loadProfessionals();

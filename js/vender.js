@@ -7,6 +7,7 @@ import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
+import { PROFESSIONAL_CATEGORIES } from './professional-categories.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -369,6 +370,9 @@ function initVenderPage(user) {
   document.getElementById('toggle-comercio')?.addEventListener('click', () => setRegisterTab('comercio'));
   document.getElementById('toggle-profesional')?.addEventListener('click', () => setRegisterTab('profesional'));
 
+  loadProfessionalCategories();
+  setupProfessionalPhotoPicker();
+
   // Manejar alta de profesional/técnico
   const profForm = document.getElementById('professional-form');
   const profSubmitBtn = profForm?.querySelector('button[type="submit"]');
@@ -376,6 +380,7 @@ function initVenderPage(user) {
     e.preventDefault();
 
     const nameInput = document.getElementById('prof-name').value.trim();
+    const categoryInput = document.getElementById('prof-category').value;
     const specialtyInput = document.getElementById('prof-specialty').value.trim();
     const descriptionInput = document.getElementById('prof-description').value.trim();
     const phoneInput = document.getElementById('prof-phone').value.trim();
@@ -383,6 +388,10 @@ function initVenderPage(user) {
 
     if (!isValidShopName(nameInput)) {
       showToast("El nombre debe tener entre 3 y 100 caracteres.", "error");
+      return;
+    }
+    if (!categoryInput) {
+      showToast("Elegí una categoría.", "error");
       return;
     }
     if (!isValidShopName(specialtyInput)) {
@@ -413,10 +422,12 @@ function initVenderPage(user) {
       .insert({
         user_id: currentUser.id,
         full_name: nameInput,
+        category: categoryInput,
         specialty: specialtyInput,
         description: descriptionInput || null,
         phone: phoneInput,
         whatsapp: whatsappInput || null,
+        photo_url: profPhotoUrl,
       });
 
     if (error) {
@@ -424,10 +435,76 @@ function initVenderPage(user) {
       showToast("Hubo un error al procesar tu solicitud.", "error");
     } else {
       showToast("¡Solicitud enviada! Revisaremos tus datos antes de publicarte.", "success");
+      profPhotoUrl = null;
       await checkSellerState(currentUser);
     }
 
     if (profSubmitBtn) setLoading(profSubmitBtn, false, "Enviar solicitud");
+  });
+}
+
+/** Llena el <select> de categorías del alta de profesional. */
+function loadProfessionalCategories() {
+  const select = document.getElementById('prof-category');
+  if (!select) return;
+  PROFESSIONAL_CATEGORIES.forEach((cat) => {
+    const opt = document.createElement('option');
+    opt.value = cat.value;
+    opt.textContent = cat.label;
+    select.appendChild(opt);
+  });
+}
+
+// Foto/logo del alta de profesional: se sube apenas se elige el archivo
+// (igual que el avatar de Mi perfil), la URL pública viaja en el insert de
+// professional_requests recién al enviar el formulario.
+const MAX_PROF_PHOTO_BYTES = 2 * 1024 * 1024;
+let profPhotoUrl = null;
+
+function setupProfessionalPhotoPicker() {
+  const input = document.getElementById('prof-photo');
+  const preview = document.getElementById('prof-photo-preview');
+  if (!input || !preview) return;
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_PROF_PHOTO_BYTES) {
+      showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      showToast('Sesión inválida.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+    const path = `${currentUser.id}/${Date.now()}.${ext || 'jpg'}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('professional-photos')
+      .upload(path, file, { contentType: file.type || 'image/jpeg' });
+
+    if (upErr) {
+      console.error('Error al subir la foto:', upErr);
+      showToast('No se pudo subir la foto.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from('professional-photos').getPublicUrl(path);
+    profPhotoUrl = pub?.publicUrl || null;
+
+    preview.textContent = '';
+    const img = document.createElement('img');
+    img.src = profPhotoUrl;
+    img.alt = '';
+    preview.appendChild(img);
   });
 }
 

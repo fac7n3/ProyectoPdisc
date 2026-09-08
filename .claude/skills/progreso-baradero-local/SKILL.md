@@ -2046,3 +2046,84 @@ corra el redirect a login, y se mostró/ocultó `register-view` a mano -- el res
 y navbar incluidos, carga por navegación real así que se ve exactamente como en producción). Los
 dos tabs del toggle y `contratar.html` con datos de ejemplo se ven bien, sin overflow ni recortes,
 en desktop.
+
+## "Contratar": categorías, estrellas, foto, home y buscador (2026-09-08, mismo día)
+
+El usuario pidió, en un solo mensaje, cuatro ampliaciones al directorio recién armado: "que en la
+parte de arriba tenga categorías", "un sistema de estrellas (mientras más estrellas, mejor)", "que
+se puede ingresar... donde detallan un poco más lo que hacen y si es que tienen algún logo o
+imagen", "que se puedan buscar en el buscador también" y "que aparezcan en home en un pequeño
+apartado". Migración `78_professionals_extras.sql` (aplicada a producción) + `js/professional-categories.js`
+nuevo (lista compartida, evita que vender.js/admin.js/contratar.js/home.js se desincronicen).
+
+**Decisión central, la que ahorró más trabajo:** las estrellas NO son una tabla nueva. `reviews`
+(36_reviews.sql) ya es polimórfica por `target_type`/`target_id`, y la migración 44 ya le había
+sumado `'repartidor'` al `CHECK` en su momento -- acá se repite exactamente ese patrón, sumando
+`'professional'`. Consecuencia directa: **cero JS nuevo para reseñas**. `js/reviews-utils.js`
+(`renderReviewsSection`, resumen + lista + form + reportar, ya lo usan producto.js/comercio.js) se
+llama tal cual con `target_type='professional'` desde `contratar.js`. También se sumó una rama a
+`notify_new_review()` (38_notifications.sql) para que el profesional reciba notificación al recibir
+una reseña -- 'repartidor' no la tiene (gap preexistente, no se tocó, no es parte de este cambio) --
+con link nuevo en `notifications-utils.js` a `contratar.html?pro=<id>`.
+
+**Categorías**: lista fija y chica (6 valores: hogar, clases, cuidado, belleza, tecnología, eventos)
+en `professional-categories.js`, separada de `specialty` (texto libre, "Plomero", "Clases de
+inglés") a propósito -- specialty es demasiado variado para chips útiles, category sirve para
+filtrar sin depender de que el texto coincida exacto. Columna nueva en ambas tablas
+(`professional_requests`/`professionals`) con el mismo `CHECK` en las dos.
+
+**Foto/logo**: mismo patrón exacto que `stores.logo_url` (74_store_logo.sql) -- bucket
+`professional-photos`, público de lectura, cada usuario escribe solo en su propia carpeta `{uid}/`
+(la policy valida contra `auth.uid()`, no contra el id del profesional, porque storage no sabe
+quién es dueño de qué fila). A diferencia del logo de comercio (se sube después de aprobado, desde
+`comercio.js`), acá se sube **durante el alta** en `vender.html` -- antes de que exista la fila en
+`professionals`, por eso la carpeta es por uid del usuario, no por id de profesional. Tope 2 MB,
+mismo que el logo de comercio.
+
+**"Un apartado donde detallan más" se resolvió como tarjeta expandible, no una página nueva.**
+Se consideró un `pages/profesional.html` al estilo `producto.html`/`comercio.html`, pero para no
+sumar una ruta/entrada de Vite nueva por un detalle que cabe perfecto en una tarjeta que se abre:
+cada `.ct-card` de `contratar.html` es ahora un `<button>` que hace toggle de un panel
+`.ct-card__detail` (descripción completa + botones de contacto + `renderReviewsSection`, cargada
+recién la primera vez que se abre esa tarjeta -- `loadedReviewSections`, un `Set`, evita refetch al
+cerrar/reabrir). El resumen de estrellas de la tarjeta CERRADA sí hace falta desde el arranque
+(para poder ordenar la lista completa "mientras más estrellas, mejor"), así que `contratar.js` trae
+TODAS las reseñas de TODOS los profesionales visibles en una sola consulta
+(`.in('target_id', ids)`) y agrupa en memoria -- ni una consulta por tarjeta.
+
+**Orden de la lista**: por rating promedio descendente: quien no tiene ninguna reseña todavía va al
+final (no se mezcla con "0 estrellas", que sería peor que no tener reseñas), empatado por nombre.
+Mismo criterio de orden en la mini-sección del home.
+
+**Buscador principal** (`search.html`, la barra del navbar en todas las páginas -- distinto del
+buscador local que ya tenía `contratar.html` desde el alta original): se agregó
+`renderProfessionalResults()`/`getProfessionals()`/`buildProfessionalCard()` en `search.js`, calco
+exacto de `renderStoreResults()`/`getStores()`/`buildStoreCard` que ya mostraban comercios arriba
+de los productos -- mismo criterio (solo con texto escrito, cache en memoria porque son pocos
+registros, reutiliza las clases CSS `.product-card`/`.store-card__meta` que ya existían). Sección
+nueva `#professional-results` en `search.html`, mellizo de `#store-results`. `renderNoResults()` se
+extendió para mencionar "el profesional/los profesionales de arriba" además de comercios cuando
+corresponde, en vez de decir "sin resultados" siendo mentira.
+
+**Home**: sección nueva "Profesionales destacados" (`loadFeaturedProfessionals()` en `home.js`,
+después de `loadStores()`), fila horizontal de hasta 8 tarjetas compactas (foto, nombre, oficio,
+estrellas) ordenadas igual que `contratar.html`, con "Ver todos" al lado del título. Se oculta la
+sección entera si no hay ningún profesional publicado (mismo criterio que el carrusel de comercios:
+no es contenido crítico, si falla o está vacío desaparece en vez de mostrar un hueco). CSS agregado
+al final de `home.css` (el archivo ya es grande y no tiene una sección "temas nuevos" -- append es
+seguro porque no hay ningún `@media` final que pudiera pisar reglas nuevas).
+
+**Datos de ejemplo actualizados**: a los 3 profesionales de prueba cargados antes de esta tarea
+(Juan Pérez/Plomero, María Gómez/Clases de inglés, Carlos Díaz/Electricista) se les asignó
+categoría y se les cargaron reseñas de ejemplo (usando ids de usuarios reales ya existentes como
+`client_id`, igual que el `owner_id` de estos profesionales de prueba viene de la cuenta que ya
+tenía los 14 comercios de seed -- mismo criterio documentado en la entrada anterior) para que el
+sistema de estrellas se vea funcionando de punta a punta sin esperar reseñas reales.
+
+**Verificado visualmente con Playwright**: chips de categoría + tarjetas con foto/estrellas/tarjeta
+expandida en `contratar.html`, formulario de alta con selector de categoría + selector de foto en
+`vender.html`, mini-sección del home con "Ver todos", y resultados de profesionales con el mismo
+estilo de tarjeta que los comercios en `search.html`. Un avatar de prueba (URL externa, pravatar.cc)
+no cargó en la captura por el mismo bloqueo de red del sandbox hacia dominios externos que ya
+afecta a Font Awesome en este entorno -- las fotos reales son URLs de Supabase Storage, mismo
+origen ya permitido por la CSP del proyecto, así que sí van a cargar en producción.

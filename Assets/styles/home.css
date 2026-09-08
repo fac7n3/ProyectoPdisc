@@ -4041,3 +4041,88 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ===========================================================
+   PROFESIONALES DESTACADOS (home -> directorio "Contratar")
+   Fila compacta de los mejor calificados, scroll horizontal. Mismo
+   contenedor .products (max-width 1320px) que el resto de las secciones.
+   =========================================================== */
+.pro-highlight__row {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pro-highlight-card {
+  flex: 0 0 auto;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  box-shadow: var(--bl-shadow-card);
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.pro-highlight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--bl-shadow-md);
+}
+
+.pro-highlight-card__photo {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  overflow: hidden;
+}
+
+.pro-highlight-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pro-highlight-card__name {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--bl-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pro-highlight-card__specialty {
+  font-size: 0.78125rem;
+  color: var(--bl-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pro-highlight-card__stars {
+  font-size: 0.78125rem;
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+.pro-highlight-card__stars--empty {
+  color: var(--bl-text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .pro-highlight-card { width: 165px; }
+}

@@ -523,6 +523,108 @@ async function loadStores() {
   }
 }
 
+/** Mini-sección "Profesionales destacados": los mejor calificados del
+ *  directorio "Contratar" (js/contratar.js hace el mismo cálculo de
+ *  promedio/cantidad para el orden de la página completa). Se oculta entera
+ *  si todavía no hay ninguno publicado -- no es contenido crítico del home. */
+async function loadFeaturedProfessionals() {
+  const section = document.getElementById('pro-highlight-section');
+  const row = document.getElementById('pro-highlight-row');
+  if (!section || !row) return;
+
+  try {
+    const { data: pros, error } = await supabase
+      .from('professionals')
+      .select('id, full_name, specialty, photo_url')
+      .limit(20);
+    if (error) throw error;
+
+    if (!pros || pros.length === 0) {
+      section.hidden = true;
+      return;
+    }
+
+    const { data: reviewRows } = await supabase
+      .from('reviews')
+      .select('target_id, rating')
+      .eq('target_type', 'professional')
+      .eq('is_hidden', false)
+      .in('target_id', pros.map((p) => p.id));
+
+    const reviewsByPro = new Map();
+    (reviewRows || []).forEach((r) => {
+      const entry = reviewsByPro.get(r.target_id) || { sum: 0, count: 0 };
+      entry.sum += r.rating;
+      entry.count += 1;
+      reviewsByPro.set(r.target_id, entry);
+    });
+
+    pros.forEach((p) => {
+      const stats = reviewsByPro.get(p.id);
+      p._ratingAvg = stats ? stats.sum / stats.count : 0;
+      p._ratingCount = stats ? stats.count : 0;
+    });
+
+    pros.sort((a, b) => {
+      if (b._ratingCount === 0 && a._ratingCount === 0) return a.full_name.localeCompare(b.full_name, 'es');
+      if (b._ratingCount === 0) return -1;
+      if (a._ratingCount === 0) return 1;
+      return b._ratingAvg - a._ratingAvg;
+    });
+
+    row.textContent = '';
+    pros.slice(0, 8).forEach((p) => row.appendChild(buildProHighlightCard(p)));
+    section.hidden = false;
+  } catch (err) {
+    console.error('Error al cargar profesionales destacados:', err);
+    section.hidden = true;
+  }
+}
+
+function buildProHighlightCard(pro) {
+  const card = document.createElement('a');
+  card.className = 'pro-highlight-card';
+  card.href = `./contratar.html?pro=${encodeURIComponent(pro.id)}`;
+
+  const photo = document.createElement('div');
+  photo.className = 'pro-highlight-card__photo';
+  if (pro.photo_url) {
+    const img = document.createElement('img');
+    img.src = pro.photo_url;
+    img.alt = '';
+    img.loading = 'lazy';
+    photo.appendChild(img);
+  } else {
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-user';
+    icon.setAttribute('aria-hidden', 'true');
+    photo.appendChild(icon);
+  }
+  card.appendChild(photo);
+
+  const name = document.createElement('span');
+  name.className = 'pro-highlight-card__name';
+  name.textContent = pro.full_name;
+  card.appendChild(name);
+
+  const specialty = document.createElement('span');
+  specialty.className = 'pro-highlight-card__specialty';
+  specialty.textContent = pro.specialty;
+  card.appendChild(specialty);
+
+  const stars = document.createElement('span');
+  if (pro._ratingCount > 0) {
+    stars.className = 'pro-highlight-card__stars';
+    stars.textContent = `★ ${pro._ratingAvg.toFixed(1)} (${pro._ratingCount})`;
+  } else {
+    stars.className = 'pro-highlight-card__stars pro-highlight-card__stars--empty';
+    stars.textContent = 'Sin reseñas';
+  }
+  card.appendChild(stars);
+
+  return card;
+}
+
 /** Flechas del carrusel de comercios: scroll nativo, sin reimplementar nada
  *  (mismo criterio que el carrusel del hero). Cada click mueve casi una
  *  pantalla completa de logos. */
@@ -641,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cargar datos dinámicos
   loadStores();
   initStoresCarouselArrows();
+  loadFeaturedProfessionals();
   loadProducts();
   loadOffers();
   loadEssentials();
