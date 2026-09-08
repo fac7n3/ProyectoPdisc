@@ -425,9 +425,9 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     mapLink.className = 'store-header__map-link';
     mapLink.textContent = 'ver en mapa';
     mapLink.addEventListener('click', () => openMapModal(store.address));
-    infoBar.appendChild(buildMetaItem({ label: 'Dirección', value: store.address, extraEl: mapLink }));
+    infoBar.appendChild(buildMetaItem({ value: store.address, extraEl: mapLink }));
   } else {
-    infoBar.appendChild(buildMetaItem({ label: 'Dirección', value: 'no cargada' }));
+    infoBar.appendChild(buildMetaItem({ value: 'Dirección no cargada' }));
   }
 
   infoBar.appendChild(buildMetaItem({ value: categoryName || 'Sin categoría' }));
