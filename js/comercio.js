@@ -463,6 +463,156 @@ function closeMapModal() {
   if (frameWrap) frameWrap.innerHTML = ''; // corta la carga del iframe al cerrar
 }
 
+/** Agrupa productos por categoría (mismo orden que `categories`, que ya viene
+ *  ordenado por nombre desde getCategories()) -- los productos sin categoría
+ *  (o con una categoría que ya no existe) van en un grupo "Sin categoría" al
+ *  final. Solo se devuelven grupos con al menos un producto. */
+function groupProductsByCategory(products, categories) {
+  const bySlug = new Map();
+  (products || []).forEach((product) => {
+    const cat = categories.find((c) => c.id === product.category_id);
+    const slug = cat ? cat.slug : '_sin_categoria';
+    const name = cat ? cat.name : 'Sin categoría';
+    if (!bySlug.has(slug)) bySlug.set(slug, { slug, name, products: [] });
+    bySlug.get(slug).products.push(product);
+  });
+  const ordered = [];
+  categories.forEach((c) => { if (bySlug.has(c.slug)) ordered.push(bySlug.get(c.slug)); });
+  if (bySlug.has('_sin_categoria')) ordered.push(bySlug.get('_sin_categoria'));
+  return ordered;
+}
+
+/**
+ * Vista de la tienda para celular/tablet (≤1024px, ver @media en comercio.html):
+ * en vez de la caja con grilla única, una fila por categoría con scroll
+ * horizontal propio (flechas incluidas) + una tira de accesos rápidos arriba
+ * que salta a la fila correspondiente. Se arma una sola vez con la lista
+ * completa de productos; `renderMobile(list)` reusa las mismas filas para
+ * reflejar la búsqueda (oculta fila+chip si queda sin productos). Convive con
+ * la caja de siempre para desktop -- CSS decide cuál de las dos se muestra
+ * según el ancho, ninguna de las dos se arma condicionalmente por JS.
+ */
+function buildMobileCategorizedSection({ productList, categories, store, isOwner, favoriteIdsPromise }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'store-mobile-categorized';
+
+  const groups = groupProductsByCategory(productList, categories);
+
+  const chipsRow = document.createElement('div');
+  chipsRow.className = 'store-cat-chips';
+  wrap.appendChild(chipsRow);
+
+  if (isOwner) {
+    const editRow = document.createElement('div');
+    editRow.className = 'store-mobile-categorized__edit-row';
+    const editBtn = document.createElement('a');
+    editBtn.href = './vender.html#perfil-comercio';
+    editBtn.className = 'store-edit-profile-btn';
+    editBtn.dataset.tooltip = 'Editar mi perfil';
+    editBtn.setAttribute('aria-label', 'Editar mi perfil');
+    const pencilIcon = document.createElement('i');
+    pencilIcon.className = 'fa-solid fa-pen';
+    editBtn.appendChild(pencilIcon);
+    editRow.appendChild(editBtn);
+    wrap.appendChild(editRow);
+  }
+
+  const rowsContainer = document.createElement('div');
+  rowsContainer.className = 'store-cat-rows';
+  wrap.appendChild(rowsContainer);
+
+  if (groups.length === 0) {
+    // Mismo criterio que renderGrid: sin productos en absoluto (no hay filas
+    // que armar), estado vacío directo.
+    renderEmptyState(rowsContainer, 'Este comercio aún no tiene productos publicados.', 'fa-store-slash');
+    return { wrap, renderMobile: () => {} };
+  }
+
+  const rowRefs = groups.map((group) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'store-cat-chip';
+    chip.textContent = group.name;
+    chipsRow.appendChild(chip);
+
+    const row = document.createElement('div');
+    row.className = 'store-cat-row';
+    row.id = `store-cat-${group.slug}`;
+
+    const heading = document.createElement('h2');
+    heading.className = 'store-cat-row__title';
+    heading.textContent = group.name;
+    row.appendChild(heading);
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.className = 'store-cat-row__scroll-wrap';
+
+    const track = document.createElement('div');
+    track.className = 'store-cat-row__track';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'store-cat-arrow store-cat-arrow--prev';
+    prevBtn.setAttribute('aria-label', `${group.name}: productos anteriores`);
+    const prevIcon = document.createElement('i');
+    prevIcon.className = 'fa-solid fa-chevron-left';
+    prevBtn.appendChild(prevIcon);
+    prevBtn.addEventListener('click', () => track.scrollBy({ left: -track.clientWidth * 0.9, behavior: 'smooth' }));
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'store-cat-arrow store-cat-arrow--next';
+    nextBtn.setAttribute('aria-label', `${group.name}: productos siguientes`);
+    const nextIcon = document.createElement('i');
+    nextIcon.className = 'fa-solid fa-chevron-right';
+    nextBtn.appendChild(nextIcon);
+    nextBtn.addEventListener('click', () => track.scrollBy({ left: track.clientWidth * 0.9, behavior: 'smooth' }));
+
+    scrollWrap.append(prevBtn, track, nextBtn);
+    row.appendChild(scrollWrap);
+    rowsContainer.appendChild(row);
+
+    // Salta a la fila con la altura del navbar (sticky) descontada -- si no,
+    // el título de la fila queda tapado atrás del navbar.
+    chip.addEventListener('click', () => {
+      const navbar = document.querySelector('.navbar');
+      const offset = (navbar?.offsetHeight || 0) + 12;
+      const top = row.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+
+    return { slug: group.slug, chip, row, track };
+  });
+
+  const noResults = document.createElement('div');
+  noResults.hidden = true;
+  rowsContainer.appendChild(noResults);
+
+  function renderMobile(list) {
+    const filteredGroups = new Map(groupProductsByCategory(list, categories).map((g) => [g.slug, g.products]));
+    let anyVisible = false;
+    rowRefs.forEach(({ slug, chip, row, track }) => {
+      const products = filteredGroups.get(slug) || [];
+      track.innerHTML = '';
+      products.forEach((product) => track.appendChild(buildProductCard(product, store)));
+      const hasProducts = products.length > 0;
+      row.hidden = !hasProducts;
+      chip.hidden = !hasProducts;
+      if (hasProducts) anyVisible = true;
+    });
+    if (anyVisible) {
+      noResults.hidden = true;
+      initCartButtons();
+      favoriteIdsPromise.then((ids) => initWishlist(ids));
+    } else {
+      renderEmptyState(noResults, 'No encontramos productos con ese nombre.', 'fa-magnifying-glass');
+      noResults.hidden = false;
+    }
+  }
+
+  return { wrap, renderMobile };
+}
+
 /** Fila de búsqueda dentro de la tienda (filtra los productos ya cargados, sin navegar) + lápiz "editar perfil" del dueño. */
 function buildProductSearchRow({ isOwner, onSearch }) {
   const row = document.createElement('div');
@@ -629,17 +779,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       favoriteIdsPromise.then((ids) => initWishlist(ids));
     }
 
+    // Vista celular/tablet (≤1024px): filas por categoría con scroll horizontal
+    // propio, en vez de la caja con grilla única de acá arriba -- CSS decide
+    // cuál de las dos se muestra según el ancho (ver @media en comercio.html).
+    const mobileSection = buildMobileCategorizedSection({
+      productList, categories, store, isOwner, favoriteIdsPromise,
+    });
+
     const searchRow = buildProductSearchRow({
       isOwner,
       onSearch: (query) => {
         const q = query.trim().toLowerCase();
-        renderGrid(!q ? productList : productList.filter((p) => p.title.toLowerCase().includes(q)));
+        const filtered = !q ? productList : productList.filter((p) => p.title.toLowerCase().includes(q));
+        renderGrid(filtered);
+        mobileSection.renderMobile(filtered);
       },
     });
     gridBox.appendChild(grid);
     section.appendChild(searchRow);
     section.appendChild(gridBox);
+    section.appendChild(mobileSection.wrap);
     renderGrid(productList);
+    mobileSection.renderMobile(productList);
 
     mainContent.appendChild(section);
 

@@ -318,6 +318,122 @@
         text-decoration: none;
       }
 
+      /* ====== Vista celular/tablet de los productos (≤1024px) ======
+         Reemplazo de la caja con grilla única: una fila por categoría con
+         scroll horizontal propio (flechas incluidas) + una tira de accesos
+         rápidos arriba que salta a la fila. Se arma siempre (comercio.js),
+         el @media de más abajo decide cuál de las dos vistas se muestra. En
+         desktop/notebook queda oculta y no cambia nada de lo que ya había. */
+      .store-mobile-categorized {
+        display: none;
+      }
+      .store-cat-chips {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border-bottom: 1px solid var(--bl-border);
+        margin-bottom: 1.25rem;
+      }
+      .store-cat-chips::-webkit-scrollbar {
+        display: none;
+      }
+      .store-cat-chip {
+        flex: 0 0 auto;
+        padding: 0.65rem 1rem;
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--bl-text-secondary);
+        white-space: nowrap;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .store-cat-chip:hover {
+        color: var(--bl-primary);
+        border-bottom-color: var(--bl-primary);
+      }
+      .store-mobile-categorized__edit-row {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 0 1.25rem;
+      }
+      .store-cat-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+      }
+      .store-cat-row__title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--bl-text);
+        margin: 0 0 0.65rem;
+      }
+      .store-cat-row__scroll-wrap {
+        position: relative;
+      }
+      .store-cat-row__track {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        padding: 0.25rem 2.25rem 0.5rem;
+      }
+      .store-cat-row__track::-webkit-scrollbar {
+        display: none;
+      }
+      .store-cat-row__track .product-card {
+        flex: 0 0 min(46%, 190px);
+        scroll-snap-align: start;
+      }
+      /* Mismo lenguaje visual que las flechas del carrusel de comercios del
+         home (.stores-carousel__arrow) -- ver Assets/styles/home.css. */
+      .store-cat-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 1px solid var(--bl-border);
+        border-radius: 50%;
+        background: var(--bl-surface);
+        color: var(--bl-text-secondary);
+        font-size: 0.8125rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--bl-shadow-md);
+        transition: background 0.15s, color 0.15s;
+      }
+      .store-cat-arrow:hover {
+        background: var(--bl-primary);
+        color: #fff;
+      }
+      .store-cat-arrow--prev { left: 0; }
+      .store-cat-arrow--next { right: 0; }
+
+      @media (max-width: 1024px) {
+        .store-products-box {
+          display: none;
+        }
+        .store-search-row .store-edit-profile-btn {
+          display: none;
+        }
+        /* Sin el lápiz (se movió abajo de las categorías), el buscador pasa
+           a ocupar toda la fila en vez de quedar a la izquierda con hueco. */
+        .store-search {
+          max-width: none;
+        }
+        .store-mobile-categorized {
+          display: block;
+        }
+      }
+
       /* Modal de mapa (dirección) -- misma familia visual que el modal de producto */
       .store-map-overlay {
         display: none;
