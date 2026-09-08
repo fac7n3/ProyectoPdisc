@@ -258,11 +258,17 @@ ul, ol {
   flex-shrink: 0;
 }
 
-/* Solo el isotipo en la barra de navegación, en cualquier ancho -- el
-   nombre "Baradero Local" y el eslogan no se pierden para lectores de
-   pantalla: el <img> de al lado ya tiene alt="Baradero Local". */
 .navbar__logo-text {
-  display: none;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Solo el isotipo en celular/tablet (≤1024px) -- en computadora y notebook
+   se sigue viendo "Baradero Local" con su eslogan al lado del logo. */
+@media (max-width: 1024px) {
+  .navbar__logo-text {
+    display: none;
+  }
 }
 
 .navbar__logo-title {
@@ -3369,7 +3375,8 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
    este bloque apuntaba a .navbar__inner/.navbar__action-btn, nombres de una
    versión vieja del navbar que ya no existen en ningún HTML -- quedó
    muerto sin que nada lo usara. (El texto del logo -- "Baradero Local" y su
-   eslogan -- se esconde en cualquier ancho, ver .navbar__logo-text arriba.) */
+   eslogan -- ya se esconde en este mismo rango, ver .navbar__logo-text
+   arriba: ambos @media(max-width:1024px) coinciden a propósito.) */
 @media (max-width: 1024px) {
   .navbar__top {
     padding: 0.75rem 1.25rem;
