@@ -377,6 +377,16 @@
         scroll-snap-type: x proximity;
         scrollbar-width: none;
         padding: 0.25rem 2.25rem 0.5rem;
+        /* Sin esto, scroll-snap-align:start en las tarjetas hace que el
+           navegador arranque la fila ya scrolleada ese mismo padding hacia
+           la derecha al cargar (se "come" el padding-left) -- pero SOLO en
+           las filas con productos de sobra para poder scrollear, así que la
+           primera tarjeta terminaba empezando más a la izquierda que en las
+           filas cortas que no llegan a desbordar. scroll-padding le dice al
+           navegador dónde está el borde real (mismo fix que .stores-carousel
+           en home.css). */
+        scroll-padding-left: 2.25rem;
+        scroll-padding-right: 2.25rem;
       }
       .store-cat-row__track::-webkit-scrollbar {
         display: none;
