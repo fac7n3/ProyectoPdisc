@@ -425,13 +425,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     mapLink.className = 'store-header__map-link';
     mapLink.textContent = 'ver en mapa';
     mapLink.addEventListener('click', () => openMapModal(store.address));
-    const addressItem = buildMetaItem({ label: 'Dirección', value: store.address, extraEl: mapLink });
-    // En celular/tablet se esconde la dirección completa (ver home.css): una
-    // dirección larga sin tope de ancho quedaba mucho más alta que las otras
-    // tres columnas y descuadraba toda la fila. El link "ver en mapa" ya
-    // alcanza para ubicarse -- el texto entero sigue completo en desktop.
-    addressItem.classList.add('store-header__meta-item--address');
-    infoBar.appendChild(addressItem);
+    infoBar.appendChild(buildMetaItem({ label: 'Dirección', value: store.address, extraEl: mapLink }));
   } else {
     infoBar.appendChild(buildMetaItem({ label: 'Dirección', value: 'no cargada' }));
   }
