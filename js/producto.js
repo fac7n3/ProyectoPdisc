@@ -2,6 +2,7 @@ import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
+import { buildContactAction } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -27,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [{ data: product, error }, { data: { session } }] = await Promise.all([
       supabase
         .from('products')
-        .select('*, stores(name, id, accepts_contact, owner_id), product_images(url, position), product_variants(id, name, price, stock)')
+        .select('*, stores(name, id, contact_method, phone, whatsapp, owner_id), product_images(url, position), product_variants(id, name, price, stock)')
         .eq('id', productId)
         .single(),
       supabase.auth.getSession(),
@@ -167,13 +168,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       actionsDiv.appendChild(addBtn);
 
-      // F7-02: contactar al vendedor con contexto de este producto.
-      // P1-12: el vendedor puede desactivar este botón (stores.accepts_contact).
-      if (product.stores?.accepts_contact !== false) {
+      // Contactar al vendedor por teléfono o WhatsApp (según lo que eligió en
+      // su panel, stores.contact_method) con el contexto de este producto.
+      const contactAction = buildContactAction(product.stores, product.title);
+      if (contactAction) {
         const contactLink = document.createElement('a');
         contactLink.style.cssText = 'display: inline-flex; align-items: center; gap: 0.4rem; margin-left: 0.75rem; padding: 0.6rem 1.25rem; border: 2px solid var(--bl-primary); color: var(--bl-primary); border-radius: var(--bl-radius-md); font-weight: 600; text-decoration: none;';
-        contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}&product=${encodeURIComponent(product.id)}`;
-        contactLink.textContent = 'Contactar al vendedor';
+        contactLink.href = contactAction.href;
+        contactLink.target = contactAction.href.startsWith('https://wa.me/') ? '_blank' : '_self';
+        contactLink.rel = 'noopener';
+        contactLink.title = contactAction.label;
+        const icon = document.createElement('i');
+        icon.className = contactAction.icon;
+        contactLink.appendChild(icon);
+        contactLink.append(` Contactar al vendedor`);
         actionsDiv.appendChild(contactLink);
       }
     }

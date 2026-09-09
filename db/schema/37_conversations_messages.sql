@@ -1,3 +1,8 @@
+-- ELIMINADO en 81_remove_in_app_messaging.sql (2026-09-09) -- el chat interno
+-- se reemplazó por "Contactar al vendedor" directo a teléfono/WhatsApp
+-- (js/store-contact-utils.js). Se deja este archivo como registro histórico
+-- de lo que existió, no se vuelve a aplicar.
+--
 -- F7-02 (A113-?) — Chat comprador-vendedor con contexto de producto (D8),
 -- extraída de 13_target_data_model.sql sección 9. Único cambio respecto al
 -- diseño original: se agrega `product_id` (nullable) a `conversations` para

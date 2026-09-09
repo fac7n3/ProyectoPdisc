@@ -3,6 +3,7 @@ import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteI
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
+import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -346,12 +347,41 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
   description.textContent = store.description || 'Sin descripción disponible.';
   top.appendChild(description);
 
-  if (!isOwner && store.accepts_contact !== false) {
-    const contactLink = document.createElement('a');
-    contactLink.className = 'store-header__contact';
-    contactLink.href = `./mensajes.html?store=${encodeURIComponent(storeId)}`;
-    contactLink.textContent = 'Contactar al vendedor';
-    top.appendChild(contactLink);
+  if (!isOwner) {
+    const contactAction = buildContactAction(store);
+    if (contactAction) {
+      const contactLink = document.createElement('a');
+      contactLink.className = 'store-header__contact';
+      contactLink.href = contactAction.href;
+      contactLink.target = contactAction.href.startsWith('https://wa.me/') ? '_blank' : '_self';
+      contactLink.rel = 'noopener';
+      contactLink.title = contactAction.label;
+      const icon = document.createElement('i');
+      icon.className = contactAction.icon;
+      contactLink.appendChild(icon);
+      contactLink.append(' Contactar al vendedor');
+      top.appendChild(contactLink);
+    }
+  }
+
+  const socialLinks = getVisibleSocialLinks(store);
+  if (socialLinks.length > 0) {
+    const socialRow = document.createElement('div');
+    socialRow.className = 'store-header__social';
+    socialLinks.forEach((s) => {
+      const link = document.createElement('a');
+      link.className = 'store-header__social-link';
+      link.href = s.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('aria-label', s.label);
+      link.title = s.label;
+      const icon = document.createElement('i');
+      icon.className = s.icon;
+      link.appendChild(icon);
+      socialRow.appendChild(link);
+    });
+    top.appendChild(socialRow);
   }
 
   header.appendChild(top);
