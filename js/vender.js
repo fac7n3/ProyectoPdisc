@@ -8,6 +8,7 @@ import { initVenderShell } from './vender-shell.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES } from './professional-categories.js';
+import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
@@ -536,7 +537,7 @@ let pedidosTab = 'all'; // 'all' | 'pending_payment' | 'shipping' | 'completed' 
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
-const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, accepts_contact';
+const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
@@ -1092,7 +1093,7 @@ function fillStoreProfileForm(store) {
   const descInput = document.getElementById('store-description');
   const deliveryFeeInput = document.getElementById('store-delivery-fee');
   const freeShippingInput = document.getElementById('store-free-shipping-threshold');
-  const acceptsContactInput = document.getElementById('store-accepts-contact');
+  const whatsappInput = document.getElementById('store-whatsapp');
   const transferInfoInput = document.getElementById('store-transfer-info');
 
   if (logoInput) logoInput.value = store.logo_url || '';
@@ -1105,8 +1106,22 @@ function fillStoreProfileForm(store) {
   // F12-04: envío configurable por comercio (antes era una constante global 350/5000).
   if (deliveryFeeInput) deliveryFeeInput.value = store.delivery_fee ?? 350;
   if (freeShippingInput) freeShippingInput.value = store.free_shipping_threshold ?? 5000;
-  // P1-12: default true si la columna todavía no llegó desde el select (no debería pasar).
-  if (acceptsContactInput) acceptsContactInput.checked = store.accepts_contact !== false;
+
+  // Cómo lo contactan los clientes: teléfono / WhatsApp / ninguno
+  // (reemplaza al viejo checkbox accepts_contact, ver stores.contact_method).
+  const contactMethod = store.contact_method || 'phone';
+  document.querySelectorAll('input[name="store-contact-method"]').forEach((radio) => {
+    radio.checked = radio.value === contactMethod;
+  });
+  if (whatsappInput) whatsappInput.value = store.whatsapp || '';
+
+  // Redes sociales: un link + un check "mostrar" por red (ver SOCIAL_NETWORKS).
+  SOCIAL_NETWORKS.forEach(({ key }) => {
+    const urlInput = document.getElementById(`store-social-${key}`);
+    const showInput = document.getElementById(`store-social-${key}-show`);
+    if (urlInput) urlInput.value = store[`social_${key}`] || '';
+    if (showInput) showInput.checked = store[`social_${key}_show`] !== false;
+  });
 
   // A113-299: texto libre (CBU/alias/banco) que ve el cliente al elegir
   // transferencia. Fetch aparte (no en STORE_SELECT_COLUMNS) a propósito: la
@@ -1142,7 +1157,23 @@ function setupStoreProfileForm() {
       return;
     }
 
+    const contactMethodInput = document.querySelector('input[name="store-contact-method"]:checked');
+    const contactMethodValue = contactMethodInput ? contactMethodInput.value : 'phone';
+    const whatsappValue = document.getElementById('store-whatsapp').value.trim();
+
+    if (contactMethodValue === 'whatsapp' && !isValidPhone(whatsappValue)) {
+      showToast('Ingresá un número de WhatsApp válido para que los clientes te contacten por ahí.', 'error');
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
+
     const descriptionValue = document.getElementById('store-description').value.trim();
+
+    const socialFields = {};
+    SOCIAL_NETWORKS.forEach(({ key }) => {
+      socialFields[`social_${key}`] = document.getElementById(`store-social-${key}`).value.trim() || null;
+      socialFields[`social_${key}_show`] = document.getElementById(`store-social-${key}-show`).checked;
+    });
 
     const { error } = await supabase
       .from('stores')
@@ -1155,7 +1186,9 @@ function setupStoreProfileForm() {
         description: descriptionValue || null,
         delivery_fee: deliveryFeeValue,
         free_shipping_threshold: freeShippingValue,
-        accepts_contact: document.getElementById('store-accepts-contact').checked,
+        contact_method: contactMethodValue,
+        whatsapp: whatsappValue || null,
+        ...socialFields,
       })
       .eq('id', currentStoreId);
 
@@ -1849,24 +1882,17 @@ async function renderResumen() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
   thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-  const [rev, ord, cat, pay, msg] = await Promise.all([
+  const [rev, ord, cat, pay] = await Promise.all([
     supabase.from('reviews').select('rating, client_id').eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
     supabase.from('orders').select('total_price, created_at, delivery_method, status, client_id').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
     supabase.from('order_items').select('quantity, price, products(categories(name)), orders!inner(store_id, payment_status, created_at)').eq('orders.store_id', currentStoreId).eq('orders.payment_status', 'paid'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId).eq('payment_method', 'transferencia').eq('payment_status', 'pending'),
-    supabase.from('messages').select('conversation_id, sender_id, created_at, conversations!inner(store_id)').eq('conversations.store_id', currentStoreId).order('created_at', { ascending: false }),
   ]);
 
   const reviews = rev.data || [];
   const paidOrders = ord.data || [];
   const catItems = cat.data || [];
   const pendingPayCount = pay.count || 0;
-  const messages = msg.data || [];
-
-  // Preguntas sin responder: última respuesta de cada conversación no fue mía.
-  const lastSenderByConv = new Map();
-  messages.forEach((m) => { if (!lastSenderByConv.has(m.conversation_id)) lastSenderByConv.set(m.conversation_id, m.sender_id); });
-  const questionCount = [...lastSenderByConv.values()].filter((senderId) => senderId !== currentUserId).length;
 
   const reviewCount = reviews.length;
   const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
@@ -1920,7 +1946,6 @@ async function renderResumen() {
 
   dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
-    { label: 'Preguntas sin responder', count: questionCount, href: './mensajes.html', alert: questionCount > 0 },
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
   dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [

@@ -9,7 +9,6 @@ const TYPE_LABELS = {
   order_shipped: 'Tu pedido está en camino',
   order_delivered: 'Tu pedido fue entregado',
   new_review: 'Recibiste una nueva reseña',
-  new_message: 'Tenés un mensaje nuevo',
   revocation_requested: 'Un cliente solicitó arrepentimiento de compra',
   seller_request_approved: '¡Tu solicitud de vendedor fue aprobada!',
   seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
@@ -36,7 +35,7 @@ const SUPPORT_TICKET_STATUS_LABELS = {
  *   success (verde, --bl-success): algo avanzó/se aprobó.
  *   danger  (rojo,  --bl-danger):  un rechazo o algo que necesita reversa.
  *   accent  (ámbar, --bl-accent):  una oportunidad/aviso para actuar.
- *   info    (azul,  --bl-primary): comunicación (mensajes, reseñas).
+ *   info    (azul,  --bl-primary): comunicación (reseñas, reclamos).
  */
 const TYPE_TONE = {
   order_created: 'success',
@@ -57,7 +56,6 @@ const TYPE_TONE = {
   mp_split_needs_review: 'accent',
   support_ticket_status_change: 'accent',
   new_review: 'info',
-  new_message: 'info',
   support_ticket_message: 'info',
 };
 
@@ -83,10 +81,10 @@ function isImportant(n) {
  * Vista previa de contenido para los tipos cuyo payload no la trae directo
  * (a diferencia de stock_alert/favorite_price_drop, que ya tienen
  * product_title, o support_ticket_message, que ya trae el texto). Recibe los
- * mapas ya resueltos por reviewId/messageId/orderId (ver renderNotificationsSection)
+ * mapas ya resueltos por reviewId/orderId (ver renderNotificationsSection)
  * para no pedirle a cada notificación su propio round-trip.
  */
-function buildPreviewText(n, { reviewMap, messageMap, orderAmountMap }) {
+function buildPreviewText(n, { reviewMap, orderAmountMap }) {
   const p = n.payload || {};
   switch (n.type) {
     case 'new_review': {
@@ -96,10 +94,6 @@ function buildPreviewText(n, { reviewMap, messageMap, orderAmountMap }) {
       const comment = review?.comment?.trim();
       if (comment) return stars ? `${stars} — ${comment}` : comment;
       return stars || null;
-    }
-    case 'new_message': {
-      const body = p.message_id ? messageMap[p.message_id] : null;
-      return body || null;
     }
     case 'order_created':
       return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
@@ -120,7 +114,7 @@ function buildPreviewText(n, { reviewMap, messageMap, orderAmountMap }) {
  * A113-271: a cada notificación le arma el link "Ver ___" hacia el apartado
  * relacionado, según su `type`/`payload`. Antes solo `stock_alert` y
  * `favorite_price_drop` (las únicas con payload.product_id) tenían link --
- * el resto (pedidos, mensajes, reclamos, reseñas...) no llevaba a ningún
+ * el resto (pedidos, reclamos, reseñas...) no llevaba a ningún
  * lado. Devuelve `{ href, label }` o `null` si el tipo no tiene un destino
  * conocido (ej. avisos que ya se resuelven solos, como los de cadetería).
  */
@@ -147,9 +141,6 @@ function buildNotificationLink(n) {
     case 'order_shipped':
     case 'order_delivered':
       return p.order_id ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' } : null;
-
-    case 'new_message':
-      return p.conversation_id ? { href: `./mensajes.html?conversation_id=${encodeURIComponent(p.conversation_id)}`, label: 'Ver mensaje' } : null;
 
     case 'new_review':
       if (p.target_type === 'product' && p.target_id) return { href: `./producto.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver producto' };
@@ -372,9 +363,8 @@ export async function renderNotificationsSection(container, userId) {
 
   // El payload de cada notificación no siempre trae el texto para la vista
   // previa (ej. new_review sólo trae el review_id) -- se junta todo lo que
-  // falta y se pide en 3 consultas en lote como mucho, no una por fila.
+  // falta y se pide en 2 consultas en lote como mucho, no una por fila.
   const reviewIds = [...new Set(notifications.filter((n) => n.type === 'new_review' && n.payload?.review_id).map((n) => n.payload.review_id))];
-  const messageIds = [...new Set(notifications.filter((n) => n.type === 'new_message' && n.payload?.message_id).map((n) => n.payload.message_id))];
   const orderIds = [...new Set(
     notifications
       .filter((n) => ['order_paid', 'order_shipped', 'order_delivered', 'payment_rejected', 'revocation_requested'].includes(n.type) && n.payload?.order_id)
@@ -382,19 +372,16 @@ export async function renderNotificationsSection(container, userId) {
   )];
 
   const reviewMap = {};
-  const messageMap = {};
   const orderAmountMap = {};
 
-  const [reviewsRes, messagesRes, ordersRes] = await Promise.all([
+  const [reviewsRes, ordersRes] = await Promise.all([
     reviewIds.length ? supabase.from('reviews').select('id, comment, rating').in('id', reviewIds) : Promise.resolve({ data: [] }),
-    messageIds.length ? supabase.from('messages').select('id, body').in('id', messageIds) : Promise.resolve({ data: [] }),
     orderIds.length ? supabase.from('orders').select('id, total_price').in('id', orderIds) : Promise.resolve({ data: [] }),
   ]);
   (reviewsRes.data || []).forEach((r) => { reviewMap[r.id] = r; });
-  (messagesRes.data || []).forEach((m) => { messageMap[m.id] = m.body; });
   (ordersRes.data || []).forEach((o) => { orderAmountMap[o.id] = o.total_price; });
 
-  const maps = { reviewMap, messageMap, orderAmountMap };
+  const maps = { reviewMap, orderAmountMap };
 
   // onChange: mark/delete cambian el estado en el servidor -- se vuelve a
   // pedir todo en vez de mantener un segundo estado local sincronizado

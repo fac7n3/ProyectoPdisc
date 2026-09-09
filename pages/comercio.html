@@ -112,7 +112,9 @@
         margin: 0 auto 1.5rem auto;
       }
       .store-header__contact {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
         padding: 0.6rem 1.25rem;
         border: 2px solid var(--bl-primary);
         color: var(--bl-primary);
@@ -120,6 +122,29 @@
         border-radius: var(--bl-radius-md);
         font-weight: 600;
         text-decoration: none;
+      }
+      .store-header__social {
+        display: flex;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-top: 0.75rem;
+      }
+      .store-header__social-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        border: 1px solid var(--bl-border);
+        color: var(--bl-text-secondary, #4a5568);
+        background: var(--bl-surface);
+        text-decoration: none;
+        font-size: 1rem;
+      }
+      .store-header__social-link:hover {
+        border-color: var(--bl-primary);
+        color: var(--bl-primary);
       }
       /* Barra de datos (dirección, categoría, cantidad de productos, horarios) */
       .store-header__info-bar {

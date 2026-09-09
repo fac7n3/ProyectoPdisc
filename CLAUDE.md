@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-08. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-09. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-09** — Se eliminó el chat interno (`mensajes.html`,
+  tablas `conversations`/`messages`) a pedido del usuario. "Contactar al
+  vendedor" ahora abre teléfono (`tel:`) o WhatsApp (`wa.me` con mensaje
+  prellenado "Hola! Quería realizar una consulta ... te escribo desde
+  Baradero Local") directo, según lo que el vendedor elija en su panel
+  (`stores.contact_method`: teléfono/WhatsApp/ninguno). Se agregó también
+  una sección de redes sociales (Instagram/Facebook/TikTok/X/YouTube/sitio
+  web, cada una con su link + check "Mostrar") que aparece como íconos en la
+  página del comercio. Migraciones `81_remove_in_app_messaging.sql` y
+  `82_store_contact_and_social.sql`, ya aplicadas a producción.
 - **Resuelto 2026-09-08** — "Contratar" (botón del home) dejó de ser un
   placeholder "muy pronto" y pasó a ser el **directorio de profesionales y
   técnicos** de Baradero, informativo por WhatsApp/teléfono (sin catálogo ni

@@ -2127,3 +2127,46 @@ estilo de tarjeta que los comercios en `search.html`. Un avatar de prueba (URL e
 no cargó en la captura por el mismo bloqueo de red del sandbox hacia dominios externos que ya
 afecta a Font Awesome en este entorno -- las fotos reales son URLs de Supabase Storage, mismo
 origen ya permitido por la CSP del proyecto, así que sí van a cargar en producción.
+
+## Se eliminó el chat interno: "Contactar al vendedor" ahora es teléfono/WhatsApp directo (2026-09-09)
+
+A pedido del usuario se sacó por completo la mensajería dentro de la página (F7-02, `mensajes.html`
++ `js/mensajes.js` + tablas `conversations`/`messages`): antes del cambio se le mandó al usuario el
+detalle exacto de qué se iba a borrar (página, módulo JS, tablas con 10 conversaciones y 2 mensajes
+reales en producción, el trigger `notify_new_message()`, el tipo de notificación `new_message`
+completo en `notifications-utils.js`, la tarjeta "Preguntas sin responder" del resumen del vendedor,
+y el checkbox `accepts_contact`) y confirmó seguir adelante, incluida la pérdida de esos datos
+reales -- ninguna alternativa de "solo ocultar" quedó pendiente.
+
+**Reemplazo**: el botón "Contactar al vendedor" (en `producto.html` y `comercio.html`) ahora abre
+`tel:` con el número visible o `https://wa.me/` con un mensaje prellenado ("Hola! Quería realizar
+una consulta ... te escribo desde Baradero Local", con el nombre del producto si aplica), según lo
+que el vendedor elija en su panel. Lógica pura y testeada en `js/store-contact-utils.js`
+(`buildContactAction`/`buildWhatsappMessage`/`getVisibleSocialLinks`, `node
+js/store-contact-utils.test.mjs`), mismo patrón que `storage-utils.js`.
+
+**DB**: dos migraciones aplicadas a producción el mismo día --
+`81_remove_in_app_messaging.sql` (dropea `messages`/`conversations`/su trigger/función) y
+`82_store_contact_and_social.sql` (agrega `stores.contact_method` 'phone'|'whatsapp'|'none' -- con
+backfill desde `accepts_contact`, que se dropea -- + `stores.whatsapp` + 6 pares de columnas
+`social_<red>`/`social_<red>_show` para Instagram/Facebook/TikTok/X/YouTube/sitio web). El archivo
+viejo `37_conversations_messages.sql` y `58_store_accepts_contact.sql` se dejan como registro
+histórico con una nota arriba señalando qué migración los reemplazó -- no se borran ni se reescribe
+el historial de git.
+
+**Panel de vendedor** (`vender.html`, sección "Contacto y ubicación"): el checkbox
+"Permitir que los clientes me contacten" se reemplazó por 3 radio buttons (Teléfono/WhatsApp/
+Ninguno) + campo de número de WhatsApp, y se agregó una tarjeta nueva "Redes sociales" con
+link + check "Mostrar" por cada red (6 filas fijas en el HTML, no un loop -- mismo criterio que el
+resto de la página). `js/vender.js` valida el WhatsApp con `isValidPhone` solo si ese es el medio
+elegido.
+
+**Comercio** (`js/comercio.js`, `buildStoreHeader`): el link de contacto usa la misma
+`buildContactAction()`; debajo se agregó una fila de íconos circulares con las redes sociales
+activas (`getVisibleSocialLinks()`, CSS nuevo `.store-header__social`/`.store-header__social-link`
+inline en `comercio.html`, mismo lugar donde ya vivía `.store-header__contact`).
+
+**Limpieza**: se sacó `mensajes` de `vite.config.js` (ya no hay página que buildear) y todo el tipo
+`new_message` de `notifications-utils.js` (label, color, vista previa, link "Ver mensaje" y el
+batch-fetch a la tabla `messages`, que ya no existe -- de haber quedado, tiraba error al abrir la
+campana de notificaciones).

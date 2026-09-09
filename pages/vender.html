@@ -622,6 +622,8 @@
       .pf-field .form-label { margin-bottom: 0.4rem; }
       .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
       .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      .pf-radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; padding: 0.25rem 0; }
+      .pf-field .pf-check { margin-top: 0.5rem; font-size: 0.85rem; font-weight: 500; }
       .pf-actions { display: flex; justify-content: flex-end; }
       .pf-actions .form-btn { width: auto; padding: 0.75rem 2rem; font-size: 1rem; }
 
@@ -905,13 +907,69 @@
                       <label class="form-label" for="store-hours">Horarios de atención</label>
                       <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
                     </div>
-                    <!-- P1-12: el vendedor decide si se lo puede contactar (botón "Contactar
-                         al vendedor" en producto.js/comercio.js) -->
+                    <!-- El vendedor decide cómo lo contactan desde el botón "Contactar
+                         al vendedor" (producto.js/comercio.js): teléfono, WhatsApp o
+                         ninguno (stores.contact_method). -->
                     <div class="pf-field pf-field--full">
-                      <label class="pf-check">
-                        <input type="checkbox" id="store-accepts-contact" checked />
-                        Permitir que los clientes me contacten
-                      </label>
+                      <label class="form-label">¿Cómo querés que te contacten los clientes?</label>
+                      <div class="pf-radio-group">
+                        <label class="pf-check">
+                          <input type="radio" name="store-contact-method" value="phone" checked />
+                          Teléfono
+                        </label>
+                        <label class="pf-check">
+                          <input type="radio" name="store-contact-method" value="whatsapp" />
+                          WhatsApp
+                        </label>
+                        <label class="pf-check">
+                          <input type="radio" name="store-contact-method" value="none" />
+                          Ninguno
+                        </label>
+                      </div>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-whatsapp">Número de WhatsApp</label>
+                      <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" />
+                      <p class="pf-card__hint">Solo se usa si elegiste "WhatsApp" arriba.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Redes sociales: link + check "mostrar" por red -- se muestran como
+                     íconos en la página del comercio (comercio.js, buildStoreHeader). -->
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Redes sociales</h3>
+                  <p class="pf-card__hint">Se muestran como íconos en la página de tu comercio. Dejá el link vacío para no mostrar esa red.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-instagram">Instagram</label>
+                      <input type="text" id="store-social-instagram" class="form-input" placeholder="https://instagram.com/tu-comercio" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-instagram-show" checked /> Mostrar</label>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-facebook">Facebook</label>
+                      <input type="text" id="store-social-facebook" class="form-input" placeholder="https://facebook.com/tu-comercio" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-facebook-show" checked /> Mostrar</label>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-tiktok">TikTok</label>
+                      <input type="text" id="store-social-tiktok" class="form-input" placeholder="https://tiktok.com/@tu-comercio" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-tiktok-show" checked /> Mostrar</label>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-x">X (Twitter)</label>
+                      <input type="text" id="store-social-x" class="form-input" placeholder="https://x.com/tu-comercio" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-x-show" checked /> Mostrar</label>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-youtube">YouTube</label>
+                      <input type="text" id="store-social-youtube" class="form-input" placeholder="https://youtube.com/@tu-comercio" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-youtube-show" checked /> Mostrar</label>
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-social-website">Sitio web</label>
+                      <input type="text" id="store-social-website" class="form-input" placeholder="https://tu-comercio.com" />
+                      <label class="pf-check"><input type="checkbox" id="store-social-website-show" checked /> Mostrar</label>
                     </div>
                   </div>
                 </div>
