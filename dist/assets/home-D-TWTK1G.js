@@ -1,4 +1,4 @@
-import{c as e,s as t}from"./speed-insights-BYKzD-eO.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-BL5xH1ii.js";import{S as n,_ as r,d as i,f as a,g as o,n as s,r as c}from"./dropdown-DIyjm4nF.js";import{a as l,c as u,i as d,l as f,o as p,s as m}from"./nav-utils-BGV0OWvi.js";var h=[`/img/logo-ferreteria.webp`,`/img/logo-kiosco.webp`,`/img/logo-panaderia.webp`,`/img/logo-bebidas.webp`,`/img/logo-limpieza.webp`,`/img/logo-moda.webp`,`/img/logo-petshop.webp`,`/img/logo-tecno.webp`],g=`
+import{c as e,s as t}from"./speed-insights-BYKzD-eO.js";/* empty css             *//* empty css             *//* empty css                */import"./product-modal-BL5xH1ii.js";import{S as n,_ as r,d as i,f as a,g as o,n as s,r as c}from"./dropdown-DIyjm4nF.js";import{a as l,c as u,i as d,l as f,o as p,s as m}from"./nav-utils-DL2eB1RU.js";var h=[`/img/logo-ferreteria.webp`,`/img/logo-kiosco.webp`,`/img/logo-panaderia.webp`,`/img/logo-bebidas.webp`,`/img/logo-limpieza.webp`,`/img/logo-moda.webp`,`/img/logo-petshop.webp`,`/img/logo-tecno.webp`],g=`
   id,
   title,
   price,

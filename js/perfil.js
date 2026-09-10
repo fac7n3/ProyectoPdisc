@@ -13,6 +13,7 @@ import { isValidPhone } from "./validation-utils.js";
 import { houseNumberFrom, areaOf, suggestionLabel, dedupeByStreet } from "./address-suggest-utils.js";
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
+import { categoryLabel } from "./professional-categories.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -198,7 +199,7 @@ function setRolePanelLink(jwtRole) {
     // cambia profiles.role, así que este caso solo lo setea renderPanelLink()
     // tras consultar `professionals`, nunca setRolePanelLink() por su cuenta.
     if (icon) icon.className = 'fa-solid fa-screwdriver-wrench';
-    if (label) label.textContent = 'Mi panel de profesional';
+    if (label) label.textContent = 'Panel de profesional/técnico';
     rolePanelLink.href = './vender.html';
     rolePanelLink.hidden = false;
   }
@@ -2405,9 +2406,10 @@ async function renderAffiliationBadges(userId) {
   const nameRow = document.querySelector('.profile-header__name-row');
   if (!nameRow) return;
 
-  const [{ data: staffRows }, { data: ownedStores }] = await Promise.all([
+  const [{ data: staffRows }, { data: ownedStores }, { data: profRow }] = await Promise.all([
     supabase.from('store_staff').select('store_id, stores(name)').eq('user_id', userId),
     supabase.from('stores').select('id, name').eq('owner_id', userId),
+    supabase.from('professionals').select('category, is_active').eq('owner_id', userId).maybeSingle(),
   ]);
 
   const addBadge = (text, variant) => {
@@ -2424,6 +2426,15 @@ async function renderAffiliationBadges(userId) {
 
   if (ownedStores && ownedStores.length === 1) {
     addBadge(`Dueño de ${ownedStores[0].name}`, 'owner');
+  }
+
+  // Publicarse en "Contratar" no cambia profiles.role (sigue siendo
+  // 'cliente'), así que sin este tag no había ninguna marca visible en el
+  // perfil de que la cuenta es profesional/técnico -- mismo criterio que los
+  // tags de comercio de arriba.
+  if (profRow) {
+    const label = profRow.category ? `Profesional/Técnico · ${categoryLabel(profRow.category)}` : 'Profesional/Técnico';
+    addBadge(profRow.is_active ? label : `${label} (pausado)`, 'professional');
   }
 }
 

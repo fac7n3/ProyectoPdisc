@@ -128,7 +128,7 @@ async function checkSellerState(user) {
   // sin dashboard propio -- es informativo, no gestiona pedidos).
   const { data: prof } = await supabase
     .from('professionals')
-    .select('id, full_name, category, specialty, phone, whatsapp, photo_url, is_active')
+    .select('id, full_name, category, specialty, description, phone, whatsapp, photo_url, is_active')
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -211,8 +211,10 @@ async function showProfessionalPanel(prof) {
 
   currentProfForPromos = prof;
   renderProfessionalPanelSummary(prof);
+  fillProfessionalEditForm(prof);
   await loadProfessionalPromos(prof.id);
   setupProfessionalPromoUpload();
+  setupProfessionalEditForm();
 }
 
 function renderProfessionalPanelSummary(prof) {
@@ -235,6 +237,7 @@ function renderProfessionalPanelSummary(prof) {
   box.appendChild(photo);
 
   const info = document.createElement('div');
+  info.className = 'prof-panel-summary__info';
   const name = document.createElement('div');
   name.className = 'prof-panel-summary__name';
   name.textContent = prof.full_name;
@@ -249,11 +252,116 @@ function renderProfessionalPanelSummary(prof) {
   if (!prof.is_active) {
     const inactive = document.createElement('div');
     inactive.className = 'prof-panel-summary__inactive';
-    inactive.textContent = 'Tu publicación está desactivada. Escribinos por Soporte si querés reactivarla.';
+    inactive.textContent = 'Tu publicación está pausada: no aparece en "Contratar".';
     info.appendChild(inactive);
   }
 
   box.appendChild(info);
+
+  const pauseBtn = document.createElement('button');
+  pauseBtn.type = 'button';
+  pauseBtn.className = 'prof-panel-summary__pause-btn';
+  pauseBtn.textContent = prof.is_active ? 'Pausar publicación' : 'Reactivar publicación';
+  pauseBtn.addEventListener('click', () => toggleProfessionalActive(prof));
+  box.appendChild(pauseBtn);
+}
+
+/** Pausar/reactivar la propia publicación -- mismo patrón que ya usan
+ *  productos y cupones (togglear `is_active`), pero sobre `professionals`. */
+async function toggleProfessionalActive(prof) {
+  const nextActive = !prof.is_active;
+  const { error } = await supabase
+    .from('professionals')
+    .update({ is_active: nextActive })
+    .eq('id', prof.id);
+
+  if (error) {
+    console.error('Error al pausar/reactivar la publicación:', error);
+    showToast('No se pudo actualizar el estado de tu publicación.', 'error');
+    return;
+  }
+
+  prof.is_active = nextActive;
+  currentProfForPromos = prof;
+  showToast(nextActive ? 'Publicación reactivada.' : 'Publicación pausada.', 'success');
+  renderProfessionalPanelSummary(prof);
+}
+
+let profEditFormWired = false;
+
+/** Carga los valores actuales en el form de edición (specialty/description/phone/whatsapp). */
+function fillProfessionalEditForm(prof) {
+  const specialtyInput = document.getElementById('prof-edit-specialty');
+  const descriptionInput = document.getElementById('prof-edit-description');
+  const phoneInput = document.getElementById('prof-edit-phone');
+  const whatsappInput = document.getElementById('prof-edit-whatsapp');
+  if (specialtyInput) specialtyInput.value = prof.specialty || '';
+  if (descriptionInput) descriptionInput.value = prof.description || '';
+  if (phoneInput) phoneInput.value = prof.phone || '';
+  if (whatsappInput) whatsappInput.value = prof.whatsapp || '';
+}
+
+/** Guarda los cambios de specialty/description/phone/whatsapp -- antes, cambiar
+ *  cualquiera de estos datos requería escribir a Soporte (RLS de `professionals`
+ *  solo dejaba escribir al admin hasta la migración 86_professionals_update_own.sql). */
+function setupProfessionalEditForm() {
+  const form = document.getElementById('professional-edit-form');
+  if (!form || profEditFormWired) return;
+  profEditFormWired = true;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentProfForPromos) return;
+
+    const specialtyValue = document.getElementById('prof-edit-specialty').value.trim();
+    const descriptionValue = document.getElementById('prof-edit-description').value.trim();
+    const phoneValue = document.getElementById('prof-edit-phone').value.trim();
+    const whatsappValue = document.getElementById('prof-edit-whatsapp').value.trim();
+
+    if (!isValidShopName(specialtyValue)) {
+      showToast('Contá tu oficio o especialidad (entre 3 y 100 caracteres).', 'error');
+      return;
+    }
+    if (!isValidPhone(phoneValue)) {
+      showToast('El teléfono ingresado no es válido.', 'error');
+      return;
+    }
+    if (whatsappValue && !isValidPhone(whatsappValue)) {
+      showToast('El WhatsApp ingresado no es válido.', 'error');
+      return;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setLoading(submitBtn, true, 'Guardar cambios');
+
+    const { error } = await supabase
+      .from('professionals')
+      .update({
+        specialty: specialtyValue,
+        description: descriptionValue || null,
+        phone: phoneValue,
+        whatsapp: whatsappValue || null,
+      })
+      .eq('id', currentProfForPromos.id);
+
+    setLoading(submitBtn, false, 'Guardar cambios');
+
+    if (error) {
+      console.error('Error al guardar los cambios de la publicación:', error);
+      showToast('No se pudieron guardar los cambios.', 'error');
+      return;
+    }
+
+    currentProfForPromos = {
+      ...currentProfForPromos,
+      specialty: specialtyValue,
+      description: descriptionValue || null,
+      phone: phoneValue,
+      whatsapp: whatsappValue || null,
+    };
+    renderProfessionalPanelSummary(currentProfForPromos);
+    showToast('Cambios guardados.', 'success');
+  });
 }
 
 async function loadProfessionalPromos(professionalId) {

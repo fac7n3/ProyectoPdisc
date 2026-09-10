@@ -100,6 +100,7 @@ body {
    cuenta -- misma pill, colores propios para distinguirlos del rol. */
 .role-badge--staff { background: #ede9fe; color: #6d28d9; }
 .role-badge--owner { background: #dcfce7; color: #15803d; }
+.role-badge--professional { background: #e0f2fe; color: #0369a1; }
 
 @media (max-width: 600px) {
   .profile-header {
