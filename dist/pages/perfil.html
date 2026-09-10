@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/perfil-B0y_4jVc.js"></script>
+    <script type="module" crossorigin src="/assets/perfil-CDoRkHYw.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DIyjm4nF.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">
@@ -224,11 +224,15 @@
                   <span class="datos-row__label">Tipo de cuenta</span>
                   <span class="datos-row__value" id="card-role">Cargando…</span>
                 </div>
-                <!-- Solo para admin/moderador. Era un <select> cuya única
-                     opción distinta navegaba a admin.html: un link dice lo
-                     mismo sin disfrazarse de campo de formulario. -->
+                <!-- Acceso directo al panel que le corresponde a la cuenta
+                     (admin/moderador -> admin.html; vendedor o empleada de un
+                     comercio, o publicada en "Contratar" -> vender.html).
+                     Era un <select> cuya única opción distinta navegaba a
+                     admin.html: un link dice lo mismo sin disfrazarse de
+                     campo de formulario -- ver renderPanelLink() en
+                     js/perfil.js. -->
                 <a href="./admin.html" class="datos-btn" id="role-panel-link" hidden>
-                  <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                  <i class="fa-solid fa-shield-halved" aria-hidden="true" id="role-panel-icon"></i>
                   <span id="role-panel-label">Panel</span>
                 </a>
               </div>
