@@ -231,19 +231,30 @@ async function runSearch({ append = false } = {}) {
     // hay salto). En cambios de filtro posteriores ya no quedan skeletons →
     // ahí sí mostramos el spinner. A113-289: los filtros se aplican solos (sin
     // botón "Aplicar filtros"), así que este es el único aviso de que la
-    // búsqueda está en curso -- texto distinto si ya había resultados antes
-    // (fue un cambio de filtro) que si es la carga inicial.
+    // búsqueda está en curso.
     if (!grid.querySelector('.skeleton-card')) {
-      const isFilterUpdate = grid.querySelector('.product-card') !== null;
       grid.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'bl-loading-block';
+      loading.setAttribute('role', 'status');
+      loading.setAttribute('aria-live', 'polite');
       const spinner = document.createElement('div');
       spinner.className = 'bl-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < 6; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'bl-spinner__dot';
+        spinner.appendChild(dot);
+      }
       loading.appendChild(spinner);
-      const loadingText = document.createElement('span');
-      loadingText.textContent = isFilterUpdate ? 'Actualizando resultados...' : 'Buscando productos...';
-      loading.appendChild(loadingText);
+      const title = document.createElement('p');
+      title.className = 'bl-loading-block__title';
+      title.textContent = 'Cargando';
+      loading.appendChild(title);
+      const subtitle = document.createElement('p');
+      subtitle.className = 'bl-loading-block__subtitle';
+      subtitle.textContent = 'Esto puede tomar unos segundos…';
+      loading.appendChild(subtitle);
       grid.appendChild(loading);
     }
   } else if (loadMoreBtn) {

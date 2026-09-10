@@ -454,13 +454,62 @@ input[type="checkbox"] {
   transition: opacity 0.3s ease;
 }
 
+/* Spinner de 6 puntos girando -- gemelo de .bl-spinner (Assets/styles/home.css)
+   con las variables --auth-* para las páginas que no cargan home.css
+   (login/register). */
 .auth-loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 3px solid var(--auth-border);
-  border-top-color: var(--auth-primary);
+  --uib-size: 44px;
+  --uib-color: var(--auth-primary);
+  --uib-speed: 1.5s;
+  --dot-size: calc(var(--uib-size) * 0.17);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+  animation: auth-spinner-smooth-rotate calc(var(--uib-speed) * 1.8) linear infinite;
+}
+
+.auth-loading-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  animation: auth-spinner-rotate var(--uib-speed) ease-in-out infinite;
+}
+
+.auth-loading-spinner__dot::before {
+  content: '';
+  height: var(--dot-size);
+  width: var(--dot-size);
   border-radius: 50%;
-  animation: auth-spin 0.8s linear infinite;
+  background-color: var(--uib-color);
+  transition: background-color 0.3s ease;
+}
+
+.auth-loading-spinner__dot:nth-child(2),
+.auth-loading-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.835 * 0.5); }
+.auth-loading-spinner__dot:nth-child(3),
+.auth-loading-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.668 * 0.5); }
+.auth-loading-spinner__dot:nth-child(4),
+.auth-loading-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.501 * 0.5); }
+.auth-loading-spinner__dot:nth-child(5),
+.auth-loading-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.334 * 0.5); }
+.auth-loading-spinner__dot:nth-child(6),
+.auth-loading-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.167 * 0.5); }
+
+@keyframes auth-spinner-rotate {
+  0% { transform: rotate(0deg); }
+  65%, 100% { transform: rotate(360deg); }
+}
+
+@keyframes auth-spinner-smooth-rotate {
+  to { transform: rotate(360deg); }
 }
 
 .auth-loading-text {
@@ -470,8 +519,12 @@ input[type="checkbox"] {
   letter-spacing: 0.02em;
 }
 
-@keyframes auth-spin {
-  to { transform: rotate(360deg); }
+.auth-loading-subtext {
+  margin-top: -0.75rem;
+  color: var(--auth-text-light);
+  opacity: 0.75;
+  font-size: 0.8rem;
+  font-weight: 400;
 }
 
 /* ---- Checkbox de Términos y Condiciones ---- */

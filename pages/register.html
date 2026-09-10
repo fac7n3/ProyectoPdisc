@@ -20,9 +20,17 @@
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
 
     <!-- Loading screen -->
-    <div id="loading-screen" class="auth-loading-screen">
-      <div class="auth-loading-spinner"></div>
-      <span class="auth-loading-text">Verificando sesión...</span>
+    <div id="loading-screen" class="auth-loading-screen" role="status" aria-live="polite">
+      <div class="auth-loading-spinner" aria-hidden="true">
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+      </div>
+      <span class="auth-loading-text">Cargando</span>
+      <span class="auth-loading-subtext">Esto puede tomar unos segundos…</span>
     </div>
 
     <!-- Contenido principal -->

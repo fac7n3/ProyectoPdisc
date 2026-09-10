@@ -170,9 +170,17 @@ function buildLoadingHTML() {
           <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
-      <div class="pm-loading">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Cargando producto...</p>
+      <div class="pm-loading" role="status" aria-live="polite">
+        <div class="bl-spinner" aria-hidden="true">
+          <div class="bl-spinner__dot"></div>
+          <div class="bl-spinner__dot"></div>
+          <div class="bl-spinner__dot"></div>
+          <div class="bl-spinner__dot"></div>
+          <div class="bl-spinner__dot"></div>
+          <div class="bl-spinner__dot"></div>
+        </div>
+        <p class="bl-loading-block__title">Cargando</p>
+        <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
       </div>
     </div>
   `;

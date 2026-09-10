@@ -322,17 +322,61 @@ ul, ol {
   min-height: 2.25rem;
 }
 
-/* ── Spinner de carga reutilizable (mismo lenguaje visual que "Verificando sesión") ── */
+/* ── Spinner de carga reutilizable (6 puntos girando, mismo componente en
+   toda la página -- auth.css tiene su gemelo con las variables --auth-*
+   para las pantallas de login/register que no cargan este archivo) ── */
 .bl-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--bl-border);
-  border-top-color: var(--bl-primary);
-  border-radius: 50%;
-  animation: bl-spin 0.8s linear infinite;
+  --uib-size: 40px;
+  --uib-color: var(--bl-primary);
+  --uib-speed: 1.5s;
+  --dot-size: calc(var(--uib-size) * 0.17);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--uib-size);
+  width: var(--uib-size);
+  animation: bl-spinner-smooth-rotate calc(var(--uib-speed) * 1.8) linear infinite;
 }
 
-@keyframes bl-spin {
+.bl-spinner__dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  animation: bl-spinner-rotate var(--uib-speed) ease-in-out infinite;
+}
+
+.bl-spinner__dot::before {
+  content: '';
+  height: var(--dot-size);
+  width: var(--dot-size);
+  border-radius: 50%;
+  background-color: var(--uib-color);
+  transition: background-color 0.3s ease;
+}
+
+.bl-spinner__dot:nth-child(2),
+.bl-spinner__dot:nth-child(2)::before { animation-delay: calc(var(--uib-speed) * -0.835 * 0.5); }
+.bl-spinner__dot:nth-child(3),
+.bl-spinner__dot:nth-child(3)::before { animation-delay: calc(var(--uib-speed) * -0.668 * 0.5); }
+.bl-spinner__dot:nth-child(4),
+.bl-spinner__dot:nth-child(4)::before { animation-delay: calc(var(--uib-speed) * -0.501 * 0.5); }
+.bl-spinner__dot:nth-child(5),
+.bl-spinner__dot:nth-child(5)::before { animation-delay: calc(var(--uib-speed) * -0.334 * 0.5); }
+.bl-spinner__dot:nth-child(6),
+.bl-spinner__dot:nth-child(6)::before { animation-delay: calc(var(--uib-speed) * -0.167 * 0.5); }
+
+@keyframes bl-spinner-rotate {
+  0% { transform: rotate(0deg); }
+  65%, 100% { transform: rotate(360deg); }
+}
+
+@keyframes bl-spinner-smooth-rotate {
   to { transform: rotate(360deg); }
 }
 
@@ -345,6 +389,19 @@ ul, ol {
   padding: 3rem 1rem;
   color: var(--bl-text-muted);
   font-size: 0.9rem;
+  text-align: center;
+}
+
+.bl-loading-block__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--bl-text-secondary);
+}
+
+.bl-loading-block__subtitle {
+  margin: 0.15rem 0 0;
+  font-weight: 400;
+  font-size: 0.825rem;
 }
 
 .notif-dropdown {
