@@ -213,11 +213,15 @@
                   <span class="datos-row__label">Tipo de cuenta</span>
                   <span class="datos-row__value" id="card-role">Cargando…</span>
                 </div>
-                <!-- Solo para admin/moderador. Era un <select> cuya única
-                     opción distinta navegaba a admin.html: un link dice lo
-                     mismo sin disfrazarse de campo de formulario. -->
+                <!-- Acceso directo al panel que le corresponde a la cuenta
+                     (admin/moderador -> admin.html; vendedor o empleada de un
+                     comercio, o publicada en "Contratar" -> vender.html).
+                     Era un <select> cuya única opción distinta navegaba a
+                     admin.html: un link dice lo mismo sin disfrazarse de
+                     campo de formulario -- ver renderPanelLink() en
+                     js/perfil.js. -->
                 <a href="./admin.html" class="datos-btn" id="role-panel-link" hidden>
-                  <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                  <i class="fa-solid fa-shield-halved" aria-hidden="true" id="role-panel-icon"></i>
                   <span id="role-panel-label">Panel</span>
                 </a>
               </div>

@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-10** — Acceso al panel desde "Mi perfil" ampliado más
+  allá de admin/moderador: la fila "Tipo de cuenta" ahora también muestra el
+  link para vendedor/empleada de un comercio ("Panel de vendedor" ->
+  vender.html) y para quien está publicado en "Contratar" ("Mi panel de
+  profesional" -> vender.html). Ese mini panel de profesional es nuevo: antes
+  solo mostraba un texto fijo ("escribinos por Soporte para cambiar algo");
+  ahora puede cargar/borrar sus propias fotos promocionales (tabla nueva
+  `professional_promos` + bucket `professional-promos`, migración
+  `85_professional_promos.sql`, ya aplicada a producción), que se muestran en
+  su tarjeta de contratar.html al desplegarla (debajo de Llamar/WhatsApp),
+  cada una abrible en un lightbox simple (click para abrir, X/click
+  afuera/Esc para cerrar).
 - **Resuelto 2026-09-10** — "Mi perfil" muestra, junto al badge de rol
   existente, un tag "Empleado de \<tienda\>" por cada comercio del que la
   cuenta es `store_staff`, y "Dueño de \<tienda\>" solo si es dueña de una

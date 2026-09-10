@@ -2271,4 +2271,64 @@ figurás en Contratar" / rechazo), tono (`success`/`danger`, igual que seller/de
 `professional_requests`, no el id de la fila nueva en `professionals`, así que no se puede linkear
 al perfil público puntual). El centro de notificaciones y los toasts (`js/toast-utils.js`) heredan
 esto automático vía `buildNotificationTitle`/`buildNotificationLink`, sin tocar esos archivos.
-mostrar tag de dueño con 1 tienda" resuelve el caso solo, sin hardcodear ningún user_id.
+
+## 2026-09-10 — Acceso al panel desde "Mi perfil" (vendedor/profesional) + mini panel de fotos promocionales
+
+El usuario pidió que, si la cuenta es vendedora, pueda entrar a su panel desde "Mi perfil" por un
+"pequeño apartado de administración" -- y que los profesionales/técnicos publicados en "Contratar"
+tengan algo similar, con sus propios datos, para cargar fotos/promos. Antes de construir nada nuevo
+se encontró que ese "pequeño apartado" **ya existía**: la fila "Tipo de cuenta" en Información de tu
+perfil (`#role-panel-link`, `renderQuickProfile()`/`js/perfil.js`) ya mostraba un link "Panel" para
+admin/moderador -> admin.html. Se amplió ese mismo mecanismo en vez de agregar una tarjeta nueva al
+hub (primer intento descartado): más consistente con lo que el usuario ya conocía como "el pequeño
+apartado de administración".
+
+**`js/perfil.js`**: `setRolePanelLink(jwtRole)` (antes era un bloque inline dentro de
+`renderQuickProfile`) ahora también reconoce `'vendedor'` (-> vender.html, ícono `fa-shop`) y un
+pseudo-rol interno `'profesional'` (-> vender.html, ícono `fa-screwdriver-wrench`) que no existe en
+el JWT -- lo setea `renderPanelLink(user)`, una función nueva y async llamada desde
+`renderFullProfile()` (después de `renderAffiliationBadges`), que solo corre si `setRolePanelLink()`
+todavía no mostró el link (chequea `rolePanelLink.hidden`) y resuelve los dos casos que sí necesitan
+una consulta a la DB: empleada de un comercio (`store_staff`, sin rol propio) y publicada en
+`professionals` (publicarse en "Contratar" tampoco cambia `profiles.role`). Todos los casos apuntan
+a `vender.html`, que ya sabe distinguirlos vía `checkSellerState()` -- no hizo falta una página
+nueva.
+
+**Mini panel de profesional** (`js/vender.js`, `pages/vender.html`): hasta ahora, un profesional ya
+publicado (`professionals`, fila con `is_active`) que entraba a vender.html solo veía un texto fijo
+("Ya estás publicado... escribinos por Soporte para cambiar algo") -- `showProfessionalStatus()`
+reusada para ese caso. Se reemplazó por `showProfessionalPanel(prof)`: un resumen de sus datos
+(foto, nombre, categoría + especialidad, aviso si está desactivado) más una grilla de **fotos
+promocionales** que puede cargar/borrar él mismo (hasta 6, 2 MB c/u) -- mismo patrón de subida que
+la foto de perfil del alta (`professional-photos`), pero a una tabla/bucket nuevos:
+
+- Migración `85_professional_promos.sql` (ya aplicada a producción): tabla `professional_promos`
+  (`professional_id`, `image_url`) -- aparte de `professionals.photo_url` porque acá son varias por
+  profesional, mismo criterio que `product_images` para productos. RLS: lectura pública solo si el
+  profesional está activo (igual que `professionals_select_public`), el dueño (`owner_id =
+  auth.uid()` vía subconsulta a `professionals`) gestiona las suyas, admin con acceso total. Bucket
+  `professional-promos`, público, carpeta `{uid}/` -- mismo patrón que `professional-photos`
+  (78_professionals_extras.sql).
+- Borrado prolijo: `removeProfessionalPromo()` borra la fila y después llama
+  `removeStoredObjects()` (`js/storage-utils.js`, ya existente) para no dejar el archivo huérfano en
+  el bucket -- mismo criterio que fotos de producto/avatar (ver entrada 2026-08-28 de fotos
+  huérfanas).
+
+**`contratar.html`/`js/contratar.js`**: la tarjeta de cada profesional, al desplegarse, ahora
+muestra esas fotos debajo de Llamar/WhatsApp (`pro._promos`, cargadas en una sola consulta en lote
+para toda la lista -- mismo patrón que las reseñas agregadas de `loadProfessionals()`, no una
+consulta por tarjeta). Cada foto abre un lightbox simple y nuevo (`ct-lightbox`, un solo overlay
+reutilizado para toda la página, no uno por tarjeta): click en la miniatura para abrir, click en la
+X, click afuera de la imagen o Esc para cerrar. No se reusó el gallery/zoom de `product-modal.js`
+(pensado para el carrusel de fotos de un producto, con miniaturas y flechas) porque acá alcanza con
+abrir/cerrar una imagen suelta -- un componente nuevo y chico salía más simple que adaptar ese.
+
+**Probado**: build de Vite limpio y sin errores de sintaxis en los tres archivos JS tocados
+(`node --check`). La carga real de datos (professionals/professional_promos vía Supabase) no se pudo
+probar en un navegador en esta sesión -- el contenedor de la sesión no tiene salida a internet desde
+el proceso del navegador (solo las herramientas del agente pasan por el proxy configurado), así que
+`guardPage()` se queda esperando la verificación de sesión indefinidamente y las consultas públicas
+de contratar.html fallan a nivel de red. Se validó igual que la página carga sin errores de JS
+(`pageerror`/`console.error`) más allá de los fallos de red esperables, y que el layout no se rompe.
+Falta una pasada manual (o desde una sesión con acceso a internet real) para confirmar el flujo
+completo: subir una foto, verla en contratar.html, abrir/cerrar el lightbox.

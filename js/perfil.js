@@ -168,15 +168,38 @@ function renderQuickProfile(user) {
   }
 
   // Acceso al panel elevado. El rol real que evalúa la RLS/el gate de
-  // admin.html vive en app_metadata (JWT), no en profiles.role -- mismo campo
-  // que arregló guardPage en F12-17. El link solo aparece si el JWT realmente
-  // trae el rol: no otorga ningún permiso, solo lleva a la página.
-  const jwtRole = user.app_metadata?.role;
-  if (rolePanelLink && (jwtRole === 'admin' || jwtRole === 'moderador')) {
-    const label = document.getElementById('role-panel-label');
-    if (label) {
-      label.textContent = jwtRole === 'admin' ? 'Panel de administración' : 'Panel de moderación';
-    }
+  // admin.html/vender.html vive en app_metadata (JWT), no en profiles.role --
+  // mismo campo que arregló guardPage en F12-17. El link solo aparece si el
+  // JWT realmente trae el rol: no otorga ningún permiso, solo lleva a la
+  // página. admin/moderador/vendedor se resuelven acá mismo, sin ida y vuelta
+  // a la DB (instantáneo); empleada de un comercio o profesional publicado
+  // (sin rol propio) necesitan una consulta y se resuelven después, en
+  // renderPanelLink() -- ver su llamada en renderFullProfile.
+  setRolePanelLink(user.app_metadata?.role);
+}
+
+function setRolePanelLink(jwtRole) {
+  if (!rolePanelLink) return;
+  const icon = document.getElementById('role-panel-icon');
+  const label = document.getElementById('role-panel-label');
+
+  if (jwtRole === 'admin' || jwtRole === 'moderador') {
+    if (icon) icon.className = 'fa-solid fa-shield-halved';
+    if (label) label.textContent = jwtRole === 'admin' ? 'Panel de administración' : 'Panel de moderación';
+    rolePanelLink.href = './admin.html';
+    rolePanelLink.hidden = false;
+  } else if (jwtRole === 'vendedor') {
+    if (icon) icon.className = 'fa-solid fa-shop';
+    if (label) label.textContent = 'Panel de vendedor';
+    rolePanelLink.href = './vender.html';
+    rolePanelLink.hidden = false;
+  } else if (jwtRole === 'profesional') {
+    // Pseudo-rol interno (no existe en el JWT): publicarse en "Contratar" no
+    // cambia profiles.role, así que este caso solo lo setea renderPanelLink()
+    // tras consultar `professionals`, nunca setRolePanelLink() por su cuenta.
+    if (icon) icon.className = 'fa-solid fa-screwdriver-wrench';
+    if (label) label.textContent = 'Mi panel de profesional';
+    rolePanelLink.href = './vender.html';
     rolePanelLink.hidden = false;
   }
 }
@@ -2404,6 +2427,37 @@ async function renderAffiliationBadges(userId) {
   }
 }
 
+/**
+ * Completa el link de panel para los dos casos que necesitan una consulta a
+ * la DB (a diferencia de admin/moderador/vendedor, que setRolePanelLink() ya
+ * resuelve al instante desde el JWT): empleada de un comercio (store_staff,
+ * sin rol propio) y profesional publicado en "Contratar" (tabla
+ * `professionals`, publicarse tampoco cambia el rol). Si setRolePanelLink()
+ * ya lo mostró (admin/moderador/vendedor), no hay nada que hacer acá.
+ */
+async function renderPanelLink(user) {
+  if (rolePanelLink && !rolePanelLink.hidden) return;
+
+  const { data: staffRows } = await supabase
+    .from('store_staff')
+    .select('store_id')
+    .eq('user_id', user.id)
+    .limit(1);
+  if (staffRows && staffRows.length > 0) {
+    setRolePanelLink('vendedor');
+    return;
+  }
+
+  const { data: prof } = await supabase
+    .from('professionals')
+    .select('id')
+    .eq('owner_id', user.id)
+    .maybeSingle();
+  if (prof) {
+    setRolePanelLink('profesional');
+  }
+}
+
 async function renderFullProfile(user) {
   currentUserId = user.id;
   try {
@@ -2471,6 +2525,7 @@ async function renderFullProfile(user) {
   initNotificationsBell();
   initAccountMenu();
   renderAffiliationBadges(user.id);
+  renderPanelLink(user);
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer.
   const notifCardBadge = document.getElementById("notif-card-badge");

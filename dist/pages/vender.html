@@ -150,6 +150,42 @@
       .prof-photo-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
       .prof-photo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
 
+      /* Mini panel del profesional ya publicado ("Mi panel de profesional"):
+         resumen de sus datos + fotos promocionales, que se muestran en su
+         tarjeta de contratar.html al desplegarla. */
+      .prof-panel-summary {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 1.25rem; margin-bottom: 1.75rem;
+        background: var(--bl-surface-alt); border-radius: var(--bl-radius-md);
+        border: 1px solid var(--bl-border);
+      }
+      .prof-panel-summary__photo {
+        flex-shrink: 0; width: 3.5rem; height: 3.5rem; border-radius: 50%;
+        background: var(--bl-surface); border: 1px solid var(--bl-border);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; color: var(--bl-text-muted); font-size: 1.2rem;
+      }
+      .prof-panel-summary__photo img { width: 100%; height: 100%; object-fit: cover; }
+      .prof-panel-summary__name { font-weight: 700; color: var(--bl-text); }
+      .prof-panel-summary__detail { color: var(--bl-text-secondary); font-size: 0.875rem; margin-top: 0.15rem; }
+      .prof-panel-summary__inactive { color: #b91c1c; font-weight: 600; }
+
+      .prof-promos-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 0.75rem; margin-bottom: 1rem;
+      }
+      .prof-promo-item {
+        position: relative; aspect-ratio: 1; border-radius: var(--bl-radius-md);
+        overflow: hidden; border: 1px solid var(--bl-border); background: var(--bl-surface-alt);
+      }
+      .prof-promo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .prof-promo-item__remove {
+        position: absolute; top: 0.25rem; right: 0.25rem; width: 1.5rem; height: 1.5rem;
+        border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.6); color: #fff;
+        cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+      }
+      .prof-promo-item__remove:hover { background: rgba(0, 0, 0, 0.8); }
+
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -645,7 +681,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Cy894Jnt.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DQa8tTcm.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DIyjm4nF.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -803,6 +839,28 @@
                 <h2 id="professional-status-title">Tu solicitud</h2>
               </div>
               <div id="professional-status-body" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); text-align: center;"></div>
+            </div>
+
+            <!-- Mini panel de un profesional ya publicado: resumen de sus
+                 datos (no editable acá, para eso está Soporte) + fotos
+                 promocionales, que sí puede cargar/borrar él mismo. Se
+                 muestran en su tarjeta de contratar.html al desplegarla. -->
+            <div id="professional-panel-view" style="display: none;">
+              <div class="vender-header">
+                <h2>Tu publicación en Contratar</h2>
+                <p>Cargá fotos promocionales: se muestran en tu tarjeta al desplegarla, debajo de Llamar/WhatsApp.</p>
+              </div>
+
+              <div class="prof-panel-summary" id="professional-panel-summary"></div>
+
+              <div class="form-group">
+                <label class="form-label">Fotos promocionales</label>
+                <small style="color: var(--bl-text-muted); display: block; margin-bottom: 0.5rem;">
+                  Hasta 6 fotos, 2 MB cada una.
+                </small>
+                <div class="prof-promos-grid" id="professional-promos-grid"></div>
+                <input type="file" id="professional-promo-input" accept="image/*" />
+              </div>
             </div>
         </div>
 
