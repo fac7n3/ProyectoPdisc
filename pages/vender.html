@@ -984,11 +984,11 @@
                   <div class="pf-grid">
                     <div class="pf-field">
                       <label class="form-label" for="store-delivery-fee">Costo de envío ($)</label>
-                      <input type="number" id="store-delivery-fee" class="form-input" min="0" step="1" required />
+                      <input type="text" id="store-delivery-fee" class="form-input" inputmode="numeric" autocomplete="off" required />
                     </div>
                     <div class="pf-field">
                       <label class="form-label" for="store-free-shipping-threshold">Envío gratis a partir de ($)</label>
-                      <input type="number" id="store-free-shipping-threshold" class="form-input" min="0" step="1" required />
+                      <input type="text" id="store-free-shipping-threshold" class="form-input" inputmode="numeric" autocomplete="off" required />
                     </div>
                   </div>
                 </div>
@@ -1282,7 +1282,7 @@
                         <label class="form-label" for="prod-price">Precio</label>
                         <div class="pubform__money">
                           <span class="pubform__money-sign" aria-hidden="true">$</span>
-                          <input type="number" id="prod-price" class="form-input" min="0" step="1" inputmode="numeric" required />
+                          <input type="text" id="prod-price" class="form-input" inputmode="numeric" autocomplete="off" required />
                         </div>
                       </div>
                       <div class="form-group">
@@ -1297,7 +1297,7 @@
                         </label>
                         <div class="pubform__money">
                           <span class="pubform__money-sign" aria-hidden="true">$</span>
-                          <input type="number" id="prod-compare-price" class="form-input" min="0" step="1" inputmode="numeric" placeholder="Vacío si no está en oferta" />
+                          <input type="text" id="prod-compare-price" class="form-input" inputmode="numeric" autocomplete="off" placeholder="Vacío si no está en oferta" />
                         </div>
                         <p class="pubform__hint">Se muestra tachado al lado del precio actual.</p>
                       </div>
@@ -1321,7 +1321,7 @@
                       </div>
                       <div class="form-group">
                         <label class="form-label" for="variant-price">Precio</label>
-                        <input type="number" id="variant-price" class="form-input" min="0" step="1" inputmode="numeric" />
+                        <input type="text" id="variant-price" class="form-input" inputmode="numeric" autocomplete="off" />
                       </div>
                       <div class="form-group">
                         <label class="form-label" for="variant-stock">Stock</label>

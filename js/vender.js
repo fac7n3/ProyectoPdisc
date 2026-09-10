@@ -1,5 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
-import { formatPrice, buildPriceRow } from './cart-utils.js';
+import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
@@ -10,6 +10,26 @@ import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
+
+/** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
+function formatMoneyValue(n) {
+  const digits = String(n ?? '').replace(/[^0-9]/g, '');
+  return digits ? Number(digits).toLocaleString('es-AR') : '';
+}
+
+/**
+ * Pone el separador de miles en un input de precio mientras el vendedor
+ * escribe (ej. "1500" -> "1.500"), para que no lo tenga que tipear él mismo.
+ * El input queda como type="text": el valor real (sin puntos) se saca con
+ * parsePrice() al leerlo, nunca con Number()/parseInt() directo sobre
+ * input.value (interpretaría el "." como separador decimal).
+ */
+function attachMoneyFormatting(input) {
+  if (!input) return;
+  input.addEventListener('input', () => {
+    input.value = formatMoneyValue(input.value);
+  });
+}
 
 // --- Verificar si es vendedor y mostrar la vista correcta ---
 async function checkSellerState(user) {
@@ -1160,8 +1180,8 @@ function fillStoreProfileForm(store) {
   if (hoursInput) hoursInput.value = typeof store.hours === 'string' ? store.hours : '';
   if (descInput) descInput.value = store.description || '';
   // F12-04: envío configurable por comercio (antes era una constante global 350/5000).
-  if (deliveryFeeInput) deliveryFeeInput.value = store.delivery_fee ?? 350;
-  if (freeShippingInput) freeShippingInput.value = store.free_shipping_threshold ?? 5000;
+  if (deliveryFeeInput) deliveryFeeInput.value = formatMoneyValue(store.delivery_fee ?? 350);
+  if (freeShippingInput) freeShippingInput.value = formatMoneyValue(store.free_shipping_threshold ?? 5000);
 
   // Cómo lo contactan los clientes: teléfono / WhatsApp / ninguno
   // (reemplaza al viejo checkbox accepts_contact, ver stores.contact_method).
@@ -1198,14 +1218,17 @@ function setupStoreProfileForm() {
   const form = document.getElementById('store-profile-form');
   if (!form) return;
 
+  attachMoneyFormatting(document.getElementById('store-delivery-fee'));
+  attachMoneyFormatting(document.getElementById('store-free-shipping-threshold'));
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = form.querySelector('button[type="submit"]');
     setLoading(submitBtn, true, 'Guardar perfil');
 
     const hoursValue = document.getElementById('store-hours').value.trim();
-    const deliveryFeeValue = parseInt(document.getElementById('store-delivery-fee').value, 10);
-    const freeShippingValue = parseInt(document.getElementById('store-free-shipping-threshold').value, 10);
+    const deliveryFeeValue = parsePrice(document.getElementById('store-delivery-fee').value);
+    const freeShippingValue = parsePrice(document.getElementById('store-free-shipping-threshold').value);
 
     if (!Number.isFinite(deliveryFeeValue) || deliveryFeeValue < 0 || !Number.isFinite(freeShippingValue) || freeShippingValue < 0) {
       showToast('El costo de envío y el umbral de envío gratis tienen que ser números válidos (0 o más).', 'error');
@@ -2718,9 +2741,9 @@ async function openEditProductForm(productId) {
   editingProductId = productId;
 
   document.getElementById('prod-name').value = product.title || '';
-  document.getElementById('prod-price').value = product.price ?? '';
+  document.getElementById('prod-price').value = formatMoneyValue(product.price);
   document.getElementById('prod-stock').value = product.stock ?? '';
-  document.getElementById('prod-compare-price').value = product.compare_at_price ?? '';
+  document.getElementById('prod-compare-price').value = formatMoneyValue(product.compare_at_price);
   // Vía el picker, no por .value: escribir el input oculto directo cargaría el
   // valor pero dejaría el campo visible en blanco.
   datePickers['prod-offer-expires']?.setValue(product.offer_expires_at ?? '');
@@ -3037,6 +3060,10 @@ function setupDashboardEvents() {
   initPublicacionesControls();
   initPedidosControls();
 
+  attachMoneyFormatting(document.getElementById('prod-price'));
+  attachMoneyFormatting(document.getElementById('prod-compare-price'));
+  attachMoneyFormatting(document.getElementById('variant-price'));
+
   // F5-03: alta de variante para el producto que se está editando.
   document.getElementById('btn-add-variant')?.addEventListener('click', async () => {
     if (!editingProductId) return;
@@ -3046,7 +3073,7 @@ function setupDashboardEvents() {
     const stockInput = document.getElementById('variant-stock');
 
     const name = nameInput.value.trim();
-    const price = priceInput.value;
+    const price = parsePrice(priceInput.value);
     const stock = stockInput.value;
 
     if (!name) {
@@ -3065,7 +3092,7 @@ function setupDashboardEvents() {
     const { error } = await supabase.from('product_variants').insert({
       product_id: editingProductId,
       name,
-      price: parseInt(price),
+      price,
       stock: parseInt(stock),
     });
 
@@ -3157,9 +3184,12 @@ function setupDashboardEvents() {
     const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar producto';
 
     const titleValue = document.getElementById('prod-name').value.trim();
-    const priceValue = document.getElementById('prod-price').value;
+    // Los precios se tipean con separador de miles (attachMoneyFormatting) --
+    // parsePrice() saca el número real, nunca Number()/parseInt() directo
+    // sobre el value (interpretaría el "." como separador decimal).
+    const priceValue = parsePrice(document.getElementById('prod-price').value);
     const stockValue = document.getElementById('prod-stock').value;
-    const comparePriceValue = document.getElementById('prod-compare-price').value.trim();
+    const comparePriceValue = parsePrice(document.getElementById('prod-compare-price').value);
     const offerExpiresValue = document.getElementById('prod-offer-expires').value;
 
     if (!isValidProductTitle(titleValue)) {
@@ -3174,7 +3204,7 @@ function setupDashboardEvents() {
       showToast("El stock debe ser un número entero mayor o igual a 0.", "error");
       return;
     }
-    if (comparePriceValue && (!isValidPrice(comparePriceValue) || parseInt(comparePriceValue) <= parseInt(priceValue))) {
+    if (comparePriceValue && (!isValidPrice(comparePriceValue) || comparePriceValue <= priceValue)) {
       showToast("El precio de oferta debe ser un número entero mayor al precio actual.", "error");
       return;
     }
@@ -3190,9 +3220,9 @@ function setupDashboardEvents() {
 
     const productData = {
       title: titleValue,
-      price: parseInt(priceValue),
+      price: priceValue,
       stock: parseInt(stockValue),
-      compare_at_price: comparePriceValue ? parseInt(comparePriceValue) : null,
+      compare_at_price: comparePriceValue || null,
       offer_expires_at: comparePriceValue && offerExpiresValue ? offerExpiresValue : null,
       category_id: null,
       description: document.getElementById('prod-desc').value.trim(),
