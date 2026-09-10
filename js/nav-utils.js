@@ -795,16 +795,11 @@ export async function initAccountMenu() {
 
     // Deep links con ?tab=... -- ya soportados por perfil.js
     // (handleNotificationDeepLink -> openSection('tab-' + tab)).
-    const cuentaItems = [];
-    if (role === 'admin' || role === 'moderador') {
-      cuentaItems.push({ href: './perfil.html', icon: 'fa-solid fa-user-shield', label: 'Panel de administración' });
-    }
-    cuentaItems.push(
+    panel.appendChild(buildSection('Cuenta', [
       { href: './perfil.html?tab=mis-datos', icon: 'fa-regular fa-id-card', label: 'Mi perfil' },
       { href: './perfil.html?tab=direcciones', icon: 'fa-solid fa-location-dot', label: 'Direcciones' },
       { href: './perfil.html?tab=ajustes', icon: 'fa-solid fa-gear', label: 'Ajustes' },
-    );
-    panel.appendChild(buildSection('Cuenta', cuentaItems));
+    ]));
 
     panel.appendChild(buildSection('Actividad', [
       { href: './perfil.html?tab=compras', icon: 'fa-solid fa-box-open', label: 'Mis compras' },
@@ -813,15 +808,24 @@ export async function initAccountMenu() {
       { href: './perfil.html?tab=soporte', icon: 'fa-regular fa-comment', label: 'Soporte' },
     ]));
 
-    if (role === 'vendedor') {
+    // Vender/Administración/Moderación no son mutuamente excluyentes: un
+    // admin puede tener también su propio comercio (vender.html ya lo trata
+    // como vendedor -- ver checkSellerState() en vender.js, que da acceso al
+    // dashboard con rol 'vendedor' o 'admin'). Antes el link de arriba
+    // ("Panel de administración" apuntando a perfil.html, dentro de
+    // "Cuenta") era un duplicado roto del de la sección de Administración de
+    // más abajo -- se saca directamente en vez de repetirlo.
+    if (role === 'vendedor' || role === 'admin') {
       panel.appendChild(buildSection('Vender', [
         { href: './vender.html', icon: 'fa-solid fa-shop', label: 'Panel de vendedor' },
       ]));
-    } else if (role === 'repartidor') {
+    }
+    if (role === 'repartidor') {
       panel.appendChild(buildSection('Repartir', [
         { href: './repartidor.html', icon: 'fa-solid fa-truck-fast', label: 'Panel de repartidor' },
       ]));
-    } else if (role === 'admin' || role === 'moderador') {
+    }
+    if (role === 'admin' || role === 'moderador') {
       panel.appendChild(buildSection(role === 'admin' ? 'Administración' : 'Moderación', [
         {
           href: './admin.html',
