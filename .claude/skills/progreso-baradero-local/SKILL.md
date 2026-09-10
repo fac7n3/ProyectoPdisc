@@ -2218,3 +2218,33 @@ empleada de más de un comercio). Fix en ambos lugares: sacar `.single()`/`.mayb
 más filas, siempre se queda con la más nueva. No se tocó la data de seed (14 tiendas bajo un mismo
 owner_id no rompe ninguna constraint -- no hay `unique` en `stores.owner_id` -- así que el fix es
 en el código, no una migración de datos).
+
+## 2026-09-10 — Tags de afiliación a comercio en "Mi perfil"
+
+A raíz de la entrada anterior (la cuenta `bianberayra@gmail.com`, admin, dueña "de mentira" de las
+14 tiendas de seed), el usuario pidió mostrar en el perfil de cualquier cuenta, junto al badge de
+rol que ya existía (`#profile-role-badge`, A113-269), tags de a qué comercio está afiliada de
+verdad: empleada de cuál, dueña de cuál. Antes de tocar el perfil de todos los usuarios se confirmó
+el diseño con `AskUserQuestion` (2 preguntas: si mostrar tag de dueño cuando hay más de una tienda,
+y si los tags van en la misma fila que el rol o en una propia) -- eligió: tag de dueño SOLO si la
+cuenta es dueña de una única tienda (evita el falso positivo de 14 tags en cuentas con seed data) +
+misma fila que el rol, con wrap.
+
+**Implementación**: `renderAffiliationBadges(userId)` en `js/perfil.js`, llamada al final de
+`renderFullProfile()` (fire-and-forget, no bloquea el resto del render). Dos queries en paralelo:
+`store_staff` (con embed `stores(name)`) → un badge "Empleado de \<tienda\>" por fila, y `stores`
+por `owner_id` → badge "Dueño de \<tienda\>" solo si `data.length === 1`. Los badges se appendean a
+`.profile-header__name-row` (ya tenía `flex-wrap: wrap` de antes, no hizo falta tocar el layout).
+CSS nuevo en `Assets/styles/perfil-custom.css`: `.role-badge--staff` (violeta) / `.role-badge--owner`
+(verde), mismo patrón que las variantes de rol ya existentes (`--vendedor`/`--admin`/etc.).
+Wording sin barra de género ("Empleado"/"Dueño", no "Empleado/a") para mantener la misma convención
+que el resto de los `roleLabels` del sitio ("Administrador", "Vendedor").
+
+**Confirmado contra la DB real** (Supabase MCP, `execute_sql`) antes de implementar: de las 17
+tiendas en producción, solo **gogo** (id `a1fba4cc...`, dueña real: la cuenta admin
+`alganarasberenice@gmail.com`) y **facu.cells** (id `d07fc673...`, dueña real: la cuenta admin
+`shueywater@gmail.com`) son reales -- las otras 14 (Almacén Don José, Carnicería El Novillo, Super
+Baradero, etc.) son datos de seed de junio 2026, todas con `owner_id` = la cuenta
+`bianberayra@gmail.com` (rol `admin`), que en la vida real es empleada (`store_staff`) de `gogo`, no
+dueña de nada. No se tocó esa data ni se le dio ningún acceso nuevo a esa cuenta -- la regla "solo
+mostrar tag de dueño con 1 tienda" resuelve el caso solo, sin hardcodear ningún user_id.

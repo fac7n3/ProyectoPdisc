@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-10** — "Mi perfil" muestra, junto al badge de rol
+  existente, un tag "Empleado de \<tienda\>" por cada comercio del que la
+  cuenta es `store_staff`, y "Dueño de \<tienda\>" solo si es dueña de una
+  única tienda (evita mostrar 14 tags falsos en cuentas con tiendas de
+  seed/test como owner_id -- ver nota debajo sobre las 14 tiendas de
+  prueba). Genérico para cualquier perfil, confirmado el diseño con el
+  usuario antes de implementar. Contexto: de las 17 tiendas en producción,
+  solo **gogo** y **facu.cells** son reales -- las otras 14 son datos de
+  seed con `owner_id` apuntando a la cuenta `bianberayra@gmail.com`
+  (admin) por cómo se corrió el seed en su momento, no una relación de
+  propiedad real; esa cuenta es en verdad empleada (`store_staff`) de
+  `gogo`. No se tocó la data de esas 14 tiendas ni el acceso de nadie --
+  solo la UI del tag.
 - **Resuelto 2026-09-10** — El dueño de un comercio ahora elige, por
   empleado, qué secciones del panel ve (Publicaciones/Pedidos/Envíos en
   curso/Pagos por confirmar/Notificaciones/Soporte -- las exclusivas del
