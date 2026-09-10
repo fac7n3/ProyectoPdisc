@@ -303,7 +303,9 @@ export async function renderActiveCoupons(container, { onSelect, emptyHide } = {
  */
 export function updateCartBadge() {
   const cart = getCart();
-  const total = cart.reduce((acc, item) => acc + item.qty, 0);
+  // Cantidad de PRODUCTOS distintos en el carrito, no la suma de unidades
+  // (2 unidades de un mismo producto cuentan como 1, no como 2).
+  const total = cart.length;
   const badge = document.getElementById('cart-badge');
   if (badge) {
     badge.textContent = total > 0 ? total : '';

@@ -2525,3 +2525,17 @@ se agregó `.vendor-mode-badge[hidden], .oficios-mode-badge[hidden] { display: n
 regla de autor no le gane en cascada al `[hidden]` de user-agent. Verificado con una página de
 prueba standalone (fuera de git) con dos botones que simulan `reveal('dashboard')` y
 `showProfessionalPanel()`: cada click deja visible solo el badge que corresponde.
+
+## 2026-09-10 — Badge del carrito: cantidad de productos, no suma de unidades
+
+El usuario mandó una captura de "Mi carrito" con el número del navbar circulado, pidiendo que
+cuente **cantidad de productos** (líneas distintas en el carrito), no la suma de unidades por
+producto. `updateCartBadge()` (`js/cart-utils.js`) hacía
+`cart.reduce((acc, item) => acc + item.qty, 0)` -- 2 unidades de un mismo producto sumaban 2. Ahora
+es `cart.length` (cantidad de filas del carrito, sin importar la cantidad de cada una). No hay otro
+lugar del código con el mismo cálculo (se revisó con grep) -- el cambio queda contenido en esa
+única función. **Nota aparte, no tocada**: la captura también mostraba el nombre de un producto
+real con comillas mal codificadas (`Yerba Mate &quot;La Vuelta&quot; 500g` literal en vez de
+comillas) -- es un dato ya guardado así en la DB (probablemente quedó doble-escapado al cargarlo),
+no un bug de renderizado -- haría falta ubicar el producto y corregir el título a mano, no se hizo
+en esta pasada porque no fue lo que se pidió.
