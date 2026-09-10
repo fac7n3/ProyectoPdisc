@@ -2248,3 +2248,27 @@ Baradero, etc.) son datos de seed de junio 2026, todas con `owner_id` = la cuent
 `bianberayra@gmail.com` (rol `admin`), que en la vida real es empleada (`store_staff`) de `gogo`, no
 dueña de nada. No se tocó esa data ni se le dio ningún acceso nuevo a esa cuenta -- la regla "solo
 mostrar tag de dueño con 1 tienda" resuelve el caso solo, sin hardcodear ningún user_id.
+
+## 2026-09-10 — Notificación al profesional cuando su alta es aprobada
+
+`approveProfessionalRequest()`/`rejectProfessionalRequest()` (`js/admin.js`) aprueban/rechazan un
+alta de `professional_requests` con un UPDATE directo de `status` desde el cliente -- igual que
+`seller_requests`/`delivery_requests` antes de que `41_notify_request_status.sql` les enchufara un
+trigger genérico (`notify_request_status_change()`) para avisarle a la persona. A esa tabla nunca se
+la había sumado al `CASE` de esa función ni se le había puesto el trigger, así que quien pedía
+sumarse como profesional (`contratar.html`, alta desde `vender.html`) no se enteraba cuando lo
+aprobaban.
+
+**Fix** (migración `84_notify_professional_request_status.sql`, ya aplicada a producción): se
+amplía el mismo `CASE` de `notify_request_status_change()` con `professional_requests` ->
+`professional_request_approved`/`professional_request_rejected` (ambos casos, no solo el aprobado --
+la función no tiene `else` en el `case`, así que dejar afuera el rechazo habría insertado
+`type = NULL` y roto el UPDATE de rechazo por el `not null` de `notifications.type`) y se agrega
+`professional_requests_notify_status` como trigger `after update`. En el front,
+`js/notifications-utils.js` suma el título ("¡Tu publicación como profesional fue aceptada! Ya
+figurás en Contratar" / rechazo), tono (`success`/`danger`, igual que seller/delivery) y link
+("Ver Contratar" -> `contratar.html`, genérico: el payload solo trae el `request_id` de
+`professional_requests`, no el id de la fila nueva en `professionals`, así que no se puede linkear
+al perfil público puntual). El centro de notificaciones y los toasts (`js/toast-utils.js`) heredan
+esto automático vía `buildNotificationTitle`/`buildNotificationLink`, sin tocar esos archivos.
+mostrar tag de dueño con 1 tienda" resuelve el caso solo, sin hardcodear ningún user_id.
