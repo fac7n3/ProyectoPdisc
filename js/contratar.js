@@ -171,24 +171,36 @@ function buildCard(pro) {
   return card;
 }
 
-// --- Lightbox de fotos promocionales: se abre/cierra, un solo overlay
-// reutilizado para toda la página (no uno por tarjeta). ---
+// --- Lightbox de fotos promocionales: mismo componente que el lightbox de
+// banners del home (.promo-lightbox-overlay, ya en home.css -- esta página
+// ya lo carga), no uno nuevo. Un solo overlay reutilizado para toda la
+// página (no uno por tarjeta), toggleado por clase (.is-open), no por
+// `hidden`: con `hidden` el overlay quedaba con el fondo oscuro trabado
+// porque `.ct-lightbox { display: flex }` (una regla de autor) le ganaba en
+// cascada a `[hidden] { display: none }` (regla de user-agent) pese a tener
+// la misma especificidad -- por eso "cerrar" apagaba la imagen pero no el
+// fondo. Clase en vez de atributo evita el problema de raíz.
 let promoLightbox = null;
 
 function buildPromoLightbox() {
-  const overlay = el('div', 'ct-lightbox');
-  overlay.hidden = true;
+  const overlay = el('div', 'promo-lightbox-overlay');
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Imagen ampliada');
 
-  const closeBtn = el('button', 'ct-lightbox__close');
+  const box = el('div', 'promo-lightbox');
+  overlay.appendChild(box);
+
+  const closeBtn = el('button', 'promo-lightbox__close');
   closeBtn.type = 'button';
   closeBtn.setAttribute('aria-label', 'Cerrar');
   const closeIcon = el('i', 'fa-solid fa-xmark');
   closeIcon.setAttribute('aria-hidden', 'true');
   closeBtn.appendChild(closeIcon);
-  overlay.appendChild(closeBtn);
+  box.appendChild(closeBtn);
 
-  const img = el('img', 'ct-lightbox__img');
-  overlay.appendChild(img);
+  const img = el('img', 'promo-lightbox__img');
+  box.appendChild(img);
 
   const close = () => closePromoLightbox();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
@@ -201,13 +213,13 @@ function buildPromoLightbox() {
 function openPromoLightbox(imageUrl) {
   if (!promoLightbox) promoLightbox = buildPromoLightbox();
   promoLightbox.img.src = imageUrl;
-  promoLightbox.overlay.hidden = false;
+  promoLightbox.overlay.classList.add('is-open');
   document.addEventListener('keydown', onPromoLightboxKeydown);
 }
 
 function closePromoLightbox() {
   if (!promoLightbox) return;
-  promoLightbox.overlay.hidden = true;
+  promoLightbox.overlay.classList.remove('is-open');
   promoLightbox.img.src = '';
   document.removeEventListener('keydown', onPromoLightboxKeydown);
 }

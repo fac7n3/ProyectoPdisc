@@ -197,6 +197,21 @@
       }
       .prof-promo-item__remove:hover { background: rgba(0, 0, 0, 0.8); }
 
+      /* Botón de "Agregar foto" -- reemplaza al <input type="file"> nativo
+         (feo e inconsistente entre navegadores, mismo criterio que ya usa el
+         picker de fotos de producto/avatar): el input queda oculto y este
+         <label> lo dispara. */
+      .prof-promo-upload-btn {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.65rem 1.1rem; border-radius: var(--bl-radius-pill);
+        border: 1px dashed var(--bl-vendor-accent);
+        background: rgba(var(--bl-vendor-accent-rgb), 0.06);
+        color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.875rem;
+        cursor: pointer; transition: background 0.15s, border-color 0.15s;
+      }
+      .prof-promo-upload-btn:hover { background: rgba(var(--bl-vendor-accent-rgb), 0.12); }
+      .prof-promo-upload-btn.is-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -879,7 +894,11 @@
                   Hasta 6 fotos, 2 MB cada una.
                 </small>
                 <div class="prof-promos-grid" id="professional-promos-grid"></div>
-                <input type="file" id="professional-promo-input" accept="image/*" />
+                <label for="professional-promo-input" class="prof-promo-upload-btn" id="professional-promo-upload-label">
+                  <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                  Agregar foto
+                </label>
+                <input type="file" id="professional-promo-input" accept="image/*" hidden />
               </div>
             </div>
         </div>

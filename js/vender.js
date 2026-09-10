@@ -406,8 +406,14 @@ function renderProfessionalPromosGrid(promos) {
     grid.appendChild(item);
   });
 
+  const reachedLimit = promos.length >= MAX_PROF_PROMOS;
   const input = document.getElementById('professional-promo-input');
-  if (input) input.disabled = promos.length >= MAX_PROF_PROMOS;
+  if (input) input.disabled = reachedLimit;
+  const uploadLabel = document.getElementById('professional-promo-upload-label');
+  if (uploadLabel) {
+    uploadLabel.classList.toggle('is-disabled', reachedLimit);
+    uploadLabel.setAttribute('aria-disabled', String(reachedLimit));
+  }
 }
 
 function setupProfessionalPromoUpload() {
