@@ -37,6 +37,7 @@ async function checkSellerState(user) {
   const dashboardView = document.getElementById('dashboard-view');
   const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
+  const hamburgerBtn = document.getElementById('mc-hamburger');
 
   // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
   // esto, register-view/dashboard-view quedaban visibles por defecto (guardPage
@@ -47,6 +48,13 @@ async function checkSellerState(user) {
     if (stateLoader) stateLoader.style.display = 'none';
     registerView.style.display = view === 'register' ? 'block' : 'none';
     dashboardView.style.display = view === 'dashboard' ? 'flex' : 'none';
+    // El botón hamburguesa abre el sidebar de dashboard-view (mc-sidebar) --
+    // en register-view (alta de comercio/profesional, o el mini panel de
+    // profesional ya publicado) no hay sidebar que abrir, así que en mobile
+    // quedaba un círculo de tres líneas sin ninguna función. Estilo inline
+    // (no una clase) para pisar el `display: inline-flex` que le pone la
+    // media query de <900px cuando corresponde ocultarlo.
+    if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
   };
 
   if (!user) return; // guardPage ya se encarga de redirigir
