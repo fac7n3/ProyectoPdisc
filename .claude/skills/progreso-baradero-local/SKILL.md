@@ -2170,3 +2170,51 @@ inline en `comercio.html`, mismo lugar donde ya vivía `.store-header__contact`)
 `new_message` de `notifications-utils.js` (label, color, vista previa, link "Ver mensaje" y el
 batch-fetch a la tabla `messages`, que ya no existe -- de haber quedado, tiraba error al abrir la
 campana de notificaciones).
+
+## 2026-09-10 — Permisos por sección para empleados + fix panel de vendedor en blanco
+
+**Permisos de empleado (sobre F12-16, A113-256)**: hasta ahora un empleado (`store_staff`) tenía
+paridad total con el dueño en todo lo operativo que ya se veía en el panel -- Publicaciones,
+Pedidos, Envíos en curso, Pagos por confirmar, Notificaciones, Soporte -- sin que el dueño pudiera
+elegir cuáles. Ahora sí: migración `83_store_staff_permissions.sql` (aplicada a producción vía MCP
+de Supabase) agrega `store_staff.permissions` (jsonb, default con las 6 claves en `true` -- no
+cambia nada para los empleados ya agregados) + policy `store_staff_update_owner` (mismo criterio
+que `store_staff_delete_owner`: solo el dueño de la tienda edita). Las 3 secciones exclusivas del
+dueño (Perfil del comercio, Cupones, Empleados) siguen sin ofrecerse como opción -- nunca dependen
+de `permissions`, es la misma lógica de siempre (`mc-navitem--owner`).
+
+**Frontend** (`js/vender.js`): `STAFF_PERMISSION_SECTIONS` (las 6 claves + label) y
+`staffPermissionsWithDefaults()` (fail-open a `true` si `permissions` no llegó, por las dudas).
+`checkSellerState()` ahora trae `permissions` junto con `store_id` al detectar que la cuenta es
+empleada, y se lo pasa a `loadDashboard(user, staffStoreId, staffPermissions)`. Ahí, si no es dueño,
+por cada sección destildada se hace `document.querySelectorAll('[data-section="<key>"]').forEach(el
+=> el.remove())` -- saca del DOM tanto el ítem del sidebar como la `<section>` (comparten el mismo
+atributo `data-section`), no alcanza con ocultar: `showActiveSection()` de `vender-shell.js` revela
+cualquier `<section data-section>` presente en el DOM que matchee el hash de la URL, así que ocultar
+nomás dejaba una forma de verla igual tocando el hash a mano. Todas las funciones de render de esas
+secciones (`renderPendingPayments`, `renderShipmentsInProgress`, `renderNotificationsSection`,
+`renderSupportSection`, `renderPublicaciones` vía `fetchProducts`) ya cortaban solas si no
+encontraban su contenedor (`if (!container) return`), así que sacar la sección entera no rompe nada.
+
+**UI** (`pages/vender.html`, sección "Empleados"): cada fila de empleado (`buildStaffRow` en
+`js/vender.js`) se partió en dos líneas -- la de siempre (foto/email/fecha + "Quitar acceso") arriba,
+y una fila nueva de checks (`.staff-perms`, reusa `.pf-check` que ya existía para "Mostrar" de redes
+sociales) abajo, una por sección. Cada check guarda solo (merge sobre el objeto `permissions`, no un
+formulario con botón "Guardar" aparte) apenas se toca, con revert visual si falla el update.
+
+**Fix "el panel de vendedor aparece vacío"**: encontrado con acceso directo a la DB de producción
+(Supabase MCP) revisando la cuenta de test/seed `bianberayra@gmail.com` (role `admin`, que también
+cuenta como "vendedor" en `checkSellerState()`): esa cuenta es `owner_id` de **14** filas en
+`stores` (las tiendas de seed, `04_seed_mock_data.sql`/`06_seed_10_stores_and_products.sql`, todas
+quedaron con el mismo dueño). `loadDashboard()` pedía la tienda con `.eq('owner_id',
+user.id).single()` -- `.single()` de PostgREST tira error de coerción ("JSON object requested,
+multiple (or no) rows returned") apenas hay 2+ filas, no solo con 0. Ese error hacía `return` ANTES
+de `setupDashboardEvents()`/`initVenderShell()` (que cablean el sidebar) y antes de cualquier render
+-- entraba a `dashboard-view` (ya revelado) pero se quedaba completamente vacío, sin sidebar
+funcional ni contenido. Mismo patrón encontrado y corregido en el chequeo de `store_staff` de
+`checkSellerState()` (`.maybeSingle()` también rompe con 2+ filas -- una cuenta podría en teoría ser
+empleada de más de un comercio). Fix en ambos lugares: sacar `.single()`/`.maybeSingle()`, pedir con
+`.order('created_at', { ascending: false }).limit(1)` y tomar `data?.[0]` -- funciona con 0, 1 o
+más filas, siempre se queda con la más nueva. No se tocó la data de seed (14 tiendas bajo un mismo
+owner_id no rompe ninguna constraint -- no hay `unique` en `stores.owner_id` -- así que el fix es
+en el código, no una migración de datos).

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-09. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-10. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-10** — El dueño de un comercio ahora elige, por
+  empleado, qué secciones del panel ve (Publicaciones/Pedidos/Envíos en
+  curso/Pagos por confirmar/Notificaciones/Soporte -- las exclusivas del
+  dueño siguen sin ofrecerse). Migración `83_store_staff_permissions.sql`
+  (columna `store_staff.permissions`, default todo en `true`), ya aplicada a
+  producción. De paso, corregido el panel de vendedor que aparecía en
+  blanco para cuentas con más de una tienda (`stores.owner_id` repetido,
+  caso real: la cuenta de seed con las 14 tiendas de prueba) -- `.single()`/
+  `.maybeSingle()` en `loadDashboard()`/`checkSellerState()`
+  (`js/vender.js`) tiraban error de coerción con 2+ filas y cortaban la
+  carga antes de cablear el sidebar. Detalle completo en el skill
+  `progreso-baradero-local`.
 - **Resuelto 2026-09-09** — Se eliminó el chat interno (`mensajes.html`,
   tablas `conversations`/`messages`) a pedido del usuario. "Contactar al
   vendedor" ahora abre teléfono (`tel:`) o WhatsApp (`wa.me` con mensaje

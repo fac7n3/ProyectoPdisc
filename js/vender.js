@@ -55,15 +55,20 @@ async function checkSellerState(user) {
   }
 
   // F12-16: ¿es empleado de algún comercio? No necesita rol propio de vendedor.
-  const { data: staffRow } = await supabase
+  // Sin .maybeSingle(): esa misma cuenta podría (en teoría) ser empleada de
+  // más de un comercio -- .limit(1) evita el mismo error de coerción que
+  // rompía loadDashboard() con varias tiendas (ver ahí el comentario largo).
+  const { data: staffRows } = await supabase
     .from('store_staff')
-    .select('store_id')
+    .select('store_id, permissions')
     .eq('user_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const staffRow = staffRows?.[0];
 
   if (staffRow) {
     reveal('dashboard'); // shell "Mi cuenta"
-    await loadDashboard(user, staffRow.store_id);
+    await loadDashboard(user, staffRow.store_id, staffRow.permissions);
     return;
   }
 
@@ -519,6 +524,31 @@ let currentUserFirstName = 'vendedor'; // Resumen: nombre para el saludo "¡Hola
 let currentUserId = null; // Resumen: para detectar preguntas sin responder (último mensaje no es mío)
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
 
+/**
+ * Secciones operativas que el dueño puede prender/apagar por empleado
+ * (store_staff.permissions, migración 83). Las exclusivas del dueño (perfil
+ * del comercio, cupones, empleados) ni "Resumen"/"Publicaciones preview" van
+ * acá -- nunca se le ofrecen al empleado como opción, siempre están o
+ * siempre ocultas según sea dueño o no.
+ */
+const STAFF_PERMISSION_SECTIONS = [
+  { key: 'publicaciones', label: 'Publicaciones' },
+  { key: 'pedidos', label: 'Pedidos' },
+  { key: 'envios', label: 'Envíos en curso' },
+  { key: 'pagos', label: 'Pagos por confirmar' },
+  { key: 'notificaciones', label: 'Notificaciones' },
+  { key: 'soporte', label: 'Soporte' },
+];
+
+/** Default fail-open (todo true) si por lo que sea `permissions` no llegó (fila vieja, error de red). */
+function staffPermissionsWithDefaults(permissions) {
+  const result = {};
+  STAFF_PERMISSION_SECTIONS.forEach(({ key }) => {
+    result[key] = permissions ? permissions[key] !== false : true;
+  });
+  return result;
+}
+
 // Sección "Publicaciones" (rediseño ML): productos cacheados + ventas por producto
 // + estado de los filtros client-side (búsqueda por título / estado activo-pausado).
 let pubProducts = [];
@@ -543,11 +573,12 @@ const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, z
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
  * quien entra no es el dueño sino un empleado (store_staff) -- en ese caso
  * se carga la tienda por id en vez de por owner_id, y se ocultan las
- * secciones exclusivas del dueño (perfil del comercio, cupones, empleados).
+ * secciones exclusivas del dueño (perfil del comercio, cupones, empleados)
+ * más las que el dueño le haya destildado (`staffPermissions`, migración 83).
  * Paridad total en lo operativo (productos/pedidos/comprobantes) vía las
  * policies aditivas de 49_store_staff.sql -- nunca se tocó el acceso del dueño.
  */
-async function loadDashboard(user, staffStoreId) {
+async function loadDashboard(user, staffStoreId, staffPermissions) {
   isStoreOwner = !staffStoreId;
 
   // Cache-first del nombre de la tienda: lo pintamos al instante desde
@@ -560,11 +591,21 @@ async function loadDashboard(user, staffStoreId) {
     if (cachedName && shopNameEl) shopNameEl.textContent = cachedName;
   } catch { /* localStorage bloqueado: ignorar */ }
 
-  const { data: store, error } = await supabase
+  // Sin .single(): algunas cuentas (datos de seed/test) llegaron a tener más
+  // de un registro en `stores` con el mismo owner_id -- .single() tira error
+  // de coerción PostgREST apenas hay 2+ filas ("JSON object requested,
+  // multiple rows returned") y el panel quedaba en blanco (reveal('dashboard')
+  // ya había pasado, pero loadDashboard cortaba acá arriba, antes de cablear
+  // el sidebar/las secciones). Con .limit(1) + tomar la primera fila, el
+  // panel siempre carga aunque la cuenta tenga varias tiendas -- se queda con
+  // la más nueva.
+  const { data: stores, error } = await supabase
     .from('stores')
     .select(STORE_SELECT_COLUMNS)
     .eq(isStoreOwner ? 'owner_id' : 'id', isStoreOwner ? user.id : staffStoreId)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const store = stores?.[0];
 
   if (error || !store) {
     console.error("Error al cargar la tienda", error);
@@ -593,6 +634,21 @@ async function loadDashboard(user, staffStoreId) {
   document.querySelectorAll('.mc-navitem--owner').forEach((item) => {
     item.style.display = isStoreOwner ? '' : 'none';
   });
+
+  // Permisos por sección (migración 83): además de lo exclusivo del dueño,
+  // un empleado puede tener secciones operativas destildadas. Se sacan del
+  // DOM (nav item + <section>, ambos comparten el mismo data-section) en vez
+  // de solo ocultarlas -- así el shell (que muestra cualquier data-section
+  // presente en el DOM que matchee el hash, ver showActiveSection en
+  // vender-shell.js) no las revela igual si alguien toca el hash a mano.
+  if (!isStoreOwner) {
+    const perms = staffPermissionsWithDefaults(staffPermissions);
+    STAFF_PERMISSION_SECTIONS.forEach(({ key }) => {
+      if (!perms[key]) {
+        document.querySelectorAll(`[data-section="${key}"]`).forEach((el) => el.remove());
+      }
+    });
+  }
 
   // Mercado Pago (P0-6): además de ser dueño, la tienda tiene que estar en el piloto.
   const mpConnectSection = document.getElementById('mp-connect-section');
@@ -1454,11 +1510,15 @@ function renderStaffEmpty(container) {
 function buildStaffRow(s, email) {
   const row = document.createElement('div');
   row.className = 'pub-row';
+  row.style.cssText = 'flex-direction: column; align-items: stretch; gap: 0;';
+
+  const top = document.createElement('div');
+  top.style.cssText = 'display: flex; align-items: center; gap: 1rem; width: 100%;';
 
   const thumb = document.createElement('div');
   thumb.className = 'pub-row__thumb pub-row__thumb--icon';
   thumb.innerHTML = '<i class="fa-solid fa-user"></i>';
-  row.appendChild(thumb);
+  top.appendChild(thumb);
 
   const main = document.createElement('div');
   main.className = 'pub-row__main';
@@ -1470,7 +1530,7 @@ function buildStaffRow(s, email) {
   sub.textContent = `Agregado el ${new Date(s.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`;
   main.appendChild(title);
   main.appendChild(sub);
-  row.appendChild(main);
+  top.appendChild(main);
 
   // Única acción disponible: se muestra como botón visible, no kebab (mismo criterio que Pagos por confirmar).
   const removeBtn = document.createElement('button');
@@ -1489,7 +1549,43 @@ function buildStaffRow(s, email) {
     showToast('Acceso quitado.', 'success');
     renderStoreStaff();
   });
-  row.appendChild(removeBtn);
+  top.appendChild(removeBtn);
+  row.appendChild(top);
+
+  // Qué secciones del panel ve este empleado (migración 83). Cada check
+  // guarda solo al tocarlo (merge sobre `permissions`, no reemplaza todo el
+  // objeto -- evita pisar un cambio que haya guardado otra pestaña).
+  const perms = staffPermissionsWithDefaults(s.permissions);
+  const permsWrap = document.createElement('div');
+  permsWrap.className = 'staff-perms';
+  STAFF_PERMISSION_SECTIONS.forEach(({ key, label }) => {
+    const check = document.createElement('label');
+    check.className = 'pf-check';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = perms[key];
+    input.addEventListener('change', async () => {
+      input.disabled = true;
+      const nextPermissions = { ...perms, [key]: input.checked };
+      const { error: updateError } = await supabase
+        .from('store_staff')
+        .update({ permissions: nextPermissions })
+        .eq('id', s.id);
+      input.disabled = false;
+      if (updateError) {
+        input.checked = !input.checked; // revertir el check
+        showToast('No se pudo guardar el permiso.', 'error');
+        console.error(updateError);
+        return;
+      }
+      perms[key] = input.checked;
+      s.permissions = nextPermissions;
+    });
+    check.appendChild(input);
+    check.appendChild(document.createTextNode(label));
+    permsWrap.appendChild(check);
+  });
+  row.appendChild(permsWrap);
 
   return row;
 }
@@ -1501,7 +1597,7 @@ async function renderStoreStaff() {
 
   const { data: staff, error } = await supabase
     .from('store_staff')
-    .select('id, user_id, created_at')
+    .select('id, user_id, created_at, permissions')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false });
 
