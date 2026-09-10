@@ -7,6 +7,7 @@
 import { supabase } from './auth-utils.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
+import { getVisibleSocialLinks } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let allProfessionals = [];
@@ -144,6 +145,24 @@ function buildCard(pro) {
     actions.appendChild(wsp);
   }
   detail.appendChild(actions);
+
+  const socialLinks = getVisibleSocialLinks(pro);
+  if (socialLinks.length > 0) {
+    const socialRow = el('div', 'ct-card__social');
+    socialLinks.forEach((s) => {
+      const link = el('a', 'ct-card__social-link');
+      link.href = s.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('aria-label', s.label);
+      link.title = s.label;
+      const icon = el('i', s.icon);
+      icon.setAttribute('aria-hidden', 'true');
+      link.appendChild(icon);
+      socialRow.appendChild(link);
+    });
+    detail.appendChild(socialRow);
+  }
 
   if (pro._promos && pro._promos.length > 0) {
     const promos = el('div', 'ct-card__promos');
@@ -293,7 +312,10 @@ async function loadProfessionals() {
 
   const { data, error } = await supabase
     .from('professionals')
-    .select('id, owner_id, full_name, category, specialty, description, phone, whatsapp, photo_url')
+    .select(`id, owner_id, full_name, category, specialty, description, phone, whatsapp, photo_url,
+      social_instagram, social_instagram_show, social_facebook, social_facebook_show,
+      social_tiktok, social_tiktok_show, social_x, social_x_show,
+      social_youtube, social_youtube_show, social_website, social_website_show`)
     .order('full_name', { ascending: true });
 
   if (error) {

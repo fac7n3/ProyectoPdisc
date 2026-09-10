@@ -690,8 +690,44 @@
       .pf-actions { display: flex; justify-content: flex-end; }
       .pf-actions .form-btn { width: auto; padding: 0.75rem 2rem; font-size: 1rem; }
 
+      /* Switch "mostrar esta red" -- reemplaza el checkbox nativo + texto
+         "Mostrar" de antes por un toggle, mismo componente para el comercio
+         (.social-row, fila completa) y el profesional (.prof-social-card,
+         grilla de tarjetas -- diseño distinto a propósito, misma mecánica). */
+      .social-toggle { position: relative; display: inline-flex; width: 2.5rem; height: 1.4rem; flex-shrink: 0; }
+      .social-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+      .social-toggle__track { position: absolute; inset: 0; background: var(--bl-border); border-radius: 999px; transition: background 0.15s ease; pointer-events: none; }
+      .social-toggle__track::before {
+        content: ''; position: absolute; width: 1.05rem; height: 1.05rem; left: 0.18rem; top: 0.18rem;
+        background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform 0.15s ease;
+      }
+      .social-toggle input:checked + .social-toggle__track { background: var(--bl-vendor-accent); }
+      .social-toggle input:checked + .social-toggle__track::before { transform: translateX(1.1rem); }
+      .social-toggle input:focus-visible + .social-toggle__track { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
+
+      /* Comercio: una fila por red, ancho completo (ícono + nombre + link + switch). */
+      .social-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0.9rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface-alt); margin-bottom: 0.6rem; }
+      .social-row:last-child { margin-bottom: 0; }
+      .social-row__icon { flex-shrink: 0; width: 1.5rem; text-align: center; color: var(--bl-vendor-accent); font-size: 1.05rem; }
+      .social-row__label { flex-shrink: 0; width: 6rem; font-weight: 600; font-size: 0.85rem; color: var(--bl-text); }
+      .social-row__input { flex: 1; min-width: 0; }
+
+      /* Profesional: grilla de tarjetas chicas -- ícono en chip circular
+         arriba, link abajo, switch en la esquina -- diseño propio para no
+         repetir la fila del comercio. */
+      .prof-social-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem; }
+      .prof-social-card { position: relative; padding: 1rem 1rem 0.9rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface-alt); }
+      .prof-social-card__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; padding-right: 2.75rem; }
+      .prof-social-card__icon { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(var(--bl-vendor-accent-rgb), 0.12); color: var(--bl-vendor-accent); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+      .prof-social-card__label { font-weight: 700; font-size: 0.85rem; color: var(--bl-text); }
+      .prof-social-card .social-toggle { position: absolute; top: 1rem; right: 1rem; }
+      .prof-social-card input[type="text"] { width: 100%; }
+
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
+        .social-row { flex-wrap: wrap; }
+        .social-row__label { width: 100%; }
         .pf-actions { justify-content: stretch; }
         .pf-actions .form-btn { width: 100%; }
         .pubform__card { padding: 1.1rem; }
@@ -885,7 +921,91 @@
                   <label class="form-label" for="prof-edit-whatsapp">WhatsApp (si es distinto del teléfono)</label>
                   <input type="text" id="prof-edit-whatsapp" class="form-input" placeholder="Código de país + Número, ej: 5493329123456" />
                 </div>
+
+                <!-- Redes sociales: mismo dato que un comercio (link + switch
+                     "mostrar" por red), pero en tarjetas en vez de filas -- ver
+                     .prof-social-grid, diseño propio para no repetir el de
+                     arriba. Se muestran como íconos en la tarjeta de
+                     contratar.html (contratar.js, buildCard). Dentro del
+                     mismo form que specialty/description/phone/whatsapp: un
+                     solo "Guardar cambios" para todo, igual que el perfil del
+                     comercio. -->
+                <div class="pf-card">
+                <h3 class="pf-card__title">Redes sociales</h3>
+                <p class="pf-card__hint">Se muestran como íconos en tu tarjeta de "Contratar". Dejá el link vacío para no mostrar esa red.</p>
+                <div class="prof-social-grid">
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-brands fa-instagram" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-instagram">Instagram</label>
+                    </div>
+                    <input type="text" id="prof-social-instagram" class="form-input" placeholder="https://instagram.com/tu-usuario" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-instagram-show" checked aria-label="Mostrar Instagram" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-brands fa-facebook" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-facebook">Facebook</label>
+                    </div>
+                    <input type="text" id="prof-social-facebook" class="form-input" placeholder="https://facebook.com/tu-usuario" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-facebook-show" checked aria-label="Mostrar Facebook" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-tiktok">TikTok</label>
+                    </div>
+                    <input type="text" id="prof-social-tiktok" class="form-input" placeholder="https://tiktok.com/@tu-usuario" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-tiktok-show" checked aria-label="Mostrar TikTok" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-x">X (Twitter)</label>
+                    </div>
+                    <input type="text" id="prof-social-x" class="form-input" placeholder="https://x.com/tu-usuario" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-x-show" checked aria-label="Mostrar X (Twitter)" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-brands fa-youtube" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-youtube">YouTube</label>
+                    </div>
+                    <input type="text" id="prof-social-youtube" class="form-input" placeholder="https://youtube.com/@tu-usuario" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-youtube-show" checked aria-label="Mostrar YouTube" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="prof-social-card">
+                    <div class="prof-social-card__head">
+                      <span class="prof-social-card__icon"><i class="fa-solid fa-globe" aria-hidden="true"></i></span>
+                      <label class="prof-social-card__label" for="prof-social-website">Sitio web</label>
+                    </div>
+                    <input type="text" id="prof-social-website" class="form-input" placeholder="https://tu-sitio.com" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="prof-social-website-show" checked aria-label="Mostrar sitio web" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pf-actions">
                 <button type="submit" class="form-btn">Guardar cambios</button>
+              </div>
               </form>
 
               <div class="form-group">
@@ -1044,42 +1164,64 @@
                   </div>
                 </div>
 
-                <!-- Redes sociales: link + check "mostrar" por red -- se muestran como
+                <!-- Redes sociales: link + switch "mostrar" por red -- se muestran como
                      íconos en la página del comercio (comercio.js, buildStoreHeader). -->
                 <div class="pf-card">
                   <h3 class="pf-card__title">Redes sociales</h3>
                   <p class="pf-card__hint">Se muestran como íconos en la página de tu comercio. Dejá el link vacío para no mostrar esa red.</p>
-                  <div class="pf-grid">
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-instagram">Instagram</label>
-                      <input type="text" id="store-social-instagram" class="form-input" placeholder="https://instagram.com/tu-comercio" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-instagram-show" checked /> Mostrar</label>
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-facebook">Facebook</label>
-                      <input type="text" id="store-social-facebook" class="form-input" placeholder="https://facebook.com/tu-comercio" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-facebook-show" checked /> Mostrar</label>
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-tiktok">TikTok</label>
-                      <input type="text" id="store-social-tiktok" class="form-input" placeholder="https://tiktok.com/@tu-comercio" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-tiktok-show" checked /> Mostrar</label>
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-x">X (Twitter)</label>
-                      <input type="text" id="store-social-x" class="form-input" placeholder="https://x.com/tu-comercio" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-x-show" checked /> Mostrar</label>
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-youtube">YouTube</label>
-                      <input type="text" id="store-social-youtube" class="form-input" placeholder="https://youtube.com/@tu-comercio" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-youtube-show" checked /> Mostrar</label>
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-social-website">Sitio web</label>
-                      <input type="text" id="store-social-website" class="form-input" placeholder="https://tu-comercio.com" />
-                      <label class="pf-check"><input type="checkbox" id="store-social-website-show" checked /> Mostrar</label>
-                    </div>
+                  <div class="social-row">
+                    <i class="fa-brands fa-instagram social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-instagram">Instagram</label>
+                    <input type="text" id="store-social-instagram" class="form-input social-row__input" placeholder="https://instagram.com/tu-comercio" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-instagram-show" checked aria-label="Mostrar Instagram" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="social-row">
+                    <i class="fa-brands fa-facebook social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-facebook">Facebook</label>
+                    <input type="text" id="store-social-facebook" class="form-input social-row__input" placeholder="https://facebook.com/tu-comercio" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-facebook-show" checked aria-label="Mostrar Facebook" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="social-row">
+                    <i class="fa-brands fa-tiktok social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-tiktok">TikTok</label>
+                    <input type="text" id="store-social-tiktok" class="form-input social-row__input" placeholder="https://tiktok.com/@tu-comercio" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-tiktok-show" checked aria-label="Mostrar TikTok" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="social-row">
+                    <i class="fa-brands fa-x-twitter social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-x">X (Twitter)</label>
+                    <input type="text" id="store-social-x" class="form-input social-row__input" placeholder="https://x.com/tu-comercio" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-x-show" checked aria-label="Mostrar X (Twitter)" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="social-row">
+                    <i class="fa-brands fa-youtube social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-youtube">YouTube</label>
+                    <input type="text" id="store-social-youtube" class="form-input social-row__input" placeholder="https://youtube.com/@tu-comercio" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-youtube-show" checked aria-label="Mostrar YouTube" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
+                  </div>
+                  <div class="social-row">
+                    <i class="fa-solid fa-globe social-row__icon" aria-hidden="true"></i>
+                    <label class="social-row__label" for="store-social-website">Sitio web</label>
+                    <input type="text" id="store-social-website" class="form-input social-row__input" placeholder="https://tu-comercio.com" />
+                    <label class="social-toggle">
+                      <input type="checkbox" id="store-social-website-show" checked aria-label="Mostrar sitio web" />
+                      <span class="social-toggle__track" aria-hidden="true"></span>
+                    </label>
                   </div>
                 </div>
 
