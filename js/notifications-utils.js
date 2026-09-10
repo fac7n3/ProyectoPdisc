@@ -14,6 +14,8 @@ const TYPE_LABELS = {
   seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
   delivery_request_approved: '¡Tu solicitud de repartidor fue aprobada!',
   delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
+  professional_request_approved: '¡Tu publicación como profesional fue aceptada! Ya figurás en Contratar',
+  professional_request_rejected: 'Tu solicitud de profesional fue rechazada',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
   support_ticket_status_change: 'Tu reclamo cambió de estado',
   support_ticket_message: 'Soporte respondió a tu reclamo',
@@ -44,12 +46,14 @@ const TYPE_TONE = {
   order_delivered: 'success',
   seller_request_approved: 'success',
   delivery_request_approved: 'success',
+  professional_request_approved: 'success',
   provider_approved: 'success',
   courier_added: 'success',
   delivery_assigned: 'success',
   payment_rejected: 'danger',
   seller_request_rejected: 'danger',
   delivery_request_rejected: 'danger',
+  professional_request_rejected: 'danger',
   revocation_requested: 'danger',
   stock_alert: 'accent',
   favorite_price_drop: 'accent',
@@ -155,6 +159,10 @@ function buildNotificationLink(n) {
     case 'seller_request_approved':
     case 'seller_request_rejected':
       return { href: './vender.html', label: 'Ir a mi comercio' };
+
+    case 'professional_request_approved':
+    case 'professional_request_rejected':
+      return { href: './contratar.html', label: 'Ver Contratar' };
 
     case 'delivery_request_approved':
     case 'delivery_request_rejected':
