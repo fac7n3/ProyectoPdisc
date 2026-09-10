@@ -80,6 +80,13 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-10** — El profesional/técnico ahora carga sus redes
+  sociales desde su mini panel (mismas 6 redes que un comercio: Instagram,
+  Facebook, TikTok, X, YouTube, sitio web), con switch en vez de checkbox y
+  un diseño propio (tarjetas) distinto al del comercio (filas), aunque
+  comparten el mismo componente de switch. Se muestran como íconos en su
+  tarjeta de "Contratar". Migración `87_professionals_social.sql` (ya
+  aplicada a producción).
 - **Resuelto 2026-09-10** — Panel de profesional/técnico ampliado: aparece
   también en el menú de cuenta de la navbar (sección "Profesional/Técnico",
   antes solo estaba en "Mi perfil"), "Mi perfil" muestra un tag
