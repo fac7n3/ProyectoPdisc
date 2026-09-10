@@ -11,8 +11,11 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 // existentes en el proyecto (ficticios, sin marca real - ver
 // public/img/logo-*.webp), rotando entre ellos. Provisorio a pedido del
 // usuario: repetir el mismo diseño en más de un comercio está bien por ahora.
+// Sin logo-farmacia.webp/logo-deportes.webp: las categorías "Farmacia" y
+// "Deportes" ya no existen en el sitio (A113, categorías), así que un
+// comercio de otro rubro (ej. un almacén) podía terminar con el diseño
+// "Farmacia Central" pegado encima.
 const STORE_LOGO_FALLBACKS = [
-  '/img/logo-farmacia.webp',
   '/img/logo-ferreteria.webp',
   '/img/logo-kiosco.webp',
   '/img/logo-panaderia.webp',
@@ -21,7 +24,6 @@ const STORE_LOGO_FALLBACKS = [
   '/img/logo-moda.webp',
   '/img/logo-petshop.webp',
   '/img/logo-tecno.webp',
-  '/img/logo-deportes.webp',
 ];
 
 const PRODUCT_SELECT = `
