@@ -808,9 +808,9 @@ export async function initAccountMenu() {
       { href: './perfil.html?tab=soporte', icon: 'fa-regular fa-comment', label: 'Soporte' },
     ]));
 
-    // Vender/Administración/Moderación no son mutuamente excluyentes: un
-    // admin puede tener también su propio comercio (vender.html ya lo trata
-    // como vendedor -- ver checkSellerState() en vender.js, que da acceso al
+    // Vender/Administración no son mutuamente excluyentes: un admin puede
+    // tener también su propio comercio (vender.html ya lo trata como
+    // vendedor -- ver checkSellerState() en vender.js, que da acceso al
     // dashboard con rol 'vendedor' o 'admin'). Antes el link de arriba
     // ("Panel de administración" apuntando a perfil.html, dentro de
     // "Cuenta") era un duplicado roto del de la sección de Administración de
@@ -825,13 +825,9 @@ export async function initAccountMenu() {
         { href: './repartidor.html', icon: 'fa-solid fa-truck-fast', label: 'Panel de repartidor' },
       ]));
     }
-    if (role === 'admin' || role === 'moderador') {
-      panel.appendChild(buildSection(role === 'admin' ? 'Administración' : 'Moderación', [
-        {
-          href: './admin.html',
-          icon: 'fa-solid fa-user-shield',
-          label: role === 'admin' ? 'Panel de administración' : 'Panel de moderación',
-        },
+    if (role === 'admin') {
+      panel.appendChild(buildSection('Administración', [
+        { href: './admin.html', icon: 'fa-solid fa-user-shield', label: 'Panel de administración' },
       ]));
     }
 
