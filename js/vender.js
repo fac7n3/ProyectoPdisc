@@ -1350,8 +1350,6 @@ function fillStoreProfileForm(store) {
   const zoneInput = document.getElementById('store-zone');
   const hoursInput = document.getElementById('store-hours');
   const descInput = document.getElementById('store-description');
-  const deliveryFeeInput = document.getElementById('store-delivery-fee');
-  const freeShippingInput = document.getElementById('store-free-shipping-threshold');
   const whatsappInput = document.getElementById('store-whatsapp');
   const transferInfoInput = document.getElementById('store-transfer-info');
 
@@ -1362,9 +1360,6 @@ function fillStoreProfileForm(store) {
   // hours se guarda como un string JSON simple (ej: '"Lunes a viernes 9 a 18hs"')
   if (hoursInput) hoursInput.value = typeof store.hours === 'string' ? store.hours : '';
   if (descInput) descInput.value = store.description || '';
-  // F12-04: envío configurable por comercio (antes era una constante global 350/5000).
-  if (deliveryFeeInput) deliveryFeeInput.value = formatMoneyValue(store.delivery_fee ?? 350);
-  if (freeShippingInput) freeShippingInput.value = formatMoneyValue(store.free_shipping_threshold ?? 5000);
 
   // Cómo lo contactan los clientes: teléfono / WhatsApp / ninguno
   // (reemplaza al viejo checkbox accepts_contact, ver stores.contact_method).
@@ -1401,23 +1396,12 @@ function setupStoreProfileForm() {
   const form = document.getElementById('store-profile-form');
   if (!form) return;
 
-  attachMoneyFormatting(document.getElementById('store-delivery-fee'));
-  attachMoneyFormatting(document.getElementById('store-free-shipping-threshold'));
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = form.querySelector('button[type="submit"]');
     setLoading(submitBtn, true, 'Guardar perfil');
 
     const hoursValue = document.getElementById('store-hours').value.trim();
-    const deliveryFeeValue = parsePrice(document.getElementById('store-delivery-fee').value);
-    const freeShippingValue = parsePrice(document.getElementById('store-free-shipping-threshold').value);
-
-    if (!Number.isFinite(deliveryFeeValue) || deliveryFeeValue < 0 || !Number.isFinite(freeShippingValue) || freeShippingValue < 0) {
-      showToast('El costo de envío y el umbral de envío gratis tienen que ser números válidos (0 o más).', 'error');
-      setLoading(submitBtn, false, 'Guardar perfil');
-      return;
-    }
 
     const contactMethodInput = document.querySelector('input[name="store-contact-method"]:checked');
     const contactMethodValue = contactMethodInput ? contactMethodInput.value : 'phone';
@@ -1446,8 +1430,6 @@ function setupStoreProfileForm() {
         zone: document.getElementById('store-zone').value.trim() || null,
         hours: hoursValue || null,
         description: descriptionValue || null,
-        delivery_fee: deliveryFeeValue,
-        free_shipping_threshold: freeShippingValue,
         contact_method: contactMethodValue,
         whatsapp: whatsappValue || null,
         ...socialFields,
