@@ -2482,3 +2482,31 @@ quedan bien alineadas, el switch anima correctamente y ambos diseños se leen co
 distintas aunque compartan el mismo componente de switch. Lo único que no se ve en el screenshot
 son los íconos de Font Awesome (el CDN está bloqueado por la política de red del sandbox) -- no es
 un bug, es sólo que esta sesión no tiene salida a internet real.
+
+## 2026-09-10 — Badge "Modo Oficios" en la navbar de Contratar + botón hamburguesa oculto donde no hay sidebar
+
+Dos ajustes chicos pedidos en la misma sesión que el trabajo de arriba.
+
+**Botón hamburguesa fantasma**: el usuario mandó una captura del mini panel de profesional en mobile
+mostrando el círculo de tres líneas (`#mc-hamburger`) que abre el sidebar de `dashboard-view` --
+pero estaba visible incluso en `register-view` (alta de comercio/profesional, o el mini panel de un
+profesional ya publicado), donde no hay sidebar. La media query de `pages/vender.html` fuerza
+`display: inline-flex` en <900px sin importar qué vista esté activa; se corrigió en
+`reveal()` (`js/vender.js`, `checkSellerState()`): ahora también togglea
+`hamburgerBtn.style.display` a `'none'` salvo cuando `view === 'dashboard'` -- un estilo inline le
+gana a la regla de la media query por especificidad, sin tocar CSS.
+
+**Badge "Modo Oficios"**: pedido con una captura de `vender.html` mostrando `.vendor-mode-badge`
+("Modo Vendedor", pill azul en la navbar) como referencia -- quería lo mismo arriba de
+`contratar.html`. Se le dieron 4 opciones de texto por `AskUserQuestion` (Modo Oficios / Modo
+Changas / Modo Profesionales / Directorio de Oficios); eligió **"Modo Oficios"** (su sugerencia
+original) en un mensaje aparte, en medio del cual llegó el pedido del hamburguesa (se resolvió ese
+primero, sin perder el pendiente). Implementado como `.oficios-mode-badge` en
+`pages/contratar.html`, mismo patrón que `.vendor-mode-badge` (pill, ícono + texto, oculto en
+mobile por falta de lugar en la navbar) pero con **acento propio**: `var(--bl-accent)` (el ámbar que
+ya existe en el sistema de marca, hoy usado para "oportunidad/aviso" en `notifications-utils.js`)
+en vez del azul de "modo vendedor" -- a propósito, para que se lea de un vistazo que Contratar es un
+directorio público, no un panel de gestión como vender.html. Ícono `fa-screwdriver-wrench`, mismo
+que ya usa el hero de la página. Verificado con capturas reales (Playwright headless contra el Vite
+dev server) en desktop (pill centrado entre logo y flecha de volver) y en 400px de ancho (el badge
+desaparece, layout no se rompe).
