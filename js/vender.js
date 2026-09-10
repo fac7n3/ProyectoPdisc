@@ -7,7 +7,7 @@ import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
-import { PROFESSIONAL_CATEGORIES } from './professional-categories.js';
+import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -128,15 +128,13 @@ async function checkSellerState(user) {
   // sin dashboard propio -- es informativo, no gestiona pedidos).
   const { data: prof } = await supabase
     .from('professionals')
-    .select('full_name, is_active')
+    .select('id, full_name, category, specialty, phone, whatsapp, photo_url, is_active')
     .eq('owner_id', user.id)
     .maybeSingle();
 
   if (prof) {
     reveal('register');
-    showProfessionalStatus(prof.is_active
-      ? `Ya estás publicado en "Contratar" como ${prof.full_name}. Si necesitás cambiar algún dato, escribinos por Soporte.`
-      : `Tu publicación como ${prof.full_name} está desactivada. Escribinos por Soporte si querés reactivarla.`);
+    await showProfessionalPanel(prof);
     return;
   }
 
@@ -164,6 +162,7 @@ function showRegisterForms(defaultTab = 'comercio') {
   const toggle = document.querySelector('.register-type-toggle');
   if (toggle) toggle.style.display = 'flex';
   document.getElementById('professional-status-view').style.display = 'none';
+  document.getElementById('professional-panel-view').style.display = 'none';
   setRegisterTab(defaultTab);
 }
 
@@ -184,9 +183,193 @@ function showProfessionalStatus(message) {
   if (toggle) toggle.style.display = 'none';
   document.getElementById('comercio-form-wrap').style.display = 'none';
   document.getElementById('profesional-form-wrap').style.display = 'none';
+  document.getElementById('professional-panel-view').style.display = 'none';
   const statusView = document.getElementById('professional-status-view');
   statusView.style.display = 'block';
   document.getElementById('professional-status-body').textContent = message;
+}
+
+// --- Mini panel del profesional ya publicado: resumen + fotos promocionales ---
+//
+// A diferencia del alta (professional_requests, arriba), acá se lee/escribe
+// directo sobre `professionals`/`professional_promos` -- la fila ya existe y
+// es pública en contratar.html. RLS de esas dos tablas ya exige
+// owner_id = auth.uid() (85_professional_promos.sql), así que no hace falta
+// re-validarlo en el cliente.
+const MAX_PROF_PROMOS = 6;
+const MAX_PROF_PROMO_BYTES = 2 * 1024 * 1024;
+let currentProfForPromos = null; // { id, owner_id opcional, is_active }
+let profPromoInputWired = false;
+
+async function showProfessionalPanel(prof) {
+  const toggle = document.querySelector('.register-type-toggle');
+  if (toggle) toggle.style.display = 'none';
+  document.getElementById('comercio-form-wrap').style.display = 'none';
+  document.getElementById('profesional-form-wrap').style.display = 'none';
+  document.getElementById('professional-status-view').style.display = 'none';
+  document.getElementById('professional-panel-view').style.display = 'block';
+
+  currentProfForPromos = prof;
+  renderProfessionalPanelSummary(prof);
+  await loadProfessionalPromos(prof.id);
+  setupProfessionalPromoUpload();
+}
+
+function renderProfessionalPanelSummary(prof) {
+  const box = document.getElementById('professional-panel-summary');
+  box.textContent = '';
+
+  const photo = document.createElement('div');
+  photo.className = 'prof-panel-summary__photo';
+  if (prof.photo_url) {
+    const img = document.createElement('img');
+    img.src = prof.photo_url;
+    img.alt = '';
+    photo.appendChild(img);
+  } else {
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-user';
+    icon.setAttribute('aria-hidden', 'true');
+    photo.appendChild(icon);
+  }
+  box.appendChild(photo);
+
+  const info = document.createElement('div');
+  const name = document.createElement('div');
+  name.className = 'prof-panel-summary__name';
+  name.textContent = prof.full_name;
+  info.appendChild(name);
+
+  const detailParts = [categoryLabel(prof.category), prof.specialty].filter(Boolean);
+  const detail = document.createElement('div');
+  detail.className = 'prof-panel-summary__detail';
+  detail.textContent = detailParts.join(' · ') || 'Sin datos adicionales';
+  info.appendChild(detail);
+
+  if (!prof.is_active) {
+    const inactive = document.createElement('div');
+    inactive.className = 'prof-panel-summary__inactive';
+    inactive.textContent = 'Tu publicación está desactivada. Escribinos por Soporte si querés reactivarla.';
+    info.appendChild(inactive);
+  }
+
+  box.appendChild(info);
+}
+
+async function loadProfessionalPromos(professionalId) {
+  const { data, error } = await supabase
+    .from('professional_promos')
+    .select('id, image_url')
+    .eq('professional_id', professionalId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Error al cargar las fotos promocionales:', error);
+    return;
+  }
+
+  renderProfessionalPromosGrid(data || []);
+}
+
+function renderProfessionalPromosGrid(promos) {
+  const grid = document.getElementById('professional-promos-grid');
+  grid.textContent = '';
+
+  promos.forEach((promo) => {
+    const item = document.createElement('div');
+    item.className = 'prof-promo-item';
+
+    const img = document.createElement('img');
+    img.src = promo.image_url;
+    img.alt = '';
+    item.appendChild(img);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'prof-promo-item__remove';
+    removeBtn.setAttribute('aria-label', 'Quitar esta foto');
+    const removeIcon = document.createElement('i');
+    removeIcon.className = 'fa-solid fa-xmark';
+    removeIcon.setAttribute('aria-hidden', 'true');
+    removeBtn.appendChild(removeIcon);
+    removeBtn.addEventListener('click', () => removeProfessionalPromo(promo));
+    item.appendChild(removeBtn);
+
+    grid.appendChild(item);
+  });
+
+  const input = document.getElementById('professional-promo-input');
+  if (input) input.disabled = promos.length >= MAX_PROF_PROMOS;
+}
+
+function setupProfessionalPromoUpload() {
+  const input = document.getElementById('professional-promo-input');
+  if (!input || profPromoInputWired) return;
+  profPromoInputWired = true;
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file || !currentProfForPromos) return;
+
+    if (file.size > MAX_PROF_PROMO_BYTES) {
+      showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      showToast('Sesión inválida.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+    const path = `${currentUser.id}/${Date.now()}.${ext || 'jpg'}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('professional-promos')
+      .upload(path, file, { contentType: file.type || 'image/jpeg' });
+
+    if (upErr) {
+      console.error('Error al subir la foto promocional:', upErr);
+      showToast('No se pudo subir la foto.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from('professional-promos').getPublicUrl(path);
+
+    const { error: insertError } = await supabase
+      .from('professional_promos')
+      .insert({ professional_id: currentProfForPromos.id, image_url: pub?.publicUrl || '' });
+
+    input.value = '';
+
+    if (insertError) {
+      console.error('Error al guardar la foto promocional:', insertError);
+      showToast('No se pudo guardar la foto.', 'error');
+      return;
+    }
+
+    showToast('Foto agregada.', 'success');
+    await loadProfessionalPromos(currentProfForPromos.id);
+  });
+}
+
+async function removeProfessionalPromo(promo) {
+  if (!confirm('¿Quitar esta foto de tu publicación?')) return;
+
+  const { error } = await supabase.from('professional_promos').delete().eq('id', promo.id);
+  if (error) {
+    console.error('Error al quitar la foto promocional:', error);
+    showToast('No se pudo quitar la foto.', 'error');
+    return;
+  }
+
+  await removeStoredObjects(supabase, 'professional-promos', [promo.image_url]);
+  showToast('Foto eliminada.', 'success');
+  await loadProfessionalPromos(currentProfForPromos.id);
 }
 
 // --- Inicializar formulario y eventos ---

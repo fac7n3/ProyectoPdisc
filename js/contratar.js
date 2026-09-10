@@ -145,10 +145,75 @@ function buildCard(pro) {
   }
   detail.appendChild(actions);
 
+  if (pro._promos && pro._promos.length > 0) {
+    const promos = el('div', 'ct-card__promos');
+    pro._promos.forEach((promo) => {
+      const thumb = el('button', 'ct-card__promo');
+      thumb.type = 'button';
+      thumb.setAttribute('aria-label', `Ver foto de ${pro.full_name}`);
+      const img = el('img');
+      img.src = promo.image_url;
+      img.alt = '';
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+      thumb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPromoLightbox(promo.image_url);
+      });
+      promos.appendChild(thumb);
+    });
+    detail.appendChild(promos);
+  }
+
   detail.appendChild(el('div', 'ct-card__reviews'));
   card.appendChild(detail);
 
   return card;
+}
+
+// --- Lightbox de fotos promocionales: se abre/cierra, un solo overlay
+// reutilizado para toda la página (no uno por tarjeta). ---
+let promoLightbox = null;
+
+function buildPromoLightbox() {
+  const overlay = el('div', 'ct-lightbox');
+  overlay.hidden = true;
+
+  const closeBtn = el('button', 'ct-lightbox__close');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Cerrar');
+  const closeIcon = el('i', 'fa-solid fa-xmark');
+  closeIcon.setAttribute('aria-hidden', 'true');
+  closeBtn.appendChild(closeIcon);
+  overlay.appendChild(closeBtn);
+
+  const img = el('img', 'ct-lightbox__img');
+  overlay.appendChild(img);
+
+  const close = () => closePromoLightbox();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  closeBtn.addEventListener('click', close);
+
+  document.body.appendChild(overlay);
+  return { overlay, img };
+}
+
+function openPromoLightbox(imageUrl) {
+  if (!promoLightbox) promoLightbox = buildPromoLightbox();
+  promoLightbox.img.src = imageUrl;
+  promoLightbox.overlay.hidden = false;
+  document.addEventListener('keydown', onPromoLightboxKeydown);
+}
+
+function closePromoLightbox() {
+  if (!promoLightbox) return;
+  promoLightbox.overlay.hidden = true;
+  promoLightbox.img.src = '';
+  document.removeEventListener('keydown', onPromoLightboxKeydown);
+}
+
+function onPromoLightboxKeydown(e) {
+  if (e.key === 'Escape') closePromoLightbox();
 }
 
 function buildEmpty(message) {
@@ -233,14 +298,31 @@ async function loadProfessionals() {
     return;
   }
 
-  // Reseñas: una sola consulta para todos (no una por tarjeta), agregadas acá
-  // en promedio/cantidad -- "mientras más estrellas, mejor" ordena la lista.
-  const { data: reviewRows } = await supabase
-    .from('reviews')
-    .select('target_id, rating')
-    .eq('target_type', 'professional')
-    .eq('is_hidden', false)
-    .in('target_id', professionals.map((p) => p.id));
+  // Reseñas y fotos promocionales: una sola consulta de cada una para toda
+  // la lista (no una por tarjeta). Las reseñas se agregan en promedio/cantidad
+  // -- "mientras más estrellas, mejor" ordena la lista -- las fotos se
+  // agrupan por profesional para pintarlas en su tarjeta al desplegarla.
+  const [{ data: reviewRows }, { data: promoRows }] = await Promise.all([
+    supabase
+      .from('reviews')
+      .select('target_id, rating')
+      .eq('target_type', 'professional')
+      .eq('is_hidden', false)
+      .in('target_id', professionals.map((p) => p.id)),
+    supabase
+      .from('professional_promos')
+      .select('id, professional_id, image_url')
+      .in('professional_id', professionals.map((p) => p.id))
+      .order('created_at', { ascending: true }),
+  ]);
+
+  const promosByPro = new Map();
+  (promoRows || []).forEach((promo) => {
+    const list = promosByPro.get(promo.professional_id) || [];
+    list.push(promo);
+    promosByPro.set(promo.professional_id, list);
+  });
+  professionals.forEach((pro) => { pro._promos = promosByPro.get(pro.id) || []; });
 
   const reviewsByPro = new Map();
   (reviewRows || []).forEach((r) => {
