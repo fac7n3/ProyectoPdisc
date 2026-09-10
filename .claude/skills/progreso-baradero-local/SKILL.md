@@ -2425,3 +2425,60 @@ confirmó con `getComputedStyle` + `requestAnimationFrame` (necesario para no le
 "stale" de antes de la transición) que `.is-open` cambia `visibility` de `hidden` a `visible` y
 `opacity` de `0` a un valor intermedio en transición, y que sacar la clase los vuelve a `hidden`/`0`
 -- confirma que el fix resuelve el bug de raíz, no solo lo tapa.
+
+## 2026-09-10 — Redes sociales en el panel de profesional/técnico + rediseño con switch (ambos paneles)
+
+El usuario pidió, con una captura de un mockup externo (un builder de landing pages, no del proyecto):
+sumar un apartado de redes sociales al mini panel de profesional/técnico -- mismo dato que ya carga
+un comercio -- pero con un diseño propio (distinto del de comercio), y que ambos (comercio y
+profesional) tengan una estructura similar a la del mockup: label + link + switch por fila, en vez
+del checkbox + texto "Mostrar" que tenía el de comercio hasta ahora. La idea del mockup era solo de
+estructura -- se implementó respetando la estética de Baradero Local (tokens `--bl-*`, no los
+colores del mockup).
+
+**DB**: migración `87_professionals_social.sql` (ya aplicada a producción) agrega a `professionals`
+las mismas 12 columnas que ya tiene `stores` desde `82_store_contact_and_social.sql`
+(`social_instagram`/`social_instagram_show`, ... x6 redes). No hizo falta tocar RLS:
+`professionals_update_own` (86) ya deja al dueño actualizar su fila entera.
+
+**Switch compartido** (`pages/vender.html`): `.social-toggle`/`.social-toggle__track` es un
+`<input type="checkbox">` real (accesible, funciona con teclado) escondido detrás de un `<span>`
+con el visual de iOS-switch -- mismo patrón de "checkbox real + span decorativo" que ya usaba el
+proyecto en otros lugares (ningún JS nuevo hizo falta para leer/escribir el valor: sigue siendo
+`.checked`). Un solo componente, dos layouts:
+- **Comercio** (`.social-row`, reemplaza la `.pf-grid`/`.pf-field` de antes): una fila de ancho
+  completo por red -- ícono, nombre, input, switch -- calcada de la estructura del mockup. IDs sin
+  cambios (`store-social-<red>`/`store-social-<red>-show`), así que no hizo falta tocar la lógica
+  de lectura/guardado en `js/vender.js` (`fillStoreProfileForm()`/`setupStoreProfileForm()`), solo
+  el HTML.
+- **Profesional** (`.prof-social-grid`/`.prof-social-card`, sección nueva dentro de
+  `professional-edit-form`): grilla de tarjetas chicas -- ícono en chip circular + nombre arriba,
+  switch flotando en la esquina, input abajo -- mismo concepto (label + link + switch) pero
+  apariencia distinta a propósito, para que ambos paneles no se vean idénticos. IDs
+  `prof-social-<red>`/`prof-social-<red>-show`, dentro del mismo `<form>` que
+  specialty/description/phone/whatsapp -- un solo "Guardar cambios" para todo, con el botón movido
+  a un `.pf-actions` al final (mismo patrón que "Guardar perfil" del comercio), no metido dentro de
+  la última tarjeta.
+
+**`js/vender.js`**: el `select` de `professionals` en `checkSellerState()` suma las 12 columnas
+nuevas; `fillProfessionalEditForm()` las precarga (`SOCIAL_NETWORKS.forEach`, mismo bucle que ya
+usa el comercio); `setupProfessionalEditForm()` arma `socialFields` con el mismo patrón que
+`setupStoreProfileForm()` y lo mergea al `.update()` de `professionals`.
+
+**Público**: `js/contratar.js` ahora también pinta los íconos de redes sociales en la tarjeta del
+profesional (`.ct-card__social`, mismo componente visual que `.store-header__social-link` de
+comercio.html) reusando `getVisibleSocialLinks()` de `store-contact-utils.js` -- esa función ya era
+genérica (no le importa si el objeto es una `store` o un `professional`, solo los campos
+`social_<red>`/`social_<red>_show`), así que no hizo falta tocarla. Se ubican entre
+Llamar/WhatsApp y las fotos promocionales.
+
+**Probado sin depender de la red bloqueada de la sesión**: se armaron dos páginas de prueba
+standalone (fuera de git, borradas al terminar) copiando el `<style>` de vender.html + el fragmento
+HTML de cada sección, servidas por el mismo Vite dev server (así los `../Assets/styles/home.css`
+relativos resuelven) y abiertas con Playwright headless -- esto evita por completo `guardPage()`
+(que en esta sesión redirige a login.html apenas la llamada a Supabase falla a nivel de red, no
+hace falta sesión real para ver el HTML/CSS). Confirmado visualmente que las dos filas/tarjetas
+quedan bien alineadas, el switch anima correctamente y ambos diseños se leen como secciones
+distintas aunque compartan el mismo componente de switch. Lo único que no se ve en el screenshot
+son los íconos de Font Awesome (el CDN está bloqueado por la política de red del sandbox) -- no es
+un bug, es sólo que esta sesión no tiene salida a internet real.

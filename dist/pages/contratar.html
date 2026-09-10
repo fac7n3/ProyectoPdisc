@@ -103,6 +103,18 @@
       .ct-btn--call { background: var(--bl-primary); color: #fff; box-shadow: var(--bl-shadow-sm); }
       .ct-btn--whatsapp { background: #25d366; color: #fff; box-shadow: var(--bl-shadow-sm); }
 
+      /* Redes sociales cargadas desde el mini panel del profesional (vender.html) --
+         mismo componente que .store-header__social-link en comercio.html. */
+      .ct-card__social { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+      .ct-card__social-link {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 2.1rem; height: 2.1rem; border-radius: 50%;
+        border: 1px solid var(--bl-border); color: var(--bl-text-secondary);
+        background: var(--bl-surface); text-decoration: none; font-size: 0.9rem;
+        transition: border-color .15s, color .15s;
+      }
+      .ct-card__social-link:hover { border-color: var(--bl-primary); color: var(--bl-primary); }
+
       /* Fotos promocionales, debajo de Llamar/WhatsApp -- se abren en el
          mismo lightbox que ya usan los banners del home (.promo-lightbox-*,
          ver home.css -- esta página ya lo carga, no hace falta un componente
@@ -133,10 +145,11 @@
       .ct-cta a { color: var(--bl-primary); font-weight: 700; text-decoration: none; }
       .ct-cta a:hover { text-decoration: underline; }
     </style>
-    <script type="module" crossorigin src="/assets/contratar-suGqyUMu.js"></script>
+    <script type="module" crossorigin src="/assets/contratar-DAvYrNuZ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">
+    <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
     <link rel="stylesheet" crossorigin href="/assets/home-CwSLoaBd.css">
   </head>
   <body>

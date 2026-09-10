@@ -128,7 +128,10 @@ async function checkSellerState(user) {
   // sin dashboard propio -- es informativo, no gestiona pedidos).
   const { data: prof } = await supabase
     .from('professionals')
-    .select('id, full_name, category, specialty, description, phone, whatsapp, photo_url, is_active')
+    .select(`id, full_name, category, specialty, description, phone, whatsapp, photo_url, is_active,
+      social_instagram, social_instagram_show, social_facebook, social_facebook_show,
+      social_tiktok, social_tiktok_show, social_x, social_x_show,
+      social_youtube, social_youtube_show, social_website, social_website_show`)
     .eq('owner_id', user.id)
     .maybeSingle();
 
@@ -299,6 +302,15 @@ function fillProfessionalEditForm(prof) {
   if (descriptionInput) descriptionInput.value = prof.description || '';
   if (phoneInput) phoneInput.value = prof.phone || '';
   if (whatsappInput) whatsappInput.value = prof.whatsapp || '';
+
+  // Redes sociales -- mismos campos social_<red>/social_<red>_show que un
+  // comercio (ver SOCIAL_NETWORKS), pero con ids prof-social-*.
+  SOCIAL_NETWORKS.forEach(({ key }) => {
+    const urlInput = document.getElementById(`prof-social-${key}`);
+    const showInput = document.getElementById(`prof-social-${key}-show`);
+    if (urlInput) urlInput.value = prof[`social_${key}`] || '';
+    if (showInput) showInput.checked = prof[`social_${key}_show`] !== false;
+  });
 }
 
 /** Guarda los cambios de specialty/description/phone/whatsapp -- antes, cambiar
@@ -331,6 +343,12 @@ function setupProfessionalEditForm() {
       return;
     }
 
+    const socialFields = {};
+    SOCIAL_NETWORKS.forEach(({ key }) => {
+      socialFields[`social_${key}`] = document.getElementById(`prof-social-${key}`).value.trim() || null;
+      socialFields[`social_${key}_show`] = document.getElementById(`prof-social-${key}-show`).checked;
+    });
+
     const submitBtn = form.querySelector('button[type="submit"]');
     setLoading(submitBtn, true, 'Guardar cambios');
 
@@ -341,6 +359,7 @@ function setupProfessionalEditForm() {
         description: descriptionValue || null,
         phone: phoneValue,
         whatsapp: whatsappValue || null,
+        ...socialFields,
       })
       .eq('id', currentProfForPromos.id);
 
@@ -358,6 +377,7 @@ function setupProfessionalEditForm() {
       description: descriptionValue || null,
       phone: phoneValue,
       whatsapp: whatsappValue || null,
+      ...socialFields,
     };
     renderProfessionalPanelSummary(currentProfForPromos);
     showToast('Cambios guardados.', 'success');
