@@ -96,6 +96,11 @@ body {
 .role-badge--admin,
 .role-badge--moderador { background: #fee2e2; color: #b91c1c; }
 
+/* Tags de afiliación a un comercio (empleado/dueño), además del rol de
+   cuenta -- misma pill, colores propios para distinguirlos del rol. */
+.role-badge--staff { background: #ede9fe; color: #6d28d9; }
+.role-badge--owner { background: #dcfce7; color: #15803d; }
+
 @media (max-width: 600px) {
   .profile-header {
     gap: 1rem;

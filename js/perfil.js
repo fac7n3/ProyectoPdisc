@@ -2367,6 +2367,43 @@ function setupPrivacyActions(user) {
 }
 
 // --- Renderizar perfil completo ---
+/**
+ * Tags adicionales junto al de rol (además de "Cliente"/"Vendedor"/etc. del
+ * JWT): a qué tiendas está afiliada la cuenta -- "Empleado de <tienda>" por
+ * cada fila de `store_staff`, y "Dueño de <tienda>" SOLO si la cuenta es
+ * dueña de una única tienda. Si es dueña de más de una, es casi seguro data
+ * de seed/test (owner_id quedó puesto en una cuenta real por cómo se corrió
+ * el seed, no una relación real) -- mostrar un tag por cada una sería
+ * engañoso, así que en ese caso no se muestra ningún tag de dueño. Mismo
+ * patrón visual que el badge de rol (`.role-badge`), variantes nuevas
+ * `--staff`/`--owner` (`Assets/styles/perfil-custom.css`).
+ */
+async function renderAffiliationBadges(userId) {
+  const nameRow = document.querySelector('.profile-header__name-row');
+  if (!nameRow) return;
+
+  const [{ data: staffRows }, { data: ownedStores }] = await Promise.all([
+    supabase.from('store_staff').select('store_id, stores(name)').eq('user_id', userId),
+    supabase.from('stores').select('id, name').eq('owner_id', userId),
+  ]);
+
+  const addBadge = (text, variant) => {
+    const span = document.createElement('span');
+    span.className = `role-badge role-badge--${variant}`;
+    span.textContent = text;
+    nameRow.appendChild(span);
+  };
+
+  (staffRows || []).forEach((row) => {
+    const storeName = row.stores?.name;
+    if (storeName) addBadge(`Empleado de ${storeName}`, 'staff');
+  });
+
+  if (ownedStores && ownedStores.length === 1) {
+    addBadge(`Dueño de ${ownedStores[0].name}`, 'owner');
+  }
+}
+
 async function renderFullProfile(user) {
   currentUserId = user.id;
   try {
@@ -2433,6 +2470,7 @@ async function renderFullProfile(user) {
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
   initAccountMenu();
+  renderAffiliationBadges(user.id);
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer.
   const notifCardBadge = document.getElementById("notif-card-badge");
