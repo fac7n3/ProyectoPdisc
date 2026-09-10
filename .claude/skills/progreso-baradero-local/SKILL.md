@@ -2387,3 +2387,41 @@ ninguna policy de UPDATE por dueño (solo `professionals_all_admin`, exclusiva d
 No se sumó edición de nombre/categoría/foto de perfil en esta pasada -- quedó afuera a propósito
 para no ampliar el pedido más de lo que se pidió ("alguna acción más", no todas); si hace falta,
 mismo patrón que specialty/description: agregar el campo al formulario y al `.update()`.
+
+## 2026-09-10 — Botón de subir foto prolijo + fix del lightbox de Contratar que no cerraba del todo
+
+El usuario probó el panel de profesional con una cuenta real (captura de pantalla) y confirmó que
+funciona -- pidió dos retoques: que el botón de subir fotos promocionales se vea mejor, y que el
+lightbox de una foto en contratar.html cierre del todo (el fondo oscuro quedaba trabado). También
+pidió, con otra captura, que el lightbox se vea como el de los banners promocionales del home.
+
+**Botón de subir foto** (`pages/vender.html`): el `<input type="file">` nativo (feo, inconsistente
+entre navegadores) pasa a estar `hidden` detrás de un `<label>` estilado ("Agregar foto", ícono
+`fa-camera`, pill con borde punteado) -- mismo criterio que ya usan los pickers de fotos de
+producto/avatar en el resto del sitio, no un patrón nuevo. `renderProfessionalPromosGrid()`
+(`js/vender.js`) togglea una clase `.is-disabled` en el label (además de `input.disabled`) al llegar
+a las 6 fotos.
+
+**Bug del lightbox** (`js/contratar.js`): togglear `overlay.hidden` no alcanzaba para ocultar el
+overlay porque `.ct-lightbox { display: flex }` era una regla de **autor** (la hoja de estilos de la
+página) y le ganaba en cascada a `[hidden] { display: none }`, que es una regla de **user-agent**
+(la hoja por defecto del navegador) -- mismo peso de especificidad (ambas cuentan como una clase en
+la fórmula), pero el origen del autor siempre le gana al del user-agent en el algoritmo de cascada
+de CSS, sin importar el orden en que aparezcan. Resultado: `hidden=true` apagaba la imagen
+(`img.src = ''`) pero el `div` seguía con `display:flex` ocupando toda la pantalla con su fondo
+oscuro. **Fix**: en vez de parchear ese componente nuevo, se reemplazó entero por el lightbox que ya
+existía para los banners del home (`.promo-lightbox-overlay`/`.promo-lightbox`/
+`.promo-lightbox__img`/`.promo-lightbox__close`, `home.css` + `initPromoBannerLightbox()` en
+`home.js`) -- contratar.html ya cargaba `home.css`, así que no hizo falta escribir CSS nueva, solo
+armar la misma estructura de DOM en `js/contratar.js` y togglear una clase `is-open` (transiciona
+`opacity`/`visibility`, sin el problema de especificidad de `hidden`). De paso, ahora se ve
+exactamente igual que el lightbox de banners del home (fondo oscuro con blur, tarjeta con
+fade+scale, botón circular blanco flotando sobre la esquina superior derecha de la imagen), que es
+lo que pidió el usuario en la segunda captura.
+
+**Verificado con Playwright headless** (sin depender de la red bloqueada de la sesión, ver entradas
+anteriores): se inyectó el mismo HTML/CSS del lightbox en `contratar.html` ya servido por Vite y se
+confirmó con `getComputedStyle` + `requestAnimationFrame` (necesario para no leer el valor
+"stale" de antes de la transición) que `.is-open` cambia `visibility` de `hidden` a `visible` y
+`opacity` de `0` a un valor intermedio en transición, y que sacar la clase los vuelve a `hidden`/`0`
+-- confirma que el fix resuelve el bug de raíz, no solo lo tapa.
