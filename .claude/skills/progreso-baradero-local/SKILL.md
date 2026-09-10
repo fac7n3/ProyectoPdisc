@@ -2510,3 +2510,18 @@ directorio público, no un panel de gestión como vender.html. Ícono `fa-screwd
 que ya usa el hero de la página. Verificado con capturas reales (Playwright headless contra el Vite
 dev server) en desktop (pill centrado entre logo y flecha de volver) y en 400px de ancho (el badge
 desaparece, layout no se rompe).
+
+**Corregido en la misma sesión** -- el usuario aclaró que "Modo Oficios" iba **dentro del panel de
+profesionales/técnicos** (`vender.html`), no en la página pública `contratar.html`: se sacó de ahí
+y se agregó a la navbar de `vender.html`, al lado de `.vendor-mode-badge` ("Modo Vendedor"). De
+paso salió a la luz que `.vendor-mode-badge` no tenía `id` ni lógica de visibilidad -- se mostraba
+siempre, incluso para un profesional viendo su mini panel (que no es vendedor). Ahora los dos
+badges (`#vendor-mode-badge`/`#oficios-mode-badge`) arrancan `hidden` y `reveal()`/
+`showProfessionalPanel()` (`js/vender.js`) decide cuál mostrar: "Modo Vendedor" solo en
+`dashboard-view`, "Modo Oficios" solo cuando `showProfessionalPanel()` revela el mini panel de
+profesional ya publicado (ni durante el alta ni con una solicitud pendiente). **Mismo bug de
+`[hidden]` vs. una regla de autor con `display` que ya apareció con el lightbox de Contratar** --
+se agregó `.vendor-mode-badge[hidden], .oficios-mode-badge[hidden] { display: none; }` para que la
+regla de autor no le gane en cascada al `[hidden]` de user-agent. Verificado con una página de
+prueba standalone (fuera de git) con dos botones que simulan `reveal('dashboard')` y
+`showProfessionalPanel()`: cada click deja visible solo el badge que corresponde.

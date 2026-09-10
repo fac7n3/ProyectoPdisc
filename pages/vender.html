@@ -29,7 +29,8 @@
            rgb() a mano y quedaron todos en teal al cambiar el token. */
         --bl-vendor-accent-rgb: 47, 90, 168;
       }
-      .vendor-mode-badge {
+      .vendor-mode-badge,
+      .oficios-mode-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
@@ -42,8 +43,23 @@
         letter-spacing: 0.02em;
         white-space: nowrap;
       }
+      /* "Modo Oficios" con acento propio (el ámbar del sistema de marca,
+         --bl-accent) en vez del azul de "modo vendedor" -- distingue de un
+         vistazo que el panel de profesional/técnico no es el de un comercio.
+         Visible solo cuando showProfessionalPanel() lo revela (js/vender.js). */
+      .oficios-mode-badge { background: var(--bl-accent); }
+      /* Sin esto, el `display: inline-flex` de arriba (regla de autor) le
+         gana en cascada al `display: none` por defecto de `[hidden]` (regla
+         de user-agent) aunque tengan la misma especificidad -- mismo bug que
+         ya apareció con el lightbox de Contratar. Los dos badges arrancan
+         ocultos y js/vender.js decide cuál mostrar según la vista activa. */
+      .vendor-mode-badge[hidden],
+      .oficios-mode-badge[hidden] {
+        display: none;
+      }
       @media (max-width: 768px) {
-        .vendor-mode-badge {
+        .vendor-mode-badge,
+        .oficios-mode-badge {
           display: none;
         }
         .vender-container {
@@ -768,7 +784,8 @@
               <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
             </div>
           </a>
-          <span class="vendor-mode-badge"><i class="fa-solid fa-store"></i> Modo Vendedor</span>
+          <span class="vendor-mode-badge" id="vendor-mode-badge" hidden><i class="fa-solid fa-store" aria-hidden="true"></i> Modo Vendedor</span>
+          <span class="oficios-mode-badge" id="oficios-mode-badge" hidden><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Modo Oficios</span>
           <div class="navbar__actions">
             <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
             <div id="nav-notifications-wrap"></div>

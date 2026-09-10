@@ -38,6 +38,8 @@ async function checkSellerState(user) {
   const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
   const hamburgerBtn = document.getElementById('mc-hamburger');
+  const vendorBadge = document.getElementById('vendor-mode-badge');
+  const oficiosBadge = document.getElementById('oficios-mode-badge');
 
   // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
   // esto, register-view/dashboard-view quedaban visibles por defecto (guardPage
@@ -55,6 +57,12 @@ async function checkSellerState(user) {
     // (no una clase) para pisar el `display: inline-flex` que le pone la
     // media query de <900px cuando corresponde ocultarlo.
     if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
+    // "Modo Vendedor" solo tiene sentido en dashboard-view (comercio real).
+    // "Modo Oficios" es más específico todavía -- lo prende recién
+    // showProfessionalPanel() cuando de verdad se muestra ese mini panel, no
+    // cualquier estado de register-view (alta o solicitud pendiente).
+    if (vendorBadge) vendorBadge.hidden = view !== 'dashboard';
+    if (oficiosBadge) oficiosBadge.hidden = true;
   };
 
   if (!user) return; // guardPage ya se encarga de redirigir
@@ -219,6 +227,9 @@ async function showProfessionalPanel(prof) {
   document.getElementById('profesional-form-wrap').style.display = 'none';
   document.getElementById('professional-status-view').style.display = 'none';
   document.getElementById('professional-panel-view').style.display = 'block';
+
+  const oficiosBadge = document.getElementById('oficios-mode-badge');
+  if (oficiosBadge) oficiosBadge.hidden = false;
 
   currentProfForPromos = prof;
   renderProfessionalPanelSummary(prof);

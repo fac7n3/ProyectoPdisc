@@ -15,24 +15,6 @@
     <style>
       .ct-page { max-width: 800px; margin: 0 auto 3rem; padding: 0 1rem; }
 
-      /* Insignia de la navbar, mismo patrón que .vendor-mode-badge de
-         vender.html (F5-09) pero con acento propio (--bl-accent, el ámbar
-         que ya usa el sistema de marca para "oportunidad/algo para hacer")
-         en vez del azul de "modo vendedor" -- Contratar es un directorio
-         público, no un panel de gestión, así que conviene que se lea
-         distinto de un vistazo. Oculta en mobile, mismo criterio que el
-         badge de vender.html: no hay lugar en la navbar angosta y no es
-         información imprescindible. */
-      .oficios-mode-badge {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.35rem 0.9rem; border-radius: var(--bl-radius-pill);
-        background: var(--bl-accent); color: #fff;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
-      }
-      @media (max-width: 768px) {
-        .oficios-mode-badge { display: none; }
-      }
-
       .ct-hero { display: flex; align-items: center; gap: 1rem; margin: 1.75rem 0 1.5rem; }
       .ct-hero__icon {
         flex-shrink: 0; width: 3rem; height: 3rem; border-radius: var(--bl-radius-lg);
@@ -180,7 +162,6 @@
             <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
           </div>
         </a>
-        <span class="oficios-mode-badge"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Modo Oficios</span>
         <div class="navbar__actions">
           <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left"></i></a>
         </div>
