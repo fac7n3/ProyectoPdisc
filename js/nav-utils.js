@@ -831,6 +831,21 @@ export async function initAccountMenu() {
       ]));
     }
 
+    // Publicarse como profesional/técnico ("Contratar") no cambia el rol de
+    // la cuenta (sigue siendo 'cliente' o el que tenga) -- por eso este caso
+    // no entra en el switch de `role` de arriba y necesita su propia consulta,
+    // igual que renderPanelLink() en js/perfil.js.
+    const { data: professionalRow } = await supabase
+      .from('professionals')
+      .select('id')
+      .eq('owner_id', user.id)
+      .maybeSingle();
+    if (professionalRow) {
+      panel.appendChild(buildSection('Profesional/Técnico', [
+        { href: './vender.html', icon: 'fa-solid fa-screwdriver-wrench', label: 'Panel de profesional/técnico' },
+      ]));
+    }
+
     panel.appendChild(buildSection(null, [
       {
         icon: 'fa-solid fa-right-from-bracket',

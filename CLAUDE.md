@@ -80,6 +80,15 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-10** — Panel de profesional/técnico ampliado: aparece
+  también en el menú de cuenta de la navbar (sección "Profesional/Técnico",
+  antes solo estaba en "Mi perfil"), "Mi perfil" muestra un tag
+  "Profesional/Técnico · \<categoría\>" junto al badge de rol, y el mini panel
+  de vender.html deja de ser solo fotos: ahora puede pausar/reactivar su
+  publicación y editar especialidad/descripción/teléfono/WhatsApp sin pasar
+  por Soporte. Migración `86_professionals_update_own.sql` (ya aplicada a
+  producción): agrega la policy de UPDATE por dueño que le faltaba a
+  `professionals` (antes solo el admin podía escribir esa tabla).
 - **Resuelto 2026-09-10** — Acceso al panel desde "Mi perfil" ampliado más
   allá de admin/moderador: la fila "Tipo de cuenta" ahora también muestra el
   link para vendedor/empleada de un comercio ("Panel de vendedor" ->

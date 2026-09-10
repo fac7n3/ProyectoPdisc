@@ -2332,3 +2332,58 @@ de contratar.html fallan a nivel de red. Se validó igual que la página carga s
 (`pageerror`/`console.error`) más allá de los fallos de red esperables, y que el layout no se rompe.
 Falta una pasada manual (o desde una sesión con acceso a internet real) para confirmar el flujo
 completo: subir una foto, verla en contratar.html, abrir/cerrar el lightbox.
+
+**Verificado por SQL en la sesión siguiente** (Supabase MCP, simulando el JWT de cada cuenta con
+`set local request.jwt.claims`, ver también la entrada de abajo): la RLS de `professional_promos`
+se comporta como se diseñó -- el dueño de un profesional real (Juan Pérez) pudo insertar una fila
+para su propio `professional_id`, otra profesional (Berenice Pirula) intentando insertar en la
+publicación de Juan Pérez recibió el 42501 esperado de RLS, y con rol `anon` (visitante sin sesión)
+la fila insertada se pudo leer sin problema. No se pudo probar la subida real de un archivo al
+bucket (esa parte sí necesita un navegador real con sesión) -- filas de prueba borradas al terminar,
+no quedó nada de esto en producción.
+
+## 2026-09-10 — Panel de profesional/técnico: acceso desde la navbar + más acciones self-service
+
+A partir de una captura del menú de cuenta de la navbar (screenshot del usuario), pidió: mejorar y
+completar ese panel, sumar la categoría profesional/técnico dentro del perfil, que el panel también
+aparezca en la barra de acceso rápido (el menú de cuenta de la navbar, no solo en "Mi perfil"), y que
+el profesional/técnico pueda hacer alguna acción más además de subir fotos.
+
+**Menú de cuenta de la navbar** (`js/nav-utils.js`, función `open()` del dropdown): sumada una
+consulta a `professionals` (`owner_id = auth.uid()`) al lado de los `if (role === ...)` existentes
+-- publicarse como profesional no cambia `profiles.role`/JWT, así que no entra en ese switch y
+necesita su propia query, mismo criterio que `renderPanelLink()` en `js/perfil.js`. Si existe,
+agrega una sección "Profesional/Técnico" con el link "Panel de profesional/técnico" -> `vender.html`.
+
+**Tag en "Mi perfil"**: `renderAffiliationBadges()` (`js/perfil.js`) suma una tercera consulta
+(`professionals` por `owner_id`) a las dos que ya tenía (`store_staff`/`stores`), y agrega un tag
+"Profesional/Técnico · <categoría>" (o "... (pausado)" si `is_active` es false) junto al badge de
+rol -- mismo patrón visual que "Empleado de/Dueño de", variante nueva `.role-badge--professional`
+(`Assets/styles/perfil-custom.css`). De paso, el link de "Tipo de cuenta" (`role-panel-link`) que
+mostraba "Mi panel de profesional" pasa a decir "Panel de profesional/técnico", para que el nombre
+sea el mismo en los tres lugares (Mi perfil, navbar, header del panel en vender.html).
+
+**Más acciones en el mini panel** (`js/vender.js`/`pages/vender.html`): hasta ahora solo se podían
+cargar/borrar fotos promocionales -- cualquier otro cambio (especialidad, descripción, teléfono,
+WhatsApp, pausar la publicación) seguía pidiendo pasar por Soporte, porque `professionals` no tenía
+ninguna policy de UPDATE por dueño (solo `professionals_all_admin`, exclusiva del admin). Se agregó:
+
+- Migración `86_professionals_update_own.sql` (ya aplicada a producción): policy
+  `professionals_update_own` (`for update`, `using`/`with check` `owner_id = auth.uid()`) -- mismo
+  criterio que `stores_update_own` para comercios, sin restricción por columna (el dueño edita su
+  fila entera, como ya podía hacer un vendedor con el perfil de su comercio). Probada por SQL
+  simulando el JWT de dos cuentas distintas: el dueño real pudo actualizar su fila, otra cuenta
+  intentando tocar una fila ajena afectó 0 filas (silencioso, como corresponde a un UPDATE bloqueado
+  por RLS, a diferencia del 42501 que sí tira un INSERT bloqueado) -- se hizo dentro de una
+  transacción con `rollback` para no dejar nada escrito.
+- **Pausar/reactivar la propia publicación**: botón nuevo en el resumen del panel
+  (`toggleProfessionalActive()`), mismo patrón que ya usan productos y cupones (togglear
+  `is_active`). Antes, pausar/reactivar una publicación de profesional dependía de pedírselo al
+  admin por Soporte.
+- **Editar especialidad/descripción/teléfono/WhatsApp**: formulario nuevo
+  (`professional-edit-form`) arriba de la grilla de fotos, reusa las mismas validaciones
+  (`isValidShopName`/`isValidPhone`) que ya usa el formulario de alta.
+
+No se sumó edición de nombre/categoría/foto de perfil en esta pasada -- quedó afuera a propósito
+para no ampliar el pedido más de lo que se pidió ("alguna acción más", no todas); si hace falta,
+mismo patrón que specialty/description: agregar el campo al formulario y al `.update()`.
