@@ -1521,15 +1521,15 @@ button.coupon-chip:hover {
    proporción 2fr/1fr no es arbitraria: con las tres fotos midiendo lo mismo
    que su propio aspect-ratio (900x507, ver .promo-banner) es la que hace
    que el bloque grande y la columna apilada terminen midiendo más o menos
-   lo mismo de alto solas, sin tener que forzar ningún recorte. Achicado
-   (712px, no los 1272px disponibles) para que no ocupe media pantalla, y
-   pegado al borde izquierdo (margin:0, no auto) en vez de centrado. */
+   lo mismo de alto solas, sin tener que forzar ningún recorte. Usa todo el
+   ancho del contenedor (igual que el hero, las grillas de productos y el
+   segundo mosaico de abajo) -- antes tenía un max-width de 712px que lo
+   dejaba mucho más angosto que el resto de la página, pegado a la
+   izquierda con un espacio vacío enorme a la derecha. */
 .promo-mosaic__grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1rem;
-  max-width: 712px;
-  margin: 0;
 }
 
 .promo-mosaic__side {
