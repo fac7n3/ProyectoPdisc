@@ -4043,9 +4043,10 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 }
 
 /* ===========================================================
-   PROFESIONALES DESTACADOS (home -> directorio "Contratar")
-   Fila compacta de los mejor calificados, scroll horizontal. Mismo
-   contenedor .products (max-width 1320px) que el resto de las secciones.
+   PROFESIONALES DESTACADOS (directorio "Contratar", contratar.html)
+   Fila compacta de los mejor calificados, scroll horizontal. Vive acá
+   (home.css) porque contratar.html ya lo carga para el resto de los
+   tokens/estilos compartidos -- no por ser del home.
    =========================================================== */
 .pro-highlight__row {
   display: flex;

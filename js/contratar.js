@@ -247,6 +247,76 @@ function onPromoLightboxKeydown(e) {
   if (e.key === 'Escape') closePromoLightbox();
 }
 
+// Destacados: los mejor calificados, en una fila compacta arriba de la
+// lista completa (mismo componente .pro-highlight-card que antes vivía en
+// el home, ver Assets/styles/home.css -- esta página ya lo carga).
+function buildFeaturedCard(pro) {
+  const card = el('a', 'pro-highlight-card');
+  card.href = `#ct-pro-${pro.id}`;
+
+  const photo = el('div', 'pro-highlight-card__photo');
+  if (pro.photo_url) {
+    const img = el('img');
+    img.src = pro.photo_url;
+    img.alt = '';
+    img.loading = 'lazy';
+    photo.appendChild(img);
+  } else {
+    const icon = el('i', 'fa-solid fa-user');
+    icon.setAttribute('aria-hidden', 'true');
+    photo.appendChild(icon);
+  }
+  card.appendChild(photo);
+
+  card.appendChild(el('span', 'pro-highlight-card__name', pro.full_name));
+  card.appendChild(el('span', 'pro-highlight-card__specialty', pro.specialty));
+
+  const stars = el('span', 'pro-highlight-card__stars', `★ ${pro._ratingAvg.toFixed(1)} (${pro._ratingCount})`);
+  card.appendChild(stars);
+
+  card.addEventListener('click', (e) => {
+    e.preventDefault();
+    scrollToProfessional(pro.id);
+  });
+
+  return card;
+}
+
+function renderFeatured(list) {
+  const section = document.getElementById('ct-featured-section');
+  const row = document.getElementById('ct-featured-row');
+  if (!section || !row) return;
+
+  const featured = list.filter((p) => p._ratingCount > 0).slice(0, 8);
+  if (featured.length === 0) {
+    section.hidden = true;
+    return;
+  }
+
+  row.textContent = '';
+  featured.forEach((pro) => row.appendChild(buildFeaturedCard(pro)));
+  section.hidden = false;
+}
+
+// Abre y desplaza a una tarjeta de la lista completa, reseteando los
+// filtros si hace falta para que esté presente (mismo criterio que el
+// deep link ?pro= que usan las notificaciones/buscador).
+function scrollToProfessional(id) {
+  if (activeCategory !== 'todos' || document.getElementById('ct-search-input')?.value) {
+    activeCategory = 'todos';
+    document.querySelectorAll('.ct-chip').forEach((c) => c.classList.toggle('is-active', c.dataset.category === 'todos'));
+    const searchInput = document.getElementById('ct-search-input');
+    if (searchInput) searchInput.value = '';
+    applyFilter();
+  }
+
+  const card = document.getElementById(`ct-pro-${id}`);
+  const pro = allProfessionals.find((p) => p.id === id);
+  if (!card || !pro) return;
+  if (!card.classList.contains('is-open')) toggleCard(card, pro);
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function buildEmpty(message) {
   const empty = el('div', 'ct-empty');
   const icon = el('i', 'fa-regular fa-circle-question');
@@ -328,6 +398,7 @@ async function loadProfessionals() {
 
   if (professionals.length === 0) {
     allProfessionals = [];
+    renderFeatured([]);
     render([]);
     return;
   }
@@ -381,6 +452,7 @@ async function loadProfessionals() {
   });
 
   allProfessionals = professionals;
+  renderFeatured(allProfessionals);
   applyFilter();
 }
 

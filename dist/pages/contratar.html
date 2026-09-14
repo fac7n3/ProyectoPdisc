@@ -25,6 +25,11 @@
       .ct-hero__title { font-size: 1.6rem; color: var(--bl-primary-deeper); line-height: 1.2; }
       .ct-hero__subtitle { color: var(--bl-text-secondary); font-size: 0.9rem; margin-top: 0.15rem; }
 
+      /* Destacados: reusa .pro-highlight__row/-card de home.css, ya cargado
+         acá -- solo el espaciado de sección es propio de esta página. */
+      .ct-featured { margin-bottom: 1.5rem; }
+      .ct-featured .section-header { margin-bottom: 0.75rem; }
+
       /* --- Categorías, arriba de todo --- */
       .ct-categories {
         display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.35rem;
@@ -145,10 +150,10 @@
       .ct-cta a { color: var(--bl-primary); font-weight: 700; text-decoration: none; }
       .ct-cta a:hover { text-decoration: underline; }
     </style>
-    <script type="module" crossorigin src="/assets/contratar-DAvYrNuZ.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
+    <script type="module" crossorigin src="/assets/contratar-BGrD3mak.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B-6jIfJL.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-8R-_cou0.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
     <link rel="stylesheet" crossorigin href="/assets/home-CwSLoaBd.css">
   </head>
@@ -176,6 +181,16 @@
           <p class="ct-hero__subtitle">Profesionales y técnicos de Baradero, para contratar por WhatsApp o teléfono.</p>
         </div>
       </div>
+
+      <!-- Profesionales destacados: los mejor calificados del directorio,
+           antes de la lista completa. Se oculta entera si todavía nadie
+           tiene reseñas (ver renderFeatured en js/contratar.js). -->
+      <section class="ct-featured" id="ct-featured-section" aria-label="Profesionales destacados" hidden>
+        <div class="section-header">
+          <h2 class="section-header__title">Profesionales destacados</h2>
+        </div>
+        <div class="pro-highlight__row" id="ct-featured-row"></div>
+      </section>
 
       <!-- Chips de categoría, poblados por js/contratar.js -->
       <div class="ct-categories" id="ct-categories" role="tablist" aria-label="Categorías"></div>
