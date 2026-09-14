@@ -863,8 +863,18 @@ export async function initAccountMenu() {
     ]));
   }
 
+  // El dropdown de cuenta (con todas las secciones) solo tiene sentido en
+  // celular, donde no hay otro lugar para meter esos accesos. En desktop el
+  // avatar lleva directo al hub de perfil.html (mismo breakpoint que usa el
+  // navbar para pasar a layout mobile, home.css línea ~210).
+  const isMobileNav = () => window.matchMedia('(max-width: 768px)').matches;
+
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (!isMobileNav()) {
+      window.location.href = './perfil.html';
+      return;
+    }
     if (panel.hidden) open(); else close();
   });
   document.addEventListener('click', (e) => {
