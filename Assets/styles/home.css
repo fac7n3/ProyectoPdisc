@@ -1566,9 +1566,18 @@ button.coupon-chip:hover {
    su propio texto), con un degradé liviano del color de la promo solo en la
    franja de abajo -- lo justo para que "Promoción"/el título se distingan
    sin taparle el texto propio a la foto (que se sigue viendo arriba, clara). */
+/* Sin aspect-ratio propio: al ser 2fr contra 1fr, su ancho es siempre el
+   doble del de las tarjetas apiladas de la derecha, así que su alto "natural"
+   (mismo aspect-ratio que ellas) queda un gap más bajo que la suma de esas
+   dos tarjetas + el espacio entre ellas. Se estira (stretch, default de
+   grid) para igualar la altura real de la columna derecha, que es la que
+   manda -- así los dos bordes inferiores quedan alineados. En mobile
+   (abajo) vuelve a necesitar su propio aspect-ratio porque ahí queda solo
+   en su fila, sin la columna derecha al lado para tomarle la altura. */
 .promo-banner--a {
   background-color: #e63946;
   background-image: linear-gradient(180deg, rgba(230, 57, 70, 0) 0%, rgba(230, 57, 70, 0) 40%, rgba(230, 57, 70, 0.15) 55%, rgba(230, 57, 70, 0.35) 75%, rgba(230, 57, 70, 0.6) 100%), url('../images/banners/promo-aguas.webp');
+  aspect-ratio: unset;
 }
 
 .promo-banner--b {
@@ -1605,6 +1614,13 @@ button.coupon-chip:hover {
      resuelve el alto solo, no hace falta pisarlo acá. */
   .promo-mosaic__grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Acá promo-banner--a vuelve a quedar sola en su fila (sin la columna de
+     la derecha al lado para estirarse a su altura), así que necesita su
+     propio aspect-ratio de nuevo -- si no, colapsa. */
+  .promo-banner--a {
+    aspect-ratio: 900 / 507;
   }
 }
 
