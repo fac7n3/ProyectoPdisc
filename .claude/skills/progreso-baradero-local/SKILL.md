@@ -2539,3 +2539,18 @@ real con comillas mal codificadas (`Yerba Mate &quot;La Vuelta&quot; 500g` liter
 comillas) -- es un dato ya guardado así en la DB (probablemente quedó doble-escapado al cargarlo),
 no un bug de renderizado -- haría falta ubicar el producto y corregir el título a mano, no se hizo
 en esta pasada porque no fue lo que se pidió.
+
+## 2026-09-15 — "¿Olvidaste tu contraseña?" pasa a ser una página propia
+
+Antes el link de Login pedía el mail para el reset con un `confirm()`/toast inline sobre el mismo
+formulario de login (leía `#correo` y llamaba a `resetPasswordForEmail` desde `js/login.js`, sin
+cambiar de página). A pedido del usuario ahora es una página nueva, `pages/recuperar-password.html`
++ `js/recuperar-password.js`, con el mismo layout `.auth-card`/`.auth-input` que login/register
+(reutiliza `Assets/styles/auth.css` sin tocarlo) y un solo campo de correo. Al enviar con éxito
+oculta el formulario y muestra el aviso `.auth-confirm-notice` ya usado en el registro ("revisá tu
+correo"), en vez del toast de antes. El botón "¿Olvidaste tu contraseña?" de `login.html` ahora es
+un link normal (`href="./recuperar-password.html"`), se sacó el `id="forgot-password-link"` y su
+handler de `js/login.js` porque ya no hace falta. El link sigue mandando a `pages/login.html` como
+`redirectTo` del mail (sin cambios ahí -- la página de "elegir nueva contraseña" después de klickear
+el mail es un pendiente aparte, no pedido en esta tarea). Nueva entrada en `vite.config.js`
+(`recuperarPassword`) para que el build multipágina la incluya.
