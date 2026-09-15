@@ -80,25 +80,26 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Plantillas de email de confirmación de registro y de recuperar contraseña
-  creadas 2026-09-15, falta activarlas en producción.** Supabase manda esos
-  dos emails con una plantilla genérica por defecto; ahora hay una con la
-  identidad de marca para cada uno (isotipo + wordmark sobre `#284175`, CTA
+- **Resuelto 2026-09-15** — Plantillas con marca para los emails de
+  confirmación de registro y de recuperar contraseña, activas en producción.
+  Supabase mandaba esos dos emails con una plantilla genérica por defecto;
+  ahora tienen la identidad de marca (isotipo + wordmark sobre `#284175`, CTA
   en píldora, remate con el manifiesto de footer "Mientras otras plataformas
-  conectan personas lejanas, nosotros conectamos vecinos."):
-  `supabase/templates/confirmation.html` y `supabase/templates/recovery.html`,
-  cableadas en `supabase/config.toml` (`[auth.email.template.confirmation]` y
-  `[auth.email.template.recovery]`). El logo se copió a
+  conectan personas lejanas, nosotros conectamos vecinos."), fuente en
+  `supabase/templates/confirmation.html` y `supabase/templates/recovery.html`
+  (y cableadas en `supabase/config.toml` bajo `[auth.email.template.confirmation]`
+  / `[auth.email.template.recovery]`, para que un futuro `supabase config push`
+  no las pise con la plantilla default). El logo se copió a
   `public/img/logo-baradero-local.png` (ruta estable, sin hash de build — Vite
   hashea todo lo que está bajo `Assets/`, y un email no puede depender de una
   URL que cambia en cada build) para poder referenciarlo con URL absoluta
   (`https://proyectopdisc.vercel.app/img/...`) como exige un cliente de
-  correo. **No aplican solas:** hace falta correr, con la cuenta de Supabase
-  vinculada al proyecto, `supabase link --project-ref otzhdwuaffcplrveuadc` y
-  después `supabase config push` para sincronizar `config.toml` contra
-  producción (esta sesión no tiene esas credenciales interactivas). Hasta
-  entonces siguen mandándose las plantillas default de Supabase — no rompe
-  nada, solo no tienen la marca todavía.
+  correo. **Se activaron pegando el HTML directo en el dashboard**
+  (Authentication → Emails → Confirm signup / Reset Password), no con
+  `supabase config push` (esta sesión no tenía credenciales interactivas de
+  Supabase CLI) — si en el futuro alguien corre `config push` desde otra
+  máquina, sincroniza sin pisar nada distinto porque el `config.toml` ya
+  apunta a los mismos archivos.
 - **Resuelto 2026-09-10** — El profesional/técnico ahora carga sus redes
   sociales desde su mini panel (mismas 6 redes que un comercio: Instagram,
   Facebook, TikTok, X, YouTube, sitio web), con switch en vez de checkbox y
