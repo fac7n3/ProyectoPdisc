@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
+<title>Recuperá tu contraseña en Baradero Local</title>
+<!--[if mso]>
+<noscript>
+<xml>
+<o:OfficeDocumentSettings>
+<o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+</noscript>
+<![endif]-->
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; line-height: 100%; outline: none; text-decoration: none; }
+  body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+  a { text-decoration: none; }
+  @media screen and (max-width: 600px) {
+    .bl-container { width: 100% !important; }
+    .bl-px { padding-left: 20px !important; padding-right: 20px !important; }
+    .bl-h1 { font-size: 22px !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:#dfdfdf; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <!-- Preheader (se ve en la bandeja de entrada, no en el cuerpo del email) -->
+  <div style="display:none; max-height:0; max-width:0; overflow:hidden; opacity:0; mso-hide:all;">
+    Pediste restablecer tu contraseña en Baradero Local. Este link vence pronto.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#dfdfdf;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="bl-container" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden;">
+
+          <!-- Header con isotipo -->
+          <tr>
+            <td align="center" style="background-color:#284175; padding:28px 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td valign="middle" style="padding-right:10px;">
+                    <img src="https://proyectopdisc.vercel.app/img/logo-baradero-local.png" width="34" height="42" alt="Baradero Local" style="display:block; width:34px; height:42px;" />
+                  </td>
+                  <td valign="middle">
+                    <span style="font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:20px; line-height:24px; font-weight:700; color:#ffffff;">Baradero Local</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Cuerpo -->
+          <tr>
+            <td class="bl-px" style="padding:40px 48px 8px 48px;">
+              <h1 class="bl-h1" style="margin:0 0 16px 0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:26px; line-height:32px; font-weight:700; color:#111111;">
+                Restablecé tu contraseña
+              </h1>
+              <p style="margin:0 0 20px 0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:16px; line-height:24px; color:#111111;">
+                Recibimos un pedido para restablecer la contraseña de tu cuenta en <strong>Baradero Local</strong>. Tocá el botón de abajo para elegir una nueva.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Botón CTA -->
+          <tr>
+            <td align="center" class="bl-px" style="padding:8px 48px 32px 48px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" bgcolor="#284175" style="border-radius:28px;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:16px 40px; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:16px; line-height:20px; font-weight:600; color:#ffffff; border-radius:28px;">
+                      Restablecer mi contraseña
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Link alternativo -->
+          <tr>
+            <td class="bl-px" style="padding:0 48px 32px 48px;">
+              <p style="margin:0 0 6px 0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:13px; line-height:20px; color:#686868;">
+                Si el botón no funciona, copiá y pegá este link en tu navegador:
+              </p>
+              <p style="margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:13px; line-height:20px; word-break:break-all;">
+                <a href="{{ .ConfirmationURL }}" target="_blank" style="color:#3f85ba;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Aviso de seguridad -->
+          <tr>
+            <td class="bl-px" style="padding:0 48px 40px 48px; border-top:1px solid #dfdfdf;">
+              <p style="margin:24px 0 0 0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:13px; line-height:20px; color:#686868;">
+                Si no pediste este cambio, podés ignorar este email tranquilo — tu contraseña actual sigue funcionando y no se va a modificar nada.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f6f6f6; padding:24px 32px;">
+              <p style="margin:0 0 6px 0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:13px; line-height:20px; font-style:italic; color:#284175;">
+                Mientras otras plataformas conectan personas lejanas, nosotros conectamos vecinos.
+              </p>
+              <p style="margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size:12px; line-height:18px; color:#686868;">
+                Baradero Local · Baradero, Argentina
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

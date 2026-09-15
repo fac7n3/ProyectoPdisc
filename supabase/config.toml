@@ -255,6 +255,12 @@ otp_expiry = 3600
 subject = "Confirmá tu cuenta en Baradero Local"
 content_path = "./supabase/templates/confirmation.html"
 
+# Email de recuperación de contraseña, misma identidad de marca que arriba.
+# Requiere el mismo `supabase config push` para aplicar en producción.
+[auth.email.template.recovery]
+subject = "Restablecé tu contraseña de Baradero Local"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

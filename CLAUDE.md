@@ -80,23 +80,25 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Plantilla del email de confirmación de registro creada 2026-09-15, falta
-  activarla en producción.** Supabase manda ese email con una plantilla
-  genérica por defecto; ahora hay una con la identidad de marca en
-  `supabase/templates/confirmation.html` (isotipo + wordmark sobre `#284175`,
-  CTA en píldora, remate con el manifiesto de footer "Mientras otras
-  plataformas conectan personas lejanas, nosotros conectamos vecinos."),
-  cableada en `supabase/config.toml` (`[auth.email.template.confirmation]`).
-  El logo se copió a `public/img/logo-baradero-local.png` (ruta estable, sin
-  hash de build — Vite hashea todo lo que está bajo `Assets/`, y un email no
-  puede depender de una URL que cambia en cada build) para poder referenciarlo
-  con URL absoluta (`https://proyectopdisc.vercel.app/img/...`) como exige un
-  cliente de correo. **No aplica sola:** hace falta correr, con la cuenta de
-  Supabase vinculada al proyecto, `supabase link --project-ref
-  otzhdwuaffcplrveuadc` y después `supabase config push` para sincronizar
-  `config.toml` contra producción (esta sesión no tiene esas credenciales
-  interactivas). Hasta entonces sigue mandándose la plantilla default de
-  Supabase — no rompe nada, solo no tiene la marca todavía.
+- **Plantillas de email de confirmación de registro y de recuperar contraseña
+  creadas 2026-09-15, falta activarlas en producción.** Supabase manda esos
+  dos emails con una plantilla genérica por defecto; ahora hay una con la
+  identidad de marca para cada uno (isotipo + wordmark sobre `#284175`, CTA
+  en píldora, remate con el manifiesto de footer "Mientras otras plataformas
+  conectan personas lejanas, nosotros conectamos vecinos."):
+  `supabase/templates/confirmation.html` y `supabase/templates/recovery.html`,
+  cableadas en `supabase/config.toml` (`[auth.email.template.confirmation]` y
+  `[auth.email.template.recovery]`). El logo se copió a
+  `public/img/logo-baradero-local.png` (ruta estable, sin hash de build — Vite
+  hashea todo lo que está bajo `Assets/`, y un email no puede depender de una
+  URL que cambia en cada build) para poder referenciarlo con URL absoluta
+  (`https://proyectopdisc.vercel.app/img/...`) como exige un cliente de
+  correo. **No aplican solas:** hace falta correr, con la cuenta de Supabase
+  vinculada al proyecto, `supabase link --project-ref otzhdwuaffcplrveuadc` y
+  después `supabase config push` para sincronizar `config.toml` contra
+  producción (esta sesión no tiene esas credenciales interactivas). Hasta
+  entonces siguen mandándose las plantillas default de Supabase — no rompe
+  nada, solo no tienen la marca todavía.
 - **Resuelto 2026-09-10** — El profesional/técnico ahora carga sus redes
   sociales desde su mini panel (mismas 6 redes que un comercio: Instagram,
   Facebook, TikTok, X, YouTube, sitio web), con switch en vez de checkbox y
