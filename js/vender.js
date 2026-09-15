@@ -557,11 +557,12 @@ async function loadCategories() {
 
   categoriesCache = categories;
 
-  // Los dos controles de categoría se re-dibujan acá: cualquiera de los dos
+  // Los tres controles de categoría se re-dibujan acá: cualquiera de los
   // formularios puede haberse armado antes de que resolviera este fetch, así
   // que el orden de inicialización deja de importar.
   renderProductCategoryOptions();
   renderShopCategoryOptions();
+  renderStoreCategoryOptions();
 }
 
 /**
@@ -646,6 +647,36 @@ function setProductCategorySlug(slug) {
 /** Rubros marcados en el alta de comercio. */
 function getShopCategorySlugs() {
   return [...document.querySelectorAll('input[name="shop-category"]:checked')].map((i) => i.value);
+}
+
+/**
+ * Categoría del comercio (Perfil de mi comercio, `stores.category_slug`):
+ * una sola, como el alta de producto -- a diferencia del "Rubro(s)" del alta
+ * de comercio (checkbox, uno o más), acá se guarda un único rubro principal.
+ */
+let pendingStoreCategorySlug = null; // por si loadDashboard resuelve antes que loadCategories
+
+function renderStoreCategoryOptions() {
+  renderCategoryPicker('store-category-options', {
+    name: 'store-category', type: 'radio', required: true,
+  });
+  // loadDashboard() puede resolver antes que este fetch de categorías: si ya
+  // había un rubro pendiente de marcar (ver setStoreCategorySlug), se aplica
+  // recién ahora que existen los radios para marcarlo.
+  if (pendingStoreCategorySlug) setStoreCategorySlug(pendingStoreCategorySlug);
+}
+
+/** Marca el rubro del comercio (se usa al precargar el perfil). */
+function setStoreCategorySlug(slug) {
+  pendingStoreCategorySlug = slug || null;
+  document.querySelectorAll('input[name="store-category"]').forEach((r) => {
+    r.checked = r.value === slug;
+  });
+}
+
+/** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
+function getStoreCategorySlug() {
+  return document.querySelector('input[name="store-category"]:checked')?.value || '';
 }
 
 function initVenderPage(user) {
@@ -923,7 +954,7 @@ let pedidosTab = 'all'; // 'all' | 'pending_payment' | 'shipping' | 'completed' 
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
-const STORE_SELECT_COLUMNS = 'id, name, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
+const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
@@ -1611,6 +1642,7 @@ function fillStoreProfileForm(store) {
   const transferInfoInput = document.getElementById('store-transfer-info');
 
   if (nameInput) nameInput.value = store.name || '';
+  setStoreCategorySlug(store.category_slug || null);
   paintStoreLogo(store.logo_url || null);
   if (addressInput) addressInput.value = store.address || '';
   if (phoneInput) phoneInput.value = store.phone || '';
@@ -1666,6 +1698,13 @@ function setupStoreProfileForm() {
       return;
     }
 
+    const categorySlugValue = getStoreCategorySlug();
+    if (!categorySlugValue) {
+      showToast('Elegí una categoría para tu comercio.', 'error');
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
+
     const hoursValue = document.getElementById('store-hours').value.trim();
 
     const contactMethodInput = document.querySelector('input[name="store-contact-method"]:checked');
@@ -1690,6 +1729,7 @@ function setupStoreProfileForm() {
       .from('stores')
       .update({
         name: nameValue,
+        category_slug: categorySlugValue,
         address: document.getElementById('store-address').value.trim() || null,
         phone: document.getElementById('store-phone').value.trim() || null,
         zone: document.getElementById('store-zone').value.trim() || null,
