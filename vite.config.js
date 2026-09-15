@@ -29,6 +29,7 @@ export default defineConfig({
         login: resolve(__dirname, 'pages/login.html'),
         register: resolve(__dirname, 'pages/register.html'),
         recuperarPassword: resolve(__dirname, 'pages/recuperar-password.html'),
+        nuevaContrasena: resolve(__dirname, 'pages/nueva-contrasena.html'),
         perfil: resolve(__dirname, 'pages/perfil.html'),
         carrito: resolve(__dirname, 'pages/carrito.html'),
         search: resolve(__dirname, 'pages/search.html'),

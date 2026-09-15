@@ -579,3 +579,16 @@ input[type="checkbox"] {
   font-size: 0.8125rem;
   line-height: 1.5;
 }
+
+/* Variante roja: enlace de recuperación vencido/inválido */
+.auth-confirm-notice--error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.auth-confirm-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}

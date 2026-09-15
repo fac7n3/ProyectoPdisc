@@ -2286,7 +2286,7 @@ function renderAccountRows(user) {
     passBtn.textContent = "Enviando…";
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/pages/login.html`,
+        redirectTo: `${window.location.origin}/pages/nueva-contrasena.html`,
       });
       if (error) throw error;
       showToast(`Te mandamos un correo a ${user.email} con el link para cambiarla.`, "success");
