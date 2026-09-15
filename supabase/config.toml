@@ -248,6 +248,13 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# Email de confirmación de registro, con la identidad de marca de Baradero Local
+# (ver docs/brand-guidelines.md). Para que aplique en producción hace falta
+# correr `supabase link --project-ref otzhdwuaffcplrveuadc` y `supabase config push`.
+[auth.email.template.confirmation]
+subject = "Confirmá tu cuenta en Baradero Local"
+content_path = "./supabase/templates/confirmation.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
