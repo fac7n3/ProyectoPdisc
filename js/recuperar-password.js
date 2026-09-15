@@ -20,7 +20,7 @@ async function requestPasswordReset() {
     return;
   }
 
-  setLoading(recoverBtn, true, "Enviar instrucciones");
+  setLoading(recoverBtn, true, "Enviar correo de recuperación");
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -30,7 +30,7 @@ async function requestPasswordReset() {
     if (error) {
       console.error("Reset password error:", error);
       showToast("Hubo un error al intentar enviar el correo. Intentá nuevamente.", "error");
-      setLoading(recoverBtn, false, "Enviar instrucciones");
+      setLoading(recoverBtn, false, "Enviar correo de recuperación");
       return;
     }
 
@@ -39,7 +39,7 @@ async function requestPasswordReset() {
   } catch (err) {
     console.error("Unexpected reset error:", err);
     showToast("Error inesperado. Intentá de nuevo más tarde.", "error");
-    setLoading(recoverBtn, false, "Enviar instrucciones");
+    setLoading(recoverBtn, false, "Enviar correo de recuperación");
   }
 }
 
