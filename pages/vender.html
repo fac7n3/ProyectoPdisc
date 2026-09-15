@@ -168,6 +168,20 @@
       .prof-photo-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
       .prof-photo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
 
+      /* Logo del comercio (Perfil de mi comercio): mismo patrón que el
+         foto-picker de arriba, con acciones "Elegir imagen"/"Quitar". */
+      .store-logo-picker { display: flex; align-items: center; gap: 1rem; }
+      .store-logo-picker__preview {
+        flex-shrink: 0; width: 4rem; height: 4rem; border-radius: 50%;
+        background: var(--bl-surface-alt); border: 1px dashed var(--bl-border);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; color: var(--bl-text-muted); font-size: 1.25rem;
+      }
+      .store-logo-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+      .store-logo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+      .store-logo-picker__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+      .store-logo-picker__error { color: var(--bl-danger, #ef4444); }
+
       /* Mini panel del profesional ya publicado ("Mi panel de profesional"):
          resumen de sus datos + fotos promocionales, que se muestran en su
          tarjeta de contratar.html al desplegarla. */
@@ -1122,12 +1136,30 @@
                   <p class="pf-card__hint">Cómo se presenta tu tienda a los clientes.</p>
                   <div class="pf-grid">
                     <div class="pf-field pf-field--full">
-                      <label class="form-label" for="store-logo">URL del logo</label>
-                      <input type="url" id="store-logo" class="form-input" placeholder="https://..." />
+                      <label class="form-label" for="store-name">Nombre del comercio</label>
+                      <input type="text" id="store-name" class="form-input" placeholder="Ej: Panadería La Espiga" required />
                     </div>
                     <div class="pf-field pf-field--full">
                       <label class="form-label" for="store-description">Descripción</label>
                       <textarea id="store-description" class="form-input" rows="3" placeholder="Contales a tus clientes sobre tu comercio"></textarea>
+                    </div>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-logo-file">Logo</label>
+                      <!-- El logo se sube apenas se elige el archivo (igual que el
+                           avatar de Mi perfil): no espera al "Guardar cambios" del
+                           resto del formulario. -->
+                      <div class="store-logo-picker">
+                        <div class="store-logo-picker__preview" id="store-logo-preview"><i class="fa-solid fa-store" aria-hidden="true"></i></div>
+                        <div class="store-logo-picker__field">
+                          <input type="file" id="store-logo-file" accept="image/png,image/jpeg,image/webp" hidden />
+                          <div class="store-logo-picker__actions">
+                            <button type="button" class="btn-outline" id="store-logo-pick-btn">Elegir imagen</button>
+                            <button type="button" class="btn-outline" id="store-logo-remove-btn" hidden>Quitar</button>
+                          </div>
+                          <small style="color: var(--bl-text-muted);">Se muestra en tu página. Formato JPG, PNG o WEBP, hasta 2 MB.</small>
+                          <small class="store-logo-picker__error" id="store-logo-error" role="alert" hidden></small>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1487,9 +1487,121 @@ async function updateOrderStatus(orderId, newStatus) {
   renderAllOrders();
 }
 
+// --- Logo del comercio (Perfil de mi comercio) ---
+// Mismo patrón que la foto de perfil de Mi perfil y que el logo editable
+// desde la propia vista del comercio (comercio.js, buildStoreLogo): se sube
+// y se guarda apenas se elige el archivo, sin esperar al "Guardar cambios"
+// del resto del formulario. Bucket store-logos, migración 74_store_logo.sql.
+const MAX_STORE_LOGO_BYTES = 2 * 1024 * 1024;
+let currentStoreLogoUrl = null;
+
+function paintStoreLogo(url) {
+  currentStoreLogoUrl = url || null;
+  const preview = document.getElementById('store-logo-preview');
+  const removeBtn = document.getElementById('store-logo-remove-btn');
+  if (removeBtn) removeBtn.hidden = !currentStoreLogoUrl;
+  if (!preview) return;
+
+  preview.textContent = '';
+  if (currentStoreLogoUrl) {
+    const img = document.createElement('img');
+    img.src = currentStoreLogoUrl;
+    img.alt = 'Logo del comercio';
+    preview.appendChild(img);
+  } else {
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-store';
+    icon.setAttribute('aria-hidden', 'true');
+    preview.appendChild(icon);
+  }
+}
+
+function setupStoreLogoPicker() {
+  const pickBtn = document.getElementById('store-logo-pick-btn');
+  const removeBtn = document.getElementById('store-logo-remove-btn');
+  const fileInput = document.getElementById('store-logo-file');
+  const errorEl = document.getElementById('store-logo-error');
+  if (!pickBtn || !fileInput) return;
+
+  const fail = (msg) => {
+    if (!errorEl) return;
+    errorEl.textContent = msg;
+    errorEl.hidden = false;
+  };
+  const clearFail = () => { if (errorEl) errorEl.hidden = true; };
+
+  pickBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    clearFail();
+
+    if (file.size > MAX_STORE_LOGO_BYTES) {
+      fail('Esa imagen pesa más de 2 MB. Probá con una más liviana.');
+      fileInput.value = '';
+      return;
+    }
+
+    pickBtn.disabled = true;
+    pickBtn.textContent = 'Subiendo…';
+    const previousUrl = currentStoreLogoUrl;
+
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+      // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del bucket.
+      const path = `${currentUserId}/${Date.now()}.${ext || 'jpg'}`;
+
+      const { error: upErr } = await supabase.storage
+        .from('store-logos')
+        .upload(path, file, { contentType: file.type || 'image/jpeg' });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
+      const publicUrl = pub?.publicUrl;
+      if (!publicUrl) throw new Error('No se pudo obtener la URL del logo.');
+
+      const { error: dbErr } = await supabase.from('stores').update({ logo_url: publicUrl }).eq('id', currentStoreId);
+      if (dbErr) throw dbErr;
+
+      paintStoreLogo(publicUrl);
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Listo, guardamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al subir el logo:', err);
+      fail(err.message || 'No pudimos subir el logo. Probá de nuevo.');
+    } finally {
+      pickBtn.disabled = false;
+      pickBtn.textContent = 'Elegir imagen';
+      fileInput.value = '';
+    }
+  });
+
+  removeBtn?.addEventListener('click', async () => {
+    if (!confirm('¿Sacamos el logo del comercio?')) return;
+    clearFail();
+    removeBtn.disabled = true;
+    const previousUrl = currentStoreLogoUrl;
+
+    try {
+      const { error: dbErr } = await supabase.from('stores').update({ logo_url: null }).eq('id', currentStoreId);
+      if (dbErr) throw dbErr;
+
+      paintStoreLogo(null);
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Sacamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al quitar el logo:', err);
+      fail(err.message || 'No pudimos sacar el logo. Probá de nuevo.');
+    } finally {
+      removeBtn.disabled = false;
+    }
+  });
+}
+
 /** F5-08: precarga el form de perfil del comercio con los datos actuales. */
 function fillStoreProfileForm(store) {
-  const logoInput = document.getElementById('store-logo');
+  const nameInput = document.getElementById('store-name');
   const addressInput = document.getElementById('store-address');
   const phoneInput = document.getElementById('store-phone');
   const zoneInput = document.getElementById('store-zone');
@@ -1498,7 +1610,8 @@ function fillStoreProfileForm(store) {
   const whatsappInput = document.getElementById('store-whatsapp');
   const transferInfoInput = document.getElementById('store-transfer-info');
 
-  if (logoInput) logoInput.value = store.logo_url || '';
+  if (nameInput) nameInput.value = store.name || '';
+  paintStoreLogo(store.logo_url || null);
   if (addressInput) addressInput.value = store.address || '';
   if (phoneInput) phoneInput.value = store.phone || '';
   if (zoneInput) zoneInput.value = store.zone || '';
@@ -1546,6 +1659,13 @@ function setupStoreProfileForm() {
     const submitBtn = form.querySelector('button[type="submit"]');
     setLoading(submitBtn, true, 'Guardar perfil');
 
+    const nameValue = document.getElementById('store-name').value.trim();
+    if (!isValidShopName(nameValue)) {
+      showToast('Ingresá un nombre de comercio válido (entre 3 y 100 caracteres).', 'error');
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
+
     const hoursValue = document.getElementById('store-hours').value.trim();
 
     const contactMethodInput = document.querySelector('input[name="store-contact-method"]:checked');
@@ -1569,7 +1689,7 @@ function setupStoreProfileForm() {
     const { error } = await supabase
       .from('stores')
       .update({
-        logo_url: document.getElementById('store-logo').value.trim() || null,
+        name: nameValue,
         address: document.getElementById('store-address').value.trim() || null,
         phone: document.getElementById('store-phone').value.trim() || null,
         zone: document.getElementById('store-zone').value.trim() || null,
@@ -1598,6 +1718,13 @@ function setupStoreProfileForm() {
       // F12-15: onboarding -- si acaba de completar el perfil, el checklist se actualiza solo.
       currentStoreHasProfile = Boolean(descriptionValue);
       renderOnboardingChecklist(currentProductCount > 0);
+      // El nombre pudo haber cambiado: refresca el header del sidebar y su cache
+      // (esta sección solo la ve el dueño, nunca un empleado -- ver loadDashboard).
+      const shopNameEl = document.getElementById('dash-shop-name');
+      if (shopNameEl) shopNameEl.textContent = nameValue;
+      if (currentUserId) {
+        try { localStorage.setItem(`bl_vender_shopname_${currentUserId}`, nameValue); } catch { /* ignore */ }
+      }
     }
     setLoading(submitBtn, false, 'Guardar perfil');
   });
@@ -3304,6 +3431,7 @@ async function renderVariantsManager(productId) {
 
 function setupDashboardEvents() {
   setupStoreProfileForm();
+  setupStoreLogoPicker();
   setupMyCouponForm();
   setupStoreStaffForm();
   initPublicacionesControls();
