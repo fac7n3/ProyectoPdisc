@@ -24,7 +24,7 @@ async function requestPasswordReset() {
 
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/pages/login.html`,
+      redirectTo: `${window.location.origin}/pages/nueva-contrasena.html`,
     });
 
     if (error) {

@@ -2554,3 +2554,20 @@ handler de `js/login.js` porque ya no hace falta. El link sigue mandando a `page
 `redirectTo` del mail (sin cambios ahí -- la página de "elegir nueva contraseña" después de klickear
 el mail es un pendiente aparte, no pedido en esta tarea). Nueva entrada en `vite.config.js`
 (`recuperarPassword`) para que el build multipágina la incluya.
+
+**Completado el mismo día** -- el usuario preguntó si la página a la que lleva el link del mail
+("Restablecer mi contraseña") ya estaba armada, y no: `resetPasswordForEmail` mandaba de vuelta a
+`pages/login.html`, que como página INVERSA (`guardPage({ redirectIfAuth: true })`) redirige apenas
+detecta la sesión de recuperación que arma el link -- el usuario nunca llegaba a ver un formulario
+para elegir la contraseña nueva, quedaba logueado con la vieja sin darse cuenta. Nueva página
+`pages/nueva-contrasena.html` + `js/nueva-contrasena.js` (dos campos de contraseña + confirmar,
+misma regla de validación que `register.js`: 8+ caracteres, una mayúscula, un número). No usa
+`guardPage` -- esa página piensa "sesión = usuario logueado normal" y te manda a Home; acá hace
+falta la lógica opuesta (cualquier sesión activa al entrar habilita el formulario, sin sesión
+después de un margen de ~2.5s muestra "enlace inválido o vencido" con link para pedir uno nuevo).
+Al guardar, `supabase.auth.updateUser({ password })` + `signOut()` (que vuelva a entrar con la
+contraseña nueva) + aviso de éxito con link a Login. `redirectTo` de `js/recuperar-password.js` y
+del botón "Cambiar" contraseña en `js/perfil.js` (mismo gap ahí, no se había notado) ahora apuntan
+acá en vez de a `login.html`. Clase nueva `.auth-confirm-notice--error` en `auth.css` (variante roja
+del aviso verde que ya existía para "confirmá tu correo" del registro). Nueva entrada en
+`vite.config.js` (`nuevaContrasena`).

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="view-transition" content="same-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <title>Elegir nueva contraseña - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script type="module" crossorigin src="/assets/nuevaContrasena-Dex2wI6Q.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-BBdPY8wr.css">
+  </head>
+  <body>
+    <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
+         categorias, que en TalkBack son mas de 20 pasos en cada pagina. -->
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- Loading screen: se oculta apenas se confirma (o descarta) el link de recuperación -->
+    <div id="loading-screen" class="auth-loading-screen">
+      <div class="auth-loading-spinner"></div>
+      <span class="auth-loading-text">Verificando el enlace...</span>
+    </div>
+
+    <div id="main-content" style="visibility: hidden;">
+      <main id="contenido-principal" tabindex="-1" class="auth-layout">
+        <div class="auth-header">
+          <h1>Elegir nueva contraseña</h1>
+          <p>Ingresá tu nueva contraseña para terminar de recuperar tu cuenta.</p>
+        </div>
+
+        <div class="auth-card">
+          <div id="newpass-form-view" style="display: none;">
+            <form id="newpass-form">
+              <div class="auth-inputs">
+                <div class="password-wrapper">
+                  <label for="new-password" class="sr-only">Nueva contraseña</label>
+                  <input id="new-password" type="password" placeholder="Nueva contraseña" autocomplete="new-password" class="auth-input" required />
+                  <button type="button" class="password-toggle-btn" id="toggle-new-password" aria-label="Mostrar contraseña">
+                    <i class="fa-regular fa-eye"></i>
+                  </button>
+                </div>
+
+                <div class="password-wrapper">
+                  <label for="new-password-confirm" class="sr-only">Repetir nueva contraseña</label>
+                  <input id="new-password-confirm" type="password" placeholder="Repetir nueva contraseña" autocomplete="new-password" class="auth-input" required />
+                  <button type="button" class="password-toggle-btn" id="toggle-new-password-confirm" aria-label="Mostrar contraseña">
+                    <i class="fa-regular fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+
+              <button id="newpass-btn" class="auth-btn auth-btn-primary" type="submit">Guardar nueva contraseña</button>
+            </form>
+          </div>
+
+          <div id="newpass-invalid-view" class="auth-confirm-notice auth-confirm-notice--error" style="display: none;" role="status">
+            Este enlace ya no es válido o venció. <a href="./recuperar-password.html">Pedí uno nuevo</a>.
+          </div>
+
+          <div id="newpass-success-view" class="auth-confirm-notice" style="display: none;" role="status">
+            ¡Listo! Ya podés <a href="./login.html">iniciar sesión</a> con tu nueva contraseña.
+          </div>
+        </div>
+      </main>
+    </div>
+
+  </body>
+</html>
