@@ -1022,6 +1022,14 @@ a.compra-item-text:hover {
   border-top: none;
 }
 
+/* Ajustes: las opciones quedan sueltas, sin el recuadro que las encierra
+   (el resto de "Mi perfil" sigue usando .datos-panel con recuadro). */
+#tab-ajustes .datos-panel {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
 .datos-row__main {
   display: flex;
   flex-direction: column;
