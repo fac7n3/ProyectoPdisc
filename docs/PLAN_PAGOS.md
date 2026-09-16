@@ -5,6 +5,12 @@
 > (`otzhdwuaffcplrveuadc`) el **2026-09-16**. Todos los números de esta página salen de
 > consultas reales, no de estimaciones.
 
+> **Fase A ejecutada en producción el 2026-09-16** (ver sección 6). Los números de las secciones 0
+> y 2.1 describen el estado **antes** de esa fase — quedan así a propósito, como registro de
+> auditoría. Estado actual real: 0 pedidos `pending` viejos, 0 productos en stock 0, el hueco de
+> seguridad de 3.1 cerrado, los cupones de seed de 3.2 desactivados, la policy de 3.4 borrada.
+> Detalle completo de qué se hizo y cómo: skill `progreso-baradero-local`.
+
 ---
 
 ## 0. El titular
@@ -328,15 +334,19 @@ Ordenadas por impacto sobre el problema real (nadie termina de pagar):
 
 ## 6. Plan por fases
 
-### Fase A — Parar la hemorragia *(1 sesión)*
-Nada de esto necesita decisiones de producto ni credenciales nuevas.
+### Fase A — Parar la hemorragia *(hecha, 2026-09-16)*
 
-- [ ] Devolver stock: columna + `release_order_stock` + llamada desde el webhook **(2.1)**
-- [ ] Job de expiración de pedidos `pending` **(2.1)**
-- [ ] Limpieza de los 47 pedidos históricos y su stock **(2.1 — confirmar con el usuario primero)**
-- [ ] Desactivar `BIENVENIDO10` / `VERANO20` **(3.2)**
-- [ ] `revoke update` de las columnas de dinero en `orders` **(3.1)**
-- [ ] `drop policy orders_select_repartidor` **(3.4)**
+- [x] Devolver stock: trigger `orders_release_stock` (no un RPC llamado desde cada código que mata
+      una orden) + `admin_release_order_stock` como válvula manual — `88_stock_release_and_expiration.sql` **(2.1)**
+- [x] Job de expiración de pedidos `pending` (`pg_cron`, cada hora — 24h Mercado Pago / 72h transferencia) **(2.1)**
+- [x] Limpieza de los 47 pedidos históricos y su stock — confirmado con el usuario, cancelados y
+      liberados: 0 `pending` restantes, 0 productos en stock 0, $0 inmovilizado **(2.1)**
+- [x] Desactivar `BIENVENIDO10` / `VERANO20` — `89_orders_payment_lockdown.sql` **(3.2)**
+- [x] Cerrar el UPDATE de columnas de dinero en `orders` **(3.1)** — el `revoke` por columna solo
+      no alcanzaba (un `GRANT` de tabla completa previo seguía permitiendo todo); se revocó la
+      tabla entera y se volvió a otorgar solo `UPDATE (status)` a `authenticated`. Verificado con
+      `has_column_privilege()`.
+- [x] `drop policy orders_select_repartidor` **(3.4)**
 
 ### Fase B — Que se pueda cobrar *(1–2 sesiones)*
 - [ ] Botón "Pagar ahora" en Mis compras **(2.2)**

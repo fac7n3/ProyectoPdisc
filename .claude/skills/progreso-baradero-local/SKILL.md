@@ -2648,3 +2648,79 @@ siguen en el schema (migraciones 11/25/26/27/28/44, ya aplicadas en producción)
 llegar a ellos desde la app. Se dejan así por si se retoma la logística de entregas más adelante --
 no había nada real que migrar ni limpiar (ninguna fila de `deliveries`/`delivery_requests` en
 producción tenía que ver con un usuario activo). `dist/` reconstruido con `npm run build` al final.
+
+## 2026-09-16 — Auditoría de pagos + Fase A del plan (stock, seguridad, cupones)
+
+Escaneo completo del área de pagos (checkout, `create_order`, Mercado Pago, transferencia,
+cupones, envío, conciliación) contrastado contra la base de producción. Resultado en
+`docs/PLAN_PAGOS.md` (plan por fases A-D) y un artefacto compartible con el resumen ejecutivo.
+Titular: desde el 2026-07-10 no se había acreditado ni un solo pago real; 51 órdenes creadas, 4
+pagadas (3 `simulado`, 1 Mercado Pago real). El dato que más dice: 0 órdenes en `rejected` pese a
+38 intentos fallidos de Mercado Pago -- el webhook nunca estaba confirmando nada.
+
+Mismo día, ejecutada la Fase A completa (los hallazgos que no dependían de ninguna decisión de
+producto):
+
+**Stock que se descontaba y nunca volvía (hallazgo 2.1).** `create_order` descuenta stock al
+crear la orden; ningún camino lo devolvía (ni pago rechazado, ni checkout abandonado, ni
+cancelación del vendedor -- `updateOrderStatus` en `vender.js` hace un `update` directo a
+`status`, sin pasar por ningún RPC). Medido: 47 órdenes `pending` desde julio, $506.960 y 141
+unidades de 11 productos trabadas, 2 productos ya en stock 0. Migración
+`88_stock_release_and_expiration.sql` (aplicada a producción):
+- `orders.stock_released_at` (idempotencia -- nunca libera dos veces).
+- `_restock_order_items(order_id)`: suma `order_items` por producto y devuelve `stock`.
+- **Trigger** `orders_release_stock` (BEFORE UPDATE, con WHEN sobre `status`/`payment_status`):
+  libera sola apenas una orden pasa a `status='cancelled'` o `payment_status='rejected'`. Se
+  eligió trigger en vez de tocar cada código que puede matar una orden -- cubre los tres caminos
+  existentes (webhook, cancelación manual del vendedor, el job de expiración) y cualquiera que se
+  agregue después, sin depender de acordarse de llamarlo. `needs_review` queda afuera a propósito
+  (todavía puede resolverse a `paid`).
+- `admin_release_order_stock(p_order_id)`: válvula de escape manual para el admin, mismo patrón
+  que `admin_set_product_active`.
+- `expire_pending_orders()` + `pg_cron` (extensión recién habilitada en el proyecto, no se usaba
+  antes): corre cada hora, cancela `pending` de Mercado Pago con más de 24h y de transferencia con
+  más de 72h -- el UPDATE dispara el trigger de arriba solo, sin duplicar la lógica de restock acá.
+- **Probado en producción antes de tocar nada real**: `BEGIN; UPDATE ... status='cancelled' WHERE
+  id=<una orden pending real>; SELECT stock antes/después; ROLLBACK;` -- confirmó 87→88 y
+  `stock_released_at` sellado, después verificado que el rollback no dejó rastro.
+- **Limpieza histórica**: con confirmación explícita del usuario (no había evidencia de que
+  ninguna de las 47 se hubiera cobrado por fuera del sistema -- 0 comprobantes, 0 pagos MP más
+  allá del único de julio), se canceló las 47 en un solo `UPDATE`. El trigger liberó el stock de
+  las 47 automáticamente. Verificado después: 0 `pending` restantes, 0 productos en stock 0, 0
+  unidades inmovilizadas.
+
+**Seguridad (hallazgos 3.1/3.2/3.4).** Migración `89_orders_payment_lockdown.sql` (aplicada a
+producción):
+- Un vendedor (o cualquier empleado suyo) podía marcarse su propio pedido como `paid` con un
+  update directo desde el navegador -- `authenticated`/`anon` tenían `UPDATE` sobre TODAS las
+  columnas de `orders` porque las policies de UPDATE nunca tuvieron `WITH CHECK`. **Gotcha real
+  encontrado en el momento**: el primer intento (`revoke update (payment_status, ...) on orders
+  from authenticated`) no sirvió de nada -- en Postgres, un `GRANT UPDATE` a nivel de TABLA sigue
+  permitiendo escribir cualquier columna aunque se revoquen columnas puntuales después (son ACLs
+  independientes, alcanza con una sola para poder escribir). Había un `grant update on orders to
+  authenticated, anon` de tabla completa desde el default de Supabase. Se corrigió revocando la
+  tabla entera y volviendo a otorgar solo `UPDATE (status)` a `authenticated` (la única columna
+  que el frontend legítimamente toca directo, `updateOrderStatus` en `vender.js` -- verificado con
+  grep que es la única `.update()` sobre `orders` en todo el frontend fuera de los RPCs); `anon` se
+  quedó sin nada. Verificado con `has_column_privilege()`: `payment_status` ya no es escribible por
+  `authenticated`, `status` sigue siéndolo, `anon` no tiene nada. No afecta a los RPCs
+  (`SECURITY DEFINER`, corren como el dueño de la función) ni a `mp-webhook` (service role) ni a
+  los triggers (un trigger BEFORE UPDATE puede tocar cualquier columna de `NEW` sin que el rol que
+  disparó el UPDATE tenga privilegio sobre ella -- Postgres solo chequea el grant contra las
+  columnas del SET original).
+- `BIENVENIDO10`/`VERANO20` (cupones de seed de `08_coupons_schema.sql`, activos, globales, sin
+  vencimiento ni límite de uso) desactivados. Límites de uso reales (`max_uses`,
+  `coupon_redemptions`) quedan para la Fase D del plan.
+- `drop policy orders_select_repartidor` -- quedó viva después de sacar el rol `repartidor` el
+  2026-09-16 (ver entrada de arriba en este mismo skill); daba SELECT sobre todos los pedidos
+  pagados con envío de todos los comercios a cualquier JWT con ese rol. Verificado que no hay
+  ninguna cuenta con ese rol en producción -- no había exposición real, pero era superficie muerta
+  sobre datos financieros. Las tablas `deliveries`/`delivery_requests` y sus RPCs no se tocaron.
+
+**Pendiente de la Fase A, con confirmación explícita del usuario antes de ejecutar cualquier cosa
+irreversible**: ninguno, se completó entera. Fases B (reintentar pago, fix del descuento por
+tienda en el carrito, bloquear transferencia sin `transfer_info`, validar monto/firma del webhook,
+credenciales de producción), C (pantalla de vinculación de Mercado Pago -- diagnóstico de
+A113-274: el backend ya funciona, `mp-oauth-callback` está deployada pero sin ningún llamador en
+el frontend) y D (efectivo al retirar, panel de conciliación, límites de cupones, Checkout Bricks)
+quedan documentadas en `docs/PLAN_PAGOS.md` para retomar cuando el usuario priorice.

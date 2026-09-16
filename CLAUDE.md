@@ -80,6 +80,21 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Nuevo 2026-09-16 — Auditoría de pagos: [`docs/PLAN_PAGOS.md`](docs/PLAN_PAGOS.md), Fase A
+  resuelta.** Escaneo completo del área de pagos contra producción: desde el 2026-07-10 no se
+  había acreditado ningún pago real (51 órdenes creadas, 4 pagadas, 3 de ellas `simulado`). Fase A
+  ya ejecutada en producción el mismo día: trigger que devuelve stock automáticamente cuando una
+  orden se cancela o el pago se rechaza (`88_stock_release_and_expiration.sql`, corta un bug que
+  tenía $506.960 y 141 unidades trabadas en 47 pedidos `pending` desde julio, ya limpiados con
+  confirmación del usuario), `pg_cron` expirando pedidos `pending` viejos, cierre del hueco donde
+  cualquier vendedor podía marcarse un pedido propio como pagado (`89_orders_payment_lockdown.sql`
+  — el `revoke` por columna no alcanzaba solo, había que revocar la tabla entera primero), cupones
+  de seed desactivados, y la policy muerta de `repartidor` sobre `orders` borrada. **Pendiente**:
+  Fases B (reintentar pago desde "Mis compras", fix del descuento por tienda en el carrito,
+  bloquear transferencia sin `transfer_info`, validar monto/firma en `mp-webhook`, cambiar
+  `MP_ACCESS_TOKEN` a producción), C (pantalla de vinculación de Mercado Pago — diagnostica
+  A113-274: el backend ya funciona, solo falta la UI) y D (efectivo al retirar, panel de
+  conciliación, límites de uso en cupones) sin empezar, a priorizar con el usuario.
 - **Resuelto 2026-09-16** — Se sacó por completo el rol `repartidor` y todo
   su apartado, a pedido del usuario: la logística de entregas queda para
   más adelante. Borrados `pages/repartidor.html` y `js/repartidor.js`
