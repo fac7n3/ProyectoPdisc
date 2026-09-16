@@ -105,6 +105,20 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   repartidores reales en producción (el rol nunca pasó de "planeado"), así
   que sacar el frontend no afecta a ningún usuario ni pedido existente.
   `dist/` reconstruido. Detalle completo: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — Limpieza de ramas sueltas: 34 ramas remotas
+  revisadas una por una. 29 sin trabajo propio (ya mergeadas o superadas por
+  trabajo posterior en otra rama) se borraron sin tocar código. Las 5 con
+  contenido real se mergearon a `main` (conflictos solo en `dist/`, resueltos
+  quedándose con la versión de `HEAD` y con un rebuild único al final, mismo
+  patrón que la limpieza del 2026-09-07): fix de "Mi perfil" que dejaba
+  guardar fecha de nacimiento/documento vacíos como si se hubiera completado,
+  traducción de "cancelled" en notificaciones de reclamos de soporte, el
+  nombre del producto en "Mis compras" ahora abre el modal en vez de
+  `producto.html`, alineación del borde inferior del banner de aguas del
+  mosaico del home, y un spinner nuevo de 6 puntos (reemplaza el ring simple)
+  en pantallas de carga (guard de auth, "Cargando tu comercio", grilla de
+  búsqueda, modal rápido de producto). Más la eliminación del rol
+  `repartidor` (ver entrada de arriba, era una de esas 5 ramas).
 - **Resuelto 2026-09-15** — Plantillas con marca para los emails de
   confirmación de registro y de recuperar contraseña, activas en producción.
   Supabase mandaba esos dos emails con una plantilla genérica por defecto;
