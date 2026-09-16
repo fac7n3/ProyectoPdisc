@@ -9,11 +9,13 @@
     "preview": "vite preview",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
-    "optimize-images": "node scripts/optimize-images.mjs"
+    "optimize-images": "node scripts/optimize-images.mjs",
+    "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done"
   },
   "devDependencies": {
     "sharp": "^0.35.3",
     "supabase": "^2.109.1",
+    "typescript": "^5.9.3",
     "vite": "^8.0.16"
   },
   "dependencies": {

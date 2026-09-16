@@ -2758,3 +2758,135 @@ aplicar** -- es uno de los pendientes que aplica el usuario. Hasta que corra, la
 reclamos funciona sin adjuntos (las dos consultas usan `select('*')` y la columna solo viaja en el
 insert si hay archivos); lo que falla es la subida al bucket. El CSS y los arreglos de esta tarea
 no dependen de esa migración.
+
+---
+
+## 2026-09-16 — Auditoría de las 4 Edge Functions (pagos y baja de cuenta)
+
+Segundo análisis al azar de la sesión: salió `supabase/functions/`. Cuatro funciones, ~711 líneas,
+que mueven plata (Mercado Pago) y borran cuentas — y **cero tests** hasta esta tarea.
+
+### El hallazgo principal: el webhook nunca verificaba el monto
+
+`mp-webhook` marcaba una orden como `paid` con esta sola condición:
+
+```ts
+if (payment.status === "approved") { /* ...update payment_status: "paid" */ }
+```
+
+Re-confirmaba contra la API real de MP (bien, eso ya estaba) y chequeaba que las órdenes fueran
+`pending` y de Mercado Pago, pero **nunca comparaba `payment.transaction_amount` contra lo que
+suman los `total_price` de esas órdenes**. Reproducido en test: un pago de $100 marcaba pagado un
+pedido de $50.000. Un carrito de dos órdenes ($3.000 + $7.000) con un pago de $3.000 marcaba las
+dos.
+
+Ahora las órdenes se leen ANTES de escribir, se suma el total esperado y, si lo cobrado no lo
+cubre, van a `needs_review` con una notificación al vendedor — nunca a `paid`.
+
+**Decisión de diseño a tener presente:** un pago partido en dos medios (MP manda un webhook por
+cada uno, cada `transaction_amount` es parcial) va a caer en `needs_review` en vez de `paid`. Es a
+propósito: marcar `paid` de más regala mercadería, marcar `needs_review` de más solo pide una
+revisión. Si el caso aparece seguido en producción, la salida correcta es consultar el
+`merchant_order` (`paid_amount` vs `total_amount`) en vez de aflojar la comparación.
+
+### Los otros bugs de `mp-webhook`
+
+- **Devolución y contracargo no se manejaban.** `refunded`, `charged_back` e `in_mediation` caían
+  en el `else` vacío ("pending/in_process: no hacemos nada"), así que la orden se quedaba `paid`
+  para siempre: el vendedor despachaba una venta cuya plata ya no estaba. Ahora vuelven a
+  `needs_review` + notificación. Se filtra por `payment_id` para no tocar órdenes de otro pago.
+  **No hizo falta migración:** `needs_review` ya era un valor válido del CHECK
+  (`56_mp_marketplace_split.sql`) y `notifications.type` no tiene CHECK (verificado contra
+  producción), así que los dos tipos nuevos entran sin tocar el schema.
+- **`external_reference` sin validar.** Se hacía `.split(",")` y se metía derecho en `.in("id",
+  ...)`: cualquier cosa que no fuera uuid hacía tirar a Postgres por casteo, caía en el catch y
+  devolvía **500 — y Mercado Pago reintenta un webhook con 500 durante días**. Ahora se filtra por
+  forma de uuid y se responde 200 con un `console.warn`.
+- **N+1.** Por cada orden actualizada se pedía el `owner_id` de su tienda en una query aparte;
+  ahora es una sola con `.in()` (helper `notifyStoreOwners`).
+- **`resolveAccessToken` con `.maybeSingle()`.** `stores.mp_collector_id` no tiene unique, así que
+  la misma cuenta de MP puede quedar vinculada a dos tiendas; con dos filas `.maybeSingle()`
+  devuelve error, el código lo ignoraba (`const { data: store } = ...`, sin mirar `error`) y caía
+  **en silencio** al token global — con el que no puede leer el pago del vendedor, así que la venta
+  no se confirmaba nunca y no quedaba rastro de por qué. Es el mismo patrón que ya había mordido en
+  `js/vender.js` (panel en blanco con 2+ tiendas, 2026-09-10). Ahora usa `.limit(2)`, detecta el
+  caso y lo loguea.
+
+### `delete-account`: datos personales que sobrevivían a la baja
+
+El encabezado del archivo cita la Ley 25.326 (derecho de supresión), pero solo limpiaba el bucket
+`avatars`. Las **capturas adjuntas a un reclamo de soporte** (`support-attachments/{uid}/`, que por
+su propia migración "suelen traer datos personales: dirección, mail, medio de pago") quedaban en el
+bucket para siempre después de borrar la cuenta. Ahora se limpian los dos buckets con carpeta
+`{uid}/`.
+
+- `payment-proofs` **NO** se toca a propósito y queda documentado en el archivo: sus paths son
+  `{order_id}/`, no `{uid}/`, y los pedidos sobreviven anonimizados (`orders.client_id` es SET
+  NULL) para que el comercio conserve su historial de ventas — borrar el comprobante le sacaría el
+  respaldo de un cobro que sigue siendo suyo.
+- **`list()` corta en 100 objetos y no avisa que hay más**, así que se pagina (siempre pidiendo
+  desde el principio, porque lo que queda corre para atrás al borrar) con un tope de vueltas para
+  que un `remove` que no borre nada no deje la función girando.
+- **Se reordenó**: primero `deleteUser`, después los archivos y sin tirar. Antes era al revés, y si
+  el `deleteUser` fallaba la persona se quedaba con la cuenta pero ya sin su foto de perfil.
+  Al revés también importa: si la limpieza tirara después de borrar al usuario, el catch devolvía
+  500 y `js/perfil.js` cae al fallback de abrir un ticket de soporte... por una cuenta que ya no
+  existe. Por eso `purgeUserFolder` loguea pero nunca tira.
+
+### `mp-oauth-callback` y `mp-create-preference`
+
+- **No se puede vincular la misma cuenta de MP a dos tiendas** (409 con el nombre de la otra
+  tienda). Es lo que causaba el bug silencioso de `resolveAccessToken` de arriba.
+- **Falta el `state` del flujo OAuth** — documentado en el encabezado del archivo y en "Pendientes
+  activos". Sin `state`, nada ata el `code` a quien arrancó la vinculación: hacerle disparar la
+  función a un vendedor logueado con un `code` ajeno le vincula el comercio a la cuenta de MP del
+  atacante, y todos los cobros van ahí. Hoy no es explotable porque **ninguna página llama a esta
+  función** (se confirmó con grep: solo `delete-account` y `mp-create-preference` se invocan desde
+  el front) — la vinculación quedó pausada en A113-274. Resolverlo antes de cablearla.
+- **`order_ids` validado** en `mp-create-preference`: uuids, deduplicado y con tope de 50. Antes un
+  body con números u objetos llegaba derecho al `.in()` y el usuario veía "Error interno" (500);
+  y `["A","A"]` hacía fallar el chequeo `orders.length !== orderIds.length` respondiendo "Alguna
+  orden no existe o no te pertenece", que es falso.
+- **`MP_MARKETPLACE_FEE_PCT`** con un valor inválido daba `NaN`, que se serializa como `null` en el
+  JSON de la preferencia. Ahora cae a 0 y lo loguea.
+
+### Tests nuevos: `supabase/functions/_tests/`
+
+24 asserts, corren con `node` (sin Deno, sin Supabase levantado, sin red) y se sumaron a un
+`npm test` nuevo que también corre los `js/*.test.mjs` de siempre.
+
+- `load-edge.mjs` lee el `index.ts` **real**, le saca el `import` de `jsr:` (que solo resuelve en
+  Deno), lo transpila con `typescript` (agregado como devDependency) y lo corre en un `vm` con
+  `Deno`, `createClient` y `fetch` stubbeados, quedándose con el handler que la función le pasa a
+  `Deno.serve`. O sea que se prueba el archivo que se despliega, no una copia.
+- `fake-supabase.mjs` es un Supabase en memoria con lo justo del query builder que usan estas
+  funciones (`select`/`update`/`eq`/`neq`/`in`/`limit`/`maybeSingle`/`single`/`rpc`).
+- Van en `_tests/` porque **el CLI de Supabase ignora las carpetas que empiezan con `_`** al
+  desplegar (misma convención que `_shared`), así que no viajan a producción.
+- **Contra el código de `main` fallan 8** de los 24: los 5 del webhook (monto de menos, carrito
+  parcial, devolución, contracargo, collector duplicado) y 3 de la baja de cuenta (adjuntos de
+  soporte, orden de operaciones, archivos perdidos si la baja falla).
+
+### El pendiente más grave que salió y NO se tocó
+
+**`orders_insert_own` deja fijar el precio desde el cliente.** Verificado contra la base de
+producción con `pg_policies`: la policy es solo `with check (client_id = auth.uid())`, sin nada que
+proteja `total_price`, `payment_status` ni `store_id`, y **no hay trigger que recalcule el total
+desde `order_items`**. El RPC `create_order` (SECURITY DEFINER) sí calcula bien el precio desde
+`products.price` — pero nada obliga a pasar por él: cualquier usuario autenticado puede insertar la
+orden directo por la API REST con el `total_price` que quiera, y con `order_items_insert_own`
+sumarle ítems inventados.
+
+Importante: **la verificación de monto del webhook NO tapa este caso** — el pago coincide con el
+total inventado, así que para el webhook cierra perfecto. Se arregla en la policy (que el insert
+directo no pueda fijar esos campos, o revocarlo y dejar solo el RPC). Necesita migración, la aplica
+el usuario. Anotado en "Pendientes activos" con prioridad ALTA.
+
+### Verificación
+
+`npm test` en verde (24 asserts nuevos + los 6 archivos de test que ya había). Las 4 funciones
+parsean sin errores de sintaxis (chequeado con el parser de TypeScript; **no hay Deno en el entorno
+remoto y no se puede instalar, el proxy de egress bloquea deno.land**, así que no se corrió
+`deno check` ni se desplegó nada). `dist/` reconstruido por el cambio en
+`js/notifications-utils.js`. **Ninguna función se re-desplegó**: los cambios están en el repo, hay
+que hacer `supabase functions deploy` para que lleguen a producción.

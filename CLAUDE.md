@@ -80,6 +80,63 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — Auditoría de las 4 Edge Functions
+  (`supabase/functions/`), que mueven plata y borran cuentas y **no tenían ni
+  un test**. Lo más grave, en `mp-webhook`: **nunca se verificaba el monto
+  cobrado**. Alcanzaba con que Mercado Pago dijera `approved` para marcar la
+  orden como pagada, sin comparar `transaction_amount` contra lo que suman las
+  órdenes — un pago de $100 marcaba pagado un pedido de $50.000 (reproducido
+  en test). Ahora, si lo cobrado no cubre el total, las órdenes van a
+  `needs_review` y se le avisa al vendedor; nunca a `paid`. Segundo: una
+  **devolución o contracargo** (`refunded`/`charged_back`/`in_mediation`)
+  dejaba la orden en `paid` para siempre y el vendedor despachaba una venta
+  que ya no existía — ahora vuelve a `needs_review` con aviso. Tercero: un
+  `external_reference` que no fueran uuids hacía explotar el `.in()`, caía en
+  el catch y devolvía 500, y **MP reintenta un webhook con 500 durante días**
+  — ahora se filtra por forma de uuid y responde 200. Cuarto: se sacó el N+1
+  que pedía el `owner_id` de a una orden por vez.
+  En **`delete-account`**: la función implementa el derecho de supresión (Ley
+  25.326) pero solo limpiaba el bucket `avatars` — las **capturas de los
+  reclamos** (`support-attachments/{uid}/`, que suelen traer dirección, mail o
+  medio de pago) quedaban ahí para siempre después de una baja. Ahora se
+  borran las dos carpetas, paginando (`list()` corta en 100 y no avisa que hay
+  más). `payment-proofs` se deja a propósito: sus paths son `{order_id}/` y el
+  pedido sobrevive anonimizado, es el respaldo del cobro del comercio.
+  Además se reordenó: primero la baja, después los archivos y sin tirar —
+  antes, si el `deleteUser` fallaba, la persona se quedaba con la cuenta pero
+  ya sin su foto de perfil.
+  En **`mp-oauth-callback`**: no dejaba vincular la misma cuenta de MP a dos
+  tiendas (`stores.mp_collector_id` no tiene unique, y con dos filas el
+  webhook no sabe con qué token leer el pago, se cae al global y la venta no
+  se confirma nunca, en silencio). En **`mp-create-preference`**: se valida el
+  `order_ids` que llega en el body (uuids, sin duplicados, con tope) para
+  devolver un 400 claro en vez de un 500, y se protege
+  `MP_MARKETPLACE_FEE_PCT` de un valor inválido que se colaba como NaN.
+  Tests nuevos en **`supabase/functions/_tests/`** (24 asserts, corren con
+  `npm test`, sin Deno ni red): transpilan el `index.ts` real y lo corren
+  contra un Supabase en memoria. Contra el código de `main` fallan 8.
+  **Dos pendientes que salieron de esto y NO se tocaron** (ver abajo).
+- **Pendiente (2026-09-16) — prioridad ALTA — `orders_insert_own` deja fijar
+  el precio desde el cliente.** La policy es solo
+  `with check (client_id = auth.uid())`: cualquier usuario autenticado puede
+  insertar una orden por la API REST **salteándose el RPC `create_order`**
+  (que sí calcula el total server-side desde `products.price`) con el
+  `total_price`, `store_id` y `payment_method` que quiera. Con
+  `order_items_insert_own` puede sumarle ítems con título y precio
+  inventados. O sea: fabricar un pedido de productos reales por $1, pagarlo, y
+  que le figure al comercio como pagado. Verificado contra la base de
+  producción el 2026-09-16 con `pg_policies`. La verificación de monto que se
+  agregó al webhook **no tapa este caso** (el monto coincide con el total
+  inventado): hay que arreglarlo en la policy — que el insert directo no pueda
+  fijar `total_price`/`payment_status`, o directamente revocarlo y dejar solo
+  el RPC. Necesita migración, la aplica el usuario.
+- **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
+  Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
+  vendedor logueado se le hace disparar la función con un `code` ajeno, su
+  comercio queda vinculado a la cuenta de MP del atacante y todos los cobros
+  van ahí. Hoy no es explotable porque **ninguna página llama a esa función**
+  (la vinculación está pausada, ver A113-274), pero hay que resolverlo
+  **antes** de cablearla. Anotado también en el encabezado del archivo.
 - **Resuelto 2026-09-16** — La sección "Contactar a soporte" (Mi perfil y panel
   de vendedor) se veía rota en producción: el commit `3a3e6a3` que sumó los
   adjuntos reescribió `js/support-utils.js` entero (+552 líneas: tarjeta,
