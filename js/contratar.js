@@ -14,7 +14,10 @@ let allProfessionals = [];
 let activeCategory = 'todos';
 let currentUserId = null;
 // Evita volver a pedir las reseñas si se cierra y reabre la misma tarjeta.
-const loadedReviewSections = new Set();
+// Se vacía en cada render(): las tarjetas se rehacen de cero al filtrar, así
+// que un id que quedó acá apunta a un nodo que ya no existe -- y su tarjeta
+// nueva se quedaba para siempre con la sección de reseñas vacía.
+let loadedReviewSections = new Set();
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -317,6 +320,19 @@ function scrollToProfessional(id) {
   card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+/** Bloque "cargando" con el spinner de 6 puntos del proyecto (home.css). */
+function buildLoadingBlock(text) {
+  const block = el('div', 'bl-loading-block');
+  block.setAttribute('role', 'status');
+  block.setAttribute('aria-live', 'polite');
+  const spinner = el('div', 'bl-spinner');
+  spinner.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 6; i++) spinner.appendChild(el('div', 'bl-spinner__dot'));
+  block.appendChild(spinner);
+  block.appendChild(el('p', 'bl-loading-block__title', text));
+  return block;
+}
+
 function buildEmpty(message) {
   const empty = el('div', 'ct-empty');
   const icon = el('i', 'fa-regular fa-circle-question');
@@ -329,6 +345,7 @@ function buildEmpty(message) {
 function render(list) {
   const container = document.getElementById('ct-content');
   container.textContent = '';
+  loadedReviewSections = new Set();
 
   if (list.length === 0) {
     container.appendChild(buildEmpty(allProfessionals.length === 0
@@ -376,6 +393,9 @@ function normalize(text) {
 async function loadProfessionals() {
   const container = document.getElementById('ct-content');
   container.textContent = '';
+  // La consulta tarda (profesionales + reseñas + fotos): sin esto la página
+  // queda en blanco abajo de los chips hasta que llega todo.
+  container.appendChild(buildLoadingBlock('Cargando el directorio'));
 
   const { data: { session } } = await supabase.auth.getSession();
   currentUserId = session?.user?.id || null;
@@ -386,6 +406,10 @@ async function loadProfessionals() {
       social_instagram, social_instagram_show, social_facebook, social_facebook_show,
       social_tiktok, social_tiktok_show, social_x, social_x_show,
       social_youtube, social_youtube_show, social_website, social_website_show`)
+    // La policy `professionals_select_public` ya filtra por is_active, pero la
+    // del admin (`professionals_all_admin`, cmd ALL) no: sin esto, una cuenta
+    // admin ve en el directorio público las publicaciones pausadas.
+    .eq('is_active', true)
     .order('full_name', { ascending: true });
 
   if (error) {

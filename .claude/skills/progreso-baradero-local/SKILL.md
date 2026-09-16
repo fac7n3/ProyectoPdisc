@@ -2890,3 +2890,118 @@ remoto y no se puede instalar, el proxy de egress bloquea deno.land**, así que 
 `deno check` ni se desplegó nada). `dist/` reconstruido por el cambio en
 `js/notifications-utils.js`. **Ninguna función se re-desplegó**: los cambios están en el repo, hay
 que hacer `supabase functions deploy` para que lleguen a producción.
+
+---
+
+## 2026-09-16 — Directorios (contratar / farmacias / servicios): URLs sin validar y 4 bugs
+
+Tercer análisis al azar de la sesión: salieron las tres páginas de directorio (`js/contratar.js`,
+`js/farmacias.js`, `js/servicios.js`, ~940 líneas).
+
+### El hallazgo principal: una URL de la base puesta derecho en un `href`
+
+`getVisibleSocialLinks()` (`js/store-contact-utils.js`) devolvía el valor crudo de la columna:
+
+```js
+url: String(store[`social_${key}`] || '').trim(),
+```
+
+y tanto `contratar.js` como `comercio.js` hacían `link.href = s.url`. Lo mismo `farmacias.js` con
+`pharmacy.maps_url`. Nadie valida esos campos en ningún punto de la cadena: el input de
+`vender.html` es `type="text"` (no `type="url"`), `vender.js` guarda `.value.trim() || null` sin
+tocar nada, y las columnas son `text` pelado sin CHECK (verificado contra producción). El dueño
+las escribe él mismo desde su panel (`professionals_update_own`, migración 86).
+
+**Consecuencia 1 — la de todos los días, confirmada en el navegador.** Una URL sin esquema queda
+**relativa**: `instagram.com/mitienda` en un `href` no va a Instagram, el navegador la resuelve
+contra la página y termina en `proyectopdisc.vercel.app/pages/instagram.com/mitienda`, un 404 del
+propio sitio. Y "sin esquema" es exactamente como lo escribe cualquiera; el placeholder del campo
+muestra `https://instagram.com/tu-usuario` pero nada lo obliga.
+
+**Consecuencia 2 — el `javascript:`, con una aclaración importante.** Un
+`javascript:void(...)` guardado en el campo se dibujaba como link clickeable. La medición
+matizó la severidad y conviene dejarla escrita para no exagerarla después:
+
+- Un `<a href="javascript:...">` **sin** `target="_blank"` **sí ejecuta** bajo la CSP del
+  proyecto — `script-src 'self' 'unsafe-inline'`, y `unsafe-inline` habilita las URLs
+  `javascript:`. Comprobado con Chromium contra la CSP real copiada de `pages/contratar.html`.
+- Pero los dos lugares que renderizan estos links (`contratar.js`, `comercio.js`) ponen
+  `target="_blank"` + `rel="noopener noreferrer"`, y ahí Chromium **abre una pestaña nueva y no
+  llega al origen del sitio** (se probó leyendo el `localStorage` del origen después del clic:
+  vacío).
+
+O sea: **no era un XSS guardado explotable tal como está escrito hoy**, pero lo único que lo
+separaba de serlo eran dos atributos en el call site — cualquier refactor que los saque (o un
+tercer consumidor que los olvide) lo abre. Por eso el filtro va en el helper compartido y no en
+cada página.
+
+### El arreglo
+
+`safeExternalUrl(raw)` en `js/store-contact-utils.js`:
+
+1. saca caracteres de control (la forma clásica de partir un `javascript:` en dos: `"java\nscript:"`);
+2. si no trae esquema, le antepone `https://`;
+3. parsea con `new URL()` y **descarta todo lo que no sea `http:`/`https:`** (y lo que no tenga host).
+
+Lo usa `getVisibleSocialLinks()`, así que **arregla de una las dos páginas que lo consumen**
+(contratar y comercio) sin tocar `comercio.js`, y `farmacias.js` lo importa para su `mapsHref()`.
+Tests nuevos en `js/store-contact-utils.test.mjs` (casos: sin esquema, mayúsculas raras,
+partido con salto de línea, `data:`, `vbscript:`, `file:`, vacío, `https://` sin host).
+
+### Los otros tres bugs
+
+1. **`contratar.js`: las reseñas dejaban de cargar para siempre.** `loadedReviewSections` es un
+   `Set` de ids ya cargados, pero `render()` rehace todas las tarjetas desde cero al filtrar. Tras
+   filtrar, el id seguía en el Set y `toggleCard()` cortaba antes de poblar la sección del nodo
+   nuevo, que quedaba vacía. Reproducido en el navegador (abrir tarjeta → escribir en el buscador →
+   reabrir la misma: con `main` la sección queda en `""`, con el arreglo vuelve a cargar). Se
+   vacía el Set en cada `render()`.
+2. **Las tres páginas mostraban un hueco en blanco mientras cargaban.** Ahora usan el bloque con
+   el spinner de 6 puntos (`bl-loading-block` + `bl-spinner`, ya en `home.css`, que las tres
+   páginas cargan). En `servicios.html` importa más que en otras: son números de emergencia, y una
+   página vacía se lee como "no hay ninguno cargado".
+3. **`contratar`/`servicios` no filtraban por `is_active`.** Las policies públicas
+   (`professionals_select_public`, `emergency_contacts_select_public`) sí lo hacen, pero las de
+   admin (`professionals_all_admin`, `emergency_contacts_all_admin`, ambas cmd `ALL`) no: una
+   cuenta admin veía en las páginas **públicas** las publicaciones pausadas y los contactos dados
+   de baja. Se agregó `.eq('is_active', true)` explícito.
+
+### Cosas que parecían bugs y NO lo eran (verificado, no asumido)
+
+- **Dos farmacias de turno simultáneas**: `pharmacy_shifts` tiene
+  `constraint pharmacy_shifts_one_per_day unique (shift_date)`, así que no puede pasar.
+- **Contactos de emergencia en una categoría desconocida** (que `servicios.js` descartaría en
+  silencio): hay un CHECK que limita `category` a `emergencias`/`veterinarias`, las dos que
+  conoce el JS.
+- **`pro.phone.replace()` / `contact.phone.replace()` con phone null**: las dos columnas son
+  `NOT NULL`.
+
+### Contradicción documentada, no resuelta
+
+La migración 67 dice que `pharmacy_shifts.closes_at` se interpreta **SIEMPRE** como del día
+siguiente. `shiftWindow()` en `js/farmacias.js` solo lo pasa al día siguiente cuando
+`closes_at <= opens_at`, así que un turno cargado "8:00 a 22:00" lo toma del mismo día. El JSDoc
+de la función afirmaba lo de la migración ("SIEMPRE") mientras el código hacía otra cosa.
+
+Se dejó **el comportamiento del código** a propósito, y se reescribió el comentario para que diga
+la verdad y el porqué: es el lado conservador, que es el criterio que manda en ese archivo ("ante
+la duda, NO mostrar el dato"). Si el admin quiso decir "22:00 de mañana", la página dice "no
+tenemos el turno" durante esas horas — molesto pero inofensivo; al revés mandaría a alguien a una
+farmacia cerrada a la madrugada. Con los turnos reales de Baradero (8:00 a 8:00) las dos lecturas
+coinciden, así que hoy no cambia nada.
+
+**Si alguna vez hay que cargar turnos que no sean de 24hs, la salida correcta es agregarle a
+`pharmacy_shifts` una columna explícita (`closes_next_day`), no adivinar por las horas.** El
+formulario del admin (`shift-opens`/`shift-closes` en `admin.js`) son dos inputs de hora sin
+ninguna aclaración sobre esto.
+
+### Verificación
+
+`npm test` en verde (95 asserts entre los `js/*.test.mjs` y los de las edge functions). Los dos
+bugs principales se reprodujeron contra el código de `origin/main` en un harness de Playwright
+que monta la página real con un stub de Supabase y la CSP real copiada de `pages/contratar.html`,
+y se re-verificaron con el arreglo. `dist/` reconstruido.
+
+**Gotcha del harness:** los estilos `ct-*` de `contratar.html` están partidos entre `home.css` y
+un `<style>` inline en la propia página, así que un harness que solo cargue `home.css` la muestra
+sin estilo — no es un bug de la página.

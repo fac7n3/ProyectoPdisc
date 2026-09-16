@@ -80,6 +80,49 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — Auditoría de las tres páginas de directorio
+  (`js/contratar.js`, `js/farmacias.js`, `js/servicios.js`). Lo principal:
+  **las URLs que carga a mano un comercio o un profesional (redes sociales,
+  sitio web) iban derecho a un `href` sin validar ni normalizar**, y lo mismo
+  el `maps_url` de una farmacia. Dos consecuencias, las dos medidas en el
+  navegador: (1) **el caso de todos los días** — quien escribe
+  "instagram.com/mitienda" (sin `https://`, que es como lo escribe
+  cualquiera) generaba un link **relativo**, así que el ícono de Instagram
+  llevaba a `proyectopdisc.vercel.app/pages/instagram.com/mitienda`, un 404
+  del propio sitio; el input es `type="text"` y la columna es `text` pelada,
+  no había validación en ningún lado. (2) un `javascript:...` guardado en ese
+  campo se dibujaba como link clickeable. **Medido:** con el `target="_blank"`
+  + `rel="noopener noreferrer"` que ponen `contratar.js` y `comercio.js`,
+  Chromium abre una pestaña nueva y **no** llega al origen del sitio; sin
+  `target="_blank"` sí ejecuta (la CSP no lo frena, `script-src` tiene
+  `'unsafe-inline'`). O sea: no era un XSS guardado explotable hoy, pero lo
+  único que lo separaba de serlo eran dos atributos en el call site. Se
+  resolvió en `js/store-contact-utils.js` con `safeExternalUrl()` (completa el
+  `https://` que falta, descarta todo lo que no sea http/https), que usa
+  `getVisibleSocialLinks()` — **arregla de una las dos páginas que lo
+  consumen, contratar y comercio**, más el `maps_url` de farmacias. Con tests
+  (`node js/store-contact-utils.test.mjs`).
+  Otros tres arreglos: en `contratar.js`, **las reseñas dejaban de cargar para
+  siempre** si se abría una tarjeta y después se filtraba la lista (el Set
+  `loadedReviewSections` guardaba ids de un DOM que el re-render ya había
+  tirado — reproducido y verificado en el navegador); las tres páginas
+  mostraban un hueco en blanco mientras cargaban (ahora usan el bloque con el
+  spinner de 6 puntos); y `contratar`/`servicios` ahora filtran explícito por
+  `is_active` — la policy pública ya lo hacía, pero la del admin (cmd `ALL`)
+  no, así que una cuenta admin veía en las páginas públicas las publicaciones
+  pausadas y los contactos dados de baja.
+  **Contradicción documentada, no resuelta:** la migración 67 dice que
+  `pharmacy_shifts.closes_at` se interpreta **SIEMPRE** como del día
+  siguiente, pero `js/farmacias.js` solo lo pasa al día siguiente cuando
+  `closes_at <= opens_at` (un turno "8:00 a 22:00" lo toma del mismo día). Se
+  dejó el comportamiento del código a propósito — es el conservador, y el
+  criterio del archivo es "ante la duda, NO mostrar el dato" — y se documentó
+  la divergencia en el JSDoc de `shiftWindow`. Con los turnos reales de
+  Baradero (8:00 a 8:00) las dos lecturas coinciden, así que hoy no cambia
+  nada. **Si alguna vez hay que cargar turnos que no sean de 24hs, la salida
+  correcta es una columna explícita `closes_next_day`, no adivinar por las
+  horas.** El formulario del admin son dos inputs de hora sin ninguna
+  aclaración sobre esto.
 - **Resuelto 2026-09-16** — Auditoría de las 4 Edge Functions
   (`supabase/functions/`), que mueven plata y borran cuentas y **no tenían ni
   un test**. Lo más grave, en `mp-webhook`: **nunca se verificaba el monto
