@@ -953,7 +953,7 @@ let pedidosTab = 'all'; // 'all' | 'pending_payment' | 'shipping' | 'completed' 
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
-const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, phone, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
+const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
@@ -1633,7 +1633,6 @@ function setupStoreLogoPicker() {
 function fillStoreProfileForm(store) {
   const nameInput = document.getElementById('store-name');
   const addressInput = document.getElementById('store-address');
-  const phoneInput = document.getElementById('store-phone');
   const zoneInput = document.getElementById('store-zone');
   const hoursInput = document.getElementById('store-hours');
   const descInput = document.getElementById('store-description');
@@ -1644,19 +1643,22 @@ function fillStoreProfileForm(store) {
   setStoreCategorySlug(store.category_slug || null);
   paintStoreLogo(store.logo_url || null);
   if (addressInput) addressInput.value = store.address || '';
-  if (phoneInput) phoneInput.value = store.phone || '';
   if (zoneInput) zoneInput.value = store.zone || '';
   // hours se guarda como un string JSON simple (ej: '"Lunes a viernes 9 a 18hs"')
   if (hoursInput) hoursInput.value = typeof store.hours === 'string' ? store.hours : '';
   if (descInput) descInput.value = store.description || '';
 
-  // Cómo lo contactan los clientes: teléfono / WhatsApp / ninguno
-  // (reemplaza al viejo checkbox accepts_contact, ver stores.contact_method).
-  const contactMethod = store.contact_method || 'phone';
+  // Cómo lo contactan los clientes: WhatsApp o ninguno (ya no "teléfono" --
+  // era un número aparte, stores.phone, que quedaba duplicado con este).
+  // Las cuentas que todavía tengan el viejo contact_method='phone' guardado
+  // caen acá en "whatsapp": si no tienen número cargado, el submit las va a
+  // frenar con el error de "ingresá un WhatsApp válido" hasta que lo agreguen.
+  const contactMethod = store.contact_method === 'none' ? 'none' : 'whatsapp';
   document.querySelectorAll('input[name="store-contact-method"]').forEach((radio) => {
     radio.checked = radio.value === contactMethod;
   });
   if (whatsappInput) whatsappInput.value = store.whatsapp || '';
+  toggleStoreWhatsappField(contactMethod);
 
   // Redes sociales: un link + un check "mostrar" por red (ver SOCIAL_NETWORKS).
   SOCIAL_NETWORKS.forEach(({ key }) => {
@@ -1681,9 +1683,23 @@ function fillStoreProfileForm(store) {
   }
 }
 
+/** Solo se pide el número si van a contactar por WhatsApp -- si no, no tiene sentido pedirlo. */
+function toggleStoreWhatsappField(contactMethod) {
+  const field = document.getElementById('store-whatsapp-field');
+  if (!field) return;
+  // Con style.display en vez de [hidden]: .pf-field ya trae display:flex, que
+  // por especificidad le gana al [hidden] del user-agent (mismo gotcha que
+  // .store-header__logo--placeholder en comercio.js).
+  field.style.display = contactMethod === 'whatsapp' ? '' : 'none';
+}
+
 function setupStoreProfileForm() {
   const form = document.getElementById('store-profile-form');
   if (!form) return;
+
+  document.querySelectorAll('input[name="store-contact-method"]').forEach((radio) => {
+    radio.addEventListener('change', () => toggleStoreWhatsappField(radio.value));
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1707,7 +1723,7 @@ function setupStoreProfileForm() {
     const hoursValue = document.getElementById('store-hours').value.trim();
 
     const contactMethodInput = document.querySelector('input[name="store-contact-method"]:checked');
-    const contactMethodValue = contactMethodInput ? contactMethodInput.value : 'phone';
+    const contactMethodValue = contactMethodInput ? contactMethodInput.value : 'whatsapp';
     const whatsappValue = document.getElementById('store-whatsapp').value.trim();
 
     if (contactMethodValue === 'whatsapp' && !isValidPhone(whatsappValue)) {
@@ -1730,7 +1746,6 @@ function setupStoreProfileForm() {
         name: nameValue,
         category_slug: categorySlugValue,
         address: document.getElementById('store-address').value.trim() || null,
-        phone: document.getElementById('store-phone').value.trim() || null,
         zone: document.getElementById('store-zone').value.trim() || null,
         hours: hoursValue || null,
         description: descriptionValue || null,
