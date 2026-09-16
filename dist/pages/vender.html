@@ -771,15 +771,15 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-DuHy2X1H.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BjfrnZI3.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DDli3ltD.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-BD8sM3AC.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-DXMAS3Rs.js">
+    <link rel="modulepreload" crossorigin href="/assets/validation-utils-DeNlwmsN.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
-    <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
     <link rel="stylesheet" crossorigin href="/assets/home-s8E_144O.css">
@@ -1231,7 +1231,10 @@
                     </div>
                     <div class="pf-field pf-field--full" id="store-whatsapp-field">
                       <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
-                      <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" />
+                      <div style="display: flex; gap: 0.5rem;">
+                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
+                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      </div>
                       <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
                   </div>

@@ -1222,7 +1222,10 @@
                     </div>
                     <div class="pf-field pf-field--full" id="store-whatsapp-field">
                       <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
-                      <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" />
+                      <div style="display: flex; gap: 0.5rem;">
+                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
+                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      </div>
                       <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
                   </div>
