@@ -1175,13 +1175,9 @@
                   <h3 class="pf-card__title">Contacto y ubicación</h3>
                   <p class="pf-card__hint">Dónde te encuentran y cómo comunicarse con vos.</p>
                   <div class="pf-grid">
-                    <div class="pf-field">
+                    <div class="pf-field pf-field--full">
                       <label class="form-label" for="store-address">Dirección</label>
                       <input type="text" id="store-address" class="form-input" />
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-phone">Teléfono</label>
-                      <input type="text" id="store-phone" class="form-input" />
                     </div>
                     <div class="pf-field">
                       <label class="form-label" for="store-zone">Zona / Barrio</label>
@@ -1191,18 +1187,16 @@
                       <label class="form-label" for="store-hours">Horarios de atención</label>
                       <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
                     </div>
-                    <!-- El vendedor decide cómo lo contactan desde el botón "Contactar
-                         al vendedor" (producto.js/comercio.js): teléfono, WhatsApp o
-                         ninguno (stores.contact_method). -->
+                    <!-- El vendedor decide si lo contactan por WhatsApp o no desde el
+                         botón "Contactar al vendedor" (producto.js/comercio.js) --
+                         stores.contact_method. Un solo número (stores.whatsapp): ya no
+                         hay un teléfono aparte para "llamar", que quedaba duplicado con
+                         este campo. -->
                     <div class="pf-field pf-field--full">
                       <label class="form-label">¿Cómo querés que te contacten los clientes?</label>
                       <div class="pf-radio-group">
                         <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="phone" checked />
-                          Teléfono
-                        </label>
-                        <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="whatsapp" />
+                          <input type="radio" name="store-contact-method" value="whatsapp" checked />
                           WhatsApp
                         </label>
                         <label class="pf-check">
@@ -1211,10 +1205,10 @@
                         </label>
                       </div>
                     </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-whatsapp">Número de WhatsApp</label>
+                    <div class="pf-field pf-field--full" id="store-whatsapp-field">
+                      <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
                       <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" />
-                      <p class="pf-card__hint">Solo se usa si elegiste "WhatsApp" arriba.</p>
+                      <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
                   </div>
                 </div>
