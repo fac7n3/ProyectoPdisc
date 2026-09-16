@@ -3005,3 +3005,96 @@ y se re-verificaron con el arreglo. `dist/` reconstruido.
 **Gotcha del harness:** los estilos `ct-*` de `contratar.html` están partidos entre `home.css` y
 un `<style>` inline en la propia página, así que un harness que solo cargue `home.css` la muestra
 sin estilo — no es un bug de la página.
+
+---
+
+## 2026-09-16 — Carrito y checkout: el total mostrado no era el total cobrado
+
+Cuarto análisis al azar de la sesión: salió `js/carrito.js` (1400 líneas) + `js/cart-utils.js`.
+
+### El hallazgo principal
+
+`create_order` (leído de la base de producción, no del archivo de migración) calcula así, **por
+tienda**:
+
+```sql
+v_store_discount_pct := case
+  when v_coupon_discount_pct is not null and (v_coupon_store_id is null or v_coupon_store_id = v_store_id)
+  then v_coupon_discount_pct else 0 end;
+...
+v_total := round(v_subtotal * (1 - v_store_discount_pct / 100.0))::integer + v_delivery_fee;
+```
+
+O sea: **el descuento se aplica tienda por tienda**, y un cupón de un comercio puntual no toca a
+los demás. El carrito hacía otra cosa: `applyCoupon()` leía `data.store_id` de
+`validate_coupon_code` solo para chequear que el carrito tuviera algo de esa tienda, y después lo
+**tiraba**, guardando nada más el porcentaje en un `currentDiscount` global que `renderCart()` le
+restaba al subtotal entero.
+
+**Diferencia medida en la página real, con el carrito de dos comercios:** $10.000 en cada uno y un
+cupón del 20% que pertenece a uno solo. `main` muestra **Total $16.000**; `create_order` cobra
+**$18.000**. El mensaje de la UI ya decía la verdad ("20% de descuento en los productos de esa
+tienda") mientras el número de al lado decía otra cosa.
+
+Dos diferencias más, chicas pero del mismo origen:
+
+- **Orden del redondeo.** El RPC redondea el subtotal con descuento de **cada tienda**
+  (`round(...)::integer`) y recién ahí suma el envío; el carrito redondeaba una sola vez al final y
+  solo para mostrar. Con $10 y $10 al 15%: el RPC da 9 + 9 = 18, el carrito mostraba 17.
+- **Umbral de envío gratis con el descuento de otro.** `calculateShippingByStore()` aplicaba
+  `currentDiscount` al subtotal de **todas** las tiendas para decidir si llegaban al envío gratis,
+  así que un cupón ajeno podía bajar artificialmente el subtotal de una tienda y mostrar envío
+  cobrado donde el RPC daba gratis. Lo mismo el chip "Te faltan $X para envío gratis" de cada grupo.
+
+### El arreglo
+
+La aritmética se sacó a **`js/cart-totals.js`**, puro y sin DOM (mismo patrón que
+`storage-utils.js` / `store-contact-utils.js`), con `node js/cart-totals.test.mjs`. Replica el RPC
+paso por paso:
+
+1. agrupa por tienda;
+2. `discountPctForStore(pct, couponStoreId, storeId)` — el mismo `case` del SQL;
+3. el umbral de envío se compara contra el valor **sin redondear** (es lo que hace el RPC: redondear
+   antes de comparar puede cruzar el límite por una fracción de peso — hay un test para eso);
+4. redondea el subtotal con descuento de cada tienda y **después** suma el envío.
+
+**Gotcha del redondeo:** `round()` de Postgres sobre `numeric` redondea el 0,5 alejándose del cero y
+`Math.round` de JS lo redondea hacia +infinito. Coinciden porque acá todos los importes son
+positivos; si alguna vez hay negativos (una nota de crédito), hay que revisarlo.
+
+`carrito.js` pasó de `currentDiscount` (0-1, global) a `couponPercent` (0-100) + `couponStoreId`, y
+el resumen, el chip de envío por comercio y el botón de pagar salen todos de la misma función. Los
+`FREE_SHIPPING_THRESHOLD`/`FLAT_SHIPPING_FEE` que estaban duplicados en `carrito.js` ahora se
+importan de `cart-totals.js` (`DEFAULT_*`), para no tener el mismo número escrito en dos lados.
+
+### Dos arreglos menores
+
+1. **Las ofertas vencían tres horas antes, todas las noches.**
+   `new Date().toISOString().slice(0, 10)` devuelve el día **en UTC**, y Argentina va 3 horas atrás:
+   entre las 21:00 y la medianoche el día UTC ya es el siguiente, así que
+   `offer_expires_at < today` daba `true` para una oferta que todavía estaba vigente y el precio
+   tachado desaparecía. Estaba igual en `cart-utils.js` (`buildPriceRow`) y en `product-modal.js`.
+   Ahora los dos usan `localIsoDate()` / `isOfferExpired()` de `cart-utils.js` — el mismo criterio
+   que `isoDate()` de `js/farmacias.js`, que ya tenía el comentario "no UTC: toISOString corre el
+   día". **Quedan dos usos más de ese patrón en `js/vender.js` (líneas ~1379 y ~2449), en las
+   métricas del panel; no se tocaron por estar fuera de esta tarea.**
+2. **`renderActiveCoupons` no filtraba vencidos para un admin.** `coupons_select_public` ya filtra
+   `is_active` + expiración, pero `coupons_all_admin` (cmd `ALL`) no, así que una cuenta admin veía
+   en el home y en el carrito cupones que `create_order` después rechazaba con "Cupón inválido o
+   expirado". Se agregaron los filtros explícitos.
+
+### Cosas que se verificaron y estaban bien
+
+- **El checkout no manda precios.** El payload de `create_order` es solo `{id, qty}`; el precio lo
+  vuelve a leer el servidor de `products`. Bien.
+- **El filtro por comercio no toca `selected`.** Es solo una lente de visualización, y hay un aviso
+  (`#cart-hidden-note`) para lo que queda tildado pero oculto. Bien pensado, se dejó igual.
+- **No se vacía el carrito antes de tiempo con Mercado Pago.** Está documentado en el propio
+  archivo y es correcto.
+
+### Verificación
+
+`npm test` en verde (112 asserts). El bug principal se reprodujo **en la página real** con un
+harness de Playwright que monta `pages/carrito.html` con un stub de Supabase (dos comercios, un
+cupón del 20% con `store_id` de uno solo): contra `origin/main` el resumen dice $16.000, con el
+arreglo dice $18.000, que es lo que cobra el RPC. `dist/` reconstruido.

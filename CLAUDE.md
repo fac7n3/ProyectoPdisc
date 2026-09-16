@@ -80,6 +80,35 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — Auditoría del carrito y el checkout (`js/carrito.js`
+  + `js/cart-utils.js`). Lo grave: **el total que mostraba el carrito no era el
+  que cobraba `create_order`**. El RPC aplica el descuento del cupón **tienda
+  por tienda** (solo donde `coupon.store_id` es null o coincide), pero el
+  carrito guardaba únicamente el porcentaje y se lo restaba al subtotal
+  entero. Con dos comercios en el carrito y un cupón de uno solo, la
+  diferencia no era de centavos: **con $10.000 en cada comercio y un cupón del
+  20% de uno de ellos, el resumen mostraba $16.000 y se cobraban $18.000**
+  (reproducido de punta a punta en la página real). Segundo, más chico: el RPC
+  redondea el subtotal con descuento de **cada tienda** y recién ahí suma el
+  envío; el carrito redondeaba una sola vez al final, lo que corría unos pesos
+  con varios comercios. Y tercero, el umbral de envío gratis de una tienda se
+  calculaba con el descuento de un cupón que podía no ser suyo, así que podía
+  mostrar envío cobrado donde el RPC daba envío gratis.
+  La cuenta se sacó a **`js/cart-totals.js`** (puro, sin DOM, con
+  `node js/cart-totals.test.mjs` — 17 casos que fijan la aritmética contra la
+  del RPC, incluida la comparación del umbral **sin redondear**, que es como
+  la hace Postgres). `carrito.js` ahora guarda `couponPercent` + `couponStoreId`
+  en vez de un `currentDiscount` global, y el resumen, el chip de envío de cada
+  comercio y el botón de pagar salen todos de la misma función.
+  Dos arreglos menores de paso: **las ofertas vencían tres horas antes de
+  tiempo todas las noches** — `new Date().toISOString().slice(0,10)` da el día
+  **UTC**, y Argentina va 3 horas atrás, así que de 21:00 a medianoche una
+  oferta que vencía ese mismo día ya se mostraba sin tachado (estaba igual en
+  `cart-utils.js` y en `product-modal.js`; ahora los dos usan `localIsoDate()`,
+  mismo criterio que `isoDate()` de `farmacias.js`). Y la lista de cupones
+  públicos ahora filtra explícito por activo + no vencido: la policy pública ya
+  lo hacía, pero la del admin (cmd `ALL`) no, así que una cuenta admin veía
+  cupones que `create_order` después rechazaba.
 - **Resuelto 2026-09-16** — Auditoría de las tres páginas de directorio
   (`js/contratar.js`, `js/farmacias.js`, `js/servicios.js`). Lo principal:
   **las URLs que carga a mano un comercio o un profesional (redes sociales,

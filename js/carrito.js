@@ -4,12 +4,33 @@ import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons, isItemSelected, getSelectedItems } from './cart-utils.js';
+// F12-04: los DEFAULT_* son el fallback de antes de que validateCartFreshness
+// traiga el envío real de cada tienda, y coinciden con el default de la base
+// (42_vendor_coupons_and_per_store_shipping.sql). Viven en cart-totals.js para
+// no tener el mismo número escrito en dos lados.
+import {
+  computeCartTotals,
+  discountPctForStore,
+  DEFAULT_FREE_SHIPPING_THRESHOLD,
+  DEFAULT_DELIVERY_FEE,
+} from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
 
 // --- Estado del Carrito ---
-let currentDiscount = 0; // Porcentaje de descuento (0 a 1)
+/**
+ * Descuento del cupón puesto, tal como lo devuelve la base: porcentaje 0-100 y
+ * la tienda a la que pertenece (`null` = global, vale para todo el carrito).
+ *
+ * El `store_id` es lo que faltaba guardar: `create_order` aplica el porcentaje
+ * **tienda por tienda**, así que un cupón de un solo comercio no toca el resto
+ * del carrito. Antes acá solo vivía el porcentaje y se restaba del subtotal
+ * entero, y con dos comercios el resumen mostraba un total más bajo que el que
+ * se terminaba cobrando. La cuenta vive en js/cart-totals.js, con tests.
+ */
+let couponPercent = 0;
+let couponStoreId = null;
 let appliedCouponCode = null; // Código tal cual lo valida el servidor en create_order
 let deliveryMethod = 'pickup'; // 'pickup' | 'delivery' — ver initDeliveryEvents()
 let shippingAddress = '';
@@ -46,12 +67,6 @@ function storeKeyOf(item) {
   return item.shop || 'Tienda';
 }
 
-// F12-04: fallback antes de que termine de cargar el envío real de cada
-// tienda (validateCartFreshness lo trae) — coincide con el default real en
-// la base (39_.../42_vendor_coupons_and_per_store_shipping.sql), así que
-// nunca muestra un número distinto al que create_order va a cobrar.
-const FREE_SHIPPING_THRESHOLD = 5000;
-const FLAT_SHIPPING_FEE = 350;
 
 // F12-04: productId -> storeId y storeId -> {deliveryFee, freeShippingThreshold},
 // poblados por validateCartFreshness (ya trae los productos reales del carrito,
@@ -71,27 +86,32 @@ const storeTransferInfoById = new Map();
 const storeNameById = new Map();
 
 /**
- * Agrupa el carrito por tienda y calcula el envío real de cada una (post-descuento).
+ * Tienda de un ítem. Antes de que `validateCartFreshness` traiga los ids
+ * reales cae al nombre del comercio, que es lo único que trae el carrito
+ * guardado -- alcanza para agrupar y para el envío, no para matchear el
+ * `store_id` de un cupón de vendedor (para entonces ya corrió).
+ */
+function storeIdOfItem(item) {
+  return productStoreId.get(item.id) || item.shop || 'Tienda';
+}
+
+/**
+ * La cuenta completa del carrito (subtotal, descuento, envío y total),
+ * calculada igual que `create_order`: por tienda, con el descuento solo donde
+ * corresponde y redondeando cada tienda por separado. Ver js/cart-totals.js.
  * Recibe SOLO los ítems tildados: un producto en pendiente no viaja a
  * create_order, así que tampoco puede empujar a esa tienda por encima de su
  * umbral de envío gratis.
  */
-function calculateShippingByStore(cart, discount) {
-  if (deliveryMethod === 'pickup') return 0;
-
-  const subtotalByStore = cart.reduce((acc, item) => {
-    const storeId = productStoreId.get(item.id) || item.shop || 'Tienda';
-    acc[storeId] = (acc[storeId] || 0) + item.price * item.qty;
-    return acc;
-  }, {});
-
-  return Object.entries(subtotalByStore).reduce((total, [storeId, storeSubtotal]) => {
-    const discounted = storeSubtotal * (1 - discount);
-    const shipping = storeShippingById.get(storeId);
-    const threshold = shipping?.freeShippingThreshold ?? FREE_SHIPPING_THRESHOLD;
-    const fee = shipping?.deliveryFee ?? FLAT_SHIPPING_FEE;
-    return total + (discounted >= threshold ? 0 : fee);
-  }, 0);
+function cartTotals(selectedItems) {
+  return computeCartTotals({
+    items: selectedItems,
+    storeIdOf: storeIdOfItem,
+    shippingOf: (storeId) => storeShippingById.get(storeId),
+    deliveryMethod,
+    couponPercent,
+    couponStoreId,
+  });
 }
 
 /**
@@ -125,10 +145,13 @@ function groupShippingState(entries) {
 
   const storeId = entries.map((e) => productStoreId.get(e.item.id)).find(Boolean);
   const config = storeId ? storeShippingById.get(storeId) : null;
-  const threshold = config?.freeShippingThreshold ?? FREE_SHIPPING_THRESHOLD;
-  const fee = config?.deliveryFee ?? FLAT_SHIPPING_FEE;
+  const threshold = config?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING_THRESHOLD;
+  const fee = config?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
 
-  const subtotal = selected.reduce((acc, e) => acc + e.item.price * e.item.qty, 0) * (1 - currentDiscount);
+  // El descuento que le toca a ESTA tienda: un cupón de otro comercio no le
+  // baja el subtotal, así que tampoco puede hacerle perder el envío gratis.
+  const pct = discountPctForStore(couponPercent, couponStoreId, storeId ?? entries[0]?.item.shop);
+  const subtotal = selected.reduce((acc, e) => acc + e.item.price * e.item.qty, 0) * (1 - pct / 100);
   if (fee === 0 || subtotal >= threshold) return { kind: 'free', text: 'Envío gratis' };
 
   return {
@@ -447,23 +470,18 @@ function renderCart() {
   const selectedItems = getSelectedItems(cart);
   const pendingItems = cart.filter((item) => !isItemSelected(item));
 
-  const subtotal = selectedItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const pendingAmount = pendingItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  const discountAmount = subtotal * currentDiscount;
-  const subtotalWithDiscount = subtotal - discountAmount;
-
-  // Envío: gratis en "retiro"; en "envío a domicilio" se calcula por tienda
-  // (mismo criterio que create_order, ver calculateShippingByStore arriba).
-  const shipping = calculateShippingByStore(selectedItems, currentDiscount);
-  const total = subtotalWithDiscount + shipping;
+  // Subtotal, descuento, envío y total salen todos de la misma cuenta, que es
+  // la que replica a create_order (ver cartTotals arriba).
+  const { subtotal, discountAmount, shipping, total } = cartTotals(selectedItems);
 
   // Actualizar resumen
   if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
 
-  if (summaryDiscountRow && currentDiscount > 0) {
+  if (summaryDiscountRow && discountAmount > 0) {
     summaryDiscountRow.style.display = 'flex';
-    if (discountPercent) discountPercent.textContent = `${currentDiscount * 100}%`;
+    if (discountPercent) discountPercent.textContent = `${couponPercent}%`;
     if (summaryDiscount) summaryDiscount.textContent = `-${formatPrice(discountAmount)}`;
   } else if (summaryDiscountRow) {
     summaryDiscountRow.style.display = 'none';
@@ -858,7 +876,8 @@ function initCouponEvents() {
     message.className = 'coupon-message'; // reset
 
     if (!code) {
-      currentDiscount = 0;
+      couponPercent = 0;
+      couponStoreId = null;
       appliedCouponCode = null;
       message.textContent = '';
       setIdleBtnState();
@@ -885,17 +904,22 @@ function initCouponEvents() {
       const noAplica = data?.store_id && !cartStoreIds.has(data.store_id);
 
       if (error || !data) {
-        currentDiscount = 0;
+        couponPercent = 0;
+        couponStoreId = null;
         appliedCouponCode = null;
         message.textContent = 'Código inválido o expirado.';
         message.classList.add('is-error');
       } else if (noAplica) {
-        currentDiscount = 0;
+        couponPercent = 0;
+        couponStoreId = null;
         appliedCouponCode = null;
         message.textContent = 'Ese cupón es de un comercio que no tenés en el carrito.';
         message.classList.add('is-error');
       } else {
-        currentDiscount = data.discount_percentage / 100;
+        couponPercent = data.discount_percentage;
+        // Se guarda la tienda del cupón, no solo el porcentaje: es lo que deja
+        // aplicarlo donde create_order lo va a aplicar y en ningún lado más.
+        couponStoreId = data.store_id ?? null;
         appliedCouponCode = code;
         message.textContent = data.store_id
           ? `¡Cupón aplicado! Tenés ${data.discount_percentage}% de descuento en los productos de esa tienda.`
@@ -904,7 +928,8 @@ function initCouponEvents() {
       }
     } catch (err) {
       console.error('Error validando cupón:', err);
-      currentDiscount = 0;
+      couponPercent = 0;
+      couponStoreId = null;
       appliedCouponCode = null;
       message.textContent = 'Error al validar cupón.';
       message.classList.add('is-error');

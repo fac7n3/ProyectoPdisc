@@ -161,6 +161,29 @@ export function formatPrice(price) {
 }
 
 /**
+ * 'YYYY-MM-DD' de hoy **en hora local**. `toISOString()` devuelve UTC, y
+ * Argentina va 3 horas atrás: de 21:00 a medianoche el día UTC ya es el
+ * siguiente, así que una oferta que vence hoy se daba por vencida tres horas
+ * antes de tiempo, todas las noches. Mismo criterio que `isoDate()` en
+ * js/farmacias.js.
+ */
+export function localIsoDate(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * ¿La oferta de este producto ya venció? `offer_expires_at` es una fecha
+ * (sin hora): vence al terminar ese día, no al empezar.
+ * @param {{offer_expires_at?: string|null}} product
+ */
+export function isOfferExpired(product) {
+  return Boolean(product?.offer_expires_at && product.offer_expires_at < localIsoDate());
+}
+
+/**
  * F5-05: fila de precio de una product-card, con precio tachado + % de
  * descuento si el producto tiene `compare_at_price`. Compartida entre
  * home.js/search.js/comercio.js para no repetir el mismo bloque 3 veces.
@@ -178,10 +201,7 @@ export function buildPriceRow(product) {
   priceSpan.textContent = formatPrice(product.price);
   priceRow.appendChild(priceSpan);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const offerExpired = product.offer_expires_at && product.offer_expires_at < today;
-
-  if (product.compare_at_price && product.compare_at_price > product.price && !offerExpired) {
+  if (product.compare_at_price && product.compare_at_price > product.price && !isOfferExpired(product)) {
     const oldSpan = document.createElement('span');
     oldSpan.className = 'product-card__price-old';
     oldSpan.textContent = formatPrice(product.compare_at_price);
@@ -243,6 +263,11 @@ export async function renderActiveCoupons(container, { onSelect, emptyHide } = {
       .from('coupons')
       .select('code, discount_percentage, expires_at, store_id')
       .is('store_id', null)
+      // `coupons_select_public` ya filtra activo + no vencido, pero la policy
+      // del admin (cmd ALL) no: sin esto una cuenta admin ve acá cupones
+      // vencidos que `create_order` después rechaza con "Cupón inválido".
+      .eq('is_active', true)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('discount_percentage', { ascending: false })
       .limit(12);
 
