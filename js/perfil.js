@@ -1914,6 +1914,11 @@ function openRowEditor(field) {
     openEditorKey = null;
     renderDatosRows();
   }
+  // Si la fila decía "Sin completar", no alcanza con pasar el validate propio
+  // del campo (que acepta vacío porque el dato es opcional): guardar así solo
+  // cerraría el editor y mostraría "Listo, lo guardamos" sin haber cargado
+  // nada. Con esto, "Completar" con el campo en blanco queda bloqueado.
+  const wasEmpty = !field.display(profileData);
   const row = document.querySelector(`.datos-row[data-key="${field.key}"]`);
   if (!row) return;
 
@@ -2039,12 +2044,18 @@ function openRowEditor(field) {
       return;
     }
 
+    const patch = field.collect(values);
+    if (wasEmpty && Object.values(patch).every((v) => v === null || v === undefined)) {
+      showError("Completá el dato antes de guardar, o cancelá si no querés cargarlo todavía.");
+      Object.values(els)[0]?.focus();
+      return;
+    }
+
     saveBtn.disabled = true;
     cancelBtn.disabled = true;
     saveBtn.textContent = "Guardando…";
 
     try {
-      const patch = field.collect(values);
       const { error: dbError } = await supabase
         .from("profiles")
         .update(patch)
