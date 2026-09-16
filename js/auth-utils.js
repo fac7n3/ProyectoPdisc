@@ -207,14 +207,30 @@ export function checkUrlErrors() {
   }
 }
 
+/**
+ * Vendedor (role='vendedor') o profesional ya publicado en "Contratar" --
+ * publicarse como profesional no cambia el rol de la cuenta (ver el
+ * comentario de approve_seller_request en 05_admin_seller.sql), así que ahí
+ * hay que consultar la tabla `professionals` en vez de mirar el JWT. Ambos
+ * gestionan su presencia desde vender.html. Lo usan el redirect post-login de
+ * acá abajo y el auto-redirect del home cuando entran directo a la página
+ * (js/home.js).
+ */
+export async function hasSellerPanel(user) {
+  if (!user) return false;
+  if (user.app_metadata?.role === "vendedor") return true;
+  const { data } = await supabase.from("professionals").select("id").eq("owner_id", user.id).maybeSingle();
+  return Boolean(data);
+}
+
 // --- Destino post-login según el rol (A113-270) ---
-// El vendedor arranca en su panel (vender.html) en vez de home.html; el
-// resto de los roles sigue yendo a home.html como siempre. Solo se aplica
-// cuando el caller no pidió explícitamente otro destino (redirectTo).
-function resolvePostLoginRedirect(user, explicitRedirectTo) {
+// El vendedor o el profesional ya publicado arrancan en su panel
+// (vender.html) en vez de home.html; el resto sigue yendo a home.html como
+// siempre. Solo se aplica cuando el caller no pidió explícitamente otro
+// destino (redirectTo).
+async function resolvePostLoginRedirect(user, explicitRedirectTo) {
   if (explicitRedirectTo) return explicitRedirectTo;
-  const role = user?.app_metadata?.role;
-  return role === "vendedor" ? "../pages/vender.html" : "../pages/home.html";
+  return (await hasSellerPanel(user)) ? "../pages/vender.html" : "../pages/home.html";
 }
 
 // --- Listener Global de Sesión ---
@@ -222,7 +238,7 @@ let isHandlingRedirect = false;
 
 export function setupGlobalSessionListener(redirectIfNoSession = false, redirectIfSession = false) {
   // Escuchar cambios de estado de autenticación
-  supabase.auth.onAuthStateChange((event, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
     if (isHandlingRedirect) return;
 
     if (event === "SIGNED_OUT" && redirectIfNoSession) {
@@ -230,16 +246,16 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
       window.location.replace("../pages/login.html");
     } else if (event === "SIGNED_IN" && redirectIfSession) {
       isHandlingRedirect = true;
-      window.location.replace(resolvePostLoginRedirect(session?.user));
+      window.location.replace(await resolvePostLoginRedirect(session?.user));
     }
   });
 
   // Verificar sesión inicial (leer desde localStorage primero)
-  supabase.auth.getSession().then(({ data: { session } }) => {
+  supabase.auth.getSession().then(async ({ data: { session } }) => {
     if (!session && redirectIfNoSession) {
       window.location.replace("../pages/login.html");
     } else if (session && redirectIfSession) {
-      window.location.replace(resolvePostLoginRedirect(session?.user));
+      window.location.replace(await resolvePostLoginRedirect(session?.user));
     }
   }).catch((err) => {
     console.warn("Session check failed:", err?.message || err);
@@ -308,8 +324,8 @@ export async function guardPage({
 
     if (user && redirectIfAuth) {
       // Autenticado en página de login/register → a home (o a vender.html
-      // si es vendedor, A113-270)
-      window.location.replace(resolvePostLoginRedirect(user, redirectTo));
+      // si es vendedor/profesional, A113-270)
+      window.location.replace(await resolvePostLoginRedirect(user, redirectTo));
       return null;
     }
 
@@ -354,7 +370,7 @@ export async function guardPage({
     }
 
     // 6. Configurar listener para cambios de sesión en tiempo real
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
       if (isHandlingRedirect) return;
 
       if (event === "SIGNED_OUT" && requireAuth) {
@@ -362,7 +378,7 @@ export async function guardPage({
         window.location.replace(redirectTo || '../pages/login.html');
       } else if (event === "SIGNED_IN" && redirectIfAuth) {
         isHandlingRedirect = true;
-        window.location.replace(resolvePostLoginRedirect(session?.user, redirectTo));
+        window.location.replace(await resolvePostLoginRedirect(session?.user, redirectTo));
       }
     });
 
