@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-10. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-16. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -100,6 +100,20 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   Supabase CLI) — si en el futuro alguien corre `config push` desde otra
   máquina, sincroniza sin pisar nada distinto porque el `config.toml` ya
   apunta a los mismos archivos.
+- **Pendiente (2026-09-16)** — el remitente de los emails de Auth (confirmación
+  de registro, recuperar contraseña) sigue mostrando **"Supabase"** en vez de
+  "Baradero Local", aunque el cuerpo del email ya tiene la marca (ver punto de
+  arriba). No se puede cambiar solo con código: el servicio de email por
+  defecto de Supabase (el que se usa hoy, sin SMTP propio) no permite
+  personalizar el nombre del remitente — hace falta configurar **Custom SMTP**
+  con un proveedor externo (Resend recomendado, o SendGrid/Postmark/otro) y
+  cargar `sender_name = "Baradero Local"` + credenciales en el dashboard
+  (Authentication → Emails → SMTP Settings), reflejando después esas mismas
+  claves en `supabase/config.toml` bajo `[auth.email.smtp]` (hoy comentado).
+  Mismo bloqueante que **F8-02/F8-03** más abajo (falta credenciales de un
+  proveedor externo) — cuando se resuelva uno, conviene resolver el otro con
+  el mismo proveedor. Usuario avisado 2026-09-16, decidió dejarlo pendiente
+  para retomar después de elegir proveedor.
 - **Resuelto 2026-09-10** — El profesional/técnico ahora carga sus redes
   sociales desde su mini panel (mismas 6 redes que un comercio: Instagram,
   Facebook, TikTok, X, YouTube, sitio web), con switch en vez de checkbox y
