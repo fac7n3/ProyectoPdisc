@@ -1082,11 +1082,6 @@ body.modal-open {
   color: var(--bl-text-secondary);
 }
 
-.pm-loading i {
-  font-size: 1.75rem;
-  color: var(--bl-primary);
-}
-
 .pm-modal-error i {
   font-size: 1.75rem;
   color: var(--bl-danger);
