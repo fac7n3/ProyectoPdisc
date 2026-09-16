@@ -1849,8 +1849,8 @@ function openRowEditor(field) {
       // Desplegable propio: el <select> nativo no se puede estilar y quedaba
       // fuera de tono al lado de los inputs de la fila.
       const dd = buildDropdown({
-        // Las opciones vienen como strings (DOC_TYPES) o ya como {value, label}
-        // (característica de país, donde el label muestra bandera + nombre).
+        // Las opciones vienen ya como {value, label} (característica de
+        // país, donde el label muestra bandera + nombre).
         options: spec.options.map((o) => (typeof o === "string" ? { value: o, label: o } : o)),
         value: spec.value,
         ariaLabel: spec.aria,
