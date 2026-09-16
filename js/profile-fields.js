@@ -10,8 +10,6 @@
 
 import { PHONE_COUNTRY_OPTIONS, splitPhone } from "./phone-countries.js";
 
-export const DOC_TYPES = ["DNI", "LC", "LE", "CI", "Pasaporte"];
-
 /**
  * 'YYYY-MM-DD' -> '12/03/1994'. A propósito sin `new Date(iso)`: eso parsea el
  * string como UTC y en Argentina (UTC-3) termina mostrando el día anterior.
@@ -77,28 +75,19 @@ export const PROFILE_FIELDS = [
     display: (p) => (p.doc_type && p.doc_number ? `${p.doc_type} ${p.doc_number}` : null),
     inputs: (p) => [
       {
-        el: "select", name: "doc_type", value: p.doc_type || "DNI", options: DOC_TYPES,
-        className: "datos-input datos-input--compact", aria: "Tipo de documento",
-      },
-      {
         el: "input", name: "doc_number", type: "text", value: p.doc_number || "",
         placeholder: "Sin puntos", inputMode: "numeric", maxLength: 20,
-        className: "datos-input datos-input--grow", aria: "Número de documento",
+        className: "datos-input datos-input--grow", aria: "Número de documento (DNI)",
       },
     ],
     collect: (v) => {
       const num = v.doc_number.replace(/[.\s]/g, "");
       // La DB exige tipo y número juntos, o ninguno de los dos.
-      return num ? { doc_type: v.doc_type, doc_number: num } : { doc_type: null, doc_number: null };
+      return num ? { doc_type: "DNI", doc_number: num } : { doc_type: null, doc_number: null };
     },
     validate: (v) => {
       const num = v.doc_number.replace(/[.\s]/g, "");
       if (!num) return null;
-      if (v.doc_type === "Pasaporte") {
-        return /^[a-zA-Z0-9]{5,20}$/.test(num)
-          ? null
-          : "El pasaporte lleva entre 5 y 20 letras o números.";
-      }
       return /^\d{6,9}$/.test(num)
         ? null
         : "El número va sin puntos y tiene entre 6 y 9 dígitos.";

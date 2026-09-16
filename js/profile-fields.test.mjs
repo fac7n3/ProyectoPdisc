@@ -44,32 +44,28 @@ console.log("documento");
 const doc = fieldByKey("doc");
 
 check("acepta un DNI de 6 a 9 dígitos", () => {
-  assert.equal(doc.validate({ doc_type: "DNI", doc_number: "34123456" }), null);
-  assert.equal(doc.validate({ doc_type: "DNI", doc_number: "123456" }), null);
+  assert.equal(doc.validate({ doc_number: "34123456" }), null);
+  assert.equal(doc.validate({ doc_number: "123456" }), null);
 });
 
 check("acepta el DNI escrito con puntos y lo guarda limpio", () => {
-  assert.equal(doc.validate({ doc_type: "DNI", doc_number: "34.123.456" }), null);
+  assert.equal(doc.validate({ doc_number: "34.123.456" }), null);
   assert.deepEqual(
-    doc.collect({ doc_type: "DNI", doc_number: "34.123.456" }),
+    doc.collect({ doc_number: "34.123.456" }),
     { doc_type: "DNI", doc_number: "34123456" }
   );
 });
 
 check("rechaza un DNI muy largo o con letras", () => {
-  assert.ok(doc.validate({ doc_type: "DNI", doc_number: "3412345678" }));
-  assert.ok(doc.validate({ doc_type: "DNI", doc_number: "34abc456" }));
-});
-
-check("el pasaporte sí admite letras", () => {
-  assert.equal(doc.validate({ doc_type: "Pasaporte", doc_number: "AB123456" }), null);
+  assert.ok(doc.validate({ doc_number: "3412345678" }));
+  assert.ok(doc.validate({ doc_number: "34abc456" }));
 });
 
 check("vacío es válido (el dato es opcional) y guarda los dos campos en null", () => {
-  assert.equal(doc.validate({ doc_type: "DNI", doc_number: "" }), null);
+  assert.equal(doc.validate({ doc_number: "" }), null);
   // La DB tiene un CHECK que exige tipo y número juntos, o ninguno.
   assert.deepEqual(
-    doc.collect({ doc_type: "DNI", doc_number: "" }),
+    doc.collect({ doc_number: "" }),
     { doc_type: null, doc_number: null }
   );
 });
