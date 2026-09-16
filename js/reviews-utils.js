@@ -25,7 +25,7 @@ document.addEventListener('click', closeAllReviewMenus);
 
 /**
  * Selector de estrellas (1 a 5). Reemplaza al `<select>` con opciones "★★★☆☆"
- * que estaba copiado igual acá y en perfil.js (calificar al repartidor):
+ * que estaba copiado igual acá y en perfil.js:
  * elegir una calificación con un desplegable obliga a abrirlo y leer cinco
  * cadenas casi idénticas, cuando el gesto natural es tocar la tercera estrella.
  *

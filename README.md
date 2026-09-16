@@ -2,7 +2,7 @@
 
 > *"Mientras otras plataformas conectan personas lejanas, nosotros conectamos vecinos."*
 
-**Baradero Local** es un e-commerce de comercio de proximidad para Baradero (Argentina): permite a los vecinos explorar y comprar productos de comercios locales, y a los comerciantes gestionar su tienda, stock y pedidos desde un panel propio. Incluye rol de repartidor para las entregas y un panel de administración completo.
+**Baradero Local** es un e-commerce de comercio de proximidad para Baradero (Argentina): permite a los vecinos explorar y comprar productos de comercios locales, y a los comerciantes gestionar su tienda, stock y pedidos desde un panel propio. Incluye un panel de administración completo.
 
 ---
 
@@ -25,15 +25,11 @@
 - Gestión de pedidos (pickup/delivery), confirmación de pagos por transferencia.
 - Estadísticas del día/mes, perfil de tienda (zona, horarios, descripción).
 
-**Repartidor**
-- Alta con aprobación manual del admin.
-- Toma de pedidos disponibles y actualización de estado (asignado → en camino → entregado).
-
 **Admin**
-- Aprobación de comercios y repartidores (CUIT validado).
+- Aprobación de comercios (CUIT validado).
 - Moderación de productos/comercios/reseñas, CRUD de categorías y cupones.
 - Alta de farmacias y carga de los turnos de farmacia de cada día.
-- Métricas globales (usuarios, ventas, entregas).
+- Métricas globales (usuarios, ventas).
 
 ---
 

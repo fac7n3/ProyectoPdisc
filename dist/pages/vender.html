@@ -675,7 +675,7 @@
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
 
       /* Los estilos de .catpick viven en home.css: los comparten el alta de
-         producto, el alta de comercio y el alta de repartidor. */
+         producto y el alta de comercio. */
 
       .pubform__gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
       .pubform__gallery:empty { display: none; }
@@ -771,15 +771,14 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-YiRQesH2.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BhR5RO6T.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-Bef7p2Kx.js">
-    <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B_cxPIz9.js">
-    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
+    <link rel="modulepreload" crossorigin href="/assets/datepicker-B0mUKZYe.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BIw7qWtl.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-mzq2aWBb.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-BBdPY8wr.css">
@@ -1096,7 +1095,6 @@
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="all">Pedidos</button>
-                <button type="button" class="mc-navitem" data-section="envios">Envíos en curso</button>
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
@@ -1465,21 +1463,6 @@
                 <h2 class="pub-title">Pagos por confirmar</h2>
               </div>
               <div class="pub-list" id="pending-payments-container">
-                <!-- Cargado con JS -->
-              </div>
-            </div>
-
-            </section>
-
-            <!-- === Envíos en curso === -->
-            <!-- Estado de envío de los pedidos con delivery (F3-04), mismo shell que Pagos
-                 por confirmar -- solo lectura, el repartidor gestiona el estado desde su panel. -->
-            <section class="mc-section" data-section="envios" hidden>
-            <div class="pub-wrap">
-              <div class="pub-header">
-                <h2 class="pub-title">Envíos en curso</h2>
-              </div>
-              <div class="pub-list" id="shipments-container">
                 <!-- Cargado con JS -->
               </div>
             </div>

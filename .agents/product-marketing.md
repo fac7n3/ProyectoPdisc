@@ -7,7 +7,7 @@
 **Frase:** Comprá local, recibí en casa.
 **Qué hace (2-3 frases):** Baradero Local es el marketplace de comercio de proximidad de la ciudad de Baradero (Argentina). Conecta a vecinos que quieren comprar online con los comercios reales de su propia ciudad — almacén, panadería, verdulería, carnicería, farmacia, ferretería y otros 14 rubros — con pago por Mercado Pago o transferencia, y entrega dentro de Baradero (envío o retiro en el local). Cada vendedor se valida con CUIT y aprobación manual de un admin antes de poder vender.
 **Categoría de producto (la "góndola" en la que competimos):** Comercio de proximidad / "el almacén de tu barrio, online" — explícitamente NO "tienda online genérica" ni "marketplace nacional". Esta distinción de categoría es la decisión de posicionamiento central del proyecto (ver Diferenciación): si el producto se deja leer como "e-commerce" a secas, compite en catálogo/precio/velocidad de envío contra jugadores que siempre van a ganar esa comparación.
-**Tipo de producto:** Marketplace de dos lados (cliente vecino ↔ vendedor comerciante), con rol admin para aprobación de vendedores y rol repartidor planeado.
+**Tipo de producto:** Marketplace de dos lados (cliente vecino ↔ vendedor comerciante), con rol admin para aprobación de vendedores. (Hubo un rol repartidor con panel propio para gestionar entregas dentro de Baradero; se sacó del producto el 2026-09-16 -- la logística de entregas queda para más adelante.)
 **Modelo de negocio y precios:** Precios en pesos argentinos enteros (sin centavos) en todo el sistema. Pago vía Mercado Pago (Checkout Pro) o transferencia con comprobante. Envío dentro de Baradero o retiro en el comercio. (Modelo de comisión/monetización de la plataforma en sí: a definir — no hay decisión tomada todavía sobre cobro a vendedores, se documenta cuando exista.)
 
 ## Público objetivo
@@ -101,7 +101,6 @@ Marketplace de dos lados — no aplica el formato B2B de comprador/champion/deci
 |---------|-------------|
 | Cliente | Vecino de Baradero que compra en la plataforma |
 | Vendedor | Comerciante local, validado con CUIT y aprobado manualmente por un admin |
-| Repartidor | Rol planeado (no lanzado) para gestionar entregas dentro de Baradero |
 | Admin | Rol que aprueba manualmente a los vendedores nuevos y modera la plataforma |
 | Retiro en local | Alternativa al envío: el cliente retira su pedido directamente en el comercio |
 | Comercio de proximidad | La categoría real del producto — no "e-commerce genérico", ver Diferenciación |

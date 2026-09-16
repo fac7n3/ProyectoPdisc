@@ -677,7 +677,7 @@
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
 
       /* Los estilos de .catpick viven en home.css: los comparten el alta de
-         producto, el alta de comercio y el alta de repartidor. */
+         producto y el alta de comercio. */
 
       .pubform__gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
       .pubform__gallery:empty { display: none; }
@@ -1086,7 +1086,6 @@
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="all">Pedidos</button>
-                <button type="button" class="mc-navitem" data-section="envios">Envíos en curso</button>
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
@@ -1455,21 +1454,6 @@
                 <h2 class="pub-title">Pagos por confirmar</h2>
               </div>
               <div class="pub-list" id="pending-payments-container">
-                <!-- Cargado con JS -->
-              </div>
-            </div>
-
-            </section>
-
-            <!-- === Envíos en curso === -->
-            <!-- Estado de envío de los pedidos con delivery (F3-04), mismo shell que Pagos
-                 por confirmar -- solo lectura, el repartidor gestiona el estado desde su panel. -->
-            <section class="mc-section" data-section="envios" hidden>
-            <div class="pub-wrap">
-              <div class="pub-header">
-                <h2 class="pub-title">Envíos en curso</h2>
-              </div>
-              <div class="pub-list" id="shipments-container">
                 <!-- Cargado con JS -->
               </div>
             </div>

@@ -921,7 +921,6 @@ let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (sto
 const STAFF_PERMISSION_SECTIONS = [
   { key: 'publicaciones', label: 'Publicaciones' },
   { key: 'pedidos', label: 'Pedidos' },
-  { key: 'envios', label: 'Envíos en curso' },
   { key: 'pagos', label: 'Pagos por confirmar' },
   { key: 'notificaciones', label: 'Notificaciones' },
   { key: 'soporte', label: 'Soporte' },
@@ -1063,7 +1062,6 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   await Promise.all([
     renderAllOrders(),
     renderPendingPayments(),
-    renderShipmentsInProgress(),
     renderResumen(),
   ]);
 
@@ -1252,8 +1250,9 @@ function buildOrdActions(order) {
   menu.className = 'pub-actions__menu';
   menu.hidden = true;
 
-  // El flujo de "delivery" lo maneja el repartidor (F3-03) -- acá el
-  // vendedor solo gestiona directamente el retiro en el local.
+  // El seguimiento de pedidos con envío queda fuera de esta vista por ahora
+  // (logística pendiente) -- acá el vendedor solo gestiona directamente el
+  // retiro en el local.
   if (order.delivery_method === 'pickup' && order.status === 'paid') {
     menu.appendChild(pubMenuItem('Listo para retirar', 'fa-box', () => {
       closePubMenus();
@@ -2055,7 +2054,7 @@ async function renderStoreStaff() {
   }
 
   // store_staff.user_id referencia auth.users, no profiles -> segunda consulta
-  // por los emails (mismo patrón que phoneByClientId en repartidor.js, F12-05).
+  // por los emails (mismo patrón que phoneByClientId en perfil.js, F12-05).
   const userIds = staff.map((s) => s.user_id);
   const { data: profiles } = await supabase.from('profiles').select('id, email').in('id', userIds);
   const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
@@ -2419,7 +2418,7 @@ async function renderResumen() {
 
   const [rev, ord, cat, pay] = await Promise.all([
     supabase.from('reviews').select('rating, client_id').eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
-    supabase.from('orders').select('total_price, created_at, delivery_method, status, client_id').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
+    supabase.from('orders').select('total_price, created_at, status, client_id').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
     supabase.from('order_items').select('quantity, price, products(categories(name)), orders!inner(store_id, payment_status, created_at)').eq('orders.store_id', currentStoreId).eq('orders.payment_status', 'paid'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId).eq('payment_method', 'transferencia').eq('payment_status', 'pending'),
   ]);
@@ -2442,7 +2441,6 @@ async function renderResumen() {
 
   const incomeTotal = paidOrders.reduce((s, o) => s + o.total_price, 0);
   const orders30dCount = paidOrders.filter((o) => new Date(o.created_at) >= thirtyDaysAgo).length;
-  const shipmentsInProgress = paidOrders.filter((o) => o.delivery_method === 'delivery' && (o.status === 'paid' || o.status === 'shipped')).length;
 
   const dailyTotals = [];
   for (let i = 0; i < 7; i++) {
@@ -2484,7 +2482,6 @@ async function renderResumen() {
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
   dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
-    { label: 'Envíos en curso', count: shipmentsInProgress, section: 'envios' },
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pagos', alert: pendingPayCount > 0 },
     { label: 'Ventas para calificar', count: salesToRate, section: 'pedidos', tab: 'completed' },
   ], { label: 'Ir a pedidos', section: 'pedidos' }));
@@ -2641,112 +2638,6 @@ async function handlePaymentDecision(proofId, approve) {
 
   showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
   await renderPendingPayments();
-}
-
-// --- F3-04: estado de envío de los pedidos con delivery ---
-// Sin push en tiempo real todavía (se actualiza al recargar el dashboard,
-// igual que el resto de los paneles de este proyecto) — F3-05/mejoras futuras.
-
-const SHIPMENT_STATUS_LABELS = {
-  assigned: 'Repartidor asignado',
-  picked_up: 'En camino',
-  delivered: 'Entregado',
-};
-
-// Mismas 3 variantes de color que ya usa Ventas (pub-status--*) -- coinciden
-// bien semánticamente: esperando/asignado en tonos de "todavía no salió",
-// en camino = shipped (azul), entregado = active (verde).
-const SHIPMENT_STATUS_BADGE_VARIANT = {
-  assigned: 'ready',
-  picked_up: 'shipped',
-  delivered: 'active',
-};
-
-async function renderShipmentsInProgress() {
-  const container = document.getElementById('shipments-container');
-  if (!container || !currentStoreId) return;
-
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select('id, total_price, shipping_address, created_at, deliveries ( status )')
-    .eq('store_id', currentStoreId)
-    .eq('delivery_method', 'delivery')
-    .in('status', ['paid', 'shipped'])
-    .order('created_at', { ascending: false });
-
-  container.textContent = '';
-
-  if (error) {
-    console.error('Error al cargar envíos en curso:', error);
-    const errorMsg = document.createElement('p');
-    errorMsg.style.color = 'var(--bl-text-secondary)';
-    errorMsg.textContent = 'Error al cargar los envíos.';
-    container.appendChild(errorMsg);
-    return;
-  }
-
-  if (!orders || orders.length === 0) {
-    renderShipmentsEmpty(container);
-    return;
-  }
-
-  orders.forEach((order) => container.appendChild(buildShipmentRow(order)));
-}
-
-function renderShipmentsEmpty(container) {
-  const box = document.createElement('div');
-  box.className = 'pub-empty';
-  const icon = document.createElement('i');
-  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
-  box.appendChild(icon);
-  const title = document.createElement('p');
-  title.className = 'pub-empty__title';
-  title.textContent = 'No hay envíos en curso';
-  box.appendChild(title);
-  const sub = document.createElement('p');
-  sub.className = 'pub-empty__sub';
-  sub.textContent = 'Los pedidos con envío pagados van a aparecer acá hasta que se entreguen.';
-  box.appendChild(sub);
-  container.appendChild(box);
-}
-
-/** Fila estilo ML (clases pub-*), solo lectura -- el repartidor gestiona el estado desde
- * su propio panel (F3-03), acá el vendedor solo hace seguimiento, sin acciones. */
-function buildShipmentRow(order) {
-  const row = document.createElement('div');
-  row.className = 'pub-row';
-
-  const icon = document.createElement('div');
-  icon.className = 'pub-row__thumb pub-row__thumb--icon';
-  const iconEl = document.createElement('i');
-  iconEl.className = 'fa-solid fa-truck';
-  icon.appendChild(iconEl);
-  row.appendChild(icon);
-
-  const main = document.createElement('div');
-  main.className = 'pub-row__main';
-  const title = document.createElement('span');
-  title.className = 'pub-row__title';
-  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-  main.appendChild(title);
-  const sub = document.createElement('span');
-  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
-  sub.textContent = `${formatPrice(order.total_price)} · ${order.shipping_address || 'Sin dirección cargada'}`;
-  main.appendChild(sub);
-  row.appendChild(main);
-
-  const statusCell = document.createElement('div');
-  statusCell.className = 'pub-row__cell';
-  const badge = document.createElement('span');
-  // deliveries.order_id es UNIQUE -> PostgREST lo embebe como objeto único.
-  const deliveryStatus = order.deliveries?.status;
-  const variant = deliveryStatus ? (SHIPMENT_STATUS_BADGE_VARIANT[deliveryStatus] || 'paused') : 'pending';
-  badge.className = `pub-status pub-status--${variant}`;
-  badge.textContent = deliveryStatus ? (SHIPMENT_STATUS_LABELS[deliveryStatus] || deliveryStatus) : 'Esperando repartidor';
-  statusCell.appendChild(badge);
-  row.appendChild(statusCell);
-
-  return row;
 }
 
 /**

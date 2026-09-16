@@ -108,7 +108,7 @@ export const PROFILE_FIELDS = [
     key: "phone",
     container: "datos-contacto",
     label: "Teléfono",
-    hint: "Para que el comercio o el repartidor te avisen si hay una demora.",
+    hint: "Para que el comercio te avise si hay una demora.",
     display: (p) => p.phone,
     inputs: (p) => {
       const { dial, number } = splitPhone(p.phone);

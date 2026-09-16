@@ -4,8 +4,8 @@
  *
  * Sección compartida "Contactar a soporte": formulario de reclamo nuevo +
  * lista de los reclamos propios con su estado, el hilo de mensajes y los
- * archivos adjuntos. La usan perfil.js (cliente), vender.js (vendedor) y
- * repartidor.js (repartidor) — por eso vive acá y no en una de esas páginas.
+ * archivos adjuntos. La usan perfil.js (cliente) y vender.js (vendedor) —
+ * por eso vive acá y no en una de esas páginas.
  *
  * Adjuntos: se pueden sumar capturas de pantalla (o un PDF) al enviar el
  * reclamo. Van a un bucket privado, se suben ANTES de insertar el ticket y

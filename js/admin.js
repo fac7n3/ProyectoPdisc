@@ -153,156 +153,6 @@ async function rejectRequest(id) {
   }
 }
 
-const VEHICLE_LABELS = {
-  bicicleta: 'Bicicleta',
-  moto: 'Moto',
-  auto: 'Auto',
-};
-
-async function fetchDeliveryRequests() {
-  const tbody = document.getElementById('delivery-requests-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>';
-
-  const { data, error } = await supabase
-    .from('delivery_requests')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching delivery requests:', error);
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error al cargar las solicitudes.</td></tr>';
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay solicitudes registradas.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = '';
-  data.forEach(req => {
-    const date = new Date(req.created_at).toLocaleDateString('es-AR');
-    let statusClass = '';
-    let statusText = '';
-
-    if (req.status === 'pending') {
-      statusClass = 'status-pending';
-      statusText = 'Pendiente';
-    } else if (req.status === 'approved') {
-      statusClass = 'status-approved';
-      statusText = 'Aprobado';
-    } else {
-      statusClass = 'status-rejected';
-      statusText = 'Rechazado';
-    }
-
-    const tr = document.createElement('tr');
-
-    const tdDate = document.createElement('td');
-    tdDate.textContent = date;
-    tr.appendChild(tdDate);
-
-    const tdName = document.createElement('td');
-    tdName.textContent = req.full_name;
-    tr.appendChild(tdName);
-
-    const tdPhone = document.createElement('td');
-    tdPhone.textContent = req.phone;
-    tr.appendChild(tdPhone);
-
-    const tdVehicle = document.createElement('td');
-    tdVehicle.textContent = VEHICLE_LABELS[req.vehicle_type] || req.vehicle_type;
-    if (req.vehicle_plate) {
-      tdVehicle.appendChild(document.createElement('br'));
-      const plateSmall = document.createElement('small');
-      plateSmall.textContent = req.vehicle_plate;
-      tdVehicle.appendChild(plateSmall);
-    }
-    tr.appendChild(tdVehicle);
-
-    const tdStatus = document.createElement('td');
-    const statusBadge = document.createElement('span');
-    statusBadge.className = `status-badge ${statusClass}`;
-    statusBadge.textContent = statusText;
-    tdStatus.appendChild(statusBadge);
-    tr.appendChild(tdStatus);
-
-    const tdActions = document.createElement('td');
-    if (req.status === 'pending') {
-      const approveBtn = document.createElement('button');
-      approveBtn.className = 'action-btn btn-approve-delivery';
-      approveBtn.dataset.id = req.id;
-      approveBtn.title = 'Aprobar';
-      const checkIcon = document.createElement('i');
-      checkIcon.className = 'fa-solid fa-check';
-      approveBtn.appendChild(checkIcon);
-      tdActions.appendChild(approveBtn);
-
-      const rejectBtn = document.createElement('button');
-      rejectBtn.className = 'action-btn btn-reject-delivery';
-      rejectBtn.dataset.id = req.id;
-      rejectBtn.title = 'Rechazar';
-      const xIcon = document.createElement('i');
-      xIcon.className = 'fa-solid fa-xmark';
-      rejectBtn.appendChild(xIcon);
-      tdActions.appendChild(rejectBtn);
-    } else {
-      tdActions.textContent = '-';
-    }
-    tr.appendChild(tdActions);
-
-    tbody.appendChild(tr);
-  });
-
-  document.querySelectorAll('.btn-approve-delivery').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      if (confirm('¿Estás seguro de aprobar este repartidor?')) {
-        await approveDeliveryRequest(id);
-      }
-    });
-  });
-
-  document.querySelectorAll('.btn-reject-delivery').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      if (confirm('¿Estás seguro de rechazar esta solicitud?')) {
-        await rejectDeliveryRequest(id);
-      }
-    });
-  });
-}
-
-async function approveDeliveryRequest(id) {
-  try {
-    const { error } = await supabase.rpc('approve_delivery_request', { req_id: id });
-    if (error) throw error;
-
-    showToast('Repartidor aprobado exitosamente', 'success');
-    fetchDeliveryRequests();
-  } catch (err) {
-    console.error('Error al aprobar repartidor:', err);
-    showToast('Error al aprobar la solicitud.', 'error');
-  }
-}
-
-async function rejectDeliveryRequest(id) {
-  try {
-    const { error } = await supabase
-      .from('delivery_requests')
-      .update({ status: 'rejected', updated_at: new Date() })
-      .eq('id', id);
-
-    if (error) throw error;
-
-    showToast('Solicitud rechazada', 'success');
-    fetchDeliveryRequests();
-  } catch (err) {
-    console.error('Error al rechazar repartidor:', err);
-    showToast('Error al rechazar la solicitud.', 'error');
-  }
-}
-
 // --- Profesionales / técnicos (directorio "Contratar" del home) ---
 //
 // A diferencia de approve_seller_request, acá aprobar NO necesita un RPC
@@ -592,11 +442,10 @@ async function loadGlobalMetrics() {
   const grid = document.getElementById('metrics-grid');
   if (!grid) return;
 
-  const [{ data: profiles }, { data: stores }, { data: paidOrders }, { data: deliveries }] = await Promise.all([
+  const [{ data: profiles }, { data: stores }, { data: paidOrders }] = await Promise.all([
     supabase.from('profiles').select('role'),
     supabase.from('stores').select('status'),
     supabase.from('orders').select('total_price').eq('payment_status', 'paid'),
-    supabase.from('deliveries').select('status'),
   ]);
 
   const countBy = (rows, key) => (rows || []).reduce((acc, row) => {
@@ -606,18 +455,14 @@ async function loadGlobalMetrics() {
 
   const roleCounts = countBy(profiles, 'role');
   const storeCounts = countBy(stores, 'status');
-  const deliveryCounts = countBy(deliveries, 'status');
   const totalSales = (paidOrders || []).reduce((sum, o) => sum + o.total_price, 0);
 
   const metrics = [
     { label: 'Usuarios totales', value: (profiles || []).length, icon: 'fa-users', color: '#2563eb' },
     { label: 'Vendedores', value: roleCounts.vendedor || 0, icon: 'fa-store', color: '#0891b2' },
-    { label: 'Repartidores', value: roleCounts.repartidor || 0, icon: 'fa-motorcycle', color: '#7c3aed' },
     { label: 'Comercios aprobados', value: storeCounts.approved || 0, icon: 'fa-circle-check', color: '#10b981' },
     { label: 'Comercios suspendidos', value: storeCounts.suspended || 0, icon: 'fa-ban', color: '#ef4444' },
     { label: 'Ventas totales', value: formatPrice(totalSales), icon: 'fa-sack-dollar', color: '#f59e0b' },
-    { label: 'Entregas en curso', value: (deliveryCounts.assigned || 0) + (deliveryCounts.picked_up || 0), icon: 'fa-truck-fast', color: '#3b82f6' },
-    { label: 'Entregas completadas', value: deliveryCounts.delivered || 0, icon: 'fa-flag-checkered', color: '#059669' },
   ];
 
   grid.textContent = '';
@@ -918,71 +763,6 @@ async function fetchStoresForModeration() {
     } else {
       tdActions.textContent = '-';
     }
-    tr.appendChild(tdActions);
-
-    tbody.appendChild(tr);
-  });
-}
-
-async function fetchRepartidoresForModeration() {
-  const tbody = document.getElementById('repartidores-mod-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando repartidores...</td></tr>';
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, email, is_suspended')
-    .eq('role', 'repartidor')
-    .order('full_name');
-
-  if (error) {
-    console.error('Error fetching repartidores:', error);
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar los repartidores.</td></tr>';
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay repartidores registrados.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = '';
-  data.forEach((rep) => {
-    const tr = document.createElement('tr');
-
-    const tdName = document.createElement('td');
-    tdName.textContent = rep.full_name || '-';
-    tr.appendChild(tdName);
-
-    const tdEmail = document.createElement('td');
-    tdEmail.textContent = rep.email;
-    tr.appendChild(tdEmail);
-
-    const tdStatus = document.createElement('td');
-    const statusBadge = document.createElement('span');
-    statusBadge.className = `status-badge ${rep.is_suspended ? 'status-suspended' : 'status-approved'}`;
-    statusBadge.textContent = rep.is_suspended ? 'Suspendido' : 'Activo';
-    tdStatus.appendChild(statusBadge);
-    tr.appendChild(tdStatus);
-
-    const tdActions = document.createElement('td');
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = `action-btn ${rep.is_suspended ? 'btn-reactivate' : 'btn-suspend'}`;
-    toggleBtn.textContent = rep.is_suspended ? 'Reactivar' : 'Suspender';
-    toggleBtn.addEventListener('click', async () => {
-      if (!confirm(`¿${rep.is_suspended ? 'Reactivar' : 'Suspender'} a "${rep.full_name || rep.email}"?`)) return;
-      const { error: rpcError } = await supabase.rpc('admin_set_repartidor_suspended', {
-        p_user_id: rep.id,
-        p_suspended: !rep.is_suspended,
-      });
-      if (rpcError) {
-        showToast(rpcError.message || 'No se pudo actualizar el repartidor.', 'error');
-        console.error(rpcError);
-        return;
-      }
-      showToast(`Repartidor ${rep.is_suspended ? 'reactivado' : 'suspendido'}.`, 'success');
-      fetchRepartidoresForModeration();
-    });
-    tdActions.appendChild(toggleBtn);
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
@@ -1679,7 +1459,7 @@ async function fetchErrorLogs() {
 
   // error_logs.user_id referencia auth.users, no profiles -> segunda consulta
   // por los distintos user_id de la página (mismo patrón que phoneByClientId
-  // en vender.js/repartidor.js, F12-05).
+  // en vender.js, F12-05).
   const userIds = [...new Set(data.map((log) => log.user_id).filter(Boolean))];
   const { data: profiles } = userIds.length
     ? await supabase.from('profiles').select('id, email').in('id', userIds)
@@ -2009,7 +1789,6 @@ async function fetchAuditLog() {
 const SECTION_LOADERS = {
   'metrics': loadGlobalMetrics,
   'seller-requests': fetchRequests,
-  'delivery-requests': fetchDeliveryRequests,
   'professionals': loadProfessionalsSection,
   'categories': fetchCategories,
   'coupons': fetchCoupons,
@@ -2017,7 +1796,6 @@ const SECTION_LOADERS = {
   'emergency-contacts': fetchEmergencyContacts,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
-  'repartidores-mod': fetchRepartidoresForModeration,
   'reviews-mod': fetchReportedReviews,
   'proofs': fetchPendingProofsAdmin,
   'revocations': fetchRevocationRequests,
@@ -2090,7 +1868,6 @@ function initAdminPage() {
   document.getElementById('admin-content').style.display = 'block';
 
   document.getElementById('btn-refresh').addEventListener('click', fetchRequests);
-  document.getElementById('btn-refresh-delivery').addEventListener('click', fetchDeliveryRequests);
   document.getElementById('btn-refresh-professionals').addEventListener('click', loadProfessionalsSection);
   document.getElementById('btn-refresh-metrics').addEventListener('click', loadGlobalMetrics);
   document.getElementById('btn-refresh-categories').addEventListener('click', fetchCategories);
@@ -2098,7 +1875,6 @@ function initAdminPage() {
   document.getElementById('btn-refresh-pharmacies').addEventListener('click', loadPharmaciesSection);
   document.getElementById('btn-refresh-emergency-contacts').addEventListener('click', fetchEmergencyContacts);
   document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
-  document.getElementById('btn-refresh-repartidores-mod').addEventListener('click', fetchRepartidoresForModeration);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
   document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
   document.getElementById('btn-refresh-revocations').addEventListener('click', fetchRevocationRequests);
@@ -2126,9 +1902,9 @@ function initAdminPage() {
 // oculta la UI que un moderador no puede usar, para que no vea opciones
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
-  'seller-requests', 'delivery-requests', 'professionals', 'metrics', 'categories', 'coupons',
+  'seller-requests', 'professionals', 'metrics', 'categories', 'coupons',
   'pharmacies', 'emergency-contacts',
-  'stores-mod', 'products-mod', 'repartidores-mod', 'proofs',
+  'stores-mod', 'products-mod', 'proofs',
   'revocations', 'error-logs', 'audit-log',
 ];
 
