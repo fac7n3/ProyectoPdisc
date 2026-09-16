@@ -44,6 +44,15 @@ const SIGNED_URL_SECONDS = 60;
 const DROP_HINT = `Arrastralas acá o hacé clic — hasta ${MAX_FILES} archivos (imagen o PDF) de 5 MB`;
 
 /**
+ * El selector de adjuntos vivo de cada contenedor. La sección se redibuja
+ * entera en varios caminos (enviar un reclamo, cancelar otro), y ahí el
+ * formulario anterior se tira sin pasar por su `cleanup()`: sin este registro
+ * los objectURL de las miniaturas ya elegidas quedan retenidos hasta recargar
+ * la página. WeakMap para no dejar vivo el contenedor por tenerlo anotado.
+ */
+const pickerByContainer = new WeakMap();
+
+/**
  * Sube los archivos al bucket y devuelve sus rutas. Si uno falla se borran
  * los que ya habían subido: mejor perder el intento entero que dejar
  * archivos huérfanos ocupando (y costando) lugar en el bucket.
@@ -76,15 +85,38 @@ async function removeAttachments(paths) {
   if (error) console.warn('No se pudieron borrar los adjuntos del reclamo:', error.message);
 }
 
+/**
+ * Abre un adjunto en una pestaña nueva.
+ *
+ * La pestaña se abre vacía ANTES de pedir la signed URL, aunque todavía no
+ * haya nada que cargar: el bloqueador de popups solo deja pasar
+ * `window.open()` mientras siga vivo el gesto del usuario, y el `await` de
+ * createSignedUrl lo termina. Abriendo primero y navegando después el chip
+ * funciona también en Safari y Firefox, que si no lo bloquean en silencio
+ * (se hace clic y no pasa nada, sin siquiera un error).
+ *
+ * No se puede pedir 'noopener' en ese open: con esa opción el navegador
+ * devuelve null a propósito y nos quedamos sin la referencia para navegar.
+ * `tab.opener = null` corta el vínculo inverso igual de bien.
+ */
 async function openAttachment(path, trigger) {
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+
   trigger.disabled = true;
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS);
   trigger.disabled = false;
+
   if (error || !data?.signedUrl) {
+    tab?.close();
     showToast('No se pudo abrir el archivo.', 'error');
     return;
   }
-  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+
+  // replace() y no href: así la pestaña en blanco no queda en su historial y
+  // el "atrás" del navegador no lleva a una página vacía.
+  if (tab) tab.location.replace(data.signedUrl);
+  else window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
 }
 
 /**
@@ -280,7 +312,13 @@ function buildAttachmentPicker() {
     e.preventDefault();
     drop.classList.add('is-over');
   });
-  drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  // El dragleave también salta al pasar de la zona a uno de sus propios hijos
+  // (el ícono, los dos textos): sin este chequeo el resaltado parpadea
+  // mientras se arrastra por encima.
+  drop.addEventListener('dragleave', (e) => {
+    if (drop.contains(e.relatedTarget)) return;
+    drop.classList.remove('is-over');
+  });
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     drop.classList.remove('is-over');
@@ -334,6 +372,7 @@ export async function fetchMyTickets() {
   return data || [];
 }
 
+/** Mensajes del hilo, o null si la consulta falló (≠ hilo todavía sin respuestas). */
 async function fetchTicketMessages(ticketId) {
   const { data, error } = await supabase
     .from('support_ticket_messages')
@@ -342,7 +381,7 @@ async function fetchTicketMessages(ticketId) {
     .order('created_at', { ascending: true });
   if (error) {
     console.error('Error al cargar mensajes del reclamo:', error);
-    return [];
+    return null;
   }
   return data || [];
 }
@@ -359,12 +398,49 @@ async function sendTicketMessage(ticketId, message) {
   if (error) throw error;
 }
 
+/**
+ * `.select()` al final para saber si de verdad cambió algo: cuando la RLS
+ * rechaza el update (un ticket que ya no es cancelable, o de otra persona)
+ * Supabase no devuelve error, devuelve cero filas — sin esto se anunciaba
+ * "Reclamo cancelado" igual y el estado seguía como estaba.
+ */
 async function cancelTicket(ticketId) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('support_tickets')
     .update({ status: 'cancelled' })
-    .eq('id', ticketId);
+    .eq('id', ticketId)
+    .select('id');
   if (error) throw error;
+  if (!data?.length) throw new Error('No se pudo cancelar el reclamo. Recargá la página y probá de nuevo.');
+}
+
+/**
+ * Bloque "cargando" con el spinner de 6 puntos del proyecto. Mismo markup que
+ * arma la grilla del buscador (js/search.js) para que la espera se vea igual
+ * en todos lados.
+ */
+function buildLoadingBlock(text) {
+  const block = document.createElement('div');
+  block.className = 'bl-loading-block';
+  block.setAttribute('role', 'status');
+  block.setAttribute('aria-live', 'polite');
+
+  const spinner = document.createElement('div');
+  spinner.className = 'bl-spinner';
+  spinner.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 6; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'bl-spinner__dot';
+    spinner.appendChild(dot);
+  }
+  block.appendChild(spinner);
+
+  const title = document.createElement('p');
+  title.className = 'bl-loading-block__title';
+  title.textContent = text;
+  block.appendChild(title);
+
+  return block;
 }
 
 /** Campo con etiqueta arriba: <label> real, así el clic enfoca el control. */
@@ -434,6 +510,7 @@ function buildTicketForm(container) {
   form.appendChild(messageField);
 
   const picker = buildAttachmentPicker();
+  pickerByContainer.set(container, picker);
   const attachField = document.createElement('div');
   attachField.className = 'tkt-field';
   const attachLabel = document.createElement('span');
@@ -466,6 +543,20 @@ function buildTicketForm(container) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     formError.hidden = true;
+
+    // El `required` del navegador da por completo un campo con solo espacios,
+    // y abajo se guarda el valor ya trimmeado: sin este chequeo entraba un
+    // reclamo con asunto vacío, que en la lista queda como una fila en blanco
+    // que ni el usuario ni soporte pueden identificar.
+    const subject = subjectInput.value.trim();
+    const message = messageInput.value.trim();
+    if (!subject || !message) {
+      formError.textContent = 'Completá el asunto y contanos qué pasó.';
+      formError.hidden = false;
+      (subject ? messageInput : subjectInput).focus();
+      return;
+    }
+
     submitBtn.disabled = true;
     const files = picker.getFiles();
     submitText.textContent = files.length ? 'Subiendo archivos...' : 'Enviando...';
@@ -478,7 +569,7 @@ function buildTicketForm(container) {
         submitText.textContent = `Subiendo archivos (${done}/${total})...`;
       });
       submitText.textContent = 'Enviando...';
-      await submitSupportTicket(subjectInput.value.trim(), messageInput.value.trim(), paths);
+      await submitSupportTicket(subject, message, paths);
 
       picker.cleanup();
       showToast('Reclamo enviado. Te respondemos por acá.', 'success');
@@ -501,10 +592,19 @@ function buildTicketForm(container) {
  * propios con estado, hilo de mensajes expandible, adjuntos y cancelación.
  */
 export async function renderSupportSection(container) {
+  // El formulario anterior se va con el textContent = '': liberar antes sus
+  // miniaturas, que son objectURL y no los recoge el GC solos.
+  pickerByContainer.get(container)?.cleanup();
   container.textContent = '';
   container.appendChild(buildTicketForm(container));
 
+  // fetchMyTickets tarda: sin esto queda el formulario solo, con un hueco
+  // mudo donde después aparece la lista. Mismo bloque de carga que usa la
+  // grilla del buscador.
+  const loading = buildLoadingBlock('Cargando tus reclamos');
+  container.appendChild(loading);
   const tickets = await fetchMyTickets();
+  loading.remove();
 
   const listHead = document.createElement('div');
   listHead.className = 'tkt-listhead';
@@ -599,6 +699,8 @@ export async function renderSupportSection(container) {
 
     const thread = document.createElement('div');
     thread.className = 'tkt-thread';
+    thread.id = `ticket-thread-${t.id}`;
+    top.setAttribute('aria-controls', thread.id);
     row.appendChild(thread);
 
     top.addEventListener('click', async () => {
@@ -651,7 +753,14 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
 
   const messages = await fetchTicketMessages(ticket.id);
 
-  if (messages.length > 0) {
+  if (messages === null) {
+    // null = la consulta falló. Decir acá "todavía no hay respuestas" sería
+    // mentir: la respuesta de soporte puede estar y no haberse podido leer.
+    const failed = document.createElement('p');
+    failed.className = 'tkt-thread__note';
+    failed.textContent = 'No se pudieron cargar las respuestas. Volvé a abrir el reclamo para reintentar.';
+    threadEl.appendChild(failed);
+  } else if (messages.length > 0) {
     const msgList = document.createElement('div');
     msgList.className = 'tkt-thread__list';
 
@@ -663,7 +772,11 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
 
       const meta = document.createElement('div');
       meta.className = 'tkt-bubble__meta';
-      meta.textContent = new Date(m.created_at).toLocaleString('es-AR');
+      // Sin los segundos: toLocaleString('es-AR') a secas devuelve
+      // "12/9/2026, 10:00:00" y el :00 final es ruido en un chat.
+      meta.textContent = new Date(m.created_at).toLocaleString('es-AR', {
+        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      });
       bubble.appendChild(meta);
 
       msgList.appendChild(bubble);
@@ -689,6 +802,9 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
 
   const replyInput = document.createElement('textarea');
   replyInput.placeholder = 'Escribí una respuesta...';
+  // Sin <label> propio (el hilo es una conversación, no un formulario con
+  // rótulos): el placeholder no cuenta como nombre accesible.
+  replyInput.setAttribute('aria-label', 'Tu respuesta a este reclamo');
   replyInput.maxLength = 2000;
   replyInput.className = 'tkt-reply__input';
   replyForm.appendChild(replyInput);

@@ -80,6 +80,40 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — La sección "Contactar a soporte" (Mi perfil y panel
+  de vendedor) se veía rota en producción: el commit `3a3e6a3` que sumó los
+  adjuntos reescribió `js/support-utils.js` entero (+552 líneas: tarjeta,
+  dropzone, lista de archivos, chips, fila plegable) **sin tocar ni un archivo
+  de CSS**. Quedaron 34 clases `tkt-*` usadas por el JS sin una sola regla, así
+  que el selector de adjuntos, la tarjeta del formulario y los chips salían sin
+  estilo, y cada fila de la lista mostraba asunto + mensaje + fecha pegados en
+  un solo renglón corrido. Agregadas las 34 reglas a `Assets/styles/home.css`
+  (junto al bloque `tkt-` que ya estaba) y reparadas las que el rediseño había
+  dejado desfasadas: `.tkt-item__top` pasó de `<div>` a `<button>` y le faltaba
+  el reset (ancho, padding, `font`, alineación), `.tkt-empty` pasó de `<p>` a
+  bloque con ícono, y `.tkt-item__msg`/`.tkt-item__date` habían quedado muertas
+  (borradas). **Gotcha para el futuro:** el chequeo que caza esta clase de bug
+  es comparar las clases del JS contra las del CSS —
+  `grep -oE "tkt-[a-zA-Z0-9_-]+" js/support-utils.js | sort -u` contra
+  `grep -rhoE "\.tkt-[a-zA-Z0-9_-]+" Assets/styles/ | sed 's/^\.//' | sort -u`;
+  al 2026-09-16 las dos direcciones dan 0.
+  De paso, 8 arreglos en `js/support-utils.js`: (1) abrir un adjunto no
+  funcionaba en Safari/Firefox — `window.open()` iba después del `await` de
+  `createSignedUrl` y el bloqueador de popups lo frenaba sin avisar; ahora la
+  pestaña se abre antes y se navega después (**el mismo bug sigue en
+  `js/vender.js:2599` y `js/admin.js:891`, con los comprobantes de
+  transferencia** — no se tocaron por estar fuera de esta tarea); (2) el
+  `required` del navegador dejaba mandar un reclamo con asunto de solo
+  espacios, que quedaba como una fila en blanco; (3) cancelar un reclamo
+  avisaba "Reclamo cancelado" aunque la RLS rechazara el update (Supabase no
+  tira error, devuelve cero filas — ahora se chequea con `.select()`); (4) si
+  fallaba la consulta del hilo se mostraba "Todavía no hay respuestas", que es
+  mentira; (5) fuga de los objectURL de las miniaturas al redibujar la sección;
+  (6) bloque de carga con el spinner de 6 puntos mientras se piden los
+  reclamos, que antes era un hueco mudo; (7) el campo de respuesta no tenía
+  nombre accesible y el encabezado plegable no declaraba `aria-controls`;
+  (8) parpadeo del resaltado al arrastrar archivos sobre la zona. `dist/`
+  reconstruido.
 - **Resuelto 2026-09-16** — Se sacó por completo el rol `repartidor` y todo
   su apartado, a pedido del usuario: la logística de entregas queda para
   más adelante. Borrados `pages/repartidor.html` y `js/repartidor.js`

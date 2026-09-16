@@ -2648,3 +2648,113 @@ siguen en el schema (migraciones 11/25/26/27/28/44, ya aplicadas en producción)
 llegar a ellos desde la app. Se dejan así por si se retoma la logística de entregas más adelante --
 no había nada real que migrar ni limpiar (ninguna fila de `deliveries`/`delivery_requests` en
 producción tenía que ver con un usuario activo). `dist/` reconstruido con `npm run build` al final.
+
+---
+
+## 2026-09-16 — Sección de soporte: el CSS que nunca se escribió (+ 8 bugs)
+
+Análisis al azar de `js/support-utils.js` (sección compartida "Contactar a soporte", la usan
+`perfil.js` y `vender.js`). Lo que apareció no fue un detalle de estilo sino una **regresión
+visible en producción**.
+
+### El hallazgo principal
+
+El commit `3a3e6a3` ("feat(soporte): adjuntar capturas al enviar un reclamo", 2026-09-03) reescribió
+`js/support-utils.js` entero -- +552 líneas, 6 archivos tocados -- y **ninguno de esos 6 archivos
+era CSS**. El rediseño que trajo (tarjeta con encabezado, campos con rótulo, contador de
+caracteres, dropzone de adjuntos, lista de archivos elegidos con miniatura, chips de adjuntos, fila
+de reclamo plegable con preview y chevron, estado vacío ilustrado) quedó **entero sin estilos**:
+**34 clases `tkt-*` usadas por el JS sin una sola regla** en todo `Assets/styles/`.
+
+Cómo se veía antes del arreglo (verificado con Playwright montando la sección real contra un stub
+de Supabase): el encabezado de la tarjeta desbordaba el formulario, el dropzone era un renglón de
+texto centrado sin borde ni caja, los chips de adjuntos eran texto plano pegado, y cada fila de la
+lista mostraba **asunto + mensaje + fecha en un solo renglón corrido y sin separación**
+("No me llegó el pedido #4821Hice el pedido el martes y figura como...11 de sept de 2026").
+
+Además tres reglas que sí existían habían quedado desfasadas por el mismo rediseño:
+
+- `.tkt-item__top` pasó de `<div>` a `<button>` (se hizo plegable) y su regla nunca se actualizó:
+  le faltaba `width: 100%`, `padding: 0`, `font: inherit`, `color: inherit` y `text-align: left`.
+  El reset global de `button` en `home.css:96` tapaba lo peor (fondo y borde), pero el encabezado
+  seguía sin ocupar el ancho, con el `font-size: 13.33px` del navegador y centrado.
+- `.tkt-empty` pasó de `<p>` suelto a un bloque con ícono + texto + aclaración.
+- `.tkt-item__msg` y `.tkt-item__date` quedaron muertas (el JS pasó a `.tkt-item__preview` y a un
+  `<span>` dentro de `.tkt-item__meta`). Borradas.
+
+**Gotcha reusable:** el chequeo que caza esta clase de bug es comparar las dos direcciones,
+`grep -oE "tkt-[a-zA-Z0-9_-]+" js/support-utils.js | sort -u` contra
+`grep -rhoE "\.tkt-[a-zA-Z0-9_-]+" Assets/styles/ | sed 's/^\.//' | sort -u`, con `comm -23` y
+`comm -13`. Al 2026-09-16 las dos dan 0. Sirve igual para cualquier otro prefijo de clases del
+proyecto (`pubform-`, `proof-`, `notif-`, ...).
+
+Las 34 reglas nuevas se agregaron a `Assets/styles/home.css`, al lado del bloque `tkt-` que ya
+estaba (las tres páginas que muestran la sección -- perfil, vender, admin -- cargan `home.css`).
+Se introdujo `--tkt-col: 560px` en un `:root` local a la sección: el formulario, la lista y el
+estado vacío lo comparten para que se lea como una sola columna, en vez de un formulario angosto
+arriba de una lista a todo lo ancho (que era lo que pasaba, `.tkt-form` tenía `max-width: 500px`
+y `.tkt-list` ninguno). El dropzone sigue el mismo lenguaje que `.proof-drop` del comprobante de
+transferencia (borde punteado + ícono), y los tintes usan `rgba(40, 65, 117, ...)` literal porque
+no existe un token `--bl-primary-rgb`.
+
+### Los 8 bugs de JS arreglados en la misma tarea
+
+1. **Los adjuntos no se abrían en Safari ni Firefox.** `openAttachment()` llamaba a `window.open()`
+   *después* del `await` de `createSignedUrl`: para entonces el gesto del usuario ya se consumió y
+   el bloqueador de popups frena la pestaña **en silencio** (se hace clic en el chip y no pasa
+   nada, sin error de consola). Ahora la pestaña se abre vacía antes del await y se navega con
+   `location.replace()` cuando llega la URL. **Ojo:** no se puede pasar `noopener` en ese
+   `window.open`, porque con esa opción el navegador devuelve `null` a propósito y uno se queda
+   sin la referencia -- se usa `tab.opener = null`, que corta el vínculo inverso igual.
+   **El mismo bug sigue sin arreglar en `js/vender.js:2599` y `js/admin.js:891`** (botón "Ver
+   comprobante" de los pagos por transferencia, idéntico patrón); se dejaron fuera por estar fuera
+   del alcance de esta tarea.
+2. **Reclamo con asunto vacío.** El `required` del navegador da por completo un campo con solo
+   espacios, y el insert guardaba el valor ya pasado por `.trim()`: entraba un ticket con
+   `subject = ''`, que en la lista queda como una fila en blanco que ni el usuario ni soporte
+   pueden identificar. Ahora se valida el valor trimmeado antes de subir nada.
+3. **Cancelar un reclamo mentía.** `cancelTicket()` hacía `update().eq()` sin `.select()`: cuando
+   la RLS rechaza el update (la policy de la migración 54 solo deja al dueño pasar a `cancelled`)
+   Supabase **no devuelve error, devuelve cero filas**, así que se mostraba "Reclamo cancelado" y
+   el estado seguía igual. Ahora `.select('id')` y se tira si no volvió ninguna fila.
+4. **"Todavía no hay respuestas" cuando en realidad falló la consulta.** `fetchTicketMessages()`
+   devolvía `[]` tanto para un hilo vacío como para un error. Ahora devuelve `null` en el error y
+   el hilo lo dice ("No se pudieron cargar las respuestas").
+5. **Fuga de objectURL.** `renderSupportSection()` hace `container.textContent = ''` y se lleva
+   puesto el picker anterior sin pasar por su `cleanup()`; las miniaturas de las imágenes elegidas
+   y no enviadas quedaban retenidas hasta recargar. Se registra el picker vivo en un `WeakMap`
+   por contenedor y se limpia antes de redibujar.
+6. **Hueco mudo mientras cargaban los reclamos.** Aparecía el formulario y, un rato después y de
+   golpe, la lista. Ahora hay un bloque de carga con el spinner de 6 puntos, mismo markup que arma
+   la grilla del buscador (`js/search.js`).
+7. **Accesibilidad:** el campo de respuesta del hilo solo tenía `placeholder` (que no cuenta como
+   nombre accesible) -- se le puso `aria-label`; y el encabezado plegable declaraba `aria-expanded`
+   pero no `aria-controls` -- se le dio un `id` al hilo y se cablearon.
+8. **Parpadeo al arrastrar archivos.** El `dragleave` también salta al pasar de la zona a uno de
+   sus propios hijos, así que el resaltado titilaba. Resuelto por los dos lados: `pointer-events:
+   none` en los hijos del dropzone (CSS) y un chequeo de `relatedTarget` (JS).
+
+De yapa, la hora de cada mensaje del hilo salía con segundos (`toLocaleString('es-AR')` a secas ->
+"12/9/2026, 10:00:00"); ahora es día + mes + hora:minuto.
+
+### Verificación
+
+Se montó un harness temporal (`_harness/`, borrado al terminar) que sirve la sección real contra un
+stub de `auth-utils.js`, y se sacaron capturas con el Chromium preinstalado en cuatro escenarios:
+lista con hilo abierto, picker con archivos elegidos + error de tamaño, estado vacío, y celular a
+390px. Font Awesome está bloqueado por el proxy de egress de la sesión, así que los íconos se
+sustituyeron con un CSS de harness. También se capturó el "antes" (checkout de `origin/main` de
+`home.css` + `support-utils.js` en el mismo harness) para confirmar la regresión. Los 6
+`js/*.test.mjs` del proyecto siguen pasando. `dist/` reconstruido.
+
+**Nota sobre `dist/`:** el rebuild cambia el hash del nombre de bundles cuyo contenido no cambió
+(ya documentado como `[[project-dist-merge-conflicts]]`); se verificó comparando el contenido de
+`servicios-*.js` antes y después -- idéntico, solo cambia el nombre.
+
+### Lo que NO se tocó
+
+La migración **73** (`support_tickets.attachments` + bucket `support-attachments`) **sigue sin
+aplicar** -- es uno de los pendientes que aplica el usuario. Hasta que corra, la sección de
+reclamos funciona sin adjuntos (las dos consultas usan `select('*')` y la columna solo viaja en el
+insert si hay archivos); lo que falla es la subida al bucket. El CSS y los arreglos de esta tarea
+no dependen de esa migración.
