@@ -1211,7 +1211,19 @@ function buildCompraItem(order, reviewByRepartidorId, transferInfoByStoreId) {
       const text = `${oi.quantity}x ${title} — ${formatPrice(oi.price * oi.quantity)}`;
       const textEl = document.createElement(oi.product_id ? 'a' : 'span');
       textEl.className = 'compra-item-text';
-      if (oi.product_id) textEl.href = `./producto.html?id=${encodeURIComponent(oi.product_id)}`;
+      if (oi.product_id) {
+        textEl.id = oi.product_id;
+        textEl.href = `./producto.html?id=${encodeURIComponent(oi.product_id)}`;
+        // Mismo patrón que buildFavProductCard: abre el modal de producto
+        // (home/búsqueda/comercio/favoritos) en vez de la página standalone.
+        // El href se conserva como fallback (Ctrl/Cmd/rueda del mouse).
+        textEl.addEventListener('click', (e) => {
+          if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          if (typeof window.openProductModal !== 'function') return;
+          e.preventDefault();
+          window.openProductModal(textEl);
+        });
+      }
       textEl.textContent = text;
       li.appendChild(textEl);
 
