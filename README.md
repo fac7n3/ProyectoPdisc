@@ -79,7 +79,7 @@ Proyecto-Pdisc/
 |---|---|
 | [docs/RUN_LOCAL.md](docs/RUN_LOCAL.md) | Setup completo de desarrollo local: DB, migraciones en orden, historial técnico detallado de cada feature. |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | Cómo desplegar a producción (Vercel + Supabase + Mercado Pago). |
-| [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) | Guía de uso por rol (cliente/vendedor/repartidor/admin). |
+| [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) | Guía de uso por rol (cliente/vendedor/admin). |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Cómo está armado el sistema: modelo de datos, seguridad, decisiones clave. |
 | [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md) | Checklist manual de testing por rol y flujo. |
 | [docs/ACCESIBILIDAD.md](docs/ACCESIBILIDAD.md) | Qué se hizo para lectores de pantalla, cómo se verificó y qué falta. |
