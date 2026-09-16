@@ -27,6 +27,7 @@ const SUPPORT_TICKET_STATUS_LABELS = {
   open: 'Abierto',
   in_progress: 'En progreso',
   resolved: 'Resuelto',
+  cancelled: 'Cancelado',
 };
 
 /**
