@@ -92,7 +92,6 @@ body {
 }
 
 .role-badge--vendedor { background: #fef3e2; color: #b45309; }
-.role-badge--repartidor { background: #ecfdf5; color: #047857; }
 .role-badge--admin,
 .role-badge--moderador { background: #fee2e2; color: #b91c1c; }
 
@@ -609,8 +608,8 @@ a.compra-item-text:hover {
 
 /* === Favoritos: buscador ===
    Antes era un <input class="form-input"> pelado: esa clase solo existe inline
-   en vender.html y repartidor.html, así que en esta página no aplicaba nada y
-   se veía el input crudo del navegador. */
+   en vender.html, así que en esta página no aplicaba nada y se veía el input
+   crudo del navegador. */
 .fav-search {
   position: relative;
   display: flex;

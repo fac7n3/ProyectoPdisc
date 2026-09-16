@@ -820,11 +820,6 @@ export async function initAccountMenu() {
         { href: './vender.html', icon: 'fa-solid fa-shop', label: 'Panel de vendedor' },
       ]));
     }
-    if (role === 'repartidor') {
-      panel.appendChild(buildSection('Repartir', [
-        { href: './repartidor.html', icon: 'fa-solid fa-truck-fast', label: 'Panel de repartidor' },
-      ]));
-    }
     if (role === 'admin') {
       panel.appendChild(buildSection('Administración', [
         { href: './admin.html', icon: 'fa-solid fa-user-shield', label: 'Panel de administración' },

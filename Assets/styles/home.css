@@ -2303,9 +2303,9 @@ button.coupon-chip:hover {
 }
 
 /* ── .catpick: grilla de opciones en lugar de un <select> ──
-   Radios (o checkbox) nativos estilados. La usan el alta de producto, el alta
-   de comercio y el alta de repartidor; vive acá y no inline en cada página
-   para tener una sola definición.
+   Radios (o checkbox) nativos estilados. La usan el alta de producto y el
+   alta de comercio; vive acá y no inline en cada página para tener una sola
+   definición.
 
    El acento sale de --bl-vendor-accent donde exista (el panel del vendedor
    define ese token en su :root) y del azul de marca en el resto. */
@@ -3652,8 +3652,8 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 
 /* ============================================================
    Notificaciones + Soporte (componentes compartidos, estilo ML)
-   Usados en perfil.html (cliente), vender.html (vendedor),
-   repartidor.html (repartidor) y el dropdown de la campanita.
+   Usados en perfil.html (cliente), vender.html (vendedor)
+   y el dropdown de la campanita.
    Acento: --bl-primary (aparecen también en la página del cliente).
    ============================================================ */
 

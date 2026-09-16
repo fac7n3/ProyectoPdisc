@@ -12,8 +12,6 @@ const TYPE_LABELS = {
   revocation_requested: 'Un cliente solicitó arrepentimiento de compra',
   seller_request_approved: '¡Tu solicitud de vendedor fue aprobada!',
   seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
-  delivery_request_approved: '¡Tu solicitud de repartidor fue aprobada!',
-  delivery_request_rejected: 'Tu solicitud de repartidor fue rechazada',
   professional_request_approved: '¡Tu publicación como profesional fue aceptada! Ya figurás en Contratar',
   professional_request_rejected: 'Tu solicitud de profesional fue rechazada',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
@@ -46,14 +44,9 @@ const TYPE_TONE = {
   order_shipped: 'success',
   order_delivered: 'success',
   seller_request_approved: 'success',
-  delivery_request_approved: 'success',
   professional_request_approved: 'success',
-  provider_approved: 'success',
-  courier_added: 'success',
-  delivery_assigned: 'success',
   payment_rejected: 'danger',
   seller_request_rejected: 'danger',
-  delivery_request_rejected: 'danger',
   professional_request_rejected: 'danger',
   revocation_requested: 'danger',
   stock_alert: 'accent',
@@ -164,15 +157,6 @@ function buildNotificationLink(n) {
     case 'professional_request_approved':
     case 'professional_request_rejected':
       return { href: './contratar.html', label: 'Ver Contratar' };
-
-    case 'delivery_request_approved':
-    case 'delivery_request_rejected':
-    case 'courier_added':
-    case 'delivery_assigned':
-      return { href: './repartidor.html', label: n.type === 'delivery_assigned' ? 'Ver entrega' : 'Ver' };
-
-    case 'provider_approved':
-      return { href: './logistica.html', label: 'Ver' };
 
     default:
       return null;

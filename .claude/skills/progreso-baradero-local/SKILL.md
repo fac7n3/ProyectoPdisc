@@ -2571,3 +2571,80 @@ del botón "Cambiar" contraseña en `js/perfil.js` (mismo gap ahí, no se había
 acá en vez de a `login.html`. Clase nueva `.auth-confirm-notice--error` en `auth.css` (variante roja
 del aviso verde que ya existía para "confirmá tu correo" del registro). Nueva entrada en
 `vite.config.js` (`nuevaContrasena`).
+
+## 2026-09-16 — Se saca por completo el rol `repartidor` y su apartado
+
+A pedido del usuario: "sacá todo lo que tenga que ver con repartidor, el rol, el apartado, y demás,
+la parte de logística lo vamos a dejar para más adelante". El rol venía de la migración 11 (F3-01 a
+F3-04, `feature/F3-*`) y nunca pasó de "planeado" en la práctica -- no había ninguna cuenta real con
+`role='repartidor'` en producción, así que sacar todo el frontend no afecta a ningún usuario ni
+pedido existente.
+
+**Archivos borrados enteros:** `pages/repartidor.html` (panel del repartidor: alta con
+nombre/teléfono/vehículo, lista de "pedidos disponibles" con `claim_delivery`, lista de "mis
+entregas" con avance de estado vía `update_delivery_status`, calificación propia) y `js/repartidor.js`
+(su lógica). Sacada la entrada `repartidor` de `rollupOptions.input` en `vite.config.js` y la línea
+`Disallow: /pages/repartidor.html` de `public/robots.txt`.
+
+**Alta y aprobación** (mismo patrón que `seller_requests`/`professional_requests`, tabla
+`delivery_requests`): vivía enteramente en `repartidor.html`/`repartidor.js` (alta) + `admin.js`/
+`admin.html` (aprobación). En `admin.js` se sacaron `VEHICLE_LABELS`, `fetchDeliveryRequests`,
+`approveDeliveryRequest`, `rejectDeliveryRequest` (llamaba al RPC `approve_delivery_request`) y
+`fetchRepartidoresForModeration` (tabla de moderación con `admin_set_repartidor_suspended`) --
+cuatro funciones bien aisladas, sin lógica compartida con las secciones de vendedores/profesionales
+que siguen activas. En `admin.html` se sacaron los dos botones de nav ("Repartidores" en
+Solicitudes y en Moderación) y las dos `<section>` completas (`delivery-requests`,
+`repartidores-mod`). Se limpiaron las referencias sueltas: `SECTION_LOADERS`,
+`MODERADOR_HIDDEN_SECTIONS`, los listeners de los botones "Refrescar" en `initAdminPage()`, y las
+métricas del resumen global que dependían de esto (`Repartidores`, `Entregas en curso`, `Entregas
+completadas` -- esta última consultaba la tabla `deliveries`, que ahora nadie va a volver a poblar).
+
+**Cliente ("Mis compras", `perfil.js`):** se sacó la entrada `repartidor` del diccionario de labels
+de rol, el objeto `DELIVERY_STATUS_LABELS` ("Un repartidor tomó tu pedido"/"El repartidor está en
+camino"), y la función completa `buildRepartidorRatingSection` (calificar al repartidor tras la
+entrega, F12-08, reusaba `reviews` con `target_type='repartidor'`) junto con el parámetro
+`reviewByRepartidorId`/`comprasReviewByRepartidorId` que la alimentaba en `loadCompras()` (bloque
+que buscaba reseñas propias en lote, mismo patrón que `phoneByClientId` de F12-05). El `select` de
+`loadCompras` dejó de traer el embed `deliveries ( status, repartidor_id )`.
+
+**Panel de vendedor (`vender.js`/`vender.html`):** se sacó la sección completa "Envíos en curso"
+(F3-04) -- a diferencia de `delivery_method` (pickup/delivery, que sigue siendo una opción de
+checkout válida y una forma de filtrar pedidos, eso NO se tocó), esta sección era 100% de
+seguimiento read-only de entregas gestionadas por un repartidor ("el repartidor gestiona el estado
+desde su panel", literal en el comentario que la describía). Sin repartidor.js nadie iba a volver a
+crear una fila en `deliveries`, así que hubiera quedado una pestaña permanentemente vacía en el
+dashboard de cada vendedor -- se sacó entera en vez de dejarla así: el nav item, la `<section>`, la
+entrada `envios` de `STAFF_PERMISSION_SECTIONS` (permisos por empleado, migración 83), la llamada a
+`renderShipmentsInProgress()` en la carga inicial, el conteo `shipmentsInProgress` y su card en
+"Pendientes en tus ventas" del resumen, y las funciones `SHIPMENT_STATUS_LABELS`/
+`SHIPMENT_STATUS_BADGE_VARIANT`/`renderShipmentsInProgress`/`renderShipmentsEmpty`/`buildShipmentRow`.
+
+**Notificaciones (`notifications-utils.js`):** se sacaron `delivery_request_approved`/
+`delivery_request_rejected` de `TYPE_LABELS`/`TYPE_TONE` y el `case` correspondiente en
+`buildNotificationLink`. De paso se encontraron y sacaron tres tipos ya huérfanos antes de esta
+tarea -- `courier_added`, `delivery_assigned` (sin entrada en `TYPE_LABELS`, solo en `TYPE_TONE` y
+en el mismo `case` que apuntaba a `repartidor.html`) y `provider_approved` (apuntaba a
+`logistica.html`, página que nunca existió en el repo) -- restos sueltos de la rama sin mergear
+`feature/logistica-terceros` (mencionada en "Pendientes activos" de `CLAUDE.md` por los números de
+migración 61-65 reservados), ningún código los genera.
+
+**Copy y comentarios:** `pages/terminos.html` (sacado el rol de la lista de tipos de cuenta, "cuatro"
+-> "tres", sacada la mención en la sección de envío y retiro), `pages/perfil.html` (intro de "Mi
+perfil"), `pages/home.html` (link "Sumate como repartidor" del footer), `js/nav-utils.js` (bloque
+`if (role === 'repartidor')` del menú de cuenta), `js/profile-fields.js` (hint del teléfono),
+`Assets/styles/perfil-custom.css` (`.role-badge--repartidor`) y comentarios sueltos en
+`js/vender.js`, `js/admin.js`, `js/reviews-utils.js`, `js/support-utils.js`, `js/auth-utils.js`,
+`Assets/styles/home.css` que lo mencionaban de pasada. También `docs/GUIA_USUARIO.md` (sacada la
+sección "Repartidor" completa y las menciones en "Administrador"), `memory/glossary.md` y
+`.agents/product-marketing.md` (roles de producto). Los demás docs con menciones históricas
+(`ROADMAP.md`, `ARQUITECTURA.md`, `TESTING_CHECKLIST.md`, `WHATSAPP_TEMPLATES.md`, etc., que
+documentan las fases F3-01 a F3-04 como ya completadas en su momento) se dejaron sin tocar a
+propósito -- son registro histórico de cómo se construyó, no documentación de cara al uso actual;
+mismo criterio que ya se aplica en este mismo skill.
+
+**Deliberadamente no tocado:** la base de datos. `delivery_requests`, `deliveries` y los RPCs
+`claim_delivery`/`update_delivery_status`/`approve_delivery_request`/`admin_set_repartidor_suspended`
+siguen en el schema (migraciones 11/25/26/27/28/44, ya aplicadas en producción) sin ninguna forma de
+llegar a ellos desde la app. Se dejan así por si se retoma la logística de entregas más adelante --
+no había nada real que migrar ni limpiar (ninguna fila de `deliveries`/`delivery_requests` en
+producción tenía que ver con un usuario activo). `dist/` reconstruido con `npm run build` al final.

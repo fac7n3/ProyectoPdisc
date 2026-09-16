@@ -25,7 +25,7 @@
 
 ## Qué es
 **Baradero Local**: e-commerce de comercio de proximidad para Baradero (Argentina).
-Objetivo definido: **lanzamiento real**. Roles: `cliente`, `vendedor`, `repartidor` (planeado), `admin`.
+Objetivo definido: **lanzamiento real**. Roles: `cliente`, `vendedor`, `admin`.
 Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan completo: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack y convenciones
@@ -80,6 +80,31 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-16** — Se sacó por completo el rol `repartidor` y todo
+  su apartado, a pedido del usuario: la logística de entregas queda para
+  más adelante. Borrados `pages/repartidor.html` y `js/repartidor.js`
+  (panel propio con alta, toma de pedidos y avance de estado de entrega) y
+  su entrada en `vite.config.js`/`robots.txt`. Sacado de todos los lugares
+  donde aparecía: link "Repartir" del menú de cuenta (`nav-utils.js`), link
+  "Sumate como repartidor" del footer del home, badge de rol y calificación
+  post-entrega en "Mis compras" (`perfil.js`), sección "Envíos en curso"
+  completa del panel de vendedor (nav + card de resumen + permisos por
+  empleado, `vender.js`/`vender.html` -- quedaba 100% atada al repartidor
+  que gestionaba el estado, así que no tenía sentido dejarla mostrando
+  siempre "vacío"), las dos secciones de admin ("Solicitudes de
+  repartidores" y "Moderación · Repartidores", con sus métricas del
+  resumen global) y los tipos de notificación asociados (incluidos
+  `courier_added`/`delivery_assigned`/`provider_approved`, restos sueltos
+  de la rama de logística de terceros que nunca se terminó, apuntaban a
+  `repartidor.html`/`logistica.html`). Términos y condiciones, "Mi perfil"
+  y varios comentarios de código actualizados para no seguir mencionando el
+  rol. **No se tocó la base de datos**: las tablas `delivery_requests`/
+  `deliveries` y sus RPCs (`claim_delivery`, `update_delivery_status`,
+  `approve_delivery_request`, `admin_set_repartidor_suspended`) siguen ahí
+  sin uso por si se retoma la fase de logística más adelante -- no había
+  repartidores reales en producción (el rol nunca pasó de "planeado"), así
+  que sacar el frontend no afecta a ningún usuario ni pedido existente.
+  `dist/` reconstruido. Detalle completo: skill `progreso-baradero-local`.
 - **Resuelto 2026-09-15** — Plantillas con marca para los emails de
   confirmación de registro y de recuperar contraseña, activas en producción.
   Supabase mandaba esos dos emails con una plantilla genérica por defecto;

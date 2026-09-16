@@ -8,8 +8,15 @@ Complementa a `CLAUDE.md` (memoria rápida) — acá va el detalle completo.
 |-----|-------------|
 | `cliente` | Comprador final |
 | `vendedor` | Dueño de un comercio local, publica productos (requiere aprobación admin + CUIT válido) |
-| `repartidor` | Repartidor de pedidos (agregado en migración 11, planeado — no operativo aún en frontend) |
 | `admin` | Administrador de la plataforma, aprueba vendedores |
+
+El rol `repartidor` (agregado en migración 11) tuvo un frontend completo
+(panel propio, aprobación de solicitudes, seguimiento de envíos) hasta que
+se sacó por completo el 2026-09-16 a pedido del usuario -- la logística de
+entregas queda para más adelante. Las tablas `delivery_requests`/`deliveries`
+y sus RPCs (`claim_delivery`, `update_delivery_status`,
+`approve_delivery_request`) siguen en la DB sin tocar por si se retoma esa
+fase, pero ya no hay ninguna forma de llegar a ellas desde la app.
 
 El rol se lee del **JWT** (`app_metadata.role`), no de una tabla aparte consultada en cada request.
 

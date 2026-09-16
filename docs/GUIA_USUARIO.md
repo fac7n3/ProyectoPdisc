@@ -29,21 +29,13 @@ Para vender, primero hay que registrar el comercio.
    - **Perfil de tu comercio**: descripción, zona, horarios, logo.
    - **Estadísticas**: ventas del día, ingresos del mes, productos activos.
 
-## Repartidor
-
-1. Andá a **"Repartir"** (mismo menú desplegable) y completá tus datos (nombre, teléfono, vehículo).
-2. Tu solicitud también necesita aprobación del admin.
-3. Aprobado, vas a ver dos listas en tu panel:
-   - **Pedidos disponibles**: pedidos con envío a domicilio ya pagados, esperando repartidor. Tocás "Tomar pedido" para asignártelo (una vez tomado, desaparece de la lista para los demás repartidores).
-   - **Mis entregas**: tus pedidos en curso, con botones para marcar "en camino" y "entregado" en el orden correcto (no se puede saltear un paso).
-
 ## Administrador
 
 Cuenta con permisos especiales (no se puede obtener por registro normal — la asigna otro admin).
 
-- **Aprobar/rechazar** solicitudes de vendedores y repartidores.
-- **Suspender** un comercio o un repartidor si hace falta (oculta sus productos del catálogo público sin borrar nada).
+- **Aprobar/rechazar** solicitudes de vendedores.
+- **Suspender** un comercio si hace falta (oculta sus productos del catálogo público sin borrar nada).
 - **Moderar** un producto puntual de cualquier vendedor, u ocultar una reseña reportada.
 - **Categorías y cupones**: alta, edición y baja.
 - **Comprobantes de transferencia**: ver y confirmar los de cualquier comercio (no solo el propio).
-- **Métricas globales**: usuarios por rol, comercios por estado, ventas totales, entregas en curso.
+- **Métricas globales**: usuarios por rol, comercios por estado, ventas totales.
