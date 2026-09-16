@@ -9,6 +9,8 @@ import { removeStoredObjects } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
+import { buildDropdown } from './dropdown.js';
+import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -1657,7 +1659,9 @@ function fillStoreProfileForm(store) {
   document.querySelectorAll('input[name="store-contact-method"]').forEach((radio) => {
     radio.checked = radio.value === contactMethod;
   });
-  if (whatsappInput) whatsappInput.value = store.whatsapp || '';
+  const { dial, number } = splitPhone(store.whatsapp);
+  if (storeWhatsappDial) storeWhatsappDial.setValue(store.whatsapp ? dial : DEFAULT_PHONE_DIAL);
+  if (whatsappInput) whatsappInput.value = store.whatsapp ? number : '';
   toggleStoreWhatsappField(contactMethod);
 
   // Redes sociales: un link + un check "mostrar" por red (ver SOCIAL_NETWORKS).
@@ -1693,9 +1697,21 @@ function toggleStoreWhatsappField(contactMethod) {
   field.style.display = contactMethod === 'whatsapp' ? '' : 'none';
 }
 
+// Selector de característica de país para el WhatsApp del comercio (mismo
+// componente y misma lista que el teléfono de "Mi perfil"/direcciones).
+let storeWhatsappDial = null;
+
 function setupStoreProfileForm() {
   const form = document.getElementById('store-profile-form');
   if (!form) return;
+
+  const dialSlot = document.getElementById('store-whatsapp-dial-slot');
+  if (dialSlot && !storeWhatsappDial) {
+    storeWhatsappDial = buildDropdown({
+      options: PHONE_COUNTRY_OPTIONS, value: DEFAULT_PHONE_DIAL, ariaLabel: 'Característica de país',
+    });
+    dialSlot.appendChild(storeWhatsappDial.element);
+  }
 
   document.querySelectorAll('input[name="store-contact-method"]').forEach((radio) => {
     radio.addEventListener('change', () => toggleStoreWhatsappField(radio.value));
@@ -1731,6 +1747,7 @@ function setupStoreProfileForm() {
       setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
+    const whatsappDialValue = storeWhatsappDial ? storeWhatsappDial.getValue() : DEFAULT_PHONE_DIAL;
 
     const descriptionValue = document.getElementById('store-description').value.trim();
 
@@ -1750,7 +1767,7 @@ function setupStoreProfileForm() {
         hours: hoursValue || null,
         description: descriptionValue || null,
         contact_method: contactMethodValue,
-        whatsapp: whatsappValue || null,
+        whatsapp: whatsappValue ? `${whatsappDialValue} ${whatsappValue}` : null,
         ...socialFields,
       })
       .eq('id', currentStoreId);
