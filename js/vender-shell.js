@@ -3,12 +3,20 @@
 // `nav-utils.js` (initCategoryBar / initNotificationsBell). No reescribe ninguna
 // sección: solo muestra una por vez y marca la activa. Fase 0 del rediseño "Mi cuenta".
 
-const DEFAULT_SECTION = 'resumen';
+let DEFAULT_SECTION = 'resumen';
 
-export function initVenderShell() {
+/**
+ * @param {{ defaultSection?: string }} [opts] sección a mostrar si el hash no
+ * matchea ninguna (ej. al entrar sin `#` en la URL). El dueño entra directo a
+ * "Perfil de mi comercio"; un empleado sigue cayendo en "Resumen" porque esa
+ * sección es exclusiva del dueño (queda en el DOM pero vacía para él, ver
+ * loadDashboard en vender.js).
+ */
+export function initVenderShell({ defaultSection } = {}) {
   const sidebar = document.getElementById('mc-sidebar');
   if (!sidebar || sidebar.dataset.shellInit) return; // idempotente
   sidebar.dataset.shellInit = '1';
+  if (defaultSection) DEFAULT_SECTION = defaultSection;
 
   // Grupos colapsables (Ventas, etc.)
   sidebar.querySelectorAll('.mc-group').forEach((group) => {
