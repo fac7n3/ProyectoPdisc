@@ -771,7 +771,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-BAuF3lPn.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DIJJDckO.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-Bef7p2Kx.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
@@ -781,8 +781,8 @@
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-BBdPY8wr.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DKSvu9md.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-CkVRp1BZ.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -790,9 +790,17 @@
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
 
     <!-- Loading screen -->
-    <div id="loading-screen" class="auth-loading-screen">
-      <div class="auth-loading-spinner"></div>
-      <span class="auth-loading-text">Verificando sesión...</span>
+    <div id="loading-screen" class="auth-loading-screen" role="status" aria-live="polite">
+      <div class="auth-loading-spinner" aria-hidden="true">
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+      </div>
+      <span class="auth-loading-text">Cargando</span>
+      <span class="auth-loading-subtext">Esto puede tomar unos segundos…</span>
     </div>
 
     <!-- Contenido principal -->
@@ -824,9 +832,17 @@
              register-view y dashboard-view no tienen un estado inicial oculto
              y se ven las dos superpuestas (o el alta de comercio de más) hasta
              que resuelve esa consulta. -->
-        <div id="vender-state-loading" class="bl-loading-block">
-          <div class="bl-spinner" aria-hidden="true"></div>
-          <span>Cargando tu comercio…</span>
+        <div id="vender-state-loading" class="bl-loading-block" role="status" aria-live="polite">
+          <div class="bl-spinner" aria-hidden="true">
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+          </div>
+          <p class="bl-loading-block__title">Cargando</p>
+          <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
         </div>
 
         <!-- Vista de Registro (card centrada, sin sidebar) -->
