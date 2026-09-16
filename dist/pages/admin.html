@@ -11,17 +11,16 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script type="module" crossorigin src="/assets/admin-DTuezz6x.js"></script>
+    <script type="module" crossorigin src="/assets/admin-CxmQ-sRq.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CGQ9u1QN.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-Bef7p2Kx.js">
-    <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
-    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-mzq2aWBb.js">
+    <link rel="modulepreload" crossorigin href="/assets/datepicker-B0mUKZYe.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="stylesheet" crossorigin href="/assets/admin-Bd_xwrix.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-BBdPY8wr.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DTHj5RdC.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-DKSvu9md.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -66,9 +65,6 @@
               <button type="button" class="admin-nav__item" data-target="seller-requests">
                 <i class="fa-solid fa-store" aria-hidden="true"></i><span>Comercios</span>
               </button>
-              <button type="button" class="admin-nav__item" data-target="delivery-requests">
-                <i class="fa-solid fa-motorcycle" aria-hidden="true"></i><span>Repartidores</span>
-              </button>
               <button type="button" class="admin-nav__item" data-target="professionals">
                 <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i><span>Profesionales</span>
               </button>
@@ -97,9 +93,6 @@
               </button>
               <button type="button" class="admin-nav__item" data-target="products-mod">
                 <i class="fa-solid fa-box" aria-hidden="true"></i><span>Productos</span>
-              </button>
-              <button type="button" class="admin-nav__item" data-target="repartidores-mod">
-                <i class="fa-solid fa-id-badge" aria-hidden="true"></i><span>Repartidores</span>
               </button>
               <button type="button" class="admin-nav__item" data-target="reviews-mod">
                 <i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i><span>Reseñas</span>
@@ -190,34 +183,6 @@
                         </tr>
                       </thead>
                       <tbody id="requests-tbody"></tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
-
-              <!-- ===== Solicitudes de repartidores ===== -->
-              <section class="admin-section" data-section="delivery-requests">
-                <div class="admin-section__head">
-                  <div>
-                    <h2 class="admin-section__title">Solicitudes de repartidores</h2>
-                    <p class="admin-section__subtitle">Aprobá a quienes quieren repartir pedidos en la ciudad.</p>
-                  </div>
-                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-delivery"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-                </div>
-                <div class="admin-card">
-                  <div class="table-container">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Fecha</th>
-                          <th>Nombre</th>
-                          <th>Teléfono</th>
-                          <th>Vehículo</th>
-                          <th>Estado</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody id="delivery-requests-tbody"></tbody>
                     </table>
                   </div>
                 </div>
@@ -566,31 +531,6 @@
                 </div>
               </section>
 
-              <!-- ===== Moderación · Repartidores ===== -->
-              <section class="admin-section" data-section="repartidores-mod">
-                <div class="admin-section__head">
-                  <div>
-                    <h2 class="admin-section__title">Moderación · Repartidores</h2>
-                    <p class="admin-section__subtitle">Suspendé o reactivá repartidores activos en la plataforma.</p>
-                  </div>
-                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-repartidores-mod"><i class="fa-solid fa-rotate-right"></i> Refrescar</button>
-                </div>
-                <div class="admin-card">
-                  <div class="table-container">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Nombre</th>
-                          <th>Email</th>
-                          <th>Estado</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody id="repartidores-mod-tbody"></tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
 
               <!-- ===== Moderación · Reseñas reportadas ===== -->
               <section class="admin-section" data-section="reviews-mod">
