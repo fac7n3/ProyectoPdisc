@@ -3705,6 +3705,10 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   height: 100%;
   object-fit: contain;
   padding: 0.75rem; /* Margen de seguridad del logo dentro del squircle */
+  border-radius: 16px; /* Los logos genéricos (PNG con fondo transparente) ya
+    se ven redondeados porque el gráfico no llega a las esquinas -- una foto
+    real subida por el comercio (bucket store-logos) sí las llena, y sin esto
+    se le veían las cuatro puntas rectas adentro del squircle. */
 }
 
 /* ============================================================
