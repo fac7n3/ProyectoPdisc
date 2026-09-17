@@ -180,66 +180,6 @@
       .store-logo-picker__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       .store-logo-picker__error { color: var(--bl-danger, #ef4444); }
 
-      /* Mini panel del profesional ya publicado ("Mi panel de profesional"):
-         resumen de sus datos + fotos promocionales, que se muestran en su
-         tarjeta de contratar.html al desplegarla. */
-      .prof-panel-summary {
-        display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-        padding: 1.25rem; margin-bottom: 1.75rem;
-        background: var(--bl-surface-alt); border-radius: var(--bl-radius-md);
-        border: 1px solid var(--bl-border);
-      }
-      .prof-panel-summary__photo {
-        flex-shrink: 0; width: 3.5rem; height: 3.5rem; border-radius: 50%;
-        background: var(--bl-surface); border: 1px solid var(--bl-border);
-        display: flex; align-items: center; justify-content: center;
-        overflow: hidden; color: var(--bl-text-muted); font-size: 1.2rem;
-      }
-      .prof-panel-summary__photo img { width: 100%; height: 100%; object-fit: cover; }
-      .prof-panel-summary__info { flex: 1; min-width: 12rem; }
-      .prof-panel-summary__name { font-weight: 700; color: var(--bl-text); }
-      .prof-panel-summary__detail { color: var(--bl-text-secondary); font-size: 0.875rem; margin-top: 0.15rem; }
-      .prof-panel-summary__inactive { color: #b91c1c; font-weight: 600; margin-top: 0.35rem; }
-      .prof-panel-summary__pause-btn {
-        flex-shrink: 0; padding: 0.6rem 1.1rem; border-radius: var(--bl-radius-pill);
-        border: 1px solid var(--bl-border); background: var(--bl-surface);
-        color: var(--bl-text); font-weight: 600; font-size: 0.875rem; cursor: pointer;
-      }
-      .prof-panel-summary__pause-btn:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
-
-      .prof-edit-form { margin-bottom: 2rem; }
-
-      .prof-promos-grid {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-        gap: 0.75rem; margin-bottom: 1rem;
-      }
-      .prof-promo-item {
-        position: relative; aspect-ratio: 1; border-radius: var(--bl-radius-md);
-        overflow: hidden; border: 1px solid var(--bl-border); background: var(--bl-surface-alt);
-      }
-      .prof-promo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .prof-promo-item__remove {
-        position: absolute; top: 0.25rem; right: 0.25rem; width: 1.5rem; height: 1.5rem;
-        border-radius: 50%; border: none; background: rgba(0, 0, 0, 0.6); color: #fff;
-        cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
-      }
-      .prof-promo-item__remove:hover { background: rgba(0, 0, 0, 0.8); }
-
-      /* Botón de "Agregar foto" -- reemplaza al <input type="file"> nativo
-         (feo e inconsistente entre navegadores, mismo criterio que ya usa el
-         picker de fotos de producto/avatar): el input queda oculto y este
-         <label> lo dispara. */
-      .prof-promo-upload-btn {
-        display: inline-flex; align-items: center; gap: 0.5rem;
-        padding: 0.65rem 1.1rem; border-radius: var(--bl-radius-pill);
-        border: 1px dashed var(--bl-vendor-accent);
-        background: rgba(var(--bl-vendor-accent-rgb), 0.06);
-        color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.875rem;
-        cursor: pointer; transition: background 0.15s, border-color 0.15s;
-      }
-      .prof-promo-upload-btn:hover { background: rgba(var(--bl-vendor-accent-rgb), 0.12); }
-      .prof-promo-upload-btn.is-disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
-
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -719,9 +659,9 @@
       .pf-actions .form-btn { width: auto; padding: 0.75rem 2rem; font-size: 1rem; }
 
       /* Switch "mostrar esta red" -- reemplaza el checkbox nativo + texto
-         "Mostrar" de antes por un toggle, mismo componente para el comercio
-         (.social-row, fila completa) y el profesional (.prof-social-card,
-         grilla de tarjetas -- diseño distinto a propósito, misma mecánica). */
+         "Mostrar" de antes por un toggle. El panel del profesional usa el
+         mismo componente con otro diseño de tarjeta, pero desde que se mudó a
+         profesional.html lo define Assets/styles/profesional.css. */
       .social-toggle { position: relative; display: inline-flex; width: 2.5rem; height: 1.4rem; flex-shrink: 0; }
       .social-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
       .social-toggle__track { position: absolute; inset: 0; background: var(--bl-border); border-radius: 999px; transition: background 0.15s ease; pointer-events: none; }
@@ -740,17 +680,6 @@
       .social-row__icon { flex-shrink: 0; width: 1.5rem; text-align: center; color: var(--bl-vendor-accent); font-size: 1.05rem; }
       .social-row__label { flex-shrink: 0; width: 6rem; font-weight: 600; font-size: 0.85rem; color: var(--bl-text); }
       .social-row__input { flex: 1; min-width: 0; }
-
-      /* Profesional: grilla de tarjetas chicas -- ícono en chip circular
-         arriba, link abajo, switch en la esquina -- diseño propio para no
-         repetir la fila del comercio. */
-      .prof-social-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem; }
-      .prof-social-card { position: relative; padding: 1rem 1rem 0.9rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface-alt); }
-      .prof-social-card__head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; padding-right: 2.75rem; }
-      .prof-social-card__icon { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: rgba(var(--bl-vendor-accent-rgb), 0.12); color: var(--bl-vendor-accent); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
-      .prof-social-card__label { font-weight: 700; font-size: 0.85rem; color: var(--bl-text); }
-      .prof-social-card .social-toggle { position: absolute; top: 1rem; right: 1rem; }
-      .prof-social-card input[type="text"] { width: 100%; }
 
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
@@ -771,15 +700,18 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-B5exhImt.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BNGWpgBF.js">
-    <link rel="modulepreload" crossorigin href="/assets/dropdown-B_8UxF7s.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
-    <link rel="modulepreload" crossorigin href="/assets/datepicker-CdJgR0OV.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-ZLcW_Pg4.js">
-    <link rel="modulepreload" crossorigin href="/assets/validation-utils-DeNlwmsN.js">
+    <script type="module" crossorigin src="/assets/vender-lY_-y-Vp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Cp5fHgbX.js">
+    <link rel="modulepreload" crossorigin href="/assets/dropdown-DhRhwbSd.js">
+    <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CZ9zTcmj.js">
+    <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-B9i3qPeL.js">
+    <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
+    <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DjFEP-8E.css">
@@ -947,136 +879,6 @@
               <div id="professional-status-body" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); text-align: center;"></div>
             </div>
 
-            <!-- Mini panel de un profesional/técnico ya publicado: resumen +
-                 pausar/reactivar, form para editar especialidad/descripción/
-                 contacto, y fotos promocionales -- todo self-service, ya no
-                 hace falta escribir a Soporte para esto. Se muestran en su
-                 tarjeta de contratar.html al desplegarla. -->
-            <div id="professional-panel-view" style="display: none;">
-              <div class="vender-header">
-                <h2>Tu publicación en Contratar</h2>
-                <p>Editá tus datos y cargá fotos promocionales: se muestran en tu tarjeta al desplegarla, debajo de Llamar/WhatsApp.</p>
-              </div>
-
-              <div class="prof-panel-summary" id="professional-panel-summary"></div>
-
-              <form id="professional-edit-form" class="prof-edit-form">
-                <div class="form-group">
-                  <label class="form-label" for="prof-edit-specialty">Oficio o especialidad</label>
-                  <input type="text" id="prof-edit-specialty" class="form-input" placeholder="Ej: Plomero, Electricista, Clases de inglés" required />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="prof-edit-description">Contanos más sobre lo que hacés (opcional)</label>
-                  <textarea id="prof-edit-description" class="form-input" rows="4" placeholder="Experiencia, especialidades, zona en la que trabajás..."></textarea>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="prof-edit-phone">Teléfono</label>
-                  <input type="text" id="prof-edit-phone" class="form-input" placeholder="Código de área + Número" required />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="prof-edit-whatsapp">WhatsApp (si es distinto del teléfono)</label>
-                  <input type="text" id="prof-edit-whatsapp" class="form-input" placeholder="Código de país + Número, ej: 5493329123456" />
-                </div>
-
-                <!-- Redes sociales: mismo dato que un comercio (link + switch
-                     "mostrar" por red), pero en tarjetas en vez de filas -- ver
-                     .prof-social-grid, diseño propio para no repetir el de
-                     arriba. Se muestran como íconos en la tarjeta de
-                     contratar.html (contratar.js, buildCard). Dentro del
-                     mismo form que specialty/description/phone/whatsapp: un
-                     solo "Guardar cambios" para todo, igual que el perfil del
-                     comercio. -->
-                <div class="pf-card">
-                <h3 class="pf-card__title">Redes sociales</h3>
-                <p class="pf-card__hint">Se muestran como íconos en tu tarjeta de "Contratar". Dejá el link vacío para no mostrar esa red.</p>
-                <div class="prof-social-grid">
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-brands fa-instagram" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-instagram">Instagram</label>
-                    </div>
-                    <input type="text" id="prof-social-instagram" class="form-input" placeholder="https://instagram.com/tu-usuario" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-instagram-show" checked aria-label="Mostrar Instagram" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-brands fa-facebook" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-facebook">Facebook</label>
-                    </div>
-                    <input type="text" id="prof-social-facebook" class="form-input" placeholder="https://facebook.com/tu-usuario" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-facebook-show" checked aria-label="Mostrar Facebook" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-tiktok">TikTok</label>
-                    </div>
-                    <input type="text" id="prof-social-tiktok" class="form-input" placeholder="https://tiktok.com/@tu-usuario" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-tiktok-show" checked aria-label="Mostrar TikTok" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-x">X (Twitter)</label>
-                    </div>
-                    <input type="text" id="prof-social-x" class="form-input" placeholder="https://x.com/tu-usuario" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-x-show" checked aria-label="Mostrar X (Twitter)" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-brands fa-youtube" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-youtube">YouTube</label>
-                    </div>
-                    <input type="text" id="prof-social-youtube" class="form-input" placeholder="https://youtube.com/@tu-usuario" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-youtube-show" checked aria-label="Mostrar YouTube" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                  <div class="prof-social-card">
-                    <div class="prof-social-card__head">
-                      <span class="prof-social-card__icon"><i class="fa-solid fa-globe" aria-hidden="true"></i></span>
-                      <label class="prof-social-card__label" for="prof-social-website">Sitio web</label>
-                    </div>
-                    <input type="text" id="prof-social-website" class="form-input" placeholder="https://tu-sitio.com" />
-                    <label class="social-toggle">
-                      <input type="checkbox" id="prof-social-website-show" checked aria-label="Mostrar sitio web" />
-                      <span class="social-toggle__track" aria-hidden="true"></span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="pf-actions">
-                <button type="submit" class="form-btn">Guardar cambios</button>
-              </div>
-              </form>
-
-              <div class="form-group">
-                <label class="form-label">Fotos promocionales</label>
-                <small style="color: var(--bl-text-muted); display: block; margin-bottom: 0.5rem;">
-                  Hasta 6 fotos, 2 MB cada una.
-                </small>
-                <div class="prof-promos-grid" id="professional-promos-grid"></div>
-                <label for="professional-promo-input" class="prof-promo-upload-btn" id="professional-promo-upload-label">
-                  <i class="fa-solid fa-camera" aria-hidden="true"></i>
-                  Agregar foto
-                </label>
-                <input type="file" id="professional-promo-input" accept="image/*" hidden />
-              </div>
-            </div>
         </div>
 
         <!-- Vista del Panel: shell "Mi cuenta" (sidebar + contenido) -->

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="view-transition" content="same-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <title>Mi panel de profesional - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      /* El badge de modo vive en vender.html como CSS inline; acá se necesita
+         la misma regla porque esta página no comparte ese <style>. */
+      .oficios-mode-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.35rem 0.9rem; background: var(--bl-accent); color: #fff;
+        border-radius: var(--bl-radius-pill); font-size: 0.8rem;
+        font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
+      }
+      /* Sin esto el inline-flex de autor le gana al display:none del
+         user-agent para [hidden] -- mismo detalle que en vender.html. */
+      .oficios-mode-badge[hidden] { display: none; }
+      @media (max-width: 768px) {
+        .oficios-mode-badge { display: none; }
+      }
+      .prof-status-card {
+        max-width: 640px; margin: 2.5rem auto; padding: 2rem;
+        background: var(--bl-surface-alt); border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-lg); text-align: center;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/profesional-B3q9cEWn.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Cp5fHgbX.js">
+    <link rel="modulepreload" crossorigin href="/assets/dropdown-DhRhwbSd.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CZ9zTcmj.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-J7ziBnWk.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CjZXgdrR.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
+    <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-B9i3qPeL.js">
+    <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
+    <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
+    <link rel="stylesheet" crossorigin href="/assets/profesional-DnIJLPVm.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-DjFEP-8E.css">
+  </head>
+  <body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
+    <div id="loading-screen" class="auth-loading-screen" role="status" aria-live="polite">
+      <div class="auth-loading-spinner" aria-hidden="true">
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+      </div>
+      <span class="auth-loading-text">Cargando</span>
+      <span class="auth-loading-subtext">Esto puede tomar unos segundos…</span>
+    </div>
+
+    <div id="main-content">
+      <nav class="navbar">
+        <div class="navbar__top">
+          <a href="./home.html" class="navbar__logo">
+            <img src="/assets/logoazulpng-BmcneNO6.png" alt="Baradero Local" class="navbar__logo-img" />
+            <div class="navbar__logo-text">
+              <span class="navbar__logo-title">Baradero Local</span>
+              <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+            </div>
+          </a>
+          <span class="oficios-mode-badge" id="oficios-mode-badge" hidden><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> Modo Oficios</span>
+          <div class="navbar__actions">
+            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+            <div id="nav-notifications-wrap"></div>
+            <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+          </div>
+        </div>
+      </nav>
+
+      <main id="contenido-principal" tabindex="-1">
+        <!-- Se ve mientras se resuelve si esta cuenta está publicada en
+             Contratar, tiene una solicitud pendiente, o no es nada de las dos
+             (en ese caso se va al alta). Sin esto se vería el panel vacío
+             hasta que vuelve la consulta -- mismo problema que ya se corrigió
+             en vender.html con #vender-state-loading. -->
+        <div id="prof-state-loading" class="bl-loading-block" role="status" aria-live="polite">
+          <div class="bl-spinner" aria-hidden="true">
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+          </div>
+          <p class="bl-loading-block__title">Cargando tu panel</p>
+          <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
+        </div>
+
+        <!-- Solicitud todavía sin aprobar, o rechazada. -->
+        <div id="prof-status-view" class="prof-status-card" hidden>
+          <h1 id="prof-status-title">Tu solicitud</h1>
+          <p id="prof-status-body"></p>
+        </div>
+
+        <div id="prof-panel-view" class="mc-shell" hidden>
+          <div class="mc-backdrop" id="mc-backdrop" hidden></div>
+
+          <aside class="mc-sidebar" id="mc-sidebar">
+            <div class="mc-sidebar__header">
+              <div class="mc-sidebar__titles">
+                <span class="mc-sidebar__title">Mi oficio</span>
+                <span class="mc-store-name" id="of-sidebar-name">Tu publicación</span>
+              </div>
+              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- El href se completa en JS, cuando se conoce el id. -->
+            <a class="mc-navlink" href="./contratar.html" id="of-preview-link"><i class="fa-solid fa-eye mc-navicon"></i> Ver mi perfil público</a>
+
+            <button type="button" class="mc-navlink mc-navitem" data-section="resumen"><i class="fa-solid fa-house mc-navicon"></i> Resumen</button>
+
+            <div class="mc-group is-open">
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-screwdriver-wrench mc-navicon"></i> Mi publicación <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <div class="mc-group__panel">
+                <button type="button" class="mc-navitem" data-section="perfil">Mis datos</button>
+                <button type="button" class="mc-navitem" data-section="servicios">Servicios y precios</button>
+                <button type="button" class="mc-navitem" data-section="disponibilidad">Horarios y zona</button>
+                <button type="button" class="mc-navitem" data-section="galeria">Fotos de trabajos</button>
+              </div>
+            </div>
+
+            <div class="mc-group is-open">
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-users mc-navicon"></i> Mis clientes <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <div class="mc-group__panel">
+                <button type="button" class="mc-navitem" data-section="consultas">Consultas</button>
+                <button type="button" class="mc-navitem" data-section="resenas">Reseñas</button>
+                <button type="button" class="mc-navitem" data-section="metricas">Estadísticas</button>
+              </div>
+            </div>
+
+            <button type="button" class="mc-navlink mc-navitem" data-section="notificaciones"><i class="fa-regular fa-bell mc-navicon"></i> Notificaciones</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="soporte"><i class="fa-solid fa-headset mc-navicon"></i> Soporte</button>
+
+            <a class="mc-navlink" href="./perfil.html"><i class="fa-solid fa-user mc-navicon"></i> Mi perfil</a>
+
+            <button class="btn-outline" id="of-logout" style="width: 100%; margin-top: 1rem; border-color: #ef4444; color: #ef4444;">Volver al inicio</button>
+          </aside>
+
+          <div class="mc-content">
+            <h1 class="sr-only">Mi panel de profesional</h1>
+
+            <!-- === Resumen === -->
+            <section class="mc-section" data-section="resumen">
+              <div class="rs-greeting">
+                <h2 class="rs-greeting__title">¡Hola, <span id="of-greeting-name">vecino</span>!</h2>
+                <p class="rs-greeting__sub">Así viene tu publicación en Contratar.</p>
+              </div>
+              <div class="rs-dash" id="of-resumen-stats"></div>
+              <div class="rs-grid2" id="of-resumen-cards"></div>
+            </section>
+
+            <!-- === Mis datos === -->
+            <section class="mc-section" data-section="perfil" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Mis datos</h2>
+                  <p class="of-sub">Esto es lo que ve un vecino cuando te encuentra en Contratar.</p>
+                </div>
+                <div id="of-publish-toggle"></div>
+              </div>
+
+              <div class="of-preview" id="of-preview" hidden></div>
+
+              <form id="of-profile-form" class="pf-wrap">
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Tu foto</h3>
+                  <p class="pf-card__hint">Una foto tuya o tu logo. Hasta 2 MB.</p>
+                  <div class="prof-photo-picker">
+                    <div class="prof-photo-picker__preview" id="of-photo-preview"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
+                    <div class="prof-photo-picker__field">
+                      <div class="of-row__actions">
+                        <label class="of-btn of-btn--ghost of-btn--sm" for="of-photo-input"><i class="fa-solid fa-camera" aria-hidden="true"></i> Cambiar foto</label>
+                        <button type="button" class="of-btn of-btn--danger of-btn--sm" id="of-photo-remove" hidden>Quitar</button>
+                      </div>
+                      <input type="file" id="of-photo-input" accept="image/*" hidden />
+                      <small id="of-photo-msg" style="color: var(--bl-text-muted);"></small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Quién sos y qué hacés</h3>
+                  <p class="pf-card__hint">El nombre y el rubro con los que aparecés en el directorio.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="of-name">Tu nombre</label>
+                      <input type="text" id="of-name" class="form-input" maxlength="100" required />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="of-category-slot">Rubro</label>
+                      <div id="of-category-slot"></div>
+                    </div>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="of-specialty">Oficio o especialidad</label>
+                      <input type="text" id="of-specialty" class="form-input" placeholder="Ej: Plomero, Electricista, Clases de inglés" maxlength="100" required />
+                    </div>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="of-description">Contanos más sobre lo que hacés (opcional)</label>
+                      <textarea id="of-description" class="form-input" rows="4" placeholder="Experiencia, especialidades, cómo trabajás..."></textarea>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Cómo te contactan</h3>
+                  <p class="pf-card__hint">Los botones de Llamar y WhatsApp de tu tarjeta salen de acá.</p>
+                  <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="of-phone">Teléfono</label>
+                      <input type="text" id="of-phone" class="form-input" placeholder="Código de área + número" required />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="of-whatsapp">WhatsApp (si es distinto)</label>
+                      <input type="text" id="of-whatsapp" class="form-input" placeholder="Ej: 5493329123456" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pf-card">
+                  <h3 class="pf-card__title">Redes sociales</h3>
+                  <p class="pf-card__hint">Se muestran como íconos en tu tarjeta. Dejá el link vacío para no mostrar esa red.</p>
+                  <div class="prof-social-grid" id="of-social-grid"></div>
+                </div>
+
+                <div class="pf-actions">
+                  <button type="submit" class="form-btn">Guardar cambios</button>
+                </div>
+              </form>
+            </section>
+
+            <!-- === Servicios y precios === -->
+            <section class="mc-section" data-section="servicios" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Servicios y precios</h2>
+                  <p class="of-sub">Cargá lo que hacés con un precio de referencia. El vecino llega sabiendo cuánto sale, y a vos te ahorra la mitad de las consultas.</p>
+                </div>
+                <button type="button" class="of-btn" id="of-service-new"><i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar servicio</button>
+              </div>
+              <div id="of-service-form-slot"></div>
+              <div class="of-list" id="of-services-list"></div>
+            </section>
+
+            <!-- === Horarios y zona === -->
+            <section class="mc-section" data-section="disponibilidad" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Horarios y zona</h2>
+                  <p class="of-sub">Cuándo atendés y hasta dónde llegás. Tu tarjeta va a mostrar si estás abierto en este momento.</p>
+                </div>
+              </div>
+
+              <div class="pf-card">
+                <h3 class="pf-card__title">Urgencias</h3>
+                <p class="pf-card__hint">Si atendés emergencias a cualquier hora, tu tarjeta lo muestra siempre como disponible.</p>
+                <label class="pf-check">
+                  <span class="social-toggle">
+                    <input type="checkbox" id="of-24h" />
+                    <span class="social-toggle__track" aria-hidden="true"></span>
+                  </span>
+                  Atiendo urgencias las 24 horas
+                </label>
+              </div>
+
+              <div class="pf-card">
+                <h3 class="pf-card__title">Horarios de atención</h3>
+                <p class="pf-card__hint">Podés cargar dos franjas por día, por ejemplo de 9 a 13 y de 16 a 20.</p>
+                <div id="of-hours"></div>
+              </div>
+
+              <div class="pf-card">
+                <h3 class="pf-card__title">Zonas donde trabajás</h3>
+                <p class="pf-card__hint">Tocá las zonas a las que vas. Si no marcás ninguna, se entiende que vas a todo Baradero.</p>
+                <div class="of-chips" id="of-zones"></div>
+              </div>
+
+              <div class="pf-actions">
+                <button type="button" class="form-btn" id="of-availability-save">Guardar cambios</button>
+              </div>
+            </section>
+
+            <!-- === Fotos de trabajos === -->
+            <section class="mc-section" data-section="galeria" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Fotos de trabajos</h2>
+                  <p class="of-sub">Hasta 6 fotos, 2 MB cada una. Se ven en tu tarjeta cuando alguien la despliega; la primera es la que más se mira.</p>
+                </div>
+                <label class="of-btn" for="of-photo-upload" id="of-photo-upload-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Agregar foto</label>
+                <input type="file" id="of-photo-upload" accept="image/*" hidden />
+              </div>
+              <div class="of-gallery" id="of-gallery"></div>
+            </section>
+
+            <!-- === Consultas === -->
+            <section class="mc-section" data-section="consultas" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Consultas</h2>
+                  <p class="of-sub">Lo que te dejaron pidiendo presupuesto desde tu tarjeta.</p>
+                </div>
+              </div>
+              <div class="of-chips" id="of-inquiry-filters" style="margin-bottom: 1.25rem;"></div>
+              <div class="of-list" id="of-inquiries-list"></div>
+            </section>
+
+            <!-- === Reseñas === -->
+            <section class="mc-section" data-section="resenas" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Reseñas</h2>
+                  <p class="of-sub">Lo que opinan los vecinos que te contrataron. Podés responder cada una: la respuesta se ve debajo, en tu tarjeta.</p>
+                </div>
+              </div>
+              <div class="of-list" id="of-reviews-list"></div>
+            </section>
+
+            <!-- === Estadísticas === -->
+            <section class="mc-section" data-section="metricas" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Estadísticas</h2>
+                  <p class="of-sub">Cuánta gente vio tu publicación y cuántos te quisieron contactar. Son números orientativos de los últimos 30 días.</p>
+                </div>
+              </div>
+              <div id="of-metrics"></div>
+            </section>
+
+            <!-- === Notificaciones === -->
+            <section class="mc-section" data-section="notificaciones" hidden>
+              <div id="of-notifications"></div>
+            </section>
+
+            <!-- === Soporte === -->
+            <section class="mc-section" data-section="soporte" hidden>
+              <div id="of-support"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+
+  </body>
+</html>

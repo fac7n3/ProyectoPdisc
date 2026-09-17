@@ -95,7 +95,7 @@ export async function fetchReviewsSummary(targetType, targetId) {
 export async function fetchReviews(targetType, targetId) {
   const { data, error } = await supabase
     .from('reviews')
-    .select('id, rating, comment, created_at, client_id')
+    .select('id, rating, comment, created_at, client_id, owner_reply, owner_replied_at')
     .eq('target_type', targetType)
     .eq('target_id', targetId)
     .eq('is_hidden', false)
@@ -227,6 +227,25 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         commentP.style.cssText = 'margin: 0.35rem 0; color: var(--bl-text);';
         commentP.textContent = review.comment;
         row.appendChild(commentP);
+      }
+
+      // Respuesta pública de quien recibió la reseña (migración 94). La
+      // escribe desde su panel; acá es solo de lectura.
+      if (review.owner_reply) {
+        const reply = document.createElement('div');
+        reply.style.cssText = 'margin: 0.6rem 0 0.35rem; padding: 0.6rem 0.75rem; background: var(--bl-surface-alt); border-left: 3px solid var(--bl-primary); border-radius: 0 var(--bl-radius-sm) var(--bl-radius-sm) 0;';
+
+        const replyLabel = document.createElement('div');
+        replyLabel.style.cssText = 'font-size: 0.75rem; font-weight: 700; color: var(--bl-primary); margin-bottom: 0.15rem;';
+        replyLabel.textContent = 'Respuesta';
+        reply.appendChild(replyLabel);
+
+        const replyText = document.createElement('div');
+        replyText.style.cssText = 'font-size: 0.88rem; color: var(--bl-text); overflow-wrap: anywhere;';
+        replyText.textContent = review.owner_reply;
+        reply.appendChild(replyText);
+
+        row.appendChild(reply);
       }
 
       const meta = document.createElement('div');

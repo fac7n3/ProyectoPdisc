@@ -216,21 +216,25 @@ export function checkUrlErrors() {
  * acá abajo y el auto-redirect del home cuando entran directo a la página
  * (js/home.js).
  */
-export async function hasSellerPanel(user) {
-  if (!user) return false;
-  if (user.app_metadata?.role === "vendedor") return true;
-  const { data } = await supabase.from("professionals").select("id").eq("owner_id", user.id).maybeSingle();
-  return Boolean(data);
+export async function sellerPanelPage(user) {
+  if (!user) return null;
+  if (user.app_metadata?.role === "vendedor") return "vender.html";
+  // Sin .maybeSingle(): `professionals` no tiene unique por owner_id y una
+  // cuenta con dos filas tiraría error de coerción, dejando al profesional
+  // sin panel -- el mismo bug que ya apareció con las tiendas de seed.
+  const { data } = await supabase.from("professionals").select("id").eq("owner_id", user.id).limit(1);
+  return data?.length ? "profesional.html" : null;
 }
 
 // --- Destino post-login según el rol (A113-270) ---
-// El vendedor o el profesional ya publicado arrancan en su panel
-// (vender.html) en vez de home.html; el resto sigue yendo a home.html como
-// siempre. Solo se aplica cuando el caller no pidió explícitamente otro
-// destino (redirectTo).
+// El vendedor arranca en vender.html y el profesional ya publicado en
+// profesional.html (su panel propio desde 2026-09-17); el resto sigue yendo a
+// home.html como siempre. Solo se aplica cuando el caller no pidió
+// explícitamente otro destino (redirectTo).
 async function resolvePostLoginRedirect(user, explicitRedirectTo) {
   if (explicitRedirectTo) return explicitRedirectTo;
-  return (await hasSellerPanel(user)) ? "../pages/vender.html" : "../pages/home.html";
+  const panel = await sellerPanelPage(user);
+  return panel ? `../pages/${panel}` : "../pages/home.html";
 }
 
 // --- Listener Global de Sesión ---

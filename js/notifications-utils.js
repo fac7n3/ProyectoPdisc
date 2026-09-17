@@ -14,6 +14,7 @@ const TYPE_LABELS = {
   seller_request_rejected: 'Tu solicitud de vendedor fue rechazada',
   professional_request_approved: '¡Tu publicación como profesional fue aceptada! Ya figurás en Contratar',
   professional_request_rejected: 'Tu solicitud de profesional fue rechazada',
+  professional_inquiry_new: 'Alguien te pidió un presupuesto',
   stock_alert: 'Volvió el stock de un producto que te interesaba',
   support_ticket_status_change: 'Tu reclamo cambió de estado',
   support_ticket_message: 'Soporte respondió a tu reclamo',
@@ -58,6 +59,7 @@ const TYPE_TONE = {
   seller_request_rejected: 'danger',
   professional_request_rejected: 'danger',
   revocation_requested: 'danger',
+  professional_inquiry_new: 'accent',
   stock_alert: 'accent',
   favorite_price_drop: 'accent',
   mp_split_needs_review: 'accent',
@@ -176,8 +178,15 @@ function buildNotificationLink(n) {
       return { href: './vender.html', label: 'Ir a mi comercio' };
 
     case 'professional_request_approved':
+      // Recién aprobado: lo útil es su panel, para terminar de cargar
+      // servicios y horarios, no el directorio.
+      return { href: './profesional.html', label: 'Ir a mi panel' };
+
     case 'professional_request_rejected':
       return { href: './contratar.html', label: 'Ver Contratar' };
+
+    case 'professional_inquiry_new':
+      return { href: './profesional.html#consultas', label: 'Ver la consulta' };
 
     default:
       return null;

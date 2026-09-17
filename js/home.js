@@ -1,5 +1,5 @@
 // Interacciones de la página principal
-import { supabase, hasSellerPanel } from './auth-utils.js';
+import { supabase, sellerPanelPage } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
@@ -8,9 +8,9 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
 /**
- * Un vendedor o profesional ya publicado entra directo a su panel
- * (vender.html) en vez de ver el home con los productos -- a pedido del
- * usuario, 2026-09-16. La única puerta de vuelta al home es el logo del
+ * Un vendedor o profesional ya publicado entra directo a su panel (vender.html
+ * o profesional.html según el caso) en vez de ver el home con los productos --
+ * a pedido del usuario, 2026-09-16. La única puerta de vuelta al home es el logo del
  * navbar: si `document.referrer` es de este mismo sitio, asumimos que
  * llegaron navegando adentro de la app (típicamente ese click) y no los
  * mandamos de vuelta al panel. Si no hay referrer o es de otro origen (URL
@@ -23,11 +23,12 @@ async function redirectSellerOrProfessionalToPanel() {
   const user = session?.user;
   if (!user) return;
 
-  if (!(await hasSellerPanel(user))) return;
+  const panel = await sellerPanelPage(user);
+  if (!panel) return;
 
   const cameFromWithinSite = document.referrer && document.referrer.startsWith(window.location.origin);
   if (!cameFromWithinSite) {
-    window.location.replace('./vender.html');
+    window.location.replace(`./${panel}`);
     return;
   }
 

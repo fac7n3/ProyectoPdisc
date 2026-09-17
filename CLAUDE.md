@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-16. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-17. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,32 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-17** — **Panel de autogestión del profesional/técnico**, en
+  página propia `pages/profesional.html` (+ `js/profesional.js` y seis módulos
+  `js/profesional-*.js`, uno por sección). Reemplaza al mini panel que vivía
+  adentro de `vender.html`, que solo dejaba pausar la publicación y editar
+  oficio/descripción/teléfono/WhatsApp/redes -- **no la foto, el nombre ni el
+  rubro**: para corregir la foto había que escribirle a Soporte. Ahora tiene
+  Resumen, Mis datos (todo editable, con vista previa de cómo lo ve un vecino),
+  Servicios y precios, Horarios y zona, Fotos de trabajos (ordenables y con
+  pie), Consultas, Reseñas (con respuesta pública), Estadísticas,
+  Notificaciones y Soporte. Reusa el shell del panel del vendedor
+  (`js/vender-shell.js`, que ya era genérico) y sus clases, copiadas a
+  `Assets/styles/profesional.css`; el acento es el ámbar del modo Oficios en su
+  tono oscuro (`#b45309`, porque el de marca no llega a AA con texto blanco
+  encima). Migraciones **89-94**, todas aplicadas a producción. **Ojo con dos
+  cosas al tocar esto:** (1) `increment_professional_metric` lo llama un
+  visitante anónimo, así que valida adentro el tipo de evento y que el
+  profesional esté activo, y la tabla de métricas no tiene policy de escritura
+  para nadie; (2) el trigger de `reviews` corta en los dos sentidos porque
+  `reviews_update_own` ya dejaba al autor editar su fila -- sin ese chequeo
+  podía escribirse él mismo la "respuesta del profesional". De paso se arregló
+  que "Sumate al directorio" cayera en el formulario de comercio
+  (`vender.html?tipo=servicio`). **Lo que quedó sin probar:** el recorrido
+  logueado de punta a punta, porque el navegador del entorno no llega a
+  Supabase -- hay tests de la lógica con filo
+  (`professional-hours-utils`, `professional-service-utils`) y se verificó el
+  diseño, pero el flujo real conviene caminarlo una vez a mano.
 - **Resuelto 2026-09-16** — Auditoría del carrito y el checkout (`js/carrito.js`
   + `js/cart-utils.js`). Lo grave: **el total que mostraba el carrito no era el
   que cobraba `create_order`**. El RPC aplica el descuento del cupón **tienda
@@ -382,7 +408,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **Resuelto 2026-09-08** — "Contratar" (botón del home) dejó de ser un
   placeholder "muy pronto" y pasó a ser el **directorio de profesionales y
   técnicos** de Baradero, informativo por WhatsApp/teléfono (sin catálogo ni
-  pedidos). Alta desde `vender.html` (nuevo selector "Vender productos" /
+  pedidos). **Actualizado el 2026-09-17:** dejó de ser solo informativo -- la
+  tarjeta ahora muestra servicios con precio de referencia, horarios y zonas, y
+  el vecino puede pedir un presupuesto desde la plataforma (tabla
+  `professional_inquiries`). Sigue sin haber carrito ni pagos: el trabajo se
+  arregla entre las dos personas. Alta desde `vender.html` (nuevo selector "Vender productos" /
   "Ofrecer un servicio" arriba del formulario), con aprobación manual del
   admin — mismo flujo que un comercio, pero sin RPC `SECURITY DEFINER`
   porque publicarse no cambia el rol de la cuenta. Tablas nuevas
