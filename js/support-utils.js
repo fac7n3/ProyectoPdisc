@@ -386,18 +386,6 @@ async function fetchTicketMessages(ticketId) {
   return data || [];
 }
 
-async function sendTicketMessage(ticketId, message) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('Debés iniciar sesión.');
-
-  const { error } = await supabase.from('support_ticket_messages').insert({
-    ticket_id: ticketId,
-    sender_id: session.user.id,
-    message,
-  });
-  if (error) throw error;
-}
-
 /**
  * `.select()` al final para saber si de verdad cambió algo: cuando la RLS
  * rechaza el update (un ticket que ya no es cancelable, o de otra persona)
@@ -796,42 +784,6 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
     threadEl.appendChild(closed);
     return;
   }
-
-  const replyForm = document.createElement('div');
-  replyForm.className = 'tkt-reply';
-
-  const replyInput = document.createElement('textarea');
-  replyInput.placeholder = 'Escribí una respuesta...';
-  // Sin <label> propio (el hilo es una conversación, no un formulario con
-  // rótulos): el placeholder no cuenta como nombre accesible.
-  replyInput.setAttribute('aria-label', 'Tu respuesta a este reclamo');
-  replyInput.maxLength = 2000;
-  replyInput.className = 'tkt-reply__input';
-  replyForm.appendChild(replyInput);
-
-  const sendBtn = document.createElement('button');
-  sendBtn.type = 'button';
-  sendBtn.className = 'tkt-reply__send';
-  sendBtn.textContent = 'Enviar';
-  replyForm.appendChild(sendBtn);
-
-  sendBtn.addEventListener('click', async () => {
-    const msg = replyInput.value.trim();
-    if (!msg) return;
-    sendBtn.disabled = true;
-    sendBtn.textContent = 'Enviando...';
-    try {
-      await sendTicketMessage(ticket.id, msg);
-      threadEl.dataset.loaded = '';
-      await renderTicketThread(threadEl, ticket, myId, container);
-    } catch (err) {
-      showToast(err.message || 'No se pudo enviar.', 'error');
-      sendBtn.disabled = false;
-      sendBtn.textContent = 'Enviar';
-    }
-  });
-
-  threadEl.appendChild(replyForm);
 
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
