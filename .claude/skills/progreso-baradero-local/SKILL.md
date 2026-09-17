@@ -5,6 +5,45 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## El selector de tipo de cuenta del registro (2026-09-17)
+
+`register.html` mostraba "Tipo de Cuenta: Cliente / Vendedor" desde la migración
+23, pero era **decorativo**: los dos radios terminaban en `home.html`. Quien se
+registraba con la intención declarada de vender no recibía ninguna señal de que
+esa elección hubiera servido para algo, y tenía que descubrir por su cuenta el
+botón "Vender" del home.
+
+**Lo que NO se cambió, a propósito:** el rol. `handle_new_user()` fuerza
+`role='cliente'` para toda cuenta nueva porque dejar que el cliente eligiera su
+rol en el signup era una escalada de privilegios. Se mantiene la aprobación
+manual del admin. Lo único que cambia es **dónde queda parada la persona**
+después de registrarse.
+
+**El detalle que es fácil pasar por alto:** el registro tiene **tres** salidas
+distintas, y había que tocar las tres, no solo la obvia:
+
+1. `data.session` presente (el proyecto no exige confirmar el correo) →
+   `window.location.replace`.
+2. Sin sesión, hace falta confirmar el correo → el destino lo decide el
+   `emailRedirectTo` que viaja en el `signUp`, no el código de la página.
+3. Google OAuth → el `redirectTo` del `signInWithOAuth`.
+
+Las tres salen ahora de `paginaPostRegistro()`, que lee el radio marcado. El
+aviso de "revisá tu correo" además aclara que al entrar va a caer en el
+formulario de su negocio.
+
+De paso, la pantalla: "Recomendado para nuevos usuarios!" era un consejo raro
+cuando la elección no hacía nada, y pasó a describir qué hace cada opción; y se
+corrigieron los dos tuteos que quedaban ("Registra tu negocio", "¿Ya tienes una
+cuenta? Inicia sesión aquí"), los únicos de una pantalla en un sitio que vosea
+en todos lados.
+
+**Verificado en el navegador** que el `querySelector` del radio devuelve
+`cliente` por defecto, `vendedor` al elegir esa tarjeta, y vuelve a `cliente`
+al deseleccionar. El registro real de punta a punta no se pudo caminar: el
+navegador del entorno no llega a Supabase.
+
+
 ## Panel de autogestión del profesional/técnico (2026-09-17) — migraciones 89-94
 
 Convierte "Contratar" de un directorio que el profesional casi no podía tocar en algo que

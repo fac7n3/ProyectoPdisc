@@ -578,7 +578,22 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **F11-04** — Dominio propio: requiere que el usuario compre un dominio (decisión de costo). Hoy corre en `proyectopdisc.vercel.app`. Pasos para cuando se compre uno, en `docs/DEPLOY.md`.
 - **F11-06** — Cargar comercios reales: las 14 tiendas son datos de seed. El conteo de productos es incierto sin acceso a la DB real: los archivos de seed (`db/schema/04_seed_mock_data.sql` + `06_seed_10_stores_and_products.sql`) suman 56, pero la última auditoría contra la base real (2026-07-08, ver skill `progreso-baradero-local`) había medido 64 — probablemente se cargaron productos sueltos a mano después del seed. No se pudo re-verificar en la sesión 2026-08-03 (sin credenciales de Supabase). Falta que vendedores reales se registren y sean aprobados (el flujo ya funciona).
 - **Resuelto 2026-08-28** — **`orders.client_id`/`store_id` eran `NOT NULL` pese a estar declaradas `ON DELETE SET NULL`**: la cascada intentaba escribir NULL, la restricción lo rechazaba y el DELETE del padre fallaba entero. O sea que **no se podía borrar una cuenta con ningún pedido, ni una tienda con ningún pedido**. Apareció al probar `delete-account` con una cuenta de descarte (daba 500). Migración `62_orders_nullable_on_delete.sql`. **Gotcha para el futuro:** la consulta que caza esta clase de bug es buscar FK con `confdeltype='n'` cuya columna tenga `attnotnull` — al 2026-08-28 da 0 filas.
-- **Radios "Cliente / Vendedor" del registro no hacen nada** (visible desde el arreglo del flujo de registro, 2026-08-15, pero venía de la migración 23): `register.html` muestra el selector de tipo de cuenta, pero `handle_new_user()` fuerza `role='cliente'` para todo usuario nuevo a propósito (era una escalada de privilegios). Elegir "Vendedor" ahí no cambia nada — hay que pedirlo después por el flujo de aprobación. Decidir si se saca el selector o se convierte en un "quiero vender" que abra ese flujo.
+- **Resuelto 2026-09-17** — los radios "Cliente / Vendedor" del registro
+  **ya hacen algo**. Venían de la migración 23 y eran decorativos: los dos
+  terminaban en `home.html`, así que quien marcaba "Vendedor" no notaba
+  ninguna diferencia. Ahora quien elige "Vendedor" aterriza en `vender.html`
+  (el alta de comercio), que es el flujo real para pedir el rol. **No cambia
+  nada de seguridad:** `handle_new_user()` sigue forzando `role='cliente'`
+  para toda cuenta nueva a propósito -- dejar que el cliente eligiera su rol
+  era una escalada de privilegios --, lo único que cambia es dónde queda
+  parada la persona. El destino se resuelve en `paginaPostRegistro()`
+  (`js/register.js`) y se aplica en los **tres** caminos de salida del
+  registro, que es lo fácil de pasar por alto: la sesión inmediata
+  (`window.location.replace`), el `emailRedirectTo` del link de confirmación
+  por correo, y el `redirectTo` del OAuth de Google. De paso, la pantalla:
+  "Recomendado para nuevos usuarios!" pasó a describir qué hace cada opción,
+  y se corrigieron los dos tuteos que quedaban ("Registra tu negocio",
+  "¿Ya tienes una cuenta? Inicia sesión aquí") -- el resto del sitio vosea.
 - **F12-18** — Facturación/AFIP: fuera de alcance de código desde el principio (ver `docs/ROADMAP.md` sección 17.1).
 - **F10-02** — Tests E2E con Playwright: diferido a propósito, opcional en el roadmap.
 - **Backlog mencionado por el usuario (2026-07-10), sin abordar aún**: pulido de responsive en detalles sin especificar; apps nativas (App Store/Google Play) recomendadas pero no iniciadas.
