@@ -5,7 +5,7 @@ import { getPref, setPref } from "./settings-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
-import { initNotificationsBell, initAccountMenu, buildSectionBackButton } from "./nav-utils.js";
+import { initNotificationsBell, initAccountMenu } from "./nav-utils.js";
 import { PROFILE_FIELDS } from "./profile-fields.js";
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from "./phone-countries.js";
 import { removeStoredObjects, formatFileSize } from "./storage-utils.js";
@@ -113,15 +113,6 @@ function renderQuickProfile(user) {
   const quickRole = user.app_metadata?.role || "cliente";
 
   if (mainContent) mainContent.style.display = "block";
-
-  // A113-311: botón "Volver" arriba del encabezado -- history.back() con
-  // fallback a home.html, en vez de depender del link fijo de la navbar.
-  // renderQuickProfile corre una sola vez por carga de página (guardPage.onReady).
-  if (mainContent) {
-    const backBtn = buildSectionBackButton('Volver a principal');
-    backBtn.id = 'profile-back-btn';
-    mainContent.insertBefore(backBtn, mainContent.firstChild);
-  }
 
   if (sidebarName) { sidebarName.textContent = quickName || "-"; removeSkeleton(sidebarName); }
   if (sidebarEmail) { sidebarEmail.textContent = user.email || "sin email"; removeSkeleton(sidebarEmail); }
