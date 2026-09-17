@@ -297,27 +297,6 @@
               </button>
             </div>
 
-            <!-- Filtro por fecha en que se agregó a favoritos: presets de período
-                 + rango personalizado. Elegir un preset carga los dos <input
-                 type="date">; tocar los inputs a mano pasa el select a "Personalizado". -->
-            <div class="fav-date-filter">
-              <label class="sr-only" for="fav-period-select">Filtrar por período</label>
-              <select id="fav-period-select" class="fav-period-select">
-                <option value="todas">Cualquier fecha</option>
-                <option value="hoy">Hoy</option>
-                <option value="7dias">Últimos 7 días</option>
-                <option value="30dias">Últimos 30 días</option>
-                <option value="3meses">Últimos 3 meses</option>
-                <option value="anio">Este año</option>
-                <option value="personalizado">Personalizado</option>
-              </select>
-              <label class="sr-only" for="fav-date-from">Desde</label>
-              <input type="date" id="fav-date-from" class="fav-date-input" />
-              <span class="fav-date-filter__sep">–</span>
-              <label class="sr-only" for="fav-date-to">Hasta</label>
-              <input type="date" id="fav-date-to" class="fav-date-input" />
-            </div>
-
             <!-- Filtro por categoría. Solo aplica a productos; lo arma el JS con
                  las categorías que el usuario realmente tiene en favoritos. -->
             <div class="fav-chips" id="fav-categories" role="group" aria-label="Filtrar por categoría"></div>
