@@ -4140,44 +4140,6 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   margin: 0 0 0.5rem;
 }
 
-.tkt-reply {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.tkt-reply__input {
-  flex: 1;
-  padding: 0.5rem 0.65rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-sm);
-  min-height: 60px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  resize: vertical;
-  color: var(--bl-text);
-  background: var(--bl-surface);
-}
-.tkt-reply__input:focus {
-  outline: 2px solid var(--bl-primary);
-  outline-offset: -1px;
-  border-color: var(--bl-primary);
-}
-
-.tkt-reply__send {
-  align-self: flex-end;
-  padding: 0.5rem 1rem;
-  background: var(--bl-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--bl-radius-md);
-  font-weight: 600;
-  cursor: pointer;
-}
-.tkt-reply__send:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 /* ===== Tarjeta del formulario de reclamo nuevo ===== */
 .tkt-card {
   max-width: var(--tkt-col);
@@ -4547,13 +4509,6 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   .tkt-submit {
     width: 100%;
     justify-content: center;
-  }
-  /* El campo de respuesta y su botón no entran uno al lado del otro. */
-  .tkt-reply {
-    flex-direction: column;
-  }
-  .tkt-reply__send {
-    align-self: stretch;
   }
   .tkt-chip__name {
     max-width: 8rem;
