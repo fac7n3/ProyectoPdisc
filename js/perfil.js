@@ -75,7 +75,9 @@ const sectionBack = document.getElementById("section-back");
 let currentUserId = null;
 
 // --- Navegación del hub: la grilla y la sección abierta se turnan ---
-function openSection(targetId) {
+// scrollToId (ej. desde Ajustes -> "Ver" de Contraseña) lleva directo a esa
+// sub-sección de adentro de la pestaña en vez de al tope.
+function openSection(targetId, scrollToId) {
   const targetPane = document.getElementById(targetId);
   if (!targetPane) return;
 
@@ -84,7 +86,13 @@ function openSection(targetId) {
 
   if (accountHub) accountHub.style.display = "none";
   if (sectionsWrap) sectionsWrap.style.display = "block";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const scrollTarget = scrollToId ? document.getElementById(scrollToId) : null;
+  if (scrollTarget) {
+    scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function closeSection() {
@@ -94,7 +102,7 @@ function closeSection() {
 }
 
 sectionLinks.forEach((el) => {
-  el.addEventListener("click", () => openSection(el.dataset.target));
+  el.addEventListener("click", () => openSection(el.dataset.target, el.dataset.scrollTo));
 });
 
 if (sectionBack) sectionBack.addEventListener("click", closeSection);

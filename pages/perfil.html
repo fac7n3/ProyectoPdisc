@@ -184,7 +184,7 @@
           </section>
 
           <!-- ---------- Seguridad ---------- -->
-          <section class="datos-group">
+          <section class="datos-group" id="datos-seguridad">
             <h3 class="datos-group__title">Seguridad</h3>
             <div class="datos-panel">
               <div class="datos-row datos-row--static">
@@ -447,9 +447,10 @@
                     <span class="datos-row__label">Contraseña y forma de ingreso</span>
                     <span class="datos-row__hint">Se manejan junto al resto de tus datos, en "Información de tu perfil".</span>
                   </div>
-                  <!-- data-target: mismo mecanismo que las tarjetas del hub, no
-                       hace falta un handler propio (ver perfil.js). -->
-                  <button type="button" class="datos-btn" data-target="tab-mis-datos">Ver</button>
+                  <!-- data-target: mismo mecanismo que las tarjetas del hub (ver
+                       perfil.js), + data-scroll-to para caer directo en la sección
+                       "Seguridad" de "Información de tu perfil" en vez del tope. -->
+                  <button type="button" class="datos-btn" data-target="tab-mis-datos" data-scroll-to="datos-seguridad">Ver</button>
                 </div>
                 <div class="datos-row datos-row--static">
                   <div class="datos-row__main">
