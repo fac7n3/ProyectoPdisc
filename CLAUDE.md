@@ -542,6 +542,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   tomada), toggle de "aceptar contacto" del vendedor (296), multi-rubro en
   el alta de vendedor (305, P2-10), pausar/reactivar producto (309),
   cancelar reclamo + admin responde (295).
+- **Resuelto 2026-09-17** — se sacó el botón **"Usar mi ubicación"** de Mi perfil → Direcciones
+  (Direcciones de envío), a pedido del usuario. Queda solo "Agregar dirección" + el autocompletado
+  manual. Se borró el botón (`pages/perfil.html`) y su handler de geolocalización/reverse geocoding
+  contra Nominatim (`js/perfil.js`) — `pickAddressSuggestion()` sigue viva porque también la usa el
+  autocompletado al tipear. Había sido agregado el 2026-09-03 (ver historial abajo, entrada superada
+  por esta).
 - **Resuelto 2026-09-03** — mergeado `claude/location-button-feature-9511de`: botón **"Usar mi
   ubicación"** en Mi perfil → Direcciones (geolocalización del navegador + reverse geocoding contra
   Nominatim). **Gotcha del merge:** la rama llamaba a `addressSuggestionLabel()`, la función que el
