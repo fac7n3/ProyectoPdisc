@@ -208,19 +208,78 @@ export function checkUrlErrors() {
 }
 
 /**
- * Vendedor (role='vendedor') o profesional ya publicado en "Contratar" --
- * publicarse como profesional no cambia el rol de la cuenta (ver el
- * comentario de approve_seller_request en 05_admin_seller.sql), así que ahí
- * hay que consultar la tabla `professionals` en vez de mirar el JWT. Ambos
- * gestionan su presencia desde vender.html. Lo usan el redirect post-login de
- * acá abajo y el auto-redirect del home cuando entran directo a la página
- * (js/home.js).
+ * Qué paneles propios tiene una cuenta, para el botón "Panel" del home y para
+ * los redirects de más abajo. Devuelve `{ isAdmin, seller }`, donde `seller`
+ * es `'vendedor'`, `'profesional'` o `null`. No son excluyentes: un admin
+ * puede además tener su propio comercio o estar publicado en "Contratar", y
+ * ahí tiene dos paneles distintos (vender.html y admin.html).
+ *
+ * Por qué hacen falta consultas y no alcanza el JWT:
+ *  - publicarse como profesional en "Contratar" NO cambia el rol de la cuenta
+ *    (sigue 'cliente' -- ver el comentario de approve_seller_request en
+ *    05_admin_seller.sql), así que se mira la tabla `professionals`;
+ *  - una empleada de un comercio (`store_staff`) tampoco tiene rol propio y
+ *    sin embargo entra al mismo panel que su dueño (ver checkSellerState en
+ *    js/vender.js);
+ *  - un admin que además tiene comercio no se distingue por el rol tampoco
+ *    (el JWT guarda uno solo), así que se mira `stores.owner_id`.
+ *
+ * Las tres consultas van en paralelo y solo para quien ya tiene sesión; con
+ * rol 'vendedor' en el JWT ni siquiera hacen falta.
+ *
+ * @param {import("@supabase/supabase-js").User|null} user
+ * @returns {Promise<{ isAdmin: boolean, seller: 'vendedor'|'profesional'|null }>}
+ */
+export async function getPanelAccess(user) {
+  if (!user) return { isAdmin: false, seller: null };
+
+  const role = user.app_metadata?.role;
+  // El moderador entra al mismo admin.html que el admin (ver requireRole en
+  // js/admin.js), así que cuenta como "tiene panel de administración".
+  const isAdmin = role === "admin" || role === "moderador";
+
+  if (role === "vendedor") return { isAdmin: false, seller: "vendedor" };
+
+  const [storeRes, staffRes, profRes] = await Promise.all([
+    supabase.from("stores").select("id").eq("owner_id", user.id).limit(1),
+    supabase.from("store_staff").select("store_id").eq("user_id", user.id).limit(1),
+    supabase.from("professionals").select("id").eq("owner_id", user.id).maybeSingle(),
+  ]);
+
+  let seller = null;
+  if (storeRes.data?.length || staffRes.data?.length) seller = "vendedor";
+  else if (profRes.data) seller = "profesional";
+
+  return { isAdmin, seller };
+}
+
+/**
+ * ¿Esta cuenta arranca en su panel (vender.html) en vez del home? Sí para
+ * vendedor/empleada/profesional publicado. NO para quien además es admin:
+ * ahí hay dos paneles posibles y elegir uno por su cuenta sería adivinar --
+ * ese caso se queda en el home, donde el botón "Panel" le deja elegir
+ * (js/home.js). Lo usan el redirect post-login de acá abajo y el auto-redirect
+ * del home.
  */
 export async function hasSellerPanel(user) {
-  if (!user) return false;
-  if (user.app_metadata?.role === "vendedor") return true;
-  const { data } = await supabase.from("professionals").select("id").eq("owner_id", user.id).maybeSingle();
-  return Boolean(data);
+  const { isAdmin, seller } = await getPanelAccess(user);
+  return !isAdmin && seller !== null;
+}
+
+// --- "Quiero ver el inicio" (logo del navbar) ---
+// El home manda al vendedor/profesional directo a su panel apenas entra
+// (js/home.js). La puerta de vuelta al home es el logo de arriba a la
+// izquierda, así que marcamos ese click: sin esta marca el home solo podría
+// adivinar la intención por `document.referrer`, que no siempre viaja
+// (páginas estáticas, políticas de referrer del navegador, algunos favoritos).
+// Se guarda por pestaña (sessionStorage) y NO se limpia al leerlo: una vez que
+// la persona pidió ver el inicio, recargar o volver con el botón de atrás no
+// tiene por qué rebotarla de nuevo al panel.
+export const HOME_INTENT_KEY = "bl_home_intent";
+
+function markHomeIntent(e) {
+  if (!e.target.closest?.(".navbar__logo")) return;
+  try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
 }
 
 // --- Destino post-login según el rol (A113-270) ---
@@ -489,6 +548,9 @@ export async function updateNavbarProfile() {
 
 // Ejecutar automáticamente al cargar el script en cualquier página
 if (typeof window !== "undefined") {
+  // Click en el logo del navbar = "llevame al inicio" (ver markHomeIntent).
+  document.addEventListener("click", markHomeIntent, true);
+
   // Escuchar cuando el DOM esté listo
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", updateNavbarProfile);

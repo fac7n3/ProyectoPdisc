@@ -3098,3 +3098,98 @@ importan de `cart-totals.js` (`DEFAULT_*`), para no tener el mismo número escri
 harness de Playwright que monta `pages/carrito.html` con un stub de Supabase (dos comercios, un
 cupón del 20% con `store_id` de uno solo): contra `origin/main` el resumen dice $16.000, con el
 arreglo dice $18.000, que es lo que cobra el RPC. `dist/` reconstruido.
+
+## 2026-09-17 — Botón "Panel" del home (con menú cuando hay dos) + a quién se auto-redirige
+
+Continuación de lo que se había hecho el 2026-09-16 (`e569ccc`, "Home:
+vendedor/profesional ya registrado entra directo a su panel"). Pedido del usuario, en tres
+partes: (1) que quien ya está registrado como vendedor/profesional entre directo a su panel,
+(2) que el logo de arriba a la izquierda sea la vuelta al inicio, y (3) que la palabra
+"Vender" de la fila de accesos diga **"Panel"** para vendedores, profesionales **y
+administradores**, con un menú de dos opciones cuando la misma cuenta es las dos cosas.
+
+### Lo que ya estaba y lo que faltaba
+
+(1) ya estaba resuelto. (2) estaba resuelto **por inferencia**: `home.js` miraba
+`document.referrer` y, si era de este mismo origen, asumía que el click fue intencional. Anda,
+pero el referrer no siempre viaja (páginas estáticas sin JS, políticas de referrer del
+navegador, algunos favoritos). (3) existía a medias: el texto pasaba a "Panel" solo para
+vendedor/profesional, solo en la rama "vinieron por el logo", y no contemplaba admin.
+
+### `getPanelAccess()` — una sola función que responde "¿qué paneles tenés?"
+
+`hasSellerPanel()` devolvía un booleano y solo miraba dos cosas (rol `vendedor` en el JWT +
+tabla `professionals`). No alcanzaba para el caso nuevo, que necesita saber **cuál** panel y si
+además hay uno de admin. Se reemplazó por `getPanelAccess(user)` →
+`{ isAdmin, seller: 'vendedor'|'profesional'|null }` (`js/auth-utils.js`).
+
+Por qué hacen falta consultas y no alcanza el JWT — **el rol guarda un valor solo**:
+- publicarse en "Contratar" no cambia el rol (sigue `cliente`) → tabla `professionals`;
+- una **empleada** de un comercio (`store_staff`) tampoco tiene rol propio y entra al mismo
+  panel que su dueño (ver `checkSellerState` en `js/vender.js`) → tabla `store_staff`;
+- un **admin que además tiene comercio** no se distingue por el rol → `stores.owner_id`.
+
+Las tres consultas van en paralelo (`Promise.all`), solo con sesión, y se saltean del todo si el
+JWT ya dice `vendedor`. `hasSellerPanel()` quedó como envoltorio:
+`!isAdmin && seller !== null`.
+
+**Decisión: a quien tiene panel de admin NO se lo auto-redirige.** Tiene dos destinos posibles y
+elegir uno sería adivinar; se queda en el home y elige desde el botón. De paso esto esquiva la
+trampa de los datos de seed: la cuenta admin `bianberayra@gmail.com` figura como `owner_id` de
+las 14 tiendas de prueba (ver la nota de las 17 tiendas en CLAUDE.md), así que con el criterio
+contrario habría entrado siempre al panel de vendedor sin haberlo pedido.
+
+Efecto lateral buscado: la **empleada** de un comercio ahora sí entra directo a su panel, y el
+redirect post-login (`resolvePostLoginRedirect`) la reconoce igual que al vendedor.
+
+### El logo marca la intención, no se adivina
+
+`markHomeIntent()` (`js/auth-utils.js`, listener delegado en captura, registrado en el bloque
+`if (typeof window !== "undefined")` que corre en cualquier página que importe el módulo —
+prácticamente todo el sitio) guarda `bl_home_intent` en `sessionStorage` cuando el click cae
+adentro de `.navbar__logo`. `cameToHomeOnPurpose()` en `home.js` acepta esa marca **o** el
+referrer del mismo origen (se mantiene: cubre cualquier link interno al home, y las páginas
+estáticas sin JS —`info.html`, `terminos.html`, `privacidad.html`— donde el listener no corre).
+
+**No se limpia al leerla**, a propósito: una vez que la persona pidió ver el inicio, recargar o
+volver con el botón de atrás no tiene por qué rebotarla al panel otra vez. Es por pestaña
+(`sessionStorage`), así que una pestaña nueva vuelve a arrancar en el panel.
+
+De paso, la comparación de origen pasó de `referrer.startsWith(location.origin)` a
+`new URL(referrer).origin === location.origin` (lo anterior daba `true` para un origen que
+apenas empieza igual, tipo `...vercel.app.otrositio.com`).
+
+### El botón
+
+`renderPanelAction()` en `js/home.js`. Con **un** panel el `<a>` sigue siendo un `<a>`: cambia
+el texto a "Panel" y el `href` a `vender.html` o `admin.html`. Con **dos**, el `<a>` se
+reemplaza por un `<div class="home-action-menu">` con un `<button class="home-action
+home-action--menu">` y un menú (`.home-panel-menu`) de dos ítems, etiquetados según esa cuenta:
+"Panel de vendedor" **o** "Panel de profesional/técnico" (nunca los dos, que es lo que pidió el
+usuario), más "Panel de administrador" — o "Panel de moderación" si el rol es `moderador`, que
+entra al mismo `admin.html` (ver `requireRole` en `js/admin.js`). Los textos son los mismos que
+usa `setRolePanelLink()` en `js/perfil.js`.
+
+**Gotcha del CSS:** `.home-action` es `flex: 1` como hijo directo de
+`.category-bar__inner--home-actions`. Al envolverlo en un div para poder posicionar el menú,
+el `flex: 1` tiene que pasar al **wrapper** — si no, el botón se encoge al ancho del texto y los
+otros dos accesos se comen la fila. El menú no se recorta porque `.category-bar` ya es
+`position: relative; z-index: 40` con overflow visible (lo dejó así el mega-menú de categorías).
+
+### Verificación
+
+19 checks en Chromium contra el build real (`vite build` a un outDir aparte con env de mentira,
+servidor estático, sesión sembrada en `localStorage` con un JWT armado a mano y las consultas
+de PostgREST interceptadas con `page.route`). Cubren: cliente común (no se toca nada),
+vendedor sin referrer → `vender.html`, vendedor con intención → se queda y ve "Panel",
+profesional y empleada → `vender.html`, admin solo → "Panel" a `admin.html`, admin+vendedor y
+admin+profesional → menú con las dos etiquetas correctas, y que el menú abra/cierre con click,
+Escape y click afuera. Más una captura a 390px para confirmar que el menú entra en la pantalla.
+Harness en el scratchpad de la sesión (no versionado). `npm test` en verde, `dist/` reconstruido.
+
+**Gotcha del harness, por si se reusa:** Playwright resuelve las rutas de `page.route`/
+`context.route` **de la última registrada a la primera**, así que el catch-all va primero y las
+específicas después — al revés, el catch-all se come todo y las consultas mockeadas vuelven
+vacías (pasó, y hacía fallar justo los casos de profesional/empleada). Y el Chromium
+preinstalado del entorno remoto no es el que espera el `playwright` recién instalado: hay que
+pasarle `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`.

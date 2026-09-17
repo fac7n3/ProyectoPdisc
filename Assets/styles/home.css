@@ -835,6 +835,83 @@ ul, ol {
   background: var(--bl-primary-deeper);
 }
 
+/* ── Botón "Panel" con dos destinos ──
+   Solo aparece cuando la misma cuenta tiene panel de vendedor/profesional Y
+   de administración (js/home.js): ahí el botón deja de ser un link y abre
+   este menú para elegir. El wrapper toma el lugar del <a> en la fila, así que
+   hereda su `flex: 1` -- sin esto el botón se encoge al ancho del texto y los
+   otros dos accesos se comen la fila. */
+.home-action-menu {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.home-action--menu {
+  gap: 0.4rem;
+}
+
+.home-action--menu i {
+  font-size: 0.6875rem;
+  transition: transform 0.15s;
+}
+
+.home-action--menu[aria-expanded="true"] {
+  background: var(--bl-primary-dark);
+  color: #fff;
+}
+
+.home-action--menu[aria-expanded="true"] i {
+  transform: rotate(180deg);
+}
+
+.home-panel-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: max(100%, 230px);
+  max-width: calc(100vw - 2rem);
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  box-shadow: var(--bl-shadow-lg);
+  padding: 0.35rem;
+  z-index: 210;
+  animation: cat-mega-in 0.15s ease;
+}
+
+.home-panel-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--bl-radius-md);
+  color: var(--bl-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-panel-menu__item i {
+  width: 1.1rem;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--bl-text-muted);
+}
+
+.home-panel-menu__item:hover,
+.home-panel-menu__item:focus-visible {
+  background: var(--bl-surface-alt);
+  color: var(--bl-primary);
+}
+
+.home-panel-menu__item:hover i,
+.home-panel-menu__item:focus-visible i {
+  color: var(--bl-primary);
+}
+
 /* Tira de acceso rápido (scrollea horizontal; el mega-menú queda fijo) */
 .category-bar__quick {
   flex: 1;

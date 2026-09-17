@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-16. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-17. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,29 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-17** — El botón "Vender" de la fila de accesos del home
+  pasa a decir **"Panel"** para quien ya tiene uno: vendedor, empleada de un
+  comercio, profesional publicado en "Contratar", admin y moderador. Con un
+  solo panel es el mismo link de siempre apuntando adonde corresponda
+  (`vender.html` o `admin.html`); con los dos —vendedor/profesional que
+  **además** es admin— el botón abre un menú chico con las dos opciones,
+  etiquetadas según esa cuenta ("Panel de vendedor" **o** "Panel de
+  profesional/técnico", más "Panel de administrador" / "Panel de
+  moderación"). El auto-redirect al panel que se había hecho el 2026-09-16
+  ahora reconoce también a la **empleada** de un comercio (`store_staff`, no
+  tiene rol propio) y **deja de aplicarse a quien tiene panel de admin**: con
+  dos paneles posibles, elegir uno por su cuenta sería adivinar, así que esa
+  cuenta se queda en el home y elige desde el botón. La puerta de vuelta al
+  home dejó de depender solo de `document.referrer`: el click en el logo del
+  navbar marca la intención en `sessionStorage` (`bl_home_intent`, listener
+  en `auth-utils.js`, que corre en todas las páginas), y no se limpia al
+  leerla — una vez que la persona pidió ver el inicio, recargar o volver con
+  el botón de atrás no la rebota de nuevo al panel. Toda la detección de
+  paneles quedó en **`getPanelAccess()`** (`js/auth-utils.js`), que devuelve
+  `{ isAdmin, seller }` — `hasSellerPanel()` ahora es un envoltorio de eso.
+  Verificado en el navegador (19 checks de Playwright sobre el build real,
+  con la sesión y las consultas mockeadas; harness en el scratchpad de la
+  sesión, no versionado).
 - **Resuelto 2026-09-16** — Auditoría del carrito y el checkout (`js/carrito.js`
   + `js/cart-utils.js`). Lo grave: **el total que mostraba el carrito no era el
   que cobraba `create_order`**. El RPC aplica el descuento del cupón **tienda
