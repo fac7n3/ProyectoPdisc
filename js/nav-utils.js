@@ -837,7 +837,7 @@ export async function initAccountMenu() {
       .maybeSingle();
     if (professionalRow) {
       panel.appendChild(buildSection('Profesional/Técnico', [
-        { href: './vender.html', icon: 'fa-solid fa-screwdriver-wrench', label: 'Panel de profesional/técnico' },
+        { href: './profesional.html', icon: 'fa-solid fa-screwdriver-wrench', label: 'Panel de profesional/técnico' },
       ]));
     }
 

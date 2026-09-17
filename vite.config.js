@@ -43,6 +43,7 @@ export default defineConfig({
         info: resolve(__dirname, 'pages/info.html'),
         farmacias: resolve(__dirname, 'pages/farmacias.html'),
         contratar: resolve(__dirname, 'pages/contratar.html'),
+        profesional: resolve(__dirname, 'pages/profesional.html'),
         servicios: resolve(__dirname, 'pages/servicios.html'),
       }
     }

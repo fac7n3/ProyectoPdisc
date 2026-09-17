@@ -199,7 +199,7 @@ function setRolePanelLink(jwtRole) {
     // tras consultar `professionals`, nunca setRolePanelLink() por su cuenta.
     if (icon) icon.className = 'fa-solid fa-screwdriver-wrench';
     if (label) label.textContent = 'Panel de profesional/técnico';
-    rolePanelLink.href = './vender.html';
+    rolePanelLink.href = './profesional.html';
     rolePanelLink.hidden = false;
   }
 }

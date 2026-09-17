@@ -58,9 +58,8 @@ async function checkSellerState(user) {
     // media query de <900px cuando corresponde ocultarlo.
     if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
     // "Modo Vendedor" solo tiene sentido en dashboard-view (comercio real).
-    // "Modo Oficios" es más específico todavía -- lo prende recién
-    // showProfessionalPanel() cuando de verdad se muestra ese mini panel, no
-    // cualquier estado de register-view (alta o solicitud pendiente).
+    // El de Oficios ya no se prende nunca acá: desde que el panel del
+    // profesional vive en profesional.html, esta página es solo el alta.
     if (vendorBadge) vendorBadge.hidden = view !== 'dashboard';
     if (oficiosBadge) oficiosBadge.hidden = true;
   };
@@ -139,21 +138,17 @@ async function checkSellerState(user) {
     return;
   }
 
-  // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional,
-  // o tiene una solicitud de profesional en curso? (directorio "Contratar",
-  // sin dashboard propio -- es informativo, no gestiona pedidos).
+  // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional?
+  // Si lo está, su panel es una página aparte (pages/profesional.html): acá
+  // solo queda el alta.
   const { data: prof } = await supabase
     .from('professionals')
-    .select(`id, full_name, category, specialty, description, phone, whatsapp, photo_url, is_active,
-      social_instagram, social_instagram_show, social_facebook, social_facebook_show,
-      social_tiktok, social_tiktok_show, social_x, social_x_show,
-      social_youtube, social_youtube_show, social_website, social_website_show`)
+    .select('id')
     .eq('owner_id', user.id)
-    .maybeSingle();
+    .limit(1);
 
-  if (prof) {
-    reveal('register');
-    await showProfessionalPanel(prof);
+  if (prof?.length) {
+    window.location.replace('./profesional.html');
     return;
   }
 
@@ -172,7 +167,8 @@ async function checkSellerState(user) {
   }
 
   reveal('register');
-  showRegisterForms();
+  const tipo = new URLSearchParams(window.location.search).get('tipo');
+  showRegisterForms(tipo === 'servicio' ? 'profesional' : 'comercio');
 }
 
 /** Alterna entre el toggle+formularios y el estado de una solicitud de profesional
@@ -181,7 +177,6 @@ function showRegisterForms(defaultTab = 'comercio') {
   const toggle = document.querySelector('.register-type-toggle');
   if (toggle) toggle.style.display = 'flex';
   document.getElementById('professional-status-view').style.display = 'none';
-  document.getElementById('professional-panel-view').style.display = 'none';
   setRegisterTab(defaultTab);
 }
 
@@ -202,327 +197,9 @@ function showProfessionalStatus(message) {
   if (toggle) toggle.style.display = 'none';
   document.getElementById('comercio-form-wrap').style.display = 'none';
   document.getElementById('profesional-form-wrap').style.display = 'none';
-  document.getElementById('professional-panel-view').style.display = 'none';
   const statusView = document.getElementById('professional-status-view');
   statusView.style.display = 'block';
   document.getElementById('professional-status-body').textContent = message;
-}
-
-// --- Mini panel del profesional ya publicado: resumen + fotos promocionales ---
-//
-// A diferencia del alta (professional_requests, arriba), acá se lee/escribe
-// directo sobre `professionals`/`professional_promos` -- la fila ya existe y
-// es pública en contratar.html. RLS de esas dos tablas ya exige
-// owner_id = auth.uid() (85_professional_promos.sql), así que no hace falta
-// re-validarlo en el cliente.
-const MAX_PROF_PROMOS = 6;
-const MAX_PROF_PROMO_BYTES = 2 * 1024 * 1024;
-let currentProfForPromos = null; // { id, owner_id opcional, is_active }
-let profPromoInputWired = false;
-
-async function showProfessionalPanel(prof) {
-  const toggle = document.querySelector('.register-type-toggle');
-  if (toggle) toggle.style.display = 'none';
-  document.getElementById('comercio-form-wrap').style.display = 'none';
-  document.getElementById('profesional-form-wrap').style.display = 'none';
-  document.getElementById('professional-status-view').style.display = 'none';
-  document.getElementById('professional-panel-view').style.display = 'block';
-
-  const oficiosBadge = document.getElementById('oficios-mode-badge');
-  if (oficiosBadge) oficiosBadge.hidden = false;
-
-  currentProfForPromos = prof;
-  renderProfessionalPanelSummary(prof);
-  fillProfessionalEditForm(prof);
-  await loadProfessionalPromos(prof.id);
-  setupProfessionalPromoUpload();
-  setupProfessionalEditForm();
-}
-
-function renderProfessionalPanelSummary(prof) {
-  const box = document.getElementById('professional-panel-summary');
-  box.textContent = '';
-
-  const photo = document.createElement('div');
-  photo.className = 'prof-panel-summary__photo';
-  if (prof.photo_url) {
-    const img = document.createElement('img');
-    img.src = prof.photo_url;
-    img.alt = '';
-    photo.appendChild(img);
-  } else {
-    const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-user';
-    icon.setAttribute('aria-hidden', 'true');
-    photo.appendChild(icon);
-  }
-  box.appendChild(photo);
-
-  const info = document.createElement('div');
-  info.className = 'prof-panel-summary__info';
-  const name = document.createElement('div');
-  name.className = 'prof-panel-summary__name';
-  name.textContent = prof.full_name;
-  info.appendChild(name);
-
-  const detailParts = [categoryLabel(prof.category), prof.specialty].filter(Boolean);
-  const detail = document.createElement('div');
-  detail.className = 'prof-panel-summary__detail';
-  detail.textContent = detailParts.join(' · ') || 'Sin datos adicionales';
-  info.appendChild(detail);
-
-  if (!prof.is_active) {
-    const inactive = document.createElement('div');
-    inactive.className = 'prof-panel-summary__inactive';
-    inactive.textContent = 'Tu publicación está pausada: no aparece en "Contratar".';
-    info.appendChild(inactive);
-  }
-
-  box.appendChild(info);
-
-  const pauseBtn = document.createElement('button');
-  pauseBtn.type = 'button';
-  pauseBtn.className = 'prof-panel-summary__pause-btn';
-  pauseBtn.textContent = prof.is_active ? 'Pausar publicación' : 'Reactivar publicación';
-  pauseBtn.addEventListener('click', () => toggleProfessionalActive(prof));
-  box.appendChild(pauseBtn);
-}
-
-/** Pausar/reactivar la propia publicación -- mismo patrón que ya usan
- *  productos y cupones (togglear `is_active`), pero sobre `professionals`. */
-async function toggleProfessionalActive(prof) {
-  const nextActive = !prof.is_active;
-  const { error } = await supabase
-    .from('professionals')
-    .update({ is_active: nextActive })
-    .eq('id', prof.id);
-
-  if (error) {
-    console.error('Error al pausar/reactivar la publicación:', error);
-    showToast('No se pudo actualizar el estado de tu publicación.', 'error');
-    return;
-  }
-
-  prof.is_active = nextActive;
-  currentProfForPromos = prof;
-  showToast(nextActive ? 'Publicación reactivada.' : 'Publicación pausada.', 'success');
-  renderProfessionalPanelSummary(prof);
-}
-
-let profEditFormWired = false;
-
-/** Carga los valores actuales en el form de edición (specialty/description/phone/whatsapp). */
-function fillProfessionalEditForm(prof) {
-  const specialtyInput = document.getElementById('prof-edit-specialty');
-  const descriptionInput = document.getElementById('prof-edit-description');
-  const phoneInput = document.getElementById('prof-edit-phone');
-  const whatsappInput = document.getElementById('prof-edit-whatsapp');
-  if (specialtyInput) specialtyInput.value = prof.specialty || '';
-  if (descriptionInput) descriptionInput.value = prof.description || '';
-  if (phoneInput) phoneInput.value = prof.phone || '';
-  if (whatsappInput) whatsappInput.value = prof.whatsapp || '';
-
-  // Redes sociales -- mismos campos social_<red>/social_<red>_show que un
-  // comercio (ver SOCIAL_NETWORKS), pero con ids prof-social-*.
-  SOCIAL_NETWORKS.forEach(({ key }) => {
-    const urlInput = document.getElementById(`prof-social-${key}`);
-    const showInput = document.getElementById(`prof-social-${key}-show`);
-    if (urlInput) urlInput.value = prof[`social_${key}`] || '';
-    if (showInput) showInput.checked = prof[`social_${key}_show`] !== false;
-  });
-}
-
-/** Guarda los cambios de specialty/description/phone/whatsapp -- antes, cambiar
- *  cualquiera de estos datos requería escribir a Soporte (RLS de `professionals`
- *  solo dejaba escribir al admin hasta la migración 86_professionals_update_own.sql). */
-function setupProfessionalEditForm() {
-  const form = document.getElementById('professional-edit-form');
-  if (!form || profEditFormWired) return;
-  profEditFormWired = true;
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentProfForPromos) return;
-
-    const specialtyValue = document.getElementById('prof-edit-specialty').value.trim();
-    const descriptionValue = document.getElementById('prof-edit-description').value.trim();
-    const phoneValue = document.getElementById('prof-edit-phone').value.trim();
-    const whatsappValue = document.getElementById('prof-edit-whatsapp').value.trim();
-
-    if (!isValidShopName(specialtyValue)) {
-      showToast('Contá tu oficio o especialidad (entre 3 y 100 caracteres).', 'error');
-      return;
-    }
-    if (!isValidPhone(phoneValue)) {
-      showToast('El teléfono ingresado no es válido.', 'error');
-      return;
-    }
-    if (whatsappValue && !isValidPhone(whatsappValue)) {
-      showToast('El WhatsApp ingresado no es válido.', 'error');
-      return;
-    }
-
-    const socialFields = {};
-    SOCIAL_NETWORKS.forEach(({ key }) => {
-      socialFields[`social_${key}`] = document.getElementById(`prof-social-${key}`).value.trim() || null;
-      socialFields[`social_${key}_show`] = document.getElementById(`prof-social-${key}-show`).checked;
-    });
-
-    const submitBtn = form.querySelector('button[type="submit"]');
-    setLoading(submitBtn, true, 'Guardar cambios');
-
-    const { error } = await supabase
-      .from('professionals')
-      .update({
-        specialty: specialtyValue,
-        description: descriptionValue || null,
-        phone: phoneValue,
-        whatsapp: whatsappValue || null,
-        ...socialFields,
-      })
-      .eq('id', currentProfForPromos.id);
-
-    setLoading(submitBtn, false, 'Guardar cambios');
-
-    if (error) {
-      console.error('Error al guardar los cambios de la publicación:', error);
-      showToast('No se pudieron guardar los cambios.', 'error');
-      return;
-    }
-
-    currentProfForPromos = {
-      ...currentProfForPromos,
-      specialty: specialtyValue,
-      description: descriptionValue || null,
-      phone: phoneValue,
-      whatsapp: whatsappValue || null,
-      ...socialFields,
-    };
-    renderProfessionalPanelSummary(currentProfForPromos);
-    showToast('Cambios guardados.', 'success');
-  });
-}
-
-async function loadProfessionalPromos(professionalId) {
-  const { data, error } = await supabase
-    .from('professional_promos')
-    .select('id, image_url')
-    .eq('professional_id', professionalId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('Error al cargar las fotos promocionales:', error);
-    return;
-  }
-
-  renderProfessionalPromosGrid(data || []);
-}
-
-function renderProfessionalPromosGrid(promos) {
-  const grid = document.getElementById('professional-promos-grid');
-  grid.textContent = '';
-
-  promos.forEach((promo) => {
-    const item = document.createElement('div');
-    item.className = 'prof-promo-item';
-
-    const img = document.createElement('img');
-    img.src = promo.image_url;
-    img.alt = '';
-    item.appendChild(img);
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'prof-promo-item__remove';
-    removeBtn.setAttribute('aria-label', 'Quitar esta foto');
-    const removeIcon = document.createElement('i');
-    removeIcon.className = 'fa-solid fa-xmark';
-    removeIcon.setAttribute('aria-hidden', 'true');
-    removeBtn.appendChild(removeIcon);
-    removeBtn.addEventListener('click', () => removeProfessionalPromo(promo));
-    item.appendChild(removeBtn);
-
-    grid.appendChild(item);
-  });
-
-  const reachedLimit = promos.length >= MAX_PROF_PROMOS;
-  const input = document.getElementById('professional-promo-input');
-  if (input) input.disabled = reachedLimit;
-  const uploadLabel = document.getElementById('professional-promo-upload-label');
-  if (uploadLabel) {
-    uploadLabel.classList.toggle('is-disabled', reachedLimit);
-    uploadLabel.setAttribute('aria-disabled', String(reachedLimit));
-  }
-}
-
-function setupProfessionalPromoUpload() {
-  const input = document.getElementById('professional-promo-input');
-  if (!input || profPromoInputWired) return;
-  profPromoInputWired = true;
-
-  input.addEventListener('change', async () => {
-    const file = input.files?.[0];
-    if (!file || !currentProfForPromos) return;
-
-    if (file.size > MAX_PROF_PROMO_BYTES) {
-      showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
-      input.value = '';
-      return;
-    }
-
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) {
-      showToast('Sesión inválida.', 'error');
-      input.value = '';
-      return;
-    }
-
-    const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
-    const path = `${currentUser.id}/${Date.now()}.${ext || 'jpg'}`;
-
-    const { error: upErr } = await supabase.storage
-      .from('professional-promos')
-      .upload(path, file, { contentType: file.type || 'image/jpeg' });
-
-    if (upErr) {
-      console.error('Error al subir la foto promocional:', upErr);
-      showToast('No se pudo subir la foto.', 'error');
-      input.value = '';
-      return;
-    }
-
-    const { data: pub } = supabase.storage.from('professional-promos').getPublicUrl(path);
-
-    const { error: insertError } = await supabase
-      .from('professional_promos')
-      .insert({ professional_id: currentProfForPromos.id, image_url: pub?.publicUrl || '' });
-
-    input.value = '';
-
-    if (insertError) {
-      console.error('Error al guardar la foto promocional:', insertError);
-      showToast('No se pudo guardar la foto.', 'error');
-      return;
-    }
-
-    showToast('Foto agregada.', 'success');
-    await loadProfessionalPromos(currentProfForPromos.id);
-  });
-}
-
-async function removeProfessionalPromo(promo) {
-  if (!confirm('¿Quitar esta foto de tu publicación?')) return;
-
-  const { error } = await supabase.from('professional_promos').delete().eq('id', promo.id);
-  if (error) {
-    console.error('Error al quitar la foto promocional:', error);
-    showToast('No se pudo quitar la foto.', 'error');
-    return;
-  }
-
-  await removeStoredObjects(supabase, 'professional-promos', [promo.image_url]);
-  showToast('Foto eliminada.', 'success');
-  await loadProfessionalPromos(currentProfForPromos.id);
 }
 
 // --- Inicializar formulario y eventos ---
