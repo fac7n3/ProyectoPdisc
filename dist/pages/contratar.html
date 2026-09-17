@@ -149,11 +149,98 @@
       }
       .ct-cta a { color: var(--bl-primary); font-weight: 700; text-decoration: none; }
       .ct-cta a:hover { text-decoration: underline; }
+
+      /* --- Disponibilidad, servicios y zonas en la tarjeta (panel del
+         profesional, 2026-09) --- */
+      .ct-card__open {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        padding: 0.15rem 0.6rem; border-radius: var(--bl-radius-pill);
+        font-size: 0.75rem; font-weight: 700;
+        background: var(--bl-surface-alt); color: var(--bl-text-muted);
+      }
+      .ct-card__open--now { background: #dcfce7; color: #15803d; }
+
+      .ct-card__block { margin-top: 1.1rem; }
+      .ct-card__block-title {
+        font-size: 0.85rem; font-weight: 700; color: var(--bl-text);
+        margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;
+      }
+
+      .ct-services { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+      .ct-service {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 1rem; padding: 0.5rem 0.7rem;
+        background: var(--bl-surface-alt); border-radius: var(--bl-radius-md);
+      }
+      .ct-service__main { display: flex; flex-direction: column; min-width: 0; }
+      .ct-service__title { color: var(--bl-text); font-weight: 600; font-size: 0.92rem; }
+      .ct-service__desc { color: var(--bl-text-secondary); font-size: 0.82rem; margin-top: 0.1rem; }
+      .ct-service__price { color: var(--bl-primary); font-weight: 700; white-space: nowrap; font-size: 0.92rem; }
+
+      .ct-hours { list-style: none; margin: 0; padding: 0; }
+      .ct-hours__row {
+        display: flex; justify-content: space-between; gap: 1rem;
+        padding: 0.3rem 0; font-size: 0.88rem;
+        border-bottom: 1px solid var(--bl-border-light);
+      }
+      .ct-hours__row:last-child { border-bottom: none; }
+      .ct-hours__day { color: var(--bl-text-secondary); }
+      .ct-hours__range { color: var(--bl-text); font-weight: 600; }
+
+      .ct-zones { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .ct-zone {
+        padding: 0.25rem 0.7rem; border-radius: var(--bl-radius-pill);
+        background: var(--bl-surface-alt); color: var(--bl-text-secondary);
+        font-size: 0.82rem;
+      }
+
+      .ct-btn--quote { background: var(--bl-accent); color: #1f2937; box-shadow: var(--bl-shadow-sm); }
+
+      /* --- Modal de "Pedir presupuesto" --- */
+      .ct-modal-overlay {
+        position: fixed; inset: 0; z-index: 1200;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem;
+      }
+      .ct-modal {
+        position: relative; width: 100%; max-width: 480px;
+        max-height: 90vh; overflow-y: auto;
+        background: var(--bl-surface); border-radius: var(--bl-radius-lg);
+        box-shadow: var(--bl-shadow-lg); padding: 1.75rem;
+      }
+      .ct-modal__close {
+        position: absolute; top: 0.75rem; right: 0.75rem;
+        width: 2rem; height: 2rem; border: none; border-radius: 50%;
+        background: var(--bl-surface-alt); color: var(--bl-text-secondary);
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+      }
+      .ct-modal__close:hover { background: var(--bl-border); }
+      .ct-modal__title { margin: 0 2rem 0.4rem 0; font-size: 1.15rem; color: var(--bl-text); }
+      .ct-modal__sub { margin: 0 0 1.25rem; color: var(--bl-text-secondary); font-size: 0.9rem; line-height: 1.45; }
+      .ct-modal__label { display: block; font-weight: 600; font-size: 0.88rem; color: var(--bl-text); margin-bottom: 0.4rem; }
+      .ct-modal__input {
+        width: 100%; padding: 0.65rem 0.8rem; margin-bottom: 1.1rem;
+        border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);
+        font: inherit; font-size: 0.95rem;
+      }
+      .ct-modal__input:focus {
+        outline: none; border-color: var(--bl-primary);
+        box-shadow: 0 0 0 2px rgba(40, 65, 117, 0.12);
+      }
+      .ct-modal__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.1rem; }
+      .ct-modal__error { color: var(--bl-danger, #dc2626); font-size: 0.86rem; margin: 0 0 0.75rem; }
+      .ct-modal__submit { width: 100%; justify-content: center; text-decoration: none; }
+
+      @media (max-width: 480px) {
+        .ct-service { flex-direction: column; gap: 0.2rem; }
+      }
     </style>
-    <script type="module" crossorigin src="/assets/contratar-cfLHuFAt.js"></script>
+    <script type="module" crossorigin src="/assets/contratar-BHtENmE4.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-rs9vaAKL.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-J7ziBnWk.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-WLCMvE-T.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
     <link rel="stylesheet" crossorigin href="/assets/home-CkVRp1BZ.css">
   </head>
