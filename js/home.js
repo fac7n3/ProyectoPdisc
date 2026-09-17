@@ -1,5 +1,5 @@
 // Interacciones de la página principal
-import { supabase, sellerPanelPage } from './auth-utils.js';
+import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
@@ -8,36 +8,144 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
 /**
- * Un vendedor o profesional ya publicado entra directo a su panel (vender.html
- * o profesional.html según el caso) en vez de ver el home con los productos --
- * a pedido del usuario, 2026-09-16. La única puerta de vuelta al home es el logo del
- * navbar: si `document.referrer` es de este mismo sitio, asumimos que
- * llegaron navegando adentro de la app (típicamente ese click) y no los
- * mandamos de vuelta al panel. Si no hay referrer o es de otro origen (URL
- * tipeada a mano, favorito, buscador), entran derecho al panel.
+ * El botón "Vender" de la fila de accesos pasa a ser "Panel" para quien ya
+ * tiene uno propio: no tiene sentido ofrecerle "vender" a quien ya vende.
+ * El texto de cada destino es el mismo que usa "Mi perfil"
+ * (setRolePanelLink en js/perfil.js).
+ */
+const PANEL_LABELS = {
+  vendedor: 'Panel de vendedor',
+  profesional: 'Panel de profesional/técnico',
+};
+
+/**
+ * ¿Llegaron al home a propósito? Dos señales: el click en el logo del navbar
+ * (lo marca markHomeIntent en auth-utils.js) o cualquier navegación interna
+ * del sitio (el referrer es de este mismo origen). Si no hay ninguna -- URL
+ * tipeada a mano, favorito, buscador -- es una entrada "desde afuera" y al
+ * vendedor/profesional lo llevamos a su panel.
+ */
+function cameToHomeOnPurpose() {
+  try {
+    if (sessionStorage.getItem(HOME_INTENT_KEY) === '1') return true;
+  } catch { /* sessionStorage bloqueado (navegación privada, etc.) */ }
+
+  if (!document.referrer) return false;
+  try {
+    return new URL(document.referrer).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Un vendedor o profesional ya publicado entra directo a su panel
+ * (vender.html o profesional.html según el caso -- SELLER_PANEL_PAGES) en vez
+ * de ver el home con los productos, a pedido del usuario (2026-09-16). La
+ * puerta de vuelta al home es el logo del navbar (ver cameToHomeOnPurpose).
+ *
+ * Quien ADEMÁS es admin no se redirige: tiene dos paneles y elegir uno por su
+ * cuenta sería adivinar (ver sellerPanelPage en auth-utils.js). Se queda en el
+ * home y el botón le abre el menú para elegir.
+ *
  * Corre apenas carga el módulo (no espera a DOMContentLoaded) para que la
  * redirección salga lo antes posible y el home no llegue a pintarse.
  */
-async function redirectSellerOrProfessionalToPanel() {
+async function initPanelAction() {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   if (!user) return;
 
-  const panel = await sellerPanelPage(user);
-  if (!panel) return;
+  const { isAdmin, seller } = await getPanelAccess(user);
+  if (!isAdmin && !seller) return; // cliente común: la fila queda como está
 
-  const cameFromWithinSite = document.referrer && document.referrer.startsWith(window.location.origin);
-  if (!cameFromWithinSite) {
-    window.location.replace(`./${panel}`);
+  if (!isAdmin && !cameToHomeOnPurpose()) {
+    window.location.replace(`./${SELLER_PANEL_PAGES[seller]}`);
     return;
   }
 
-  // Llegaron por el logo (u otro link interno) y son vendedor/profesional:
-  // el botón de la fila de acciones deja de decir "Vender" -- ya lo son.
-  const venderLink = document.querySelector('.home-action[href="./vender.html"]');
-  if (venderLink) venderLink.textContent = 'Panel';
+  // El <a> puede no estar en el DOM todavía si la sesión resolvió rapidísimo.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role }), { once: true });
+  } else {
+    renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role });
+  }
 }
-redirectSellerOrProfessionalToPanel();
+initPanelAction();
+
+/**
+ * Reemplaza el "Vender" de la fila de accesos por "Panel". Con un solo panel
+ * sigue siendo el mismo link de siempre, apuntando adonde corresponda; con
+ * los dos (vendedor/profesional que además es admin) pasa a ser un botón que
+ * abre un menú chico para elegir.
+ */
+function renderPanelAction({ isAdmin, seller, role }) {
+  const link = document.querySelector('.home-action[href="./vender.html"]');
+  if (!link) return;
+
+  const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
+
+  if (!isAdmin || !seller) {
+    link.textContent = 'Panel';
+    link.href = isAdmin ? './admin.html' : `./${SELLER_PANEL_PAGES[seller]}`;
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'home-action-menu';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'home-action home-action--menu';
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.append('Panel');
+  const caret = document.createElement('i');
+  caret.className = 'fa-solid fa-chevron-down';
+  btn.appendChild(caret);
+  wrap.appendChild(btn);
+
+  const menu = document.createElement('div');
+  menu.className = 'home-panel-menu';
+  menu.hidden = true;
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Elegí un panel');
+
+  [
+    { href: `./${SELLER_PANEL_PAGES[seller]}`, icon: seller === 'profesional' ? 'fa-solid fa-screwdriver-wrench' : 'fa-solid fa-shop', label: PANEL_LABELS[seller] },
+    { href: './admin.html', icon: 'fa-solid fa-user-shield', label: adminLabel },
+  ].forEach(({ href, icon, label }) => {
+    const item = document.createElement('a');
+    item.className = 'home-panel-menu__item';
+    item.href = href;
+    item.setAttribute('role', 'menuitem');
+    const i = document.createElement('i');
+    i.className = icon;
+    item.appendChild(i);
+    item.append(label);
+    menu.appendChild(item);
+  });
+  wrap.appendChild(menu);
+
+  link.replaceWith(wrap);
+
+  const close = () => {
+    menu.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+  };
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    btn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+    if (!menu.hidden) menu.querySelector('.home-panel-menu__item')?.focus();
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !menu.hidden) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) { close(); btn.focus(); }
+  });
+}
 
 // Comercios sin logo_url: se les asigna uno de estos diseños genéricos ya
 // existentes en el proyecto (ficticios, sin marca real - ver

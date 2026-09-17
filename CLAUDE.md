@@ -106,6 +106,29 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   Supabase -- hay tests de la lógica con filo
   (`professional-hours-utils`, `professional-service-utils`) y se verificó el
   diseño, pero el flujo real conviene caminarlo una vez a mano.
+- **Resuelto 2026-09-17** — El botón "Vender" de la fila de accesos del home
+  pasa a decir **"Panel"** para quien ya tiene uno: vendedor, empleada de un
+  comercio, profesional publicado en "Contratar", admin y moderador. Con un
+  solo panel es el mismo link de siempre apuntando adonde corresponda
+  (`vender.html`, `profesional.html` o `admin.html`); con los dos
+  —vendedor/profesional que **además** es admin— el botón abre un menú chico
+  con las dos opciones, etiquetadas según esa cuenta ("Panel de vendedor"
+  **o** "Panel de profesional/técnico", más "Panel de administrador" / "Panel
+  de moderación"). El auto-redirect al panel que se había hecho el 2026-09-16
+  ahora reconoce también a la **empleada** de un comercio (`store_staff`, no
+  tiene rol propio) y **deja de aplicarse a quien tiene panel de admin**: con
+  dos paneles posibles, elegir uno por su cuenta sería adivinar, así que esa
+  cuenta se queda en el home y elige desde el botón. La puerta de vuelta al
+  home dejó de depender solo de `document.referrer`: el click en el logo del
+  navbar marca la intención en `sessionStorage` (`bl_home_intent`, listener
+  en `auth-utils.js`, que corre en todas las páginas), y no se limpia al
+  leerla — una vez que la persona pidió ver el inicio, recargar o volver con
+  el botón de atrás no la rebota de nuevo al panel. Toda la detección de
+  paneles quedó en **`getPanelAccess()`** (`js/auth-utils.js`), que devuelve
+  `{ isAdmin, seller }`; `sellerPanelPage()` y el mapa `SELLER_PANEL_PAGES`
+  (qué página es el panel de cada uno) salen de ahí. Verificado en el
+  navegador (20 checks de Playwright sobre el build real, con la sesión y las
+  consultas mockeadas; harness en el scratchpad de la sesión, no versionado).
 - **Resuelto 2026-09-16** — Auditoría del carrito y el checkout (`js/carrito.js`
   + `js/cart-utils.js`). Lo grave: **el total que mostraba el carrito no era el
   que cobraba `create_order`**. El RPC aplica el descuento del cupón **tienda
