@@ -982,6 +982,23 @@ a.compra-item-text:hover {
 /* --- Grupos --- */
 .datos-group { margin-bottom: 2rem; }
 
+/* Resalta un grupo al llegar por un link directo (ej. "Ver" de Ajustes ->
+   Sesión y seguridad): un fondo azul transparente que llama la atención y se
+   desvanece solo. Padding/margin negativos para que el fondo no quede pegado
+   al borde del texto. Se agrega/saca por JS (perfil.js), nunca queda pegada
+   con :target ni similar. */
+@keyframes datos-group-highlight {
+  0%, 65% { background-color: rgba(40, 65, 117, 0.12); }
+  100% { background-color: transparent; }
+}
+
+.datos-group--highlight {
+  animation: datos-group-highlight 1.8s ease-out;
+  border-radius: var(--radius-lg);
+  margin: -0.75rem;
+  padding: 0.75rem;
+}
+
 .datos-group__title {
   margin: 0 0 0.625rem;
   padding-left: 0.125rem;

@@ -90,9 +90,21 @@ function openSection(targetId, scrollToId) {
   const scrollTarget = scrollToId ? document.getElementById(scrollToId) : null;
   if (scrollTarget) {
     scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+    highlightSection(scrollTarget);
   } else {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+}
+
+// Resalta con un fondo azul transparente que se desvanece solo (CSS
+// .datos-group--highlight), para que la vista aterrice justo donde apunta el
+// scroll. Saca la clase primero por si quedó de un click anterior a mitad de
+// la animación -- si no, reagregarla no reinicia el @keyframes.
+function highlightSection(el) {
+  el.classList.remove("datos-group--highlight");
+  void el.offsetWidth;
+  el.classList.add("datos-group--highlight");
+  el.addEventListener("animationend", () => el.classList.remove("datos-group--highlight"), { once: true });
 }
 
 function closeSection() {
