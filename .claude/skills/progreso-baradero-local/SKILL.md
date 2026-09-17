@@ -5,6 +5,124 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Panel de autogestión del profesional/técnico (2026-09-17) — migraciones 88-93
+
+Convierte "Contratar" de un directorio que el profesional casi no podía tocar en algo que
+puede administrar solo. Antes tenía un mini panel adentro de `vender.html`
+(`#professional-panel-view`, ~130 líneas de markup y ~315 de `js/vender.js`) que solo
+permitía pausar la publicación, editar oficio/descripción/teléfono/WhatsApp + las 12
+columnas de redes, y subir hasta 6 fotos sin orden. **No podía cambiar su foto, su nombre
+ni su rubro**: la foto se subía una única vez en el alta y después había que escribirle a
+Soporte.
+
+### Qué se construyó
+
+Página propia `pages/profesional.html` + `js/profesional.js` (entrada, estado, resumen y
+"Mis datos") + seis módulos de sección (`js/profesional-{servicios,disponibilidad,galeria,
+consultas,resenas,metricas}.js`). Secciones: Resumen, Mis datos, Servicios y precios,
+Horarios y zona, Fotos de trabajos, Consultas, Reseñas, Estadísticas, Notificaciones y
+Soporte (las dos últimas embebidas con `renderNotificationsSection` /
+`renderSupportSection`, que ya eran plug-and-play).
+
+- **El shell no se reescribió**: `js/vender-shell.js` ya era genérico (opera sobre
+  `#mc-sidebar`, `.mc-navitem[data-section]`, `.mc-content .mc-section`), así que se usa tal
+  cual. Su `DEFAULT_SECTION` está fijo en `'resumen'`, y por eso la sección inicial del
+  panel nuevo se llama igual — no hizo falta tocar el módulo.
+- **CSS**: `Assets/styles/profesional.css`. Las clases base (`mc-`, `rs-`, `pf-`, `form-`)
+  se extrajeron del `<style>` inline de `vender.html` con un parser por selector (los
+  rangos por número de línea se cortaban mal), dejando afuera lo exclusivo del comercio
+  (`.store-logo-picker`, `.social-row`, `.staff-perms`). Es una copia a propósito: el
+  objetivo era que los dos paneles se vean hermanos sin refactorizar una página que ya está
+  en producción.
+- **Acento**: ámbar, el que el proyecto ya asocia al modo Oficios (`.oficios-mode-badge`),
+  pero en tono **oscuro** `#b45309`. El ámbar de marca (`--bl-accent`) da 2.1:1 contra
+  blanco y hay botones con texto blanco encima (`.form-btn`); el oscuro da 5.9:1 (AA).
+- **Carga perezosa**: cada sección pide sus datos la primera vez que se muestra
+  (`alMostrar(seccion, fn)` en `profesional.js`), no al abrir el panel. Entrar a "Mis datos"
+  no dispara las consultas de las otras ocho.
+- **Consulta del profesional sin `.maybeSingle()`**: `professionals` no tiene unique por
+  `owner_id`, y en este proyecto ya pasó que una cuenta con dos filas rompiera un panel
+  entero por el error de coerción (las 14 tiendas de seed, `js/vender.js`). Se usa
+  `limit(1)` y se toma `[0]`.
+
+### Migraciones (88-93, todas aplicadas a producción)
+
+- **88** `professional_services`: título, descripción, `price_type` (`fixed`/`from`/`quote`)
+  y `price_pesos integer` (pesos enteros, no `numeric`), con CHECK cruzado: "a convenir" no
+  lleva número, los otros dos sí y positivo. Ordenables.
+- **89** `professional_inquiries`: las consultas de presupuesto. Inserta **solo el vecino
+  logueado** (sin captcha, una bandeja anónima sería spam; además hace falta la cuenta para
+  mostrarle después "tus consultas"). **RLS no restringe por columna**, así que el "el
+  profesional solo mueve el estado" va en un trigger (`protect_inquiry_content`), mismo
+  patrón que `prevent_role_update_on_profile`. Trigger `notify_new_inquiry` →
+  `professional_inquiry_new`.
+- **90** `professional_metrics_daily`: contadores agregados con PK
+  `(professional_id, event_type, day)`, **no** una tabla de eventos crudos — el volumen es de
+  pueblo chico y solo se muestran totales de 30 días. **Sin policy de INSERT/UPDATE para
+  nadie**: se escribe solo por `increment_professional_metric`, un RPC `SECURITY DEFINER`
+  que lo llama un visitante **anónimo**, así que valida adentro el tipo de evento contra la
+  lista y que el profesional esté activo, y solo hace `+1` (nunca recibe el valor a
+  escribir). Es la lección de `approve_seller_request` (migración 75) aplicada.
+- **91** `professional_business_hours` (dos franjas por día, para el corte del mediodía) +
+  `professional_service_areas` + `professionals.serves_24h`. **No** se creó una función SQL
+  de "abierto ahora": los horarios ya viajan al navegador para mostrarlos, así que
+  resolverlo del lado del servidor sería la misma regla escrita dos veces.
+- **92** `professional_promos` suma `sort_order` y `description`, y el bucket recibe la
+  policy `update_own` que le faltaba.
+- **93** `reviews.owner_reply` / `owner_replied_at` + `is_owner_of_review_target()`.
+
+### El gotcha importante: falsificar la respuesta a una reseña
+
+`reviews` es la tabla genérica compartida por productos, comercios, repartidores y
+profesionales, y **ya tenía `reviews_update_own`**, que deja al **autor** de una reseña
+editar su propia fila. El diseño inicial del trigger solo cortaba el caso
+`client_id != auth.uid()` — o sea que un cliente podía escribir `owner_reply` en su propia
+reseña y **falsificar la respuesta del profesional**. Se verificaron las policies reales en
+producción antes de escribir la migración y el trigger quedó cortando en los dos sentidos:
+
+- el dueño de lo reseñado solo puede tocar `owner_reply`,
+- el autor puede tocar `rating`/`comment` pero **nunca** la respuesta,
+- admin y moderador pasan derecho (necesitan poder moderar una respuesta abusiva),
+- `owner_replied_at` lo pone el servidor, nunca el cliente.
+
+`is_owner_of_review_target()` es `SECURITY DEFINER` a propósito: si corriera con los
+permisos de quien llama, la RLS de `professionals` podría esconderle su propia fila a un
+profesional con la publicación pausada y no podría responder. Se le revocó `EXECUTE` a
+`anon` (la policy es FOR UPDATE, que anon nunca ejecuta) porque si no queda publicada como
+RPC en `/rest/v1/rpc/` y el advisor de Supabase la marca, con razón.
+
+### Módulos puros con tests
+
+- `js/professional-hours-utils.js` — `estaAbiertoAhora`, `resumenDisponibilidad`,
+  `agruparPorDia`, `formatearFranjas`. **Bug que encontró el test**: quien atiende un solo
+  día a la semana y ya cerró tiene su próximo turno recién el mismo día de la semana
+  siguiente; el bucle iba hasta 6 y devolvía "Cerrado". Ahora llega a 7.
+- `js/professional-service-utils.js` — `formatTarifa`, `parsePrecio`, `validarServicio`. El
+  formato de pesos está repetido a propósito y no importado de `cart-utils.js`: ese módulo
+  importa el cliente de Supabase y este tiene que correr en un test sin credenciales.
+- `js/professional-zones.js` — lista fija de zonas. Las cuatro últimas son localidades
+  reales del partido; las primeras son divisiones genéricas del casco urbano y **conviene
+  repasarlas con alguien que camine el pueblo**.
+
+### En la página pública
+
+`contratar.html` muestra servicios con tarifa, horarios con chip "Abierto ahora", zonas, y
+un botón "Pedir presupuesto". Las métricas se registran sin `await` ni toast: si falla, el
+visitante no tiene por qué enterarse. El modal de presupuesto **no manda un `?redirect=`** a
+login porque el login del proyecto no lo soporta (`resolvePostLoginRedirect` en
+`auth-utils.js`) — avisa en el mismo modal en vez de prometer una vuelta que no pasa.
+
+### Qué quedó sin probar
+
+El recorrido logueado de punta a punta: **el navegador del entorno de trabajo no puede
+llegar a Supabase** (el proxy lo bloquea; `fetch` a la API tira "Failed to fetch"), así que
+no se pudo entrar como profesional y usar el panel de verdad. Sí se verificó: la página
+carga y redirige a login sin sesión, el build pasa, los tests de los módulos puros pasan, y
+el diseño se revisó con capturas renderizando el panel con datos de muestra. **El flujo real
+conviene caminarlo una vez a mano** (cargar un servicio, un horario, pedirse un presupuesto
+desde otra cuenta, responder una reseña).
+
+
 ## Farmacias de turno (2026-08-16) — A113-261, rama `feature/farmacias-de-turno`
 
 Reemplaza el `alert()` de `js/home.js` que mostraba una farmacia, dirección y teléfono
