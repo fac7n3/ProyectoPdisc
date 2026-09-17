@@ -173,11 +173,11 @@ async function checkSellerState(user) {
   showRegisterForms(tipo === 'servicio' ? 'profesional' : 'comercio');
 }
 
-/** Alterna entre el toggle+formularios y el estado de una solicitud de profesional
- *  ya enviada (pendiente/aprobada/rechazada) -- todo dentro de #register-view. */
+/** Alterna entre los formularios de alta y el estado de una solicitud de
+ *  profesional ya enviada (pendiente/aprobada/rechazada) -- todo dentro de
+ *  #register-view. Qué formulario mostrar lo decide el query param `tipo`
+ *  (ver caller), no hay selector visible para cambiar entre uno y otro. */
 function showRegisterForms(defaultTab = 'comercio') {
-  const toggle = document.querySelector('.register-type-toggle');
-  if (toggle) toggle.style.display = 'flex';
   document.getElementById('professional-status-view').style.display = 'none';
   setRegisterTab(defaultTab);
 }
@@ -186,17 +186,9 @@ function setRegisterTab(tab) {
   const isComercio = tab === 'comercio';
   document.getElementById('comercio-form-wrap').style.display = isComercio ? 'block' : 'none';
   document.getElementById('profesional-form-wrap').style.display = isComercio ? 'none' : 'block';
-  const btnComercio = document.getElementById('toggle-comercio');
-  const btnProfesional = document.getElementById('toggle-profesional');
-  btnComercio?.classList.toggle('is-active', isComercio);
-  btnComercio?.setAttribute('aria-selected', String(isComercio));
-  btnProfesional?.classList.toggle('is-active', !isComercio);
-  btnProfesional?.setAttribute('aria-selected', String(!isComercio));
 }
 
 function showProfessionalStatus(message) {
-  const toggle = document.querySelector('.register-type-toggle');
-  if (toggle) toggle.style.display = 'none';
   document.getElementById('comercio-form-wrap').style.display = 'none';
   document.getElementById('profesional-form-wrap').style.display = 'none';
   const statusView = document.getElementById('professional-status-view');
@@ -437,10 +429,6 @@ function initVenderPage(user) {
   logoutBtn?.addEventListener('click', () => {
     window.location.replace('./home.html');
   });
-
-  // Toggle "Vender productos" / "Ofrecer un servicio"
-  document.getElementById('toggle-comercio')?.addEventListener('click', () => setRegisterTab('comercio'));
-  document.getElementById('toggle-profesional')?.addEventListener('click', () => setRegisterTab('profesional'));
 
   loadProfessionalCategories();
   setupProfessionalPhotoPicker();

@@ -76,8 +76,6 @@
         margin: 3rem auto;
         padding: 2rem;
         background: var(--bl-surface);
-        border: 1px solid var(--bl-border);
-        border-top: 4px solid var(--bl-vendor-accent);
         border-radius: var(--bl-radius-xl);
         box-shadow: var(--bl-shadow-lg);
       }
@@ -132,27 +130,6 @@
       }
       .form-btn:hover {
         background: var(--bl-vendor-accent-dark);
-      }
-
-      /* Selector "Vender productos" / "Ofrecer un servicio" en la vista de
-         alta -- decide qué formulario se muestra (js/vender.js). */
-      .register-type-toggle {
-        display: flex; gap: 0.5rem; padding: 0.3rem;
-        background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill);
-        margin-bottom: 2rem;
-      }
-      .register-type-toggle__btn {
-        flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-        padding: 0.65rem 1rem; border: none; border-radius: var(--bl-radius-pill);
-        background: transparent; color: var(--bl-text-secondary);
-        font-weight: 600; font-size: 0.9375rem; cursor: pointer; transition: all 0.15s;
-      }
-      .register-type-toggle__btn.is-active {
-        background: var(--bl-surface); color: var(--bl-vendor-accent);
-        box-shadow: var(--bl-shadow-sm);
-      }
-      @media (max-width: 480px) {
-        .register-type-toggle__btn span { display: none; }
       }
 
       /* Foto/logo opcional del alta de profesional. */
@@ -700,7 +677,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-rvzUT3HJ.js"></script>
+    <script type="module" crossorigin src="/assets/vender-Cxsdys-K.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DBVHVREb.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-B64FUxTS.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -779,15 +756,6 @@
 
         <!-- Vista de Registro (card centrada, sin sidebar) -->
         <div id="register-view" class="vender-container" style="display: none;">
-            <div class="register-type-toggle" role="tablist" aria-label="Qué querés hacer">
-              <button type="button" class="register-type-toggle__btn is-active" id="toggle-comercio" role="tab" aria-selected="true">
-                <i class="fa-solid fa-store" aria-hidden="true"></i><span>Vender productos</span>
-              </button>
-              <button type="button" class="register-type-toggle__btn" id="toggle-profesional" role="tab" aria-selected="false">
-                <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i><span>Ofrecer un servicio</span>
-              </button>
-            </div>
-
             <div id="comercio-form-wrap">
               <div class="vender-header">
                 <h2>Empezá a vender en Baradero</h2>
