@@ -2,7 +2,7 @@
  * Sección "Fotos de trabajos" del panel del profesional.
  *
  * Son filas de `professional_promos` (bucket `professional-promos`). La
- * migración 92 les sumó `sort_order` y `description`: antes eran una pila sin
+ * migración 93 les sumó `sort_order` y `description`: antes eran una pila sin
  * orden y sin pie de foto.
  */
 

@@ -98,7 +98,7 @@ export function estaAbiertoAhora({ horarios = [], serves24h = false } = {}, ahor
     const desde = minutosDeHora(franja.open_time);
     const hasta = minutosDeHora(franja.close_time);
     if (desde === null || hasta === null) return false;
-    // El CHECK de la migración 91 garantiza close_time > open_time, así que
+    // El CHECK de la migración 92 garantiza close_time > open_time, así que
     // no hay franjas que crucen la medianoche que haya que partir en dos.
     return minutosAhora >= desde && minutosAhora < hasta;
   });

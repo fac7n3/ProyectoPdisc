@@ -10,7 +10,7 @@
  */
 
 import { supabase } from './auth-utils.js';
-import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite } from './cart-utils.js';
+import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
 import { fetchReviewsSummary, renderReviewsSection } from './reviews-utils.js';
 
 // ── Seguridad ───────────────────────────────────────────────
@@ -40,8 +40,7 @@ async function fetchProductData(productId) {
 
   // F12-14: mismo criterio que buildPriceRow (cart-utils.js) -- una oferta
   // vencida se muestra como precio normal, sin tachado.
-  const today = new Date().toISOString().slice(0, 10);
-  const offerExpired = !!(product.offer_expires_at && product.offer_expires_at < today);
+  const offerExpired = isOfferExpired(product);
   const hasDiscount = !!(product.compare_at_price && product.compare_at_price > product.price && !offerExpired);
   const discountPct = hasDiscount ? Math.round((1 - product.price / product.compare_at_price) * 100) : 0;
 

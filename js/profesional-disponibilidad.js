@@ -3,7 +3,7 @@
  *
  * Los horarios son filas de `professional_business_hours` (dos franjas por día
  * como máximo, que es el corte del mediodía típico) y las zonas filas de
- * `professional_service_areas` (migración 91). El "atiende 24 h" es una
+ * `professional_service_areas` (migración 92). El "atiende 24 h" es una
  * columna de `professionals`.
  *
  * Guardar reemplaza todo: se borran las filas del profesional y se insertan

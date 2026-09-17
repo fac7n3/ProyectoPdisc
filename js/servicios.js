@@ -77,6 +77,19 @@ function buildCard(category, contacts) {
   return card;
 }
 
+/** Bloque "cargando" con el spinner de 6 puntos del proyecto (home.css). */
+function buildLoadingBlock(text) {
+  const block = el('div', 'bl-loading-block');
+  block.setAttribute('role', 'status');
+  block.setAttribute('aria-live', 'polite');
+  const spinner = el('div', 'bl-spinner');
+  spinner.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 6; i++) spinner.appendChild(el('div', 'bl-spinner__dot'));
+  block.appendChild(spinner);
+  block.appendChild(el('p', 'bl-loading-block__title', text));
+  return block;
+}
+
 function buildEmpty(message) {
   const empty = el('div', 'sv-empty');
   const icon = el('i', 'fa-regular fa-circle-question');
@@ -89,12 +102,21 @@ function buildEmpty(message) {
 async function loadServicios() {
   const container = document.getElementById('sv-content');
   container.textContent = '';
+  // Son números de emergencia: mientras cargan hay que decir que están
+  // cargando, no dejar la página vacía como si no hubiera ninguno.
+  container.appendChild(buildLoadingBlock('Cargando los números'));
 
   const { data, error } = await supabase
     .from('emergency_contacts')
     .select('id, category, name, phone, notes, display_order')
+    // La policy pública ya filtra por is_active, pero la del admin
+    // (`emergency_contacts_all_admin`, cmd ALL) no: sin esto una cuenta admin
+    // ve en la página pública los contactos dados de baja.
+    .eq('is_active', true)
     .order('display_order', { ascending: true })
     .order('name', { ascending: true });
+
+  container.textContent = '';
 
   if (error) {
     console.error('Error al cargar los servicios:', error);

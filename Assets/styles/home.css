@@ -3705,6 +3705,10 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   height: 100%;
   object-fit: contain;
   padding: 0.75rem; /* Margen de seguridad del logo dentro del squircle */
+  border-radius: 16px; /* Los logos genéricos (PNG con fondo transparente) ya
+    se ven redondeados porque el gráfico no llega a las esquinas -- una foto
+    real subida por el comercio (bucket store-logos) sí las llena, y sin esto
+    se le veían las cuatro puntas rectas adentro del squircle. */
 }
 
 /* ============================================================
@@ -3848,25 +3852,24 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   margin: 0;
 }
 
-/* --- Soporte / reclamos --- */
+/* --- Soporte / reclamos ---
+   Sección "Contactar a soporte" que arma js/support-utils.js, compartida por
+   Mi perfil (cliente) y el panel de vendedor. `--tkt-col` es el ancho de la
+   columna: la tarjeta del formulario, la lista y el estado vacío lo comparten
+   para que se lea como una sola columna, y no como un formulario angosto
+   arriba de una lista a todo lo ancho. */
+:root { --tkt-col: 560px; }
 .tkt-heading {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--bl-text);
-  margin: 0 0 0.6rem;
+  margin: 0;
 }
 
 .tkt-form {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  max-width: 500px;
-  padding: 1rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-lg);
-  background: var(--bl-surface);
-  box-shadow: var(--bl-shadow-sm);
-  margin-bottom: 1.75rem;
+  gap: 0.9rem;
 }
 
 .tkt-input,
@@ -3892,6 +3895,9 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 }
 
 .tkt-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   width: fit-content;
   padding: 0.6rem 1.25rem;
   background: var(--bl-primary);
@@ -3907,15 +3913,38 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 }
 
 .tkt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: var(--tkt-col);
+  padding: 2rem 1.25rem;
+  border: 1px dashed var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  background: var(--bl-surface);
+  text-align: center;
+}
+.tkt-empty > i {
+  font-size: 1.75rem;
   color: var(--bl-text-muted);
-  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
+}
+.tkt-empty > p {
   margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--bl-text-secondary);
+}
+.tkt-empty > span {
+  font-size: 0.85rem;
+  color: var(--bl-text-muted);
 }
 
 .tkt-list {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  max-width: var(--tkt-col);
 }
 
 .tkt-item {
@@ -3930,8 +3959,22 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   cursor: pointer;
+  /* Es un <button> real (foco y Enter/Espacio gratis), así que hay que sacarle
+     el fondo gris, el borde y el centrado que le pone el navegador. */
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.tkt-item__top:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 3px;
+  border-radius: var(--bl-radius-sm);
 }
 
 .tkt-item__subject {
@@ -3950,17 +3993,6 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 .tkt-badge--in_progress { background: rgba(245,158,11,0.14);  color: #b45309; }
 .tkt-badge--resolved    { background: rgba(16,185,129,0.12);  color: #047857; }
 .tkt-badge--cancelled   { background: rgba(239,68,68,0.12);   color: #b91c1c; }
-
-.tkt-item__msg {
-  margin: 0.4rem 0 0.3rem;
-  font-size: 0.9rem;
-  color: var(--bl-text-secondary);
-}
-
-.tkt-item__date {
-  font-size: 0.78rem;
-  color: var(--bl-text-muted);
-}
 
 .tkt-cancel {
   display: block;
@@ -4067,6 +4099,388 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 .tkt-reply__send:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* ===== Tarjeta del formulario de reclamo nuevo ===== */
+.tkt-card {
+  max-width: var(--tkt-col);
+  padding: 1.15rem;
+  margin-bottom: 1.75rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  background: var(--bl-surface);
+  box-shadow: var(--bl-shadow-sm);
+}
+
+.tkt-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.tkt-card__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--bl-radius-md);
+  /* Tinte del ancla de marca #284175; no hay token --bl-primary-rgb. */
+  background: rgba(40, 65, 117, 0.08);
+  color: var(--bl-primary);
+  font-size: 1rem;
+}
+
+.tkt-card__title {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.tkt-card__sub {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--bl-text-secondary);
+}
+
+/* ===== Campos ===== */
+.tkt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tkt-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bl-text);
+}
+
+.tkt-label__opt {
+  font-weight: 500;
+  color: var(--bl-text-muted);
+}
+
+.tkt-counter {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  color: var(--bl-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tkt-msg {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.tkt-msg--error {
+  color: var(--bl-danger);
+}
+.tkt-msg[hidden] {
+  display: none;
+}
+
+/* ===== Selector de adjuntos =====
+   Mismo lenguaje que el dropzone del comprobante de transferencia
+   (.proof-drop, Assets/styles/perfil-custom.css): borde punteado + ícono. */
+.tkt-attach {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tkt-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 1.1rem 1rem;
+  border: 1.5px dashed var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-secondary);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.tkt-drop:hover:not(:disabled),
+.tkt-drop.is-over {
+  border-color: var(--bl-primary);
+  background: rgba(40, 65, 117, 0.04);
+}
+.tkt-drop:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+.tkt-drop:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+/* Los hijos no reciben el puntero: si no, arrastrar de la zona al ícono
+   dispara un dragleave en el botón y el resaltado parpadea. */
+.tkt-drop > * {
+  pointer-events: none;
+}
+
+.tkt-drop__icon {
+  font-size: 1.35rem;
+  color: var(--bl-primary);
+}
+.tkt-drop:disabled .tkt-drop__icon {
+  color: var(--bl-text-muted);
+}
+
+.tkt-drop__main {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--bl-text);
+}
+
+.tkt-drop__hint {
+  font-size: 0.78rem;
+  color: var(--bl-text-muted);
+  line-height: 1.35;
+}
+
+/* ===== Archivos ya elegidos ===== */
+.tkt-files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tkt-files:empty {
+  display: none;
+}
+
+.tkt-file {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+}
+
+.tkt-file__thumb {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--bl-radius-sm);
+  object-fit: cover;
+  background: var(--bl-surface-alt);
+}
+.tkt-file__thumb--icon {
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  color: var(--bl-danger);
+}
+
+.tkt-file__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;   /* deja que el nombre se recorte en vez de desbordar la fila */
+  flex: 1;
+}
+
+.tkt-file__name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--bl-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tkt-file__size {
+  font-size: 0.75rem;
+  color: var(--bl-text-muted);
+}
+
+.tkt-file__remove {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: var(--bl-radius-sm);
+  background: none;
+  color: var(--bl-text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.tkt-file__remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--bl-danger);
+}
+.tkt-file__remove:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 1px;
+}
+
+/* ===== Encabezado de "Mis reclamos" ===== */
+.tkt-listhead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: var(--tkt-col);
+  margin-bottom: 0.6rem;
+}
+
+.tkt-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ===== Fila de un reclamo (encabezado plegable) ===== */
+.tkt-item__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;   /* sin esto el flex no deja que el preview se recorte */
+  flex: 1;
+}
+
+.tkt-item__preview {
+  font-size: 0.85rem;
+  color: var(--bl-text-secondary);
+  /* Una sola línea: el mensaje completo se ve al desplegar el hilo. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tkt-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--bl-text-muted);
+}
+
+.tkt-item__clip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.tkt-item__chev {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--bl-text-muted);
+  transition: transform 0.2s ease;
+}
+.tkt-item--open .tkt-item__chev {
+  transform: rotate(180deg);
+}
+
+/* ===== Reclamo original, arriba del hilo ===== */
+.tkt-original {
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.85rem;
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface-alt);
+}
+
+.tkt-original__msg {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--bl-text);
+  white-space: pre-wrap;   /* respeta los saltos de línea que escribió la persona */
+}
+
+/* ===== Adjuntos de un ticket (también los usa el panel de admin) ===== */
+.tkt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.tkt-chips__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bl-text-muted);
+  margin-right: 0.15rem;
+}
+
+.tkt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface);
+  color: var(--bl-primary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.tkt-chip:hover:not(:disabled) {
+  border-color: var(--bl-primary);
+  background: rgba(40, 65, 117, 0.06);
+}
+.tkt-chip:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 1px;
+}
+.tkt-chip:disabled {
+  opacity: 0.6;
+  cursor: progress;   /* mientras se pide la signed URL */
+}
+
+.tkt-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12rem;
+}
+
+/* ===== Celular ===== */
+@media (max-width: 600px) {
+  .tkt-card {
+    padding: 1rem 0.9rem;
+  }
+  .tkt-submit {
+    width: 100%;
+    justify-content: center;
+  }
+  /* El campo de respuesta y su botón no entran uno al lado del otro. */
+  .tkt-reply {
+    flex-direction: column;
+  }
+  .tkt-reply__send {
+    align-self: stretch;
+  }
+  .tkt-chip__name {
+    max-width: 8rem;
+  }
 }
 
 .store-logo-skeleton {

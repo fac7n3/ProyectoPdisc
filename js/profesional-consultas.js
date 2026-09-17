@@ -1,7 +1,7 @@
 /**
  * Sección "Consultas" del panel del profesional: las solicitudes de
  * presupuesto que dejan los vecinos desde la tarjeta de contratar.html
- * (tabla `professional_inquiries`, migración 89).
+ * (tabla `professional_inquiries`, migración 90).
  *
  * El profesional solo puede mover el estado. El contenido de la consulta lo
  * protege un trigger en la base, no la UI.
@@ -9,7 +9,7 @@
 
 import { supabase, showToast } from './auth-utils.js';
 
-/** Los mismos tres valores que el CHECK de la migración 89. */
+/** Los mismos tres valores que el CHECK de la migración 90. */
 const ESTADOS = [
   { valor: 'new', label: 'Sin responder', tag: 'new' },
   { valor: 'answered', label: 'Respondidas', tag: 'answered' },

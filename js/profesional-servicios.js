@@ -1,7 +1,7 @@
 /**
  * Sección "Servicios y precios" del panel del profesional.
  *
- * Cada servicio es una fila de `professional_services` (migración 88) con un
+ * Cada servicio es una fila de `professional_services` (migración 89) con un
  * precio de referencia en pesos enteros, o "a convenir". Se muestran en la
  * tarjeta pública de contratar.html.
  */

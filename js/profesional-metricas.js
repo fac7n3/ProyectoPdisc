@@ -1,7 +1,7 @@
 /**
  * Sección "Estadísticas" del panel del profesional.
  *
- * Lee `professional_metrics_daily` (migración 90), que guarda contadores por
+ * Lee `professional_metrics_daily` (migración 91), que guarda contadores por
  * día y tipo de evento. Los incrementa contratar.html vía el RPC
  * increment_professional_metric cuando alguien mira la tarjeta o toca Llamar
  * o WhatsApp.

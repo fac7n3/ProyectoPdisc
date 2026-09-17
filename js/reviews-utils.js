@@ -229,7 +229,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         row.appendChild(commentP);
       }
 
-      // Respuesta pública de quien recibió la reseña (migración 93). La
+      // Respuesta pública de quien recibió la reseña (migración 94). La
       // escribe desde su panel; acá es solo de lectura.
       if (review.owner_reply) {
         const reply = document.createElement('div');

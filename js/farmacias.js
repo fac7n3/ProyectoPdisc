@@ -9,6 +9,7 @@
 // innerHTML — misma convención que el resto del proyecto.
 
 import { supabase } from './auth-utils.js';
+import { safeExternalUrl } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Un turno cargado hace más de esto se considera desactualizado y la página
@@ -41,13 +42,22 @@ function combine(dateStr, timeStr) {
 }
 
 /**
- * Ventana real de un turno. `closes_at` SIEMPRE se interpreta como del día
- * siguiente a `shift_date` (ver el comentario de la migración 67): un turno
- * "8:00 a 8:00" del sábado termina el domingo a las 8.
+ * Ventana real de un turno. El caso normal en Baradero es "8:00 a 8:00": el
+ * cierre no es posterior a la apertura, así que cae al día siguiente. De ahí
+ * sale la parte que es fácil equivocar: a las 3 de la mañana del domingo la
+ * farmacia de turno es la del SÁBADO, por eso no alcanza con buscar
+ * `shift_date = hoy`.
  *
- * De acá sale la parte que es fácil equivocar: a las 3 de la mañana del
- * domingo, la farmacia de turno es la del SÁBADO. Por eso no alcanza con
- * buscar `shift_date = hoy`.
+ * **Ojo, esto NO es lo que dice la migración 67**, que afirma que `closes_at`
+ * se interpreta SIEMPRE como del día siguiente. Acá el cierre solo salta de
+ * día cuando `closes_at <= opens_at`, así que un turno cargado "8:00 a 22:00"
+ * se toma como del mismo día. Se deja así a propósito, por el criterio que
+ * manda en este archivo (ante la duda, NO mostrar el dato): si el admin quiso
+ * decir "22:00 de mañana", la página muestra "no tenemos el turno" durante
+ * esas horas -- molesto pero inofensivo. Al revés mandaría a alguien a una
+ * farmacia cerrada a la madrugada. Si alguna vez hace falta cargar turnos que
+ * no sean de 24hs, lo correcto es agregarle a `pharmacy_shifts` una columna
+ * explícita (`closes_next_day`) en vez de adivinar por las horas.
  */
 function shiftWindow(shift) {
   const start = combine(shift.shift_date, shift.opens_at);
@@ -95,9 +105,15 @@ function infoRow(iconClass, text) {
   return row;
 }
 
-/** Link a Google Maps. Usa el que cargó el admin o, si no hay, lo arma con la dirección. */
+/**
+ * Link a Google Maps. Usa el que cargó el admin o, si no hay (o si lo que
+ * cargó no es una URL http/https usable), lo arma con la dirección.
+ * `maps_url` es texto libre de la base puesto derecho en un href, así que
+ * pasa por el mismo filtro que las redes sociales (ver safeExternalUrl).
+ */
 function mapsHref(pharmacy) {
-  if (pharmacy.maps_url) return pharmacy.maps_url;
+  const cargado = safeExternalUrl(pharmacy.maps_url);
+  if (cargado) return cargado;
   const query = encodeURIComponent(`${pharmacy.address}, Baradero, Buenos Aires`);
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
@@ -314,11 +330,28 @@ function renderFreshness(container, shifts) {
 /* Carga                                                               */
 /* ------------------------------------------------------------------ */
 
+/** Bloque "cargando" con el spinner de 6 puntos del proyecto (home.css). */
+function buildLoadingBlock(text) {
+  const block = el('div', 'bl-loading-block');
+  block.setAttribute('role', 'status');
+  block.setAttribute('aria-live', 'polite');
+  const spinner = el('div', 'bl-spinner');
+  spinner.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 6; i++) spinner.appendChild(el('div', 'bl-spinner__dot'));
+  block.appendChild(spinner);
+  block.appendChild(el('p', 'bl-loading-block__title', text));
+  return block;
+}
+
 async function loadFarmacias() {
   const heroBox = document.getElementById('fx-hero-container');
   const weekBox = document.getElementById('fx-week-container');
   const noteBox = document.getElementById('fx-note-container');
   const weekTitle = document.getElementById('fx-week-title');
+
+  // Alguien que entra a la madrugada buscando la farmacia de turno no puede
+  // ver un hueco en blanco y pensar que no hay ninguna cargada.
+  heroBox.appendChild(buildLoadingBlock('Buscando la farmacia de turno'));
 
   const hoy = new Date();
   // Desde AYER: a la madrugada, el turno vigente es el del día anterior.

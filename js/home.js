@@ -1,11 +1,43 @@
 // Interacciones de la página principal
-import { supabase } from './auth-utils.js';
+import { supabase, sellerPanelPage } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
+
+/**
+ * Un vendedor o profesional ya publicado entra directo a su panel (vender.html
+ * o profesional.html según el caso) en vez de ver el home con los productos --
+ * a pedido del usuario, 2026-09-16. La única puerta de vuelta al home es el logo del
+ * navbar: si `document.referrer` es de este mismo sitio, asumimos que
+ * llegaron navegando adentro de la app (típicamente ese click) y no los
+ * mandamos de vuelta al panel. Si no hay referrer o es de otro origen (URL
+ * tipeada a mano, favorito, buscador), entran derecho al panel.
+ * Corre apenas carga el módulo (no espera a DOMContentLoaded) para que la
+ * redirección salga lo antes posible y el home no llegue a pintarse.
+ */
+async function redirectSellerOrProfessionalToPanel() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+  if (!user) return;
+
+  const panel = await sellerPanelPage(user);
+  if (!panel) return;
+
+  const cameFromWithinSite = document.referrer && document.referrer.startsWith(window.location.origin);
+  if (!cameFromWithinSite) {
+    window.location.replace(`./${panel}`);
+    return;
+  }
+
+  // Llegaron por el logo (u otro link interno) y son vendedor/profesional:
+  // el botón de la fila de acciones deja de decir "Vender" -- ya lo son.
+  const venderLink = document.querySelector('.home-action[href="./vender.html"]');
+  if (venderLink) venderLink.textContent = 'Panel';
+}
+redirectSellerOrProfessionalToPanel();
 
 // Comercios sin logo_url: se les asigna uno de estos diseños genéricos ya
 // existentes en el proyecto (ficticios, sin marca real - ver

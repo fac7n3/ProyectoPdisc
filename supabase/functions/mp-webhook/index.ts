@@ -14,6 +14,17 @@
 // mantiene compatibilidad con cualquier orden `pending` que haya quedado en
 // vuelo de antes de esta migración.
 //
+// Qué se verifica antes de marcar una orden como pagada (todo esto se agregó
+// el 2026-09-16, antes alcanzaba con que el webhook dijera "approved"):
+//   1. el pago existe y se puede leer con NUESTRO token (o el del vendedor);
+//   2. su `external_reference` son uuids con forma de uuid;
+//   3. las órdenes están `pending` y son de Mercado Pago;
+//   4. **el monto cobrado cubre lo que suman esas órdenes**. Si no, se marcan
+//      `needs_review` y se avisa al vendedor, nunca `paid`.
+// Y si después llega una devolución/contracargo (`refunded`, `charged_back`,
+// `in_mediation`), la orden vuelve a `needs_review` -- antes se quedaba
+// `paid` para siempre y el vendedor despachaba una venta que ya no existía.
+//
 // NOTA: la relación "webhook.user_id == collector del pago" no está 100%
 // confirmada en la documentación pública de Mercado Pago (ver hallazgo en
 // docs/MIGRACIONES_PENDIENTES.md o el mensaje del PR) -- hay que confirmarla
@@ -40,12 +51,31 @@ async function resolveAccessToken(
     return { token: MP_ACCESS_TOKEN, storeId: null };
   }
 
-  const { data: store } = await supabase
+  // limit(2) y no .maybeSingle(): `stores.mp_collector_id` no tiene unique,
+  // así que una misma cuenta de MP puede terminar vinculada a dos tiendas (es
+  // lo que evita ahora mp-oauth-callback, pero puede haber quedado de antes).
+  // Con .maybeSingle() ese caso devolvía error, se caía en silencio al token
+  // global y el pago no se confirmaba nunca, sin dejar rastro de por qué.
+  const { data: stores, error: storesError } = await supabase
     .from("stores")
     .select("id")
     .eq("mp_collector_id", mpUserId)
-    .maybeSingle();
+    .limit(2);
 
+  if (storesError) {
+    console.error("Error buscando la tienda por mp_collector_id:", storesError);
+    return { token: MP_ACCESS_TOKEN, storeId: null };
+  }
+
+  if (stores && stores.length > 1) {
+    console.error(
+      `mp_collector_id ${mpUserId} está vinculado a más de una tienda: no se puede ` +
+      "saber con qué token leer el pago. Hay que desvincular una desde el panel.",
+    );
+    return { token: "", storeId: null };
+  }
+
+  const store = stores?.[0];
   if (!store) {
     return { token: MP_ACCESS_TOKEN, storeId: null };
   }
@@ -92,6 +122,55 @@ async function resolveAccessToken(
     .eq("store_id", store.id);
 
   return { token: refreshed.access_token as string, storeId: store.id as string };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Estados de MP en los que la plata ya no está: devolución, contracargo o disputa abierta. */
+const DISPUTED_STATUSES = ["refunded", "charged_back", "in_mediation"];
+
+/**
+ * Avisa a los dueños de las tiendas de esas órdenes. Una sola consulta de
+ * `stores` para todas (antes se pedía el owner_id de a una dentro del for,
+ * un N+1 contra la base por cada orden del pago).
+ */
+async function notifyStoreOwners(
+  supabase: ReturnType<typeof createClient>,
+  orders: Array<{ id: string; store_id: string }>,
+  type: string,
+  extraPayload: Record<string, unknown> = {},
+) {
+  const storeIds = [...new Set(orders.map((o) => o.store_id))];
+  if (storeIds.length === 0) return;
+
+  const { data: stores, error } = await supabase
+    .from("stores")
+    .select("id, owner_id")
+    .in("id", storeIds);
+
+  if (error) {
+    console.error("Error buscando los dueños para notificar:", error);
+    return;
+  }
+
+  const ownerByStore = new Map(
+    (stores ?? []).map((st: { id: string; owner_id: string | null }) => [st.id, st.owner_id]),
+  );
+
+  for (const order of orders) {
+    const ownerId = ownerByStore.get(order.store_id);
+    if (!ownerId) continue;
+    await supabase
+      .rpc("create_notification", {
+        p_user_id: ownerId,
+        p_type: type,
+        p_payload: { order_id: order.id, ...extraPayload },
+      })
+      .then(
+        () => {},
+        (err: unknown) => console.error(`Error creando notificación ${type}:`, err),
+      );
+  }
 }
 
 async function markNeedsReview(supabase: ReturnType<typeof createClient>, storeId: string) {
@@ -162,14 +241,79 @@ Deno.serve(async (req: Request) => {
     }
 
     const payment = await paymentRes.json();
-    const orderIds: string[] = (payment.external_reference ?? "")
+
+    // external_reference lo escribe mp-create-preference como "uuid,uuid,...",
+    // pero acá llega desde afuera: si trae cualquier otra cosa, el `.in("id",
+    // ...)` de abajo explota con un error de casteo de uuid, cae en el catch y
+    // devuelve 500 -- y Mercado Pago reintenta un webhook con 500 durante
+    // días. Filtrar por forma de uuid lo convierte en un "no hay nada que
+    // hacer" (200) en vez de un reintento eterno.
+    const orderIds: string[] = String(payment.external_reference ?? "")
       .split(",")
-      .filter(Boolean);
+      .map((id: string) => id.trim())
+      .filter((id: string) => UUID_RE.test(id));
+
     if (orderIds.length === 0) {
+      if (payment.external_reference) {
+        console.warn("external_reference sin uuids válidos, se ignora:", payment.external_reference);
+      }
       return new Response("ok", { status: 200 });
     }
 
     if (payment.status === "approved") {
+      // Qué órdenes de las que dice este pago se pueden marcar realmente.
+      // Se leen ANTES de escribir para poder comparar el total contra lo que
+      // Mercado Pago dice que se cobró: hasta ahora se marcaba pagado con
+      // mirar solo `status === "approved"`, sin verificar ni una vez el monto.
+      const { data: pendingOrders, error: pendingError } = await supabase
+        .from("orders")
+        .select("id, store_id, total_price")
+        .in("id", orderIds)
+        .eq("payment_method", "mercadopago")
+        .eq("payment_status", "pending");
+
+      if (pendingError) throw pendingError;
+
+      if (!pendingOrders || pendingOrders.length === 0) {
+        // Ya las confirmó un webhook anterior (MP reintenta el mismo evento) o
+        // el pago apunta a órdenes que no están esperando cobro.
+        return new Response("ok", { status: 200 });
+      }
+
+      const expectedTotal = pendingOrders.reduce(
+        (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
+        0,
+      );
+      // Pesos enteros en todo el sistema (ver CLAUDE.md), así que redondear
+      // alcanza: no hay centavos que perdonar.
+      const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
+
+      if (paidAmount < expectedTotal) {
+        // Se cobró menos de lo que suman las órdenes. Puede ser un intento de
+        // pagar de menos, o un pago partido en dos medios (MP manda un webhook
+        // por cada uno y cada `transaction_amount` es parcial). En los dos
+        // casos lo correcto es NO dar la venta por cobrada y que el vendedor
+        // mire: marcar `paid` de más regala mercadería, marcar `needs_review`
+        // de más solo pide una revisión.
+        console.warn(
+          `Pago ${payment.id}: se cobraron ${paidAmount} y las órdenes suman ${expectedTotal}.`,
+        );
+        const { data: flagged, error: flagError } = await supabase
+          .from("orders")
+          .update({ payment_status: "needs_review", payment_id: String(payment.id) })
+          .in("id", pendingOrders.map((o: { id: string }) => o.id))
+          .eq("payment_method", "mercadopago")
+          .eq("payment_status", "pending")
+          .select("id, store_id");
+
+        if (flagError) throw flagError;
+        await notifyStoreOwners(supabase, flagged ?? [], "mp_payment_amount_mismatch", {
+          paid_amount: paidAmount,
+          expected_amount: expectedTotal,
+        });
+        return new Response("ok", { status: 200 });
+      }
+
       const { data: updated, error } = await supabase
         .from("orders")
         .update({
@@ -177,32 +321,31 @@ Deno.serve(async (req: Request) => {
           status: "paid",
           payment_id: String(payment.id),
         })
-        .in("id", orderIds)
+        .in("id", pendingOrders.map((o: { id: string }) => o.id))
         .eq("payment_method", "mercadopago")
         .eq("payment_status", "pending")
         .select("id, store_id");
 
       if (error) throw error;
+      await notifyStoreOwners(supabase, updated ?? [], "order_paid");
+    } else if (DISPUTED_STATUSES.includes(payment.status)) {
+      // Devolución, contracargo o disputa abierta: la plata ya no está, pero
+      // hasta ahora la orden se quedaba en `paid` para siempre y el vendedor
+      // despachaba igual. Se marca para revisión (no `rejected`: el pedido
+      // puede estar entregado, lo resuelve una persona) y se le avisa.
+      const { data: disputed, error: disputedError } = await supabase
+        .from("orders")
+        .update({ payment_status: "needs_review" })
+        .in("id", orderIds)
+        .eq("payment_method", "mercadopago")
+        .eq("payment_id", String(payment.id))
+        .eq("payment_status", "paid")
+        .select("id, store_id");
 
-      for (const order of updated ?? []) {
-        const { data: store } = await supabase
-          .from("stores")
-          .select("owner_id")
-          .eq("id", order.store_id)
-          .single();
-        if (store?.owner_id) {
-          await supabase
-            .rpc("create_notification", {
-              p_user_id: store.owner_id,
-              p_type: "order_paid",
-              p_payload: { order_id: order.id },
-            })
-            .then(
-              () => {},
-              (notifyErr: unknown) => console.error("Error creando notificación:", notifyErr),
-            );
-        }
-      }
+      if (disputedError) throw disputedError;
+      await notifyStoreOwners(supabase, disputed ?? [], "mp_payment_refunded", {
+        mp_status: payment.status,
+      });
     } else if (payment.status === "rejected" || payment.status === "cancelled") {
       const { error } = await supabase
         .from("orders")

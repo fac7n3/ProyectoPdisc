@@ -30,7 +30,20 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MP_CLIENT_ID = Deno.env.get("MP_CLIENT_ID")!;
 const MP_CLIENT_SECRET = Deno.env.get("MP_CLIENT_SECRET")!;
-const MP_MARKETPLACE_FEE_PCT = Number(Deno.env.get("MP_MARKETPLACE_FEE_PCT") ?? "0");
+// Si el secret viene con algo que no es número (o fuera de 0-100), se cae a 0
+// en vez de arrastrar un NaN: `marketplace_fee: NaN` se serializa como `null`
+// y Mercado Pago rechaza la preferencia entera, o peor, la acepta con una
+// comisión que nadie quiso.
+const rawFeePct = Number(Deno.env.get("MP_MARKETPLACE_FEE_PCT") ?? "0");
+const MP_MARKETPLACE_FEE_PCT =
+  Number.isFinite(rawFeePct) && rawFeePct >= 0 && rawFeePct <= 100 ? rawFeePct : 0;
+if (rawFeePct !== MP_MARKETPLACE_FEE_PCT) {
+  console.error(`MP_MARKETPLACE_FEE_PCT inválido ("${Deno.env.get("MP_MARKETPLACE_FEE_PCT")}"), se usa 0.`);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Tope defensivo: un carrito real no llega ni cerca; evita una query gigante. */
+const MAX_ORDERS_PER_PREFERENCE = 50;
 
 // Refrescar si falta menos de un día para el vencimiento (o ya venció).
 const REFRESH_MARGIN_MS = 24 * 60 * 60 * 1000;
@@ -87,9 +100,26 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { order_ids: orderIds } = await req.json();
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    const { order_ids: rawOrderIds } = await req.json();
+    if (!Array.isArray(rawOrderIds) || rawOrderIds.length === 0) {
       return jsonResponse({ error: "order_ids requerido." }, 400);
+    }
+
+    // El body es de afuera: sin este filtro, un order_ids con números u
+    // objetos llegaba tal cual al `.in("id", ...)`, Postgres tiraba un error
+    // de casteo y el usuario veía "Error interno" (500) en vez de saber que
+    // mandó algo mal. Se deduplica de paso: con ["A","A"] el chequeo de
+    // longitud de abajo daba 1 !== 2 y respondía "no te pertenece", que es
+    // confuso y falso.
+    const orderIds = [...new Set(
+      rawOrderIds.filter((id: unknown): id is string => typeof id === "string" && UUID_RE.test(id)),
+    )];
+
+    if (orderIds.length === 0) {
+      return jsonResponse({ error: "order_ids no tiene ningún identificador válido." }, 400);
+    }
+    if (orderIds.length > MAX_ORDERS_PER_PREFERENCE) {
+      return jsonResponse({ error: "Demasiados pedidos en un solo pago." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";

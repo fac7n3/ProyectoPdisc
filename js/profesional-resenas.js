@@ -2,7 +2,7 @@
  * Sección "Reseñas" del panel del profesional: las que le dejaron los vecinos
  * y la respuesta pública que puede escribir debajo de cada una.
  *
- * La respuesta vive en `reviews.owner_reply` (migración 93). Quién puede
+ * La respuesta vive en `reviews.owner_reply` (migración 94). Quién puede
  * escribirla lo decide la base: hay una policy que solo deja pasar al dueño de
  * lo reseñado y un trigger que impide que el autor de la reseña se escriba a
  * sí mismo una respuesta falsa. Acá no se valida nada de eso, se muestra.

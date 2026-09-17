@@ -93,7 +93,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (`js/vender-shell.js`, que ya era genérico) y sus clases, copiadas a
   `Assets/styles/profesional.css`; el acento es el ámbar del modo Oficios en su
   tono oscuro (`#b45309`, porque el de marca no llega a AA con texto blanco
-  encima). Migraciones **88-93**, todas aplicadas a producción. **Ojo con dos
+  encima). Migraciones **89-94**, todas aplicadas a producción. **Ojo con dos
   cosas al tocar esto:** (1) `increment_professional_metric` lo llama un
   visitante anónimo, así que valida adentro el tipo de evento y que el
   profesional esté activo, y la tabla de métricas no tiene policy de escritura
@@ -106,6 +106,169 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   Supabase -- hay tests de la lógica con filo
   (`professional-hours-utils`, `professional-service-utils`) y se verificó el
   diseño, pero el flujo real conviene caminarlo una vez a mano.
+- **Resuelto 2026-09-16** — Auditoría del carrito y el checkout (`js/carrito.js`
+  + `js/cart-utils.js`). Lo grave: **el total que mostraba el carrito no era el
+  que cobraba `create_order`**. El RPC aplica el descuento del cupón **tienda
+  por tienda** (solo donde `coupon.store_id` es null o coincide), pero el
+  carrito guardaba únicamente el porcentaje y se lo restaba al subtotal
+  entero. Con dos comercios en el carrito y un cupón de uno solo, la
+  diferencia no era de centavos: **con $10.000 en cada comercio y un cupón del
+  20% de uno de ellos, el resumen mostraba $16.000 y se cobraban $18.000**
+  (reproducido de punta a punta en la página real). Segundo, más chico: el RPC
+  redondea el subtotal con descuento de **cada tienda** y recién ahí suma el
+  envío; el carrito redondeaba una sola vez al final, lo que corría unos pesos
+  con varios comercios. Y tercero, el umbral de envío gratis de una tienda se
+  calculaba con el descuento de un cupón que podía no ser suyo, así que podía
+  mostrar envío cobrado donde el RPC daba envío gratis.
+  La cuenta se sacó a **`js/cart-totals.js`** (puro, sin DOM, con
+  `node js/cart-totals.test.mjs` — 17 casos que fijan la aritmética contra la
+  del RPC, incluida la comparación del umbral **sin redondear**, que es como
+  la hace Postgres). `carrito.js` ahora guarda `couponPercent` + `couponStoreId`
+  en vez de un `currentDiscount` global, y el resumen, el chip de envío de cada
+  comercio y el botón de pagar salen todos de la misma función.
+  Dos arreglos menores de paso: **las ofertas vencían tres horas antes de
+  tiempo todas las noches** — `new Date().toISOString().slice(0,10)` da el día
+  **UTC**, y Argentina va 3 horas atrás, así que de 21:00 a medianoche una
+  oferta que vencía ese mismo día ya se mostraba sin tachado (estaba igual en
+  `cart-utils.js` y en `product-modal.js`; ahora los dos usan `localIsoDate()`,
+  mismo criterio que `isoDate()` de `farmacias.js`). Y la lista de cupones
+  públicos ahora filtra explícito por activo + no vencido: la policy pública ya
+  lo hacía, pero la del admin (cmd `ALL`) no, así que una cuenta admin veía
+  cupones que `create_order` después rechazaba.
+- **Resuelto 2026-09-16** — Auditoría de las tres páginas de directorio
+  (`js/contratar.js`, `js/farmacias.js`, `js/servicios.js`). Lo principal:
+  **las URLs que carga a mano un comercio o un profesional (redes sociales,
+  sitio web) iban derecho a un `href` sin validar ni normalizar**, y lo mismo
+  el `maps_url` de una farmacia. Dos consecuencias, las dos medidas en el
+  navegador: (1) **el caso de todos los días** — quien escribe
+  "instagram.com/mitienda" (sin `https://`, que es como lo escribe
+  cualquiera) generaba un link **relativo**, así que el ícono de Instagram
+  llevaba a `proyectopdisc.vercel.app/pages/instagram.com/mitienda`, un 404
+  del propio sitio; el input es `type="text"` y la columna es `text` pelada,
+  no había validación en ningún lado. (2) un `javascript:...` guardado en ese
+  campo se dibujaba como link clickeable. **Medido:** con el `target="_blank"`
+  + `rel="noopener noreferrer"` que ponen `contratar.js` y `comercio.js`,
+  Chromium abre una pestaña nueva y **no** llega al origen del sitio; sin
+  `target="_blank"` sí ejecuta (la CSP no lo frena, `script-src` tiene
+  `'unsafe-inline'`). O sea: no era un XSS guardado explotable hoy, pero lo
+  único que lo separaba de serlo eran dos atributos en el call site. Se
+  resolvió en `js/store-contact-utils.js` con `safeExternalUrl()` (completa el
+  `https://` que falta, descarta todo lo que no sea http/https), que usa
+  `getVisibleSocialLinks()` — **arregla de una las dos páginas que lo
+  consumen, contratar y comercio**, más el `maps_url` de farmacias. Con tests
+  (`node js/store-contact-utils.test.mjs`).
+  Otros tres arreglos: en `contratar.js`, **las reseñas dejaban de cargar para
+  siempre** si se abría una tarjeta y después se filtraba la lista (el Set
+  `loadedReviewSections` guardaba ids de un DOM que el re-render ya había
+  tirado — reproducido y verificado en el navegador); las tres páginas
+  mostraban un hueco en blanco mientras cargaban (ahora usan el bloque con el
+  spinner de 6 puntos); y `contratar`/`servicios` ahora filtran explícito por
+  `is_active` — la policy pública ya lo hacía, pero la del admin (cmd `ALL`)
+  no, así que una cuenta admin veía en las páginas públicas las publicaciones
+  pausadas y los contactos dados de baja.
+  **Contradicción documentada, no resuelta:** la migración 67 dice que
+  `pharmacy_shifts.closes_at` se interpreta **SIEMPRE** como del día
+  siguiente, pero `js/farmacias.js` solo lo pasa al día siguiente cuando
+  `closes_at <= opens_at` (un turno "8:00 a 22:00" lo toma del mismo día). Se
+  dejó el comportamiento del código a propósito — es el conservador, y el
+  criterio del archivo es "ante la duda, NO mostrar el dato" — y se documentó
+  la divergencia en el JSDoc de `shiftWindow`. Con los turnos reales de
+  Baradero (8:00 a 8:00) las dos lecturas coinciden, así que hoy no cambia
+  nada. **Si alguna vez hay que cargar turnos que no sean de 24hs, la salida
+  correcta es una columna explícita `closes_next_day`, no adivinar por las
+  horas.** El formulario del admin son dos inputs de hora sin ninguna
+  aclaración sobre esto.
+- **Resuelto 2026-09-16** — Auditoría de las 4 Edge Functions
+  (`supabase/functions/`), que mueven plata y borran cuentas y **no tenían ni
+  un test**. Lo más grave, en `mp-webhook`: **nunca se verificaba el monto
+  cobrado**. Alcanzaba con que Mercado Pago dijera `approved` para marcar la
+  orden como pagada, sin comparar `transaction_amount` contra lo que suman las
+  órdenes — un pago de $100 marcaba pagado un pedido de $50.000 (reproducido
+  en test). Ahora, si lo cobrado no cubre el total, las órdenes van a
+  `needs_review` y se le avisa al vendedor; nunca a `paid`. Segundo: una
+  **devolución o contracargo** (`refunded`/`charged_back`/`in_mediation`)
+  dejaba la orden en `paid` para siempre y el vendedor despachaba una venta
+  que ya no existía — ahora vuelve a `needs_review` con aviso. Tercero: un
+  `external_reference` que no fueran uuids hacía explotar el `.in()`, caía en
+  el catch y devolvía 500, y **MP reintenta un webhook con 500 durante días**
+  — ahora se filtra por forma de uuid y responde 200. Cuarto: se sacó el N+1
+  que pedía el `owner_id` de a una orden por vez.
+  En **`delete-account`**: la función implementa el derecho de supresión (Ley
+  25.326) pero solo limpiaba el bucket `avatars` — las **capturas de los
+  reclamos** (`support-attachments/{uid}/`, que suelen traer dirección, mail o
+  medio de pago) quedaban ahí para siempre después de una baja. Ahora se
+  borran las dos carpetas, paginando (`list()` corta en 100 y no avisa que hay
+  más). `payment-proofs` se deja a propósito: sus paths son `{order_id}/` y el
+  pedido sobrevive anonimizado, es el respaldo del cobro del comercio.
+  Además se reordenó: primero la baja, después los archivos y sin tirar —
+  antes, si el `deleteUser` fallaba, la persona se quedaba con la cuenta pero
+  ya sin su foto de perfil.
+  En **`mp-oauth-callback`**: no dejaba vincular la misma cuenta de MP a dos
+  tiendas (`stores.mp_collector_id` no tiene unique, y con dos filas el
+  webhook no sabe con qué token leer el pago, se cae al global y la venta no
+  se confirma nunca, en silencio). En **`mp-create-preference`**: se valida el
+  `order_ids` que llega en el body (uuids, sin duplicados, con tope) para
+  devolver un 400 claro en vez de un 500, y se protege
+  `MP_MARKETPLACE_FEE_PCT` de un valor inválido que se colaba como NaN.
+  Tests nuevos en **`supabase/functions/_tests/`** (24 asserts, corren con
+  `npm test`, sin Deno ni red): transpilan el `index.ts` real y lo corren
+  contra un Supabase en memoria. Contra el código de `main` fallan 8.
+  **Dos pendientes que salieron de esto y NO se tocaron** (ver abajo).
+- **Pendiente (2026-09-16) — prioridad ALTA — `orders_insert_own` deja fijar
+  el precio desde el cliente.** La policy es solo
+  `with check (client_id = auth.uid())`: cualquier usuario autenticado puede
+  insertar una orden por la API REST **salteándose el RPC `create_order`**
+  (que sí calcula el total server-side desde `products.price`) con el
+  `total_price`, `store_id` y `payment_method` que quiera. Con
+  `order_items_insert_own` puede sumarle ítems con título y precio
+  inventados. O sea: fabricar un pedido de productos reales por $1, pagarlo, y
+  que le figure al comercio como pagado. Verificado contra la base de
+  producción el 2026-09-16 con `pg_policies`. La verificación de monto que se
+  agregó al webhook **no tapa este caso** (el monto coincide con el total
+  inventado): hay que arreglarlo en la policy — que el insert directo no pueda
+  fijar `total_price`/`payment_status`, o directamente revocarlo y dejar solo
+  el RPC. Necesita migración, la aplica el usuario.
+- **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
+  Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
+  vendedor logueado se le hace disparar la función con un `code` ajeno, su
+  comercio queda vinculado a la cuenta de MP del atacante y todos los cobros
+  van ahí. Hoy no es explotable porque **ninguna página llama a esa función**
+  (la vinculación está pausada, ver A113-274), pero hay que resolverlo
+  **antes** de cablearla. Anotado también en el encabezado del archivo.
+- **Resuelto 2026-09-16** — La sección "Contactar a soporte" (Mi perfil y panel
+  de vendedor) se veía rota en producción: el commit `3a3e6a3` que sumó los
+  adjuntos reescribió `js/support-utils.js` entero (+552 líneas: tarjeta,
+  dropzone, lista de archivos, chips, fila plegable) **sin tocar ni un archivo
+  de CSS**. Quedaron 34 clases `tkt-*` usadas por el JS sin una sola regla, así
+  que el selector de adjuntos, la tarjeta del formulario y los chips salían sin
+  estilo, y cada fila de la lista mostraba asunto + mensaje + fecha pegados en
+  un solo renglón corrido. Agregadas las 34 reglas a `Assets/styles/home.css`
+  (junto al bloque `tkt-` que ya estaba) y reparadas las que el rediseño había
+  dejado desfasadas: `.tkt-item__top` pasó de `<div>` a `<button>` y le faltaba
+  el reset (ancho, padding, `font`, alineación), `.tkt-empty` pasó de `<p>` a
+  bloque con ícono, y `.tkt-item__msg`/`.tkt-item__date` habían quedado muertas
+  (borradas). **Gotcha para el futuro:** el chequeo que caza esta clase de bug
+  es comparar las clases del JS contra las del CSS —
+  `grep -oE "tkt-[a-zA-Z0-9_-]+" js/support-utils.js | sort -u` contra
+  `grep -rhoE "\.tkt-[a-zA-Z0-9_-]+" Assets/styles/ | sed 's/^\.//' | sort -u`;
+  al 2026-09-16 las dos direcciones dan 0.
+  De paso, 8 arreglos en `js/support-utils.js`: (1) abrir un adjunto no
+  funcionaba en Safari/Firefox — `window.open()` iba después del `await` de
+  `createSignedUrl` y el bloqueador de popups lo frenaba sin avisar; ahora la
+  pestaña se abre antes y se navega después (**el mismo bug sigue en
+  `js/vender.js:2599` y `js/admin.js:891`, con los comprobantes de
+  transferencia** — no se tocaron por estar fuera de esta tarea); (2) el
+  `required` del navegador dejaba mandar un reclamo con asunto de solo
+  espacios, que quedaba como una fila en blanco; (3) cancelar un reclamo
+  avisaba "Reclamo cancelado" aunque la RLS rechazara el update (Supabase no
+  tira error, devuelve cero filas — ahora se chequea con `.select()`); (4) si
+  fallaba la consulta del hilo se mostraba "Todavía no hay respuestas", que es
+  mentira; (5) fuga de los objectURL de las miniaturas al redibujar la sección;
+  (6) bloque de carga con el spinner de 6 puntos mientras se piden los
+  reclamos, que antes era un hueco mudo; (7) el campo de respuesta no tenía
+  nombre accesible y el encabezado plegable no declaraba `aria-controls`;
+  (8) parpadeo del resaltado al arrastrar archivos sobre la zona. `dist/`
+  reconstruido.
 - **Resuelto 2026-09-16** — Se sacó por completo el rol `repartidor` y todo
   su apartado, a pedido del usuario: la logística de entregas queda para
   más adelante. Borrados `pages/repartidor.html` y `js/repartidor.js`

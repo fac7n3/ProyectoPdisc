@@ -20,6 +20,15 @@ const TYPE_LABELS = {
   support_ticket_message: 'Soporte respondió a tu reclamo',
   favorite_price_drop: 'Bajó de precio un producto de tus favoritos',
   mp_split_needs_review: 'Tu vinculación con Mercado Pago necesita revisión',
+  mp_payment_amount_mismatch: 'Un pago no cubre el total del pedido',
+  mp_payment_refunded: 'Un pago fue devuelto o desconocido',
+};
+
+/** Estados de Mercado Pago en los que la plata ya no está (ver mp-webhook). */
+const MP_DISPUTE_LABELS = {
+  refunded: 'El pago fue devuelto al cliente',
+  charged_back: 'El cliente hizo un contracargo',
+  in_mediation: 'Mercado Pago abrió una disputa por este pago',
 };
 
 const SUPPORT_TICKET_STATUS_LABELS = {
@@ -54,6 +63,8 @@ const TYPE_TONE = {
   stock_alert: 'accent',
   favorite_price_drop: 'accent',
   mp_split_needs_review: 'accent',
+  mp_payment_amount_mismatch: 'accent',
+  mp_payment_refunded: 'danger',
   support_ticket_status_change: 'accent',
   new_review: 'info',
   support_ticket_message: 'info',
@@ -97,6 +108,14 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
     }
     case 'order_created':
       return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
+    // Los manda mp-webhook cuando el pago no cierra: sin los dos montos, el
+    // aviso no dice nada accionable.
+    case 'mp_payment_amount_mismatch':
+      return p.paid_amount != null && p.expected_amount != null
+        ? `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`
+        : null;
+    case 'mp_payment_refunded':
+      return MP_DISPUTE_LABELS[p.mp_status] || null;
     case 'order_paid':
     case 'order_shipped':
     case 'order_delivered':
@@ -129,6 +148,8 @@ function buildNotificationLink(n) {
     // con el N° de pedido precargado en el buscador que ya existe ahí.
     case 'order_created':
     case 'revocation_requested':
+    case 'mp_payment_amount_mismatch':
+    case 'mp_payment_refunded':
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;

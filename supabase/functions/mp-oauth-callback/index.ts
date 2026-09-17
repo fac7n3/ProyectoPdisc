@@ -11,6 +11,20 @@
 // nunca confiar en un store_id que mande el cliente sin revalidar). El
 // intercambio de `code` por tokens y el guardado en la base usan un cliente
 // con SERVICE_ROLE_KEY, igual que mp-webhook.
+//
+// ⚠️ PENDIENTE ANTES DE RETOMAR LA VINCULACIÓN (A113-274): FALTA EL `state`.
+// El flujo OAuth no lleva parámetro `state`, así que nada ata el `code` que
+// llega a la persona que arrancó la vinculación. Si alguien consigue que un
+// vendedor ya logueado dispare esta función con un `code` ajeno (por ejemplo
+// mandándole un link a vender.html con ese code en la query), la tienda del
+// vendedor queda vinculada a la cuenta de Mercado Pago DEL ATACANTE -- y a
+// partir de ahí todos los cobros de esa tienda van a esa cuenta. Es el ataque
+// clásico de "account linking" de OAuth.
+// Hoy no es explotable porque NADA en el frontend llama a esta función (la
+// vinculación quedó pausada, ver A113-274 en CLAUDE.md), pero hay que
+// resolverlo ANTES de cablearla: generar un `state` aleatorio al abrir el
+// consentimiento, guardarlo del lado del servidor asociado al usuario, y acá
+// exigirlo y compararlo antes de intercambiar el `code`.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -88,8 +102,31 @@ Deno.serve(async (req: Request) => {
     }
 
     const expiresAt = new Date(Date.now() + Number(token.expires_in ?? 0) * 1000).toISOString();
+    const mpUserId = String(token.user_id);
 
     const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Una cuenta de Mercado Pago no puede quedar vinculada a dos tiendas.
+    // `stores.mp_collector_id` no tiene unique, y mp-webhook resuelve el token
+    // del vendedor buscando por ese campo: con dos filas no sabe cuál usar,
+    // cae al token global, no puede leer el pago y la venta no se confirma
+    // nunca -- sin ningún error visible para el vendedor.
+    const { data: alreadyLinked, error: linkedError } = await serviceClient
+      .from("stores")
+      .select("id, name")
+      .eq("mp_collector_id", mpUserId)
+      .neq("id", storeId)
+      .limit(1);
+
+    if (linkedError) throw linkedError;
+
+    if (alreadyLinked && alreadyLinked.length > 0) {
+      return jsonResponse({
+        error:
+          `Esa cuenta de Mercado Pago ya está vinculada a otro comercio ("${alreadyLinked[0].name}"). ` +
+          "Desvinculala de ahí primero, o usá otra cuenta.",
+      }, 409);
+    }
 
     const { error: upsertError } = await serviceClient
       .from("store_mp_credentials")
@@ -97,7 +134,7 @@ Deno.serve(async (req: Request) => {
         store_id: storeId,
         access_token: token.access_token,
         refresh_token: token.refresh_token,
-        mp_user_id: String(token.user_id),
+        mp_user_id: mpUserId,
         expires_at: expiresAt,
       });
 
@@ -105,12 +142,12 @@ Deno.serve(async (req: Request) => {
 
     const { error: storeUpdateError } = await serviceClient
       .from("stores")
-      .update({ mp_collector_id: String(token.user_id) })
+      .update({ mp_collector_id: mpUserId })
       .eq("id", storeId);
 
     if (storeUpdateError) throw storeUpdateError;
 
-    return jsonResponse({ ok: true, mp_collector_id: String(token.user_id) });
+    return jsonResponse({ ok: true, mp_collector_id: mpUserId });
   } catch (err) {
     console.error(err);
     return jsonResponse({ error: "Error interno." }, 500);

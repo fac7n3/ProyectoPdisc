@@ -700,20 +700,21 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-CvTkEeNQ.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BYKzD-eO.js">
-    <link rel="modulepreload" crossorigin href="/assets/dropdown-Cmg5bVT7.js">
+    <script type="module" crossorigin src="/assets/vender-lY_-y-Vp.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Cp5fHgbX.js">
+    <link rel="modulepreload" crossorigin href="/assets/dropdown-DhRhwbSd.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DCyCJ7SY.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CZ9zTcmj.js">
+    <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BZkfpwd7.js">
-    <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DWksVq_h.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BEh0MbmE.js">
+    <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-B9i3qPeL.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
-    <link rel="modulepreload" crossorigin href="/assets/vender-shell-CqQtCGgc.js">
+    <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-CkVRp1BZ.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-DjFEP-8E.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -1000,13 +1001,9 @@
                   <h3 class="pf-card__title">Contacto y ubicación</h3>
                   <p class="pf-card__hint">Dónde te encuentran y cómo comunicarse con vos.</p>
                   <div class="pf-grid">
-                    <div class="pf-field">
+                    <div class="pf-field pf-field--full">
                       <label class="form-label" for="store-address">Dirección</label>
                       <input type="text" id="store-address" class="form-input" />
-                    </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-phone">Teléfono</label>
-                      <input type="text" id="store-phone" class="form-input" />
                     </div>
                     <div class="pf-field">
                       <label class="form-label" for="store-zone">Zona / Barrio</label>
@@ -1016,18 +1013,16 @@
                       <label class="form-label" for="store-hours">Horarios de atención</label>
                       <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
                     </div>
-                    <!-- El vendedor decide cómo lo contactan desde el botón "Contactar
-                         al vendedor" (producto.js/comercio.js): teléfono, WhatsApp o
-                         ninguno (stores.contact_method). -->
+                    <!-- El vendedor decide si lo contactan por WhatsApp o no desde el
+                         botón "Contactar al vendedor" (producto.js/comercio.js) --
+                         stores.contact_method. Un solo número (stores.whatsapp): ya no
+                         hay un teléfono aparte para "llamar", que quedaba duplicado con
+                         este campo. -->
                     <div class="pf-field pf-field--full">
                       <label class="form-label">¿Cómo querés que te contacten los clientes?</label>
                       <div class="pf-radio-group">
                         <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="phone" checked />
-                          Teléfono
-                        </label>
-                        <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="whatsapp" />
+                          <input type="radio" name="store-contact-method" value="whatsapp" checked />
                           WhatsApp
                         </label>
                         <label class="pf-check">
@@ -1036,10 +1031,13 @@
                         </label>
                       </div>
                     </div>
-                    <div class="pf-field">
-                      <label class="form-label" for="store-whatsapp">Número de WhatsApp</label>
-                      <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" />
-                      <p class="pf-card__hint">Solo se usa si elegiste "WhatsApp" arriba.</p>
+                    <div class="pf-field pf-field--full" id="store-whatsapp-field">
+                      <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
+                      <div style="display: flex; gap: 0.5rem;">
+                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
+                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      </div>
+                      <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
                   </div>
                 </div>

@@ -4,7 +4,7 @@
  * Correr con:  node js/store-contact-utils.test.mjs
  */
 import assert from "node:assert/strict";
-import { buildContactAction, buildWhatsappMessage, getVisibleSocialLinks } from "./store-contact-utils.js";
+import { buildContactAction, buildWhatsappMessage, getVisibleSocialLinks, safeExternalUrl } from "./store-contact-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -92,6 +92,52 @@ check("respeta el orden fijo de la lista de redes", () => {
     social_instagram_show: true,
   });
   assert.deepEqual(links.map((l) => l.key), ["instagram", "youtube"]);
+});
+
+check("safeExternalUrl: completa el https:// que falta", () => {
+  // El caso de todos los días: el vendedor escribe el usuario, sin esquema.
+  // Sin esto el href queda relativo y el link va a un 404 del propio sitio.
+  assert.equal(safeExternalUrl("instagram.com/mitienda"), "https://instagram.com/mitienda");
+  assert.equal(safeExternalUrl("  www.mitienda.com.ar  "), "https://www.mitienda.com.ar/");
+});
+
+check("safeExternalUrl: deja pasar http y https tal cual", () => {
+  assert.equal(safeExternalUrl("https://instagram.com/mitienda"), "https://instagram.com/mitienda");
+  assert.equal(safeExternalUrl("http://mitienda.com.ar/"), "http://mitienda.com.ar/");
+});
+
+check("safeExternalUrl: descarta todo lo que no sea http/https", () => {
+  // `javascript:` guardado en el campo llegaba entero al href. Hoy lo salva
+  // el target="_blank" del call site; acá se corta de raíz (ver la nota de
+  // safeExternalUrl en store-contact-utils.js).
+  assert.equal(safeExternalUrl("javascript:alert(1)"), null);
+  assert.equal(safeExternalUrl("JaVaScRiPt:alert(1)"), null);
+  assert.equal(safeExternalUrl("java\nscript:alert(1)"), null, "partido con un salto de línea");
+  assert.equal(safeExternalUrl("  javascript:alert(1)"), null, "con espacios adelante");
+  assert.equal(safeExternalUrl("data:text/html,<script>alert(1)</script>"), null);
+  assert.equal(safeExternalUrl("vbscript:msgbox(1)"), null);
+  assert.equal(safeExternalUrl("file:///etc/passwd"), null);
+});
+
+check("safeExternalUrl: vacío o basura devuelve null", () => {
+  assert.equal(safeExternalUrl(""), null);
+  assert.equal(safeExternalUrl("   "), null);
+  assert.equal(safeExternalUrl(null), null);
+  assert.equal(safeExternalUrl(undefined), null);
+  assert.equal(safeExternalUrl("https://"), null, "sin host no sirve de link");
+});
+
+check("getVisibleSocialLinks normaliza y descarta lo peligroso", () => {
+  const links = getVisibleSocialLinks({
+    social_instagram: "instagram.com/mitienda",     // sin esquema -> se completa
+    social_instagram_show: true,
+    social_website: "javascript:alert(document.cookie)", // -> se descarta
+    social_website_show: true,
+    social_youtube: "https://youtube.com/@mitienda",
+    social_youtube_show: true,
+  });
+  assert.deepEqual(links.map((l) => l.key), ["instagram", "youtube"]);
+  assert.equal(links[0].url, "https://instagram.com/mitienda");
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");
