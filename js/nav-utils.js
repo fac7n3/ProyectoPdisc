@@ -146,6 +146,36 @@ function writeCatBarCache(categories, featured) {
   } catch { /* localStorage bloqueado: ignorar */ }
 }
 
+// La barra de categorías queda fija (position: sticky) justo debajo del
+// navbar en vez de scrollear con la página. Como el navbar mide distinto según
+// la página (una fila en home, dos en el resto) y según el ancho de pantalla,
+// se mide en JS y se publica como variable CSS en vez de hardcodear un alto:
+// `.category-bar` usa `top: var(--bl-navbar-height)` para pegarse justo
+// después, y `.filters-sidebar` (search.html) suma también
+// `--bl-catbar-height` para no quedar tapada por la barra ahora fija.
+function syncStickyHeightVars() {
+  const navbar = document.querySelector('.navbar');
+  const catbar = document.querySelector('.category-bar');
+  const root = document.documentElement.style;
+  root.setProperty('--bl-navbar-height', `${navbar ? navbar.getBoundingClientRect().height : 0}px`);
+  root.setProperty('--bl-catbar-height', `${catbar ? catbar.getBoundingClientRect().height : 0}px`);
+}
+
+function initStickyHeightVars() {
+  syncStickyHeightVars();
+  const navbar = document.querySelector('.navbar');
+  const catbar = document.querySelector('.category-bar');
+  if (window.ResizeObserver) {
+    // Reacciona también a cambios de tamaño por contenido (ej: la tira de
+    // categorías se llena de forma asíncrona), no solo a resize de ventana.
+    const ro = new ResizeObserver(syncStickyHeightVars);
+    if (navbar) ro.observe(navbar);
+    if (catbar) ro.observe(catbar);
+  } else {
+    window.addEventListener('resize', syncStickyHeightVars, { passive: true });
+  }
+}
+
 /**
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
  * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'/'inicio').
@@ -161,6 +191,8 @@ export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6
   // seguir habiendo mega-menú si la página lo montó en otro lado (home).
   const hasMegaMount = megaMountId && document.getElementById(megaMountId);
   if (!inner && !hasMegaMount) return;
+
+  initStickyHeightVars();
 
   const cached = readCatBarCache();
   if (cached) {

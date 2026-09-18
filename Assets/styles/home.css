@@ -765,7 +765,12 @@ ul, ol {
   border-bottom: 1px solid var(--bl-border);
   /* overflow visible: el panel del mega-menú se posiciona absoluto y no debe recortarse.
      El scroll horizontal ahora vive en .category-bar__quick. */
-  position: relative;
+  /* Fija justo debajo del navbar (que también es sticky) al scrollear, en vez
+     de irse con el resto de la página. --bl-navbar-height la calcula
+     syncStickyHeightVars() en nav-utils.js porque el alto del navbar cambia
+     según la página y el ancho de pantalla -- un valor fijo se desactualiza. */
+  position: sticky;
+  top: var(--bl-navbar-height, 0px);
   z-index: 40;
 }
 
@@ -2026,8 +2031,11 @@ button.coupon-chip:hover {
   border-radius: var(--bl-radius-xl);
   padding: 1.5rem;
   position: sticky;
-  top: 5rem;
-  max-height: calc(100vh - 6rem);
+  /* Debajo del navbar Y de la barra de categorías, que ahora también es
+     sticky (ver .category-bar) -- sin sumar --bl-catbar-height quedaría
+     tapada por ella al scrollear. */
+  top: calc(var(--bl-navbar-height, 5rem) + var(--bl-catbar-height, 0px));
+  max-height: calc(100vh - var(--bl-navbar-height, 5rem) - var(--bl-catbar-height, 0px) - 1rem);
   overflow-y: auto;
   scrollbar-width: thin;
 }
