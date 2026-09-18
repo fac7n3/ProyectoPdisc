@@ -29,6 +29,7 @@ const cardMemberSince = document.getElementById("card-member-since");
 const logoutBtn = document.getElementById("logout-btn");
 const mainContent = document.getElementById("main-content");
 const rolePanelLink = document.getElementById("role-panel-link");
+const ajustesPanelLink = document.getElementById("ajustes-panel-link");
 
 // Direcciones (multi-address book, P0-2)
 const addressesList = document.getElementById("addresses-list");
@@ -189,29 +190,40 @@ function renderQuickProfile(user) {
   setRolePanelLink(user.app_metadata?.role);
 }
 
+/**
+ * Completa un link de acceso al panel: ícono + href, y lo revela.
+ * Se usa dos veces por cuenta elegible -- el de "Tu cuenta" (con label que
+ * dice a cuál panel exactamente, ej. "Panel de vendedor") y el botón
+ * "Ingresar a mi panel" de Ajustes (label fijo, a pedido del usuario: no
+ * necesita repetir cuál es, ya está bajo el título "Tu panel").
+ */
+function applyPanelLink(linkEl, iconId, iconClass, href) {
+  if (!linkEl) return;
+  const icon = document.getElementById(iconId);
+  if (icon) icon.className = iconClass;
+  linkEl.href = href;
+  linkEl.hidden = false;
+}
+
 function setRolePanelLink(jwtRole) {
   if (!rolePanelLink) return;
-  const icon = document.getElementById('role-panel-icon');
   const label = document.getElementById('role-panel-label');
 
   if (jwtRole === 'admin' || jwtRole === 'moderador') {
-    if (icon) icon.className = 'fa-solid fa-shield-halved';
     if (label) label.textContent = jwtRole === 'admin' ? 'Panel de administración' : 'Panel de moderación';
-    rolePanelLink.href = './admin.html';
-    rolePanelLink.hidden = false;
+    applyPanelLink(rolePanelLink, 'role-panel-icon', 'fa-solid fa-shield-halved', './admin.html');
+    applyPanelLink(ajustesPanelLink, 'ajustes-panel-icon', 'fa-solid fa-shield-halved', './admin.html');
   } else if (jwtRole === 'vendedor') {
-    if (icon) icon.className = 'fa-solid fa-shop';
     if (label) label.textContent = 'Panel de vendedor';
-    rolePanelLink.href = './vender.html';
-    rolePanelLink.hidden = false;
+    applyPanelLink(rolePanelLink, 'role-panel-icon', 'fa-solid fa-shop', './vender.html');
+    applyPanelLink(ajustesPanelLink, 'ajustes-panel-icon', 'fa-solid fa-shop', './vender.html');
   } else if (jwtRole === 'profesional') {
     // Pseudo-rol interno (no existe en el JWT): publicarse en "Contratar" no
     // cambia profiles.role, así que este caso solo lo setea renderPanelLink()
     // tras consultar `professionals`, nunca setRolePanelLink() por su cuenta.
-    if (icon) icon.className = 'fa-solid fa-screwdriver-wrench';
     if (label) label.textContent = 'Panel de profesional/técnico';
-    rolePanelLink.href = './profesional.html';
-    rolePanelLink.hidden = false;
+    applyPanelLink(rolePanelLink, 'role-panel-icon', 'fa-solid fa-screwdriver-wrench', './profesional.html');
+    applyPanelLink(ajustesPanelLink, 'ajustes-panel-icon', 'fa-solid fa-screwdriver-wrench', './profesional.html');
   }
 }
 
@@ -2313,14 +2325,14 @@ async function renderPanelLink(user) {
 }
 
 /**
- * Muestra la tarjeta del hub "Tu panel al entrar" y el grupo de Ajustes que
- * la acompaña solo para cuentas con panel propio -- mismo criterio que usa
- * initPanelAction() en js/home.js para decidir si hay algo que redirigir.
+ * Muestra el grupo "Tu panel" de Ajustes (botón "Ingresar a mi panel" +
+ * toggle de auto-redirect) solo para cuentas con panel propio -- mismo
+ * criterio que usa initPanelAction() en js/home.js para decidir si hay algo
+ * que redirigir.
  */
 async function initPanelHomeVisibility(user) {
   const { isAdmin, seller } = await getPanelAccess(user);
   const eligible = isAdmin || !!seller;
-  document.getElementById("account-card-panel-home")?.toggleAttribute("hidden", !eligible);
   document.getElementById("ajustes-auto-redirect")?.toggleAttribute("hidden", !eligible);
 }
 

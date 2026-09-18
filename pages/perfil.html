@@ -99,11 +99,6 @@
           <span class="account-card__title">Soporte</span>
           <span class="account-card__desc">¿Necesitás una mano? Escribinos.</span>
         </button>
-        <button type="button" class="account-card" data-target="tab-ajustes" data-scroll-to="ajustes-auto-redirect" id="account-card-panel-home" hidden>
-          <i class="fa-solid fa-house-chimney account-card__icon"></i>
-          <span class="account-card__title">Tu panel al entrar</span>
-          <span class="account-card__desc">Elegí si entrás directo a tu panel o primero ves el inicio de compras.</span>
-        </button>
         <button type="button" class="account-card" data-target="tab-ajustes">
           <i class="fa-solid fa-gear account-card__icon"></i>
           <span class="account-card__title">Ajustes</span>
@@ -392,8 +387,18 @@
 
             <!-- ---------- Tu panel al entrar (solo cuentas con panel propio) ---------- -->
             <section class="datos-group" id="ajustes-auto-redirect" hidden>
-              <h3 class="datos-group__title">Tu panel al entrar</h3>
+              <h3 class="datos-group__title">Tu panel</h3>
               <div class="datos-panel">
+                <div class="datos-row datos-row--static">
+                  <div class="datos-row__main">
+                    <span class="datos-row__label">Ir a tu panel</span>
+                    <span class="datos-row__value">Gestioná tu comercio, tu publicación o el panel de administración.</span>
+                  </div>
+                  <a href="./vender.html" class="datos-btn" id="ajustes-panel-link" hidden>
+                    <i class="fa-solid fa-arrow-right-to-bracket" id="ajustes-panel-icon" aria-hidden="true"></i>
+                    <span id="ajustes-panel-label">Ingresar a mi panel</span>
+                  </a>
+                </div>
                 <div class="pref-row">
                   <label class="pref-toggle" for="pref-auto-redirect-panel">
                     <input type="checkbox" id="pref-auto-redirect-panel" checked />
@@ -404,7 +409,7 @@
                   </label>
                 </div>
                 <p class="datos-row__hint" style="margin-top: 0.5rem;">
-                  Esto solo cambia a dónde entrás primero. Aunque lo apagues, vas a poder seguir entrando a tu panel cuando quieras desde "Tu cuenta", en Información de tu perfil.
+                  Esto solo cambia a dónde entrás primero. Aunque lo apagues, vas a poder seguir entrando a tu panel cuando quieras con el botón "Ingresar a mi panel" de acá arriba.
                 </p>
               </div>
             </section>
