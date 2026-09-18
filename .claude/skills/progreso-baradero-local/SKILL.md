@@ -3347,7 +3347,9 @@ usa `setRolePanelLink()` en `js/perfil.js`.
 `.category-bar__inner--home-actions`. Al envolverlo en un div para poder posicionar el menú,
 el `flex: 1` tiene que pasar al **wrapper** — si no, el botón se encoge al ancho del texto y los
 otros dos accesos se comen la fila. El menú no se recorta porque `.category-bar` ya es
-`position: relative; z-index: 40` con overflow visible (lo dejó así el mega-menú de categorías).
+`position: sticky` (antes `relative`, ver entrada 2026-09-18 más abajo) con `z-index: 40` y
+overflow visible (lo dejó así el mega-menú de categorías) — sticky sigue sin recortar hijos
+posicionados absoluto, así que el gotcha se mantiene igual.
 
 ### Verificación
 
@@ -3367,3 +3369,38 @@ específicas después — al revés, el catch-all se come todo y las consultas m
 vacías (pasó, y hacía fallar justo los casos de profesional/empleada). Y el Chromium
 preinstalado del entorno remoto no es el que espera el `playwright` recién instalado: hay que
 pasarle `executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`.
+
+## 2026-09-18 — Barra de categorías fija al scrollear
+
+La franja de "Inicio / Ofertas / rubros" (`.category-bar`, debajo del navbar en search/comercios/
+producto/comercio, y la fila "Vender/Contratar/Panel" que ocupa el mismo lugar en home) era
+`position: relative`: al bajar la página, scrolleaba con el resto igual que cualquier otro
+bloque. Pedido del usuario: que quede fija (sticky) igual que ya lo era el navbar.
+
+Pasa a `position: sticky` con `top: var(--bl-navbar-height, 0px)`. El valor no se pudo
+hardcodear: el navbar mide distinto en home (una sola fila, `navbar--single-row`) que en el
+resto (dos filas: logo+acciones y buscador separado), y también según el ancho de pantalla
+(el navbar pasa a 2 renglones en mobile). Se resolvió midiéndolo en JS
+(`syncStickyHeightVars()` en `js/nav-utils.js`, con `ResizeObserver` sobre `.navbar` y
+`.category-bar` para que se actualice solo si el navbar cambia de alto o la barra de categorías
+tarda en poblarse de forma asíncrona) y publicándolo como variable CSS
+(`--bl-navbar-height`/`--bl-catbar-height` en `documentElement.style`). Se engancha desde
+`initCategoryBar()`, que ya corren las 5 páginas con barra de categorías — no hizo falta tocar
+cada página por separado.
+
+**Efecto colateral que había que resolver sí o sí:** `.filters-sidebar` (el panel "Filtros" de
+search.html) ya era `position: sticky` con un `top: 5rem` adivinado a mano (una aproximación al
+alto del navbar de dos filas). Con la barra de categorías ahora también fija debajo del navbar,
+ese `top` se quedaba corto y el sidebar terminaba tapado detrás de la barra al scrollear. Pasa a
+`top: calc(var(--bl-navbar-height, 5rem) + var(--bl-catbar-height, 0px))` (mismo criterio para
+`max-height`), así que se acomoda automáticamente sea cual sea el alto real.
+
+**Verificado con Playwright** contra el build real (`vite preview`): con contenido de relleno
+inyectado para simular una grilla de productos alta (en el entorno de la sesión la red a
+Supabase no anda —`ERR_TUNNEL_CONNECTION_FAILED`/certificado inválido del proxy del sandbox—,
+así que sin datos reales la grilla queda más baja que el propio sidebar y el sticky no tiene
+margen para moverse; es una limitación del entorno de prueba, no del CSS). Con la grilla alta:
+al scrollear 500px, navbar en `0–117px`, barra de categorías pegada justo debajo en
+`117–166px`, y el sidebar de Filtros arrancando en `166px` sin quedar tapado. Confirmado también
+en `home.html` (navbar de una fila, la franja de accesos queda fija en `65–102px`) y en mobile
+(390px) que no rompe el layout. `npm test` en verde, `dist/` reconstruido.
