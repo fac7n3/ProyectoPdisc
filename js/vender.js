@@ -7,7 +7,6 @@ import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
-import { openImageCropModal, cropOutputExt } from './image-crop-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
@@ -1291,26 +1290,18 @@ function setupStoreLogoPicker() {
       return;
     }
 
-    // Deja elegir qué parte de la foto queda visible (arrastrando/zoom) antes
-    // de subirla -- si cancela, no se sube nada.
-    const cropped = await openImageCropModal(file);
-    if (!cropped) {
-      fileInput.value = '';
-      return;
-    }
-
     pickBtn.disabled = true;
     pickBtn.textContent = 'Subiendo…';
     const previousUrl = currentStoreLogoUrl;
 
     try {
-      const ext = cropOutputExt(cropped);
+      const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
       // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del bucket.
-      const path = `${currentUserId}/${Date.now()}.${ext}`;
+      const path = `${currentUserId}/${Date.now()}.${ext || 'jpg'}`;
 
       const { error: upErr } = await supabase.storage
         .from('store-logos')
-        .upload(path, cropped, { contentType: cropped.type });
+        .upload(path, file, { contentType: file.type || 'image/jpeg' });
       if (upErr) throw upErr;
 
       const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
