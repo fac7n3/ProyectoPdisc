@@ -12,6 +12,7 @@
 
 import { supabase, guardPage, showToast, setLoading } from './auth-utils.js';
 import { initVenderShell } from './vender-shell.js';
+import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
@@ -33,6 +34,38 @@ const BUCKET_FOTO = 'professional-photos';
 
 /** Estado de la página. `prof` es la fila de `professionals` de esta cuenta. */
 const estado = { user: null, prof: null, categoriaDropdown: null };
+
+// Copy de las tarjetas de bienvenida al panel (js/panel-onboarding-utils.js).
+// Clave = mismo valor que data-section en el sidebar (pages/profesional.html).
+const PROF_SECTION_COPY = {
+  resumen: { icon: 'fa-solid fa-house', title: 'Resumen', desc: 'Cómo viene tu actividad: consultas, reseñas y lo más importante de un vistazo.' },
+  perfil: { icon: 'fa-regular fa-id-card', title: 'Mis datos', desc: 'Tu nombre, oficio y descripción: lo primero que lee un vecino que busca ayuda.' },
+  servicios: { icon: 'fa-solid fa-screwdriver-wrench', title: 'Servicios y precios', desc: 'Los trabajos que ofrecés y cuánto cobrás por cada uno.' },
+  disponibilidad: { icon: 'fa-regular fa-clock', title: 'Horarios y zona', desc: 'Cuándo estás disponible y hasta dónde llegás a trabajar.' },
+  galeria: { icon: 'fa-regular fa-images', title: 'Fotos de trabajos', desc: 'Mostrá trabajos que ya hiciste: es lo que más convence a un vecino nuevo.' },
+  consultas: { icon: 'fa-regular fa-comments', title: 'Consultas', desc: 'Los mensajes de vecinos interesados en contratarte.' },
+  resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan quienes ya te contrataron.' },
+  metricas: { icon: 'fa-solid fa-chart-line', title: 'Estadísticas', desc: 'Cuántos vecinos vieron tu publicación y te contactaron.' },
+  notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de consultas nuevas y reseñas.' },
+  soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Necesitás una mano? Escribinos.' },
+};
+
+function buildProfOnboardingSections() {
+  const keys = new Set();
+  document.querySelectorAll('#mc-sidebar [data-section]').forEach((el) => keys.add(el.dataset.section));
+  return [...keys].map((k) => PROF_SECTION_COPY[k]).filter(Boolean);
+}
+
+async function maybeShowProfOnboarding() {
+  if (await loadPanelOnboardingSeen('profesional')) return;
+  const nombre = (estado.prof?.full_name || '').trim().split(/\s+/)[0];
+  showPanelOnboarding({
+    panelKey: 'profesional',
+    title: '¡Bienvenido a tu panel de profesional/técnico!',
+    greeting: nombre ? `Hola ${nombre}, así vas a manejar tu publicación en Contratar:` : 'Así vas a manejar tu publicación en Contratar:',
+    sections: buildProfOnboardingSections(),
+  });
+}
 
 /** Columnas de `professionals` que usa el panel, con las 12 de redes. */
 const COLUMNAS = [
@@ -152,6 +185,7 @@ function montarPanel() {
   // El shell necesita las secciones ya en el DOM: se cablea antes de pedir
   // datos, igual que loadDashboard() en vender.js.
   initVenderShell();
+  maybeShowProfOnboarding();
   initNotificationsBell();
 
   initPerfil();

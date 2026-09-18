@@ -4654,3 +4654,106 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 @media (max-width: 480px) {
   .pro-highlight-card { width: 165px; }
 }
+
+/* Overlay de bienvenida a un panel (js/panel-onboarding-utils.js). Lo cargan
+   vender.html, profesional.html y admin.html además de home.html. */
+.panel-onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.panel-onboarding-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.panel-onboarding {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--bl-surface);
+  border-radius: var(--bl-radius-xl);
+  padding: 1.75rem;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.2);
+}
+
+.panel-onboarding__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: var(--bl-text);
+}
+
+.panel-onboarding__greeting {
+  color: var(--bl-text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.panel-onboarding__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-onboarding__card {
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  padding: 0.9rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.panel-onboarding__card-icon {
+  color: var(--bl-primary);
+  margin-top: 0.15rem;
+}
+
+.panel-onboarding__card-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+  color: var(--bl-text);
+}
+
+.panel-onboarding__card-desc {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--bl-text-muted);
+}
+
+.panel-onboarding__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.panel-onboarding__btn {
+  padding: 0.55rem 1rem;
+  border-radius: var(--bl-radius-md);
+  border: 1px solid var(--bl-border);
+  background: var(--bl-surface);
+  color: var(--bl-text);
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.panel-onboarding__btn--primary {
+  background: var(--bl-primary);
+  color: #fff;
+  border-color: var(--bl-primary);
+}

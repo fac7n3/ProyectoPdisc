@@ -5,6 +5,7 @@ import { renderNotificationsSection } from './notifications-utils.js';
 import { renderSupportSection } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
+import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
@@ -634,6 +635,40 @@ let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
 const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
+// Copy de las tarjetas de bienvenida al panel (js/panel-onboarding-utils.js).
+// Clave = mismo valor que data-section en el sidebar (pages/vender.html).
+const VENDOR_SECTION_COPY = {
+  resumen: { icon: 'fa-solid fa-chart-simple', title: 'Resumen', desc: 'De un vistazo: cómo viene tu comercio hoy — pedidos, ventas y lo que necesita tu atención.' },
+  'perfil-comercio': { icon: 'fa-solid fa-pen', title: 'Perfil de mi comercio', desc: 'Los datos que ve un vecino antes de comprarte: nombre, horarios, dirección y medios de pago.' },
+  publicaciones: { icon: 'fa-solid fa-image', title: 'Publicaciones', desc: 'Acá cargás y editás lo que vendés: fotos, precios y stock de cada producto.' },
+  pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando, para que los prepares y avises cuando estén listos.' },
+  pagos: { icon: 'fa-solid fa-money-check-dollar', title: 'Pagos por confirmar', desc: 'Transferencias que un vecino dice haber hecho: revisá el comprobante y confirmá el pago.' },
+  cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
+  empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
+  notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de pedidos nuevos, pagos y novedades de tu comercio.' },
+  soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Algo no anda como esperabas? Escribinos y te ayudamos.' },
+};
+
+// Arma las tarjetas SOLO con lo que el sidebar realmente muestra a esta
+// cuenta (ya filtrado por dueño/empleado y permisos más arriba, en
+// loadDashboard) -- así un empleado sin "Empleados"/"Cupones" no ve esas
+// tarjetas tampoco en la bienvenida.
+function buildVendorOnboardingSections() {
+  const keys = new Set();
+  document.querySelectorAll('#mc-sidebar [data-section]').forEach((el) => keys.add(el.dataset.section));
+  return [...keys].map((k) => VENDOR_SECTION_COPY[k]).filter(Boolean);
+}
+
+async function maybeShowVendorOnboarding() {
+  if (await loadPanelOnboardingSeen('vendedor')) return;
+  showPanelOnboarding({
+    panelKey: 'vendedor',
+    title: '¡Bienvenido a tu panel de vendedor!',
+    greeting: 'Acá vas a manejar tu comercio en Baradero Local. Esto es lo que hace cada sección:',
+    sections: buildVendorOnboardingSections(),
+  });
+}
+
 /**
  * F12-16: multi-usuario por comercio. `staffStoreId` viene seteado cuando
  * quien entra no es el dueño sino un empleado (store_staff) -- en ese caso
@@ -725,6 +760,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   // El dueño entra directo a "Perfil de mi comercio" (a pedido del usuario,
   // 2026-09-16); un empleado no tiene esa sección y sigue cayendo en "Resumen".
   initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
+  maybeShowVendorOnboarding();
 
   if (isStoreOwner) {
     fillStoreProfileForm(store);

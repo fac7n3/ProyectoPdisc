@@ -7,7 +7,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Mi Perfil - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -98,6 +98,11 @@
           <i class="fa-regular fa-comment account-card__icon"></i>
           <span class="account-card__title">Soporte</span>
           <span class="account-card__desc">¿Necesitás una mano? Escribinos.</span>
+        </button>
+        <button type="button" class="account-card" data-target="tab-ajustes" data-scroll-to="ajustes-auto-redirect" id="account-card-panel-home" hidden>
+          <i class="fa-solid fa-house-chimney account-card__icon"></i>
+          <span class="account-card__title">Tu panel al entrar</span>
+          <span class="account-card__desc">Elegí si entrás directo a tu panel o primero ves el inicio de compras.</span>
         </button>
         <button type="button" class="account-card" data-target="tab-ajustes">
           <i class="fa-solid fa-gear account-card__icon"></i>
@@ -384,6 +389,25 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-gear"></i> Ajustes
             </h2>
+
+            <!-- ---------- Tu panel al entrar (solo cuentas con panel propio) ---------- -->
+            <section class="datos-group" id="ajustes-auto-redirect" hidden>
+              <h3 class="datos-group__title">Tu panel al entrar</h3>
+              <div class="datos-panel">
+                <div class="pref-row">
+                  <label class="pref-toggle" for="pref-auto-redirect-panel">
+                    <input type="checkbox" id="pref-auto-redirect-panel" checked />
+                    <span class="pref-toggle__text">
+                      <span class="pref-toggle__title">Entrar directo a mi panel</span>
+                      <span class="pref-toggle__desc">Al iniciar sesión, vas directo a tu panel en vez de ver primero el inicio de compras.</span>
+                    </span>
+                  </label>
+                </div>
+                <p class="datos-row__hint" style="margin-top: 0.5rem;">
+                  Esto solo cambia a dónde entrás primero. Aunque lo apagues, vas a poder seguir entrando a tu panel cuando quieras desde "Tu cuenta", en Información de tu perfil.
+                </p>
+              </div>
+            </section>
 
             <!-- ---------- Preferencias de uso ---------- -->
             <section class="datos-group">
