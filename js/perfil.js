@@ -1,4 +1,5 @@
-import { supabase, guardPage, showToast } from "./auth-utils.js";
+import { supabase, guardPage, showToast, getPanelAccess } from "./auth-utils.js";
+import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-utils.js";
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { getPref, setPref } from "./settings-utils.js";
@@ -252,6 +253,37 @@ function syncCartHintsPref(profile) {
 }
 
 /**
+ * "Entrar directo a mi panel" (js/panel-redirect-utils.js): controla si
+ * initPanelAction() de js/home.js redirige solo al iniciar sesión. Solo
+ * visible para cuentas con panel propio -- ver initPanelHomeVisibility.
+ * Mismo patrón que initCartHintsPref de arriba.
+ */
+function initAutoRedirectPref() {
+  const toggle = document.getElementById("pref-auto-redirect-panel");
+  if (!toggle) return;
+
+  toggle.checked = isAutoRedirectEnabled();
+
+  toggle.addEventListener("change", async () => {
+    const enabled = toggle.checked;
+    const { persisted } = await setAutoRedirectEnabled(enabled);
+
+    if (!persisted) {
+      showToast("Preferencia guardada solo en este dispositivo.", "error");
+      return;
+    }
+    showToast(enabled ? "Vas a entrar directo a tu panel." : "Vas a ver primero el inicio de compras.", "success");
+  });
+}
+
+/** Refleja en la casilla lo que dice la cuenta (fuente de verdad). */
+function syncAutoRedirectPref(profile) {
+  const toggle = document.getElementById("pref-auto-redirect-panel");
+  if (!toggle || profile?.auto_redirect_panel_enabled == null) return;
+  toggle.checked = profile.auto_redirect_panel_enabled;
+}
+
+/**
  * Preferencias que se guardan en el navegador y no en la cuenta
  * (js/settings-utils.js). Son decisiones del dispositivo -- "no me tires
  * carteles en la compra de la oficina", "esta pantalla me marea" -- y encima
@@ -307,6 +339,7 @@ function initSignOutAll() {
 /** Todo lo que vive en la pestaña "Ajustes". */
 function initSettings() {
   initCartHintsPref();
+  initAutoRedirectPref();
   bindDevicePref("pref-notif-toasts", "notifToasts");
   bindDevicePref("pref-reduce-motion", "reduceMotion");
   initSignOutAll();
@@ -2279,6 +2312,18 @@ async function renderPanelLink(user) {
   }
 }
 
+/**
+ * Muestra la tarjeta del hub "Tu panel al entrar" y el grupo de Ajustes que
+ * la acompaña solo para cuentas con panel propio -- mismo criterio que usa
+ * initPanelAction() en js/home.js para decidir si hay algo que redirigir.
+ */
+async function initPanelHomeVisibility(user) {
+  const { isAdmin, seller } = await getPanelAccess(user);
+  const eligible = isAdmin || !!seller;
+  document.getElementById("account-card-panel-home")?.toggleAttribute("hidden", !eligible);
+  document.getElementById("ajustes-auto-redirect")?.toggleAttribute("hidden", !eligible);
+}
+
 async function renderFullProfile(user) {
   currentUserId = user.id;
   try {
@@ -2306,6 +2351,7 @@ async function renderFullProfile(user) {
     const nameToUse = profile.full_name?.trim() || null;
 
     syncCartHintsPref(profile);
+    syncAutoRedirectPref(profile);
 
     if (sidebarEmail) sidebarEmail.textContent = emailToUse;
     if (sidebarName && nameToUse) sidebarName.textContent = nameToUse;
@@ -2347,6 +2393,7 @@ async function renderFullProfile(user) {
   initAccountMenu();
   renderAffiliationBadges(user.id);
   renderPanelLink(user);
+  initPanelHomeVisibility(user);
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer.
   const notifCardBadge = document.getElementById("notif-card-badge");

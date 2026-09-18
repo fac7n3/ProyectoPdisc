@@ -3,6 +3,7 @@ import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from '.
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
+import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -39,14 +40,19 @@ function cameToHomeOnPurpose() {
 }
 
 /**
- * Un vendedor o profesional ya publicado entra directo a su panel
- * (vender.html o profesional.html según el caso -- SELLER_PANEL_PAGES) en vez
- * de ver el home con los productos, a pedido del usuario (2026-09-16). La
- * puerta de vuelta al home es el logo del navbar (ver cameToHomeOnPurpose).
+ * Una cuenta con UN SOLO panel posible (vendedor, empleada de un comercio,
+ * profesional publicado, o admin/moderador que no además vende ni ofrece un
+ * servicio) entra directo a ese panel en vez de ver el home con los
+ * productos, a pedido del usuario (2026-09-16, ampliado a admin/moderador de
+ * cuenta única el 2026-09-18). La puerta de vuelta al home es el logo del
+ * navbar (ver cameToHomeOnPurpose). Se puede apagar desde Perfil → Ajustes
+ * (ver panel-redirect-utils.js); aunque esté apagado, el panel se sigue
+ * pudiendo abrir a mano desde el botón que arma renderPanelAction() acá abajo.
  *
- * Quien ADEMÁS es admin no se redirige: tiene dos paneles y elegir uno por su
- * cuenta sería adivinar (ver sellerPanelPage en auth-utils.js). Se queda en el
- * home y el botón le abre el menú para elegir.
+ * Quien tiene DOS paneles posibles (ej. vendedor que además es admin) NUNCA
+ * se redirige sola: elegir por su cuenta sería adivinar (ver sellerPanelPage
+ * en auth-utils.js). Se queda en el home y el botón le abre el menú para
+ * elegir.
  *
  * Corre apenas carga el módulo (no espera a DOMContentLoaded) para que la
  * redirección salga lo antes posible y el home no llegue a pintarse.
@@ -59,9 +65,19 @@ async function initPanelAction() {
   const { isAdmin, seller } = await getPanelAccess(user);
   if (!isAdmin && !seller) return; // cliente común: la fila queda como está
 
-  if (!isAdmin && !cameToHomeOnPurpose()) {
-    window.location.replace(`./${SELLER_PANEL_PAGES[seller]}`);
-    return;
+  // XOR: exactamente un panel posible. Con los dos (isAdmin && seller) esto
+  // da false y nunca se auto-redirige, igual que antes.
+  const hasSinglePanel = isAdmin !== !!seller;
+
+  if (hasSinglePanel && !cameToHomeOnPurpose()) {
+    // Se consulta la preferencia solo acá (no en cada carga del home para
+    // cualquier cuenta) para no sumar una consulta de más al resto de los casos.
+    const autoRedirect = await loadAutoRedirectPreference();
+    if (autoRedirect) {
+      const target = isAdmin ? './admin.html' : `./${SELLER_PANEL_PAGES[seller]}`;
+      window.location.replace(target);
+      return;
+    }
   }
 
   // El <a> puede no estar en el DOM todavía si la sesión resolvió rapidísimo.

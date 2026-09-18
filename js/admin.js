@@ -4,6 +4,7 @@ import { buildDropdown } from './dropdown.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { formatPrice } from './cart-utils.js';
 import { categoryLabel } from './professional-categories.js';
+import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -1929,6 +1930,34 @@ function applyRoleVisibility(role) {
   hideEmptyNavGroups();
 }
 
+// Copy de las tarjetas de bienvenida al panel (js/panel-onboarding-utils.js):
+// sin diccionario propio, se lee directo el título/subtítulo que cada
+// sección ya trae en el HTML (admin-section__title/__subtitle) -- evita
+// mantener una segunda copia de esos textos, y se adapta sola a lo que el
+// moderador puede ver (applyRoleVisibility ya corrió antes de llamar a esto).
+function buildAdminOnboardingSections() {
+  return Array.from(document.querySelectorAll('.admin-nav__item[data-target]:not([hidden])'))
+    .map((navItem) => {
+      const key = navItem.dataset.target;
+      const section = document.querySelector(`.admin-section[data-section="${key}"]`);
+      const icon = navItem.querySelector('i')?.className || 'fa-solid fa-gear';
+      const title = section?.querySelector('.admin-section__title')?.textContent?.trim();
+      const desc = section?.querySelector('.admin-section__subtitle')?.textContent?.trim();
+      return title ? { icon, title, desc: desc || '' } : null;
+    })
+    .filter(Boolean);
+}
+
+async function maybeShowAdminOnboarding(role) {
+  if (await loadPanelOnboardingSeen('admin')) return;
+  showPanelOnboarding({
+    panelKey: 'admin',
+    title: role === 'moderador' ? '¡Bienvenido a tu panel de moderación!' : '¡Bienvenido a tu panel de administración!',
+    greeting: 'Esto es lo que hace cada sección:',
+    sections: buildAdminOnboardingSections(),
+  });
+}
+
 guardPage({
   requireAuth: true,
   requireRole: ['admin', 'moderador'],
@@ -1939,5 +1968,6 @@ guardPage({
     // lecturas (getElementById(...).value) no cambian.
     upgradeDateInputs();
     initAdminPage();
+    maybeShowAdminOnboarding(user?.app_metadata?.role);
   }
 });
