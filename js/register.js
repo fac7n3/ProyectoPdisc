@@ -14,19 +14,22 @@ const termsCheckbox = document.getElementById("terms-checkbox");
  * A dónde va la persona apenas termina de registrarse, según el "Tipo de
  * cuenta" que eligió arriba del formulario.
  *
- * Hasta ahora ese selector era decorativo: los dos radios terminaban en
+ * Hasta ahora ese selector era decorativo: los radios terminaban en
  * home.html y quien había marcado "Vendedor" no veía ninguna diferencia.
  * Elegirlo sigue SIN cambiar el rol -- `handle_new_user()` fuerza
  * `role='cliente'` para toda cuenta nueva a propósito, porque dejar que el
  * cliente eligiera su rol era una escalada de privilegios (migración 23). Lo
- * único que cambia es dónde queda parado: en el alta de comercio, que es el
- * flujo real para pedir el rol y que un admin lo apruebe.
+ * único que cambia es dónde queda parado: en el alta de comercio o de
+ * profesional/técnico, que son los flujos reales para pedir el rol o
+ * publicarse y que un admin lo apruebe.
  *
- * @returns {string} nombre del archivo, sin ruta.
+ * @returns {string} archivo + query, sin dominio (ej. "vender.html?tipo=servicio").
  */
 function paginaPostRegistro() {
   const tipo = document.querySelector('input[name="account_type"]:checked')?.value;
-  return tipo === "vendedor" ? "vender.html" : "home.html";
+  if (tipo === "vendedor") return "vender.html";
+  if (tipo === "profesional") return "vender.html?tipo=servicio";
+  return "home.html";
 }
 
 // --- Valida y resalta el checkbox de términos ---
@@ -64,9 +67,13 @@ function showConfirmEmailNotice(email) {
   const notice = document.createElement("p");
   notice.className = "auth-confirm-notice";
   notice.setAttribute("role", "status");
-  const destino = paginaPostRegistro() === "vender.html"
-    ? " Cuando entres te dejamos en el formulario para registrar tu negocio."
-    : "";
+  const destinoPagina = paginaPostRegistro();
+  let destino = "";
+  if (destinoPagina === "vender.html") {
+    destino = " Cuando entres te dejamos en el formulario para registrar tu negocio.";
+  } else if (destinoPagina.startsWith("vender.html?")) {
+    destino = " Cuando entres te dejamos en el formulario para publicarte como profesional/técnico.";
+  }
   notice.textContent = `Te enviamos un correo a ${email}. Abrilo y tocá el link para confirmar tu cuenta: con eso entrás directo, no hace falta que inicies sesión de nuevo.${destino}`;
   registerBtn?.insertAdjacentElement("afterend", notice);
   notice.scrollIntoView({ behavior: "smooth", block: "nearest" });
