@@ -2,7 +2,7 @@ import { supabase } from './auth-utils.js';
 import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
-import { removeStoredObjects } from './storage-utils.js';
+import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -233,6 +233,11 @@ function buildStoreLogo(store, isOwner) {
   const popover = document.createElement('div');
   popover.className = 'store-popover store-logo-popover';
 
+  const hint = document.createElement('p');
+  hint.className = 'store-popover__hint';
+  hint.textContent = 'Tiene que ser cuadrada (mismo ancho que alto), hasta 2 MB.';
+  popover.appendChild(hint);
+
   const addRow = document.createElement('button');
   addRow.type = 'button';
   addRow.className = 'store-popover__row';
@@ -299,6 +304,19 @@ function buildStoreLogo(store, isOwner) {
 
     if (file.size > MAX_LOGO_BYTES) {
       showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    try {
+      const { width, height } = await getImageDimensions(file);
+      if (width !== height) {
+        showToast('La imagen tiene que ser cuadrada (mismo ancho que alto). Recortala y probá de nuevo.', 'error');
+        fileInput.value = '';
+        return;
+      }
+    } catch {
+      showToast('No pudimos leer esa imagen. Probá con otro archivo.', 'error');
       fileInput.value = '';
       return;
     }
