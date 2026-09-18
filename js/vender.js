@@ -6,7 +6,7 @@ import { renderSupportSection } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
-import { removeStoredObjects } from './storage-utils.js';
+import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
@@ -1286,6 +1286,19 @@ function setupStoreLogoPicker() {
 
     if (file.size > MAX_STORE_LOGO_BYTES) {
       fail('Esa imagen pesa más de 2 MB. Probá con una más liviana.');
+      fileInput.value = '';
+      return;
+    }
+
+    try {
+      const { width, height } = await getImageDimensions(file);
+      if (width !== height) {
+        fail('La imagen tiene que ser cuadrada (mismo ancho que alto). Recortala y probá de nuevo.');
+        fileInput.value = '';
+        return;
+      }
+    } catch {
+      fail('No pudimos leer esa imagen. Probá con otro archivo.');
       fileInput.value = '';
       return;
     }

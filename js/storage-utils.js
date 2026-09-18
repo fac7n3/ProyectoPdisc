@@ -84,3 +84,27 @@ export function storedFileName(path) {
   const base = String(path ?? "").split("/").pop() || "";
   return base.replace(/^\d+-/, "") || base;
 }
+
+/**
+ * Ancho y alto reales de una imagen elegida en un <input type="file">. Se usa
+ * para exigir que un logo sea cuadrado antes de subirlo -- se muestra en
+ * círculo/cuadrado (`object-fit: cover`) en todos lados, así que una imagen
+ * rectangular queda recortada de forma imprevisible.
+ * @param {File} file
+ * @returns {Promise<{width: number, height: number}>}
+ */
+export function getImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No pudimos leer esa imagen."));
+    };
+    img.src = url;
+  });
+}
