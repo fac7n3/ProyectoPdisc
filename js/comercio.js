@@ -3,6 +3,7 @@ import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteI
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
+import { openImageCropModal, cropOutputExt } from './image-crop-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -170,16 +171,16 @@ function buildColorPopover(store, header) {
   return popover;
 }
 
-/** Sube el archivo elegido a store-logos/{uid del dueño}/ y actualiza stores.logo_url. */
-async function uploadStoreLogo(file, store) {
-  const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+/** Sube el recorte ya elegido (ver openImageCropModal) a store-logos/{uid del dueño}/ y actualiza stores.logo_url. */
+async function uploadStoreLogo(croppedBlob, store) {
+  const ext = cropOutputExt(croppedBlob);
   // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del
   // bucket (storage no sabe qué tienda es dueño cada usuario).
-  const path = `${store.owner_id}/${Date.now()}.${ext || 'jpg'}`;
+  const path = `${store.owner_id}/${Date.now()}.${ext}`;
 
   const { error: upErr } = await supabase.storage
     .from('store-logos')
-    .upload(path, file, { contentType: file.type || 'image/jpeg' });
+    .upload(path, croppedBlob, { contentType: croppedBlob.type });
   if (upErr) throw upErr;
 
   const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
@@ -303,9 +304,17 @@ function buildStoreLogo(store, isOwner) {
       return;
     }
 
+    // Deja elegir qué parte de la foto queda visible (arrastrando/zoom) antes
+    // de subirla -- si cancela, no se sube nada.
+    const cropped = await openImageCropModal(file);
+    if (!cropped) {
+      fileInput.value = '';
+      return;
+    }
+
     const previousUrl = store.logo_url;
     try {
-      const publicUrl = await uploadStoreLogo(file, store);
+      const publicUrl = await uploadStoreLogo(cropped, store);
       store.logo_url = publicUrl;
       img.src = publicUrl;
       wrap.classList.add('has-logo');
