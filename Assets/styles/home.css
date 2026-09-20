@@ -3331,6 +3331,7 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 
 .bl-text-stroke {
   color: #4371de;
+  -webkit-text-stroke: 1.5px #19336b;
   text-shadow: 2px 2px 0 #19336b, 3px 3px 0 #19336b, 4px 4px 0 #19336b;
 }
 
