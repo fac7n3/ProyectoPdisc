@@ -26,6 +26,16 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/100_products_bucket_folder_ownership.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `products_bucket_folder_ownership`). Encontrada en una
+  auditoría de seguridad del panel de vendedor: la policy de INSERT del bucket público `products`
+  solo chequeaba el rol, no la carpeta -- cualquier vendedor podía subir archivos arbitrarios a
+  `products/{product_id ajeno}/archivo`, hosting público no autorizado bajo el dominio del
+  proyecto (no defacement directo, la galería se arma desde la tabla, no listando storage). Ahora
+  exige que el primer segmento del path sea un producto que la cuenta puede escribir de verdad
+  (dueño o empleado del comercio). Verificado con inserts simulados contra `storage.objects` en
+  transacciones con ROLLBACK. Detalle completo en el skill `progreso-baradero-local`.
+
 - `db/schema/99_protect_is_suspended_on_profile.sql` — **aplicada el 2026-09-22** vía
   `apply_migration` (nombre en Supabase: `protect_is_suspended_on_profile`). Encontrada en una
   auditoría de seguridad de "Mi perfil": `profiles_update_own` no restringe columnas, y

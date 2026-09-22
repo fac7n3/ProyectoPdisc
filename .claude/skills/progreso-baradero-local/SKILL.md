@@ -3627,3 +3627,61 @@ transacciones con `ROLLBACK` contra la base real: un `UPDATE` directo de `is_sus
 bandera tira la excepción esperada, el mismo `UPDATE` con la bandera seteada sí aplica, y un
 `UPDATE` directo de `role` sigue bloqueado igual que antes (sin regresión). No se tocó nada de
 `js/`: es un fix puramente de base, la UI de repartidor ya no existe.
+
+## 2026-09-22 — Auditoría de seguridad del panel de vendedor (quinto sector al azar)
+
+Quinto sector elegido al azar: `js/vender.js` (3368 líneas) + `pages/vender.html`. Es el panel
+más grande después de admin -- productos, pedidos, cupones, empleados, perfil del comercio y
+comprobantes de transferencia.
+
+**Primero, un susto que resultó falsa alarma pero vale dejar anotado.** `orders_update_staff` y
+`orders_update_store_or_admin` (RLS de `orders`) no tienen `with check` propio -- en Postgres, una
+policy de UPDATE sin `with check` reusa el `using` como check, así que a simple vista parecía el
+mismo hueco que `orders_insert_own` (migración 96): dueño/empleado podrían reescribir
+`payment_status`/`total_price`/`client_id` de cualquier orden de su tienda por fuera de
+`confirm_transfer_payment`. Se probó directo contra la base real (`SET ROLE authenticated` +
+intento de `UPDATE ... SET payment_status = 'paid'`) y **ya está bloqueado** -- pero no por RLS:
+`authenticated` solo tiene el privilegio de columna `UPDATE` sobre `status` en `orders`, ninguna
+otra columna (confirmado con `information_schema.column_privileges`). Este grant column-level
+**no está en ningún archivo de `db/schema/`** -- se armó en algún momento fuera del historial de
+migraciones (dashboard, o una sesión que no lo documentó). Es la única columna que
+`updateOrderStatus()` (`js/vender.js`) toca directo, así que coincide exactamente con lo que hace
+falta. **No se tocó** (ya está bien, solo quedó sin registrar en el repo -- si alguna vez hay que
+reconstruir la base de cero desde los archivos de `db/schema/`, esta protección específica no
+va a estar, vale la pena que quien lo note en el futuro sepa que existe en producción aunque no
+esté en el historial).
+
+**Encontrado y arreglado, severidad media** (`db/schema/100_products_bucket_folder_ownership.sql`,
+aplicada en producción): la policy de INSERT del bucket público `products` (storage) solo
+chequeaba `role in ('vendedor', 'admin')` -- a diferencia de TODOS los demás buckets del proyecto
+(professional-photos, professional-promos, avatars, store-logos, support-attachments...), que
+siempre exigen que el primer segmento del path sea del dueño de verdad. Sin ese chequeo,
+cualquier cuenta vendedor podía subir lo que quisiera a
+`products/{cualquier_product_id}/archivo` -- incluido el `product_id` de un producto ajeno (no es
+secreto, está en la URL pública de cada producto). El bucket es público, así que quedaba servido
+con URL pública bajo el dominio del proyecto: hosting de archivos arbitrarios sin relación con
+Baradero Local, con el sitio como anfitrión involuntario. **No era defacement directo** de la
+ficha de otro vendedor -- la vista de producto arma la galería desde la tabla
+`product_images`/`products.image_url`, nunca listando el storage (y el bucket ni tiene policy de
+SELECT en `storage.objects` para listar, mismo gotcha ya documentado sobre las fotos huérfanas) --
+pero sí era hosting público no autorizado.
+
+Fix: la policy ahora exige que el primer segmento del path sea el id de un producto que la cuenta
+puede escribir de verdad -- dueño (`seller_id = auth.uid()`) o empleado del comercio
+(`store_staff`), mismo criterio que `products_insert_staff`/`products_update_seller` (03/49); admin
+pasa sin el chequeo de producto, ya tiene acceso total en el resto del proyecto. No rompe el flujo
+real: `persistProductImages()` en `vender.js` siempre sube las fotos DESPUÉS de insertar la fila
+del producto, así que el id ya existe y ya es del vendedor correcto. Verificado con dos inserts
+directos contra `storage.objects` simulando el JWT de un vendedor real (`set_config('request.jwt.claims', ...)`
++ `SET ROLE authenticated`, todo en transacciones con `ROLLBACK`): subir a la carpeta de un
+producto ajeno se bloquea, subir a la carpeta del producto propio funciona.
+
+**El resto revisado sin problemas**: `add_store_staff` (RPC) valida que quien llama sea dueño del
+comercio antes de buscar el email e insertar -- no expone una policy de "buscar cualquier profile
+por email". `coupons_insert_own_store`/`update`/`delete` exigen `store_id` no nulo y
+`stores.owner_id = auth.uid()` -- **excluye a los empleados a propósito**, coincide con el diseño
+documentado ("nada financiero" para `store_staff`, 49_store_staff.sql). El sistema de
+`store_staff.permissions` (qué SECCIONES ve un empleado en el panel, migración 83) es
+explícitamente solo de UI -- el propio archivo de esa migración ya documenta que la superficie de
+ataque real son las policies de 49, que dan paridad operativa completa sin mirar `permissions`;
+no hay nada que arreglar ahí, ya está razonado y anotado.

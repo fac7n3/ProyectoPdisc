@@ -327,6 +327,36 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (bloqueo sin la bandera, éxito con la bandera, sin regresión en `role`).
   Sin cambios de `js/`. Detalle completo en el skill
   `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — auditoría de seguridad del panel de vendedor
+  (quinto sector al azar). Primero un susto que resultó falsa alarma pero
+  quedó anotado: `orders_update_staff`/`orders_update_store_or_admin` no
+  tienen `with check` propio, así que a simple vista parecía el mismo hueco
+  que `orders_insert_own` (dueño/empleado reescribiendo `payment_status`/
+  `total_price` por fuera de `confirm_transfer_payment`). Probado contra la
+  base real: **ya está bloqueado**, pero no por RLS -- `authenticated` solo
+  tiene privilegio de columna `UPDATE` sobre `status` en `orders`, ninguna
+  otra columna, y ese grant **no está documentado en ningún archivo de
+  `db/schema/`** (se armó fuera del historial de migraciones). No se tocó
+  -- ya está bien, solo quedó sin registrar; si algún día hay que
+  reconstruir la base desde cero con los archivos del repo, esta protección
+  específica no va a estar.
+  Encontrado y arreglado, severidad media: la policy de INSERT del bucket
+  público `products` (storage) solo chequeaba el rol (`vendedor`/`admin`),
+  a diferencia de TODOS los demás buckets del proyecto, que exigen que el
+  primer segmento del path sea del dueño de verdad. Cualquier vendedor
+  podía subir archivos arbitrarios a `products/{product_id ajeno}/archivo`
+  -- hosting público no autorizado bajo el dominio del proyecto (no
+  defacement directo: la galería se arma desde la tabla `product_images`,
+  nunca listando el storage). Migración
+  `db/schema/100_products_bucket_folder_ownership.sql`, aplicada: ahora
+  exige que el primer segmento del path sea un producto que la cuenta
+  puede escribir de verdad (dueño o empleado del comercio). Verificado con
+  inserts simulados contra `storage.objects` en transacciones con ROLLBACK.
+  Revisado sin problemas: `add_store_staff` valida dueño antes de agregar
+  un empleado, `coupons` excluye a los empleados a propósito (ya
+  documentado), y el sistema de `store_staff.permissions` es explícitamente
+  solo de UI (ya razonado en su propia migración). Detalle completo en el
+  skill `progreso-baradero-local`.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su
