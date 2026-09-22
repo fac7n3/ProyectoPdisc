@@ -80,6 +80,27 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — la etiqueta de rubro de la tarjeta de un comercio
+  (página "Comercios") **no era la que el dueño elige en su panel**: cambiar
+  "Perfil de mi comercio → Categoría" no se reflejaba nunca en el público.
+  `js/comercios.js` nunca leía `stores.category_slug` (la columna que guarda
+  el panel, migración 71) -- **contaba las categorías de los PRODUCTOS del
+  comercio y mostraba la más repetida**. Caso reportado por el usuario y
+  reproducido contra producción: *Beruru* tiene `category_slug='ropa'` y
+  6 de sus 10 productos en Tecnología, así que la tarjeta decía "Tecnología"
+  por más veces que cambiara el chip. Ahora la tarjeta sale de
+  `category_slug`, resuelto a nombre con `getCategories()`.
+  **El conteo por productos quedó solo como respaldo para `category_slug` en
+  NULL**, que en producción son exactamente las 14 tiendas de seed (F11-06):
+  se insertaron a mano sin pasar por `approve_seller_request`, que es quien
+  copia el rubro desde la solicitud, y el backfill de la migración 71 no las
+  alcanzó porque no tienen `seller_requests`. Sin ese respaldo esas 14
+  tarjetas se habrían quedado sin etiqueta -- se arreglan solas en cuanto su
+  dueño guarde el perfil una vez (el formulario exige elegir categoría).
+  Verificado en el navegador con los datos reales mockeados (6 checks). Nota:
+  la **ficha** del comercio (`comercio.html`) ya leía bien `category_slug`;
+  los resultados de búsqueda no muestran rubro (nunca lo mostraron) y se
+  dejaron igual.
 - **Resuelto 2026-09-17** — **Panel de autogestión del profesional/técnico**, en
   página propia `pages/profesional.html` (+ `js/profesional.js` y seis módulos
   `js/profesional-*.js`, uno por sección). Reemplaza al mini panel que vivía

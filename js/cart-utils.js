@@ -396,8 +396,9 @@ export function renderEmptyState(container, message, icon = 'fa-box-open') {
  * ficha del comercio. Vive acá porque la usan dos páginas: el listado de
  * comercios y los resultados de búsqueda.
  *
- * `store._topCategory` es opcional (el rubro más común de sus productos); si
- * no viene, la fila simplemente no se dibuja.
+ * `store._categoryName` es opcional (el rubro del comercio, ya resuelto a
+ * nombre); si no viene, la fila simplemente no se dibuja -- por eso los
+ * resultados de búsqueda, que no lo setean, muestran la tarjeta sin rubro.
  */
 export function buildStoreCard(store) {
   const card = document.createElement('a');
@@ -441,12 +442,15 @@ export function buildStoreCard(store) {
     zoneRow.append(store.zone);
     meta.appendChild(zoneRow);
   }
-  if (store._topCategory) {
+  // `_categoryName`: el rubro que el dueño eligió en su panel, resuelto a
+  // nombre por quien llama (ver comercios.js). No se lee de `store` a secas
+  // porque la columna guarda el slug, no el texto que va en la tarjeta.
+  if (store._categoryName) {
     const catRow = document.createElement('span');
     const icon = document.createElement('i');
     icon.className = 'fa-solid fa-tag';
     catRow.appendChild(icon);
-    catRow.append(store._topCategory);
+    catRow.append(store._categoryName);
     meta.appendChild(catRow);
   }
   body.appendChild(meta);

@@ -3878,3 +3878,60 @@ pasar por la validación de email -- no hay tercero perjudicado ni gano nada que
 tuviera ya sobre su propio comercio.
 
 Se descarta como auditado.
+
+## 2026-09-22 — La etiqueta de rubro de "Comercios" no era la que elige el dueño
+
+Reportado por el usuario con capturas: en su panel el comercio *Beruru* tiene marcado el chip
+**Ropa**, y en la página "Comercios" la tarjeta seguía diciendo **Tecnología**.
+
+### Qué pasaba
+
+`js/comercios.js` **nunca leía `stores.category_slug`** -- la columna que guarda "Perfil de mi
+comercio → Categoría" (migración 71, y que `js/vender.js` escribe bien). En su lugar pedía
+`products(categories(name))` y mostraba la categoría **más repetida entre los productos** del
+comercio. O sea que la etiqueta no dependía del panel en absoluto: cambiar el chip no la movía
+nunca.
+
+Confirmado contra la base de producción antes de tocar nada:
+
+| Comercio | `category_slug` (panel) | Categorías de sus productos |
+|---|---|---|
+| Beruru | `ropa` | Tecnología ×6, Lácteos ×1, Limpieza ×1, Ropa ×1, Verdulería ×1 |
+
+6 contra 1: por eso ganaba "Tecnología".
+
+### El arreglo, y la trampa que tenía
+
+Lo obvio era reemplazar el conteo por `category_slug`. **Eso solo habría roto 14 tarjetas**: la
+misma consulta mostró que de los 17 comercios aprobados, **14 tienen `category_slug` en NULL**.
+Son las tiendas de seed (F11-06): se insertaron a mano, nunca pasaron por
+`approve_seller_request` (que es quien copia el rubro desde la solicitud), y el backfill que trae
+la propia migración 71 no las alcanza porque busca por `seller_requests` y ellas no tienen. Hoy
+muestran etiqueta *gracias* al conteo por productos.
+
+Así que el conteo se conservó **como respaldo, solo para `category_slug` NULL**
+(`fallbackCategoryFromProducts()`). Se arreglan solas en cuanto su dueño guarde el perfil una vez:
+el formulario exige elegir categoría. No se backfilleó la base a propósito -- son datos de seed
+destinados a ser reemplazados por comercios reales, no vale una migración de datos en producción.
+
+`buildStoreCard()` (`js/cart-utils.js`) pasó de `store._topCategory` ("el rubro más común de sus
+productos") a `store._categoryName`, que es lo que ahora significa de verdad.
+
+### Lo que se revisó y estaba bien
+
+- **La ficha del comercio** (`comercio.html` / `js/comercio.js`) ya leía `store.category_slug` y
+  lo resolvía con `getCategories()`. Ahí el cambio del panel siempre se vio bien.
+- **Resultados de búsqueda** (`search.js`): usa la misma `buildStoreCard` pero no setea el rubro,
+  así que la tarjeta sale sin etiqueta. No es el bug reportado (no muestra una vieja, no muestra
+  ninguna) y se dejó igual para no meter un cambio visual que nadie pidió. Si algún día se quiere,
+  alcanza con sumar `category_slug` al select de `getStores()` y resolverlo igual que acá.
+- **El carrusel del home** muestra solo el logo, sin rubro.
+- No hay caché de datos en el medio: `sw.js` cachea JS/CSS, no las respuestas de Supabase.
+
+### Verificación
+
+6 checks en Chromium contra el build real, con PostgREST interceptado y **los datos reales de
+producción** como fixture (Beruru con su `ropa` + sus 6 productos de Tecnología, una tienda de seed
+con `category_slug` NULL, una tienda con rubro y sin productos, y una sin nada). Cubren el bug
+reportado, la no-regresión de las 14 de seed y los dos bordes. `npm test` en verde, `dist/`
+reconstruido.
