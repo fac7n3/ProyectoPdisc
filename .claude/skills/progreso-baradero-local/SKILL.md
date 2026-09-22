@@ -3820,3 +3820,23 @@ de las auditorías de esta sesión, el hallazgo de mayor impacto real: a diferen
 (que requerían un rol delegado, un empleado, o ya estaban mitigados por otra capa), este lo podía
 explotar **cualquier cliente común contra cualquier vendedor real**, hoy, sin necesitar ningún
 permiso especial.
+
+## 2026-09-22 — Auditoría de seguridad del sistema de favoritos (décimo sector al azar): sin hallazgos
+
+Décimo sector elegido al azar: `favorites`/`favorite_stores` (tablas) + `getFavoriteIds`/
+`toggleFavorite`/`getFavoriteStoreIds`/`toggleFavoriteStore`/`mergeLocalWishlistIntoFavorites`/
+`initWishlist` en `js/cart-utils.js` -- se usa en home/search/comercio/producto/comercios/perfil
+pero nunca se había auditado directo su RLS.
+
+**Sin hallazgos.** Las dos tablas son idénticas en diseño: `user_id`/`client_id` +
+`product_id`/`store_id`, sin columna que valga la pena restringir por rol (nada de estado ni
+plata), tres policies (`select`/`insert`/`delete`, todas `= auth.uid()`) sin `update` porque no
+hay nada que actualizar -- un favorito se agrega o se borra, no se edita. Confirmado que coinciden
+con la base real (`pg_policy`, sin drift). El `productId`/`storeId` que viaja desde el cliente
+siempre sale del `id` de una tarjeta ya renderizada con datos reales de la DB (nunca de un input
+de texto), y aunque no fuera así el `foreign key` a `products`/`stores` corta cualquier intento de
+favoritear algo que no existe -- no hay ganancia real en falsificar el id de todos modos, es un
+bookmark personal, no un permiso. `mergeLocalWishlistIntoFavorites()` (el merge de favoritos de
+invitado al loguearse) siempre usa `session.user.id`, nunca un id pasado desde otro lado.
+
+Se descarta como auditado.
