@@ -1084,3 +1084,22 @@
     height: 48px;
   }
 }
+
+/* Opciones elegidas en la línea del carrito (Color: Rojo · Talle: M). Es lo
+   único que distingue dos líneas del mismo producto. */
+.cart-item__options {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--bl-text-secondary);
+  margin-top: 0.15rem;
+}
+
+/* El vendedor tocó las opciones después de que agregaron la línea: se avisa
+   acá y la línea queda fuera de la compra (ver validateCartFreshness). */
+.cart-item__options-warn {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--bl-danger, #ef4444);
+  margin-top: 0.15rem;
+}

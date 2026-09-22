@@ -556,7 +556,10 @@
       .pd-cell-product { display: flex; align-items: center; gap: 0.6rem; min-width: 190px; }
       .pd-cell-product__thumb { width: 40px; height: 40px; border-radius: var(--bl-radius-sm); object-fit: cover; background: var(--bl-surface-alt); flex-shrink: 0; }
       .pd-cell-product__name { font-weight: 600; color: var(--bl-text); display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pd-cell-product__sub { font-size: 0.78rem; color: var(--bl-text-muted); }
+      .pd-cell-product__sub { display: block; font-size: 0.78rem; color: var(--bl-text-muted); }
+      /* Qué opción le pidieron (Color: Rojo). Va más marcado que el resto de la
+         celda: es el dato que necesita para preparar el pedido. */
+      .pd-cell-product__options { display: block; font-size: 0.78rem; font-weight: 600; color: var(--bl-primary); }
       .pd-cell-buyer { display: flex; align-items: center; gap: 0.55rem; }
       .pd-cell-buyer__avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bl-vendor-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
       .pd-cell-buyer__name { font-weight: 600; color: var(--bl-text); display: block; }

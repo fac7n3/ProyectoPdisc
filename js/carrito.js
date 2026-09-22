@@ -3,6 +3,7 @@
 import { supabase } from './auth-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
+import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
 import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons, isItemSelected, getSelectedItems } from './cart-utils.js';
 // F12-04: los DEFAULT_* son el fallback de antes de que validateCartFreshness
 // traiga el envío real de cada tienda, y coinciden con el default de la base
@@ -282,6 +283,26 @@ function buildCartRow(item, index) {
   nameSpan.className = 'cart-item__name';
   nameSpan.textContent = item.name;
   infoDiv.appendChild(nameSpan);
+
+  // Lo que eligió (Color: Rojo · Talle: M). Es lo único que distingue dos
+  // líneas del mismo producto, así que sin esto el carrito muestra dos
+  // renglones idénticos y no se sabe cuál es cuál.
+  const optionsText = describeSelectedOptions(item.optionsLabel);
+  if (optionsText) {
+    const optionsSpan = document.createElement('span');
+    optionsSpan.className = 'cart-item__options';
+    optionsSpan.textContent = optionsText;
+    infoDiv.appendChild(optionsSpan);
+  }
+
+  // La revalidación contra la base (validateCartFreshness) marca la línea
+  // cuando el vendedor tocó las opciones después de que la agregaron.
+  if (item.optionsProblem) {
+    const warn = document.createElement('span');
+    warn.className = 'cart-item__options-warn';
+    warn.textContent = item.optionsProblem;
+    infoDiv.appendChild(warn);
+  }
 
   // El comercio ya está en la cabecera del grupo; acá se reemplaza por el
   // estado del ítem, que es lo que ahora puede sorprender al usuario.
@@ -1111,7 +1132,13 @@ function initCartEvents() {
     try {
       // create_order vuelve a leer el precio real de cada producto en el
       // servidor — no hace falta (ni conviene) mandarle el precio del carrito.
-      const payload = selectedItems.map(item => ({ id: item.id, qty: item.qty }));
+      // `options` son ids de product_option_values, nunca el texto: el nombre
+      // legible lo arma create_order leyendo la base (ver migración 102).
+      const payload = selectedItems.map(item => ({
+        id: item.id,
+        qty: item.qty,
+        ...(item.options?.length ? { options: item.options } : {}),
+      }));
 
       const { data, error } = await supabase.rpc('create_order', {
         cart_payload: payload,
@@ -1292,17 +1319,43 @@ async function validateCartFreshness() {
   const cart = getCart();
   if (cart.length === 0) return;
 
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
-    .in('id', cart.map((item) => item.id));
+  const productIds = [...new Set(cart.map((item) => item.id))];
+
+  const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
+      .in('id', productIds),
+    supabase
+      .from('product_options')
+      .select('id, product_id, name, position, product_option_values(id, value, is_available, position)')
+      .in('product_id', productIds),
+  ]);
 
   if (error) {
     console.error('Error al revalidar el carrito:', error);
     return;
   }
+  if (optionsError) {
+    // Sin esto no se puede decir si la elección sigue en pie. Mejor dejar el
+    // carrito como está que borrar líneas por un error de red: create_order
+    // las revalida igual antes de cobrar.
+    console.error('Error al revalidar las opciones del carrito:', optionsError);
+    return;
+  }
 
   const byId = new Map((products || []).map((p) => [p.id, p]));
+
+  // Grupos de opciones por producto, para chequear que lo que eligió siga
+  // existiendo y disponible (el vendedor pudo marcar ese color como agotado,
+  // renombrarlo, borrarlo, o agregar un talle nuevo después).
+  const optionsByProduct = new Map();
+  (optionRows || []).forEach((row) => {
+    const list = optionsByProduct.get(row.product_id) || [];
+    list.push({ ...row, values: row.product_option_values || [] });
+    optionsByProduct.set(row.product_id, list);
+  });
+  optionsByProduct.forEach((list, key) => optionsByProduct.set(key, sortOptionGroups(list)));
 
   // F12-04: mismo fetch de arriba ya trae la tienda real de cada producto —
   // se aprovecha para armar el mapa de envío por tienda (antes era una
@@ -1332,6 +1385,12 @@ async function validateCartFreshness() {
   const removedNames = [];
   const adjustedNames = [];
 
+  // Stock restante por producto, no por línea. Con opciones la misma remera
+  // puede estar en dos líneas (roja y azul) y las dos compiten por el mismo
+  // stock: recortarlas por separado dejaba pasar al checkout un total que
+  // `create_order` rechaza, porque el RPC sí suma por producto.
+  const stockLeft = new Map();
+
   const validatedCart = cart.reduce((acc, item) => {
     const product = byId.get(item.id);
 
@@ -1340,12 +1399,48 @@ async function validateCartFreshness() {
       return acc;
     }
 
-    const clampedQty = Math.min(item.qty, product.stock);
+    const groups = optionsByProduct.get(item.id) || [];
+    const selection = checkSelection(groups, item.options);
+    const optionsText = describeSelectedOptions(item.optionsLabel);
+
+    // Lo que eligió ya no se puede comprar. No se borra la línea: se marca y
+    // se saca de la compra, para que vea qué pasó y pueda elegir otra cosa en
+    // vez de encontrarse con el carrito vacío.
+    let optionsProblem = null;
+    if (!selection.ok) {
+      if (selection.reason === 'no-disponible') {
+        optionsProblem = `${optionsText || 'La opción elegida'} ya no está disponible. Elegí otra.`;
+      } else if (selection.reason === 'sin-opciones') {
+        // El producto dejó de tener opciones: la elección vieja sobra pero la
+        // línea sigue siendo comprable. Se limpia sin molestar al usuario.
+        acc.push({ ...item, options: [], optionsLabel: null, optionsProblem: null, qty: item.qty, price: product.price });
+        return acc;
+      } else {
+        optionsProblem = 'Este producto ahora tiene opciones para elegir. Volvé a agregarlo.';
+      }
+    }
+
+    const remaining = stockLeft.has(item.id) ? stockLeft.get(item.id) : product.stock;
+    const clampedQty = Math.max(0, Math.min(item.qty, remaining));
+
+    if (clampedQty === 0) {
+      removedNames.push(item.name);
+      return acc;
+    }
+    stockLeft.set(item.id, remaining - clampedQty);
+
     if (clampedQty !== item.qty || product.price !== item.price) {
       adjustedNames.push(item.name);
     }
 
-    acc.push({ ...item, qty: clampedQty, price: product.price });
+    acc.push({
+      ...item,
+      qty: clampedQty,
+      price: product.price,
+      optionsProblem,
+      // Una línea con la opción rota no puede viajar a create_order.
+      selected: optionsProblem ? false : item.selected,
+    });
     return acc;
   }, []);
 

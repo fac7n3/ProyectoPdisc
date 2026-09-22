@@ -9,7 +9,7 @@ import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
-import { sortOptionGroups } from './product-options-utils.js';
+import { sortOptionGroups, describeSelectedOptions } from './product-options-utils.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
@@ -836,7 +836,7 @@ async function renderAllOrders() {
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, products(title, image_url))')
+    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, title, selected_options, products(title, image_url))')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -881,12 +881,47 @@ function buildPedidoProductCell(order) {
   const info = document.createElement('div');
   const name = document.createElement('span');
   name.className = 'pd-cell-product__name';
-  name.textContent = first?.products?.title || 'Producto eliminado';
+  // `title` es el nombre congelado al momento de la compra (order_items.title);
+  // el join a products es solo el respaldo para pedidos viejos que no lo tienen.
+  name.textContent = first?.title || first?.products?.title || 'Producto eliminado';
   info.appendChild(name);
-  const sub = document.createElement('span');
-  sub.className = 'pd-cell-product__sub';
-  sub.textContent = items.length > 1 ? `${items.length} productos` : '1 producto';
-  info.appendChild(sub);
+
+  // Qué le pidieron exactamente. Sin esto el vendedor no sabe de qué color
+  // despachar: esta fila es el único lugar donde ve el pedido (la vista de
+  // detalle todavía no existe, ver el botón "Ver detalle" más abajo).
+  const firstOptions = describeSelectedOptions(first?.selected_options);
+  if (firstOptions) {
+    const opts = document.createElement('span');
+    opts.className = 'pd-cell-product__options';
+    opts.textContent = firstOptions;
+    info.appendChild(opts);
+  }
+
+  if (items.length > 1) {
+    // Con varios ítems se listan los demás (hasta 3) en vez del conteo pelado:
+    // "2 productos" no alcanza para preparar el pedido si cada uno tiene su
+    // color. El resto queda como conteo para no romper el alto de la fila.
+    const rest = items.slice(1);
+    rest.slice(0, 3).forEach((it) => {
+      const line = document.createElement('span');
+      line.className = 'pd-cell-product__sub';
+      const itOptions = describeSelectedOptions(it.selected_options);
+      line.textContent = `${it.quantity}x ${it.title || it.products?.title || 'Producto'}${itOptions ? ` — ${itOptions}` : ''}`;
+      info.appendChild(line);
+    });
+    if (rest.length > 3) {
+      const more = document.createElement('span');
+      more.className = 'pd-cell-product__sub';
+      more.textContent = `+${rest.length - 3} producto${rest.length - 3 === 1 ? '' : 's'} más`;
+      info.appendChild(more);
+    }
+  } else {
+    const sub = document.createElement('span');
+    sub.className = 'pd-cell-product__sub';
+    sub.textContent = '1 producto';
+    info.appendChild(sub);
+  }
+
   cell.appendChild(info);
 
   return cell;

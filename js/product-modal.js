@@ -789,8 +789,20 @@ function bindModalEvents(overlay, data) {
     const qty = parseInt(qtyInput?.value, 10) || 1;
     const priceOld = _parsePrice(data.priceOldText);
 
+    // Mismo requisito que "Agregar al carrito": este botón es el otro camino
+    // al carrito desde el modal y se olvidaba fácil. Sin la elección completa,
+    // mandarlo al checkout sería mandarlo a un error.
+    const selectedIds = [...overlay.querySelectorAll('#pm-options input[type="radio"]:checked')].map((r) => r.value);
+    const missingNow = missingOptionNames(data.optionGroups, selectedIds);
+    if (missingNow.length > 0) {
+      _showToast(`Elegí ${missingNow.map((m) => m.toLowerCase()).join(' y ')} antes de comprar.`, 'error');
+      overlay.querySelector('#pm-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const lineKeyNow = cartLineKey(data.id, selectedIds);
     const cart = _getCart();
-    const existing = cart.find(item => item.id === data.id);
+    const existing = cart.find(item => itemLineKey(item) === lineKeyNow);
 
     if (existing) {
       existing.qty += qty;
@@ -804,6 +816,8 @@ function bindModalEvents(overlay, data) {
         priceOld: priceOld || null,
         image: data.imgSrc,
         qty,
+        options: selectedIds,
+        optionsLabel: buildSelectionSnapshot(data.optionGroups, selectedIds),
         selected: true
       });
     }

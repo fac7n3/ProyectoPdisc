@@ -1,4 +1,5 @@
 import { supabase } from './auth-utils.js';
+import { itemLineKey } from './product-options-utils.js';
 
 export const CART_KEY = 'bl_cart';
 
@@ -39,19 +40,26 @@ export async function pushCartToCloud(cart) {
 }
 
 /**
- * Combina el carrito local con el de la nube: suma cantidades de productos
- * repetidos (tope MAX_QTY) y usa los datos de display (nombre/precio/imagen)
+ * Combina el carrito local con el de la nube: suma cantidades de líneas
+ * repetidas (tope MAX_QTY) y usa los datos de display (nombre/precio/imagen)
  * de la versión local, que es la más reciente en este navegador.
+ *
+ * Se agrupa por CLAVE DE LÍNEA, no por id de producto. Con `item.id` a secas,
+ * la misma remera en rojo y en azul se fusionaban en una sola línea con la
+ * cantidad sumada y el color de la última — o sea que el cliente terminaba
+ * comprando dos veces el mismo color sin haberlo pedido. Se descubrió
+ * probando el checkout de punta a punta con dos colores en el carrito.
  */
 function mergeCarts(localCart, cloudCart) {
   const merged = new Map();
   (cloudCart || []).forEach((item) => {
-    if (item?.id) merged.set(item.id, { ...item });
+    if (item?.id) merged.set(itemLineKey(item), { ...item });
   });
   (localCart || []).forEach((item) => {
     if (!item?.id) return;
-    const existing = merged.get(item.id);
-    merged.set(item.id, {
+    const key = itemLineKey(item);
+    const existing = merged.get(key);
+    merged.set(key, {
       ...item,
       qty: existing ? Math.min(MAX_QTY, existing.qty + item.qty) : item.qty,
     });

@@ -3935,3 +3935,107 @@ producción** como fixture (Beruru con su `ropa` + sus 6 productos de Tecnologí
 con `category_slug` NULL, una tienda con rubro y sin productos, y una sin nada). Cubren el bug
 reportado, la no-regresión de las 14 de seed y los dos bordes. `npm test` en verde, `dist/`
 reconstruido.
+
+## 2026-09-22 — Opciones de producto (color / sabor / talle) de punta a punta — migración 102
+
+Pedido del usuario: "cuando alguien vende la misma prenda en distintos colores… distintos sabores
+para budines, salsas, todo eso… y que el cliente pueda elegir cuál quiere antes de comprar".
+
+### Las tres decisiones que definieron el tamaño del trabajo
+
+Se preguntaron **antes** de escribir código, porque cada una cambia el modelo de datos:
+
+1. **Stock por opción, o del producto?** → del producto. El vendedor marca una opción como
+   agotada a mano. **Consecuencia central: no hay tabla de variantes ni de combinaciones.** Una
+   remera con 3 colores y 4 talles son 7 filas de valores, no 12 de combinaciones — y el
+   comerciante no tiene que mantener 12 stocks.
+2. **Un grupo o varios?** → varios (Color + Talle a la vez). De ahí que sean dos tablas
+   (`product_options` / `product_option_values`) y no un array en `products`.
+3. **La opción cambia el precio?** → no. Si algún día cambia, el lugar es una columna en
+   `product_option_values` **más** `create_order` **más** `js/cart-totals.js`, que fija la
+   aritmética contra ese mismo RPC con tests.
+
+### Lo que ya existía y estaba muerto: F5-03
+
+Apareció recién al abrir `js/vender.js`: había un manager de **"variantes"** (`product_variants`,
+migración 13) con nombre + precio + stock por variante, el vendedor las podía cargar… y el cliente
+solo veía una lista informativa con **"Para pedir una opción específica, consultá con el
+vendedor."**. Nunca tocó el carrito.
+
+`select count(*) from product_variants` en producción: **0**. Nadie la usó nunca, así que no hubo
+datos que migrar. Se reemplazó el frontend entero (editor del vendedor, bloque del modal y bloque
+de la ficha) y **la tabla se dejó en la base sin uso**, mismo criterio que las de `repartidor`.
+Ningún archivo de `js/` la lee ya.
+
+### Seguridad: el carrito manda ids, no texto
+
+El payload de `create_order` por ítem pasó de `{id, qty}` a `{id, qty, options: [uuid…]}`, donde
+los uuid son de `product_option_values`. **Ids y no texto a propósito**: con texto, un cliente
+podía mandar `"Color: el que quiera"` y al vendedor le entraba un pedido de algo que no vende. El
+nombre legible lo arma el RPC leyendo la base, exactamente el mismo criterio que ya se usaba con
+el precio.
+
+El RPC valida que la selección (a) cubra **todos** los grupos del producto, (b) use valores de
+**ese** producto y (c) marcados disponibles. Las dos comparaciones de cantidad
+(`count(distinct po.id) = v_group_count` **y** `array_length(v_opt_ids,1) = v_group_count`) son
+las que cierran los huecos sutiles: mandar dos valores del mismo grupo, y mandar ids de relleno
+además de los correctos.
+
+`order_items.selected_options` guarda un **snapshot de texto** (`[{"option":"Color","value":"Rojo"}]`),
+no foreign keys: el vendedor puede renombrar "Rojo" a "Bordó" o borrar el grupo, y un pedido de
+hace tres meses tiene que seguir diciendo qué se despachó. Mismo criterio que `order_items.title`.
+
+### Dos bugs que destapó la feature (los dos reales, los dos verificados en el navegador)
+
+1. **`mergeCarts` fusionaba las líneas.** La sincronización del carrito con la nube
+   (`user_carts`) agrupaba por `item.id`, así que la misma remera en rojo y en azul se fusionaba
+   en **una sola línea, con la cantidad sumada y el color de la última**. O sea: el cliente
+   terminaba comprando dos veces el mismo color sin haberlo pedido. Lo cazó el test de punta a
+   punta comparando el payload exacto que recibe el RPC — el carrito en pantalla se veía bien.
+   Ahora agrupa por `itemLineKey()`.
+2. **`validateCartFreshness` recortaba el stock por línea, no por producto.** Con dos líneas de
+   la misma remera, cada una se recortaba contra el stock **completo**, así que pasaban las dos y
+   `create_order` (que sí agrupa por `product_id`) rechazaba el checkout entero con un error
+   genérico. Ahora lleva un `stockLeft` por producto. **Era un bug preexistente**, solo que sin
+   opciones era casi imposible tener dos líneas del mismo producto.
+
+### Detalles de implementación que no son obvios
+
+- **El botón rápido de "agregar" de una tarjeta** no puede agregar a ciegas un producto con
+  opciones: abre el modal. Saber qué productos tienen opciones se resuelve con **una consulta por
+  render** (no una por click, que se notaría) y **desde `cart-utils.js`, no desde el `select` de
+  cada página**: los resultados de búsqueda salen del RPC `search_products`, con columnas fijas,
+  y habría que tocar la base para sumarle el dato. Así las tres grillas quedan cubiertas con el
+  mismo código. El handler hace `await` de esa consulta antes de decidir, para que un click en los
+  primeros milisegundos no agregue una línea sin opciones.
+- **Los chips arrancan sin marcar.** Preseleccionar el primero es lo cómodo de programar y lo peor
+  para el vendedor: el cliente que no miró se lleva un pedido del color equivocado y la culpa
+  parece del comercio.
+- **"Comprar ahora" del modal es un segundo camino al carrito** y se olvida fácil — apareció
+  barriendo `item.id ===` al final. Tiene la misma validación que "Agregar al carrito".
+- **El CSS de los chips vive en `home.css`, no en `product-modal.css`**, aunque las clases se
+  llamen `pm-option*`: `producto.html` **no carga** `product-modal.css` (verificado), y los chips
+  también se usan ahí. `home.css` la cargan las cuatro páginas donde se puede comprar. Es
+  exactamente la clase de bug del caso `tkt-*` del 2026-09-16.
+- **El vendedor todavía no tiene vista de detalle del pedido** (el botón dice "llega pronto"), así
+  que la fila de Pedidos es el único lugar donde ve qué le pidieron. Por eso esa celda pasó de
+  "N productos" a listar los ítems con su opción (hasta 3, después un conteo): sin eso no puede
+  saber de qué color despachar y la feature no le sirve.
+
+### Verificación
+
+- **RPC contra la base real**, en transacciones con ROLLBACK: rechaza sin elegir, con un grupo
+  faltante, con dos valores del mismo grupo y con una opción agotada; acepta la selección válida y
+  guarda el snapshot correcto. **Sin regresión**: un producto sin opciones se compra exactamente
+  igual (mismo total, mismo descuento de stock, `selected_options` NULL) y el bloqueo del pago
+  simulado de la migración 101 sigue en pie.
+- **9 checks de Playwright** sobre el build real con PostgREST interceptado: los dos grupos en la
+  ficha, el chip agotado deshabilitado, ningún chip preseleccionado, no agrega sin elegir y avisa
+  qué falta, agrega con la elección, dos colores = dos líneas, el carrito las distingue, y **el
+  payload exacto que recibe `create_order`**.
+- `node js/product-options-utils.test.mjs`: 24 asserts. `npm test` en verde, `dist/` reconstruido.
+
+**Gotcha del harness, otra vez:** Playwright resuelve las rutas de `context.route` **de la última
+registrada a la primera**. La ruta de `/rest/v1/rpc/` tiene que registrarse **después** de la
+genérica de `/rest/v1/`, si no la genérica se la come y el test dice "no se llamó a create_order"
+cuando en realidad sí se llamó.

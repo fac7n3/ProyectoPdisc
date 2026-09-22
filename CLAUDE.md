@@ -80,6 +80,42 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
+  a pedido del usuario: el comerciante las carga y el cliente elige antes de
+  comprar. Migración **102** (aplicada a producción): `product_options` +
+  `product_option_values` + `order_items.selected_options`, y `create_order`
+  valida la elección **del lado del servidor**. Tres decisiones de producto,
+  confirmadas antes de escribir nada: el **stock sigue siendo del producto**
+  (el vendedor marca una opción como agotada a mano, no lleva la cuenta color
+  por color) — por eso **no hay tabla de variantes ni de combinaciones**;
+  un producto puede tener **varios grupos a la vez** (Color + Talle); y la
+  opción **no cambia el precio** (si algún día cambia, el lugar es una columna
+  en `product_option_values` + `create_order` + `js/cart-totals.js`).
+  **Reemplaza al stub de F5-03**: existía un editor de "variantes"
+  (nombre/precio/stock) que **no se integraba con el carrito** — el cliente
+  solo veía una lista con un "consultá con el vendedor". `product_variants`
+  estaba **vacía en producción** (0 filas, nadie la usó), así que no hubo nada
+  que migrar; la tabla se deja sin uso (mismo criterio que las de
+  `repartidor`) y ya no la lee ningún archivo.
+  **El carrito manda ids de valores, nunca texto** — si viajara el texto el
+  cliente podría inventar una opción que el comercio no vende; el nombre
+  legible lo arma el RPC leyendo la base, igual que ya hacía con el precio.
+  Lógica compartida en **`js/product-options-utils.js`** (24 asserts).
+  **Dos bugs encontrados al construir esto, los dos verificados en el
+  navegador:** (1) `mergeCarts` (sincronización del carrito con la nube)
+  agrupaba por `item.id`, así que la misma remera en rojo y en azul se fusionaba
+  en **una línea con la cantidad sumada y el color de la última** — el cliente
+  terminaba comprando dos veces el mismo color sin pedirlo; ahora agrupa por
+  clave de línea. (2) `validateCartFreshness` recortaba el stock **por línea**
+  y no por producto: dos líneas de la misma remera pasaban cada una con el
+  stock completo y `create_order` (que sí suma por producto) rechazaba el
+  checkout entero. **Gotcha del panel del vendedor:** todavía **no existe la
+  vista de detalle del pedido** ("llega pronto"), así que la fila de Pedidos es
+  el único lugar donde ve qué le pidieron — por eso ahora lista los ítems con
+  su opción ahí, hasta 3 y después un conteo.
+  Verificado con 9 checks de Playwright sobre el build real (selector, chips
+  agotados, validación de lo que falta, dos líneas separadas y el payload
+  exacto que recibe el RPC) más las pruebas del RPC contra la base real.
 - **Resuelto 2026-09-22** — la etiqueta de rubro de la tarjeta de un comercio
   (página "Comercios") **no era la que el dueño elige en su panel**: cambiar
   "Perfil de mi comercio → Categoría" no se reflejaba nunca en el público.

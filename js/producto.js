@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
+import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
 import { buildContactAction } from './store-contact-utils.js';
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [{ data: product, error }, { data: { session } }] = await Promise.all([
       supabase
         .from('products')
-        .select('*, stores(name, id, contact_method, phone, whatsapp, owner_id), product_images(url, position), product_variants(id, name, price, stock)')
+        .select('*, stores(name, id, contact_method, phone, whatsapp, owner_id), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
         .eq('id', productId)
         .single(),
       supabase.auth.getSession(),
@@ -112,35 +113,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     descDiv.textContent = product.description || 'Sin descripción disponible.';
     info.appendChild(descDiv);
 
-    // F5-03: display informativo de variantes (talle/color/peso) — no integra con el carrito.
-    const variants = product.product_variants || [];
-    if (variants.length > 0) {
-      const variantsDiv = document.createElement('div');
-      variantsDiv.className = 'product-variants-info';
-      variantsDiv.style.cssText = 'margin: 1rem 0;';
+    // Selector de opciones (color / sabor / talle). Antes acá había una lista
+    // informativa con un "consultá con el vendedor" -- F5-03 nunca llegó al
+    // carrito. Mismos chips que el modal rápido (Assets/styles/product-modal.css,
+    // que esta página ya carga) para que la elección se vea igual en los dos
+    // lugares donde se puede comprar.
+    const optionGroups = sortOptionGroups(
+      (product.product_options || []).map((g) => ({ ...g, values: g.product_option_values || [] }))
+    );
 
-      const variantsTitle = document.createElement('p');
-      variantsTitle.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem;';
-      variantsTitle.textContent = 'Opciones disponibles:';
-      variantsDiv.appendChild(variantsTitle);
+    if (optionGroups.length > 0) {
+      const optionsWrap = document.createElement('div');
+      optionsWrap.className = 'pm-options';
+      optionsWrap.id = 'product-options';
 
-      const variantsList = document.createElement('ul');
-      variantsList.style.cssText = 'list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.35rem;';
-      variants.forEach((variant) => {
-        const li = document.createElement('li');
-        li.style.cssText = 'font-size: 0.9rem; color: var(--bl-text-muted, #666);';
-        const stockNote = variant.stock > 0 ? `stock: ${variant.stock}` : 'sin stock';
-        li.textContent = `${variant.name} — ${formatPrice(variant.price)} (${stockNote})`;
-        variantsList.appendChild(li);
+      optionGroups.forEach((group) => {
+        const fieldset = document.createElement('fieldset');
+        fieldset.className = 'pm-option';
+
+        const legend = document.createElement('legend');
+        legend.className = 'pm-option__title';
+        legend.textContent = group.name;
+        fieldset.appendChild(legend);
+
+        const chips = document.createElement('div');
+        chips.className = 'pm-option__chips';
+
+        group.values.forEach((value) => {
+          const label = document.createElement('label');
+          label.className = 'pm-option__chip' + (value.is_available ? '' : ' pm-option__chip--out');
+
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = `product-opt-${group.id}`;
+          radio.value = value.id;
+          radio.disabled = !value.is_available;
+          label.appendChild(radio);
+
+          const text = document.createElement('span');
+          text.textContent = value.value;
+          label.appendChild(text);
+
+          chips.appendChild(label);
+        });
+
+        fieldset.appendChild(chips);
+        optionsWrap.appendChild(fieldset);
       });
-      variantsDiv.appendChild(variantsList);
 
-      const variantsNote = document.createElement('p');
-      variantsNote.style.cssText = 'font-size: 0.8rem; color: var(--bl-text-muted, #999); margin-top: 0.35rem;';
-      variantsNote.textContent = 'Para pedir una opción específica, consultá con el vendedor.';
-      variantsDiv.appendChild(variantsNote);
-
-      info.appendChild(variantsDiv);
+      info.appendChild(optionsWrap);
     }
 
     const actionsDiv = document.createElement('div');
@@ -229,8 +250,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnAdd = document.getElementById('btn-add-cart');
     if (btnAdd) {
       btnAdd.addEventListener('click', () => {
+        const selectedIds = [...document.querySelectorAll('#product-options input[type="radio"]:checked')].map((r) => r.value);
+
+        // Igual que en el modal: sin elegir todo no se agrega. create_order lo
+        // rechazaría igual, pero recién al pagar y sin decir qué falta.
+        const missing = missingOptionNames(optionGroups, selectedIds);
+        if (missing.length > 0) {
+          showToast(`Elegí ${missing.map((m) => m.toLowerCase()).join(' y ')} antes de agregar al carrito.`, 'error');
+          document.getElementById('product-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        const lineKey = cartLineKey(product.id, selectedIds);
         const cart = getCart();
-        const existing = cart.find(item => item.id === product.id);
+        const existing = cart.find(item => itemLineKey(item) === lineKey);
 
         if (existing) {
           existing.qty++;
@@ -244,6 +277,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             priceOld: null,
             image: imgUrl,
             qty: 1,
+            options: selectedIds,
+            optionsLabel: buildSelectionSnapshot(optionGroups, selectedIds),
             selected: true // un producto recién agregado entra tildado
           });
         }
@@ -255,7 +290,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { btnAdd.style.transform = ''; }, 100);
 
         updateCartBadge();
-        showToast(`${product.title} agregado al carrito`, 'success');
+        const chosen = describeSelectedOptions(buildSelectionSnapshot(optionGroups, selectedIds));
+        showToast(`${product.title}${chosen ? ` (${chosen})` : ''} agregado al carrito`, 'success');
       });
     }
 

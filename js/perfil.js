@@ -1,4 +1,5 @@
 import { supabase, guardPage, showToast, getPanelAccess } from "./auth-utils.js";
+import { describeSelectedOptions } from './product-options-utils.js';
 import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-utils.js";
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
@@ -1139,7 +1140,11 @@ function buildCompraItem(order, transferInfoByStoreId) {
       // a la ficha sí usa product_id en vivo -- products_select_purchased
       // (migración 68) permite verla aunque el vendedor la haya pausado.
       const title = oi.title || 'Producto';
-      const text = `${oi.quantity}x ${title} — ${formatPrice(oi.price * oi.quantity)}`;
+      // Lo que eligió (Color: Rojo · Talle: M), congelado en el pedido: si el
+      // vendedor después renombra o borra esa opción, el recibo sigue diciendo
+      // qué compró -- mismo criterio que el título de acá arriba.
+      const chosen = describeSelectedOptions(oi.selected_options);
+      const text = `${oi.quantity}x ${title}${chosen ? ` (${chosen})` : ''} — ${formatPrice(oi.price * oi.quantity)}`;
       const textEl = document.createElement(oi.product_id ? 'a' : 'span');
       textEl.className = 'compra-item-text';
       if (oi.product_id) {
@@ -1608,7 +1613,7 @@ async function loadCompras(userId) {
       .select(`
         id, client_id, store_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
         stores ( name ),
-        order_items ( quantity, price, title, product_id, products ( image_url ) ),
+        order_items ( quantity, price, title, selected_options, product_id, products ( image_url ) ),
         payment_proofs ( status, created_at )
       `)
       .eq('client_id', userId)
