@@ -26,6 +26,16 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/98_reviews_moderador_only_hides.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `reviews_moderador_only_hides`). Encontrada en una
+  auditoría de seguridad del panel de admin: el trigger `protect_review_owner_reply()` eximía a
+  `moderador` de todo chequeo de columna en `reviews`, así que ese rol (deliberadamente acotado,
+  50_moderador_role.sql) podía en los hechos reescribir el rating/comentario/autor de cualquier
+  reseña en vez de solo ocultarla/mostrarla, que es todo lo que hace el panel. Ahora el trigger
+  bloquea cualquier cambio de moderador que no sea `is_hidden`. `admin` no se tocó (ya tiene acceso
+  total consistente en el resto del proyecto). Detalle completo en el skill
+  `progreso-baradero-local`.
+
 - `db/schema/97_lock_down_request_status_on_insert.sql` — **aplicada el 2026-09-22** vía
   `apply_migration` (nombre en Supabase: `lock_down_request_status_on_insert`). Encontrada en una
   auditoría de seguridad del panel de profesional/técnico: `professional_requests_insert_own` y

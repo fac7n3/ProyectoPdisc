@@ -3534,3 +3534,51 @@ diagnóstico -- y de paso borra de la query string cualquier parámetro con nomb
 resto de la URL (path, query no sensible) se conserva intacto porque sigue siendo útil para
 diagnosticar en qué página pasó el error. Sin migración: `error_logs` no cambia de esquema, el fix
 es enteramente del lado del cliente, antes de que el insert salga.
+
+## 2026-09-22 — Auditoría de seguridad del panel de admin (tercer sector al azar)
+
+Tercer sector elegido al azar (mismo pedido del usuario): `js/admin.js` (1981 líneas) +
+`pages/admin.html`. Es la superficie de mayor privilegio del sitio y no había tenido un pase de
+auditoría dedicado (sesiones previas tocaron piezas sueltas -- el visor de `error_logs`, la
+aprobación de profesionales -- pero no una revisión sistemática).
+
+**El panel en general está bien construido**: sin un solo `innerHTML` con datos de la persona en
+todo el archivo (se revisaron las ~60 apariciones, todas son literales de "Cargando…"/"Error al
+cargar"/vacío o `= ''` para limpiar), el hilo de mensajes de soporte usa `textContent` para el
+mensaje del usuario y del admin por igual, y los RPCs sensibles (`confirm_transfer_payment`,
+`admin_set_product_active`) validan el rol o la propiedad del recurso adentro, con
+`security definer` + `search_path` fijo -- mismo patrón ya establecido en el resto del proyecto.
+`support_tickets_update`/`support_ticket_messages_insert_participants` (54) ya tenían el patrón
+correcto de restringir por columna: el dueño del ticket solo puede poner `status = 'cancelled'`
+en su propio `with check`, nunca reescribir el resto.
+
+**Encontrado y arreglado, severidad media-alta**: `protect_review_owner_reply()` (el trigger de
+`reviews` que agregó la respuesta pública del dueño, 94_reviews_owner_reply.sql) eximía a
+`admin` **y** `moderador` de todo chequeo de columna -- volvía con `return new` apenas veía
+cualquiera de los dos roles. El problema es 'moderador': es, por diseño explícito de
+`50_moderador_role.sql`, un rol deliberadamente acotado ("nada financiero ni de configuración"),
+pensado solo para ocultar/mostrar reseñas reportadas (F7-03) -- y "moderar una reseña" en este
+proyecto es únicamente eso: `fetchReportedReviews()` en `js/admin.js` solo manda
+`update({ is_hidden: ... })`, nunca toca otra columna. Pero `reviews_update_moderador` (la
+policy RLS) no restringe ninguna columna en su `with check`, y con el trigger exento de chequeos
+para ese rol, un moderador podía en los hechos reescribir el `rating`, el `comment`, el
+`client_id` (autor) o el `target_id`/`target_type` de **cualquier reseña del sitio** -- forjar el
+contenido de una reseña ajena, no solo moderarla. Confirmado contra la policy real en producción
+(`pg_policy`, sin restricción de columna) antes de tocar nada.
+
+**`admin` no se tocó a propósito**: ya tiene acceso total y consistente en el resto del proyecto
+(`for all` en casi cualquier tabla) y las 4 cuentas admin ya pueden hacer lo mismo desde el SQL
+Editor de Supabase -- restringirlo acá no cierra ninguna superficie real, solo movería la
+inconsistencia a otro lado. `moderador` es el caso distinto: un rol delegado sin acceso al
+dashboard, pensado explícitamente como acotado -- el mismo criterio que ya usa el propio archivo
+50 para justificar por qué existe.
+
+Fix (`db/schema/98_reviews_moderador_only_hides.sql`, aplicada en producción vía
+`apply_migration`): el trigger ahora separa el camino de `moderador` del de `admin` -- para
+moderador, cualquier cambio que no sea `is_hidden` (rating/comment/client_id/target_type/
+target_id/report_reason/owner_reply) tira excepción ("Como moderador solo podés ocultar o
+mostrar la reseña."), igual de estricto que ya lo era para el autor de la reseña con el resto de
+las columnas. El toggle real de `fetchReportedReviews()` sigue andando exactamente igual, porque
+solo cambia `is_hidden`. No hay cuentas `moderador` asignadas todavía en producción (verificado
+2026-09-14, ver "Pendientes activos" de CLAUDE.md sobre los 4 admins) -- se encontró y cerró antes
+de que hubiera alguien con ese rol para explotarlo.

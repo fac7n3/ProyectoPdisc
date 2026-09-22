@@ -290,6 +290,23 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   saca el hash entero y cualquier parámetro sensible de la query string antes
   de loguear. Cambio de cliente, sin migración. Detalle completo en el skill
   `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — auditoría de seguridad del panel de admin
+  (tercer sector al azar). El panel en general está bien construido (sin
+  `innerHTML` con datos de la persona, RPCs sensibles con chequeo de rol
+  adentro). Encontrado y arreglado, severidad media-alta: el trigger
+  `protect_review_owner_reply()` eximía a `moderador` de todo chequeo de
+  columna en `reviews` -- ese rol es deliberadamente acotado por diseño
+  (`50_moderador_role.sql`: "nada financiero ni de configuración", solo
+  ocultar/mostrar reseñas reportadas), pero sin el chequeo podía en los
+  hechos reescribir el rating/comentario/autor de **cualquier reseña del
+  sitio**, no solo ocultarla. Migración
+  `db/schema/98_reviews_moderador_only_hides.sql`, aplicada en producción:
+  ahora cualquier cambio de moderador que no sea `is_hidden` tira excepción.
+  `admin` no se tocó (ya tiene acceso total consistente en el resto del
+  proyecto, y las 4 cuentas admin ya pueden hacer lo mismo desde el SQL
+  Editor). No había cuentas `moderador` asignadas en producción -- se cerró
+  antes de que hubiera alguien con ese rol para explotarlo. Detalle completo
+  en el skill `progreso-baradero-local`.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su
