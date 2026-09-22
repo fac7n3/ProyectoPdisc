@@ -3582,3 +3582,48 @@ las columnas. El toggle real de `fetchReportedReviews()` sigue andando exactamen
 solo cambia `is_hidden`. No hay cuentas `moderador` asignadas todavía en producción (verificado
 2026-09-14, ver "Pendientes activos" de CLAUDE.md sobre los 4 admins) -- se encontró y cerró antes
 de que hubiera alguien con ese rol para explotarlo.
+
+## 2026-09-22 — Auditoría de seguridad de "Mi perfil" (cuarto sector al azar)
+
+Cuarto sector elegido al azar (mismo pedido del usuario): `js/perfil.js` (2511 líneas) +
+`pages/perfil.html`. Maneja datos personales, libreta de direcciones, avatar, favoritos, "Mis
+compras" (con comprobante de transferencia y botón de arrepentimiento) y la baja de cuenta.
+
+**En general está bien construido**: `renderFavList`/`buildFavProductCard`/`buildFavStoreCard`
+usan `textContent`, nunca interpolan datos de producto/comercio en `innerHTML` (el único
+`innerHTML` con interpolación, en `renderFavList`, es siempre un literal fijo, nunca dato de
+usuario). `user_addresses` tiene RLS limpia por dueño sin nada que restringir por columna. El
+upload de comprobante de transferencia sanea el nombre de archivo contra path traversal Y está
+además cubierto en dos capas server-side (`payment_proofs_storage_insert_client` exige que la
+carpeta del primer segmento del path sea un `order_id` de una orden propia con
+`payment_method = 'transferencia'`, y el trigger `validate_payment_proof_order` exige que esa
+orden siga `pending`) -- no hay forma de subir un comprobante a la carpeta de otra persona ni de
+inflar la bandeja de otro comercio. `request_order_revocation` valida ownership + estado pagado +
+plazo de 15 días. Los tres usos de `URLSearchParams` (`tab`, `order`, `mp`) solo mueven el foco de
+scroll o togglean un toast -- ninguno se usa para autorizar nada ni se reinyecta sin escapar.
+
+**Encontrado y arreglado, severidad alta**: `profiles_update_own` (`with check: auth.uid() = id`,
+sin restricción de columna) deja que cualquier cuenta reescriba cualquier columna de su propia
+fila en `profiles`. `role` ya estaba protegido desde la migración 24
+(`prevent_role_update_on_profile`, con la bandera de transacción
+`app.role_change_authorized`) -- pero `is_suspended` (34_admin_moderation.sql, pensada para
+"suspender repartidor") **no tenía ninguna protección**. Un usuario podía mandar directo
+`supabase.from('profiles').update({ is_suspended: false }).eq('id', auth.uid())` y
+des-suspenderse a sí mismo, sin pasar por `admin_set_repartidor_suspended` (el único camino
+pensado para tocar esa columna). Confirmado que no es hipotético: aunque el frontend de
+`repartidor` se sacó el 2026-09-16, `claim_delivery`/`update_delivery_status` -- las únicas dos
+RPCs que de verdad usan `is_suspended` como gate -- siguen con `EXECUTE` otorgado a
+`authenticated` en producción (verificado con `information_schema.routine_privileges`), así que
+la suspensión de un repartidor malo era, en los hechos, una defensa de cartón.
+
+Fix (`db/schema/99_protect_is_suspended_on_profile.sql`, aplicada en producción vía
+`apply_migration`): el trigger `prevent_role_update_on_profile` ahora protege `role` **e**
+`is_suspended` bajo la misma bandera `app.role_change_authorized`, y
+`admin_set_repartidor_suspended` pasa a setearla antes de su propio `update` -- si no, su UPDATE
+legítimo (que corre con los privilegios reales del admin, tras el chequeo de rol de la función)
+quedaría bloqueado por el mismo trigger que ahora lo protege, igual que le pasó en su momento a
+`approve_seller_request` antes del fix de la migración 24. Verificado con tres pruebas en
+transacciones con `ROLLBACK` contra la base real: un `UPDATE` directo de `is_suspended` sin la
+bandera tira la excepción esperada, el mismo `UPDATE` con la bandera seteada sí aplica, y un
+`UPDATE` directo de `role` sigue bloqueado igual que antes (sin regresión). No se tocó nada de
+`js/`: es un fix puramente de base, la UI de repartidor ya no existe.

@@ -26,6 +26,16 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/99_protect_is_suspended_on_profile.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `protect_is_suspended_on_profile`). Encontrada en una
+  auditoría de seguridad de "Mi perfil": `profiles_update_own` no restringe columnas, y
+  `profiles.is_suspended` (pensada para suspender repartidores) no tenía la misma protección que
+  `role` -- un usuario podía des-suspenderse a sí mismo con un update directo. El trigger
+  `prevent_role_update_on_profile` ahora también protege `is_suspended` bajo la bandera
+  `app.role_change_authorized`, y `admin_set_repartidor_suspended` la setea antes de su propio
+  update. Verificado con pruebas en transacciones con ROLLBACK. Detalle completo en el skill
+  `progreso-baradero-local`.
+
 - `db/schema/98_reviews_moderador_only_hides.sql` — **aplicada el 2026-09-22** vía
   `apply_migration` (nombre en Supabase: `reviews_moderador_only_hides`). Encontrada en una
   auditoría de seguridad del panel de admin: el trigger `protect_review_owner_reply()` eximía a

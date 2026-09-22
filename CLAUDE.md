@@ -307,6 +307,26 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   Editor). No había cuentas `moderador` asignadas en producción -- se cerró
   antes de que hubiera alguien con ese rol para explotarlo. Detalle completo
   en el skill `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — auditoría de seguridad de "Mi perfil" (cuarto
+  sector al azar). En general está bien construido (sin `innerHTML` con
+  datos de usuario, subida de comprobantes cubierta en dos capas
+  server-side). Encontrado y arreglado, severidad ALTA:
+  `profiles_update_own` no restringe columnas, y `profiles.is_suspended`
+  (pensada para suspender repartidores) no tenía la misma protección que
+  `role` -- cualquier cuenta podía des-suspenderse a sí misma con un update
+  directo (`supabase.from('profiles').update({ is_suspended: false })`),
+  sin pasar por `admin_set_repartidor_suspended`. No es hipotético: aunque
+  el frontend de `repartidor` se sacó el 2026-09-16, `claim_delivery`/
+  `update_delivery_status` -- las RPCs que de verdad usan `is_suspended`
+  como gate -- siguen con `EXECUTE` otorgado a `authenticated` en
+  producción. Migración `db/schema/99_protect_is_suspended_on_profile.sql`,
+  aplicada: el trigger `prevent_role_update_on_profile` ahora protege
+  `role` **e** `is_suspended` bajo la misma bandera de transacción, y
+  `admin_set_repartidor_suspended` la setea antes de su propio update.
+  Verificado con pruebas en transacciones con ROLLBACK contra la base real
+  (bloqueo sin la bandera, éxito con la bandera, sin regresión en `role`).
+  Sin cambios de `js/`. Detalle completo en el skill
+  `progreso-baradero-local`.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su
