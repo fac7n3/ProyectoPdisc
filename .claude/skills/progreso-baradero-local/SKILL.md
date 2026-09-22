@@ -3489,3 +3489,48 @@ no tiene rate limit -- un visitante anónimo podría inflar `profile_view`/`call
 datos ni una escalada, y con el volumen de "pueblo chico" del proyecto no pareció justificar la
 complejidad de un limitador -- queda para retomar si en algún momento se usan estas métricas para
 algo con peso (ranking, facturación, etc.).
+
+## 2026-09-22 — Auditoría de seguridad del flujo de login/registro/recuperación
+
+Segundo sector elegido al azar (mismo pedido del usuario): `js/login.js`, `js/register.js`,
+`js/recuperar-password.js`, `js/nueva-contrasena.js` y `js/auth-utils.js` (el módulo que importan
+todas las páginas del sitio -- `guardPage`, `checkUrlErrors`, el listener global de sesión).
+
+**Los cuatro flujos en sí están bien**: los redirects de OAuth/registro/login son todos
+hardcodeados o salen de una lista cerrada de 3 valores (`paginaPostRegistro()`), no hay open
+redirect. `checkUrlErrors()` vuelca `error_description` de la URL a un toast con `textContent`,
+nunca `innerHTML` -- no hay XSS ahí pese a ser contenido 100% controlado por la URL. El gate de
+rol de `guardPage` (`requireRole`) es puramente de UX/redirect: confirmado que las acciones reales
+de admin en el sitio están today todas detrás de RLS con el mismo chequeo de
+`auth.jwt() -> app_metadata ->> role`, así que aunque alguien lo saltee client-side no gana nada.
+
+**Encontrado y arreglado, severidad alta** (`js/error-logger.js`): el logger global de errores
+(`window.onerror`/`unhandledrejection`, A113-171) mandaba `window.location.href` **completo**,
+hash incluido, a la tabla `error_logs` en cada error no manejado. El problema: los links de
+recuperación de contraseña, de confirmación de email y el callback de Google OAuth vuelven con
+`#access_token=...&refresh_token=...&type=recovery` en el HASH de la URL -- así arma la sesión
+supabase-js (`detectSessionInUrl`, default `true`). Ese procesamiento es **asíncrono**
+(`_initialize()` de `GoTrueClient`, con lock + posible round-trip antes de limpiar la URL con
+`history.replaceState`): hay una ventana real, entre que carga la página y que termina, donde
+`window.location.href` todavía tiene el token de sesión crudo. Si CUALQUIER error no relacionado
+(un script de una extensión, un timeout de red, un bug en otra parte del sitio) dispara justo en
+esa ventana, el token de la persona quedaba guardado en texto plano en una tabla de la base --
+`error_logs_select_admin` la deja leer a las 4 cuentas admin, y con ese `access_token`/
+`refresh_token` alcanza para tomar la sesión de la cuenta (llamando
+`supabase.auth.setSession(...)` con esos valores) mientras no expiren. No hacía falta que el
+error ocurriera EN la página de recuperación -- el mismo error-logger corre en TODO el sitio
+(se importa desde `auth-utils.js`, que importa cualquier página), así que la ventana existe en
+cualquier página a la que Google OAuth o un link de email puedan redirigir.
+
+Se verificó contra la base real que hoy no hay ningún token filtrado (`error_logs` tiene una sola
+fila en producción y no contiene `access_token`/`refresh_token`/`#`), así que es un hueco
+encontrado antes de que se explotara, no una fuga ya ocurrida.
+
+**Fix**: `sanitizeUrlForLogging()` (exportada, con test en `js/error-logger.test.mjs`) saca el
+hash entero antes de loguear -- ahí no debería viajar nunca nada que valga la pena registrar para
+diagnóstico -- y de paso borra de la query string cualquier parámetro con nombre sensible
+(`access_token`, `refresh_token`, `provider_token`, `provider_refresh_token`, `token`,
+`token_hash`, `code`, `apikey`) por si algún flujo futuro los pasa ahí en vez de en el hash. El
+resto de la URL (path, query no sensible) se conserva intacto porque sigue siendo útil para
+diagnosticar en qué página pasó el error. Sin migración: `error_logs` no cambia de esquema, el fix
+es enteramente del lado del cliente, antes de que el insert salga.
