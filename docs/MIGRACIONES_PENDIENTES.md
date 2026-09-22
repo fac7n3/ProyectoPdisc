@@ -26,6 +26,15 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/96_lock_down_direct_order_inserts.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `lock_down_direct_order_inserts`). Fix de seguridad
+  ALTA anotado el 2026-09-16: revoca el `INSERT` directo de `orders`/`order_items` para
+  `authenticated`/`anon` y borra `orders_insert_own`/`order_items_insert_own` (solo validaban
+  `client_id = auth.uid()`, sin cubrir `total_price`/`payment_status`). `create_order()` sigue
+  funcionando igual — es `SECURITY DEFINER`, dueña `postgres`, misma dueña de las dos tablas, así
+  que bypassea RLS y grants. Verificado post-aplicación contra `information_schema.role_table_grants`.
+  Detalle completo en el skill `progreso-baradero-local`.
+
 - `db/schema/66_cart_hints_preference.sql` — **aplicada el 2026-08-18** vía `apply_migration`
   (nombre en Supabase: `cart_hints_preference`). Agrega `profiles.cart_hints_enabled`
   (boolean not null default true), la preferencia "Mostrar ayudas en el carrito" que se edita

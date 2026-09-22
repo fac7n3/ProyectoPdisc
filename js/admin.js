@@ -887,14 +887,22 @@ async function fetchPendingProofsAdmin() {
     viewBtn.style.color = 'white';
     viewBtn.textContent = 'Ver';
     viewBtn.addEventListener('click', async () => {
+      // Se abre la pestaña ANTES del await: el bloqueador de popups de
+      // Safari/Firefox corta window.open() en cuanto termina el gesto del
+      // usuario, y el await de createSignedUrl lo termina (mismo fix que
+      // js/support-utils.js openAttachment()).
+      const tab = window.open('', '_blank');
+      if (tab) tab.opener = null;
       const { data: signedData, error: signedError } = await supabase.storage
         .from('payment-proofs')
         .createSignedUrl(proof.receipt_url, 60);
       if (signedError || !signedData?.signedUrl) {
+        tab?.close();
         showToast('No se pudo abrir el comprobante.', 'error');
         return;
       }
-      window.open(signedData.signedUrl, '_blank', 'noopener,noreferrer');
+      if (tab) tab.location.replace(signedData.signedUrl);
+      else window.open(signedData.signedUrl, '_blank', 'noopener,noreferrer');
     });
     tdActions.appendChild(viewBtn);
 

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-17. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-22. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -237,20 +237,28 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `npm test`, sin Deno ni red): transpilan el `index.ts` real y lo corren
   contra un Supabase en memoria. Contra el código de `main` fallan 8.
   **Dos pendientes que salieron de esto y NO se tocaron** (ver abajo).
-- **Pendiente (2026-09-16) — prioridad ALTA — `orders_insert_own` deja fijar
-  el precio desde el cliente.** La policy es solo
-  `with check (client_id = auth.uid())`: cualquier usuario autenticado puede
-  insertar una orden por la API REST **salteándose el RPC `create_order`**
-  (que sí calcula el total server-side desde `products.price`) con el
-  `total_price`, `store_id` y `payment_method` que quiera. Con
-  `order_items_insert_own` puede sumarle ítems con título y precio
-  inventados. O sea: fabricar un pedido de productos reales por $1, pagarlo, y
-  que le figure al comercio como pagado. Verificado contra la base de
-  producción el 2026-09-16 con `pg_policies`. La verificación de monto que se
-  agregó al webhook **no tapa este caso** (el monto coincide con el total
-  inventado): hay que arreglarlo en la policy — que el insert directo no pueda
-  fijar `total_price`/`payment_status`, o directamente revocarlo y dejar solo
-  el RPC. Necesita migración, la aplica el usuario.
+- **Resuelto 2026-09-22** — el hueco de prioridad ALTA de `orders_insert_own`
+  (2026-09-16): la policy era solo `with check (client_id = auth.uid())`, así
+  que cualquier usuario autenticado podía insertar una orden por la API REST
+  **salteándose el RPC `create_order`** con el `total_price`, `store_id` y
+  `payment_method` que quisiera (y con `order_items_insert_own`, precio de
+  ítem inventado). Migración `db/schema/96_lock_down_direct_order_inserts.sql`,
+  **aplicada en producción** vía el MCP de Supabase: revoca el `INSERT` de
+  `orders`/`order_items` para `authenticated`/`anon` y borra las dos policies
+  de insert. No rompe `create_order()` — es `SECURITY DEFINER` y su dueño
+  (`postgres`) es también dueño de las dos tablas, así que bypassea RLS y
+  grants igual; el RPC sigue siendo el único camino para crear un pedido,
+  ahora sin forma de saltearlo. Verificado post-aplicación contra
+  `information_schema.role_table_grants` y que no hay ningún
+  `.from('orders').insert(...)` en el cliente. Detalle completo en el skill
+  `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — mismo bug de popup bloqueado que ya se había
+  arreglado en `js/support-utils.js` el 2026-09-16, ahora también en el botón
+  "Ver comprobante" de una transferencia en `js/vender.js` y `js/admin.js`:
+  `window.open(signedUrl, ...)` se llamaba después del `await` de
+  `createSignedUrl`, y Safari/Firefox bloquean en silencio un `window.open()`
+  que ya perdió el gesto del usuario. Se abre la pestaña en blanco antes del
+  `await` y se navega después.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su

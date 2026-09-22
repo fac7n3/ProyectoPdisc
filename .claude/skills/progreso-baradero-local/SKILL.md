@@ -3404,3 +3404,38 @@ al scrollear 500px, navbar en `0–117px`, barra de categorías pegada justo deb
 `117–166px`, y el sidebar de Filtros arrancando en `166px` sin quedar tapado. Confirmado también
 en `home.html` (navbar de una fila, la franja de accesos queda fija en `65–102px`) y en mobile
 (390px) que no rompe el layout. `npm test` en verde, `dist/` reconstruido.
+
+## 2026-09-22 — Cerrado el hueco de `orders_insert_own` (fijar el precio desde el cliente) + popup bloqueado al ver el comprobante
+
+**El pendiente de prioridad ALTA anotado el 2026-09-16 en CLAUDE.md**: la policy
+`orders_insert_own` (`with check (client_id = auth.uid())`) y `order_items_insert_own` no
+restringían nada más, así que cualquier usuario autenticado podía insertar una orden por la API
+REST **salteándose el RPC `create_order`** con el `total_price`, `store_id`, `payment_status` y
+`payment_method` que quisiera, y sumarle ítems con precio inventado. Confirmado contra la base
+real antes de tocar nada (`pg_policy` vía el MCP de Supabase, proyecto `otzhdwuaffcplrveuadc`):
+el `with_check` de `orders_insert_own` era exactamente eso, sin ninguna otra columna cubierta.
+
+**Fix aplicado** (`db/schema/96_lock_down_direct_order_inserts.sql`, aplicada en producción el
+mismo día vía `apply_migration`): en vez de intentar escribir un `with check` que cubra cada
+columna sensible (frágil, cualquier columna nueva vuelve a abrir el hueco), se revoca el
+`INSERT` de `orders`/`order_items` para `authenticated` y `anon` directamente y se borran las dos
+policies de insert, que quedan sin uso. Esto **no rompe `create_order()`**: es `SECURITY DEFINER`
+y tanto la función como las dos tablas son dueñas de `postgres` (verificado con
+`pg_get_userbyid(relowner)`/`pg_get_userbyid(proowner)`) — el dueño de una tabla en Postgres
+bypassea tanto los `GRANT` como el RLS (`relforcerowsecurity` está en `false`, no hay `FORCE ROW
+LEVEL SECURITY`), así que el único camino para crear un pedido sigue siendo el RPC, ahora sin
+forma de saltearlo desde la API REST. Verificado post-aplicación:
+`information_schema.role_table_grants` ya no lista `INSERT` para `authenticated`/`anon` en
+ninguna de las dos tablas. Se buscó en todo `js/` y no hay ningún `.from('orders').insert(...)`
+ni `.from('order_items').insert(...)` en el cliente -- todo pasa por `supabase.rpc('create_order',
+...)`, así que no había nada más que actualizar en el frontend.
+
+**Segundo fix, más chico** (`js/vender.js` y `js/admin.js`, botón "Ver comprobante" de una
+transferencia): mismo bug que ya se había resuelto en `js/support-utils.js` el 2026-09-16 pero
+que esa sesión había dejado anotado como pendiente en estos dos archivos por estar fuera de
+alcance. `window.open(signedUrl, ...)` se llamaba **después** del `await
+createSignedUrl(...)`, y Safari/Firefox bloquean en silencio un `window.open()` que ya no está
+atado al gesto de click del usuario (Chromium no, por eso no se notaba probando ahí). Mismo
+arreglo: abrir la pestaña en blanco (`window.open('', '_blank')`, `tab.opener = null`) antes del
+`await`, y navegarla con `tab.location.replace(signedUrl)` una vez que llega la URL firmada
+(`tab?.close()` si falla). Cambio puro de JS, sin migración ni CSS -- `dist/` reconstruido.
