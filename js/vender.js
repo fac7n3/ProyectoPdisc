@@ -2354,14 +2354,22 @@ function buildPendingPaymentRow(order, proof) {
   viewBtn.style.cssText = 'padding: 0.5rem 0.9rem;';
   viewBtn.textContent = 'Ver comprobante';
   viewBtn.addEventListener('click', async () => {
+    // Se abre la pestaña ANTES del await: el bloqueador de popups de
+    // Safari/Firefox corta window.open() en cuanto termina el gesto del
+    // usuario, y el await de createSignedUrl lo termina (mismo fix que
+    // js/support-utils.js openAttachment()).
+    const tab = window.open('', '_blank');
+    if (tab) tab.opener = null;
     const { data, error } = await supabase.storage
       .from('payment-proofs')
       .createSignedUrl(proof.receipt_url, 60);
     if (error || !data?.signedUrl) {
+      tab?.close();
       showToast('No se pudo abrir el comprobante.', 'error');
       return;
     }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (tab) tab.location.replace(data.signedUrl);
+    else window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   });
   actions.appendChild(viewBtn);
 

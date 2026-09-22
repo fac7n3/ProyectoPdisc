@@ -3404,3 +3404,354 @@ al scrollear 500px, navbar en `0–117px`, barra de categorías pegada justo deb
 `117–166px`, y el sidebar de Filtros arrancando en `166px` sin quedar tapado. Confirmado también
 en `home.html` (navbar de una fila, la franja de accesos queda fija en `65–102px`) y en mobile
 (390px) que no rompe el layout. `npm test` en verde, `dist/` reconstruido.
+
+## 2026-09-22 — Cerrado el hueco de `orders_insert_own` (fijar el precio desde el cliente) + popup bloqueado al ver el comprobante
+
+**El pendiente de prioridad ALTA anotado el 2026-09-16 en CLAUDE.md**: la policy
+`orders_insert_own` (`with check (client_id = auth.uid())`) y `order_items_insert_own` no
+restringían nada más, así que cualquier usuario autenticado podía insertar una orden por la API
+REST **salteándose el RPC `create_order`** con el `total_price`, `store_id`, `payment_status` y
+`payment_method` que quisiera, y sumarle ítems con precio inventado. Confirmado contra la base
+real antes de tocar nada (`pg_policy` vía el MCP de Supabase, proyecto `otzhdwuaffcplrveuadc`):
+el `with_check` de `orders_insert_own` era exactamente eso, sin ninguna otra columna cubierta.
+
+**Fix aplicado** (`db/schema/96_lock_down_direct_order_inserts.sql`, aplicada en producción el
+mismo día vía `apply_migration`): en vez de intentar escribir un `with check` que cubra cada
+columna sensible (frágil, cualquier columna nueva vuelve a abrir el hueco), se revoca el
+`INSERT` de `orders`/`order_items` para `authenticated` y `anon` directamente y se borran las dos
+policies de insert, que quedan sin uso. Esto **no rompe `create_order()`**: es `SECURITY DEFINER`
+y tanto la función como las dos tablas son dueñas de `postgres` (verificado con
+`pg_get_userbyid(relowner)`/`pg_get_userbyid(proowner)`) — el dueño de una tabla en Postgres
+bypassea tanto los `GRANT` como el RLS (`relforcerowsecurity` está en `false`, no hay `FORCE ROW
+LEVEL SECURITY`), así que el único camino para crear un pedido sigue siendo el RPC, ahora sin
+forma de saltearlo desde la API REST. Verificado post-aplicación:
+`information_schema.role_table_grants` ya no lista `INSERT` para `authenticated`/`anon` en
+ninguna de las dos tablas. Se buscó en todo `js/` y no hay ningún `.from('orders').insert(...)`
+ni `.from('order_items').insert(...)` en el cliente -- todo pasa por `supabase.rpc('create_order',
+...)`, así que no había nada más que actualizar en el frontend.
+
+**Segundo fix, más chico** (`js/vender.js` y `js/admin.js`, botón "Ver comprobante" de una
+transferencia): mismo bug que ya se había resuelto en `js/support-utils.js` el 2026-09-16 pero
+que esa sesión había dejado anotado como pendiente en estos dos archivos por estar fuera de
+alcance. `window.open(signedUrl, ...)` se llamaba **después** del `await
+createSignedUrl(...)`, y Safari/Firefox bloquean en silencio un `window.open()` que ya no está
+atado al gesto de click del usuario (Chromium no, por eso no se notaba probando ahí). Mismo
+arreglo: abrir la pestaña en blanco (`window.open('', '_blank')`, `tab.opener = null`) antes del
+`await`, y navegarla con `tab.location.replace(signedUrl)` una vez que llega la URL firmada
+(`tab?.close()` si falla). Cambio puro de JS, sin migración ni CSS -- `dist/` reconstruido.
+
+## 2026-09-22 — Auditoría de seguridad del panel de profesional/técnico
+
+Pedido del usuario: auditar un sector al azar del sitio buscando oportunidades de mejora de
+seguridad. Se eligió el panel de autogestión del profesional/técnico
+(`js/profesional.js` + los 6 módulos `js/profesional-*.js`, `pages/profesional.html`,
+migraciones 77-95) por ser lo más nuevo y complejo del proyecto, y porque el propio CLAUDE.md
+lo marcaba como "sin probar el recorrido logueado de punta a punta".
+
+**Resultado: el panel en sí está bien construido.** Revisado contra la base real (no solo los
+`.sql` del repo -- ya pasó antes que un archivo describiera un fix que nunca se aplicó) con
+`pg_policy` vía el MCP de Supabase: las 7 tablas del panel
+(`professionals`, `professional_services`, `professional_promos`,
+`professional_inquiries`, `professional_metrics_daily`, `professional_business_hours`,
+`professional_service_areas`) tienen exactamente las policies que documentan sus migraciones,
+todas con el `exists (select 1 from professionals p where p.id = ... and p.owner_id =
+auth.uid())` correcto en insert/update/delete. `professionals` no tiene policy de insert propia
+para el dueño -- publicarse exige un insert que solo puede hacer el admin
+(`professionals_all_admin`), así que no hay forma de auto-aprobarse (el mismo patrón que rompió
+`approve_seller_request` en la migración 75 no se repite acá). Nada de `innerHTML` con datos de
+la persona en ninguno de los 7 archivos, `contratar.js` ya usa `getVisibleSocialLinks`/
+`safeExternalUrl` (fix del 2026-09-16) para las redes del profesional. El RPC público
+`increment_professional_metric` valida el tipo de evento, exige que el profesional esté activo
+y solo suma 1 -- no recibe el valor a escribir.
+
+**Encontrado y arreglado** (`db/schema/97_lock_down_request_status_on_insert.sql`, aplicada en
+producción vía `apply_migration`): `professional_requests_insert_own` --y, se confirmó, su
+gemela `seller_requests_insert_own` de `02_shop_and_cart.sql`, mismo patrón desde el origen del
+proyecto-- solo validaban `auth.uid() = user_id` al dar de alta la solicitud, sin restringir la
+columna `status`. Un usuario autenticado podía insertar su propia solicitud con
+`status: 'approved'` en vez de dejar el default `'pending'`. **No es una escalada de
+privilegios**: publicarse de verdad sigue exigiendo el insert admin-only en
+`professionals`/`stores`, así que la cuenta atacante no gana nada por sí misma. El impacto real
+es de integridad del panel de admin -- confirmado leyendo `fetchProfessionalRequests()`
+(`js/admin.js`): la tabla de solicitudes hace `select('*')` sin filtrar por estado y solo
+muestra los botones Aprobar/Rechazar cuando `status === 'pending'`, así que una solicitud con el
+estado falseado aparece con el badge "Aprobado"/"Rechazado" y sin acciones -- desaparece de la
+cola de revisión aunque el admin nunca la haya mirado. Fix: el `with check` de las dos policies
+ahora exige `status = 'pending'` en el insert, mismo criterio de "columna protegida" que ya usan
+el trigger de `professional_inquiries` (90) y el de `reviews.owner_reply` (94). Se confirmó antes
+de aplicar que ni `js/vender.js` (alta de comercio) ni el alta de profesional mandan `status` en
+el insert -- las dos dependen del default de la columna (`'pending'::text` en ambas tablas), así
+que el fix no rompe el flujo real.
+
+**No se tocó** (fuera de alcance de esta auditoría, solo anotado): `increment_professional_metric`
+no tiene rate limit -- un visitante anónimo podría inflar `profile_view`/`call_click`/
+`whatsapp_click` llamando el RPC en loop. Es manipulación de una métrica vanity, no una fuga de
+datos ni una escalada, y con el volumen de "pueblo chico" del proyecto no pareció justificar la
+complejidad de un limitador -- queda para retomar si en algún momento se usan estas métricas para
+algo con peso (ranking, facturación, etc.).
+
+## 2026-09-22 — Auditoría de seguridad del flujo de login/registro/recuperación
+
+Segundo sector elegido al azar (mismo pedido del usuario): `js/login.js`, `js/register.js`,
+`js/recuperar-password.js`, `js/nueva-contrasena.js` y `js/auth-utils.js` (el módulo que importan
+todas las páginas del sitio -- `guardPage`, `checkUrlErrors`, el listener global de sesión).
+
+**Los cuatro flujos en sí están bien**: los redirects de OAuth/registro/login son todos
+hardcodeados o salen de una lista cerrada de 3 valores (`paginaPostRegistro()`), no hay open
+redirect. `checkUrlErrors()` vuelca `error_description` de la URL a un toast con `textContent`,
+nunca `innerHTML` -- no hay XSS ahí pese a ser contenido 100% controlado por la URL. El gate de
+rol de `guardPage` (`requireRole`) es puramente de UX/redirect: confirmado que las acciones reales
+de admin en el sitio están today todas detrás de RLS con el mismo chequeo de
+`auth.jwt() -> app_metadata ->> role`, así que aunque alguien lo saltee client-side no gana nada.
+
+**Encontrado y arreglado, severidad alta** (`js/error-logger.js`): el logger global de errores
+(`window.onerror`/`unhandledrejection`, A113-171) mandaba `window.location.href` **completo**,
+hash incluido, a la tabla `error_logs` en cada error no manejado. El problema: los links de
+recuperación de contraseña, de confirmación de email y el callback de Google OAuth vuelven con
+`#access_token=...&refresh_token=...&type=recovery` en el HASH de la URL -- así arma la sesión
+supabase-js (`detectSessionInUrl`, default `true`). Ese procesamiento es **asíncrono**
+(`_initialize()` de `GoTrueClient`, con lock + posible round-trip antes de limpiar la URL con
+`history.replaceState`): hay una ventana real, entre que carga la página y que termina, donde
+`window.location.href` todavía tiene el token de sesión crudo. Si CUALQUIER error no relacionado
+(un script de una extensión, un timeout de red, un bug en otra parte del sitio) dispara justo en
+esa ventana, el token de la persona quedaba guardado en texto plano en una tabla de la base --
+`error_logs_select_admin` la deja leer a las 4 cuentas admin, y con ese `access_token`/
+`refresh_token` alcanza para tomar la sesión de la cuenta (llamando
+`supabase.auth.setSession(...)` con esos valores) mientras no expiren. No hacía falta que el
+error ocurriera EN la página de recuperación -- el mismo error-logger corre en TODO el sitio
+(se importa desde `auth-utils.js`, que importa cualquier página), así que la ventana existe en
+cualquier página a la que Google OAuth o un link de email puedan redirigir.
+
+Se verificó contra la base real que hoy no hay ningún token filtrado (`error_logs` tiene una sola
+fila en producción y no contiene `access_token`/`refresh_token`/`#`), así que es un hueco
+encontrado antes de que se explotara, no una fuga ya ocurrida.
+
+**Fix**: `sanitizeUrlForLogging()` (exportada, con test en `js/error-logger.test.mjs`) saca el
+hash entero antes de loguear -- ahí no debería viajar nunca nada que valga la pena registrar para
+diagnóstico -- y de paso borra de la query string cualquier parámetro con nombre sensible
+(`access_token`, `refresh_token`, `provider_token`, `provider_refresh_token`, `token`,
+`token_hash`, `code`, `apikey`) por si algún flujo futuro los pasa ahí en vez de en el hash. El
+resto de la URL (path, query no sensible) se conserva intacto porque sigue siendo útil para
+diagnosticar en qué página pasó el error. Sin migración: `error_logs` no cambia de esquema, el fix
+es enteramente del lado del cliente, antes de que el insert salga.
+
+## 2026-09-22 — Auditoría de seguridad del panel de admin (tercer sector al azar)
+
+Tercer sector elegido al azar (mismo pedido del usuario): `js/admin.js` (1981 líneas) +
+`pages/admin.html`. Es la superficie de mayor privilegio del sitio y no había tenido un pase de
+auditoría dedicado (sesiones previas tocaron piezas sueltas -- el visor de `error_logs`, la
+aprobación de profesionales -- pero no una revisión sistemática).
+
+**El panel en general está bien construido**: sin un solo `innerHTML` con datos de la persona en
+todo el archivo (se revisaron las ~60 apariciones, todas son literales de "Cargando…"/"Error al
+cargar"/vacío o `= ''` para limpiar), el hilo de mensajes de soporte usa `textContent` para el
+mensaje del usuario y del admin por igual, y los RPCs sensibles (`confirm_transfer_payment`,
+`admin_set_product_active`) validan el rol o la propiedad del recurso adentro, con
+`security definer` + `search_path` fijo -- mismo patrón ya establecido en el resto del proyecto.
+`support_tickets_update`/`support_ticket_messages_insert_participants` (54) ya tenían el patrón
+correcto de restringir por columna: el dueño del ticket solo puede poner `status = 'cancelled'`
+en su propio `with check`, nunca reescribir el resto.
+
+**Encontrado y arreglado, severidad media-alta**: `protect_review_owner_reply()` (el trigger de
+`reviews` que agregó la respuesta pública del dueño, 94_reviews_owner_reply.sql) eximía a
+`admin` **y** `moderador` de todo chequeo de columna -- volvía con `return new` apenas veía
+cualquiera de los dos roles. El problema es 'moderador': es, por diseño explícito de
+`50_moderador_role.sql`, un rol deliberadamente acotado ("nada financiero ni de configuración"),
+pensado solo para ocultar/mostrar reseñas reportadas (F7-03) -- y "moderar una reseña" en este
+proyecto es únicamente eso: `fetchReportedReviews()` en `js/admin.js` solo manda
+`update({ is_hidden: ... })`, nunca toca otra columna. Pero `reviews_update_moderador` (la
+policy RLS) no restringe ninguna columna en su `with check`, y con el trigger exento de chequeos
+para ese rol, un moderador podía en los hechos reescribir el `rating`, el `comment`, el
+`client_id` (autor) o el `target_id`/`target_type` de **cualquier reseña del sitio** -- forjar el
+contenido de una reseña ajena, no solo moderarla. Confirmado contra la policy real en producción
+(`pg_policy`, sin restricción de columna) antes de tocar nada.
+
+**`admin` no se tocó a propósito**: ya tiene acceso total y consistente en el resto del proyecto
+(`for all` en casi cualquier tabla) y las 4 cuentas admin ya pueden hacer lo mismo desde el SQL
+Editor de Supabase -- restringirlo acá no cierra ninguna superficie real, solo movería la
+inconsistencia a otro lado. `moderador` es el caso distinto: un rol delegado sin acceso al
+dashboard, pensado explícitamente como acotado -- el mismo criterio que ya usa el propio archivo
+50 para justificar por qué existe.
+
+Fix (`db/schema/98_reviews_moderador_only_hides.sql`, aplicada en producción vía
+`apply_migration`): el trigger ahora separa el camino de `moderador` del de `admin` -- para
+moderador, cualquier cambio que no sea `is_hidden` (rating/comment/client_id/target_type/
+target_id/report_reason/owner_reply) tira excepción ("Como moderador solo podés ocultar o
+mostrar la reseña."), igual de estricto que ya lo era para el autor de la reseña con el resto de
+las columnas. El toggle real de `fetchReportedReviews()` sigue andando exactamente igual, porque
+solo cambia `is_hidden`. No hay cuentas `moderador` asignadas todavía en producción (verificado
+2026-09-14, ver "Pendientes activos" de CLAUDE.md sobre los 4 admins) -- se encontró y cerró antes
+de que hubiera alguien con ese rol para explotarlo.
+
+## 2026-09-22 — Auditoría de seguridad de "Mi perfil" (cuarto sector al azar)
+
+Cuarto sector elegido al azar (mismo pedido del usuario): `js/perfil.js` (2511 líneas) +
+`pages/perfil.html`. Maneja datos personales, libreta de direcciones, avatar, favoritos, "Mis
+compras" (con comprobante de transferencia y botón de arrepentimiento) y la baja de cuenta.
+
+**En general está bien construido**: `renderFavList`/`buildFavProductCard`/`buildFavStoreCard`
+usan `textContent`, nunca interpolan datos de producto/comercio en `innerHTML` (el único
+`innerHTML` con interpolación, en `renderFavList`, es siempre un literal fijo, nunca dato de
+usuario). `user_addresses` tiene RLS limpia por dueño sin nada que restringir por columna. El
+upload de comprobante de transferencia sanea el nombre de archivo contra path traversal Y está
+además cubierto en dos capas server-side (`payment_proofs_storage_insert_client` exige que la
+carpeta del primer segmento del path sea un `order_id` de una orden propia con
+`payment_method = 'transferencia'`, y el trigger `validate_payment_proof_order` exige que esa
+orden siga `pending`) -- no hay forma de subir un comprobante a la carpeta de otra persona ni de
+inflar la bandeja de otro comercio. `request_order_revocation` valida ownership + estado pagado +
+plazo de 15 días. Los tres usos de `URLSearchParams` (`tab`, `order`, `mp`) solo mueven el foco de
+scroll o togglean un toast -- ninguno se usa para autorizar nada ni se reinyecta sin escapar.
+
+**Encontrado y arreglado, severidad alta**: `profiles_update_own` (`with check: auth.uid() = id`,
+sin restricción de columna) deja que cualquier cuenta reescriba cualquier columna de su propia
+fila en `profiles`. `role` ya estaba protegido desde la migración 24
+(`prevent_role_update_on_profile`, con la bandera de transacción
+`app.role_change_authorized`) -- pero `is_suspended` (34_admin_moderation.sql, pensada para
+"suspender repartidor") **no tenía ninguna protección**. Un usuario podía mandar directo
+`supabase.from('profiles').update({ is_suspended: false }).eq('id', auth.uid())` y
+des-suspenderse a sí mismo, sin pasar por `admin_set_repartidor_suspended` (el único camino
+pensado para tocar esa columna). Confirmado que no es hipotético: aunque el frontend de
+`repartidor` se sacó el 2026-09-16, `claim_delivery`/`update_delivery_status` -- las únicas dos
+RPCs que de verdad usan `is_suspended` como gate -- siguen con `EXECUTE` otorgado a
+`authenticated` en producción (verificado con `information_schema.routine_privileges`), así que
+la suspensión de un repartidor malo era, en los hechos, una defensa de cartón.
+
+Fix (`db/schema/99_protect_is_suspended_on_profile.sql`, aplicada en producción vía
+`apply_migration`): el trigger `prevent_role_update_on_profile` ahora protege `role` **e**
+`is_suspended` bajo la misma bandera `app.role_change_authorized`, y
+`admin_set_repartidor_suspended` pasa a setearla antes de su propio `update` -- si no, su UPDATE
+legítimo (que corre con los privilegios reales del admin, tras el chequeo de rol de la función)
+quedaría bloqueado por el mismo trigger que ahora lo protege, igual que le pasó en su momento a
+`approve_seller_request` antes del fix de la migración 24. Verificado con tres pruebas en
+transacciones con `ROLLBACK` contra la base real: un `UPDATE` directo de `is_suspended` sin la
+bandera tira la excepción esperada, el mismo `UPDATE` con la bandera seteada sí aplica, y un
+`UPDATE` directo de `role` sigue bloqueado igual que antes (sin regresión). No se tocó nada de
+`js/`: es un fix puramente de base, la UI de repartidor ya no existe.
+
+## 2026-09-22 — Auditoría de seguridad del panel de vendedor (quinto sector al azar)
+
+Quinto sector elegido al azar: `js/vender.js` (3368 líneas) + `pages/vender.html`. Es el panel
+más grande después de admin -- productos, pedidos, cupones, empleados, perfil del comercio y
+comprobantes de transferencia.
+
+**Primero, un susto que resultó falsa alarma pero vale dejar anotado.** `orders_update_staff` y
+`orders_update_store_or_admin` (RLS de `orders`) no tienen `with check` propio -- en Postgres, una
+policy de UPDATE sin `with check` reusa el `using` como check, así que a simple vista parecía el
+mismo hueco que `orders_insert_own` (migración 96): dueño/empleado podrían reescribir
+`payment_status`/`total_price`/`client_id` de cualquier orden de su tienda por fuera de
+`confirm_transfer_payment`. Se probó directo contra la base real (`SET ROLE authenticated` +
+intento de `UPDATE ... SET payment_status = 'paid'`) y **ya está bloqueado** -- pero no por RLS:
+`authenticated` solo tiene el privilegio de columna `UPDATE` sobre `status` en `orders`, ninguna
+otra columna (confirmado con `information_schema.column_privileges`). Este grant column-level
+**no está en ningún archivo de `db/schema/`** -- se armó en algún momento fuera del historial de
+migraciones (dashboard, o una sesión que no lo documentó). Es la única columna que
+`updateOrderStatus()` (`js/vender.js`) toca directo, así que coincide exactamente con lo que hace
+falta. **No se tocó** (ya está bien, solo quedó sin registrar en el repo -- si alguna vez hay que
+reconstruir la base de cero desde los archivos de `db/schema/`, esta protección específica no
+va a estar, vale la pena que quien lo note en el futuro sepa que existe en producción aunque no
+esté en el historial).
+
+**Encontrado y arreglado, severidad media** (`db/schema/100_products_bucket_folder_ownership.sql`,
+aplicada en producción): la policy de INSERT del bucket público `products` (storage) solo
+chequeaba `role in ('vendedor', 'admin')` -- a diferencia de TODOS los demás buckets del proyecto
+(professional-photos, professional-promos, avatars, store-logos, support-attachments...), que
+siempre exigen que el primer segmento del path sea del dueño de verdad. Sin ese chequeo,
+cualquier cuenta vendedor podía subir lo que quisiera a
+`products/{cualquier_product_id}/archivo` -- incluido el `product_id` de un producto ajeno (no es
+secreto, está en la URL pública de cada producto). El bucket es público, así que quedaba servido
+con URL pública bajo el dominio del proyecto: hosting de archivos arbitrarios sin relación con
+Baradero Local, con el sitio como anfitrión involuntario. **No era defacement directo** de la
+ficha de otro vendedor -- la vista de producto arma la galería desde la tabla
+`product_images`/`products.image_url`, nunca listando el storage (y el bucket ni tiene policy de
+SELECT en `storage.objects` para listar, mismo gotcha ya documentado sobre las fotos huérfanas) --
+pero sí era hosting público no autorizado.
+
+Fix: la policy ahora exige que el primer segmento del path sea el id de un producto que la cuenta
+puede escribir de verdad -- dueño (`seller_id = auth.uid()`) o empleado del comercio
+(`store_staff`), mismo criterio que `products_insert_staff`/`products_update_seller` (03/49); admin
+pasa sin el chequeo de producto, ya tiene acceso total en el resto del proyecto. No rompe el flujo
+real: `persistProductImages()` en `vender.js` siempre sube las fotos DESPUÉS de insertar la fila
+del producto, así que el id ya existe y ya es del vendedor correcto. Verificado con dos inserts
+directos contra `storage.objects` simulando el JWT de un vendedor real (`set_config('request.jwt.claims', ...)`
++ `SET ROLE authenticated`, todo en transacciones con `ROLLBACK`): subir a la carpeta de un
+producto ajeno se bloquea, subir a la carpeta del producto propio funciona.
+
+**El resto revisado sin problemas**: `add_store_staff` (RPC) valida que quien llama sea dueño del
+comercio antes de buscar el email e insertar -- no expone una policy de "buscar cualquier profile
+por email". `coupons_insert_own_store`/`update`/`delete` exigen `store_id` no nulo y
+`stores.owner_id = auth.uid()` -- **excluye a los empleados a propósito**, coincide con el diseño
+documentado ("nada financiero" para `store_staff`, 49_store_staff.sql). El sistema de
+`store_staff.permissions` (qué SECCIONES ve un empleado en el panel, migración 83) es
+explícitamente solo de UI -- el propio archivo de esa migración ya documenta que la superficie de
+ataque real son las policies de 49, que dan paridad operativa completa sin mirar `permissions`;
+no hay nada que arreglar ahí, ya está razonado y anotado.
+
+## 2026-09-22 — Auditoría de seguridad de `nav-utils.js` (sexto sector al azar): sin hallazgos
+
+Sexto sector elegido al azar: `js/nav-utils.js` (954 líneas, se carga en casi todas las páginas --
+navbar de categorías, mega-menú, buscador con autocompletado, campana de notificaciones, menú de
+cuenta) + de paso `js/notifications-utils.js` (los links que arma cada notificación).
+
+**Resultado: sin hallazgos.** Los tres `innerHTML` del archivo son siempre `= ''` (limpiar), nunca
+interpolan nada -- el propio comentario de cabecera del archivo lo deja explícito ("Todo con DOM
+API (anti-XSS): los datos de la DB nunca van por innerHTML"), y se confirmó leyendo el archivo
+entero. El RPC `search_products` (51_search_products_rpc.sql) es `language sql` con el parámetro
+`p_query` bindeado normal dentro de la consulta (nunca `EXECUTE`/SQL dinámico) -- no hay
+inyección posible, y al ser `security invoker` hereda `products_select_public_active` (oculta
+productos de comercios suspendidos) sin necesidad de repetir ese filtro a mano. Los links que
+arma `notifications-utils.js` para cada tipo de notificación son siempre una ruta relativa fija
+más un id propio pasado por `encodeURIComponent` -- no hay open redirect. `initAccountMenu()` lee
+el rol de `user.app_metadata` (el que valida el JWT/RLS), nunca de `user_metadata` (que el propio
+usuario puede editarse) -- la distinción correcta, ya aplicada en todo el proyecto.
+
+Se descarta como auditado (no hace falta repetirlo en una futura sesión salvo que el archivo
+cambie de forma sustancial).
+
+## 2026-09-22 — Auditoría de seguridad de `comercio.js` (séptimo sector al azar): sin hallazgos
+
+Séptimo sector elegido al azar: `js/comercio.js` (875 líneas, la página pública de un comercio --
+header editable por el dueño, productos, favoritos, reseñas, mapa embebido) + de paso los caminos
+de escritura de `js/reviews-utils.js` (`submitReview`/`deleteOwnReview`/`report_review`).
+
+**Resultado: sin hallazgos.** El header editable (color, logo) que ve el dueño en su propia
+página pública ya está bien resuelto: `isOwner` sale de `session.user.id === store.owner_id`
+(comparación contra la sesión verificada, nunca `user_metadata`) y solo decide qué UI mostrar --
+el `.update()` real sigue atrás de `stores_update_own` (RLS por `owner_id`), así que aunque
+alguien manipulara el DOM para mostrarse el popover, el `UPDATE` seguiría rechazado para
+cualquiera que no sea el dueño. El logo se sube a `store-logos/{owner_id}/...`, folder-scoped
+igual que el resto de los buckets del proyecto. El mapa embebido arma el iframe con dominio fijo
+(`google.com/maps`) y la dirección del comercio solo entra como query param con
+`encodeURIComponent` -- sin SSRF ni framing a un origen ajeno. `submitReview`/`deleteOwnReview`
+siempre mandan `client_id: session.user.id`, nunca un valor elegido por quien llama; `rating` está
+acotado 1-5 por CHECK y `target_type` por una lista fija, los dos a nivel de columna, no solo en
+el cliente. `report_review` (RPC) exige sesión y no expone nada que no debería. Confirmado que
+`comercio.js` sí usa `getVisibleSocialLinks`/`safeExternalUrl` (el fix del 2026-09-16), no una
+copia vieja. `storeId` sale de la URL pero solo se usa como filtro de un `.eq()` parametrizado,
+nunca concatenado.
+
+Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de `product-modal.js` (octavo sector al azar): sin hallazgos
+
+Octavo sector elegido al azar: `js/product-modal.js` (931 líneas, el modal de vista rápida de
+producto que abren home/search/favoritos).
+
+**Primera impresión que resultó falsa alarma:** a diferencia de casi todo el resto del proyecto
+(DOM API, nunca `innerHTML` con datos), este archivo arma el modal entero con un template string
+(`buildModalHTML()`) y lo mete con `overlay.innerHTML = ...` -- a simple vista, con
+`data.name`/`data.shop`/`data.description` (título/nombre de tienda/descripción, **todos
+cargados por el vendedor**) interpolados directo en el template, parecía un XSS persistente
+servido a cualquier visitante que abriera el modal de ese producto. Se seteó a la fuente:
+`fetchProductData()` (línea 86-106) pasa **los tres** por `escapeHTML()` antes de meterlos en el
+objeto `data` (`name: escapeHTML(product.title...)`, igual con `description` y `shop`), así que
+para cuando llegan a `buildModalHTML()` ya están saneados -- confirmado leyendo las dos funciones
+juntas, no alcanza con mirar el template solo. El resto de los campos que sí van directo al
+template son numéricos/calculados (`priceText`, `shippingText`, `stockInfo.text`) o pasan por
+`encodeURI()` en contexto de URL (`imgSrc`, las miniaturas) -- correcto para ese contexto, y
+`encodeURI` sí escapa comillas dobles, así que tampoco hay forma de romper el atributo `src`. Los
+productos relacionados (`relatedHTML`) y las variantes (`variantsHTML`) usan `escapeHTML()`
+explícito en el punto de armado. Ningún campo del carrito (`_getCart`/`_saveCart`, localStorage
+del propio navegador) ni del `pm-reviews-container` (delega en `renderReviewsSection`, ya
+auditado, DOM API pura) agrega superficie nueva.
+
+Se descarta como auditado.
