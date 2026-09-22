@@ -9,6 +9,7 @@ import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
+import { sortOptionGroups } from './product-options-utils.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
@@ -2833,13 +2834,13 @@ async function openEditProductForm(productId) {
   openProductForm();
   await hydrateProductGallery(product);
 
-  // F5-03: variantes solo tienen sentido con un product_id real, o sea editando.
-  const variantsSection = document.getElementById('prod-variants-section');
-  if (variantsSection) variantsSection.hidden = false;
-  await renderVariantsManager(productId);
+  // Las opciones se guardan contra un product_id real: solo al editar.
+  const optionsSection = document.getElementById('prod-options-section');
+  if (optionsSection) optionsSection.hidden = false;
+  await renderProductOptionsManager(productId);
 
-  // Al final, no antes: la galería y las variantes todavía pueden cambiar el
-  // alto de la página (fotos que van cargando, variantes que se agregan).
+  // Al final, no antes: la galería y las opciones todavía pueden cambiar el
+  // alto de la página (fotos que van cargando, opciones que se agregan).
   scrollToProductForm();
 }
 
@@ -3077,55 +3078,194 @@ async function persistProductImages(productId) {
   return urls[0] ?? null;
 }
 
-/** F5-03: lista las variantes de un producto (talle/color/peso) con botón para borrarlas. */
-async function renderVariantsManager(productId) {
-  const container = document.getElementById('prod-variants-list');
+/**
+ * Editor de opciones del producto (color / sabor / talle …).
+ *
+ * Reemplaza al manager de "variantes" de F5-03, que dejaba cargar nombre +
+ * precio + stock por variante pero **no se integraba con el carrito**: el
+ * cliente solo veía una lista con un "consultá con el vendedor". La tabla
+ * `product_variants` quedó sin un solo registro en producción; se deja en la
+ * base sin uso (mismo criterio que las tablas de `repartidor`) y el frontend
+ * pasa a `product_options` / `product_option_values`, que sí llegan hasta el
+ * pedido (migración 102).
+ *
+ * Cada grupo es una fila con sus valores como chips. Un chip se apaga
+ * ("agotado") con un click en el ojo y se borra con la X. Todo guarda al
+ * instante contra la base, igual que la galería de fotos — no espera al
+ * "Guardar producto" de abajo.
+ */
+async function renderProductOptionsManager(productId) {
+  const container = document.getElementById('prod-options-list');
   if (!container) return;
   container.textContent = '';
 
-  const { data: variants, error } = await supabase
-    .from('product_variants')
-    .select('id, name, price, stock')
+  const { data: groups, error } = await supabase
+    .from('product_options')
+    .select('id, name, position, product_option_values(id, value, is_available, position)')
     .eq('product_id', productId)
-    .order('created_at', { ascending: true });
+    .order('position');
 
-  if (error || !variants) return;
+  if (error) {
+    console.error('Error al cargar las opciones del producto:', error);
+    const failed = document.createElement('p');
+    failed.className = 'popt-empty';
+    failed.textContent = 'No pudimos cargar las opciones. Recargá la página.';
+    container.appendChild(failed);
+    return;
+  }
 
-  if (variants.length === 0) {
+  const sorted = sortOptionGroups((groups || []).map((g) => ({ ...g, values: g.product_option_values || [] })));
+
+  if (sorted.length === 0) {
     const empty = document.createElement('p');
-    empty.style.cssText = 'color: var(--bl-text-muted); font-size: 0.9rem; margin: 0;';
-    empty.textContent = 'Todavía no cargaste variantes.';
+    empty.className = 'popt-empty';
+    empty.textContent = 'Este producto no tiene opciones. Si lo vendés en un solo formato, dejalo así.';
     container.appendChild(empty);
     return;
   }
 
-  variants.forEach((variant) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--bl-bg-alt, #f5f5f5); border-radius: 6px;';
+  sorted.forEach((group) => container.appendChild(buildOptionGroupRow(group, productId)));
+}
 
-    const label = document.createElement('span');
-    label.style.cssText = 'flex: 1;';
-    label.textContent = `${variant.name} — ${formatPrice(variant.price)} — stock: ${variant.stock}`;
-    row.appendChild(label);
+/** Una fila del editor: el nombre del grupo, sus chips y el alta de un valor. */
+function buildOptionGroupRow(group, productId) {
+  const row = document.createElement('div');
+  row.className = 'popt-group';
 
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.style.cssText = 'width: 24px; height: 24px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 0.8rem; line-height: 1;';
-    removeBtn.textContent = '×';
-    removeBtn.addEventListener('click', async () => {
-      const { error: deleteError } = await supabase.from('product_variants').delete().eq('id', variant.id);
-      if (deleteError) {
-        showToast('No se pudo borrar la variante.', 'error');
-        console.error(deleteError);
-        return;
-      }
-      row.remove();
-      if (!container.children.length) await renderVariantsManager(productId);
-    });
-    row.appendChild(removeBtn);
+  const head = document.createElement('div');
+  head.className = 'popt-group__head';
 
-    container.appendChild(row);
+  const name = document.createElement('span');
+  name.className = 'popt-group__name';
+  name.textContent = group.name;
+  head.appendChild(name);
+
+  const removeGroup = document.createElement('button');
+  removeGroup.type = 'button';
+  removeGroup.className = 'popt-group__remove';
+  removeGroup.setAttribute('aria-label', `Borrar el tipo de opción ${group.name}`);
+  removeGroup.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+  removeGroup.addEventListener('click', async () => {
+    if (!window.confirm(`¿Borrar "${group.name}" y todos sus valores? Los pedidos ya hechos no se tocan.`)) return;
+    const { error } = await supabase.from('product_options').delete().eq('id', group.id);
+    if (error) {
+      showToast('No se pudo borrar el tipo de opción.', 'error');
+      console.error(error);
+      return;
+    }
+    await renderProductOptionsManager(productId);
   });
+  head.appendChild(removeGroup);
+  row.appendChild(head);
+
+  const chips = document.createElement('div');
+  chips.className = 'popt-chips';
+  (group.values || []).forEach((value) => chips.appendChild(buildOptionValueChip(value, group, productId)));
+  if ((group.values || []).length === 0) {
+    const hint = document.createElement('span');
+    hint.className = 'popt-empty';
+    hint.textContent = 'Sin valores todavía.';
+    chips.appendChild(hint);
+  }
+  row.appendChild(chips);
+
+  // Alta de un valor nuevo dentro del grupo.
+  const addWrap = document.createElement('div');
+  addWrap.className = 'popt-add__row';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-input';
+  input.maxLength = 40;
+  input.placeholder = group.name === 'Color' ? 'Ej: Rojo' : 'Agregar un valor';
+  input.setAttribute('aria-label', `Agregar un valor a ${group.name}`);
+  addWrap.appendChild(input);
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn-outline';
+  addBtn.textContent = 'Agregar';
+  const addValue = async () => {
+    const value = input.value.trim();
+    if (!value) {
+      showToast('Escribí el valor (ej: Rojo).', 'error');
+      return;
+    }
+    const { error } = await supabase.from('product_option_values').insert({
+      option_id: group.id,
+      value,
+      position: (group.values || []).length,
+    });
+    if (error) {
+      // 23505 = unique(option_id, value): ya existe ese valor en el grupo.
+      showToast(error.code === '23505' ? `"${value}" ya está cargado en ${group.name}.` : 'No se pudo agregar el valor.', 'error');
+      console.error(error);
+      return;
+    }
+    input.value = '';
+    await renderProductOptionsManager(productId);
+  };
+  addBtn.addEventListener('click', addValue);
+  // Enter agrega sin mandar el formulario del producto entero.
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addValue(); }
+  });
+  addWrap.appendChild(addBtn);
+  row.appendChild(addWrap);
+
+  return row;
+}
+
+/** Un valor: el texto, el botón de agotado/disponible y el de borrar. */
+function buildOptionValueChip(value, group, productId) {
+  const chip = document.createElement('span');
+  chip.className = 'popt-chip' + (value.is_available ? '' : ' popt-chip--out');
+
+  const label = document.createElement('span');
+  label.className = 'popt-chip__label';
+  label.textContent = value.value;
+  chip.appendChild(label);
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'popt-chip__btn';
+  toggle.title = value.is_available ? 'Marcar como agotado' : 'Marcar como disponible';
+  toggle.setAttribute('aria-label', `${value.value}: ${value.is_available ? 'marcar como agotado' : 'marcar como disponible'}`);
+  toggle.innerHTML = value.is_available
+    ? '<i class="fa-regular fa-eye" aria-hidden="true"></i>'
+    : '<i class="fa-regular fa-eye-slash" aria-hidden="true"></i>';
+  toggle.addEventListener('click', async () => {
+    const { error } = await supabase
+      .from('product_option_values')
+      .update({ is_available: !value.is_available })
+      .eq('id', value.id);
+    if (error) {
+      showToast('No se pudo cambiar la disponibilidad.', 'error');
+      console.error(error);
+      return;
+    }
+    await renderProductOptionsManager(productId);
+  });
+  chip.appendChild(toggle);
+
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'popt-chip__btn popt-chip__btn--danger';
+  remove.title = 'Borrar';
+  remove.setAttribute('aria-label', `Borrar ${value.value}`);
+  remove.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+  remove.addEventListener('click', async () => {
+    const { error } = await supabase.from('product_option_values').delete().eq('id', value.id);
+    if (error) {
+      showToast('No se pudo borrar el valor.', 'error');
+      console.error(error);
+      return;
+    }
+    await renderProductOptionsManager(productId);
+  });
+  chip.appendChild(remove);
+
+  return chip;
 }
 
 function setupDashboardEvents() {
@@ -3138,50 +3278,33 @@ function setupDashboardEvents() {
 
   attachMoneyFormatting(document.getElementById('prod-price'));
   attachMoneyFormatting(document.getElementById('prod-compare-price'));
-  attachMoneyFormatting(document.getElementById('variant-price'));
 
-  // F5-03: alta de variante para el producto que se está editando.
-  document.getElementById('btn-add-variant')?.addEventListener('click', async () => {
+  // Alta de un tipo de opción (Color, Sabor, Talle…) para el producto que se
+  // está editando. Los valores de cada grupo se agregan desde su propia fila.
+  document.getElementById('btn-add-option')?.addEventListener('click', async () => {
     if (!editingProductId) return;
 
-    const nameInput = document.getElementById('variant-name');
-    const priceInput = document.getElementById('variant-price');
-    const stockInput = document.getElementById('variant-stock');
-
+    const nameInput = document.getElementById('option-name');
     const name = nameInput.value.trim();
-    const price = parsePrice(priceInput.value);
-    const stock = stockInput.value;
-
     if (!name) {
-      showToast('La variante necesita un nombre.', 'error');
-      return;
-    }
-    if (!isValidPrice(price)) {
-      showToast('El precio de la variante debe ser un número entero mayor a 0.', 'error');
-      return;
-    }
-    if (!isValidStock(stock)) {
-      showToast('El stock de la variante debe ser un número entero mayor o igual a 0.', 'error');
+      showToast('Escribí el tipo de opción (ej: Color).', 'error');
       return;
     }
 
-    const { error } = await supabase.from('product_variants').insert({
+    const { error } = await supabase.from('product_options').insert({
       product_id: editingProductId,
       name,
-      price,
-      stock: parseInt(stock),
+      position: document.querySelectorAll('#prod-options-list .popt-group').length,
     });
 
     if (error) {
-      showToast('No se pudo agregar la variante.', 'error');
+      showToast(error.code === '23505' ? `Ya tenés un tipo de opción llamado "${name}".` : 'No se pudo agregar el tipo de opción.', 'error');
       console.error(error);
       return;
     }
 
     nameInput.value = '';
-    priceInput.value = '';
-    stockInput.value = '';
-    await renderVariantsManager(editingProductId);
+    await renderProductOptionsManager(editingProductId);
   });
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
@@ -3201,10 +3324,10 @@ function setupDashboardEvents() {
     const submitBtn = addForm.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = 'Guardar producto';
     resetProductGallery();
-    const variantsSection = document.getElementById('prod-variants-section');
-    if (variantsSection) variantsSection.hidden = true;
-    const variantsList = document.getElementById('prod-variants-list');
-    if (variantsList) variantsList.textContent = '';
+    const optionsSection = document.getElementById('prod-options-section');
+    if (optionsSection) optionsSection.hidden = true;
+    const optionsList = document.getElementById('prod-options-list');
+    if (optionsList) optionsList.textContent = '';
   }
 
   btnShowAdd.addEventListener('click', () => {

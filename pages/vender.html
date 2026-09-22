@@ -632,10 +632,27 @@
       .pubform__photo-cover { position: absolute; left: 0; right: 0; bottom: 0; border: none; background: rgba(0, 0, 0, 0.6); color: #fff; font: inherit; font-size: 0.72rem; font-weight: 600; padding: 0.3rem; cursor: pointer; }
       .pubform__photo-cover:hover { background: var(--bl-vendor-accent); }
 
-      .pubform__variants { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-      .pubform__variant-add { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.5rem; align-items: end; }
-      .pubform__variant-add .form-group { margin-bottom: 0; }
-      .pubform__variant-add .btn-outline { padding: 0.6rem 1rem; }
+      /* Opciones del producto (color / sabor / talle). Reemplaza al editor de
+         "variantes" de F5-03, que nunca llegó al carrito. */
+      .popt-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+      .popt-empty { font-size: 0.875rem; color: var(--bl-text-muted); margin: 0; }
+      .popt-group { border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); padding: 0.85rem; background: var(--bl-surface-alt); }
+      .popt-group__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+      .popt-group__name { font-weight: 700; font-size: 0.9375rem; color: var(--bl-text); }
+      .popt-group__remove { border: none; background: none; color: var(--bl-text-muted); cursor: pointer; padding: 0.25rem 0.4rem; border-radius: var(--bl-radius-sm, 0.35rem); font-size: 0.875rem; }
+      .popt-group__remove:hover { color: var(--bl-danger); background: #fee2e2; }
+      .popt-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; align-items: center; }
+      .popt-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.4rem 0.3rem 0.65rem; border: 1px solid var(--bl-border); border-radius: 999px; background: var(--bl-surface); font-size: 0.8125rem; }
+      /* Agotado: sigue cargado y visible, pero se lee de un vistazo que no está. */
+      .popt-chip--out { opacity: 0.6; }
+      .popt-chip--out .popt-chip__label { text-decoration: line-through; }
+      .popt-chip__label { color: var(--bl-text); }
+      .popt-chip__btn { border: none; background: none; color: var(--bl-text-muted); cursor: pointer; padding: 0.15rem 0.25rem; line-height: 1; border-radius: 50%; font-size: 0.75rem; }
+      .popt-chip__btn:hover { color: var(--bl-primary); background: var(--bl-surface-alt); }
+      .popt-chip__btn--danger:hover { color: var(--bl-danger); background: #fee2e2; }
+      .popt-add__row { display: flex; gap: 0.5rem; align-items: center; }
+      .popt-add__row .form-input { flex: 1; min-width: 0; }
+      .popt-add__row .btn-outline { padding: 0.6rem 1rem; white-space: nowrap; }
 
       .pubform__actions { display: flex; justify-content: flex-end; gap: 1rem; }
       .pubform__actions .form-btn { width: auto; padding: 0.85rem 2rem; font-size: 1rem; }
@@ -1385,24 +1402,23 @@
                     </div>
                   </fieldset>
 
-                  <!-- Variantes (F5-03): solo disponible editando un producto ya creado -->
-                  <fieldset class="pubform__card" id="prod-variants-section" hidden>
-                    <legend class="pubform__legend">Variantes <span class="pubform__opt">(talle/color/peso)</span></legend>
-                    <div id="prod-variants-list" class="pubform__variants"></div>
-                    <div class="pubform__variant-add">
-                      <div class="form-group">
-                        <label class="form-label" for="variant-name">Nombre</label>
-                        <input type="text" id="variant-name" class="form-input" placeholder="Ej: Talle M" />
+                  <!-- Opciones del producto (color / sabor / talle …). Solo al editar
+                       un producto ya creado: cada opción se guarda contra su product_id,
+                       que hasta el primer "Guardar producto" todavía no existe. -->
+                  <fieldset class="pubform__card" id="prod-options-section" hidden>
+                    <legend class="pubform__legend">Opciones <span class="pubform__opt">(color, sabor, talle…)</span></legend>
+                    <p class="pubform__hint">
+                      Si vendés lo mismo en varias versiones, cargalas acá y el cliente elige
+                      cuál quiere antes de comprar. El stock sigue siendo el del producto:
+                      si se te acaba una, marcala como agotada.
+                    </p>
+                    <div id="prod-options-list" class="popt-list"></div>
+                    <div class="popt-add">
+                      <label class="form-label" for="option-name">Agregar un tipo de opción</label>
+                      <div class="popt-add__row">
+                        <input type="text" id="option-name" class="form-input" placeholder="Ej: Color" maxlength="40" />
+                        <button type="button" class="btn-outline" id="btn-add-option">Agregar</button>
                       </div>
-                      <div class="form-group">
-                        <label class="form-label" for="variant-price">Precio</label>
-                        <input type="text" id="variant-price" class="form-input" inputmode="numeric" autocomplete="off" />
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="variant-stock">Stock</label>
-                        <input type="number" id="variant-stock" class="form-input" min="0" step="1" inputmode="numeric" />
-                      </div>
-                      <button type="button" class="btn-outline" id="btn-add-variant">Agregar</button>
                     </div>
                   </fieldset>
 

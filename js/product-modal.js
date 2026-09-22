@@ -11,6 +11,7 @@
 
 import { supabase } from './auth-utils.js';
 import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
+import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { fetchReviewsSummary, renderReviewsSection } from './reviews-utils.js';
 
 // ── Seguridad ───────────────────────────────────────────────
@@ -29,7 +30,7 @@ async function fetchProductData(productId) {
   const [{ data: product, error }, reviewSummary, { data: { session } }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, owner_id, delivery_fee, free_shipping_threshold), product_images(url, position), product_variants(id, name, price, stock)')
+      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, owner_id, delivery_fee, free_shipping_threshold), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
       .eq('id', productId)
       .single(),
     fetchReviewsSummary('product', productId),
@@ -102,7 +103,7 @@ async function fetchProductData(productId) {
     hasRating: ratingCount > 0,
     badgeText, badgeType,
     stock: product.stock ?? 0,
-    variants: product.product_variants || [],
+    optionGroups: sortOptionGroups((product.product_options || []).map((g) => ({ ...g, values: g.product_option_values || [] }))),
   };
 }
 
@@ -258,15 +259,31 @@ function buildModalHTML(data) {
 
   // F5-03: opciones/variantes reales, mismo criterio informativo que producto.js
   // (no se integran al carrito -- el vendedor las gestiona aparte).
-  let variantsHTML = '';
-  if (data.variants.length > 0) {
-    variantsHTML = `
-      <div class="pm-variants">
-        <p class="pm-variants__title" style="font-weight:600; margin-bottom:0.4rem;">Opciones disponibles:</p>
-        <ul class="pm-variants__list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.3rem;">
-          ${data.variants.map(v => `<li style="font-size:0.85rem; color:var(--bl-text-secondary);">${escapeHTML(v.name)} — ${formatPrice(v.price)} (${v.stock > 0 ? `stock: ${v.stock}` : 'sin stock'})</li>`).join('')}
-        </ul>
-        <p style="font-size:0.75rem; color:var(--bl-text-muted); margin-top:0.3rem;">Para pedir una opción específica, consultá con el vendedor.</p>
+  // Selector de opciones (color / sabor / talle). Antes acá había una lista
+  // informativa de "variantes" con un "consultá con el vendedor": F5-03 dejaba
+  // cargarlas pero nunca llegaron al carrito. Ahora el cliente elige y la
+  // elección viaja hasta el pedido (migración 102).
+  //
+  // Los chips arrancan SIN marcar a propósito. Preseleccionar el primero es lo
+  // cómodo de programar y lo peor para el vendedor: el cliente que no miró se
+  // lleva un pedido del color equivocado y la culpa parece del comercio.
+  let optionsHTML = '';
+  if (data.optionGroups.length > 0) {
+    optionsHTML = `
+      <div class="pm-options" id="pm-options">
+        ${data.optionGroups.map((group) => `
+          <fieldset class="pm-option">
+            <legend class="pm-option__title">${escapeHTML(group.name)}</legend>
+            <div class="pm-option__chips">
+              ${group.values.map((value) => `
+                <label class="pm-option__chip${value.is_available ? '' : ' pm-option__chip--out'}">
+                  <input type="radio" name="pm-opt-${escapeHTML(group.id)}" value="${escapeHTML(value.id)}" ${value.is_available ? '' : 'disabled'} />
+                  <span>${escapeHTML(value.value)}</span>
+                </label>
+              `).join('')}
+            </div>
+          </fieldset>
+        `).join('')}
       </div>
     `;
   }
@@ -345,7 +362,7 @@ function buildModalHTML(data) {
             </div>
           </div>
 
-          ${variantsHTML}
+          ${optionsHTML}
 
           <!-- Quantity: se muestra siempre, pero el dueño viendo su propia vista
                previa no puede sumar/restar (es solo una vista previa, no una compra) -->
@@ -711,8 +728,26 @@ function bindModalEvents(overlay, data) {
     const qty = parseInt(qtyInput?.value, 10) || 1;
     const priceOld = _parsePrice(data.priceOldText);
 
+    // Lo que eligió en los chips, en el orden de los grupos.
+    const selectedIds = [...overlay.querySelectorAll('#pm-options input[type="radio"]:checked')].map((r) => r.value);
+
+    // Sin elegir todo no se agrega: `create_order` lo rechazaría igual, pero
+    // recién al pagar y con un error genérico. Acá se le dice qué le falta.
+    const missing = missingOptionNames(data.optionGroups, selectedIds);
+    if (missing.length > 0) {
+      _showToast(`Elegí ${missing.map((m) => m.toLowerCase()).join(' y ')} antes de agregar al carrito.`, 'error');
+      overlay.querySelector('#pm-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const snapshot = buildSelectionSnapshot(data.optionGroups, selectedIds);
+    const lineKey = cartLineKey(data.id, selectedIds);
+
     const cart = _getCart();
-    const existing = cart.find(item => item.id === data.id);
+    // La misma remera en rojo y en azul son dos líneas distintas del carrito,
+    // con su propia cantidad — por eso la búsqueda es por clave de línea y no
+    // por id de producto (ver cartLineKey en product-options-utils.js).
+    const existing = cart.find(item => itemLineKey(item) === lineKey);
 
     if (existing) {
       existing.qty += qty;
@@ -726,6 +761,8 @@ function bindModalEvents(overlay, data) {
         priceOld: priceOld || null,
         image: data.imgSrc,
         qty,
+        options: selectedIds,
+        optionsLabel: snapshot,
         selected: true // un producto recién agregado entra tildado
       });
     }
@@ -742,7 +779,8 @@ function bindModalEvents(overlay, data) {
       addCartBtn.innerHTML = originalHTML;
     }, 1800);
 
-    _showToast(`${data.name} agregado al carrito (x${qty})`, 'success');
+    const chosen = describeSelectedOptions(buildSelectionSnapshot(data.optionGroups, selectedIds));
+    _showToast(`${data.name}${chosen ? ` (${chosen})` : ''} agregado al carrito (x${qty})`, 'success');
   });
 
   // Comprar ahora

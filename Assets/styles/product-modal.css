@@ -1096,3 +1096,82 @@ body.modal-open {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ── Opciones del producto (color / sabor / talle) ──
+   Reemplaza al bloque `.pm-variants`, que era una lista informativa: F5-03
+   dejaba cargarlas pero el cliente no podía elegir (ver migración 102). */
+.pm-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.pm-option {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0; /* un <fieldset> no se encoge solo dentro de un flex */
+}
+
+.pm-option__title {
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--bl-text);
+  margin-bottom: 0.4rem;
+}
+
+.pm-option__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pm-option__chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--bl-border);
+  border-radius: 999px;
+  background: var(--bl-surface);
+  font-size: 0.8125rem;
+  color: var(--bl-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+/* El radio real queda invisible pero enfocable: el chip entero es el label, así
+   que sigue funcionando con teclado y con lector de pantalla. */
+.pm-option__chip input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.pm-option__chip:hover { border-color: var(--bl-primary); }
+
+.pm-option__chip:has(input:checked) {
+  border-color: var(--bl-primary);
+  background: var(--bl-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pm-option__chip:has(input:focus-visible) {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+
+/* Agotado: el vendedor lo marcó como que no lo tiene. Se muestra igual (saber
+   que existe el color ayuda a preguntar) pero no se puede elegir. */
+.pm-option__chip--out {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.pm-option__chip--out:hover { border-color: var(--bl-border); }

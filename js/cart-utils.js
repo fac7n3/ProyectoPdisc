@@ -473,12 +473,46 @@ export function showToast(message, type = 'default') {
 }
 
 /**
+ * ¿Cuáles de estos productos tienen opciones (color / sabor / talle)?
+ *
+ * Una sola consulta por render, no una por click: la latencia justo cuando la
+ * persona toca "agregar" se nota. Va acá y no en el `select` de cada página a
+ * propósito -- los resultados de búsqueda salen del RPC `search_products`, que
+ * devuelve un juego de columnas fijo y habría que tocarlo en la base para
+ * sumarle esto. Así las tres grillas (home, búsqueda, comercio) quedan
+ * cubiertas con el mismo código.
+ */
+async function fetchIdsWithOptions(productIds) {
+  if (productIds.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from('product_options')
+    .select('product_id')
+    .in('product_id', productIds);
+  if (error) {
+    console.error('Error al mirar qué productos tienen opciones:', error);
+    return new Set(); // el carrito revalida igual antes de pagar
+  }
+  return new Set((data || []).map((row) => row.product_id));
+}
+
+/**
  * Inicializar botones de agregar al carrito en product-cards del DOM.
  * Se puede llamar cada vez que se renderizan nuevas cards.
+ *
+ * Un producto con opciones no se puede agregar de un click desde la tarjeta:
+ * hay que elegir color/sabor/talle primero, así que el botón abre el modal en
+ * vez de agregar. El handler espera la consulta de arriba antes de decidir --
+ * si no, un click en los primeros milisegundos agregaría una línea sin
+ * opciones que `create_order` después rechaza.
  */
 export function initCartButtons() {
-  document.querySelectorAll('.product-card__add').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  const buttons = [...document.querySelectorAll('.product-card__add')];
+  const idsWithOptions = fetchIdsWithOptions(
+    [...new Set(buttons.map((b) => b.dataset.productId || b.closest('.product-card')?.id).filter(Boolean))]
+  );
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', async () => {
       const card = btn.closest('.product-card');
       const id = btn.dataset.productId || card?.id;
       if (!id) {
@@ -496,8 +530,21 @@ export function initCartButtons() {
         : parsePrice(card?.querySelector('.product-card__price')?.textContent || '0');
       const priceOld = parsePrice(priceOldText);
 
+      if ((await idsWithOptions).has(id)) {
+        // Tiene opciones: que las elija en el modal. openProductModal lo
+        // publica product-modal.js en window (lo cargan las tres grillas).
+        if (card && typeof window.openProductModal === 'function') {
+          window.openProductModal(card);
+          return;
+        }
+        // Sin el modal a mano, mejor no agregar algo que el checkout va a
+        // rechazar: se lo manda a la ficha, que tiene el mismo selector.
+        window.location.href = `./producto.html?id=${encodeURIComponent(id)}`;
+        return;
+      }
+
       const cart = getCart();
-      const existing = cart.find(item => item.id === id);
+      const existing = cart.find(item => item.id === id && !(item.options || []).length);
 
       if (existing) {
         if (existing.qty >= MAX_QTY) {
