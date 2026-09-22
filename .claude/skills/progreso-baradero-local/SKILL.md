@@ -3755,3 +3755,68 @@ del propio navegador) ni del `pm-reviews-container` (delega en `renderReviewsSec
 auditado, DOM API pura) agrega superficie nueva.
 
 Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de `home.js` (noveno sector al azar): sin hallazgos
+
+Noveno sector elegido al azar: `js/home.js` (808 líneas, la página de entrada del sitio -- la de
+más tráfico de todas).
+
+**Sin hallazgos.** `buildProductCard()` (la tarjeta de producto del grid) usa DOM API en serio --
+`textContent` para el título, `setAttribute`/`.alt` para los atributos -- nada de template
+strings acá, a diferencia de `product-modal.js`. El mapa de "comercios cerca tuyo"
+(`initNearbyMap`) arma el iframe/link de Google Maps con `lat`/`lng` que salen siempre de
+`navigator.geolocation.getCurrentPosition()` (números que da el navegador) o de un
+`JSON.parse` sobre `sessionStorage` propio -- nunca de un valor cruzado entre usuarios ni de
+texto libre. El botón "Panel" (`initPanelAction`/`renderPanelAction`) lee el rol de
+`user.app_metadata` (el que valida el JWT), reutilizando `getPanelAccess()` ya auditado en
+`auth-utils.js`. El carrusel de comercios (`loadStores`) usa `store.id` sin `encodeURIComponent`
+en el `href` -- inconsistente con el resto del sitio, pero `store.id` es un UUID generado por la
+base, no texto libre, así que no hay superficie real ahí.
+
+Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad "por áreas" (no al azar): pago simulado sin restricción de rol
+
+Pedido del usuario después de nueve rondas de sectores al azar: dividir lo que quedaba del
+proyecto en áreas y cubrirlas de manera sistemática en vez de una por sesión. Áreas cubiertas en
+esta pasada: el resto de las páginas públicas sin auditar (`search.js`, `comercios.js`,
+`producto.js`), los módulos compartidos más chicos (`panel-redirect-utils.js`,
+`payment-providers.js`, `storage-utils.js`), y de ahí salió una revisión a fondo de los dos RPCs
+de pago simulado.
+
+**`search.js`/`comercios.js`/`producto.js`: sin hallazgos.** Las tres arman sus tarjetas con DOM
+API (`textContent`/`setAttribute`), `search_products` ya estaba auditado (parametrizado, sin SQL
+dinámico), y `stock_alerts` (el "avisame cuando vuelva el stock" de `producto.js`, tabla que no se
+había tocado en ninguna auditoría anterior) tiene RLS limpia: el cliente inserta/borra su propia
+alerta pero **no tiene policy de UPDATE** -- `notified_at` solo lo escribe el trigger
+`notify_stock_alerts()` (`SECURITY DEFINER`), así que nadie puede marcarse a sí mismo como "ya
+avisado" para lo que sea que eso habilitara. `panel-redirect-utils.js` y `storage-utils.js`
+también sin hallazgos (el primero es una preferencia booleana sin superficie real; el segundo ya
+tenía tests con filo desde antes, incluida la guarda contra `..` en el path).
+
+**Encontrado y arreglado, severidad CRÍTICA** (`db/schema/101_restrict_simulated_payment_to_admin.sql`,
+aplicada en producción): el método de pago `'simulado'` -- documentado en CLAUDE.md como "solo
+para testing interno" y sacado del checkout real hace tiempo (P1-1, `js/carrito.js` nunca manda
+ese valor) -- **seguía totalmente operativo del lado del servidor sin ningún chequeo de rol**.
+`create_order()` aceptaba `p_payment_method: 'simulado'` de cualquier usuario autenticado (no solo
+del checkout, de un `supabase.rpc()` directo salteándose la UI), y `confirm_simulated_payment()`
+solo validaba que la orden fuera del que llama, nunca el rol. Combinadas: **cualquier cliente
+podía comprar productos reales de un comercio real (gogo, facu.cells) y marcarlos pagados sin
+pagar un peso** -- el pedido le queda al vendedor con `payment_status = 'paid'` como cualquier
+venta legítima. Confirmado contra la base real antes de tocar nada
+(`information_schema.routine_privileges`: `authenticated` tiene `EXECUTE` en las dos funciones,
+ninguna valida `app_metadata.role`).
+
+Fix: las dos funciones ahora exigen rol `admin` para usar/confirmar un pago simulado -- mismo
+patrón que `admin_set_product_active`/`add_store_staff`. El resto de cada función queda
+**idéntico** (se copió la definición viva con `pg_get_functiondef` antes de escribir la migración,
+para no reinventar el cuerpo de memoria y arriesgar un cambio de comportamiento no intencional).
+Verificado con tres pruebas en transacciones con `ROLLBACK` contra la base real, simulando el JWT
+con `set_config('request.jwt.claims', ...)`: un cliente común queda bloqueado al intentar
+`create_order(..., 'simulado', ...)`, ese mismo cliente sigue pudiendo comprar con
+`'mercadopago'` sin ningún cambio (cero regresión), y una cuenta admin puede seguir creando y
+confirmando una orden simulada de punta a punta (el uso interno legítimo sigue andando). Es,
+de las auditorías de esta sesión, el hallazgo de mayor impacto real: a diferencia de los demás
+(que requerían un rol delegado, un empleado, o ya estaban mitigados por otra capa), este lo podía
+explotar **cualquier cliente común contra cualquier vendedor real**, hoy, sin necesitar ningún
+permiso especial.
