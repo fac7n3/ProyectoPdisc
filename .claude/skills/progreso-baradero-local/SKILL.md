@@ -3706,3 +3706,27 @@ usuario puede editarse) -- la distinción correcta, ya aplicada en todo el proye
 
 Se descarta como auditado (no hace falta repetirlo en una futura sesión salvo que el archivo
 cambie de forma sustancial).
+
+## 2026-09-22 — Auditoría de seguridad de `comercio.js` (séptimo sector al azar): sin hallazgos
+
+Séptimo sector elegido al azar: `js/comercio.js` (875 líneas, la página pública de un comercio --
+header editable por el dueño, productos, favoritos, reseñas, mapa embebido) + de paso los caminos
+de escritura de `js/reviews-utils.js` (`submitReview`/`deleteOwnReview`/`report_review`).
+
+**Resultado: sin hallazgos.** El header editable (color, logo) que ve el dueño en su propia
+página pública ya está bien resuelto: `isOwner` sale de `session.user.id === store.owner_id`
+(comparación contra la sesión verificada, nunca `user_metadata`) y solo decide qué UI mostrar --
+el `.update()` real sigue atrás de `stores_update_own` (RLS por `owner_id`), así que aunque
+alguien manipulara el DOM para mostrarse el popover, el `UPDATE` seguiría rechazado para
+cualquiera que no sea el dueño. El logo se sube a `store-logos/{owner_id}/...`, folder-scoped
+igual que el resto de los buckets del proyecto. El mapa embebido arma el iframe con dominio fijo
+(`google.com/maps`) y la dirección del comercio solo entra como query param con
+`encodeURIComponent` -- sin SSRF ni framing a un origen ajeno. `submitReview`/`deleteOwnReview`
+siempre mandan `client_id: session.user.id`, nunca un valor elegido por quien llama; `rating` está
+acotado 1-5 por CHECK y `target_type` por una lista fija, los dos a nivel de columna, no solo en
+el cliente. `report_review` (RPC) exige sesión y no expone nada que no debería. Confirmado que
+`comercio.js` sí usa `getVisibleSocialLinks`/`safeExternalUrl` (el fix del 2026-09-16), no una
+copia vieja. `storeId` sale de la URL pero solo se usa como filtro de un `.eq()` parametrizado,
+nunca concatenado.
+
+Se descarta como auditado.
