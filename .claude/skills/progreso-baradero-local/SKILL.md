@@ -3840,3 +3840,41 @@ bookmark personal, no un permiso. `mergeLocalWishlistIntoFavorites()` (el merge 
 invitado al loguearse) siempre usa `session.user.id`, nunca un id pasado desde otro lado.
 
 Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de cupones y empleados de comercio (undécimo sector al azar): sin hallazgos
+
+Sector elegido al azar: la tabla `coupons` (con su uso en `js/vender.js`/`js/admin.js`/
+`create_order()`) y la tabla `store_staff` (con el RPC `add_store_staff`) -- dos piezas
+financieras/de-acceso del panel de vendedor que no se habían auditado directo contra la base real
+en ninguna de las rondas anteriores.
+
+**`coupons`: sin hallazgos.** Seis policies verificadas contra `pg_policy` real: `coupons_all_admin`
+(admin sin restricción, consistente con el resto del proyecto), `coupons_select_public` (solo
+`store_id is null and is_active and no vencido`, así un vendedor no puede fabricar un cupón
+"público" -- el insert exige `store_id not null`), y las tres de dueño (`select`/`insert`/
+`update`/`delete`) todas con el mismo `exists (select 1 from stores where owner_id = auth.uid())`
+sobre el `store_id`, con `with_check` en el `update` que impide reasignar el cupón a una tienda
+ajena. Constraints de tabla ya cubren lo que la RLS no necesita cubrir:
+`discount_percentage` acotado 1-100 (`check`) y `code` con `unique` global -- este último de
+paso descarta la duda inicial de la auditoría ("¿puede un vendedor crear un cupón con el mismo
+código que uno público o de otro comercio, para que `create_order`, que hace un `select into` sin
+`strict`, se equivoque de fila?"): con `code` único no puede existir esa colisión, es
+estructuralmente imposible. El cliente (`vender.js`/`admin.js`) solo usa `textContent` para pintar
+el código del cupón (sin `innerHTML`), y siempre manda `store_id: currentStoreId` confiando en que
+la RLS lo valide, nunca al revés. `store_staff` ya excluye a los empleados de gestionar cupones a
+propósito (documentado en su propia migración, confirmado de nuevo acá).
+
+**`store_staff`: sin hallazgos.** No tiene policy de `insert` para `authenticated` -- la única vía
+es el RPC `add_store_staff` (`SECURITY DEFINER`), que valida que quien llama es dueño de
+`p_store_id`, que el email pertenece a una cuenta ya registrada y que no sea el propio dueño.
+`store_staff_update_owner`/`store_staff_delete_owner` están acotadas por `store_id` propio en
+`qual` **y** `with_check`, así que un dueño no puede tocar la fila de empleado de un comercio
+ajeno. Único detalle sin restricción de columna: el dueño puede reescribir `user_id` de una fila
+de `store_staff` existente de su propio comercio a cualquier uuid (sin pasar de nuevo por las
+validaciones de `add_store_staff` -- email registrado, no soy yo mismo). Evaluado y descartado
+como hallazgo: el alcance queda acotado a filas del propio comercio del dueño (no se puede tocar
+la de otro), y lo peor que logra es agregar a alguien como "empleado" de su propia tienda sin
+pasar por la validación de email -- no hay tercero perjudicado ni gano nada que el dueño no
+tuviera ya sobre su propio comercio.
+
+Se descarta como auditado.
