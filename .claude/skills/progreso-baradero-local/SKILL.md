@@ -3685,3 +3685,24 @@ documentado ("nada financiero" para `store_staff`, 49_store_staff.sql). El siste
 explícitamente solo de UI -- el propio archivo de esa migración ya documenta que la superficie de
 ataque real son las policies de 49, que dan paridad operativa completa sin mirar `permissions`;
 no hay nada que arreglar ahí, ya está razonado y anotado.
+
+## 2026-09-22 — Auditoría de seguridad de `nav-utils.js` (sexto sector al azar): sin hallazgos
+
+Sexto sector elegido al azar: `js/nav-utils.js` (954 líneas, se carga en casi todas las páginas --
+navbar de categorías, mega-menú, buscador con autocompletado, campana de notificaciones, menú de
+cuenta) + de paso `js/notifications-utils.js` (los links que arma cada notificación).
+
+**Resultado: sin hallazgos.** Los tres `innerHTML` del archivo son siempre `= ''` (limpiar), nunca
+interpolan nada -- el propio comentario de cabecera del archivo lo deja explícito ("Todo con DOM
+API (anti-XSS): los datos de la DB nunca van por innerHTML"), y se confirmó leyendo el archivo
+entero. El RPC `search_products` (51_search_products_rpc.sql) es `language sql` con el parámetro
+`p_query` bindeado normal dentro de la consulta (nunca `EXECUTE`/SQL dinámico) -- no hay
+inyección posible, y al ser `security invoker` hereda `products_select_public_active` (oculta
+productos de comercios suspendidos) sin necesidad de repetir ese filtro a mano. Los links que
+arma `notifications-utils.js` para cada tipo de notificación son siempre una ruta relativa fija
+más un id propio pasado por `encodeURIComponent` -- no hay open redirect. `initAccountMenu()` lee
+el rol de `user.app_metadata` (el que valida el JWT/RLS), nunca de `user_metadata` (que el propio
+usuario puede editarse) -- la distinción correcta, ya aplicada en todo el proyecto.
+
+Se descarta como auditado (no hace falta repetirlo en una futura sesión salvo que el archivo
+cambie de forma sustancial).
