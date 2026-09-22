@@ -3878,3 +3878,26 @@ pasar por la validación de email -- no hay tercero perjudicado ni gano nada que
 tuviera ya sobre su propio comercio.
 
 Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de direcciones de usuario (duodécimo sector al azar): sin hallazgos
+
+Sector elegido al azar: la tabla `user_addresses` (libreta de direcciones de Mi perfil, P0-2) y
+su uso en `js/perfil.js` (`loadAddresses`/el formulario de alta-edición/predeterminar/borrar) --
+tiene datos de contacto reales (dirección, teléfono) y no se había auditado directo contra la
+base real.
+
+**Sin hallazgos.** Las cuatro policies (`select`/`insert`/`update`/`delete`) son idénticas en
+forma -- `user_id = auth.uid()`, con `with_check` también en el `update` -- confirmado sin drift
+contra `pg_policy` real. No hay ninguna columna que valga la pena restringir por separado (no hay
+`role`/`status`/nada que un dueño no debería poder tocar de su propia dirección) y ninguna otra
+tabla o función del proyecto referencia `user_addresses` (`grep` sobre `db/schema/` -- solo
+aparece en su propia migración, `55_user_addresses.sql`), así que no hay superficie de join o RPC
+que pueda filtrarla entre usuarios. El cliente pinta todo con `textContent`/`createElement`, sin
+un solo `innerHTML` con datos de la dirección (label, dirección, teléfono). La auto-migración de
+`profiles.address` a `user_addresses` (primera vez que alguien abre la sección y todavía tiene la
+dirección vieja de antes de P0-2) siempre opera sobre `userId`/`currentUserId`, que es el uid de
+la propia sesión en las tres llamadas donde aparece -- y aunque no lo fuera, el `insert` de RLS
+igual exige `user_id = auth.uid()`, así que no hay forma de migrar o escribir la dirección de
+otra cuenta.
+
+Se descarta como auditado.
