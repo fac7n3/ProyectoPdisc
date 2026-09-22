@@ -259,6 +259,20 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `createSignedUrl`, y Safari/Firefox bloquean en silencio un `window.open()`
   que ya perdió el gesto del usuario. Se abre la pestaña en blanco antes del
   `await` y se navega después.
+- **Resuelto 2026-09-22** — auditoría de seguridad del panel de profesional/
+  técnico (sector elegido al azar a pedido del usuario). El panel en sí está
+  bien construido (RLS de las 7 tablas verificada contra la base real, sin
+  `innerHTML` con datos de la persona, sin la clase de bug de
+  `approve_seller_request`). Encontrado y arreglado:
+  `professional_requests_insert_own`/`seller_requests_insert_own` no
+  restringían la columna `status` al insertar -- un usuario podía
+  autoinsertar su solicitud ya "aprobada", que no le daba ningún privilegio
+  real (publicarse sigue exigiendo el insert admin-only en
+  `professionals`/`stores`) pero la desaparecía de la cola de revisión del
+  admin. Migración `db/schema/97_lock_down_request_status_on_insert.sql`,
+  aplicada en producción: el `with check` ahora exige `status = 'pending'`
+  en el insert de las dos tablas. Detalle completo, incluido lo revisado que
+  no tenía problemas, en el skill `progreso-baradero-local`.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su

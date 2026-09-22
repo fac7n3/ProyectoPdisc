@@ -26,6 +26,14 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/97_lock_down_request_status_on_insert.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `lock_down_request_status_on_insert`). Encontrada en una
+  auditoría de seguridad del panel de profesional/técnico: `professional_requests_insert_own` y
+  `seller_requests_insert_own` no restringían la columna `status` al insertar, así que un usuario
+  podía autoinsertar su solicitud ya "aprobada"/"rechazada" (sin ganar ningún privilegio real,
+  pero desapareciendo de la cola de revisión del admin). El `with check` ahora exige
+  `status = 'pending'` en las dos. Detalle completo en el skill `progreso-baradero-local`.
+
 - `db/schema/96_lock_down_direct_order_inserts.sql` — **aplicada el 2026-09-22** vía
   `apply_migration` (nombre en Supabase: `lock_down_direct_order_inserts`). Fix de seguridad
   ALTA anotado el 2026-09-16: revoca el `INSERT` directo de `orders`/`order_items` para

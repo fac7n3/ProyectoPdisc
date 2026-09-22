@@ -3439,3 +3439,53 @@ atado al gesto de click del usuario (Chromium no, por eso no se notaba probando 
 arreglo: abrir la pestaña en blanco (`window.open('', '_blank')`, `tab.opener = null`) antes del
 `await`, y navegarla con `tab.location.replace(signedUrl)` una vez que llega la URL firmada
 (`tab?.close()` si falla). Cambio puro de JS, sin migración ni CSS -- `dist/` reconstruido.
+
+## 2026-09-22 — Auditoría de seguridad del panel de profesional/técnico
+
+Pedido del usuario: auditar un sector al azar del sitio buscando oportunidades de mejora de
+seguridad. Se eligió el panel de autogestión del profesional/técnico
+(`js/profesional.js` + los 6 módulos `js/profesional-*.js`, `pages/profesional.html`,
+migraciones 77-95) por ser lo más nuevo y complejo del proyecto, y porque el propio CLAUDE.md
+lo marcaba como "sin probar el recorrido logueado de punta a punta".
+
+**Resultado: el panel en sí está bien construido.** Revisado contra la base real (no solo los
+`.sql` del repo -- ya pasó antes que un archivo describiera un fix que nunca se aplicó) con
+`pg_policy` vía el MCP de Supabase: las 7 tablas del panel
+(`professionals`, `professional_services`, `professional_promos`,
+`professional_inquiries`, `professional_metrics_daily`, `professional_business_hours`,
+`professional_service_areas`) tienen exactamente las policies que documentan sus migraciones,
+todas con el `exists (select 1 from professionals p where p.id = ... and p.owner_id =
+auth.uid())` correcto en insert/update/delete. `professionals` no tiene policy de insert propia
+para el dueño -- publicarse exige un insert que solo puede hacer el admin
+(`professionals_all_admin`), así que no hay forma de auto-aprobarse (el mismo patrón que rompió
+`approve_seller_request` en la migración 75 no se repite acá). Nada de `innerHTML` con datos de
+la persona en ninguno de los 7 archivos, `contratar.js` ya usa `getVisibleSocialLinks`/
+`safeExternalUrl` (fix del 2026-09-16) para las redes del profesional. El RPC público
+`increment_professional_metric` valida el tipo de evento, exige que el profesional esté activo
+y solo suma 1 -- no recibe el valor a escribir.
+
+**Encontrado y arreglado** (`db/schema/97_lock_down_request_status_on_insert.sql`, aplicada en
+producción vía `apply_migration`): `professional_requests_insert_own` --y, se confirmó, su
+gemela `seller_requests_insert_own` de `02_shop_and_cart.sql`, mismo patrón desde el origen del
+proyecto-- solo validaban `auth.uid() = user_id` al dar de alta la solicitud, sin restringir la
+columna `status`. Un usuario autenticado podía insertar su propia solicitud con
+`status: 'approved'` en vez de dejar el default `'pending'`. **No es una escalada de
+privilegios**: publicarse de verdad sigue exigiendo el insert admin-only en
+`professionals`/`stores`, así que la cuenta atacante no gana nada por sí misma. El impacto real
+es de integridad del panel de admin -- confirmado leyendo `fetchProfessionalRequests()`
+(`js/admin.js`): la tabla de solicitudes hace `select('*')` sin filtrar por estado y solo
+muestra los botones Aprobar/Rechazar cuando `status === 'pending'`, así que una solicitud con el
+estado falseado aparece con el badge "Aprobado"/"Rechazado" y sin acciones -- desaparece de la
+cola de revisión aunque el admin nunca la haya mirado. Fix: el `with check` de las dos policies
+ahora exige `status = 'pending'` en el insert, mismo criterio de "columna protegida" que ya usan
+el trigger de `professional_inquiries` (90) y el de `reviews.owner_reply` (94). Se confirmó antes
+de aplicar que ni `js/vender.js` (alta de comercio) ni el alta de profesional mandan `status` en
+el insert -- las dos dependen del default de la columna (`'pending'::text` en ambas tablas), así
+que el fix no rompe el flujo real.
+
+**No se tocó** (fuera de alcance de esta auditoría, solo anotado): `increment_professional_metric`
+no tiene rate limit -- un visitante anónimo podría inflar `profile_view`/`call_click`/
+`whatsapp_click` llamando el RPC en loop. Es manipulación de una métrica vanity, no una fuga de
+datos ni una escalada, y con el volumen de "pueblo chico" del proyecto no pareció justificar la
+complejidad de un limitador -- queda para retomar si en algún momento se usan estas métricas para
+algo con peso (ranking, facturación, etc.).
