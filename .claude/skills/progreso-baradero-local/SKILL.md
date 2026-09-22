@@ -3730,3 +3730,28 @@ copia vieja. `storeId` sale de la URL pero solo se usa como filtro de un `.eq()`
 nunca concatenado.
 
 Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de `product-modal.js` (octavo sector al azar): sin hallazgos
+
+Octavo sector elegido al azar: `js/product-modal.js` (931 líneas, el modal de vista rápida de
+producto que abren home/search/favoritos).
+
+**Primera impresión que resultó falsa alarma:** a diferencia de casi todo el resto del proyecto
+(DOM API, nunca `innerHTML` con datos), este archivo arma el modal entero con un template string
+(`buildModalHTML()`) y lo mete con `overlay.innerHTML = ...` -- a simple vista, con
+`data.name`/`data.shop`/`data.description` (título/nombre de tienda/descripción, **todos
+cargados por el vendedor**) interpolados directo en el template, parecía un XSS persistente
+servido a cualquier visitante que abriera el modal de ese producto. Se seteó a la fuente:
+`fetchProductData()` (línea 86-106) pasa **los tres** por `escapeHTML()` antes de meterlos en el
+objeto `data` (`name: escapeHTML(product.title...)`, igual con `description` y `shop`), así que
+para cuando llegan a `buildModalHTML()` ya están saneados -- confirmado leyendo las dos funciones
+juntas, no alcanza con mirar el template solo. El resto de los campos que sí van directo al
+template son numéricos/calculados (`priceText`, `shippingText`, `stockInfo.text`) o pasan por
+`encodeURI()` en contexto de URL (`imgSrc`, las miniaturas) -- correcto para ese contexto, y
+`encodeURI` sí escapa comillas dobles, así que tampoco hay forma de romper el atributo `src`. Los
+productos relacionados (`relatedHTML`) y las variantes (`variantsHTML`) usan `escapeHTML()`
+explícito en el punto de armado. Ningún campo del carrito (`_getCart`/`_saveCart`, localStorage
+del propio navegador) ni del `pm-reviews-container` (delega en `renderReviewsSection`, ya
+auditado, DOM API pura) agrega superficie nueva.
+
+Se descarta como auditado.
