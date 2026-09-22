@@ -357,6 +357,26 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   documentado), y el sistema de `store_staff.permissions` es explícitamente
   solo de UI (ya razonado en su propia migración). Detalle completo en el
   skill `progreso-baradero-local`.
+- **Resuelto 2026-09-22** — auditoría de seguridad "por áreas" (no al azar,
+  a pedido del usuario, cubriendo lo que quedaba del proyecto de forma
+  sistemática). El hallazgo de mayor impacto de toda la sesión de
+  auditorías: el pago **`'simulado'`** (documentado como "solo testing
+  interno", sacado del checkout real hace tiempo) **seguía totalmente
+  operativo del lado del servidor sin ningún chequeo de rol** --
+  `create_order()`/`confirm_simulated_payment()` aceptaban ese método de
+  cualquier usuario autenticado llamando al RPC directo por fuera de la UI.
+  A diferencia de todos los demás hallazgos de esta sesión (que requerían
+  un rol delegado o ya estaban mitigados en otra capa), este lo podía
+  explotar **cualquier cliente común contra cualquier vendedor real**:
+  comprar productos de verdad y marcarlos pagados sin pagar un peso.
+  Migración `db/schema/101_restrict_simulated_payment_to_admin.sql`,
+  aplicada en producción: las dos funciones ahora exigen rol admin.
+  Verificado con pruebas en transacciones con ROLLBACK contra la base real
+  (cliente bloqueado en simulado, sin regresión en mercadopago, admin sigue
+  pudiendo usarlo). También cubiertas sin hallazgos: `search.js`,
+  `comercios.js`, `producto.js` (con la tabla `stock_alerts`, nunca antes
+  revisada, bien resuelta), `panel-redirect-utils.js`, `storage-utils.js`.
+  Detalle completo en el skill `progreso-baradero-local`.
 - **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
   Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
   vendedor logueado se le hace disparar la función con un `code` ajeno, su

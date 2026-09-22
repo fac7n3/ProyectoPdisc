@@ -26,6 +26,16 @@
 
 ## ✅ Aplicadas recientemente
 
+- `db/schema/101_restrict_simulated_payment_to_admin.sql` — **aplicada el 2026-09-22** vía
+  `apply_migration` (nombre en Supabase: `restrict_simulated_payment_to_admin`). Hallazgo CRÍTICO
+  de una auditoría de seguridad por áreas: `create_order()`/`confirm_simulated_payment()` no
+  restringían el pago `'simulado'` (documentado como "solo testing interno") a ningún rol --
+  cualquier cliente podía comprar productos reales y marcarlos pagados sin pagar, llamando al RPC
+  directo por fuera del checkout (que nunca manda ese valor). Ahora las dos exigen rol admin.
+  Verificado con pruebas en transacciones con ROLLBACK: cliente bloqueado en simulado, cliente sin
+  regresión en mercadopago, admin sigue pudiendo usarlo para pruebas. Detalle completo en el skill
+  `progreso-baradero-local`.
+
 - `db/schema/100_products_bucket_folder_ownership.sql` — **aplicada el 2026-09-22** vía
   `apply_migration` (nombre en Supabase: `products_bucket_folder_ownership`). Encontrada en una
   auditoría de seguridad del panel de vendedor: la policy de INSERT del bucket público `products`
