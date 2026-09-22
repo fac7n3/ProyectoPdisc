@@ -3755,3 +3755,22 @@ del propio navegador) ni del `pm-reviews-container` (delega en `renderReviewsSec
 auditado, DOM API pura) agrega superficie nueva.
 
 Se descarta como auditado.
+
+## 2026-09-22 — Auditoría de seguridad de `home.js` (noveno sector al azar): sin hallazgos
+
+Noveno sector elegido al azar: `js/home.js` (808 líneas, la página de entrada del sitio -- la de
+más tráfico de todas).
+
+**Sin hallazgos.** `buildProductCard()` (la tarjeta de producto del grid) usa DOM API en serio --
+`textContent` para el título, `setAttribute`/`.alt` para los atributos -- nada de template
+strings acá, a diferencia de `product-modal.js`. El mapa de "comercios cerca tuyo"
+(`initNearbyMap`) arma el iframe/link de Google Maps con `lat`/`lng` que salen siempre de
+`navigator.geolocation.getCurrentPosition()` (números que da el navegador) o de un
+`JSON.parse` sobre `sessionStorage` propio -- nunca de un valor cruzado entre usuarios ni de
+texto libre. El botón "Panel" (`initPanelAction`/`renderPanelAction`) lee el rol de
+`user.app_metadata` (el que valida el JWT), reutilizando `getPanelAccess()` ya auditado en
+`auth-utils.js`. El carrusel de comercios (`loadStores`) usa `store.id` sin `encodeURIComponent`
+en el `href` -- inconsistente con el resto del sitio, pero `store.id` es un UUID generado por la
+base, no texto libre, así que no hay superficie real ahí.
+
+Se descarta como auditado.
