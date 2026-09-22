@@ -2869,9 +2869,14 @@ async function openEditProductForm(productId) {
   openProductForm();
   await hydrateProductGallery(product);
 
-  // Las opciones se guardan contra un product_id real: solo al editar.
-  const optionsSection = document.getElementById('prod-options-section');
-  if (optionsSection) optionsSection.hidden = false;
+  // El modo no se guarda en la base: se deduce de si el producto ya tiene
+  // opciones cargadas, que es el dato real.
+  const { data: existingGroups } = await supabase
+    .from('product_options')
+    .select('id')
+    .eq('product_id', productId)
+    .limit(1);
+  setProductMode(existingGroups?.length ? 'variants' : 'single');
   await renderProductOptionsManager(productId);
 
   // Al final, no antes: la galería y las opciones todavía pueden cambiar el
@@ -3114,6 +3119,84 @@ async function persistProductImages(productId) {
 }
 
 /**
+ * Modo de publicación: "Un solo producto" o "Variantes de un mismo producto".
+ *
+ * Lo eligió el usuario como primer paso del formulario para que quien sube un
+ * producto simple no tenga que ver (ni entender) nada de opciones. Es solo de
+ * interfaz: no se guarda en la base, porque el dato real es si el producto
+ * tiene filas en `product_options` o no.
+ */
+function getProductMode() {
+  return document.querySelector('input[name="prod-mode"]:checked')?.value || 'single';
+}
+
+function setProductMode(mode) {
+  const radio = document.querySelector(`input[name="prod-mode"][value="${mode}"]`);
+  if (radio) radio.checked = true;
+  applyProductMode();
+}
+
+/** Muestra u oculta el bloque de opciones según el modo y si ya hay producto. */
+function applyProductMode() {
+  const section = document.getElementById('prod-options-section');
+  const pending = document.getElementById('prod-options-pending');
+  const list = document.getElementById('prod-options-list');
+  if (!section) return;
+
+  const variants = getProductMode() === 'variants';
+  section.hidden = !variants;
+
+  // En un alta nueva no hay product_id contra el cual guardar: se avisa y se
+  // esconde el editor hasta el primer guardado.
+  const isNew = !editingProductId;
+  if (pending) pending.hidden = !(variants && isNew);
+  if (list) list.hidden = variants && isNew;
+  const addRow = section.querySelector('.popt-add');
+  if (addRow) addRow.hidden = variants && isNew;
+}
+
+/**
+ * Volver a "Un solo producto" con opciones ya cargadas las borra.
+ *
+ * No alcanza con ocultar el bloque: las opciones viven en la base desde que se
+ * cargan, así que un producto "simple" con `product_options` seguiría
+ * pidiéndole al cliente que elija un color, y el vendedor no vería por qué.
+ * Se avisa antes porque es destructivo.
+ */
+async function handleProductModeChange() {
+  if (getProductMode() === 'variants' || !editingProductId) {
+    applyProductMode();
+    return;
+  }
+
+  const { data: groups } = await supabase
+    .from('product_options')
+    .select('id')
+    .eq('product_id', editingProductId);
+
+  if (groups && groups.length > 0) {
+    const ok = window.confirm(
+      'Este producto tiene opciones cargadas. Al pasarlo a "Un solo producto" se van a borrar. ' +
+      'Los pedidos que ya se hicieron no se tocan. ¿Seguimos?'
+    );
+    if (!ok) {
+      setProductMode('variants');
+      return;
+    }
+    const { error } = await supabase.from('product_options').delete().eq('product_id', editingProductId);
+    if (error) {
+      showToast('No se pudieron borrar las opciones.', 'error');
+      console.error(error);
+      setProductMode('variants');
+      return;
+    }
+    await renderProductOptionsManager(editingProductId);
+  }
+
+  applyProductMode();
+}
+
+/**
  * Editor de opciones del producto (color / sabor / talle …).
  *
  * Reemplaza al manager de "variantes" de F5-03, que dejaba cargar nombre +
@@ -3314,6 +3397,10 @@ function setupDashboardEvents() {
   attachMoneyFormatting(document.getElementById('prod-price'));
   attachMoneyFormatting(document.getElementById('prod-compare-price'));
 
+  document.querySelectorAll('input[name="prod-mode"]').forEach((radio) => {
+    radio.addEventListener('change', handleProductModeChange);
+  });
+
   // Alta de un tipo de opción (Color, Sabor, Talle…) para el producto que se
   // está editando. Los valores de cada grupo se agregan desde su propia fila.
   document.getElementById('btn-add-option')?.addEventListener('click', async () => {
@@ -3359,10 +3446,9 @@ function setupDashboardEvents() {
     const submitBtn = addForm.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.textContent = 'Guardar producto';
     resetProductGallery();
-    const optionsSection = document.getElementById('prod-options-section');
-    if (optionsSection) optionsSection.hidden = true;
     const optionsList = document.getElementById('prod-options-list');
     if (optionsList) optionsList.textContent = '';
+    setProductMode('single');
   }
 
   btnShowAdd.addEventListener('click', () => {
@@ -3501,6 +3587,24 @@ function setupDashboardEvents() {
         console.error('No se pudo guardar la foto de portada:', coverError);
         showToast('El producto se guardó, pero falló la foto de portada.', 'error');
       }
+    }
+
+    // Producto nuevo en modo "Variantes": el formulario NO se cierra. Las
+    // opciones se guardan contra el product_id, que recién existe ahora, así
+    // que cerrar acá obligaría a volver a entrar a editarlo para cargar los
+    // colores -- justo lo que vino a hacer.
+    if (!isEditing && savedProductId && getProductMode() === 'variants') {
+      showToast('Producto creado. Ahora cargá sus variantes.', 'success');
+      editingProductId = savedProductId;
+      const formTitle = document.getElementById('add-product-form-title');
+      if (formTitle) formTitle.textContent = 'Editar producto';
+      if (btnSubmit) btnSubmit.textContent = 'Guardar cambios';
+      applyProductMode();
+      await renderProductOptionsManager(savedProductId);
+      document.getElementById('prod-options-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fetchProducts();
+      setLoading(btnSubmit, false, 'Guardar cambios');
+      return;
     }
 
     showToast(isEditing ? "Producto actualizado" : "Producto creado", "success");

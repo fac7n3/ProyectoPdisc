@@ -633,6 +633,28 @@
       .pubform__photo-cover { position: absolute; left: 0; right: 0; bottom: 0; border: none; background: rgba(0, 0, 0, 0.6); color: #fff; font: inherit; font-size: 0.72rem; font-weight: 600; padding: 0.3rem; cursor: pointer; }
       .pubform__photo-cover:hover { background: var(--bl-vendor-accent); }
 
+      /* Selector "Un solo producto" / "Variantes de un mismo producto". */
+      .pubform-mode__opts { display: grid; gap: 0.6rem; margin-top: 0.85rem; }
+      .pubform-mode__opt {
+        display: flex; align-items: flex-start; gap: 0.7rem;
+        padding: 0.85rem 1rem; border: 1px solid var(--bl-border);
+        border-radius: var(--bl-radius-md); background: var(--bl-surface);
+        cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      }
+      .pubform-mode__opt:hover { border-color: var(--bl-vendor-accent); }
+      /* El círculo del radio queda a la vista (no se esconde): es el control que
+         la persona busca para elegir. accent-color lo pinta con el color del panel. */
+      .pubform-mode__opt input[type="radio"] { margin: 0.2rem 0 0; width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); flex-shrink: 0; cursor: pointer; }
+      .pubform-mode__opt:has(input:checked) { border-color: var(--bl-vendor-accent); background: var(--bl-surface-alt); }
+      .pubform-mode__opt:has(input:focus-visible) { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
+      .pubform-mode__text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+      .pubform-mode__title { font-weight: 600; font-size: 0.9375rem; color: var(--bl-text); }
+      .pubform-mode__desc { font-size: 0.8125rem; color: var(--bl-text-secondary); }
+
+      /* Aviso de "guardá primero" en un alta nueva: el editor de opciones
+         necesita un product_id que todavía no existe. */
+      .popt-pending { margin: 0.5rem 0 0; font-style: italic; }
+
       /* Opciones del producto (color / sabor / talle). Reemplaza al editor de
          "variantes" de F5-03, que nunca llegó al carrito. */
       .popt-list { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
@@ -720,7 +742,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-Co9_Kg17.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BAmuR0uJ.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -1348,6 +1370,29 @@
                 </div>
 
                 <form id="add-product-form" class="pubform__form">
+                  <!-- Qué se va a publicar. Decide si se muestra el bloque de
+                       opciones: quien sube un producto simple no tiene por qué
+                       ver nada de colores ni sabores. -->
+                  <fieldset class="pubform__card pubform-mode">
+                    <legend class="pubform__legend">¿Qué vas a publicar?</legend>
+                    <div class="pubform-mode__opts">
+                      <label class="pubform-mode__opt">
+                        <input type="radio" name="prod-mode" value="single" checked />
+                        <span class="pubform-mode__text">
+                          <span class="pubform-mode__title">Un solo producto</span>
+                          <span class="pubform-mode__desc">Subir fotos de un solo producto.</span>
+                        </span>
+                      </label>
+                      <label class="pubform-mode__opt">
+                        <input type="radio" name="prod-mode" value="variants" />
+                        <span class="pubform-mode__text">
+                          <span class="pubform-mode__title">Variantes de un mismo producto</span>
+                          <span class="pubform-mode__desc">Subir fotos de un solo producto con sus respectivas variantes (distintos colores, sabores, etc.).</span>
+                        </span>
+                      </label>
+                    </div>
+                  </fieldset>
+
                   <fieldset class="pubform__card">
                     <legend class="pubform__legend">Fotos</legend>
                     <p class="pubform__hint">
@@ -1427,6 +1472,11 @@
                       Si vendés lo mismo en varias versiones, cargalas acá y el cliente elige
                       cuál quiere antes de comprar. El stock sigue siendo el del producto:
                       si se te acaba una, marcala como agotada.
+                    </p>
+                    <!-- En un alta nueva todavía no hay product_id contra el cual
+                         guardar las opciones: se avisa y se habilitan al guardar. -->
+                    <p class="pubform__hint popt-pending" id="prod-options-pending" hidden>
+                      Guardá el producto y vas a poder cargar acá mismo sus colores, sabores o talles.
                     </p>
                     <div id="prod-options-list" class="popt-list"></div>
                     <div class="popt-add">

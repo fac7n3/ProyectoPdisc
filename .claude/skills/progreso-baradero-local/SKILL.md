@@ -4039,3 +4039,39 @@ hace tres meses tiene que seguir diciendo qué se despachó. Mismo criterio que 
 registrada a la primera**. La ruta de `/rest/v1/rpc/` tiene que registrarse **después** de la
 genérica de `/rest/v1/`, si no la genérica se la come y el test dice "no se llamó a create_order"
 cuando en realidad sí se llamó.
+
+### Agregado el mismo día: selector "Un solo producto" / "Variantes de un mismo producto"
+
+Pedido del usuario después de ver la feature armada: que el formulario de publicación empiece
+preguntando qué se va a publicar, con dos opciones y un círculo al lado, para que **quien sube un
+producto simple no tenga que ver ni entender nada de opciones**.
+
+- "Un solo producto" — *Subir fotos de un solo producto.*
+- "Variantes de un mismo producto" — *Subir fotos de un solo producto con sus respectivas
+  variantes (distintos colores, sabores, etc.).*
+
+**El modo no se guarda en la base.** El dato real es si el producto tiene filas en
+`product_options`; al abrir un producto para editar, el modo se deduce de ahí. Guardar un campo
+aparte sería un segundo lugar donde la verdad puede desincronizarse.
+
+Dos decisiones que no son obvias:
+
+1. **Volver a "Un solo producto" con opciones ya cargadas las borra**, con un `confirm` antes. Solo
+   esconder el bloque dejaría un producto "simple" que igual le pide al cliente elegir un color, y
+   el vendedor no tendría forma de ver por qué. Los pedidos ya hechos no se tocan (el snapshot vive
+   en `order_items.selected_options`).
+2. **Un alta nueva en modo Variantes no cierra el formulario al guardar.** Las opciones se guardan
+   contra el `product_id`, que recién existe después del primer insert; cerrar ahí obligaría a
+   volver a entrar a editar el producto para cargar los colores, que es justo lo que la persona
+   vino a hacer. El form queda abierto en modo edición, con el editor de opciones ya renderizado y
+   scrolleado. Mientras el producto no existe, el bloque muestra un aviso
+   ("Guardá el producto y vas a poder cargar acá mismo…") en vez del editor.
+
+7 checks de Playwright sobre el panel real (sesión de vendedor mockeada): arranca en "Un solo
+producto", los dos textos son los pedidos, el bloque de opciones no se ve, al elegir Variantes
+aparece con el aviso de guardar primero y sin editor, y al volver atrás desaparece.
+
+**Gotcha del harness:** el panel abre un onboarding a pantalla completa la primera vez
+(`js/panel-onboarding-utils.js`) que tapa el formulario en las capturas — hay que cerrarlo
+("Entendido, ir a mi panel"). Y el sidebar cambia de sección con su propio handler: para llegar al
+formulario en un test conviene revelar la sección de Publicaciones a mano.

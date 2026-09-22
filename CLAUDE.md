@@ -113,9 +113,21 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   vista de detalle del pedido** ("llega pronto"), así que la fila de Pedidos es
   el único lugar donde ve qué le pidieron — por eso ahora lista los ítems con
   su opción ahí, hasta 3 y después un conteo.
-  Verificado con 9 checks de Playwright sobre el build real (selector, chips
-  agotados, validación de lo que falta, dos líneas separadas y el payload
-  exacto que recibe el RPC) más las pruebas del RPC contra la base real.
+  **El formulario de publicación arranca con un selector** ("Un solo
+  producto" / "Variantes de un mismo producto", radio con descripción), a
+  pedido del usuario: quien sube un producto simple no ve nada de opciones.
+  Es solo de interfaz — **no se guarda en la base**, el dato real es si el
+  producto tiene filas en `product_options`, y al editar el modo se deduce de
+  eso. Dos detalles que no son obvios: (1) volver a "Un solo producto" con
+  opciones cargadas **las borra**, con aviso previo, porque ocultarlas dejaría
+  un producto "simple" que igual le pide al cliente elegir un color; (2) un
+  alta nueva en modo Variantes **no cierra el formulario al guardar** — las
+  opciones se guardan contra el `product_id`, que recién existe ahí, así que
+  el form queda abierto en modo edición para cargarlas en el momento.
+  Verificado con 9 + 7 checks de Playwright sobre el build real (selector,
+  chips agotados, validación de lo que falta, dos líneas separadas, el payload
+  exacto que recibe el RPC, y el selector de modo mostrando/escondiendo el
+  bloque) más las pruebas del RPC contra la base real.
 - **Resuelto 2026-09-22** — la etiqueta de rubro de la tarjeta de un comercio
   (página "Comercios") **no era la que el dueño elige en su panel**: cambiar
   "Perfil de mi comercio → Categoría" no se reflejaba nunca en el público.
