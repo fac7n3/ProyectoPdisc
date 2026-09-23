@@ -742,7 +742,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-TX0-_eKT.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BzPw_Zqe.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -753,6 +753,7 @@
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-66glwBAP.js">
+    <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-DW1BSwCE.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
@@ -1154,11 +1155,27 @@
                      quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
                 <div class="pf-card">
                   <h3 class="pf-card__title">Transferencia bancaria</h3>
-                  <p class="pf-card__hint">Se le muestra al cliente en el carrito apenas elige pagar por transferencia. Sin esto, no va a saber a dónde transferir.</p>
+                  <p class="pf-card__hint">Cuando un cliente paga por transferencia, ve estos datos con un botón "Copiar" en cada uno, junto con el monto y el número de pedido. Cargá al menos el alias o el CBU/CVU.</p>
                   <div class="pf-grid">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-alias">Alias</label>
+                      <input id="store-transfer-alias" class="form-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Ej: MIVENTA.BARADERO" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-cbu">CBU o CVU</label>
+                      <input id="store-transfer-cbu" class="form-input" type="text" inputmode="numeric" maxlength="30" autocomplete="off" placeholder="22 números" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-holder">Titular de la cuenta</label>
+                      <input id="store-transfer-holder" class="form-input" type="text" maxlength="80" placeholder="Como figura en el banco" />
+                    </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-bank">Banco o billetera</label>
+                      <input id="store-transfer-bank" class="form-input" type="text" maxlength="60" placeholder="Ej: Banco Nación, Mercado Pago" />
+                    </div>
                     <div class="pf-field pf-field--full">
-                      <label class="form-label" for="store-transfer-info">CBU, alias o datos de tu cuenta</label>
-                      <textarea id="store-transfer-info" class="form-input" rows="2" placeholder="Ej: Banco Nación — Alias: MIVENTA.BARADERO — CBU: 0000003100000000000000"></textarea>
+                      <label class="form-label" for="store-transfer-info">Otros datos (opcional)</label>
+                      <textarea id="store-transfer-info" class="form-input" rows="2" placeholder="Ej: Mandá el comprobante por WhatsApp y te confirmo en el día."></textarea>
                     </div>
                   </div>
                 </div>
