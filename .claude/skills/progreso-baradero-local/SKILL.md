@@ -4075,3 +4075,45 @@ aparece con el aviso de guardar primero y sin editor, y al volver atrás desapar
 (`js/panel-onboarding-utils.js`) que tapa el formulario en las capturas — hay que cerrarlo
 ("Entendido, ir a mi panel"). Y el sidebar cambia de sección con su propio handler: para llegar al
 formulario en un test conviene revelar la sección de Publicaciones a mano.
+
+## 2026-09-23 — índices faltantes en columnas de foreign key (performance)
+
+Sesión sin tarea puntual del usuario ("segui mejorando el proyecto"). Se corrió el advisor de
+performance de Supabase (`get_advisors`, `type: performance`) como punto de partida — mismo
+criterio que las auditorías de seguridad "por áreas" de sesiones anteriores, pero del lado de
+rendimiento. Encontró 4 categorías: `unindexed_foreign_keys` (20), `auth_rls_initplan` (115, WARN),
+`unused_index` (5, INFO) y `multiple_permissive_policies` (49, WARN).
+
+Se resolvió solo la primera: 20 columnas de foreign key sin índice propio (`admin_audit_log.admin_id`,
+`coupons.store_id`, `error_logs.user_id`, `favorite_stores.store_id`, `order_items.order_id`/
+`product_id`, `orders.client_id`/`store_id`, `payment_proofs.confirmed_by`,
+`pharmacy_duty_weeks.pharmacy_id`, `pharmacy_shifts.pharmacy_id`, `products.category_id`/`store_id`,
+`professional_requests.user_id`, `professionals.owner_id`, `reviews.client_id`,
+`seller_requests.user_id`, `stock_alerts.client_id`, `stores.owner_id`,
+`support_ticket_messages.sender_id`). Sin un índice, Postgres hace seq scan en cada JOIN, cada
+policy de RLS que filtra por esa columna (el patrón más común del proyecto: "productos de esta
+tienda", "pedidos de este cliente") y cada borrado en cascada del lado referenciado. Hoy no se nota
+con los catálogos chicos que tiene el proyecto, pero es la clase de cosa que conviene tener resuelta
+antes de que el volumen de datos lo vuelva visible (el objetivo del proyecto es lanzamiento real).
+Migración `db/schema/103_add_missing_fk_indexes.sql`, aplicada en producción vía el MCP de Supabase.
+Verificado con un segundo `get_advisors`: el lint `unindexed_foreign_keys` bajó a 0 hallazgos, sin
+ningún otro cambio negativo. Es puramente aditivo (`create index if not exists`) — no toca RLS, no
+toca código de `js/`, no cambia el resultado de ninguna consulta existente, solo cómo se resuelve.
+
+**Las otras tres categorías del advisor quedaron sin tocar, a propósito, por alcance y riesgo:**
+- `auth_rls_initplan` (115 WARN) — muchas policies de RLS llaman `auth.uid()`/`auth.jwt()` directo
+  en vez de `(select auth.uid())`, así que Postgres los re-evalúa fila por fila en vez de una vez
+  por query. Es una optimización real y conocida (patrón estándar de Supabase), pero reescribir 115
+  policies a mano es un cambio grande y no es tan mecánico como parece -- cada una hay que leerla
+  entera para no alterar la condición, y conviene hacerlo con tiempo dedicado a probarlo, no
+  de forma apurada en una sesión sin pedido concreto.
+- `multiple_permissive_policies` (49 WARN) — varias tablas tienen más de una policy permisiva para
+  el mismo rol+acción (ej. policy del dueño + policy del admin), que Postgres tiene que evaluar
+  todas con OR. A veces es intencional (separación clara admin/dueño) y consolidarlas sin revisar
+  cada caso puede introducir un hueco de acceso -- mismo motivo que arriba, requiere revisión
+  dedicada tabla por tabla.
+- `unused_index` (5 INFO, subió a 25 con los índices nuevos de arriba, que todavía no tuvieron
+  tráfico) -- no se tocó, borrar un índice por poco uso con un catálogo tan chico como el de hoy es
+  prematuro; hay que revisarlo con datos de uso real más adelante.
+
+Quedan como próximo candidato si se retoma este ángulo de performance.

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-22. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-23. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — auditoría de **performance** con el advisor de
+  Supabase (sin pedido puntual del usuario, mismo criterio que las
+  auditorías de seguridad "por áreas"). Se agregaron los 20 índices que
+  faltaban en columnas de foreign key (`unindexed_foreign_keys`), puramente
+  aditivo -- sin un índice, cada policy de RLS que filtra por
+  tienda/cliente/pedido hacía seq scan; no se nota con los catálogos chicos
+  de hoy pero conviene tenerlo resuelto antes de que el volumen real lo
+  vuelva visible. Migración **103**, aplicada a producción. **Quedan sin
+  tocar, a propósito (alcance/riesgo, requieren revisión caso por caso, no
+  una sesión apurada):** `auth_rls_initplan` (115 policies llaman
+  `auth.uid()` directo en vez de `(select auth.uid())`) y
+  `multiple_permissive_policies` (49). Detalle completo en el skill
+  `progreso-baradero-local`.
 - **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
   a pedido del usuario: el comerciante las carga y el cliente elige antes de
   comprar. Migración **102** (aplicada a producción): `product_options` +
