@@ -4435,3 +4435,43 @@ sí, porque cada policy contribuyente vale lo mismo para ambos, y no lo eran has
 no tuvieron tráfico) -- con el catálogo chico de hoy, borrar un índice por poco uso es prematuro.
 Con esto, las tres categorías de performance que encontró el advisor al principio de la sesión
 quedan resueltas.
+
+## 2026-09-23 — Transferencia bancaria: paso "Transferí" con datos copiables
+
+**Pedido del usuario:** después de "Iniciar pago" con "Transferencia bancaria" elegida, un apartado
+donde el cliente vea el alias del comercio y lo copie, el teléfono y lo copie, y otros datos útiles.
+
+**Cómo era antes:** el cuadro de transferencia mostraba `stores.transfer_info` (texto libre, migración
+69) debajo del radio, y al tocar "Iniciar pago" salía un toast y un redirect a Mis compras a los 2,5 s.
+Para copiar el alias había que seleccionarlo a mano dentro de una frase — en el celular, justo lo que
+sale mal. El cliente nunca veía el número de pedido ni el monto por comercio en el mismo lugar.
+
+**Qué se hizo:**
+- **Migración 106** (`106_store_transfer_structured.sql`, aplicada a producción): `stores.transfer_alias`,
+  `transfer_cbu`, `transfer_holder`, `transfer_bank`, con checks de formato argentino (CBU/CVU = 22
+  dígitos, alias = 6-20 de letras/números/punto/guion). `transfer_info` queda como "Otros datos".
+  Backfill: si el texto libre era solo un alias (única fila: Beruru, `bere.alg`) se **copió** al alias
+  sin borrar el original — el frontend que sigue en producción hasta mergear solo lee `transfer_info`.
+  `extraTransferNotes()` no muestra el texto dos veces cuando es igual al alias/CBU.
+- **`js/transfer-details-utils.js`** (puro, `node js/transfer-details-utils.test.mjs`, 10 tests) y
+  **`js/transfer-details.js`** (DOM): tarjeta con monto exacto, alias, CBU/CVU (se muestra en bloques
+  de 4, se copia sin espacios), titular (con "revisá que coincida"), banco, otros datos, "Motivo /
+  referencia: Pedido #XXXX", teléfono y WhatsApp del comercio, botón "Avisar que transferí" (wa.me con
+  pedido y monto prellenados) y "Llamar". Cada dato con botón "Copiar" que confirma en el propio botón
+  (`¡Copiado!`) y en una región `aria-live`; fallback a `execCommand` si no hay `navigator.clipboard`.
+  Respeta `contact_method = 'none'` (no muestra números).
+- **`carrito.js` → `showTransferStep()`**: con transferencia, en vez de toast + redirect se esconde el
+  carrito y se muestra la sección `#transfer-step` (una tarjeta por pedido/comercio, pasos 1-2-3,
+  "Ya transferí, subir comprobante" → Mis compras con el pedido resaltado si es uno solo). El cuadro
+  previo debajo del radio pasó a ser solo un aviso por comercio ("datos listos" / "no cargó sus datos").
+- **Mis compras** (`perfil.js`): el pedido pendiente por transferencia usa la misma tarjeta, versión
+  compacta, para quien vuelve más tarde.
+- **Panel de vendedor**: el textarea único pasó a 4 campos + "Otros datos", validados con las mismas
+  reglas que los checks (mensaje claro y foco en el campo que falla).
+- Todo degrada si faltara la 106: `fetchStoreTransferData()` reintenta con solo `transfer_info`, y el
+  guardado del vendedor también.
+
+**Verificación:** 42 checks de Playwright sobre el build real (escritorio y 390px), con Supabase
+mockeado: aviso previo, payload de `create_order`, dos tarjetas, lo copiado al portapapeles (CBU limpio,
+monto `10000`, teléfono en dígitos), link de WhatsApp, comercio sin datos, carrito vaciado y sin scroll
+horizontal. Mis compras y el form del vendedor no se caminaron logueados en el navegador.

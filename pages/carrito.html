@@ -149,8 +149,9 @@
                 <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
                 Transferencia bancaria
               </label>
-              <!-- A113-299: datos de transferencia de cada comercio del carrito, poblado
-                   por carrito.js (renderTransferInfo) solo cuando este método está elegido. -->
+              <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
+                   carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
+                   datos completos y copiables aparecen después de "Iniciar pago". -->
               <div id="transfer-info-box" class="transfer-info-box" hidden></div>
             </div>
           </div>
@@ -200,6 +201,40 @@
         </aside>
 
       </div>
+
+      <!-- Paso "Transferí": reemplaza al carrito apenas se crea un pedido con
+           "Transferencia bancaria". Una tarjeta por comercio con monto, alias,
+           CBU/CVU, titular, número de pedido y contacto, todo copiable
+           (js/transfer-details.js). Poblado por carrito.js (showTransferStep). -->
+      <section class="trf-step" id="transfer-step" hidden aria-labelledby="transfer-step-title" tabindex="-1">
+        <div class="trf-step__hero">
+          <div class="trf-step__icon"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></div>
+          <div>
+            <h2 class="trf-step__title" id="transfer-step-title">Tu pedido está reservado</h2>
+            <p class="trf-step__lead" id="transfer-step-lead">Solo falta la transferencia. Copiá los datos y hacela desde la app de tu banco o billetera.</p>
+          </div>
+        </div>
+
+        <ol class="trf-steps">
+          <li><span class="trf-steps__n">1</span> Transferí el monto exacto a cada comercio</li>
+          <li><span class="trf-steps__n">2</span> Guardá el comprobante (captura o PDF)</li>
+          <li><span class="trf-steps__n">3</span> Subilo en "Mis compras" para que el comercio confirme</li>
+        </ol>
+
+        <div class="trf-step__cards" id="transfer-step-cards"></div>
+
+        <p class="trf-step__note">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>
+          Estos datos quedan guardados en "Mis compras", dentro de cada pedido, por si los necesitás más tarde.
+        </p>
+
+        <div class="trf-step__actions">
+          <a class="trf-step__btn trf-step__btn--primary" id="transfer-step-proof" href="./perfil.html?tab=compras">
+            <i class="fa-solid fa-upload" aria-hidden="true"></i> Ya transferí, subir comprobante
+          </a>
+          <a class="trf-step__btn" href="./home.html">Seguir comprando</a>
+        </div>
+      </section>
     </main>
 
     <!-- Confirmación de "Vaciar mi carrito" (no se usa confirm() nativo: no se

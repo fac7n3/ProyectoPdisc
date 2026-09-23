@@ -16,6 +16,8 @@ import {
   DEFAULT_DELIVERY_FEE,
 } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
+import { fetchStoreTransferData, buildTransferCard } from './transfer-details.js';
+import { hasTransferData } from './transfer-details-utils.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
 
@@ -79,11 +81,12 @@ const storeShippingById = new Map();
 // split payments). Poblado por validateCartFreshness junto al resto.
 const storeMpEligibleById = new Map();
 
-// A113-299: CBU/alias/banco de cada tienda del carrito, para mostrárselo al
-// cliente apenas elige "Transferencia bancaria" -- antes no se mostraba en
-// ningún lado y el pedido quedaba pending para siempre porque no había forma
-// de saber a dónde transferir. Poblado por validateCartFreshness.
-const storeTransferInfoById = new Map();
+// A113-299: datos para transferir de cada tienda del carrito (alias, CBU,
+// titular, banco, texto libre, más teléfono/WhatsApp), para avisar apenas se
+// elige "Transferencia bancaria" qué comercio no los cargó, y para armar la
+// pantalla "Transferí" después de "Iniciar pago" sin otra consulta.
+// Poblado por loadTransferInfo (ver js/transfer-details.js).
+const storeTransferDataById = new Map();
 const storeNameById = new Map();
 
 /**
@@ -738,28 +741,18 @@ function syncPaymentMethod() {
 }
 
 /**
- * A113-299: trae el CBU/alias de cada comercio del carrito, en un fetch
- * aparte del de validateCartFreshness a propósito -- `stores.transfer_info`
- * es una columna nueva (migración 69_store_transfer_info.sql) que puede no
- * estar aplicada todavía en algunas bases. Si se pidiera junto con precio/
- * stock/envío, un 400 acá tumbaría la revalidación de TODO el carrito; así,
- * en el peor caso, solo este cuadro queda vacío.
+ * A113-299: trae los datos para transferir de cada comercio del carrito, en
+ * un fetch aparte del de validateCartFreshness a propósito -- las columnas
+ * `transfer_*` vienen de migraciones (69, 106) que pueden no estar aplicadas
+ * en alguna base. Si se pidieran junto con precio/stock/envío, un 400 acá
+ * tumbaría la revalidación de TODO el carrito; así, en el peor caso, solo
+ * falta este dato (fetchStoreTransferData ya degrada solo).
  */
 async function loadTransferInfo() {
   const storeIds = [...new Set(productStoreId.values())];
-  if (storeIds.length === 0) {
-    storeTransferInfoById.clear();
-    renderTransferInfo();
-    return;
-  }
-
-  const { data, error } = await supabase.from('stores').select('id, transfer_info').in('id', storeIds);
-  if (error) {
-    console.error('Error al cargar los datos de transferencia:', error);
-  } else {
-    storeTransferInfoById.clear();
-    (data || []).forEach((s) => storeTransferInfoById.set(s.id, s.transfer_info || null));
-  }
+  const data = await fetchStoreTransferData(supabase, storeIds);
+  storeTransferDataById.clear();
+  data.forEach((store, id) => storeTransferDataById.set(id, store));
   renderTransferInfo();
 }
 
@@ -797,11 +790,13 @@ function renderTransferInfo() {
     storeName.textContent = storeNameById.get(storeId) || 'Comercio';
     row.appendChild(storeName);
 
-    const info = storeTransferInfoById.get(storeId);
+    // Acá solo un aviso: los datos completos, con botón de copiar, se ven en
+    // la pantalla que aparece después de "Iniciar pago" (showTransferStep),
+    // que es cuando el cliente ya tiene el número de pedido y el monto final.
     const dataEl = document.createElement('div');
-    if (info) {
+    if (hasTransferData(storeTransferDataById.get(storeId))) {
       dataEl.className = 'transfer-info-box__data';
-      dataEl.textContent = info;
+      dataEl.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Alias y datos listos: vas a poder copiarlos al tocar "Iniciar pago".';
     } else {
       dataEl.className = 'transfer-info-box__missing';
       dataEl.textContent = 'Este comercio todavía no cargó sus datos para transferencia. Contactalo antes de pagar así, o elegí Mercado Pago.';
@@ -812,6 +807,59 @@ function renderTransferInfo() {
   });
 
   box.hidden = false;
+}
+
+/**
+ * Paso "Transferí" (después de "Iniciar pago" con transferencia): esconde el
+ * carrito y muestra una tarjeta por pedido -- create_order arma uno por
+ * comercio -- con el monto exacto, alias, CBU/CVU, titular, banco, el número
+ * de pedido para el motivo y el teléfono/WhatsApp del comercio, todo con su
+ * botón "Copiar". Los datos se vuelven a pedir acá en vez de confiar solo en
+ * los cargados al abrir el carrito: el vendedor pudo haberlos corregido
+ * mientras tanto, y es justo el momento en que tienen que estar bien.
+ */
+async function showTransferStep(orders) {
+  const step = document.getElementById('transfer-step');
+  const cardsEl = document.getElementById('transfer-step-cards');
+  if (!step || !cardsEl) return;
+
+  const storeIds = orders.map((o) => o.store_id);
+  let stores = await fetchStoreTransferData(supabase, storeIds);
+  // Si la consulta fresca falló entera, sirve lo que ya se había cargado.
+  if (stores.size === 0) stores = storeTransferDataById;
+
+  cardsEl.textContent = '';
+  orders.forEach((o) => {
+    cardsEl.appendChild(buildTransferCard({
+      store: stores.get(o.store_id),
+      storeName: storeNameById.get(o.store_id),
+      orderId: o.order_id,
+      total: o.total_price,
+    }));
+  });
+
+  const lead = document.getElementById('transfer-step-lead');
+  if (lead && orders.length > 1) {
+    const total = orders.reduce((acc, o) => acc + o.total_price, 0);
+    lead.textContent = `Tu compra se dividió en ${orders.length} pedidos, uno por comercio (total ${formatPrice(total)}). ` +
+      'Hacé una transferencia a cada uno con su monto.';
+  }
+
+  // Con un solo pedido, "Mis compras" abre directo resaltando ese pedido.
+  const proofLink = document.getElementById('transfer-step-proof');
+  if (proofLink && orders.length === 1) {
+    proofLink.href = `./perfil.html?tab=compras&order=${encodeURIComponent(orders[0].order_id)}`;
+  }
+
+  // style.display y no [hidden]: .cart-layout trae display:grid, que le gana
+  // al [hidden] del user-agent (mismo gotcha que .pf-field en vender.js).
+  const layout = document.querySelector('.cart-layout');
+  if (layout) layout.style.display = 'none';
+  const title = document.querySelector('.cart-page__title');
+  if (title) title.textContent = 'Pagá por transferencia';
+  step.hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  step.focus({ preventScroll: true });
 }
 
 /**
@@ -1188,7 +1236,17 @@ function initCartEvents() {
       }
 
       // "transferencia" no confirma nada en el momento — queda pending hasta
-      // que el cliente suba el comprobante (F2-04, ver perfil.js).
+      // que el cliente suba el comprobante (F2-04, ver perfil.js). En vez de
+      // un toast y un redirect (que dejaban al cliente en "Mis compras" sin
+      // haber visto nunca a dónde transferir), se muestra acá mismo el paso
+      // "Transferí" con los datos de cada comercio listos para copiar.
+      if (paymentResult.pending && paymentMethod === 'transferencia') {
+        clearPurchasedFromCart();
+        updateCartBadge();
+        await showTransferStep(orders);
+        return;
+      }
+
       const mensaje = paymentResult.pending
         ? `Pedido creado (Total: ${formatPrice(total)}). Subí el comprobante desde "Mis compras" para confirmar el pago.`
         : orders.length > 1
@@ -1363,7 +1421,7 @@ async function validateCartFreshness() {
   productStoreId.clear();
   storeShippingById.clear();
   storeMpEligibleById.clear();
-  storeTransferInfoById.clear();
+  storeTransferDataById.clear();
   storeNameById.clear();
   (products || []).forEach((p) => {
     if (!p.store_id) return;

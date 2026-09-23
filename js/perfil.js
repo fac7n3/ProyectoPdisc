@@ -16,6 +16,7 @@ import { houseNumberFrom, areaOf, suggestionLabel, dedupeByStreet } from "./addr
 import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
 import { categoryLabel } from "./professional-categories.js";
+import { fetchStoreTransferData, buildTransferCard } from "./transfer-details.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -1461,18 +1462,16 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
 
   // A113-299: los datos de transferencia del comercio, a mano acá también --
   // no solo en el carrito al momento de comprar -- por si el cliente vuelve
-  // más tarde a subir el comprobante y ya no se acuerda a dónde transfirió.
-  const transferInfo = transferInfoByStoreId?.get(order.store_id);
-  const infoP = document.createElement('p');
-  infoP.className = 'compra-proof__message';
-  if (transferInfo) {
-    infoP.style.whiteSpace = 'pre-line';
-    infoP.textContent = `Datos para transferir: ${transferInfo}`;
-  } else {
-    infoP.className = 'compra-proof__message compra-proof__message--error';
-    infoP.textContent = `${order.stores?.name || 'El comercio'} todavía no cargó sus datos para transferencia. Contactalo para coordinar el pago.`;
-  }
-  wrap.appendChild(infoP);
+  // más tarde a pagar o a subir el comprobante. Misma tarjeta que el paso
+  // "Transferí" del carrito (monto, alias, CBU, contacto, todo copiable), en
+  // su versión compacta: el encabezado del pedido ya muestra comercio y número.
+  wrap.appendChild(buildTransferCard({
+    store: transferInfoByStoreId?.get(order.store_id),
+    storeName: order.stores?.name,
+    orderId: order.id,
+    total: order.total_price,
+    compact: true,
+  }));
 
   const proofs = order.payment_proofs || [];
   const latestProof = [...proofs].sort(
@@ -1631,18 +1630,9 @@ async function loadCompras(userId) {
         .filter((o) => o.payment_method === 'transferencia' && o.payment_status === 'pending' && o.store_id)
         .map((o) => o.store_id)
     )];
-    let transferInfoByStoreId = new Map();
-    if (pendingTransferStoreIds.length > 0) {
-      const { data: transferRows, error: transferError } = await supabase
-        .from('stores')
-        .select('id, transfer_info')
-        .in('id', pendingTransferStoreIds);
-      if (transferError) {
-        console.error('Error al cargar los datos de transferencia:', transferError);
-      } else {
-        transferInfoByStoreId = new Map((transferRows || []).map((s) => [s.id, s.transfer_info || null]));
-      }
-    }
+    // storeId -> fila de stores con alias/CBU/titular/banco/contacto
+    // (fetchStoreTransferData degrada solo si falta alguna columna).
+    const transferInfoByStoreId = await fetchStoreTransferData(supabase, pendingTransferStoreIds);
 
     comprasCache = orders || [];
     comprasTransferInfoByStoreId = transferInfoByStoreId;

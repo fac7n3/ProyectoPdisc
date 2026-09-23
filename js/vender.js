@@ -11,6 +11,7 @@ import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { sortOptionGroups, describeSelectedOptions } from './product-options-utils.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
+import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -1447,13 +1448,66 @@ function fillStoreProfileForm(store) {
   // (66_store_transfer_info.sql) que puede no estar aplicada todavía en
   // algunas bases -- si se pidiera en el select principal, un 400 ahí
   // tumbaría TODO el dashboard del vendedor en vez de dejar este campo vacío.
+  // Migración 106: alias/CBU/titular/banco en columnas propias. Si esa
+  // migración faltara, el select da error y se reintenta solo con
+  // transfer_info (los campos nuevos quedan vacíos, el resto anda).
   if (transferInfoInput) {
-    supabase.from('stores').select('transfer_info').eq('id', store.id).single()
-      .then(({ data, error }) => {
-        if (error) { console.error('Error al cargar los datos de transferencia:', error); return; }
-        transferInfoInput.value = data?.transfer_info || '';
+    const fill = (data) => {
+      transferInfoInput.value = data?.transfer_info || '';
+      TRANSFER_FIELD_IDS.forEach(([col, id]) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        const value = data?.[col] || '';
+        input.value = col === 'transfer_cbu' && value ? formatCbuForDisplay(value) : value;
+      });
+    };
+    supabase.from('stores').select('transfer_info, transfer_alias, transfer_cbu, transfer_holder, transfer_bank').eq('id', store.id).single()
+      .then(async ({ data, error }) => {
+        if (!error) { fill(data); return; }
+        console.error('Error al cargar los datos de transferencia (se reintenta sin las columnas nuevas):', error);
+        const legacy = await supabase.from('stores').select('transfer_info').eq('id', store.id).single();
+        if (legacy.error) { console.error('Error al cargar los datos de transferencia:', legacy.error); return; }
+        fill(legacy.data);
       });
   }
+}
+
+/** Columna de `stores` -> id del input en el form "Transferencia bancaria". */
+const TRANSFER_FIELD_IDS = [
+  ['transfer_alias', 'store-transfer-alias'],
+  ['transfer_cbu', 'store-transfer-cbu'],
+  ['transfer_holder', 'store-transfer-holder'],
+  ['transfer_bank', 'store-transfer-bank'],
+];
+
+/**
+ * Lee y valida el bloque "Transferencia bancaria". Se valida acá con las
+ * mismas reglas que los checks de la migración 106 para avisar QUÉ está mal
+ * en vez de devolver un error genérico de la base.
+ * @returns {{ ok: true, values: object } | { ok: false, message: string, field: string }}
+ */
+function readTransferFields() {
+  const val = (id) => document.getElementById(id)?.value.trim() || '';
+  const alias = normalizeAlias(val('store-transfer-alias'));
+  const cbuRaw = val('store-transfer-cbu');
+  const cbu = normalizeCbu(cbuRaw);
+
+  if (alias && !isValidAlias(alias)) {
+    return { ok: false, field: 'store-transfer-alias', message: 'El alias tiene que tener entre 6 y 20 caracteres: letras, números, punto o guion, sin espacios.' };
+  }
+  if (cbuRaw && !isValidCbu(cbu)) {
+    return { ok: false, field: 'store-transfer-cbu', message: `El CBU/CVU tiene que tener 22 números (cargaste ${cbu.length}).` };
+  }
+  return {
+    ok: true,
+    values: {
+      transfer_alias: alias || null,
+      transfer_cbu: cbu || null,
+      transfer_holder: val('store-transfer-holder') || null,
+      transfer_bank: val('store-transfer-bank') || null,
+      transfer_info: val('store-transfer-info') || null,
+    },
+  };
 }
 
 /** Solo se pide el número si van a contactar por WhatsApp -- si no, no tiene sentido pedirlo. */
@@ -1494,6 +1548,14 @@ function setupStoreProfileForm() {
     const nameValue = document.getElementById('store-name').value.trim();
     if (!isValidShopName(nameValue)) {
       showToast('Ingresá un nombre de comercio válido (entre 3 y 100 caracteres).', 'error');
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
+
+    const transfer = readTransferFields();
+    if (!transfer.ok) {
+      showToast(transfer.message, 'error');
+      document.getElementById(transfer.field)?.focus();
       setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
@@ -1544,11 +1606,20 @@ function setupStoreProfileForm() {
     // A113-299: aparte del resto (ver por qué en fillStoreProfileForm) -- si
     // la migración 66 todavía no está aplicada, que falle esto solo y no
     // todo el guardado del perfil.
-    const { error: transferError } = await supabase
+    // Migración 106: si las columnas nuevas no existieran, se guarda al
+    // menos el texto libre en vez de perder todo.
+    let { error: transferError } = await supabase
       .from('stores')
-      .update({ transfer_info: document.getElementById('store-transfer-info').value.trim() || null })
+      .update(transfer.values)
       .eq('id', currentStoreId);
-    if (transferError) console.error('Error al guardar los datos de transferencia:', transferError);
+    if (transferError) {
+      console.error('Error al guardar los datos de transferencia (se reintenta solo con transfer_info):', transferError);
+      ({ error: transferError } = await supabase
+        .from('stores')
+        .update({ transfer_info: transfer.values.transfer_info })
+        .eq('id', currentStoreId));
+      if (transferError) console.error('Error al guardar los datos de transferencia:', transferError);
+    }
 
     if (error) {
       console.error('Error al guardar el perfil del comercio:', error);

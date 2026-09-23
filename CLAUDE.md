@@ -80,6 +80,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — **Transferencia bancaria con datos copiables**, a
+  pedido del usuario. Después de "Iniciar pago" con transferencia ya no hay
+  toast + redirect: el carrito se reemplaza por el paso "Transferí"
+  (`showTransferStep()` en `js/carrito.js`), una tarjeta por comercio con
+  monto exacto, alias, CBU/CVU, titular, banco, "Pedido #XXXX" para el
+  motivo, teléfono y WhatsApp ("Avisar que transferí"), cada dato con botón
+  "Copiar". La tarjeta vive en `js/transfer-details.js` (lógica pura +
+  tests en `js/transfer-details-utils.js`) y la reusa "Mis compras".
+  Migración **106** (aplicada a producción): `stores.transfer_alias`/
+  `transfer_cbu`/`transfer_holder`/`transfer_bank` con checks de formato;
+  `transfer_info` queda como "Otros datos". El vendedor los carga en
+  "Perfil de mi comercio → Transferencia bancaria" (4 campos nuevos). **Hoy
+  solo Beruru tiene datos cargados** (alias copiado del texto libre por el
+  backfill): conviene avisarle a los comercios reales que completen alias/CBU.
 - **Resuelto 2026-09-23** — el texto de ayuda de los **estados vacíos del panel
   de profesional/técnico** salía descentrado (reportado con captura en
   "Servicios y precios"). `.of-sub` trae `max-width: 60ch` para no hacer
