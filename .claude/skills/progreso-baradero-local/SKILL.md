@@ -4181,3 +4181,91 @@ que diera 0 de verdad.
 en la entrada de arriba -- consolidar dos policies permisivas del mismo rol+acción (ej. la del
 dueño + la del admin) sin revisar cada tabla puede abrir un hueco de acceso que no vale la pena
 correr en una sesión sin ese pedido específico.
+
+## 2026-09-23 (continuación 2) — multiple_permissive_policies: consolidar RLS duplicadas
+
+Pedido explícito del usuario ("segui con el multiple_permissive_policies también"), tercer y
+último lint de performance que quedaba de esta sesión (después de 103, índices de FK, y 104,
+auth_rls_initplan).
+
+**El problema:** 49 hallazgos de tablas con más de una policy PERMISSIVE para el mismo rol
+(`authenticated`) y la misma acción (SELECT/INSERT/UPDATE/DELETE) -- ej. `coupons_all_admin`
+(policy `ALL` del admin) superpuesta con `coupons_select_own_store`, `coupons_select_public`,
+etc. Postgres evalúa TODAS las que apliquen y las combina con OR -- funcionalmente correcto, pero
+cada policy de más es una subconsulta más por fila.
+
+**Por qué es seguro fusionar:** para el mismo rol+acción, "pasa si A OR B OR C" con 3 policies
+separadas es matemáticamente idéntico a una sola policy con la condición `(A) OR (B) OR (C)` ya
+escrita -- Postgres no cambia una sola fila visible/escribible, solo cuántas veces evalúa la
+subconsulta. La dificultad no es la fusión en sí, es hacerla bien en presencia de policies `FOR
+ALL` (participan en las 4 acciones a la vez) y de defaults implícitos de Postgres que no se ven en
+`pg_policies` a simple vista.
+
+**El algoritmo** (implementado como una consulta con CTEs que arma texto `ALTER`/`DROP`/`CREATE
+POLICY`, corrido primero como dry-run para revisar cada statement generado antes de ejecutar nada):
+
+1. Por cada tabla+acción, juntar todas las policies PERMISSIVE de rol `authenticated` cuyo `cmd`
+   sea esa acción **o** `ALL` (una `ALL` cuenta para las 4).
+2. Si hay más de una, o si alguna es `ALL` (aunque sea la única para esa acción puntual -- si se
+   va a partir la `ALL` para fusionarla en OTRA acción, hay que reconstruir esta acción también o
+   se pierde el acceso), generar una policy nueva `<tabla>_<accion>_merged` con:
+   - `USING`: OR de los `qual` de todas las que contribuyen (solo para SELECT/DELETE/UPDATE).
+   - `WITH CHECK`: OR de los `with_check` (solo para INSERT/UPDATE).
+   - Roles: la unión de los roles de todas las que contribuyen -- si alguna incluía `anon` (las de
+     lectura pública), la fusionada también, nunca se angosta.
+   - Borrar las policies originales que quedaron cubiertas.
+3. Ejecutar todo en un solo `DO` block (mismo patrón que la migración 104): la base genera y
+   ejecuta los `DROP POLICY`/`CREATE POLICY`, en una sola transacción.
+
+**Por qué es seguro para `anon`:** cuando una fusión incluye una policy pública
+(`*_select_public`, roles `{anon,authenticated}`) junto con condiciones de dueño/admin
+(`auth.uid()`, `auth.jwt()`), la fusionada queda con esos mismos roles. Para una sesión anónima
+`auth.uid()` es `NULL` y `auth.jwt()` es `NULL` (`COALESCE` da `'cliente'`), así que esas cláusulas
+ya daban `false` antes y siguen dando `false` -- no se filtra nada nuevo, la fusión solo evita
+evaluarlas dos veces. Verificado explícitamente contra la base real (`stranger` autenticado sin
+relación con ningún comercio: 0 cupones privados visibles; `anon`: 0 cupones privados visibles).
+
+**El bug real que apareció al construir esto (corregido ANTES de aplicar, no después):** la
+primera versión del generador solo aplicaba "si falta `WITH CHECK`, Postgres usa el `USING`" al
+fusionar policies `ALL` -- pero **ese mismo default de Postgres aplica también a una policy
+`UPDATE` sola sin `WITH CHECK` explícito**, no solo a `ALL`. Encontrado comparando
+`qual`/`with_check` esperados contra lo que el generador realmente producía para
+`orders_update_staff`/`orders_update_store_or_admin`/`products_update_seller`/
+`payment_proofs_update_*` -- las cuatro tenían `USING` pero ningún `WITH CHECK` propio, y **no
+heredaban nada** en la primera versión del merge porque el filtro que decidía qué contribuye al
+`WITH CHECK` fusionado solo miraba `with_check is not null OR cmd = 'ALL'`, dejando afuera a estas
+cuatro (`cmd = 'UPDATE'`, no `ALL`). Confirmado contra `pg_policy.polwithcheck` directo (no solo
+la documentación) que en Postgres real, sin `WITH CHECK` explícito, una policy `UPDATE` **sí**
+usa su propio `USING` como cheque -- es el mismo comportamiento que `ALL`, documentado pero fácil
+de pasar por alto. El síntoma que esto habría causado: un vendedor cuyo producto pasa el `USING`
+fusionado por el camino de `products_update_seller` (identificado por `auth.jwt()`, no por la
+tabla `profiles` ni por `store_staff`) hubiera visto la fila **visible para el UPDATE pero
+rechazada al escribir** ("new row violates row-level security policy"), porque el `WITH CHECK`
+fusionado le faltaba esa cláusula. Corregido ampliando el fallback a `cmd in ('ALL', 'UPDATE')`
+antes de aplicar nada a producción -- se detectó en la revisión manual del dry-run, comparando
+`qual_agg`/`check_agg` de `orders`/`payment_proofs`/`products` UPDATE (debían ser idénticos entre
+sí, porque cada policy contribuyente vale lo mismo para ambos, y no lo eran hasta el fix).
+
+**Las 26 tablas tocadas**, migración `db/schema/105_consolidate_permissive_policies.sql`:
+`coupons`, `emergency_contacts`, `pharmacies`, `pharmacy_duty_weeks`, `pharmacy_shifts`,
+`product_images`, `product_option_values`, `product_options`, `product_variants`,
+`professional_business_hours`, `professional_promos`, `professional_service_areas`,
+`professional_services`, `professionals`, `delivery_requests`, `order_items`, `orders`,
+`payment_proofs`, `products`, `professional_inquiries`, `professional_metrics_daily`,
+`professional_requests`, `profiles`, `reviews`, `seller_requests`, `support_tickets`.
+
+**Verificado:**
+- `get_advisors(type: performance)`: `multiple_permissive_policies` bajó de 49 a 0 hallazgos.
+- `get_advisors(type: security)`: sin cambios respecto a antes -- nada roto.
+- Pruebas contra la base real en transacciones con `ROLLBACK`: `anon` sin JWT no ve cupones con
+  `store_id` (privados); un `authenticated` cualquiera sin relación con ningún comercio tampoco.
+- No se probó en vivo el camino de escritura (`UPDATE` de un producto vía `products_update_seller`
+  específicamente), por no mutar datos reales -- la verificación fue algebraica (`qual_agg` ==
+  `check_agg` tras el fix, confirmado en el dry-run) más la garantía de que el `DO` block entero
+  hubiera fallado (y no aplicado nada, por ser una sola transacción) si algún `CREATE POLICY`
+  generado tuviera un error de sintaxis.
+
+**Sin tocar:** `unused_index` (25 INFO, subió de 5 porque los índices de la migración 103 todavía
+no tuvieron tráfico) -- con el catálogo chico de hoy, borrar un índice por poco uso es prematuro.
+Con esto, las tres categorías de performance que encontró el advisor al principio de la sesión
+quedan resueltas.

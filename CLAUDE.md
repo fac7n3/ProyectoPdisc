@@ -97,10 +97,27 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `(select auth.uid())`/`(select auth.jwt())` (mecánico, sin cambio de
   semántica -- mismo valor durante toda la consulta). Verificado con
   `EXPLAIN`: el filtro pasó a resolverse como `InitPlan` en vez de por fila.
-  **Sigue sin tocar, a propósito (alcance/riesgo -- consolidar policies sin
-  revisar cada caso puede abrir un hueco de acceso):**
-  `multiple_permissive_policies` (49 WARN). Detalle completo en el skill
-  `progreso-baradero-local`.
+  **Resuelto también en la misma sesión, a pedido del usuario:**
+  `multiple_permissive_policies` (49 WARN). Migración **105**: consolida,
+  tabla por tabla, todas las policies PERMISSIVE que se superponían para el
+  mismo rol+acción (ej. la del dueño + la del admin, o una policy `ALL` de
+  admin superpuesta con las específicas de SELECT/INSERT/UPDATE/DELETE) en
+  una sola por acción, uniendo sus condiciones con OR -- matemáticamente
+  idéntico a lo que Postgres ya hacía evaluando varias, solo que ahora se
+  evalúa una vez. Una policy `ALL` que se fusionaba con otra en algunas
+  acciones se partió en sus 4 acciones (donde no había nada que fusionar,
+  queda igual de sola pero como policy propia de esa acción). Encontrado y
+  corregido **antes** de aplicar: la primera versión perdía el `WITH CHECK`
+  implícito que Postgres le da a una policy `UPDATE` sin `WITH CHECK` propio
+  (usa su propio `USING`) al no incluirlo en la fusión -- confirmado contra
+  `pg_policy.polwithcheck`, no solo la documentación --, lo que habría
+  bloqueado a un vendedor identificado por `auth.jwt()` (en vez de la tabla
+  `profiles` o `store_staff`) actualizando su propio producto. Verificado
+  con `get_advisors` (0 hallazgos, contra 49 antes) y con pruebas contra la
+  base real en transacciones con ROLLBACK (anon no ve cupones privados,
+  ningún cliente ajeno ve cupones de otro comercio). Detalle completo,
+  incluida la lista de las 26 tablas tocadas y por qué es seguro para el rol
+  `anon`, en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
   a pedido del usuario: el comerciante las carga y el cliente elige antes de
   comprar. Migración **102** (aplicada a producción): `product_options` +
