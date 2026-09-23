@@ -13,6 +13,7 @@
  */
 import { supabase } from './auth-utils.js';
 import { formatFileSize, storedFileName } from './storage-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 
 const STATUS_LABELS = {
   open: 'Abierto',
@@ -790,7 +791,12 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
   cancelBtn.className = 'tkt-cancel';
   cancelBtn.textContent = 'Cancelar reclamo';
   cancelBtn.addEventListener('click', async () => {
-    if (!confirm('¿Cancelar este reclamo?')) return;
+    const ok = await confirmDialog('¿Cancelar este reclamo?', {
+      confirmText: 'Sí, cancelar',
+      cancelText: 'Volver',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await cancelTicket(ticket.id);
       showToast('Reclamo cancelado.', 'success');

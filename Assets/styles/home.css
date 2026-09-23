@@ -4523,6 +4523,108 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   }
 }
 
+/* ===== Confirm dialog propio (js/confirm-dialog.js) =====
+   Reemplaza el confirm() nativo del navegador -- cuadro gris sin estilo,
+   con la URL del sitio arriba -- por una tarjeta propia. Genérico: lo usa
+   cualquier página que importe el módulo, no solo "Contactar a soporte". */
+.bl-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 10500;
+  animation: bl-confirm-fade-in 0.15s ease;
+}
+@keyframes bl-confirm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bl-confirm-card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--bl-surface);
+  border-radius: var(--bl-radius-lg);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+  padding: 1.5rem;
+  animation: bl-confirm-pop-in 0.18s ease;
+}
+@keyframes bl-confirm-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bl-confirm-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.bl-confirm-msg {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--bl-text-secondary);
+}
+
+.bl-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.3rem;
+}
+
+.bl-confirm-btn {
+  border: 0;
+  border-radius: var(--bl-radius-pill);
+  padding: 0.55rem 1.2rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+.bl-confirm-btn:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+
+.bl-confirm-btn--cancel {
+  background: var(--bl-surface-alt);
+  color: var(--bl-text);
+}
+.bl-confirm-btn--cancel:hover {
+  background: var(--bl-border);
+}
+
+.bl-confirm-btn--confirm {
+  background: var(--bl-primary);
+  color: #fff;
+}
+.bl-confirm-btn--confirm:hover {
+  background: var(--bl-primary-dark);
+}
+
+.bl-confirm-btn--danger {
+  background: var(--bl-danger);
+  color: #fff;
+}
+.bl-confirm-btn--danger:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 600px) {
+  .bl-confirm-actions {
+    flex-direction: column-reverse;
+  }
+  .bl-confirm-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 .store-logo-skeleton {
   flex: 0 0 auto;
   width: 90px;
