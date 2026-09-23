@@ -4192,6 +4192,56 @@ si en el futuro hay que actualizar la versión, hay que repetir la copia manual 
 @fortawesome/fontawesome-free@<version>` en un scratch dir, copiar `css/all.min.css` +
 `webfonts/*.woff2`/`*.ttf` a `public/vendor/fontawesome/`).
 
+## 2026-09-23 — admin.html dejó de usar Font Awesome del todo (emojis en vez de íconos)
+
+Continuación de la entrada anterior. Se verificó del lado del servidor (con `web_fetch_vercel_url`
+contra `proyectopdisc.vercel.app`, no contra el sandbox de la sesión, que tiene la red restringida)
+que el autoalojado de Font Awesome estaba servido perfecto: `admin.html` con el `<link>` nuevo,
+`all.min.css` con 200, y `fa-solid-900.woff2` con 200 + `content-type: font/woff2` + los 156.400
+bytes exactos del archivo real. O sea, el servidor está bien — pero el usuario seguía viendo
+cuadrados en su pantalla después de eso. Sin acceso a su navegador no hay forma de seguir
+diagnosticando a ciegas (caché vieja, un bloqueador de contenido que filtra por nombre de archivo
+tipo "fontawesome"/"webfonts" sin importar el dominio, alguna extensión — quedó como sugerencia al
+usuario probar en incógnito). A pedido del usuario, en vez de seguir con hipótesis: **`admin.html`
+deja de usar Font Awesome directamente**, así el panel no depende de ninguna fuente de íconos
+externa ni autoalojada — imposible que vuelva a mostrar un cuadrado vacío, porque un emoji lo
+dibuja la fuente de emojis del sistema operativo, no una `@font-face` que hay que descargar.
+
+Los ~30 usos de `<i class="fa-solid fa-X">` de `pages/admin.html` (sidebar, topbar, botones
+"Refrescar"/"Agregar"/"Buscar") pasaron a `<i class="admin-emoji">EMOJI</i>` (nueva clase en
+`admin.css`, solo `font-style: normal` -- por las dudas, aunque el `font-style: italic` por default
+de `<i>` no afecta cómo se ve un emoji en ningún navegador moderno). Se sacó el `<link>` a
+`/vendor/fontawesome/css/all.min.css` de `admin.html` -- el resto del sitio (19 páginas) lo sigue
+usando igual que la entrada anterior, esto es específico de admin. El campo "Ícono (clase Font
+Awesome)" del formulario de categorías **no se tocó**: ese input guarda una clase de Font Awesome
+en la base para que la lean `comercios.html`/el mega-menú/etc, no se renderiza como ícono dentro de
+admin.html (la tabla de categorías solo la muestra como texto plano).
+
+En `js/admin.js`, los 23 lugares que creaban un `<i>` con `document.createElement` y le ponían una
+clase `fa-solid fa-X` (aprobar/rechazar, activar/desactivar, ver detalle, etc.) pasan a
+`className = 'admin-emoji'` + `textContent = EMOJI`. Las tarjetas de "Resumen general"
+(`loadGlobalMetrics`) cambian el campo `icon: 'fa-users'` del array de métricas por
+`emoji: '👥'` directo. Mapeo (mismo criterio en toda la sesión: el emoji más literal disponible,
+no uno "lindo"): ✅ check/activar, ❌ rechazar, 🚫 desactivar/suspender, 🗑️ borrar, 👁️/🙈
+mostrar/ocultar (no existe un emoji "ojo tachado" real), ℹ️ ver detalle, 💬 ver hilo, 📊🏪🛠️🏷️
+🎟️💊📞🛡️📦⭐🧾↩️🎧🐞📋⬅️☰🔗🔄➕🔍 para el resto de la navegación/acciones (uno por sección/botón).
+
+**Gotcha encontrado al hacerlo:** `buildAdminOnboardingSections()` (la tarjeta de bienvenida al
+panel) leía `navItem.querySelector('i')?.className` para armar el ícono de cada tarjeta -- con la
+clase ahora fija en `admin-emoji` para todos, todas las tarjetas hubieran mostrado el mismo ícono
+vacío. `showPanelOnboarding()` (`js/panel-onboarding-utils.js`), que es **compartido** con el panel
+de vendedor y el de profesional (esos dos siguen con Font Awesome de verdad, no se tocaron), ahora
+distingue: si el `icon` que le pasan empieza con `fa-` lo trata como clase de Font Awesome (como
+siempre), si no, asume que es un emoji literal y lo pone como `textContent` en vez de `className`.
+`buildAdminOnboardingSections()` ahora lee `.textContent` (el emoji) en vez de `.className`.
+
+Verificado con Playwright local (build real, sin red externa -- los emojis no dependen de ningún
+recurso, así que ni hacía falta): capturado el sidebar completo con los 16 emojis de navegación
+visibles y legibles, y confirmado por `getComputedStyle`/`textContent` que las 23 creaciones
+dinámicas de `js/admin.js` quedan con el emoji correcto en cada rama del ternario donde
+corresponde (activo/inactivo, oculto/visible). Tests (`npm test`) sin regresiones. `dist/`
+reconstruido.
+
 ## 2026-09-23 — índices faltantes en columnas de foreign key (performance)
 
 Sesión sin tarea puntual del usuario ("segui mejorando el proyecto"). Se corrió el advisor de

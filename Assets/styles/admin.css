@@ -22,6 +22,12 @@
   font-family: var(--bl-font);
 }
 
+/* Emojis en vez de íconos de Font Awesome: el panel no depende de ninguna
+   fuente de íconos, así que nunca puede mostrar un cuadrado vacío. */
+.admin-emoji {
+  font-style: normal;
+}
+
 /* ===========================================================
    SIDEBAR
    =========================================================== */

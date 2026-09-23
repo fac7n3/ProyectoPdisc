@@ -148,7 +148,13 @@ export function showPanelOnboarding({ panelKey, title, greeting, sections }) {
     card.className = 'panel-onboarding__card';
 
     const i = document.createElement('i');
-    i.className = `${icon} panel-onboarding__card-icon`;
+    if (icon.startsWith('fa-')) {
+      i.className = `${icon} panel-onboarding__card-icon`;
+    } else {
+      // Panel de admin: no usa Font Awesome, `icon` ya viene como emoji.
+      i.className = 'panel-onboarding__card-icon';
+      i.textContent = icon;
+    }
     i.setAttribute('aria-hidden', 'true');
 
     const body = document.createElement('div');

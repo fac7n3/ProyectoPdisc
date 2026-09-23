@@ -83,7 +83,8 @@ async function fetchRequests() {
       approveBtn.dataset.id = req.id;
       approveBtn.title = 'Aprobar';
       const checkIcon = document.createElement('i');
-      checkIcon.className = 'fa-solid fa-check';
+      checkIcon.className = 'admin-emoji';
+      checkIcon.textContent = '✅';
       approveBtn.appendChild(checkIcon);
       tdActions.appendChild(approveBtn);
 
@@ -92,7 +93,8 @@ async function fetchRequests() {
       rejectBtn.dataset.id = req.id;
       rejectBtn.title = 'Rechazar';
       const xIcon = document.createElement('i');
-      xIcon.className = 'fa-solid fa-xmark';
+      xIcon.className = 'admin-emoji';
+      xIcon.textContent = '❌';
       rejectBtn.appendChild(xIcon);
       tdActions.appendChild(rejectBtn);
     } else {
@@ -241,7 +243,8 @@ async function fetchProfessionalRequests() {
       approveBtn.className = 'action-btn btn-approve';
       approveBtn.title = 'Aprobar';
       const checkIcon = document.createElement('i');
-      checkIcon.className = 'fa-solid fa-check';
+      checkIcon.className = 'admin-emoji';
+      checkIcon.textContent = '✅';
       approveBtn.appendChild(checkIcon);
       approveBtn.addEventListener('click', async () => {
         if (!confirm(`¿Publicar a "${req.full_name}" en Contratar?`)) return;
@@ -253,7 +256,8 @@ async function fetchProfessionalRequests() {
       rejectBtn.className = 'action-btn btn-reject';
       rejectBtn.title = 'Rechazar';
       const xIcon = document.createElement('i');
-      xIcon.className = 'fa-solid fa-xmark';
+      xIcon.className = 'admin-emoji';
+      xIcon.textContent = '❌';
       rejectBtn.appendChild(xIcon);
       rejectBtn.addEventListener('click', async () => {
         if (!confirm(`¿Rechazar la solicitud de "${req.full_name}"?`)) return;
@@ -395,7 +399,8 @@ async function fetchProfessionals() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${pro.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
     const toggleIcon = document.createElement('i');
-    toggleIcon.className = pro.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = pro.is_active ? '🚫' : '✅';
     toggleBtn.appendChild(toggleIcon);
     toggleBtn.appendChild(document.createTextNode(pro.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
@@ -415,7 +420,8 @@ async function fetchProfessionals() {
     deleteBtn.className = 'action-btn btn-reject';
     deleteBtn.title = 'Borrar';
     const trashIcon = document.createElement('i');
-    trashIcon.className = 'fa-solid fa-trash';
+    trashIcon.className = 'admin-emoji';
+    trashIcon.textContent = '🗑️';
     deleteBtn.appendChild(trashIcon);
     deleteBtn.addEventListener('click', async () => {
       if (!confirm(`¿Borrar a "${pro.full_name}" del directorio?`)) return;
@@ -462,11 +468,11 @@ async function loadGlobalMetrics() {
   const totalSales = (paidOrders || []).reduce((sum, o) => sum + o.total_price, 0);
 
   const metrics = [
-    { label: 'Usuarios totales', value: (profiles || []).length, icon: 'fa-users', color: '#2563eb' },
-    { label: 'Vendedores', value: roleCounts.vendedor || 0, icon: 'fa-store', color: '#0891b2' },
-    { label: 'Comercios aprobados', value: storeCounts.approved || 0, icon: 'fa-circle-check', color: '#10b981' },
-    { label: 'Comercios suspendidos', value: storeCounts.suspended || 0, icon: 'fa-ban', color: '#ef4444' },
-    { label: 'Ventas totales', value: formatPrice(totalSales), icon: 'fa-sack-dollar', color: '#f59e0b' },
+    { label: 'Usuarios totales', value: (profiles || []).length, emoji: '👥', color: '#2563eb' },
+    { label: 'Vendedores', value: roleCounts.vendedor || 0, emoji: '🏪', color: '#0891b2' },
+    { label: 'Comercios aprobados', value: storeCounts.approved || 0, emoji: '✅', color: '#10b981' },
+    { label: 'Comercios suspendidos', value: storeCounts.suspended || 0, emoji: '🚫', color: '#ef4444' },
+    { label: 'Ventas totales', value: formatPrice(totalSales), emoji: '💰', color: '#f59e0b' },
   ];
 
   grid.textContent = '';
@@ -478,7 +484,8 @@ async function loadGlobalMetrics() {
     iconWrap.className = 'admin-metric-card__icon';
     iconWrap.style.setProperty('--m-color', m.color);
     const iconEl = document.createElement('i');
-    iconEl.className = `fa-solid ${m.icon}`;
+    iconEl.className = 'admin-emoji';
+    iconEl.textContent = m.emoji;
     iconEl.setAttribute('aria-hidden', 'true');
     iconWrap.appendChild(iconEl);
 
@@ -537,7 +544,8 @@ async function fetchCategories() {
     deleteBtn.className = 'action-btn btn-reject';
     deleteBtn.title = 'Borrar';
     const xIcon = document.createElement('i');
-    xIcon.className = 'fa-solid fa-trash';
+    xIcon.className = 'admin-emoji';
+    xIcon.textContent = '🗑️';
     deleteBtn.appendChild(xIcon);
     deleteBtn.addEventListener('click', async () => {
       if (!confirm(`¿Borrar la categoría "${cat.name}"? Los productos que la usaban quedarán sin rubro.`)) return;
@@ -640,7 +648,8 @@ async function fetchCoupons() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${coupon.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
     const toggleIcon = document.createElement('i');
-    toggleIcon.className = coupon.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = coupon.is_active ? '🚫' : '✅';
     toggleBtn.appendChild(toggleIcon);
     toggleBtn.appendChild(document.createTextNode(coupon.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
@@ -658,7 +667,8 @@ async function fetchCoupons() {
     deleteBtn.className = 'action-btn btn-reject';
     deleteBtn.title = 'Borrar';
     const xIcon = document.createElement('i');
-    xIcon.className = 'fa-solid fa-trash';
+    xIcon.className = 'admin-emoji';
+    xIcon.textContent = '🗑️';
     deleteBtn.appendChild(xIcon);
     deleteBtn.addEventListener('click', async () => {
       if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
@@ -754,7 +764,8 @@ async function fetchStoresForModeration() {
       const toggleBtn = document.createElement('button');
       toggleBtn.className = `action-btn ${isSuspended ? 'btn-reactivate' : 'btn-suspend'}`;
       const toggleIcon = document.createElement('i');
-      toggleIcon.className = isSuspended ? 'fa-solid fa-circle-check' : 'fa-solid fa-ban';
+      toggleIcon.className = 'admin-emoji';
+      toggleIcon.textContent = isSuspended ? '✅' : '🚫';
       toggleBtn.appendChild(toggleIcon);
       toggleBtn.appendChild(document.createTextNode(isSuspended ? ' Reactivar' : ' Suspender'));
       toggleBtn.addEventListener('click', async () => {
@@ -828,7 +839,8 @@ function setupProductSearch() {
       const toggleBtn = document.createElement('button');
       toggleBtn.className = `action-btn ${product.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
       const toggleIcon = document.createElement('i');
-      toggleIcon.className = product.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+      toggleIcon.className = 'admin-emoji';
+      toggleIcon.textContent = product.is_active ? '🚫' : '✅';
       toggleBtn.appendChild(toggleIcon);
       toggleBtn.appendChild(document.createTextNode(product.is_active ? ' Suspender' : ' Reactivar'));
       toggleBtn.addEventListener('click', async () => {
@@ -898,7 +910,8 @@ async function fetchPendingProofsAdmin() {
     viewBtn.style.background = 'var(--bl-primary)';
     viewBtn.style.color = 'white';
     const viewIcon = document.createElement('i');
-    viewIcon.className = 'fa-solid fa-eye';
+    viewIcon.className = 'admin-emoji';
+    viewIcon.textContent = '👁️';
     viewBtn.appendChild(viewIcon);
     viewBtn.appendChild(document.createTextNode(' Ver'));
     viewBtn.addEventListener('click', async () => {
@@ -925,7 +938,8 @@ async function fetchPendingProofsAdmin() {
     approveBtn.className = 'action-btn btn-approve';
     approveBtn.title = 'Confirmar';
     const checkIcon = document.createElement('i');
-    checkIcon.className = 'fa-solid fa-check';
+    checkIcon.className = 'admin-emoji';
+    checkIcon.textContent = '✅';
     approveBtn.appendChild(checkIcon);
     approveBtn.addEventListener('click', () => handleProofDecisionAdmin(proof.id, true));
     tdActions.appendChild(approveBtn);
@@ -934,7 +948,8 @@ async function fetchPendingProofsAdmin() {
     rejectBtn.className = 'action-btn btn-reject';
     rejectBtn.title = 'Rechazar';
     const xIcon = document.createElement('i');
-    xIcon.className = 'fa-solid fa-xmark';
+    xIcon.className = 'admin-emoji';
+    xIcon.textContent = '❌';
     rejectBtn.appendChild(xIcon);
     rejectBtn.addEventListener('click', () => handleProofDecisionAdmin(proof.id, false));
     tdActions.appendChild(rejectBtn);
@@ -1030,7 +1045,8 @@ async function fetchPharmacies() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${ph.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
     const toggleIcon = document.createElement('i');
-    toggleIcon.className = ph.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = ph.is_active ? '🚫' : '✅';
     toggleBtn.appendChild(toggleIcon);
     toggleBtn.appendChild(document.createTextNode(ph.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
@@ -1101,7 +1117,8 @@ async function fetchShifts() {
     const delBtn = document.createElement('button');
     delBtn.className = 'action-btn btn-suspend';
     const delIcon = document.createElement('i');
-    delIcon.className = 'fa-solid fa-trash';
+    delIcon.className = 'admin-emoji';
+    delIcon.textContent = '🗑️';
     delBtn.appendChild(delIcon);
     delBtn.appendChild(document.createTextNode(' Quitar'));
     delBtn.addEventListener('click', async () => {
@@ -1265,7 +1282,8 @@ async function fetchEmergencyContacts() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${contact.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
     const toggleIcon = document.createElement('i');
-    toggleIcon.className = contact.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = contact.is_active ? '🚫' : '✅';
     toggleBtn.appendChild(toggleIcon);
     toggleBtn.appendChild(document.createTextNode(contact.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
@@ -1285,7 +1303,8 @@ async function fetchEmergencyContacts() {
     deleteBtn.className = 'action-btn btn-reject';
     deleteBtn.title = 'Borrar';
     const trashIcon = document.createElement('i');
-    trashIcon.className = 'fa-solid fa-trash';
+    trashIcon.className = 'admin-emoji';
+    trashIcon.textContent = '🗑️';
     deleteBtn.appendChild(trashIcon);
     deleteBtn.addEventListener('click', async () => {
       if (!confirm(`¿Borrar "${contact.name}"?`)) return;
@@ -1389,7 +1408,8 @@ async function fetchReportedReviews() {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${review.is_hidden ? 'btn-reactivate' : 'btn-suspend'}`;
     const toggleIcon = document.createElement('i');
-    toggleIcon.className = review.is_hidden ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = review.is_hidden ? '👁️' : '🙈';
     toggleBtn.appendChild(toggleIcon);
     toggleBtn.appendChild(document.createTextNode(review.is_hidden ? ' Mostrar' : ' Ocultar'));
     toggleBtn.addEventListener('click', async () => {
@@ -1531,7 +1551,8 @@ async function fetchErrorLogs() {
     detailBtn.type = 'button';
     detailBtn.className = 'action-btn';
     const detailIcon = document.createElement('i');
-    detailIcon.className = 'fa-solid fa-circle-info';
+    detailIcon.className = 'admin-emoji';
+    detailIcon.textContent = 'ℹ️';
     detailBtn.appendChild(detailIcon);
     detailBtn.appendChild(document.createTextNode(' Ver detalle'));
     detailBtn.addEventListener('click', () => {
@@ -1632,7 +1653,8 @@ async function fetchSupportTickets() {
     replyBtn.type = 'button';
     replyBtn.style.cssText = 'display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.35rem 0.7rem; border: 1px solid var(--bl-primary, #2563eb); color: var(--bl-primary, #2563eb); background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;';
     const replyIcon = document.createElement('i');
-    replyIcon.className = 'fa-solid fa-comments';
+    replyIcon.className = 'admin-emoji';
+    replyIcon.textContent = '💬';
     replyBtn.appendChild(replyIcon);
     replyBtn.appendChild(document.createTextNode('Ver hilo'));
     replyBtn.addEventListener('click', () => toggleAdminTicketThread(tr, ticket));
@@ -1812,7 +1834,8 @@ async function fetchAuditLog() {
     detailBtn.type = 'button';
     detailBtn.className = 'action-btn';
     const detailIcon = document.createElement('i');
-    detailIcon.className = 'fa-solid fa-circle-info';
+    detailIcon.className = 'admin-emoji';
+    detailIcon.textContent = 'ℹ️';
     detailBtn.appendChild(detailIcon);
     detailBtn.appendChild(document.createTextNode(' Ver detalle'));
     detailBtn.addEventListener('click', () => {
@@ -1984,7 +2007,7 @@ function buildAdminOnboardingSections() {
     .map((navItem) => {
       const key = navItem.dataset.target;
       const section = document.querySelector(`.admin-section[data-section="${key}"]`);
-      const icon = navItem.querySelector('i')?.className || 'fa-solid fa-gear';
+      const icon = navItem.querySelector('i')?.textContent || '⚙️';
       const title = section?.querySelector('.admin-section__title')?.textContent?.trim();
       const desc = section?.querySelector('.admin-section__subtitle')?.textContent?.trim();
       return title ? { icon, title, desc: desc || '' } : null;
