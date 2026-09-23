@@ -4191,3 +4191,197 @@ copia `public/` tal cual). No se agregó `@fortawesome/fontawesome-free` como de
 si en el futuro hay que actualizar la versión, hay que repetir la copia manual (`npm install
 @fortawesome/fontawesome-free@<version>` en un scratch dir, copiar `css/all.min.css` +
 `webfonts/*.woff2`/`*.ttf` a `public/vendor/fontawesome/`).
+
+## 2026-09-23 — índices faltantes en columnas de foreign key (performance)
+
+Sesión sin tarea puntual del usuario ("segui mejorando el proyecto"). Se corrió el advisor de
+performance de Supabase (`get_advisors`, `type: performance`) como punto de partida — mismo
+criterio que las auditorías de seguridad "por áreas" de sesiones anteriores, pero del lado de
+rendimiento. Encontró 4 categorías: `unindexed_foreign_keys` (20), `auth_rls_initplan` (115, WARN),
+`unused_index` (5, INFO) y `multiple_permissive_policies` (49, WARN).
+
+Se resolvió solo la primera: 20 columnas de foreign key sin índice propio (`admin_audit_log.admin_id`,
+`coupons.store_id`, `error_logs.user_id`, `favorite_stores.store_id`, `order_items.order_id`/
+`product_id`, `orders.client_id`/`store_id`, `payment_proofs.confirmed_by`,
+`pharmacy_duty_weeks.pharmacy_id`, `pharmacy_shifts.pharmacy_id`, `products.category_id`/`store_id`,
+`professional_requests.user_id`, `professionals.owner_id`, `reviews.client_id`,
+`seller_requests.user_id`, `stock_alerts.client_id`, `stores.owner_id`,
+`support_ticket_messages.sender_id`). Sin un índice, Postgres hace seq scan en cada JOIN, cada
+policy de RLS que filtra por esa columna (el patrón más común del proyecto: "productos de esta
+tienda", "pedidos de este cliente") y cada borrado en cascada del lado referenciado. Hoy no se nota
+con los catálogos chicos que tiene el proyecto, pero es la clase de cosa que conviene tener resuelta
+antes de que el volumen de datos lo vuelva visible (el objetivo del proyecto es lanzamiento real).
+Migración `db/schema/103_add_missing_fk_indexes.sql`, aplicada en producción vía el MCP de Supabase.
+Verificado con un segundo `get_advisors`: el lint `unindexed_foreign_keys` bajó a 0 hallazgos, sin
+ningún otro cambio negativo. Es puramente aditivo (`create index if not exists`) — no toca RLS, no
+toca código de `js/`, no cambia el resultado de ninguna consulta existente, solo cómo se resuelve.
+
+**Las otras tres categorías del advisor quedaron sin tocar, a propósito, por alcance y riesgo:**
+- `auth_rls_initplan` (115 WARN) — muchas policies de RLS llaman `auth.uid()`/`auth.jwt()` directo
+  en vez de `(select auth.uid())`, así que Postgres los re-evalúa fila por fila en vez de una vez
+  por query. Es una optimización real y conocida (patrón estándar de Supabase), pero reescribir 115
+  policies a mano es un cambio grande y no es tan mecánico como parece -- cada una hay que leerla
+  entera para no alterar la condición, y conviene hacerlo con tiempo dedicado a probarlo, no
+  de forma apurada en una sesión sin pedido concreto.
+- `multiple_permissive_policies` (49 WARN) — varias tablas tienen más de una policy permisiva para
+  el mismo rol+acción (ej. policy del dueño + policy del admin), que Postgres tiene que evaluar
+  todas con OR. A veces es intencional (separación clara admin/dueño) y consolidarlas sin revisar
+  cada caso puede introducir un hueco de acceso -- mismo motivo que arriba, requiere revisión
+  dedicada tabla por tabla.
+- `unused_index` (5 INFO, subió a 25 con los índices nuevos de arriba, que todavía no tuvieron
+  tráfico) -- no se tocó, borrar un índice por poco uso con un catálogo tan chico como el de hoy es
+  prematuro; hay que revisarlo con datos de uso real más adelante.
+
+Quedan como próximo candidato si se retoma este ángulo de performance.
+
+## 2026-09-23 (continuación) — auth_rls_initplan: policies de RLS sin re-evaluar por fila
+
+Pedido explícito del usuario ("segui con el auth_rls_initplan también"), siguiendo a la entrada de
+arriba (índices de FK, migración 103) en la misma sesión.
+
+Las 115 policies flageadas por el advisor llamaban `auth.uid()`/`auth.jwt()` directo dentro de su
+`USING`/`WITH CHECK` (ej. `owner_id = auth.uid()`, `COALESCE((auth.jwt()->'app_metadata'->>'role'),
+'cliente') = 'admin'`). Como esas funciones son `STABLE` y no `IMMUTABLE`, Postgres no las puede
+tratar como constantes de toda la consulta -- las re-evalúa **fila por fila**. La recomendación
+estándar de Supabase (documentada en su guía de RLS) es envolverlas en un subselect escalar:
+`owner_id = (select auth.uid())`. El planner entonces las resuelve como un `InitPlan`, una sola vez
+por consulta, y reusa el resultado para todas las filas.
+
+**Cómo se aplicó, sin transcribir ~90 `ALTER POLICY` a mano:** un `DO` block (migración
+`db/schema/104_optimize_rls_auth_calls.sql`) que la propia base ejecuta:
+
+1. Lee `pg_policies` filtrando `schemaname = 'public'` y `qual`/`with_check` que matcheen
+   `auth\.(uid|jwt|role|email)\(\)` sin envolver.
+2. Arma el `ALTER POLICY %I ON public.%I USING (...) WITH CHECK (...)` con `format()`, aplicando
+   `regexp_replace(expr, 'auth\.(uid|jwt|role|email)\(\)', '(select auth.\1())', 'g')` sobre el
+   `qual`/`with_check` de cada policy (solo agrega la cláusula `USING`/`WITH CHECK` si esa policy ya
+   la tenía -- una policy de solo INSERT no gana un `USING` que no tenía, y viceversa).
+3. `EXECUTE` cada statement generado, todo dentro de la misma transacción (todo o nada -- si un
+   `ALTER POLICY` fallara, no queda nada aplicado a medias).
+
+**Antes de aplicarlo a producción** se corrió el mismo `SELECT` (sin el `DO`/`EXECUTE`) como
+dry-run para leer los ~90 `ALTER POLICY` que iba a generar y revisarlos a ojo -- entre otras cosas,
+confirmar que una policy con `auth.uid()` repetido dos veces en el mismo `qual` (ej.
+`products_delete_own_seller_or_admin`, que lo usa una vez para `seller_id = auth.uid()` y otra
+dentro de un `EXISTS` sobre `profiles`) envolvía las dos ocurrencias por separado sin romper el
+paréntesis que ya tenían alrededor.
+
+**Ejemplo real, del `qual` de `admin_audit_log_select_admin`:**
+```
+-- antes
+(COALESCE(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text), 'cliente'::text) = 'admin'::text)
+-- después
+(COALESCE((((select auth.jwt()) -> 'app_metadata'::text) ->> 'role'::text), 'cliente'::text) = 'admin'::text)
+```
+Mismo valor, misma columna que compara -- el único cambio es que ahora se evalúa una vez, no una vez
+por fila de `admin_audit_log`.
+
+**Gotcha de verificación:** Postgres normaliza el texto guardado de una policy al hacer `ALTER
+POLICY` -- no queda literal `(select auth.uid())` como se escribió, sino
+`( SELECT auth.uid() AS uid)` (mayúsculas, espacio, alias automático). El primer chequeo de
+"¿quedó algo sin envolver?" comparando contra el string literal en minúscula dio 115 falsos
+positivos por este motivo -- hubo que repetirlo con `!~* 'select\s+auth\.'` (case-insensitive) para
+que diera 0 de verdad.
+
+**Verificado:**
+- `get_advisors(type: performance)` después de aplicar: el lint `auth_rls_initplan` ya no aparece
+  (antes eran 115 hallazgos WARN).
+- `EXPLAIN (costs off)` de una consulta real contra `favorite_stores` con rol `authenticated` y
+  `request.jwt.claims` simulado: el filtro de la policy aparece como `(InitPlan 1).col1` en vez de
+  llamar a la función en el nodo `Filter` de cada fila -- confirma que el fix funciona como se
+  espera, no solo que la sintaxis es válida.
+- `get_advisors(type: security)` sin cambios respecto a antes de las migraciones 103/104 -- ningún
+  hallazgo nuevo, nada roto.
+
+**Sin tocar, a propósito:** `multiple_permissive_policies` (49 WARN) queda igual que se documentó
+en la entrada de arriba -- consolidar dos policies permisivas del mismo rol+acción (ej. la del
+dueño + la del admin) sin revisar cada tabla puede abrir un hueco de acceso que no vale la pena
+correr en una sesión sin ese pedido específico.
+
+## 2026-09-23 (continuación 2) — multiple_permissive_policies: consolidar RLS duplicadas
+
+Pedido explícito del usuario ("segui con el multiple_permissive_policies también"), tercer y
+último lint de performance que quedaba de esta sesión (después de 103, índices de FK, y 104,
+auth_rls_initplan).
+
+**El problema:** 49 hallazgos de tablas con más de una policy PERMISSIVE para el mismo rol
+(`authenticated`) y la misma acción (SELECT/INSERT/UPDATE/DELETE) -- ej. `coupons_all_admin`
+(policy `ALL` del admin) superpuesta con `coupons_select_own_store`, `coupons_select_public`,
+etc. Postgres evalúa TODAS las que apliquen y las combina con OR -- funcionalmente correcto, pero
+cada policy de más es una subconsulta más por fila.
+
+**Por qué es seguro fusionar:** para el mismo rol+acción, "pasa si A OR B OR C" con 3 policies
+separadas es matemáticamente idéntico a una sola policy con la condición `(A) OR (B) OR (C)` ya
+escrita -- Postgres no cambia una sola fila visible/escribible, solo cuántas veces evalúa la
+subconsulta. La dificultad no es la fusión en sí, es hacerla bien en presencia de policies `FOR
+ALL` (participan en las 4 acciones a la vez) y de defaults implícitos de Postgres que no se ven en
+`pg_policies` a simple vista.
+
+**El algoritmo** (implementado como una consulta con CTEs que arma texto `ALTER`/`DROP`/`CREATE
+POLICY`, corrido primero como dry-run para revisar cada statement generado antes de ejecutar nada):
+
+1. Por cada tabla+acción, juntar todas las policies PERMISSIVE de rol `authenticated` cuyo `cmd`
+   sea esa acción **o** `ALL` (una `ALL` cuenta para las 4).
+2. Si hay más de una, o si alguna es `ALL` (aunque sea la única para esa acción puntual -- si se
+   va a partir la `ALL` para fusionarla en OTRA acción, hay que reconstruir esta acción también o
+   se pierde el acceso), generar una policy nueva `<tabla>_<accion>_merged` con:
+   - `USING`: OR de los `qual` de todas las que contribuyen (solo para SELECT/DELETE/UPDATE).
+   - `WITH CHECK`: OR de los `with_check` (solo para INSERT/UPDATE).
+   - Roles: la unión de los roles de todas las que contribuyen -- si alguna incluía `anon` (las de
+     lectura pública), la fusionada también, nunca se angosta.
+   - Borrar las policies originales que quedaron cubiertas.
+3. Ejecutar todo en un solo `DO` block (mismo patrón que la migración 104): la base genera y
+   ejecuta los `DROP POLICY`/`CREATE POLICY`, en una sola transacción.
+
+**Por qué es seguro para `anon`:** cuando una fusión incluye una policy pública
+(`*_select_public`, roles `{anon,authenticated}`) junto con condiciones de dueño/admin
+(`auth.uid()`, `auth.jwt()`), la fusionada queda con esos mismos roles. Para una sesión anónima
+`auth.uid()` es `NULL` y `auth.jwt()` es `NULL` (`COALESCE` da `'cliente'`), así que esas cláusulas
+ya daban `false` antes y siguen dando `false` -- no se filtra nada nuevo, la fusión solo evita
+evaluarlas dos veces. Verificado explícitamente contra la base real (`stranger` autenticado sin
+relación con ningún comercio: 0 cupones privados visibles; `anon`: 0 cupones privados visibles).
+
+**El bug real que apareció al construir esto (corregido ANTES de aplicar, no después):** la
+primera versión del generador solo aplicaba "si falta `WITH CHECK`, Postgres usa el `USING`" al
+fusionar policies `ALL` -- pero **ese mismo default de Postgres aplica también a una policy
+`UPDATE` sola sin `WITH CHECK` explícito**, no solo a `ALL`. Encontrado comparando
+`qual`/`with_check` esperados contra lo que el generador realmente producía para
+`orders_update_staff`/`orders_update_store_or_admin`/`products_update_seller`/
+`payment_proofs_update_*` -- las cuatro tenían `USING` pero ningún `WITH CHECK` propio, y **no
+heredaban nada** en la primera versión del merge porque el filtro que decidía qué contribuye al
+`WITH CHECK` fusionado solo miraba `with_check is not null OR cmd = 'ALL'`, dejando afuera a estas
+cuatro (`cmd = 'UPDATE'`, no `ALL`). Confirmado contra `pg_policy.polwithcheck` directo (no solo
+la documentación) que en Postgres real, sin `WITH CHECK` explícito, una policy `UPDATE` **sí**
+usa su propio `USING` como cheque -- es el mismo comportamiento que `ALL`, documentado pero fácil
+de pasar por alto. El síntoma que esto habría causado: un vendedor cuyo producto pasa el `USING`
+fusionado por el camino de `products_update_seller` (identificado por `auth.jwt()`, no por la
+tabla `profiles` ni por `store_staff`) hubiera visto la fila **visible para el UPDATE pero
+rechazada al escribir** ("new row violates row-level security policy"), porque el `WITH CHECK`
+fusionado le faltaba esa cláusula. Corregido ampliando el fallback a `cmd in ('ALL', 'UPDATE')`
+antes de aplicar nada a producción -- se detectó en la revisión manual del dry-run, comparando
+`qual_agg`/`check_agg` de `orders`/`payment_proofs`/`products` UPDATE (debían ser idénticos entre
+sí, porque cada policy contribuyente vale lo mismo para ambos, y no lo eran hasta el fix).
+
+**Las 26 tablas tocadas**, migración `db/schema/105_consolidate_permissive_policies.sql`:
+`coupons`, `emergency_contacts`, `pharmacies`, `pharmacy_duty_weeks`, `pharmacy_shifts`,
+`product_images`, `product_option_values`, `product_options`, `product_variants`,
+`professional_business_hours`, `professional_promos`, `professional_service_areas`,
+`professional_services`, `professionals`, `delivery_requests`, `order_items`, `orders`,
+`payment_proofs`, `products`, `professional_inquiries`, `professional_metrics_daily`,
+`professional_requests`, `profiles`, `reviews`, `seller_requests`, `support_tickets`.
+
+**Verificado:**
+- `get_advisors(type: performance)`: `multiple_permissive_policies` bajó de 49 a 0 hallazgos.
+- `get_advisors(type: security)`: sin cambios respecto a antes -- nada roto.
+- Pruebas contra la base real en transacciones con `ROLLBACK`: `anon` sin JWT no ve cupones con
+  `store_id` (privados); un `authenticated` cualquiera sin relación con ningún comercio tampoco.
+- No se probó en vivo el camino de escritura (`UPDATE` de un producto vía `products_update_seller`
+  específicamente), por no mutar datos reales -- la verificación fue algebraica (`qual_agg` ==
+  `check_agg` tras el fix, confirmado en el dry-run) más la garantía de que el `DO` block entero
+  hubiera fallado (y no aplicado nada, por ser una sola transacción) si algún `CREATE POLICY`
+  generado tuviera un error de sintaxis.
+
+**Sin tocar:** `unused_index` (25 INFO, subió de 5 porque los índices de la migración 103 todavía
+no tuvieron tráfico) -- con el catálogo chico de hoy, borrar un índice por poco uso es prematuro.
+Con esto, las tres categorías de performance que encontró el advisor al principio de la sesión
+quedan resueltas.
