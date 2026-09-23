@@ -168,21 +168,24 @@
         </button>
       </section>
 
-      <!-- Mosaico de banners promocionales. Sin destino todavía (por ahora
-           solo abren su imagen ampliada, ver initPromoBannerLightbox en
-           home.js). -->
+      <!-- Mosaico de banners promocionales. Cada banner es un espacio
+           (data-promo-slot) que el admin le asigna a un comercio (tabla
+           home_promos, migración 108): con promo cargada, loadHomePromos() en
+           home.js le pone la imagen del comercio y el click lleva a su
+           publicación. Sin promo, queda el banner fijo de abajo, que solo abre
+           su imagen ampliada. -->
       <section class="promo-mosaic" aria-label="Promociones">
         <div class="promo-mosaic__grid">
-          <div class="promo-banner promo-banner--a" role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano">
+          <div class="promo-banner promo-banner--a" data-promo-slot="mosaic_a" role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano">
             <span class="promo-banner__eyebrow">Promoción</span>
             <span class="promo-banner__title">Bebidas para el verano</span>
           </div>
           <div class="promo-mosaic__side">
-            <div class="promo-banner promo-banner--b" role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas">
+            <div class="promo-banner promo-banner--b" data-promo-slot="mosaic_b" role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas">
               <span class="promo-banner__eyebrow">Combos</span>
               <span class="promo-banner__title">Combo hamburguesas</span>
             </div>
-            <div class="promo-banner promo-banner--c" role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas">
+            <div class="promo-banner promo-banner--c" data-promo-slot="mosaic_c" role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas">
               <span class="promo-banner__eyebrow">Oferta del día</span>
               <span class="promo-banner__title">2x1 en gaseosas</span>
             </div>
@@ -368,17 +371,18 @@
       <!-- Segundo mosaico de banners: mismo estilo de color plano que el de
            arriba (promo-mosaic), pero distribución distinta a propósito —
            uno ancho arriba + dos parejas abajo, en vez de uno grande a un
-           costado + dos apiladas al otro. Sin destino ni imagen todavía. -->
+           costado + dos apiladas al otro. Mismos espacios asignables que el
+           de arriba (data-promo-slot). -->
       <section class="promo-mosaic-2" aria-label="Más promociones">
         <div class="promo-mosaic-2__grid">
-          <div class="promo-banner-2 promo-banner-2--wide promo-banner-2--d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
+          <div class="promo-banner-2 promo-banner-2--wide promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
             <span class="promo-banner__eyebrow">Novedades</span>
           </div>
-          <div class="promo-banner-2 promo-banner-2--e">
+          <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e">
             <span class="promo-banner__eyebrow">Envíos</span>
             <span class="promo-banner__title">Espacio para un banner</span>
           </div>
-          <div class="promo-banner-2 promo-banner-2--f">
+          <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f">
             <span class="promo-banner__eyebrow">Comercios</span>
             <span class="promo-banner__title">Espacio para otro banner</span>
           </div>

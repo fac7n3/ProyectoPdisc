@@ -4,6 +4,7 @@ import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartBu
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
+import { isPromoLive, promoHref, promoAriaLabel } from './home-promos-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -728,21 +729,26 @@ function getBannerImageUrl(banner) {
 }
 
 /**
- * Lightbox de los banners promocionales del home: click/Enter/Espacio en un
- * banner con foto abre la imagen ampliada (ver .promo-lightbox-overlay en
- * home.css). Los banners de color plano sin `data-lightbox-alt` (todavía sin
- * imagen) quedan afuera, no son clickeables.
+ * Banners promocionales del home: click/Enter/Espacio en un banner
+ *  - con promo de un comercio cargada (data-promo-href, lo pone
+ *    loadHomePromos) => va a la publicación del comercio;
+ *  - con foto fija (data-lightbox-alt) => abre la imagen ampliada (ver
+ *    .promo-lightbox-overlay en home.css);
+ *  - sin ninguna de las dos (espacio libre de color plano) => nada.
+ * Se decide en el momento del click, así da igual si las promos terminaron de
+ * cargar antes o después de cablear los listeners.
  */
-function initPromoBannerLightbox() {
+function initPromoBanners() {
   const overlay = document.getElementById('promo-lightbox');
   const img = document.getElementById('promo-lightbox-img');
   const closeBtn = document.getElementById('promo-lightbox-close');
-  const banners = document.querySelectorAll('[data-lightbox-alt]');
-  if (!overlay || !img || !closeBtn || !banners.length) return;
+  const banners = document.querySelectorAll('[data-promo-slot]');
+  if (!banners.length) return;
 
   let lastTrigger = null;
 
   const openLightbox = (banner) => {
+    if (!overlay || !img || !closeBtn) return;
     lastTrigger = banner;
     img.src = getBannerImageUrl(banner);
     img.alt = banner.dataset.lightboxAlt || '';
@@ -756,16 +762,25 @@ function initPromoBannerLightbox() {
     if (lastTrigger) lastTrigger.focus();
   };
 
+  const activate = (banner) => {
+    if (banner.dataset.promoHref) {
+      window.location.href = banner.dataset.promoHref;
+    } else if (banner.dataset.lightboxAlt) {
+      openLightbox(banner);
+    }
+  };
+
   banners.forEach((banner) => {
-    banner.addEventListener('click', () => openLightbox(banner));
+    banner.addEventListener('click', () => activate(banner));
     banner.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        openLightbox(banner);
+        activate(banner);
       }
     });
   });
 
+  if (!overlay || !closeBtn) return;
   closeBtn.addEventListener('click', closeLightbox);
   // Click en el fondo (afuera de la imagen/botón) también cierra.
   overlay.addEventListener('click', (e) => {
@@ -776,13 +791,67 @@ function initPromoBannerLightbox() {
   });
 }
 
+/**
+ * Pinta en cada espacio del mosaico la promo del comercio que el admin le
+ * asignó (tabla home_promos, migración 108). Un espacio sin promo "viva"
+ * (ver isPromoLive) no se toca: sigue el banner fijo del HTML/CSS. Si la
+ * consulta falla también quedan los fijos -- es decoración, no vale la pena
+ * mostrar un error en la portada.
+ */
+async function loadHomePromos() {
+  const banners = document.querySelectorAll('[data-promo-slot]');
+  if (!banners.length) return;
+
+  const { data, error } = await supabase
+    .from('home_promos')
+    .select('slot, store_id, product_id, image_url, title, is_active, stores(name, status), products(is_active)')
+    .eq('is_active', true)
+    .not('store_id', 'is', null)
+    .not('image_url', 'is', null);
+  if (error) {
+    console.error('Error al cargar las promociones del home:', error);
+    return;
+  }
+
+  const bySlot = new Map((data || []).filter(isPromoLive).map((p) => [p.slot, p]));
+
+  banners.forEach((banner) => {
+    const promo = bySlot.get(banner.dataset.promoSlot);
+    if (!promo) return;
+
+    // La imagen del comercio ya trae su propio texto: el rótulo fijo del
+    // banner ("Combos", "Espacio para un banner"...) se reemplaza por el
+    // nombre del comercio + el título de la promo, si cargó uno.
+    banner.textContent = '';
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'promo-banner__eyebrow';
+    eyebrow.textContent = promo.stores.name;
+    banner.appendChild(eyebrow);
+    if (promo.title) {
+      const title = document.createElement('span');
+      title.className = 'promo-banner__title';
+      title.textContent = promo.title;
+      banner.appendChild(title);
+    }
+
+    banner.style.setProperty('--promo-img', `url("${encodeURI(promo.image_url)}")`);
+    banner.classList.add('is-store-promo');
+    banner.dataset.promoHref = promoHref(promo);
+    delete banner.dataset.lightboxAlt;
+    banner.setAttribute('role', 'link');
+    banner.setAttribute('tabindex', '0');
+    banner.setAttribute('aria-label', promoAriaLabel(promo));
+  });
+}
+
 // Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
   initScrollTop();
   initNavbarScroll();
   initHeroCarousel();
   initHeroExploreCta();
-  initPromoBannerLightbox();
+  initPromoBanners();
+  loadHomePromos();
   initNearbyMap();
   updateCartBadge();
 

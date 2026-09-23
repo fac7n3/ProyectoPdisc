@@ -85,6 +85,9 @@
               <button type="button" class="admin-nav__item" data-target="emergency-contacts">
                 <i class="admin-emoji" aria-hidden="true">📞</i><span>Servicios</span>
               </button>
+              <button type="button" class="admin-nav__item" data-target="home-promos">
+                <i class="admin-emoji" aria-hidden="true">📣</i><span>Promos del inicio</span>
+              </button>
             </div>
 
             <div class="admin-nav__group">
@@ -475,6 +478,18 @@
                     </table>
                   </div>
                 </div>
+              </section>
+
+              <!-- ===== Promos del inicio (mosaicos de banners del home, tabla home_promos) ===== -->
+              <section class="admin-section" data-section="home-promos">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Promos del inicio</h2>
+                    <p class="admin-section__subtitle">Elegí qué comercio puede usar cada espacio de banner del inicio. El comercio carga la imagen y la publicación desde su panel ("Promo en el inicio"), o la cargás vos acá. Al hacer click en el banner, el vecino va directo a esa publicación.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-home-promos"><i class="admin-emoji" aria-hidden="true">🔄</i> Refrescar</button>
+                </div>
+                <div class="hp-grid" id="home-promos-grid"></div>
               </section>
 
               <!-- ===== Moderación · Comercios ===== -->

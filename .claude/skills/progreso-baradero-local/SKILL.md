@@ -4538,3 +4538,46 @@ horizontal. Mis compras y el form del vendedor no se caminaron logueados en el n
   desbloquea; con alias: sin aviso, form abre).
 - **Ojo:** hoy solo Beruru tiene alias — los otros 16 comercios no pueden publicar productos nuevos hasta
   cargarlo (sus productos actuales siguen a la venta).
+## 2026-09-23 — Promos de comercios en los banners del inicio (click → publicación)
+
+A pedido del usuario (captura del lightbox del "Combo hamburguesas"): al tocar
+un banner del inicio tiene que llevar a la publicación del vendedor, y los
+admins eligen qué comercio puede usar esos espacios.
+
+- **Migración 108** (`db/schema/108_home_promos.sql`; en Supabase quedó registrada como `107_home_promos`, se renombró al mergear porque `main` ya tenía `107_require_transfer_alias_for_products.sql`) (**aplicada a
+  producción**): tabla `home_promos`, una fila fija por espacio del mosaico
+  (`mosaic_a`..`mosaic_f`, sembradas; sin policy de INSERT/DELETE — "quitar"
+  es poner `store_id` en NULL). Columnas: `store_id` (lo elige el admin),
+  `product_id` (a dónde lleva el click), `image_url`, `title` (≤60),
+  `is_active`. Lectura pública; UPDATE para admin **o** dueño del comercio
+  asignado. Trigger `home_promos_guard`: el dueño no puede cambiar
+  `store_id`/`is_active`; la publicación tiene que ser del comercio del
+  espacio (para todos, admin incluido); si el admin cambia el comercio se
+  limpian imagen/publicación/título del anterior. Bucket público
+  `home-promos`, paths `{slot}/{ts}.{ext}`; subir/borrar: admin o dueño del
+  comercio asignado a ese slot. Probado contra la base real con un `DO` que
+  termina en `RAISE` (todo se deshace): admin asigna ✓, producto ajeno
+  bloqueado (admin y dueño) ✓, dueño edita ✓, dueño apaga/cambia comercio
+  bloqueado ✓, dueño en espacio ajeno 0 filas ✓, otro vendedor 0 filas ✓,
+  anon lee 6 / update 0 ✓, reasignar limpia ✓.
+- **Home** (`js/home.js`): `loadHomePromos()` pinta en cada
+  `[data-promo-slot]` la promo "viva" (activa + comercio `approved` +
+  imagen, `isPromoLive`) con `--promo-img` + `.is-store-promo` (CSS en
+  `home.css`), rótulo = nombre del comercio + título. `initPromoBanners()`
+  reemplaza a `initPromoBannerLightbox()` y decide al hacer click: con
+  `data-promo-href` navega; con `data-lightbox-alt` abre el lightbox como
+  antes; sin nada, no hace nada. Destino (`promoHref`): la publicación si
+  sigue activa, si no la página del comercio. Espacio sin promo = banner
+  fijo de siempre, sin cambios.
+- **Editor compartido** `js/home-promos-editor.js` (`buildPromoEditorCard`,
+  modo `admin`/`seller`), estilos `.hp-*` al final de `home.css` (lo cargan
+  admin y vender). Vista previa con FileReader (`data:`), no `blob:` — la
+  CSP de las páginas no permite `blob:` en `img-src`.
+- **Admin**: sección "Promos del inicio" (grupo Catálogo), oculta al
+  moderador. **Vendedor**: "Promo en el inicio" en Ventas, solo dueño
+  (`mc-navitem--owner`), con estado vacío si no tiene espacio.
+- Lógica pura + tests: `js/home-promos-utils.js` (15 asserts). Playwright
+  sobre el build (con Supabase mockeado y sesión simulada): 10 checks del
+  home, 7 del admin, 6 del vendedor.
+- **No incluido:** el carrusel grande del hero sigue fijo (no es un espacio
+  asignable). Si se quiere, el mismo esquema se extiende agregando slots.
