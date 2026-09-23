@@ -4242,6 +4242,45 @@ dinámicas de `js/admin.js` quedan con el emoji correcto en cada rama del ternar
 corresponde (activo/inactivo, oculto/visible). Tests (`npm test`) sin regresiones. `dist/`
 reconstruido.
 
+## 2026-09-23 — Resumen general del admin: rediseño visual + panel "Necesita tu atención"
+
+A pedido del usuario ("que se vea más estético"). Las 5 tarjetas de métricas
+(`loadGlobalMetrics()`) ya existían pero eran chatas: ícono plano sin fondo, número y label del
+mismo peso visual. Ahora cada tarjeta tiene una franja de color arriba (`::before`, 3px, del color
+de la métrica), el ícono va en una placa con degradé + sombra interior sutil del mismo color, el
+número sube a 1.75rem/800 y el label pasa a mayúsculas chicas con letter-spacing (patrón típico de
+dashboard). **Gotcha de CSS variables:** `--m-color` se seteaba en `.admin-metric-card__icon`
+(el div del ícono), no en la tarjeta -- el nuevo `::before` de la franja de color es hijo directo
+de `.admin-metric-card`, no del ícono, así que no heredaba la variable. Se movió el
+`style.setProperty('--m-color', ...)` a la tarjeta (`card`) en vez del `iconWrap`; ambos (el
+`::before` y el ícono) la heredan igual porque las custom properties cascadean a todos los
+descendientes desde donde se setean.
+
+Se agregó también un panel nuevo debajo de las tarjetas, **"Necesita tu atención"**
+(`renderMetricsAttention()`, contenedor `#metrics-attention` en `admin.html`): 6 contadores en
+tiempo real de lo que le falta revisión al admin -- solicitudes de comercios y de profesionales
+pendientes, comprobantes de transferencia por confirmar, reseñas reportadas sin resolver, reclamos
+de soporte abiertos (`open`/`in_progress`) y arrepentimientos sin resolver. Cada fila es un botón
+que llama a `showSection(key)` (la misma función que usa el sidebar) para saltar directo a esa
+sección. Si no hay nada pendiente en ningún lado, se muestra un único mensaje ("Todo al día 🎉") en
+vez de seis filas en cero -- se sigue el mismo criterio que otras partes del panel (estados vacíos
+con un mensaje, no una lista de ceros).
+
+Las 6 consultas nuevas usan `{ count: 'exact', head: true }` (patrón ya usado en
+`notifications-utils.js`/`perfil.js`/`vender.js`/`profesional.js`): traen solo el número, no las
+filas, así que no pesan aunque se disparen en paralelo con las 3 consultas que ya traía la sección
+(`Promise.all` con 9 llamadas en total). Los filtros de cada contador copian exactamente los que ya
+usa cada sección propia del panel (mismo valor `'pending'` para `seller_requests`/
+`professional_requests`/`payment_proofs`, mismos criterios de "reportada"/"abierto"/"pendiente de
+resolución" que `fetchReportedReviews`/`fetchSupportTickets`/`fetchRevocationRequests`) para no
+inventar un criterio nuevo que después no coincida con lo que se ve al entrar a esa sección.
+
+Verificado con Playwright contra un HTML de prueba aislado (mismo CSS real del proyecto, datos de
+prueba con la forma exacta que arma `loadGlobalMetrics`/`renderMetricsAttention` -- no se pudo
+probar contra Supabase real por las restricciones de red del entorno, así que se armó un arnés
+mínimo fuera del repo, sin commitear). Tests (`npm test`) y `node --check` sin regresiones. `dist/`
+reconstruido.
+
 ## 2026-09-23 — índices faltantes en columnas de foreign key (performance)
 
 Sesión sin tarea puntual del usuario ("segui mejorando el proyecto"). Se corrió el advisor de

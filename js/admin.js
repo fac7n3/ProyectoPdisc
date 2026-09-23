@@ -452,10 +452,28 @@ async function loadGlobalMetrics() {
   const grid = document.getElementById('metrics-grid');
   if (!grid) return;
 
-  const [{ data: profiles }, { data: stores }, { data: paidOrders }] = await Promise.all([
+  const count = (query) => query.then(({ count: n }) => n || 0);
+
+  const [
+    { data: profiles },
+    { data: stores },
+    { data: paidOrders },
+    pendingStores,
+    pendingProfessionals,
+    pendingProofs,
+    reportedReviews,
+    openTickets,
+    pendingRevocations,
+  ] = await Promise.all([
     supabase.from('profiles').select('role'),
     supabase.from('stores').select('status'),
     supabase.from('orders').select('total_price').eq('payment_status', 'paid'),
+    count(supabase.from('seller_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
+    count(supabase.from('professional_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
+    count(supabase.from('payment_proofs').select('id', { count: 'exact', head: true }).eq('status', 'pending')),
+    count(supabase.from('reviews').select('id', { count: 'exact', head: true }).not('report_reason', 'is', null).eq('is_hidden', false)),
+    count(supabase.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress'])),
+    count(supabase.from('orders').select('id', { count: 'exact', head: true }).not('revocation_requested_at', 'is', null).neq('status', 'cancelled')),
   ]);
 
   const countBy = (rows, key) => (rows || []).reduce((acc, row) => {
@@ -479,10 +497,10 @@ async function loadGlobalMetrics() {
   metrics.forEach((m) => {
     const card = document.createElement('div');
     card.className = 'admin-metric-card';
+    card.style.setProperty('--m-color', m.color);
 
     const iconWrap = document.createElement('div');
     iconWrap.className = 'admin-metric-card__icon';
-    iconWrap.style.setProperty('--m-color', m.color);
     const iconEl = document.createElement('i');
     iconEl.className = 'admin-emoji';
     iconEl.textContent = m.emoji;
@@ -501,6 +519,78 @@ async function loadGlobalMetrics() {
     card.appendChild(iconWrap);
     card.appendChild(body);
     grid.appendChild(card);
+  });
+
+  renderMetricsAttention([
+    { label: 'Solicitudes de comercios', count: pendingStores, emoji: '🏪', section: 'seller-requests' },
+    { label: 'Solicitudes de profesionales', count: pendingProfessionals, emoji: '🛠️', section: 'professionals' },
+    { label: 'Comprobantes por confirmar', count: pendingProofs, emoji: '🧾', section: 'proofs' },
+    { label: 'Reseñas reportadas', count: reportedReviews, emoji: '⭐', section: 'reviews-mod' },
+    { label: 'Reclamos abiertos', count: openTickets, emoji: '🎧', section: 'support' },
+    { label: 'Arrepentimientos pendientes', count: pendingRevocations, emoji: '↩️', section: 'revocations' },
+  ]);
+}
+
+/**
+ * Fila de accesos rápidos a lo que le falta revisión al admin, debajo de
+ * las tarjetas de métricas. Cada fila lleva a la sección correspondiente
+ * (mismo showSection() que usa el sidebar). Si no hay nada pendiente en
+ * ningún lado, se muestra un único mensaje en vez de seis filas en cero.
+ */
+function renderMetricsAttention(items) {
+  const box = document.getElementById('metrics-attention');
+  if (!box) return;
+
+  box.textContent = '';
+  box.hidden = false;
+
+  const title = document.createElement('p');
+  title.className = 'admin-attn__title';
+  const titleIcon = document.createElement('i');
+  titleIcon.className = 'admin-emoji';
+  titleIcon.setAttribute('aria-hidden', 'true');
+  titleIcon.textContent = '📌';
+  title.appendChild(titleIcon);
+  title.appendChild(document.createTextNode(' Necesita tu atención'));
+  box.appendChild(title);
+
+  const pending = items.filter((item) => item.count > 0);
+
+  if (pending.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'admin-attn__empty';
+    const emptyIcon = document.createElement('i');
+    emptyIcon.className = 'admin-emoji';
+    emptyIcon.setAttribute('aria-hidden', 'true');
+    emptyIcon.textContent = '🎉';
+    empty.appendChild(emptyIcon);
+    empty.appendChild(document.createTextNode(' Todo al día — no hay nada pendiente de revisión.'));
+    box.appendChild(empty);
+    return;
+  }
+
+  pending.forEach((item) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'admin-attn__row';
+    row.addEventListener('click', () => showSection(item.section));
+
+    const label = document.createElement('span');
+    label.className = 'admin-attn__label';
+    const icon = document.createElement('i');
+    icon.className = 'admin-emoji';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = item.emoji;
+    label.appendChild(icon);
+    label.appendChild(document.createTextNode(item.label));
+
+    const badge = document.createElement('span');
+    badge.className = 'admin-attn__badge';
+    badge.textContent = item.count;
+
+    row.appendChild(label);
+    row.appendChild(badge);
+    box.appendChild(row);
   });
 }
 
