@@ -587,6 +587,10 @@ function setupProfessionalPhotoPicker() {
 let currentStoreId = null;
 let editingProductId = null; // F5-02: null = alta nueva, id = editando ese producto
 let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardingChecklist
+// Migración 107: sin alias bancario no se pueden publicar productos nuevos
+// (la base lo rechaza con un trigger). Arranca en null = "todavía no se
+// sabe", para no mostrar el aviso por un instante a quien sí lo tiene.
+let currentStoreHasAlias = null;
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
 let currentUserFirstName = 'vendedor'; // Resumen: nombre para el saludo "¡Hola, {nombre}!"
@@ -718,6 +722,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   const previewLink = document.getElementById('preview-store-link');
   if (previewLink) previewLink.href = `./comercio.html?id=${store.id}`;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
+  loadStoreAliasState(store.id);
   const shopLabel = isStoreOwner ? store.name : `${store.name} (como empleado)`;
   if (shopNameEl) shopNameEl.textContent = shopLabel;
   try { localStorage.setItem(SHOP_NAME_KEY, shopLabel); } catch { /* ignore */ }
@@ -1472,6 +1477,73 @@ function fillStoreProfileForm(store) {
   }
 }
 
+/**
+ * Migración 107: ¿el comercio tiene alias? Consulta aparte (no en
+ * STORE_SELECT_COLUMNS), mismo criterio que los datos de transferencia: si la
+ * columna faltara, no se cae todo el panel. Ante un error se asume que SÍ
+ * tiene -- la base igual lo valida al guardar, y bloquear a alguien por una
+ * consulta fallida sería peor que dejarlo llegar a ese error.
+ */
+async function loadStoreAliasState(storeId) {
+  const { data, error } = await supabase.from('stores').select('transfer_alias').eq('id', storeId).single();
+  if (error) {
+    console.error('Error al consultar el alias del comercio:', error);
+    currentStoreHasAlias = true;
+  } else {
+    currentStoreHasAlias = Boolean(data?.transfer_alias?.trim());
+  }
+  updateAliasGate();
+  renderOnboardingChecklist(currentProductCount > 0);
+}
+
+/** Muestra u oculta el aviso "Cargá tu alias" de Publicaciones. */
+function updateAliasGate() {
+  const gate = document.getElementById('pub-alias-gate');
+  if (!gate) return;
+  gate.hidden = currentStoreHasAlias !== false;
+
+  // El empleado no puede editar el perfil del comercio (sección solo del dueño).
+  const btn = document.getElementById('pub-alias-gate-btn');
+  const text = document.getElementById('pub-alias-gate-text');
+  if (btn) btn.hidden = !isStoreOwner;
+  if (text && !isStoreOwner) {
+    text.textContent = 'Es el dato que ven los clientes para pagar por transferencia. Pedile al dueño del comercio que lo cargue en "Perfil de mi comercio"; mientras tanto no se pueden publicar productos nuevos.';
+  }
+}
+
+/** Lleva al campo Alias del perfil del comercio. */
+function goToAliasField() {
+  const focusAlias = () => {
+    const input = document.getElementById('store-transfer-alias');
+    if (!input) return;
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  };
+  // El shell muestra la sección recién en el hashchange (que llega después,
+  // no en el mismo tick): hasta entonces el campo está oculto y no toma foco.
+  if (location.hash === '#perfil-comercio') {
+    focusAlias();
+    return;
+  }
+  window.addEventListener('hashchange', () => setTimeout(focusAlias, 0), { once: true });
+  location.hash = 'perfil-comercio';
+}
+
+/** Intento de publicar sin alias: no abre el form, resalta el aviso. */
+function blockPublishWithoutAlias() {
+  updateAliasGate();
+  const gate = document.getElementById('pub-alias-gate');
+  showToast(isStoreOwner
+    ? 'Primero cargá el alias de tu comercio: sin él no se pueden publicar productos.'
+    : 'El comercio todavía no cargó su alias: sin él no se pueden publicar productos.', 'error');
+  if (gate) {
+    gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    gate.classList.remove('is-flash');
+    void gate.offsetWidth; // reinicia la animación si se aprieta dos veces
+    gate.classList.add('is-flash');
+  }
+}
+
 /** Columna de `stores` -> id del input en el form "Transferencia bancaria". */
 const TRANSFER_FIELD_IDS = [
   ['transfer_alias', 'store-transfer-alias'],
@@ -1612,6 +1684,11 @@ function setupStoreProfileForm() {
       .from('stores')
       .update(transfer.values)
       .eq('id', currentStoreId);
+    if (!transferError) {
+      // Habilita (o vuelve a bloquear) "Publicar" sin recargar el panel.
+      currentStoreHasAlias = Boolean(transfer.values.transfer_alias);
+      updateAliasGate();
+    }
     if (transferError) {
       console.error('Error al guardar los datos de transferencia (se reintenta solo con transfer_info):', transferError);
       ({ error: transferError } = await supabase
@@ -2535,7 +2612,7 @@ function renderOnboardingChecklist(hasProducts) {
 
   // F12-16: el checklist apunta a acciones exclusivas del dueño (perfil,
   // publicar producto) -- un empleado no las puede hacer, no tiene sentido mostrárselo.
-  if (!isStoreOwner || (currentStoreHasProfile && hasProducts)) {
+  if (!isStoreOwner || (currentStoreHasProfile && currentStoreHasAlias !== false && hasProducts)) {
     container.style.display = 'none';
     return;
   }
@@ -2559,6 +2636,11 @@ function renderOnboardingChecklist(hasProducts) {
       done: currentStoreHasProfile,
       label: 'Completá el perfil de tu comercio (dirección, horarios, descripción)',
       onClick: () => document.getElementById('store-profile-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+    },
+    {
+      done: currentStoreHasAlias !== false,
+      label: 'Cargá tu alias para cobrar por transferencia (obligatorio para publicar)',
+      onClick: goToAliasField,
     },
     {
       done: hasProducts,
@@ -3527,7 +3609,13 @@ function setupDashboardEvents() {
     setProductMode('single');
   }
 
+  document.getElementById('pub-alias-gate-btn')?.addEventListener('click', goToAliasField);
+
   btnShowAdd.addEventListener('click', () => {
+    if (currentStoreHasAlias === false) {
+      blockPublishWithoutAlias();
+      return;
+    }
     resetProductForm();
     openProductForm();
     scrollToProductForm();
@@ -3578,6 +3666,11 @@ function setupDashboardEvents() {
     const btnSubmit = addForm.querySelector('button[type="submit"]');
     const isEditing = Boolean(editingProductId);
     const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar producto';
+
+    if (!isEditing && currentStoreHasAlias === false) {
+      blockPublishWithoutAlias();
+      return;
+    }
 
     const titleValue = document.getElementById('prod-name').value.trim();
     // Los precios se tipean con separador de miles (attachMoneyFormatting) --
@@ -3641,6 +3734,15 @@ function setupDashboardEvents() {
       const { data: inserted, error: insertError } = await supabase.from('products').insert([productData]).select('id').single();
       error = insertError;
       savedProductId = inserted?.id;
+    }
+
+    // Migración 107: el trigger avisa con hint 'missing_transfer_alias' (por
+    // si el alias se borró desde otra pestaña después de cargar el panel).
+    if (error && error.hint === 'missing_transfer_alias') {
+      currentStoreHasAlias = false;
+      setLoading(btnSubmit, false, submitLabel);
+      blockPublishWithoutAlias();
+      return;
     }
 
     if (error) {

@@ -686,6 +686,18 @@
       .pf-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.5rem; box-shadow: var(--bl-shadow-card); margin-bottom: 1.25rem; }
       .pf-card__title { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); margin-bottom: 0.35rem; }
       .pf-card__hint { font-size: 0.85rem; color: var(--bl-text-secondary); margin-bottom: 1.25rem; }
+      .pf-required { color: #b91c1c; font-weight: 700; }
+      .pub-alias-gate { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; margin-bottom: 1rem; background: #fffbeb; border: 1px solid #fcd34d; border-radius: var(--bl-radius-md); }
+      .pub-alias-gate[hidden] { display: none; }
+      .pub-alias-gate.is-flash { animation: pubAliasFlash 0.9s ease-out; }
+      @keyframes pubAliasFlash { 0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.55); } 100% { box-shadow: 0 0 0 12px rgba(217, 119, 6, 0); } }
+      .pub-alias-gate__icon { color: #b45309; font-size: 1.25rem; flex: 0 0 auto; }
+      .pub-alias-gate__body { flex: 1 1 auto; min-width: 0; }
+      .pub-alias-gate__title { display: block; color: var(--bl-text); font-size: 0.95rem; }
+      .pub-alias-gate__text { margin: 0.2rem 0 0; color: var(--bl-text-secondary); font-size: 0.85rem; }
+      .pub-alias-gate__btn { flex: 0 0 auto; padding: 0.55rem 1rem; border: none; border-radius: var(--bl-radius-pill); background: var(--bl-primary); color: #fff; font: inherit; font-weight: 600; font-size: 0.875rem; cursor: pointer; }
+      .pub-alias-gate__btn:hover { background: var(--bl-primary-dark); }
+      @media (max-width: 640px) { .pub-alias-gate { flex-wrap: wrap; } .pub-alias-gate__btn { width: 100%; } }
       .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
       .pf-field { display: flex; flex-direction: column; }
       .pf-field--full { grid-column: 1 / -1; }
@@ -742,7 +754,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-CyGNjhg-.js"></script>
+    <script type="module" crossorigin src="/assets/vender-DXlsezwA.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
@@ -1155,10 +1167,10 @@
                      quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
                 <div class="pf-card">
                   <h3 class="pf-card__title">Transferencia bancaria</h3>
-                  <p class="pf-card__hint">Cuando un cliente paga por transferencia, ve estos datos con un botón "Copiar" en cada uno, junto con el monto y el número de pedido. Cargá al menos el alias o el CBU/CVU.</p>
+                  <p class="pf-card__hint">Cuando un cliente paga por transferencia, ve estos datos con un botón "Copiar" en cada uno, junto con el monto y el número de pedido. <strong>El alias es obligatorio para publicar productos.</strong></p>
                   <div class="pf-grid">
                     <div class="pf-field">
-                      <label class="form-label" for="store-transfer-alias">Alias</label>
+                      <label class="form-label" for="store-transfer-alias">Alias <span class="pf-required" aria-hidden="true">*</span><span class="sr-only">(obligatorio para publicar productos)</span></label>
                       <input id="store-transfer-alias" class="form-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Ej: MIVENTA.BARADERO" />
                     </div>
                     <div class="pf-field">
@@ -1361,6 +1373,17 @@
                     <button type="button" class="pub-publish__item pub-publish__item--soon" id="btn-bulk-publish"><i class="fa-solid fa-barcode"></i> Masivamente <span class="pub-soon">Próximamente</span></button>
                   </div>
                 </div>
+              </div>
+
+              <!-- Aviso: sin alias bancario no se puede publicar (migración 107 lo
+                   exige también en la base). Lo muestra/oculta vender.js (updateAliasGate). -->
+              <div class="pub-alias-gate" id="pub-alias-gate" role="status" hidden>
+                <i class="fa-solid fa-building-columns pub-alias-gate__icon" aria-hidden="true"></i>
+                <div class="pub-alias-gate__body">
+                  <strong class="pub-alias-gate__title">Cargá tu alias para publicar productos</strong>
+                  <p class="pub-alias-gate__text" id="pub-alias-gate-text">Es el dato que ven tus clientes para pagarte por transferencia. Sin alias no se pueden publicar productos nuevos; los que ya tenés siguen a la venta.</p>
+                </div>
+                <button type="button" class="pub-alias-gate__btn" id="pub-alias-gate-btn">Cargar mi alias</button>
               </div>
 
               <!-- Barra de filtros (búsqueda + estado + contador), todo client-side -->

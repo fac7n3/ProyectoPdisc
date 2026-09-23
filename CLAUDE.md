@@ -80,6 +80,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — **Alias bancario obligatorio para publicar
+  productos**, a pedido del usuario. Migración **107** (aplicada): trigger en
+  `products` que rechaza el ALTA si `stores.transfer_alias` está vacío
+  (admin exento; editar/pausar/borrar productos existentes no se toca, y
+  borrar el alias después no baja lo publicado). El panel lo avisa antes:
+  aviso en Publicaciones con "Cargar mi alias", "Publicar" no abre el form, y
+  paso nuevo en el checklist de bienvenida. **Hoy solo Beruru tiene alias:**
+  el resto de los comercios no puede sumar productos hasta cargarlo.
 - **Resuelto 2026-09-23** — **Transferencia bancaria con datos copiables**, a
   pedido del usuario. Después de "Iniciar pago" con transferencia ya no hay
   toast + redirect: el carrito se reemplaza por el paso "Transferí"
