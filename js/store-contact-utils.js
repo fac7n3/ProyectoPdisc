@@ -22,28 +22,25 @@ export function buildWhatsappMessage(productTitle) {
 }
 
 /**
- * Decide qué botón de contacto mostrar según store.contact_method:
- * 'phone' -> tel: con el número visible, 'whatsapp' -> wa.me con el mensaje
- * prellenado, 'none' (o sin teléfono/whatsapp cargado) -> sin botón.
- * @param {{ contact_method?: string, phone?: string, whatsapp?: string }} store
+ * Decide qué botón de contacto mostrar según store.contact_method: cualquier
+ * valor que no sea 'none' -> wa.me con el mensaje prellenado, 'none' (o sin
+ * whatsapp cargado) -> sin botón. El comprador solo puede escribirle al
+ * vendedor, nunca llamarlo -- el sentido inverso (el vendedor llamando al
+ * comprador) se resuelve del lado del panel de vendedor, con el teléfono que
+ * ya carga el pedido. Las cuentas viejas con contact_method='phone' caen acá
+ * en whatsapp, mismo criterio que ya usa `fillStoreProfileForm` en vender.js.
+ * @param {{ contact_method?: string, whatsapp?: string }} store
  * @param {string} [productTitle] contexto opcional para el mensaje de WhatsApp.
  * @returns {{ href: string, label: string, icon: string } | null}
  */
 export function buildContactAction(store, productTitle) {
   if (!store) return null;
-  const method = store.contact_method || 'phone';
-  if (method === 'none') return null;
+  if (store.contact_method === 'none') return null;
 
-  if (method === 'whatsapp') {
-    const digits = digitsOnly(store.whatsapp);
-    if (!digits) return null;
-    const text = encodeURIComponent(buildWhatsappMessage(productTitle));
-    return { href: `https://wa.me/${digits}?text=${text}`, label: 'Escribir por WhatsApp', icon: 'fa-brands fa-whatsapp' };
-  }
-
-  const digits = digitsOnly(store.phone);
+  const digits = digitsOnly(store.whatsapp);
   if (!digits) return null;
-  return { href: `tel:${digits}`, label: `Llamar: ${store.phone}`, icon: 'fa-solid fa-phone' };
+  const text = encodeURIComponent(buildWhatsappMessage(productTitle));
+  return { href: `https://wa.me/${digits}?text=${text}`, label: 'Escribir por WhatsApp', icon: 'fa-brands fa-whatsapp' };
 }
 
 /**

@@ -939,6 +939,7 @@ function buildPedidoBuyerCell(order) {
   const cell = document.createElement('div');
   cell.className = 'pd-cell-buyer';
   const name = ordNameByClientId.get(order.client_id) || 'Comprador';
+  const phone = ordPhoneByClientId.get(order.client_id);
 
   const avatar = document.createElement('div');
   avatar.className = 'pd-cell-buyer__avatar';
@@ -947,7 +948,11 @@ function buildPedidoBuyerCell(order) {
 
   const info = document.createElement('div');
   info.appendChild(rsEl('span', 'pd-cell-buyer__name', name));
-  info.appendChild(rsEl('span', 'pd-cell-buyer__loc', 'Baradero'));
+  // El comprador solo puede escribirle al vendedor por WhatsApp (ver
+  // store-contact-utils.js) -- nunca llamarlo. Al revés sí: acá el vendedor
+  // tiene el celular del comprador, por si necesita escribirle o llamarlo
+  // (ej. coordinar una entrega).
+  info.appendChild(rsEl('span', 'pd-cell-buyer__loc', phone || 'Baradero'));
   cell.appendChild(info);
 
   return cell;

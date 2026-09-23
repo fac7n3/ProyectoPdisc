@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const [{ data: product, error }, { data: { session } }] = await Promise.all([
       supabase
         .from('products')
-        .select('*, stores(name, id, contact_method, phone, whatsapp, owner_id), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
+        .select('*, stores(name, id, contact_method, whatsapp, owner_id), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
         .eq('id', productId)
         .single(),
       supabase.auth.getSession(),
@@ -189,8 +189,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       actionsDiv.appendChild(addBtn);
 
-      // Contactar al vendedor por teléfono o WhatsApp (según lo que eligió en
-      // su panel, stores.contact_method) con el contexto de este producto.
+      // Contactar al vendedor por WhatsApp (el comprador nunca puede
+      // llamarlo, ver store-contact-utils.js) con el contexto de este producto.
       const contactAction = buildContactAction(product.stores, product.title);
       if (contactAction) {
         const contactLink = document.createElement('a');

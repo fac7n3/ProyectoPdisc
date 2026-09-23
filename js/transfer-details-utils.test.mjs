@@ -64,16 +64,15 @@ test('número de pedido y monto para copiar', () => {
 });
 
 test('contacto: respeta contact_method=none', () => {
-  const store = { contact_method: 'none', phone: '3329-111111', whatsapp: '3329 555' };
-  assert.deepEqual(buildContactInfo(store), { phone: null, phoneDigits: null, whatsapp: null, whatsappDigits: null });
+  const store = { contact_method: 'none', whatsapp: '3329 555' };
+  assert.deepEqual(buildContactInfo(store), { whatsapp: null, whatsappDigits: null });
 });
 
-test('contacto: teléfono y WhatsApp cuando están cargados', () => {
-  const info = buildContactInfo({ contact_method: 'phone', phone: '3329-111111', whatsapp: '+54 3329 69-5897' });
-  assert.equal(info.phone, '3329-111111');
-  assert.equal(info.phoneDigits, '3329111111');
+test('contacto: solo WhatsApp -- el comprador nunca puede llamar', () => {
+  const info = buildContactInfo({ contact_method: 'whatsapp', whatsapp: '+54 3329 69-5897' });
   assert.equal(info.whatsappDigits, '543329695897');
-  const noWa = buildContactInfo({ contact_method: 'phone', phone: '3329-111111', whatsapp: null });
+  assert.equal('phone' in info, false);
+  const noWa = buildContactInfo({ contact_method: 'whatsapp', whatsapp: null });
   assert.equal(noWa.whatsapp, null);
 });
 
