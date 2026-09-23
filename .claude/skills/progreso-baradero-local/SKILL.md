@@ -4140,3 +4140,54 @@ Revisado y **sin el mismo problema**: el panel de vendedor (`.pub-empty__sub` no
 **Gotcha del harness:** cada sección del panel carga su contenido recién cuando el shell la muestra
 (`ctx.alMostrar`), así que en un test no alcanza con sacarle el `hidden` a la sección — hay que
 hacer click en el `.mc-navitem` de verdad o el contenedor queda vacío.
+
+## 2026-09-23 — Font Awesome dejó de depender del CDN de cdnjs (se autoalojó)
+
+Pedido inicial: "agregá los íconos al panel de administrador". Primera pasada (agregó íconos
+faltantes a botones de fila que no los tenían — activar/desactivar, ver detalle, etc., todos en
+`js/admin.js`) se mergeó a `main`, pero el usuario reportó después: **"en admin.html están solo
+cuadrados y no se ven los íconos en todo el panel"** — no solo los nuevos, ninguno (ni el logo del
+sidebar, ni Refrescar, ni Aprobar/Rechazar, que ya andaban antes de esta sesión).
+
+**Diagnóstico:** cuadrados vacíos (tofu boxes) en vez del glyph es la firma clásica de que el CSS
+del ícono cargó bien (el contenido Unicode de `::before` se aplica) pero el archivo de fuente
+(`.woff2`) no. Se investigó y descartó la hipótesis más obvia primero: `.admin-shell, .admin-shell
+* { font-family: var(--bl-font); }` en `admin.css` (pensada para pisar el `* { font-family:
+Segoe UI... }` de `auth.css`) por accidente también apunta a los `<i class="fa-solid ...">` —
+pero probado con Playwright local contra los archivos reales del repo (sirviendo Font Awesome
+real vía `npm install @fortawesome/fontawesome-free@6.5.2` en un server local, sin tocar el CDN),
+la cascada resuelve bien: el `<link>` de Font Awesome es el último en el `<head>`, mismo
+specificity (0,1,0) que `.admin-shell *`, gana por orden de aparición — `getComputedStyle` daba
+`font-family: "Font Awesome 6 Free"` correcto y el ícono se veía perfecto. La regla de `admin.css`
+**no es el bug** (aunque sigue siendo una trampa latente si algún día alguien le agrega
+`!important` a algo, o si Font Awesome deja de declarar su propio `font-family` sin `!important`
+— quedó documentado acá por si alguna vez hay que revisarla de nuevo).
+
+Con el código descartado como causa, quedó el CDN externo (`https://cdnjs.cloudflare.com/ajax/
+libs/font-awesome/6.5.2/css/all.min.css`, con `integrity` + `crossorigin="anonymous"`) como único
+sospechoso restante: si el `.woff2` no llega (bloqueado por la red del usuario, un adblocker que
+filtra cdnjs, un intermediario corporativo, lo que sea) el CSS igual carga bien -- por eso el
+cuadrado se dibuja -- pero la fuente no, y el navegador cae al glyph de "no encontrado". No se
+pudo confirmar la causa exacta del lado del usuario (esta sesión no tiene salida de red hacia
+`cdnjs.cloudflare.com` para reproducirlo tal cual), pero un CDN externo de terceros como único
+punto de falla para **todo ícono del sitio entero** (Font Awesome se usa en las 19 páginas, no
+solo admin) es en sí mismo un riesgo a sacarse de encima, más viniendo de un proyecto que ya
+versiona `dist/` completo y prioriza no depender de infraestructura de terceros en runtime.
+
+**Fix:** autoalojar Font Awesome 6.5.2 (misma versión que ya estaba pineada) en
+`public/vendor/fontawesome/` (`css/all.min.css` + los 8 archivos de `webfonts/` -- solid, regular,
+brands, v4compatibility, en woff2 y ttf -- copiados desde el paquete oficial
+`@fortawesome/fontawesome-free`, ~1.1MB total). Las 19 páginas que usan íconos pasan de
+`<link href="https://cdnjs.cloudflare.com/...">` con `integrity`/`crossorigin` a
+`<link href="/vendor/fontawesome/css/all.min.css">` sin depender de red externa; `index.html` no
+usa íconos, solo se le tocó el CSP. De paso, la CSP de las 20 páginas se pudo achicar: `cdnjs.
+cloudflare.com` no se usaba para nada más que esto, así que salió de `style-src` y `font-src` en
+las 20 (`fonts.googleapis.com`/`fonts.gstatic.com`, que son de Google Fonts para Inter, quedan
+igual). Verificado con Playwright local (server real de `vite`, sin red externa): `getComputedStyle`
+de un ícono del sidebar de admin da `font-family: "Font Awesome 6 Free"`, `font-weight: 900`, sin
+ningún request fallido a `/vendor/fontawesome/*`. `dist/vendor/fontawesome/` se genera solo (Vite
+copia `public/` tal cual). No se agregó `@fortawesome/fontawesome-free` como dependencia de
+`package.json` -- los archivos se copiaron una vez a mano, no hay paso de build que los regenere;
+si en el futuro hay que actualizar la versión, hay que repetir la copia manual (`npm install
+@fortawesome/fontawesome-free@<version>` en un scratch dir, copiar `css/all.min.css` +
+`webfonts/*.woff2`/`*.ttf` a `public/vendor/fontawesome/`).
