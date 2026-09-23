@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-22. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-23. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -105,6 +105,44 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   muestra la lista completa. La tarjeta "Ventas para calificar" del Resumen
   sigue llevando a la pestaña Completados, y los permisos por empleado no se
   tocan (van por la clave `pedidos`, no por botón). 6 checks de Playwright.
+- **Resuelto 2026-09-23** — auditoría de **performance** con el advisor de
+  Supabase (sin pedido puntual del usuario, mismo criterio que las
+  auditorías de seguridad "por áreas"). Se agregaron los 20 índices que
+  faltaban en columnas de foreign key (`unindexed_foreign_keys`), puramente
+  aditivo -- sin un índice, cada policy de RLS que filtra por
+  tienda/cliente/pedido hacía seq scan; no se nota con los catálogos chicos
+  de hoy pero conviene tenerlo resuelto antes de que el volumen real lo
+  vuelva visible. Migración **103**, aplicada a producción.
+  **Ampliado a pedido del usuario en la misma sesión:** también se resolvió
+  `auth_rls_initplan` (WARN, 115 hallazgos) -- las policies de RLS llamaban
+  `auth.uid()`/`auth.jwt()` directo, así que Postgres las re-evaluaba fila
+  por fila en vez de una sola vez por consulta. Migración **104**: un `DO`
+  block que genera y ejecuta el `ALTER POLICY ... USING (...) WITH CHECK
+  (...)` para cada policy de `public`, reemplazando cada llamada por
+  `(select auth.uid())`/`(select auth.jwt())` (mecánico, sin cambio de
+  semántica -- mismo valor durante toda la consulta). Verificado con
+  `EXPLAIN`: el filtro pasó a resolverse como `InitPlan` en vez de por fila.
+  **Resuelto también en la misma sesión, a pedido del usuario:**
+  `multiple_permissive_policies` (49 WARN). Migración **105**: consolida,
+  tabla por tabla, todas las policies PERMISSIVE que se superponían para el
+  mismo rol+acción (ej. la del dueño + la del admin, o una policy `ALL` de
+  admin superpuesta con las específicas de SELECT/INSERT/UPDATE/DELETE) en
+  una sola por acción, uniendo sus condiciones con OR -- matemáticamente
+  idéntico a lo que Postgres ya hacía evaluando varias, solo que ahora se
+  evalúa una vez. Una policy `ALL` que se fusionaba con otra en algunas
+  acciones se partió en sus 4 acciones (donde no había nada que fusionar,
+  queda igual de sola pero como policy propia de esa acción). Encontrado y
+  corregido **antes** de aplicar: la primera versión perdía el `WITH CHECK`
+  implícito que Postgres le da a una policy `UPDATE` sin `WITH CHECK` propio
+  (usa su propio `USING`) al no incluirlo en la fusión -- confirmado contra
+  `pg_policy.polwithcheck`, no solo la documentación --, lo que habría
+  bloqueado a un vendedor identificado por `auth.jwt()` (en vez de la tabla
+  `profiles` o `store_staff`) actualizando su propio producto. Verificado
+  con `get_advisors` (0 hallazgos, contra 49 antes) y con pruebas contra la
+  base real en transacciones con ROLLBACK (anon no ve cupones privados,
+  ningún cliente ajeno ve cupones de otro comercio). Detalle completo,
+  incluida la lista de las 26 tablas tocadas y por qué es seguro para el rol
+  `anon`, en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
   a pedido del usuario: el comerciante las carga y el cliente elige antes de
   comprar. Migración **102** (aplicada a producción): `product_options` +
