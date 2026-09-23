@@ -13,6 +13,7 @@ import { sortOptionGroups, describeSelectedOptions } from './product-options-uti
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
+import { buildPromoEditorCard } from './home-promos-editor.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -646,6 +647,7 @@ const VENDOR_SECTION_COPY = {
   pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando, para que los prepares y avises cuando estén listos.' },
   pagos: { icon: 'fa-solid fa-money-check-dollar', title: 'Pagos por confirmar', desc: 'Transferencias que un vecino dice haber hecho: revisá el comprobante y confirmá el pago.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
+  'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Promo en el inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
   notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de pedidos nuevos, pagos y novedades de tu comercio.' },
   soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Algo no anda como esperabas? Escribinos y te ayudamos.' },
@@ -728,7 +730,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (greetingName) greetingName.textContent = currentUserFirstName;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
-  ['store-profile-section', 'my-coupons-section', 'store-staff-section'].forEach((id) => {
+  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = isStoreOwner ? '' : 'none';
   });
@@ -785,7 +787,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   ]);
 
   if (isStoreOwner) {
-    await Promise.all([renderMyCoupons(), renderStoreStaff()]);
+    await Promise.all([renderMyCoupons(), renderStoreStaff(), renderHomePromo(store.name)]);
   }
 
   applyOrderDeepLink();
@@ -1638,6 +1640,52 @@ function setupStoreProfileForm() {
       }
     }
     setLoading(submitBtn, false, 'Guardar perfil');
+  });
+}
+
+// --- Promo en el inicio (home_promos, migración 107) ---
+// El admin elige qué comercio ocupa cada espacio de banner del home; acá el
+// dueño carga la imagen y la publicación de los espacios de SU comercio.
+async function renderHomePromo(storeName) {
+  const container = document.getElementById('home-promo-container');
+  if (!container || !currentStoreId) return;
+
+  const { data, error } = await supabase
+    .from('home_promos')
+    .select('id, slot, store_id, product_id, image_url, title, is_active')
+    .eq('store_id', currentStoreId)
+    .order('slot');
+
+  container.textContent = '';
+  if (error) {
+    console.error('Error al cargar la promo del inicio:', error);
+    const p = document.createElement('p');
+    p.className = 'hp-error';
+    p.textContent = 'No pudimos cargar tu espacio en el inicio.';
+    container.appendChild(p);
+    return;
+  }
+
+  if (!data?.length) {
+    const empty = document.createElement('div');
+    empty.className = 'hp-empty';
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-bullhorn';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('p');
+    text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Si querés destacar una promoción, escribinos desde Soporte.';
+    empty.append(icon, text);
+    container.appendChild(empty);
+    return;
+  }
+
+  data.forEach((promo) => {
+    container.appendChild(buildPromoEditorCard({
+      promo,
+      mode: 'seller',
+      storeName,
+      onSaved: () => renderHomePromo(storeName),
+    }));
   });
 }
 

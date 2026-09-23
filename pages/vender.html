@@ -949,6 +949,7 @@
                 <button type="button" class="mc-navitem" data-section="pedidos">Pedidos</button>
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
+                <button type="button" class="mc-navitem mc-navitem--owner" data-section="promo-inicio">Promo en el inicio</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
                 <button type="button" class="mc-navitem" data-section="soporte">Soporte</button>
@@ -1195,6 +1196,18 @@
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
               </form>
               <div id="my-coupons-container" class="pub-list"></div>
+            </div>
+            </section>
+
+            <!-- === Promo en el inicio (home_promos, migración 107) === -->
+            <!-- Solo el dueño: el admin le asigna a este comercio un espacio de
+                 banner del inicio y acá se carga la imagen + la publicación a la
+                 que lleva el click (js/home-promos-editor.js). -->
+            <section class="mc-section" data-section="promo-inicio" hidden>
+            <div class="pub-wrap" id="home-promo-section">
+              <div class="pub-header"><h2 class="pub-title">Promo en el inicio</h2></div>
+              <p class="hp-intro">Los banners de la página de inicio los asigna el equipo de Baradero Local. Si tu comercio tiene un espacio, subí acá la imagen de tu promoción y elegí la publicación: cuando un vecino toque el banner, va directo a esa publicación.</p>
+              <div class="hp-grid" id="home-promo-container"></div>
             </div>
             </section>
 

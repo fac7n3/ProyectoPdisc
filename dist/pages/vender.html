@@ -742,15 +742,17 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-DSOlbev5.js"></script>
+    <script type="module" crossorigin src="/assets/vender-u67tKlDM.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-C9JeV_VR.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-Crh1w9JM.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-C97ouXjB.js">
     <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-mpCEsJfu.js">
     <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-DiVN0VhT.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-66glwBAP.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-DW1BSwCE.js">
@@ -758,7 +760,7 @@
     <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DjU_3hGm.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-j1GWxO8-.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -963,6 +965,7 @@
                 <button type="button" class="mc-navitem" data-section="pedidos">Pedidos</button>
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
+                <button type="button" class="mc-navitem mc-navitem--owner" data-section="promo-inicio">Promo en el inicio</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>
                 <button type="button" class="mc-navitem" data-section="soporte">Soporte</button>
@@ -1209,6 +1212,18 @@
                 <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
               </form>
               <div id="my-coupons-container" class="pub-list"></div>
+            </div>
+            </section>
+
+            <!-- === Promo en el inicio (home_promos, migración 107) === -->
+            <!-- Solo el dueño: el admin le asigna a este comercio un espacio de
+                 banner del inicio y acá se carga la imagen + la publicación a la
+                 que lleva el click (js/home-promos-editor.js). -->
+            <section class="mc-section" data-section="promo-inicio" hidden>
+            <div class="pub-wrap" id="home-promo-section">
+              <div class="pub-header"><h2 class="pub-title">Promo en el inicio</h2></div>
+              <p class="hp-intro">Los banners de la página de inicio los asigna el equipo de Baradero Local. Si tu comercio tiene un espacio, subí acá la imagen de tu promoción y elegí la publicación: cuando un vecino toque el banner, va directo a esa publicación.</p>
+              <div class="hp-grid" id="home-promo-container"></div>
             </div>
             </section>
 

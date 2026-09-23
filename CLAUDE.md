@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — **Banners del inicio asignables a comercios**, a
+  pedido del usuario. Los 6 espacios de los dos mosaicos del home son filas de
+  `home_promos` (migración **107**, aplicada a producción, + bucket
+  `home-promos`). El **admin** elige en "Promos del inicio" qué comercio usa
+  cada espacio y lo prende/apaga; el **dueño** de ese comercio carga la imagen
+  y la publicación desde "Promo en el inicio" (o lo hace el admin). Al tocar el
+  banner, el vecino va directo a la publicación (o a la página del comercio si
+  no eligió una o la pausó). Un espacio sin promo sigue mostrando el banner
+  fijo con su lightbox. El trigger `home_promos_guard` impide que el dueño
+  cambie el comercio/on-off o apunte a un producto ajeno. Editor compartido
+  en `js/home-promos-editor.js`. **Hoy no hay ningún espacio asignado**: los
+  6 muestran los banners de siempre hasta que un admin asigne uno. El
+  carrusel grande del hero no se tocó.
 - **Resuelto 2026-09-23** — **Transferencia bancaria con datos copiables**, a
   pedido del usuario. Después de "Iniciar pago" con transferencia ya no hay
   toast + redirect: el carrito se reemplaza por el paso "Transferí"

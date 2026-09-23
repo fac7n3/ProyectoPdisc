@@ -10,18 +10,20 @@
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <script type="module" crossorigin src="/assets/admin-DTPi9Sus.js"></script>
+    <script type="module" crossorigin src="/assets/admin-XRC_4dAz.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-C9JeV_VR.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-Crh1w9JM.js">
     <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-mpCEsJfu.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-Cr0V21CQ.js">
     <link rel="modulepreload" crossorigin href="/assets/support-utils-66glwBAP.js">
     <link rel="stylesheet" crossorigin href="/assets/admin-zDmO7NTw.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-CkuHEqrl.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-DjU_3hGm.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-j1GWxO8-.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -92,6 +94,9 @@
               </button>
               <button type="button" class="admin-nav__item" data-target="emergency-contacts">
                 <i class="admin-emoji" aria-hidden="true">📞</i><span>Servicios</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="home-promos">
+                <i class="admin-emoji" aria-hidden="true">📣</i><span>Promos del inicio</span>
               </button>
             </div>
 
@@ -483,6 +488,18 @@
                     </table>
                   </div>
                 </div>
+              </section>
+
+              <!-- ===== Promos del inicio (mosaicos de banners del home, tabla home_promos) ===== -->
+              <section class="admin-section" data-section="home-promos">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Promos del inicio</h2>
+                    <p class="admin-section__subtitle">Elegí qué comercio puede usar cada espacio de banner del inicio. El comercio carga la imagen y la publicación desde su panel ("Promo en el inicio"), o la cargás vos acá. Al hacer click en el banner, el vecino va directo a esa publicación.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-home-promos"><i class="admin-emoji" aria-hidden="true">🔄</i> Refrescar</button>
+                </div>
+                <div class="hp-grid" id="home-promos-grid"></div>
               </section>
 
               <!-- ===== Moderación · Comercios ===== -->

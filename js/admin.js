@@ -5,6 +5,7 @@ import { upgradeDateInputs } from './datepicker.js';
 import { formatPrice } from './cart-utils.js';
 import { categoryLabel } from './professional-categories.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
+import { buildPromoEditorCard } from './home-promos-editor.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -1413,6 +1414,36 @@ async function fetchEmergencyContacts() {
   });
 }
 
+// --- Promos del inicio (home_promos, migración 107) ---
+// Una tarjeta por espacio del mosaico del home. La tarjeta (y la subida de
+// la imagen) es la misma que ve el comercio en su panel, ver
+// js/home-promos-editor.js; acá además se elige el comercio y el on/off.
+async function fetchHomePromos() {
+  const grid = document.getElementById('home-promos-grid');
+  grid.textContent = 'Cargando espacios...';
+
+  const [promosRes, storesRes] = await Promise.all([
+    supabase.from('home_promos').select('id, slot, store_id, product_id, image_url, title, is_active').order('slot'),
+    supabase.from('stores').select('id, name').eq('status', 'approved').order('name'),
+  ]);
+
+  if (promosRes.error || storesRes.error) {
+    console.error('Error al cargar las promos del inicio:', promosRes.error || storesRes.error);
+    grid.textContent = 'No se pudieron cargar los espacios.';
+    return;
+  }
+
+  grid.textContent = '';
+  promosRes.data.forEach((promo) => {
+    grid.appendChild(buildPromoEditorCard({
+      promo,
+      mode: 'admin',
+      stores: storesRes.data || [],
+      onSaved: fetchHomePromos,
+    }));
+  });
+}
+
 function setupEmergencyContactForm() {
   const form = document.getElementById('emergency-contact-form');
   form?.addEventListener('submit', async (e) => {
@@ -1952,6 +1983,7 @@ const SECTION_LOADERS = {
   'coupons': fetchCoupons,
   'pharmacies': loadPharmaciesSection,
   'emergency-contacts': fetchEmergencyContacts,
+  'home-promos': fetchHomePromos,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
   'reviews-mod': fetchReportedReviews,
@@ -2032,6 +2064,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-coupons').addEventListener('click', fetchCoupons);
   document.getElementById('btn-refresh-pharmacies').addEventListener('click', loadPharmaciesSection);
   document.getElementById('btn-refresh-emergency-contacts').addEventListener('click', fetchEmergencyContacts);
+  document.getElementById('btn-refresh-home-promos').addEventListener('click', fetchHomePromos);
   document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
   document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
@@ -2061,7 +2094,7 @@ function initAdminPage() {
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'professionals', 'metrics', 'categories', 'coupons',
-  'pharmacies', 'emergency-contacts',
+  'pharmacies', 'emergency-contacts', 'home-promos',
   'stores-mod', 'products-mod', 'proofs',
   'revocations', 'error-logs', 'audit-log',
 ];
