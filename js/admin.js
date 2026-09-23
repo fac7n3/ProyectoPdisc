@@ -394,7 +394,10 @@ async function fetchProfessionals() {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${pro.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
-    toggleBtn.textContent = pro.is_active ? 'Desactivar' : 'Activar';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = pro.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(pro.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
       const { error: updErr } = await supabase
         .from('professionals')
@@ -636,7 +639,10 @@ async function fetchCoupons() {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${coupon.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
-    toggleBtn.textContent = coupon.is_active ? 'Desactivar' : 'Activar';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = coupon.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(coupon.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
       const { error: updateError } = await supabase.from('coupons').update({ is_active: !coupon.is_active }).eq('id', coupon.id);
       if (updateError) {
@@ -747,7 +753,10 @@ async function fetchStoresForModeration() {
       const isSuspended = store.status === 'suspended';
       const toggleBtn = document.createElement('button');
       toggleBtn.className = `action-btn ${isSuspended ? 'btn-reactivate' : 'btn-suspend'}`;
-      toggleBtn.textContent = isSuspended ? 'Reactivar' : 'Suspender';
+      const toggleIcon = document.createElement('i');
+      toggleIcon.className = isSuspended ? 'fa-solid fa-circle-check' : 'fa-solid fa-ban';
+      toggleBtn.appendChild(toggleIcon);
+      toggleBtn.appendChild(document.createTextNode(isSuspended ? ' Reactivar' : ' Suspender'));
       toggleBtn.addEventListener('click', async () => {
         const newStatus = isSuspended ? 'approved' : 'suspended';
         if (!confirm(`¿${isSuspended ? 'Reactivar' : 'Suspender'} el comercio "${store.name}"?`)) return;
@@ -818,7 +827,10 @@ function setupProductSearch() {
       const tdActions = document.createElement('td');
       const toggleBtn = document.createElement('button');
       toggleBtn.className = `action-btn ${product.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
-      toggleBtn.textContent = product.is_active ? 'Suspender' : 'Reactivar';
+      const toggleIcon = document.createElement('i');
+      toggleIcon.className = product.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+      toggleBtn.appendChild(toggleIcon);
+      toggleBtn.appendChild(document.createTextNode(product.is_active ? ' Suspender' : ' Reactivar'));
       toggleBtn.addEventListener('click', async () => {
         if (!confirm(`¿${product.is_active ? 'Suspender' : 'Reactivar'} "${product.title}"?`)) return;
         const { error: rpcError } = await supabase.rpc('admin_set_product_active', {
@@ -885,7 +897,10 @@ async function fetchPendingProofsAdmin() {
     viewBtn.className = 'action-btn';
     viewBtn.style.background = 'var(--bl-primary)';
     viewBtn.style.color = 'white';
-    viewBtn.textContent = 'Ver';
+    const viewIcon = document.createElement('i');
+    viewIcon.className = 'fa-solid fa-eye';
+    viewBtn.appendChild(viewIcon);
+    viewBtn.appendChild(document.createTextNode(' Ver'));
     viewBtn.addEventListener('click', async () => {
       // Se abre la pestaña ANTES del await: el bloqueador de popups de
       // Safari/Firefox corta window.open() en cuanto termina el gesto del
@@ -1014,7 +1029,10 @@ async function fetchPharmacies() {
     const tdActions = document.createElement('td');
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${ph.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
-    toggleBtn.textContent = ph.is_active ? 'Desactivar' : 'Activar';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = ph.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(ph.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
       const { error: updErr } = await supabase
         .from('pharmacies')
@@ -1082,7 +1100,10 @@ async function fetchShifts() {
     const tdActions = document.createElement('td');
     const delBtn = document.createElement('button');
     delBtn.className = 'action-btn btn-suspend';
-    delBtn.textContent = 'Quitar';
+    const delIcon = document.createElement('i');
+    delIcon.className = 'fa-solid fa-trash';
+    delBtn.appendChild(delIcon);
+    delBtn.appendChild(document.createTextNode(' Quitar'));
     delBtn.addEventListener('click', async () => {
       if (!confirm(`¿Quitar el turno del ${tdDate.textContent}?`)) return;
       const { error: delErr } = await supabase.from('pharmacy_shifts').delete().eq('id', shift.id);
@@ -1243,7 +1264,10 @@ async function fetchEmergencyContacts() {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${contact.is_active ? 'btn-suspend' : 'btn-reactivate'}`;
-    toggleBtn.textContent = contact.is_active ? 'Desactivar' : 'Activar';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = contact.is_active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(contact.is_active ? ' Desactivar' : ' Activar'));
     toggleBtn.addEventListener('click', async () => {
       const { error: updErr } = await supabase
         .from('emergency_contacts')
@@ -1364,7 +1388,10 @@ async function fetchReportedReviews() {
     const tdActions = document.createElement('td');
     const toggleBtn = document.createElement('button');
     toggleBtn.className = `action-btn ${review.is_hidden ? 'btn-reactivate' : 'btn-suspend'}`;
-    toggleBtn.textContent = review.is_hidden ? 'Mostrar' : 'Ocultar';
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = review.is_hidden ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(review.is_hidden ? ' Mostrar' : ' Ocultar'));
     toggleBtn.addEventListener('click', async () => {
       const { error: updateError } = await supabase.from('reviews').update({ is_hidden: !review.is_hidden }).eq('id', review.id);
       if (updateError) {
@@ -1503,7 +1530,10 @@ async function fetchErrorLogs() {
     const detailBtn = document.createElement('button');
     detailBtn.type = 'button';
     detailBtn.className = 'action-btn';
-    detailBtn.textContent = 'Ver detalle';
+    const detailIcon = document.createElement('i');
+    detailIcon.className = 'fa-solid fa-circle-info';
+    detailBtn.appendChild(detailIcon);
+    detailBtn.appendChild(document.createTextNode(' Ver detalle'));
     detailBtn.addEventListener('click', () => {
       alert(
         `Mensaje:\n${log.message}\n\nURL: ${log.url || '—'}\n\nUser agent: ${log.user_agent || '—'}\n\nStack:\n${log.stack || '(sin stack trace)'}`
@@ -1600,8 +1630,11 @@ async function fetchSupportTickets() {
     const tdActions = document.createElement('td');
     const replyBtn = document.createElement('button');
     replyBtn.type = 'button';
-    replyBtn.style.cssText = 'padding: 0.35rem 0.7rem; border: 1px solid var(--bl-primary, #2563eb); color: var(--bl-primary, #2563eb); background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;';
-    replyBtn.textContent = 'Ver hilo';
+    replyBtn.style.cssText = 'display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.35rem 0.7rem; border: 1px solid var(--bl-primary, #2563eb); color: var(--bl-primary, #2563eb); background: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem;';
+    const replyIcon = document.createElement('i');
+    replyIcon.className = 'fa-solid fa-comments';
+    replyBtn.appendChild(replyIcon);
+    replyBtn.appendChild(document.createTextNode('Ver hilo'));
     replyBtn.addEventListener('click', () => toggleAdminTicketThread(tr, ticket));
     tdActions.appendChild(replyBtn);
     tr.appendChild(tdActions);
@@ -1778,7 +1811,10 @@ async function fetchAuditLog() {
     const detailBtn = document.createElement('button');
     detailBtn.type = 'button';
     detailBtn.className = 'action-btn';
-    detailBtn.textContent = 'Ver detalle';
+    const detailIcon = document.createElement('i');
+    detailIcon.className = 'fa-solid fa-circle-info';
+    detailBtn.appendChild(detailIcon);
+    detailBtn.appendChild(document.createTextNode(' Ver detalle'));
     detailBtn.addEventListener('click', () => {
       alert(
         `Tabla: ${log.target_table}\nID: ${log.target_id || '—'}\n\nDatos:\n${JSON.stringify(log.details, null, 2)}`
