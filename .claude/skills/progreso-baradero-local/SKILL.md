@@ -4117,3 +4117,67 @@ toca código de `js/`, no cambia el resultado de ninguna consulta existente, sol
   prematuro; hay que revisarlo con datos de uso real más adelante.
 
 Quedan como próximo candidato si se retoma este ángulo de performance.
+
+## 2026-09-23 (continuación) — auth_rls_initplan: policies de RLS sin re-evaluar por fila
+
+Pedido explícito del usuario ("segui con el auth_rls_initplan también"), siguiendo a la entrada de
+arriba (índices de FK, migración 103) en la misma sesión.
+
+Las 115 policies flageadas por el advisor llamaban `auth.uid()`/`auth.jwt()` directo dentro de su
+`USING`/`WITH CHECK` (ej. `owner_id = auth.uid()`, `COALESCE((auth.jwt()->'app_metadata'->>'role'),
+'cliente') = 'admin'`). Como esas funciones son `STABLE` y no `IMMUTABLE`, Postgres no las puede
+tratar como constantes de toda la consulta -- las re-evalúa **fila por fila**. La recomendación
+estándar de Supabase (documentada en su guía de RLS) es envolverlas en un subselect escalar:
+`owner_id = (select auth.uid())`. El planner entonces las resuelve como un `InitPlan`, una sola vez
+por consulta, y reusa el resultado para todas las filas.
+
+**Cómo se aplicó, sin transcribir ~90 `ALTER POLICY` a mano:** un `DO` block (migración
+`db/schema/104_optimize_rls_auth_calls.sql`) que la propia base ejecuta:
+
+1. Lee `pg_policies` filtrando `schemaname = 'public'` y `qual`/`with_check` que matcheen
+   `auth\.(uid|jwt|role|email)\(\)` sin envolver.
+2. Arma el `ALTER POLICY %I ON public.%I USING (...) WITH CHECK (...)` con `format()`, aplicando
+   `regexp_replace(expr, 'auth\.(uid|jwt|role|email)\(\)', '(select auth.\1())', 'g')` sobre el
+   `qual`/`with_check` de cada policy (solo agrega la cláusula `USING`/`WITH CHECK` si esa policy ya
+   la tenía -- una policy de solo INSERT no gana un `USING` que no tenía, y viceversa).
+3. `EXECUTE` cada statement generado, todo dentro de la misma transacción (todo o nada -- si un
+   `ALTER POLICY` fallara, no queda nada aplicado a medias).
+
+**Antes de aplicarlo a producción** se corrió el mismo `SELECT` (sin el `DO`/`EXECUTE`) como
+dry-run para leer los ~90 `ALTER POLICY` que iba a generar y revisarlos a ojo -- entre otras cosas,
+confirmar que una policy con `auth.uid()` repetido dos veces en el mismo `qual` (ej.
+`products_delete_own_seller_or_admin`, que lo usa una vez para `seller_id = auth.uid()` y otra
+dentro de un `EXISTS` sobre `profiles`) envolvía las dos ocurrencias por separado sin romper el
+paréntesis que ya tenían alrededor.
+
+**Ejemplo real, del `qual` de `admin_audit_log_select_admin`:**
+```
+-- antes
+(COALESCE(((auth.jwt() -> 'app_metadata'::text) ->> 'role'::text), 'cliente'::text) = 'admin'::text)
+-- después
+(COALESCE((((select auth.jwt()) -> 'app_metadata'::text) ->> 'role'::text), 'cliente'::text) = 'admin'::text)
+```
+Mismo valor, misma columna que compara -- el único cambio es que ahora se evalúa una vez, no una vez
+por fila de `admin_audit_log`.
+
+**Gotcha de verificación:** Postgres normaliza el texto guardado de una policy al hacer `ALTER
+POLICY` -- no queda literal `(select auth.uid())` como se escribió, sino
+`( SELECT auth.uid() AS uid)` (mayúsculas, espacio, alias automático). El primer chequeo de
+"¿quedó algo sin envolver?" comparando contra el string literal en minúscula dio 115 falsos
+positivos por este motivo -- hubo que repetirlo con `!~* 'select\s+auth\.'` (case-insensitive) para
+que diera 0 de verdad.
+
+**Verificado:**
+- `get_advisors(type: performance)` después de aplicar: el lint `auth_rls_initplan` ya no aparece
+  (antes eran 115 hallazgos WARN).
+- `EXPLAIN (costs off)` de una consulta real contra `favorite_stores` con rol `authenticated` y
+  `request.jwt.claims` simulado: el filtro de la policy aparece como `(InitPlan 1).col1` en vez de
+  llamar a la función en el nodo `Filter` de cada fila -- confirma que el fix funciona como se
+  espera, no solo que la sintaxis es válida.
+- `get_advisors(type: security)` sin cambios respecto a antes de las migraciones 103/104 -- ningún
+  hallazgo nuevo, nada roto.
+
+**Sin tocar, a propósito:** `multiple_permissive_policies` (49 WARN) queda igual que se documentó
+en la entrada de arriba -- consolidar dos policies permisivas del mismo rol+acción (ej. la del
+dueño + la del admin) sin revisar cada tabla puede abrir un hueco de acceso que no vale la pena
+correr en una sesión sin ese pedido específico.

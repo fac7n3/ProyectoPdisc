@@ -87,11 +87,19 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   aditivo -- sin un índice, cada policy de RLS que filtra por
   tienda/cliente/pedido hacía seq scan; no se nota con los catálogos chicos
   de hoy pero conviene tenerlo resuelto antes de que el volumen real lo
-  vuelva visible. Migración **103**, aplicada a producción. **Quedan sin
-  tocar, a propósito (alcance/riesgo, requieren revisión caso por caso, no
-  una sesión apurada):** `auth_rls_initplan` (115 policies llaman
-  `auth.uid()` directo en vez de `(select auth.uid())`) y
-  `multiple_permissive_policies` (49). Detalle completo en el skill
+  vuelva visible. Migración **103**, aplicada a producción.
+  **Ampliado a pedido del usuario en la misma sesión:** también se resolvió
+  `auth_rls_initplan` (WARN, 115 hallazgos) -- las policies de RLS llamaban
+  `auth.uid()`/`auth.jwt()` directo, así que Postgres las re-evaluaba fila
+  por fila en vez de una sola vez por consulta. Migración **104**: un `DO`
+  block que genera y ejecuta el `ALTER POLICY ... USING (...) WITH CHECK
+  (...)` para cada policy de `public`, reemplazando cada llamada por
+  `(select auth.uid())`/`(select auth.jwt())` (mecánico, sin cambio de
+  semántica -- mismo valor durante toda la consulta). Verificado con
+  `EXPLAIN`: el filtro pasó a resolverse como `InitPlan` en vez de por fila.
+  **Sigue sin tocar, a propósito (alcance/riesgo -- consolidar policies sin
+  revisar cada caso puede abrir un hueco de acceso):**
+  `multiple_permissive_policies` (49 WARN). Detalle completo en el skill
   `progreso-baradero-local`.
 - **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
   a pedido del usuario: el comerciante las carga y el cliente elige antes de
