@@ -371,6 +371,16 @@
 /* Estado vacío, cuando todavía no cargó nada. */
 .of-empty { text-align: center; padding: 2.5rem 1.25rem; color: var(--bl-text-secondary); background: var(--bl-surface-alt); border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-lg); }
 .of-empty i { font-size: 1.75rem; color: var(--bl-text-muted); margin-bottom: 0.6rem; display: block; }
+/* El párrafo de ayuda de un estado vacío usa .of-sub, que trae `max-width: 60ch`
+   para no hacer renglones larguísimos. Ese ancho máximo hace que la caja del
+   párrafo sea más angosta que el bloque, y con el `margin: 0` de .of-sub quedaba
+   pegada a la izquierda: el `text-align: center` de acá arriba centra el texto
+   DENTRO de esa caja, no la caja. Se veía el título centrado y el texto de
+   abajo corrido (175px en la sección Servicios). Lo mismo pasaba en los cinco
+   estados vacíos del panel (servicios, fotos, consultas, reseñas, métricas). */
+.of-empty .of-sub { margin-inline: auto; }
+.of-empty p { margin-block: 0; }
+.of-empty p + p { margin-top: 0.4rem; }
 
 /* Horarios: una fila por día, con sus franjas. */
 .of-day { display: flex; align-items: flex-start; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--bl-border-light); flex-wrap: wrap; }

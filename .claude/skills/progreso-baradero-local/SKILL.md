@@ -4110,3 +4110,33 @@ Revisado sin cambios necesarios: la tarjeta "Ventas para calificar" del Resumen 
 duplicada, hay un solo `.mc-navitem[data-section="pedidos"]`, al entrar se marca y arranca en
 "Todos", la pestaña "Completados" sigue estando, y al pararse en ella el sidebar **sigue**
 marcando Pedidos (que es justo lo que antes se rompía).
+
+## 2026-09-23 — Estados vacíos del panel de profesional: el texto de ayuda salía descentrado
+
+Reportado con captura sobre "Servicios y precios": el ícono y el título centrados, y el párrafo de
+abajo corrido.
+
+**Causa:** `.of-sub` es la clase de subtítulo del panel y trae `max-width: 60ch` (para no hacer
+renglones larguísimos en los subtítulos de sección, donde va alineada a la izquierda) con
+`margin: 0`. Dentro de `.of-empty`, que es `text-align: center`, eso centra el texto **dentro** de
+la caja del párrafo, pero la caja —más angosta que el bloque por el `max-width`— queda pegada a la
+izquierda.
+
+Medido en el navegador antes del fix, con el desvío del centro de cada `<p>` respecto del centro
+del bloque: título **0px**, párrafo de ayuda **-175px**.
+
+**Fix:** `.of-empty .of-sub { margin-inline: auto; }`, más `margin-block: 0` en los `<p>` del
+bloque y un `margin-top` explícito entre ellos (los márgenes default de `<p>` dejaban el bloque
+flojo). La regla va **scopeada a `.of-empty`** a propósito: `.of-sub` fuera de un estado vacío es
+un subtítulo de sección y tiene que seguir alineado a la izquierda.
+
+Afectaba a los **cinco** estados vacíos del panel, no solo al reportado: servicios, fotos de
+trabajos, consultas, reseñas y estadísticas — todos arman el mismo `div.of-empty` con ícono +
+`<p>` + `<p class="of-sub">`. Los cinco quedaron en 0px.
+
+Revisado y **sin el mismo problema**: el panel de vendedor (`.pub-empty__sub` no lleva
+`max-width`, así que ocupa todo el ancho y el `text-align: center` alcanza).
+
+**Gotcha del harness:** cada sección del panel carga su contenido recién cuando el shell la muestra
+(`ctx.alMostrar`), así que en un test no alcanza con sacarle el `hidden` a la sección — hay que
+hacer click en el `.mc-navitem` de verdad o el contenedor queda vacío.

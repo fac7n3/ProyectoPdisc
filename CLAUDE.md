@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — el texto de ayuda de los **estados vacíos del panel
+  de profesional/técnico** salía descentrado (reportado con captura en
+  "Servicios y precios"). `.of-sub` trae `max-width: 60ch` para no hacer
+  renglones larguísimos, y con `margin: 0` esa caja quedaba pegada a la
+  izquierda: el `text-align: center` del bloque centra el texto **dentro** de la
+  caja, no la caja. Medido en el navegador: el título a 0px del centro y el
+  párrafo de abajo a **-175px**. Arreglado con `.of-empty .of-sub
+  { margin-inline: auto; }` (regla scopeada: `.of-sub` fuera de un estado vacío
+  sigue alineada a la izquierda como corresponde a un subtítulo de sección), más
+  la normalización de los márgenes de los `<p>`. Afectaba a los **cinco**
+  estados vacíos del panel (servicios, fotos, consultas, reseñas, estadísticas)
+  — los cinco verificados en 0px. El panel de vendedor no tenía el mismo
+  problema: su `.pub-empty__sub` no lleva `max-width`.
 - **Resuelto 2026-09-23** — el sidebar del panel de vendedor tenía **dos
   entradas que llevaban a la misma sección**: "Pedidos" y "Ventas", las dos con
   `data-section="pedidos"`, cambiando solo la pestaña (`all` vs `completed`).
