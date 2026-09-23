@@ -1211,7 +1211,10 @@ function goToPedidos(tab) {
 function setPedidosTab(tab) {
   pedidosTab = tab;
   document.querySelectorAll('#pedidos-tabs .pd-tab').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
-  document.querySelectorAll('.mc-navitem[data-section="pedidos"]').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.pedidosTab === tab));
+  // El resaltado del sidebar lo maneja el shell por `data-section`
+  // (js/vender-shell.js). Acá había una línea que lo pisaba según la pestaña:
+  // hacía falta cuando dos entradas apuntaban a esta misma sección, y con una
+  // sola apagaba "Pedidos" apenas mirabas una pestaña que no fuera "Todos".
   renderPedidos();
 }
 
@@ -1249,9 +1252,11 @@ function initPedidosControls() {
     input.addEventListener('change', () => { pedidosDeliveryFilter = input.value; renderPedidos(); });
   });
 
-  // Atajos del sidebar hacia una pestaña específica de Pedidos (p. ej. "Ventas completadas").
+  // Entrar a Pedidos desde el sidebar muestra la lista completa: si quedó
+  // filtrada de la visita anterior, volver a tocar la sección y ver menos
+  // pedidos de los que hay parece que faltan.
   document.querySelectorAll('.mc-navitem[data-section="pedidos"]').forEach((item) => {
-    item.addEventListener('click', () => setPedidosTab(item.dataset.pedidosTab || 'all'));
+    item.addEventListener('click', () => setPedidosTab('all'));
   });
 
   renderPedidosTips();

@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — el sidebar del panel de vendedor tenía **dos
+  entradas que llevaban a la misma sección**: "Pedidos" y "Ventas", las dos con
+  `data-section="pedidos"`, cambiando solo la pestaña (`all` vs `completed`).
+  A pedido del usuario queda **solo "Pedidos"** — no se pierde nada, la pestaña
+  "Completados" sigue adentro junto al resto. De paso se sacó una línea de
+  `setPedidosTab()` que apagaba el resaltado del sidebar según la pestaña: hacía
+  falta para desempatar entre las dos entradas, y con una sola **apagaba
+  "Pedidos" apenas mirabas una pestaña que no fuera "Todos"** (el resaltado lo
+  maneja el shell por `data-section`). Entrar desde el sidebar ahora siempre
+  muestra la lista completa. La tarjeta "Ventas para calificar" del Resumen
+  sigue llevando a la pestaña Completados, y los permisos por empleado no se
+  tocan (van por la clave `pedidos`, no por botón). 6 checks de Playwright.
 - **Resuelto 2026-09-22** — **Opciones de producto** (color, sabor, talle…),
   a pedido del usuario: el comerciante las carga y el cliente elige antes de
   comprar. Migración **102** (aplicada a producción): `product_options` +

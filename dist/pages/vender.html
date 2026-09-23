@@ -742,7 +742,7 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-BAmuR0uJ.js"></script>
+    <script type="module" crossorigin src="/assets/vender-TX0-_eKT.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
@@ -955,9 +955,12 @@
               <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-tag mc-navicon"></i> Ventas <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
-                <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="all">Pedidos</button>
+                <!-- Una sola entrada para la sección Pedidos. Antes había dos
+                     ("Pedidos" y "Ventas") que llevaban a la MISMA sección y solo
+                     cambiaban la pestaña; "Completados" sigue estando adentro,
+                     junto al resto de las pestañas. -->
+                <button type="button" class="mc-navitem" data-section="pedidos">Pedidos</button>
                 <button type="button" class="mc-navitem" data-section="pagos">Pagos por confirmar</button>
-                <button type="button" class="mc-navitem" data-section="pedidos" data-pedidos-tab="completed">Ventas</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
                 <button type="button" class="mc-navitem" data-section="notificaciones">Notificaciones</button>

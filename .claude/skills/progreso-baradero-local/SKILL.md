@@ -4075,3 +4075,38 @@ aparece con el aviso de guardar primero y sin editor, y al volver atrás desapar
 (`js/panel-onboarding-utils.js`) que tapa el formulario en las capturas — hay que cerrarlo
 ("Entendido, ir a mi panel"). Y el sidebar cambia de sección con su propio handler: para llegar al
 formulario en un test conviene revelar la sección de Publicaciones a mano.
+
+## 2026-09-23 — Sidebar del vendedor: "Pedidos" y "Ventas" eran la misma sección
+
+Reportado por el usuario con captura: en el grupo "Ventas" del sidebar había dos entradas que
+llevaban al mismo lado.
+
+En el HTML las dos tenían `data-section="pedidos"` y solo cambiaba `data-pedidos-tab`
+(`all` en "Pedidos", `completed` en "Ventas"). O sea que "Ventas" era un atajo a una pestaña de
+Pedidos, no una sección propia — y la pestaña **"Completados" ya está adentro** de la sección junto
+a Todos / Pendientes de pago / Envíos en curso / Cancelados, así que sacar el atajo no quita
+ninguna función.
+
+**El detalle que había que mirar antes de borrar:** `setPedidosTab()` tenía esta línea
+
+```js
+document.querySelectorAll('.mc-navitem[data-section="pedidos"]')
+  .forEach((btn) => btn.classList.toggle('is-active', btn.dataset.pedidosTab === tab));
+```
+
+que existía **solo** para desempatar cuál de las dos entradas se resaltaba. Con una sola entrada
+pasaba a ser un bug: al mirar cualquier pestaña que no fuera "Todos", `dataset.pedidosTab` no
+coincidía y **apagaba el resaltado de "Pedidos"**, dejando el sidebar sin ninguna sección marcada.
+Se borró: el resaltado ya lo maneja el shell por `data-section` (`js/vender-shell.js`).
+
+El click en la entrada del sidebar ahora siempre resetea a "Todos" — si quedara filtrada de la
+visita anterior, volver a entrar y ver menos pedidos de los que hay parece que faltan.
+
+Revisado sin cambios necesarios: la tarjeta "Ventas para calificar" del Resumen navega con
+`{section:'pedidos', tab:'completed'}` y sigue funcionando; los permisos por empleado
+(`STAFF_PERMISSION_SECTIONS`) van por la clave `pedidos`, no por botón del sidebar.
+
+6 checks de Playwright sobre el panel real: la lista del grupo queda en 7 entradas sin la
+duplicada, hay un solo `.mc-navitem[data-section="pedidos"]`, al entrar se marca y arranca en
+"Todos", la pestaña "Completados" sigue estando, y al pararse en ella el sidebar **sigue**
+marcando Pedidos (que es justo lo que antes se rompía).
