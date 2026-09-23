@@ -110,20 +110,16 @@ export function hasTransferData(store) {
 /**
  * Datos de contacto del comercio para esta pantalla. Respeta lo que eligió el
  * vendedor en su panel (`contact_method`): con 'none' no se muestra ningún
- * número, igual que en la ficha del producto. El WhatsApp se ofrece si está
- * cargado aunque el método elegido sea 'phone' -- es el canal natural para
- * mandar el comprobante, y el número ya es público en ese caso.
- * @returns {{ phone: string|null, phoneDigits: string|null, whatsapp: string|null, whatsappDigits: string|null }}
+ * número, igual que en la ficha del producto. Solo WhatsApp -- el comprador
+ * nunca puede llamar al vendedor, solo escribirle (ver store-contact-utils.js).
+ * @returns {{ whatsapp: string|null, whatsappDigits: string|null }}
  */
 export function buildContactInfo(store) {
-  const empty = { phone: null, phoneDigits: null, whatsapp: null, whatsappDigits: null };
+  const empty = { whatsapp: null, whatsappDigits: null };
   if (!store || store.contact_method === 'none') return empty;
 
-  const phone = String(store.phone ?? '').trim();
   const whatsapp = String(store.whatsapp ?? '').trim();
   return {
-    phone: digitsOnly(phone) ? phone : null,
-    phoneDigits: digitsOnly(phone) || null,
     whatsapp: digitsOnly(whatsapp) ? whatsapp : null,
     whatsappDigits: digitsOnly(whatsapp) || null,
   };

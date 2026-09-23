@@ -38,32 +38,29 @@ check("sin tienda, no hay acción", () => {
 });
 
 check("contact_method 'none' no muestra botón", () => {
-  assert.equal(buildContactAction({ contact_method: "none", phone: "3329123456" }), null);
+  assert.equal(buildContactAction({ contact_method: "none", whatsapp: "3329123456" }), null);
 });
 
-check("'phone' arma un link tel: con el número visible", () => {
-  const action = buildContactAction({ contact_method: "phone", phone: "3329 12-3456" });
-  assert.equal(action.href, "tel:3329123456");
-  assert.ok(action.label.includes("3329 12-3456"));
-});
-
-check("'phone' sin número cargado no muestra botón", () => {
-  assert.equal(buildContactAction({ contact_method: "phone", phone: "" }), null);
-});
-
-check("'whatsapp' arma un wa.me con el mensaje prellenado", () => {
+check("el comprador nunca puede llamar: no hay rama tel:, solo wa.me", () => {
   const action = buildContactAction({ contact_method: "whatsapp", whatsapp: "+54 9 3329 123456" }, "Silla de jardín");
   assert.ok(action.href.startsWith("https://wa.me/5493329123456?text="));
   assert.ok(decodeURIComponent(action.href.split("text=")[1]).includes("Silla de jardín"));
 });
 
-check("'whatsapp' sin número cargado no muestra botón (aunque haya phone)", () => {
-  assert.equal(buildContactAction({ contact_method: "whatsapp", phone: "3329123456", whatsapp: "" }), null);
+check("cuentas viejas con contact_method='phone' también arman wa.me (no tel:)", () => {
+  const action = buildContactAction({ contact_method: "phone", whatsapp: "3329123456" });
+  assert.equal(action.href, "https://wa.me/3329123456?text=Hola!%20Quer%C3%ADa%20realizar%20una%20consulta%20(te%20escribo%20desde%20Baradero%20Local.)");
 });
 
-check("sin contact_method definido, se comporta como 'phone' (default de la columna)", () => {
-  const action = buildContactAction({ phone: "3329123456" });
-  assert.equal(action.href, "tel:3329123456");
+check("sin whatsapp cargado no muestra botón, sea cual sea contact_method", () => {
+  assert.equal(buildContactAction({ contact_method: "whatsapp", whatsapp: "" }), null);
+  assert.equal(buildContactAction({ contact_method: "phone", whatsapp: "" }), null);
+  assert.equal(buildContactAction({ whatsapp: "" }), null);
+});
+
+check("sin contact_method definido, se comporta como cualquier método que no sea 'none'", () => {
+  const action = buildContactAction({ whatsapp: "3329123456" });
+  assert.equal(action.href.startsWith("https://wa.me/3329123456?text="), true);
 });
 
 console.log("getVisibleSocialLinks");
