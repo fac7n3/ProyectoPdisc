@@ -4475,3 +4475,27 @@ sale mal. El cliente nunca veía el número de pedido ni el monto por comercio e
 mockeado: aviso previo, payload de `create_order`, dos tarjetas, lo copiado al portapapeles (CBU limpio,
 monto `10000`, teléfono en dígitos), link de WhatsApp, comercio sin datos, carrito vaciado y sin scroll
 horizontal. Mis compras y el form del vendedor no se caminaron logueados en el navegador.
+
+## 2026-09-23 (continuación) — Alias bancario obligatorio para publicar productos
+
+**Pedido del usuario:** "para subir productos, tenés que sí o sí tener el alias cargado".
+
+- **Migración 107** (`107_require_transfer_alias_for_products.sql`, aplicada a producción): trigger
+  `products_require_transfer_alias` (BEFORE INSERT OR UPDATE OF store_id) que rechaza el alta si
+  `stores.transfer_alias` está vacío, con `hint = 'missing_transfer_alias'`. En la base y no solo en el
+  panel porque `products_insert_seller` deja insertar por la API REST (misma lección que la 96).
+  **Alcance a propósito:** solo el alta (o mover el producto a otra tienda); editar, pausar o borrar
+  productos existentes sigue andando, y borrar el alias después NO baja lo ya publicado. El admin está
+  exento. Probado contra la base real con ROLLBACK: sin alias → bloqueado, con alias → ok, editar
+  existente sin alias → ok, admin → ok.
+- **Panel** (`js/vender.js`): `currentStoreHasAlias` (consulta aparte, `loadStoreAliasState`; ante error
+  asume que sí para no bloquear por una falla de red — la base igual valida). Aviso amarillo en
+  Publicaciones con "Cargar mi alias" (lleva al campo y lo enfoca; al empleado le dice que se lo pida al
+  dueño). "Publicar" / "Publicar ahora" / el submit de un alta no abren el form sin alias, y el error del
+  trigger se traduce al mismo aviso. Paso nuevo en el checklist de bienvenida. Al guardar el perfil con
+  alias se habilita sin recargar. Campo "Alias *" marcado como obligatorio para publicar.
+- **Verificación:** 10 checks de Playwright sobre el build real con Supabase mockeado (sin alias: aviso,
+  form bloqueado, paso de onboarding, salto al campo, alias inválido no se guarda, alias válido sí y
+  desbloquea; con alias: sin aviso, form abre).
+- **Ojo:** hoy solo Beruru tiene alias — los otros 16 comercios no pueden publicar productos nuevos hasta
+  cargarlo (sus productos actuales siguen a la venta).
