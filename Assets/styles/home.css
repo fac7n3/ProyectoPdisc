@@ -4897,8 +4897,8 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 .pm-options {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  margin: 1rem 0;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
 }
 
 .pm-option {
