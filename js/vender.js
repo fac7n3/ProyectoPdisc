@@ -14,6 +14,7 @@ import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
+import { confirmDialog } from './confirm-dialog.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -2859,7 +2860,11 @@ function buildPubActions(p) {
   // Eliminar (misma confirmación/advertencia que antes).
   menu.appendChild(pubMenuItem('Eliminar', 'fa-trash', async () => {
     closePubMenus();
-    if (!confirm('¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)')) return;
+    const ok = await confirmDialog(
+      '¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)',
+      { confirmText: 'Eliminar', danger: true }
+    );
+    if (!ok) return;
 
     // Las URLs se leen ANTES de borrar: al irse el producto, product_images se
     // va en cascada y ya no habría forma de saber qué archivos quedaron sueltos.
