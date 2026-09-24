@@ -889,9 +889,13 @@ function buildPedidoProductCell(order) {
   const info = document.createElement('div');
   const name = document.createElement('span');
   name.className = 'pd-cell-product__name';
-  // `title` es el nombre congelado al momento de la compra (order_items.title);
-  // el join a products es solo el respaldo para pedidos viejos que no lo tienen.
-  name.textContent = first?.title || first?.products?.title || 'Producto eliminado';
+  // `title` (textContent) es el nombre congelado al momento de la compra
+  // (order_items.title); el join a products es solo el respaldo para pedidos
+  // viejos que no lo tienen. El atributo `title` (tooltip) es el nombre
+  // completo, por si el recorte de la celda se come parte del texto.
+  const productName = first?.title || first?.products?.title || 'Producto eliminado';
+  name.textContent = productName;
+  name.title = productName;
   info.appendChild(name);
 
   // Qué le pidieron exactamente. Sin esto el vendedor no sabe de qué color
@@ -946,19 +950,23 @@ function buildPedidoBuyerCell(order) {
   cell.appendChild(avatar);
 
   const info = document.createElement('div');
-  info.appendChild(rsEl('span', 'pd-cell-buyer__name', name));
-  info.appendChild(rsEl('span', 'pd-cell-buyer__loc', 'Baradero'));
+  const nameEl = rsEl('span', 'pd-cell-buyer__name', name);
+  nameEl.title = name;
+  info.appendChild(nameEl);
   cell.appendChild(info);
 
   return cell;
 }
 
-/** Fila de la tabla de Pedidos: N°, producto, comprador, estado, fecha, total, acciones. */
+/** Fila de la tabla de Pedidos: N° (con la fecha abajo), producto, comprador, estado, total, acciones. */
 function buildPedidoRow(order) {
   const tr = document.createElement('tr');
 
   const orderCell = document.createElement('td');
   orderCell.appendChild(rsEl('span', 'pd-cell-order', `#BL-${order.id.split('-')[0].slice(0, 5).toUpperCase()}`));
+  // Antes era su propia columna -- ver .pd-cell-order__date en vender.html
+  // sobre por qué se movió acá.
+  orderCell.appendChild(rsEl('span', 'pd-cell-order__date', new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
   if (order.revocation_requested_at) {
     const revocationBadge = rsEl('div', null, '⚠ Arrepentimiento solicitado');
     revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.15rem 0.5rem; border-radius: var(--bl-radius-md); font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; display: inline-block;';
@@ -979,11 +987,6 @@ function buildPedidoRow(order) {
   statusCell.appendChild(badge);
   tr.appendChild(statusCell);
 
-  const dateCell = document.createElement('td');
-  dateCell.className = 'pd-cell-date';
-  dateCell.textContent = new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
-  tr.appendChild(dateCell);
-
   const totalCell = document.createElement('td');
   totalCell.className = 'pd-cell-total';
   totalCell.textContent = formatPrice(order.total_price);
@@ -991,7 +994,7 @@ function buildPedidoRow(order) {
 
   const actionsCell = document.createElement('td');
   const actionsWrap = rsEl('div', 'pd-row-actions');
-  const detailBtn = rsEl('button', 'pd-detail-btn', 'Ver detalle');
+  const detailBtn = rsEl('button', 'pd-detail-btn', 'Detalle');
   detailBtn.type = 'button';
   detailBtn.addEventListener('click', () => {
     showToast('La vista de detalle del pedido llega pronto. Mientras tanto usá el menú de acciones (⋮) para gestionarlo.', 'success');
