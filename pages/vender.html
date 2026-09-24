@@ -690,6 +690,13 @@
       .popt-chip__btn { border: none; background: none; color: var(--bl-text-muted); cursor: pointer; padding: 0.15rem 0.25rem; line-height: 1; border-radius: 50%; font-size: 0.75rem; }
       .popt-chip__btn:hover { color: var(--bl-primary); background: var(--bl-surface-alt); }
       .popt-chip__btn--danger:hover { color: var(--bl-danger); background: #fee2e2; }
+      /* Nombre de la lista: es lo que ve el cliente arriba de los chips, así que
+         se edita en el lugar en vez de ser un texto fijo. */
+      .popt-group__name-input { flex: 1; min-width: 0; max-width: 16rem; font-weight: 700; padding: 0.45rem 0.6rem; }
+      /* El segundo tipo de opción (Color Y Talle) es el caso raro: va como un
+         agregado discreto al final, no como el primer paso obligatorio. */
+      .popt-add-group { display: inline-flex; align-items: center; gap: 0.45rem; background: none; border: 1px dashed var(--bl-border); color: var(--bl-text-secondary); padding: 0.55rem 0.9rem; border-radius: var(--bl-radius-md); font: inherit; font-size: 0.875rem; cursor: pointer; align-self: flex-start; }
+      .popt-add-group:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
       .popt-add__row { display: flex; gap: 0.5rem; align-items: center; }
       .popt-add__row .form-input { flex: 1; min-width: 0; }
       .popt-add__row .btn-outline { padding: 0.6rem 1rem; white-space: nowrap; }
@@ -1525,9 +1532,9 @@
                   <fieldset class="pubform__card" id="prod-options-section" hidden>
                     <legend class="pubform__legend">Opciones <span class="pubform__opt">(color, sabor, talle…)</span></legend>
                     <p class="pubform__hint">
-                      Si vendés lo mismo en varias versiones, cargalas acá y el cliente elige
-                      cuál quiere antes de comprar. El stock sigue siendo el del producto:
-                      si se te acaba una, marcala como agotada.
+                      Escribí las versiones en las que lo vendés y el cliente elige cuál
+                      quiere antes de comprar. El stock sigue siendo el del producto: si se
+                      te acaba una, marcala como agotada.
                     </p>
                     <!-- En un alta nueva todavía no hay product_id contra el cual
                          guardar las opciones: se avisa y se habilitan al guardar. -->
@@ -1535,13 +1542,20 @@
                       Guardá el producto y vas a poder cargar acá mismo sus colores, sabores o talles.
                     </p>
                     <div id="prod-options-list" class="popt-list"></div>
-                    <div class="popt-add">
-                      <label class="form-label" for="option-name">Agregar un tipo de opción</label>
-                      <div class="popt-add__row">
-                        <input type="text" id="option-name" class="form-input" placeholder="Ej: Color" maxlength="40" />
-                        <button type="button" class="btn-outline" id="btn-add-option">Agregar</button>
-                      </div>
-                    </div>
+                    <!-- El alta de una lista nueva la agrega el JS al final de la lista de
+                         arriba (renderProductOptionsManager). Antes había acá un bloque
+                         separado "Agregar un tipo de opción" que era un paso previo
+                         obligatorio: había que crear el tipo y recién después cargarle los
+                         valores. Se sacó porque no se entendía -- un vendedor creó un tipo
+                         llamado "rosa", que en realidad es un valor. -->
+                    <datalist id="popt-name-suggestions">
+                      <option value="Color"></option>
+                      <option value="Sabor"></option>
+                      <option value="Talle"></option>
+                      <option value="Tamaño"></option>
+                      <option value="Material"></option>
+                      <option value="Aroma"></option>
+                    </datalist>
                   </fieldset>
 
                   <div class="pubform__actions">
