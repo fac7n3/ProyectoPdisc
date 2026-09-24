@@ -80,6 +80,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-24** — el editor de opciones del producto **pedía crear
+  "un tipo de opción" antes de poder cargar nada**, y ese paso previo no se
+  entendía: el usuario creó un tipo llamado **"rosa"**, que en realidad es un
+  valor, y quedó con una lista vacía. Ahora al elegir "Variantes" **ya aparece
+  una lista lista para escribir**: se pone el nombre (viene "Color" por
+  defecto, con sugerencias Color/Sabor/Talle/Tamaño/Material/Aroma) y se
+  escriben las opciones ahí mismo. **La lista no existe en la base hasta que
+  se carga la primera opción**, así que abrir el formulario y arrepentirse no
+  deja grupos vacíos dando vueltas. El caso de dos listas a la vez (Color **y**
+  Talle, que es lo que necesita la ropa) **no se perdió**: quedó como un
+  "Agregar otro tipo de opción" discreto al final, en vez de ser el primer paso
+  obligatorio. El nombre de cada lista pasó a ser un input editable en el lugar
+  (es lo que ve el cliente arriba de los chips, y antes había que borrar la
+  lista entera para corregirlo). 13 checks de Playwright sobre el panel real,
+  incluido el caso exacto del usuario: escribir "rosa" directo y que quede
+  guardado en un solo paso.
 - **Resuelto 2026-09-23** — **El comprador ya no puede llamar al vendedor**,
   a pedido del usuario: solo puede escribirle por WhatsApp. `buildContactAction`
   (`js/store-contact-utils.js`, usado en `producto.js`/`comercio.js` para

@@ -4581,3 +4581,41 @@ admins eligen qué comercio puede usar esos espacios.
   home, 7 del admin, 6 del vendedor.
 - **No incluido:** el carrusel grande del hero sigue fijo (no es un espacio
   asignable). Si se quiere, el mismo esquema se extiende agregando slots.
+
+### Corregido 2026-09-24: el editor de opciones pedía un paso previo que no se entendía
+
+El primer diseño (2026-09-22) era de dos niveles explícitos: primero "Agregar un tipo de opción"
+(Color), y recién después cargarle valores (Rojo, Azul). **No se entendió**: el usuario creó un
+tipo llamado **"rosa"** —que es un valor, no un tipo— y quedó con una lista vacía diciendo "Sin
+valores todavía". Su pedido textual fue "quita lo de los valores".
+
+**La trampa de hacerlo literal:** aplanar a una sola lista por producto resuelve la confusión pero
+mata el caso de la ropa, que fue el ejemplo con el que arrancó toda la feature — una remera
+necesita Color **y** Talle como dos preguntas separadas. Se le planteó el costo y eligió la salida
+del medio.
+
+**Cómo quedó:**
+
+- Al elegir "Variantes" **ya se muestra una lista lista para escribir**, sin crear nada antes. El
+  nombre viene con "Color" por defecto y un `<datalist>` con las sugerencias habituales
+  (Color / Sabor / Talle / Tamaño / Material / Aroma), pero es texto libre.
+- **La lista es un borrador hasta la primera opción**: `group.id === null` significa que todavía no
+  existe en la base. Se inserta recién dentro de `agregarValor()`, junto con el primer valor. Sin
+  eso, abrir el formulario y arrepentirse dejaría grupos vacíos en `product_options` que el cliente
+  vería como una pregunta sin respuestas posibles.
+- El nombre de la lista pasó de texto fijo a **input editable en el lugar** (guarda en `change`).
+  Antes, para corregir "rosa" había que borrar la lista entera.
+- El segundo tipo (Color + Talle) quedó como un **"+ Agregar otro tipo de opción"** discreto al
+  final de las listas, en vez de ser el primer paso obligatorio. Agrega otra lista en borrador.
+- Se borró el bloque separado `.popt-add` del HTML y su handler `#btn-add-option`. **Ojo:**
+  `applyProductMode()` lo escondía por separado; ahora alcanza con esconder `#prod-options-list`,
+  que contiene todo el editor.
+
+El modelo de datos **no cambió** (`product_options` + `product_option_values`, migración 102):
+esto es solo cómo se carga. El cliente sigue viendo "Sabor: rosa".
+
+13 checks de Playwright sobre el panel real con una base en memoria para options/values: la lista
+aparece sola al elegir Variantes, con nombre por defecto y campo de escritura; no existe más
+`#option-name`; **el caso exacto del usuario** (escribir "rosa" directo) crea la lista y guarda la
+opción en un solo paso; se cargan varias seguidas sin crear listas de más; el "Agregar otro tipo"
+suma una segunda lista que **no** se persiste hasta tener su primera opción.

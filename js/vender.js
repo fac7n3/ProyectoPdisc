@@ -3372,9 +3372,10 @@ function applyProductMode() {
   // esconde el editor hasta el primer guardado.
   const isNew = !editingProductId;
   if (pending) pending.hidden = !(variants && isNew);
+  // El editor entero (listas + "Agregar otro tipo") vive dentro de #prod-options-list,
+  // así que esconder ese contenedor alcanza. Antes había que esconder también un
+  // bloque `.popt-add` aparte, que era el paso previo de "crear un tipo".
   if (list) list.hidden = variants && isNew;
-  const addRow = section.querySelector('.popt-add');
-  if (addRow) addRow.hidden = variants && isNew;
 }
 
 /**
@@ -3456,18 +3457,35 @@ async function renderProductOptionsManager(productId) {
 
   const sorted = sortOptionGroups((groups || []).map((g) => ({ ...g, values: g.product_option_values || [] })));
 
-  if (sorted.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'popt-empty';
-    empty.textContent = 'Este producto no tiene opciones. Si lo vendés en un solo formato, dejalo así.';
-    container.appendChild(empty);
-    return;
-  }
+  // Sin opciones todavía: en vez de pedir que cree "un tipo de opción" primero,
+  // ya se le muestra UNA lista lista para escribir. El paso previo era el que no
+  // se entendía: un vendedor creó un tipo llamado "rosa", que es un valor.
+  // La lista en borrador no existe en la base hasta que carga la primera opción
+  // (ver agregarValor), así que abrir el formulario no deja grupos vacíos dando
+  // vueltas.
+  const grupos = sorted.length ? sorted : [{ id: null, name: 'Color', values: [] }];
+  grupos.forEach((group) => container.appendChild(buildOptionGroupRow(group, productId)));
 
-  sorted.forEach((group) => container.appendChild(buildOptionGroupRow(group, productId)));
+  // El segundo tipo es el caso raro (una remera con Color Y Talle), así que va
+  // como un agregado discreto al final y no como el primer paso obligatorio.
+  const addGroup = document.createElement('button');
+  addGroup.type = 'button';
+  addGroup.className = 'popt-add-group';
+  addGroup.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar otro tipo de opción';
+  addGroup.addEventListener('click', () => {
+    addGroup.before(buildOptionGroupRow({ id: null, name: '', values: [] }, productId));
+    container.querySelector('.popt-group:last-of-type .popt-group__name-input')?.focus();
+  });
+  container.appendChild(addGroup);
 }
 
-/** Una fila del editor: el nombre del grupo, sus chips y el alta de un valor. */
+/**
+ * Una lista de opciones: su nombre (editable), las opciones cargadas y el alta.
+ *
+ * `group.id` en null = lista en borrador, todavía no existe en la base. Se crea
+ * recién al cargar la primera opción: así el vendedor ve una lista lista para
+ * escribir desde el arranque sin que queden grupos vacíos si se arrepiente.
+ */
 function buildOptionGroupRow(group, productId) {
   const row = document.createElement('div');
   row.className = 'popt-group';
@@ -3475,21 +3493,42 @@ function buildOptionGroupRow(group, productId) {
   const head = document.createElement('div');
   head.className = 'popt-group__head';
 
-  const name = document.createElement('span');
-  name.className = 'popt-group__name';
-  name.textContent = group.name;
+  // El nombre es un input y no un texto fijo: es lo que ve el cliente arriba de
+  // los chips ("Color", "Sabor"), y el vendedor tiene que poder corregirlo sin
+  // borrar la lista entera. El datalist sugiere los habituales sin encerrarlo.
+  const name = document.createElement('input');
+  name.type = 'text';
+  name.className = 'form-input popt-group__name-input';
+  name.value = group.name || '';
+  name.maxLength = 40;
+  name.placeholder = 'Ej: Color';
+  name.setAttribute('list', 'popt-name-suggestions');
+  name.setAttribute('aria-label', 'Nombre de la lista de opciones (lo ve el cliente)');
+  name.addEventListener('change', async () => {
+    const nuevo = name.value.trim();
+    if (!group.id || !nuevo || nuevo === group.name) return;
+    const { error } = await supabase.from('product_options').update({ name: nuevo }).eq('id', group.id);
+    if (error) {
+      showToast(error.code === '23505' ? `Ya tenés una lista llamada "${nuevo}".` : 'No se pudo cambiar el nombre.', 'error');
+      name.value = group.name;
+      return;
+    }
+    group.name = nuevo;
+  });
   head.appendChild(name);
 
   const removeGroup = document.createElement('button');
   removeGroup.type = 'button';
   removeGroup.className = 'popt-group__remove';
-  removeGroup.setAttribute('aria-label', `Borrar el tipo de opción ${group.name}`);
+  removeGroup.setAttribute('aria-label', 'Borrar esta lista de opciones');
   removeGroup.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
   removeGroup.addEventListener('click', async () => {
-    if (!window.confirm(`¿Borrar "${group.name}" y todos sus valores? Los pedidos ya hechos no se tocan.`)) return;
+    // Una lista en borrador no está en la base: se saca del DOM y listo.
+    if (!group.id) { row.remove(); return; }
+    if (!window.confirm(`¿Borrar "${group.name}" y todas sus opciones? Los pedidos ya hechos no se tocan.`)) return;
     const { error } = await supabase.from('product_options').delete().eq('id', group.id);
     if (error) {
-      showToast('No se pudo borrar el tipo de opción.', 'error');
+      showToast('No se pudo borrar la lista.', 'error');
       console.error(error);
       return;
     }
@@ -3501,15 +3540,8 @@ function buildOptionGroupRow(group, productId) {
   const chips = document.createElement('div');
   chips.className = 'popt-chips';
   (group.values || []).forEach((value) => chips.appendChild(buildOptionValueChip(value, group, productId)));
-  if ((group.values || []).length === 0) {
-    const hint = document.createElement('span');
-    hint.className = 'popt-empty';
-    hint.textContent = 'Sin valores todavía.';
-    chips.appendChild(hint);
-  }
   row.appendChild(chips);
 
-  // Alta de un valor nuevo dentro del grupo.
   const addWrap = document.createElement('div');
   addWrap.className = 'popt-add__row';
 
@@ -3517,38 +3549,70 @@ function buildOptionGroupRow(group, productId) {
   input.type = 'text';
   input.className = 'form-input';
   input.maxLength = 40;
-  input.placeholder = group.name === 'Color' ? 'Ej: Rojo' : 'Agregar un valor';
-  input.setAttribute('aria-label', `Agregar un valor a ${group.name}`);
+  input.placeholder = 'Escribí una opción (ej: Rosa)';
+  input.setAttribute('aria-label', 'Agregar una opción a esta lista');
   addWrap.appendChild(input);
 
   const addBtn = document.createElement('button');
   addBtn.type = 'button';
   addBtn.className = 'btn-outline';
   addBtn.textContent = 'Agregar';
-  const addValue = async () => {
+
+  const agregarValor = async () => {
     const value = input.value.trim();
     if (!value) {
-      showToast('Escribí el valor (ej: Rojo).', 'error');
+      showToast('Escribí la opción (ej: Rosa).', 'error');
+      input.focus();
       return;
     }
+
+    // Lista en borrador: se crea recién acá, con el nombre que tenga el input.
+    if (!group.id) {
+      const nombreLista = name.value.trim();
+      if (!nombreLista) {
+        showToast('Poné un nombre a la lista (ej: Color, Sabor, Talle).', 'error');
+        name.focus();
+        return;
+      }
+      const { data, error } = await supabase
+        .from('product_options')
+        .insert({
+          product_id: productId,
+          name: nombreLista,
+          position: document.querySelectorAll('#prod-options-list .popt-group').length - 1,
+        })
+        .select('id')
+        .single();
+      if (error) {
+        showToast(error.code === '23505' ? `Ya tenés una lista llamada "${nombreLista}".` : 'No se pudo crear la lista.', 'error');
+        console.error(error);
+        return;
+      }
+      group.id = data.id;
+      group.name = nombreLista;
+    }
+
     const { error } = await supabase.from('product_option_values').insert({
       option_id: group.id,
       value,
       position: (group.values || []).length,
     });
     if (error) {
-      // 23505 = unique(option_id, value): ya existe ese valor en el grupo.
-      showToast(error.code === '23505' ? `"${value}" ya está cargado en ${group.name}.` : 'No se pudo agregar el valor.', 'error');
+      // 23505 = unique(option_id, value): ya existe esa opción en la lista.
+      showToast(error.code === '23505' ? `"${value}" ya está cargada.` : 'No se pudo agregar la opción.', 'error');
       console.error(error);
       return;
     }
     input.value = '';
     await renderProductOptionsManager(productId);
+    // Volver al mismo campo: lo normal es cargar varias seguidas.
+    document.querySelector('#prod-options-list .popt-group:last-of-type .popt-add__row input')?.focus();
   };
-  addBtn.addEventListener('click', addValue);
+
+  addBtn.addEventListener('click', agregarValor);
   // Enter agrega sin mandar el formulario del producto entero.
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addValue(); }
+    if (e.key === 'Enter') { e.preventDefault(); agregarValor(); }
   });
   addWrap.appendChild(addBtn);
   row.appendChild(addWrap);
@@ -3621,34 +3685,6 @@ function setupDashboardEvents() {
 
   document.querySelectorAll('input[name="prod-mode"]').forEach((radio) => {
     radio.addEventListener('change', handleProductModeChange);
-  });
-
-  // Alta de un tipo de opción (Color, Sabor, Talle…) para el producto que se
-  // está editando. Los valores de cada grupo se agregan desde su propia fila.
-  document.getElementById('btn-add-option')?.addEventListener('click', async () => {
-    if (!editingProductId) return;
-
-    const nameInput = document.getElementById('option-name');
-    const name = nameInput.value.trim();
-    if (!name) {
-      showToast('Escribí el tipo de opción (ej: Color).', 'error');
-      return;
-    }
-
-    const { error } = await supabase.from('product_options').insert({
-      product_id: editingProductId,
-      name,
-      position: document.querySelectorAll('#prod-options-list .popt-group').length,
-    });
-
-    if (error) {
-      showToast(error.code === '23505' ? `Ya tenés un tipo de opción llamado "${name}".` : 'No se pudo agregar el tipo de opción.', 'error');
-      console.error(error);
-      return;
-    }
-
-    nameInput.value = '';
-    await renderProductOptionsManager(editingProductId);
   });
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
