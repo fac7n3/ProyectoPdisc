@@ -1,7 +1,7 @@
 /**
  * Tarjeta "Cómo transferirle a este comercio": monto, alias, CBU/CVU,
- * titular, banco, número de pedido para el motivo, y teléfono/WhatsApp del
- * comercio, cada dato con su botón "Copiar". La usan:
+ * titular, banco, número de pedido para el motivo, y WhatsApp del comercio,
+ * cada dato con su botón "Copiar". La usan:
  *   - carrito.js, en la pantalla que aparece después de "Iniciar pago" con
  *     "Transferencia bancaria" elegida (una tarjeta por pedido/comercio);
  *   - perfil.js, en "Mis compras", en cada pedido por transferencia que
@@ -35,7 +35,7 @@ export async function fetchStoreTransferData(supabase, storeIds) {
   if (ids.length === 0) return byId;
 
   const [base, bank] = await Promise.all([
-    supabase.from('stores').select('id, name, phone, whatsapp, contact_method').in('id', ids),
+    supabase.from('stores').select('id, name, whatsapp, contact_method').in('id', ids),
     supabase.from('stores').select(TRANSFER_COLUMNS).in('id', ids),
   ]);
 
@@ -232,39 +232,25 @@ export function buildTransferCard({ store, storeName, orderId, total, compact = 
   }, live));
   card.appendChild(bankGroup);
 
-  // Contacto del comercio.
+  // Contacto del comercio: solo WhatsApp -- el comprador nunca puede llamar
+  // al vendedor, solo escribirle (ver store-contact-utils.js).
   const contact = buildContactInfo(store);
-  if (contact.phone || contact.whatsapp) {
+  if (contact.whatsapp) {
     const contactGroup = document.createElement('div');
     contactGroup.className = 'trf-group';
-    contactGroup.appendChild(buildGroupTitle('fa-solid fa-phone', 'Contacto del comercio'));
-
-    if (contact.phone) {
-      contactGroup.appendChild(buildRow({ label: 'Teléfono', display: contact.phone, copy: contact.phoneDigits }, live));
-    }
-    if (contact.whatsapp && contact.whatsappDigits !== contact.phoneDigits) {
-      contactGroup.appendChild(buildRow({ label: 'WhatsApp', display: contact.whatsapp, copy: contact.whatsappDigits }, live));
-    }
+    contactGroup.appendChild(buildGroupTitle('fa-brands fa-whatsapp', 'Contacto del comercio'));
+    contactGroup.appendChild(buildRow({ label: 'WhatsApp', display: contact.whatsapp, copy: contact.whatsappDigits }, live));
 
     const actions = document.createElement('div');
     actions.className = 'trf-contact-actions';
-    if (contact.whatsappDigits) {
-      const wa = document.createElement('a');
-      wa.className = 'trf-action trf-action--wa';
-      const text = encodeURIComponent(buildTransferWhatsappMessage({ storeName: name, orderRef, amountLabel }));
-      wa.href = `https://wa.me/${contact.whatsappDigits}?text=${text}`;
-      wa.target = '_blank';
-      wa.rel = 'noopener noreferrer';
-      wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Avisar que transferí';
-      actions.appendChild(wa);
-    }
-    if (contact.phoneDigits) {
-      const tel = document.createElement('a');
-      tel.className = 'trf-action';
-      tel.href = `tel:${contact.phoneDigits}`;
-      tel.innerHTML = '<i class="fa-solid fa-phone" aria-hidden="true"></i> Llamar';
-      actions.appendChild(tel);
-    }
+    const wa = document.createElement('a');
+    wa.className = 'trf-action trf-action--wa';
+    const text = encodeURIComponent(buildTransferWhatsappMessage({ storeName: name, orderRef, amountLabel }));
+    wa.href = `https://wa.me/${contact.whatsappDigits}?text=${text}`;
+    wa.target = '_blank';
+    wa.rel = 'noopener noreferrer';
+    wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Avisar que transferí';
+    actions.appendChild(wa);
     contactGroup.appendChild(actions);
     card.appendChild(contactGroup);
   }

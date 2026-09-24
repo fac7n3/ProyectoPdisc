@@ -571,6 +571,7 @@
       .pd-cell-buyer { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
       .pd-cell-buyer__avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bl-vendor-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
       .pd-cell-buyer__name { font-weight: 600; color: var(--bl-text); display: block; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pd-cell-buyer__loc { display: block; font-size: 0.78rem; color: var(--bl-text-muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .pd-cell-total { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
       .pd-detail-btn { background: none; border: 1px solid var(--bl-border); color: var(--bl-vendor-accent); padding: 0.3rem 0.55rem; border-radius: var(--bl-radius-md); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
       .pd-detail-btn:hover { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.06); }
@@ -597,7 +598,7 @@
         .pd-cell-product__thumb { width: 28px; height: 28px; }
         .pd-cell-product__name, .pd-cell-product__sub, .pd-cell-product__options { max-width: 130px; }
         .pd-cell-buyer__avatar { width: 24px; height: 24px; }
-        .pd-cell-buyer__name { max-width: 90px; }
+        .pd-cell-buyer__name, .pd-cell-buyer__loc { max-width: 90px; }
       }
       @media (max-width: 640px) {
         .pd-dash { grid-template-columns: repeat(2, 1fr); }

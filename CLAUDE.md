@@ -80,6 +80,24 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-23** — **El comprador ya no puede llamar al vendedor**,
+  a pedido del usuario: solo puede escribirle por WhatsApp. `buildContactAction`
+  (`js/store-contact-utils.js`, usado en `producto.js`/`comercio.js` para
+  "Contactar al vendedor") sacó la rama `tel:` -- cualquier `contact_method`
+  que no sea `'none'` arma un wa.me, mismo criterio que ya usaba
+  `fillStoreProfileForm` en `vender.js` para las cuentas viejas con
+  `contact_method='phone'` guardado (el radio de "teléfono" ya no existe en
+  ese formulario desde antes). Mismo cambio en el paso "Transferí" del
+  carrito/Mis compras: `buildContactInfo` (`js/transfer-details-utils.js`) y
+  la tarjeta (`js/transfer-details.js`) dejaron de mostrar el botón "Llamar"
+  al comercio, solo "Avisar que transferí" por WhatsApp. `stores.phone` queda
+  sin ningún lector en el código (ya no se editaba desde el formulario del
+  vendedor). **Al revés sí puede**: el panel de vendedor (pestaña Pedidos)
+  ahora muestra el celular del comprador en la tarjeta de cada pedido
+  (`buildPedidoBuyerCell` en `js/vender.js`, con `ordPhoneByClientId` que ya
+  se cargaba solo para la búsqueda) -- por si el vendedor necesita
+  escribirle o llamarlo, ej. para coordinar una entrega. Solo texto/acceso al
+  número, sin un botón de llamar/WhatsApp dedicado (no se pidió).
 - **Resuelto 2026-09-23** — **Alias bancario obligatorio para publicar
   productos**, a pedido del usuario. Migración **107** (aplicada): trigger en
   `products` que rechaza el ALTA si `stores.transfer_alias` está vacío
