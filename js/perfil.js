@@ -325,10 +325,11 @@ function initSignOutAll() {
   if (!btn) return;
 
   btn.addEventListener("click", async () => {
-    const ok = confirm(
+    const ok = await confirmDialog(
       "Vas a cerrar la sesión en todos los dispositivos donde entraste con esta cuenta.\n\n" +
       "No se borra nada: tus compras, tus favoritos y tus direcciones quedan igual. " +
-      "Solo vas a tener que ingresar de nuevo.\n\n¿Seguimos?"
+      "Solo vas a tener que ingresar de nuevo.",
+      { confirmText: "Sí, cerrar sesión" }
     );
     if (!ok) return;
 
@@ -1581,7 +1582,8 @@ function buildRevocationSection(order) {
   btn.className = 'bl-btn compra-revocation__btn';
   btn.textContent = 'Solicitar arrepentimiento';
   btn.addEventListener('click', async () => {
-    if (!confirm('¿Solicitar el arrepentimiento de esta compra? Se le va a avisar al comercio para que coordine la devolución.')) {
+    const okRevocation = await confirmDialog('¿Solicitar el arrepentimiento de esta compra? Se le va a avisar al comercio para que coordine la devolución.', { confirmText: 'Solicitar' });
+    if (!okRevocation) {
       return;
     }
     btn.disabled = true;
@@ -2073,7 +2075,7 @@ function setupAvatarControls() {
   });
 
   removeBtn?.addEventListener("click", async () => {
-    if (!confirm("¿Sacamos tu foto de perfil?")) return;
+    if (!(await confirmDialog("¿Sacamos tu foto de perfil?", { confirmText: "Sacar", danger: true }))) return;
     clearFail();
     removeBtn.disabled = true;
     const previousUrl = profileData.avatar_url;
@@ -2192,11 +2194,12 @@ function setupPrivacyActions(user) {
   const deleteBtn = document.getElementById("btn-delete-account");
 
   deleteBtn?.addEventListener("click", async () => {
-    const ok = confirm(
+    const ok = await confirmDialog(
       "Vas a borrar tu cuenta y tus datos.\n\n" +
       "Se pierden tus favoritos, tus direcciones y tus datos personales. " +
       "Tus pedidos quedan en el historial del comercio, pero sin tu nombre.\n\n" +
-      "No se puede deshacer. ¿Seguimos?"
+      "No se puede deshacer.",
+      { confirmText: "Sí, borrar mi cuenta", danger: true }
     );
     if (!ok) return;
 

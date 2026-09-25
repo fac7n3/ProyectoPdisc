@@ -1041,9 +1041,9 @@ function buildOrdActions(order) {
   }
 
   if (['pending', 'paid'].includes(order.status)) {
-    menu.appendChild(pubMenuItem('Cancelar pedido', 'fa-ban', () => {
+    menu.appendChild(pubMenuItem('Cancelar pedido', 'fa-ban', async () => {
       closePubMenus();
-      if (confirm('¿Cancelar este pedido?')) updateOrderStatus(order.id, 'cancelled');
+      if (await confirmDialog('¿Cancelar este pedido?', { confirmText: 'Sí, cancelar', danger: true })) updateOrderStatus(order.id, 'cancelled');
     }, true));
   }
 
@@ -1399,7 +1399,7 @@ function setupStoreLogoPicker() {
   });
 
   removeBtn?.addEventListener('click', async () => {
-    if (!confirm('¿Sacamos el logo del comercio?')) return;
+    if (!(await confirmDialog('¿Sacamos el logo del comercio?', { confirmText: 'Sacar', danger: true }))) return;
     clearFail();
     removeBtn.disabled = true;
     const previousUrl = currentStoreLogoUrl;
@@ -1887,7 +1887,7 @@ function buildCouponRow(coupon) {
   }));
   menu.appendChild(pubMenuItem('Borrar', 'fa-trash', async () => {
     closePubMenus();
-    if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
+    if (!(await confirmDialog(`¿Borrar el cupón "${coupon.code}"?`, { confirmText: 'Borrar', danger: true }))) return;
     const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
     if (deleteError) {
       showToast('No se pudo borrar el cupón.', 'error');
@@ -1986,7 +1986,7 @@ function buildStaffRow(s, email) {
   removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap;';
   removeBtn.textContent = 'Quitar acceso';
   removeBtn.addEventListener('click', async () => {
-    if (!confirm(`¿Quitarle el acceso a este panel a "${title.textContent}"?`)) return;
+    if (!(await confirmDialog(`¿Quitarle el acceso a este panel a "${title.textContent}"?`, { confirmText: 'Quitar acceso', danger: true }))) return;
     const { error: deleteError } = await supabase.from('store_staff').delete().eq('id', s.id);
     if (deleteError) {
       showToast('No se pudo quitar el acceso.', 'error');
@@ -3398,9 +3398,10 @@ async function handleProductModeChange() {
     .eq('product_id', editingProductId);
 
   if (groups && groups.length > 0) {
-    const ok = window.confirm(
+    const ok = await confirmDialog(
       'Este producto tiene opciones cargadas. Al pasarlo a "Un solo producto" se van a borrar. ' +
-      'Los pedidos que ya se hicieron no se tocan. ¿Seguimos?'
+      'Los pedidos que ya se hicieron no se tocan.',
+      { confirmText: 'Sí, borrarlas', danger: true }
     );
     if (!ok) {
       setProductMode('variants');
@@ -3525,7 +3526,7 @@ function buildOptionGroupRow(group, productId) {
   removeGroup.addEventListener('click', async () => {
     // Una lista en borrador no está en la base: se saca del DOM y listo.
     if (!group.id) { row.remove(); return; }
-    if (!window.confirm(`¿Borrar "${group.name}" y todas sus opciones? Los pedidos ya hechos no se tocan.`)) return;
+    if (!(await confirmDialog(`¿Borrar "${group.name}" y todas sus opciones? Los pedidos ya hechos no se tocan.`, { confirmText: 'Borrar', danger: true }))) return;
     const { error } = await supabase.from('product_options').delete().eq('id', group.id);
     if (error) {
       showToast('No se pudo borrar la lista.', 'error');

@@ -27,6 +27,7 @@ import { initGaleria } from './profesional-galeria.js';
 import { initConsultas } from './profesional-consultas.js';
 import { initResenas } from './profesional-resenas.js';
 import { initMetricas } from './profesional-metricas.js';
+import { confirmDialog } from './confirm-dialog.js';
 import './speed-insights.js';
 
 const MAX_FOTO_BYTES = 2 * 1024 * 1024;
@@ -495,7 +496,7 @@ function renderBotonPausa() {
 
 async function alternarPausa(btn) {
   const nuevoEstado = !estado.prof.is_active;
-  if (!nuevoEstado && !window.confirm('Si pausás tu publicación dejás de aparecer en Contratar hasta que la reactives. ¿Seguimos?')) {
+  if (!nuevoEstado && !(await confirmDialog('Si pausás tu publicación dejás de aparecer en Contratar hasta que la reactives.', { confirmText: 'Sí, pausar', danger: true }))) {
     return;
   }
 
@@ -569,7 +570,7 @@ async function subirFoto(event) {
 
 async function quitarFoto() {
   if (!estado.prof.photo_url) return;
-  if (!window.confirm('¿Sacamos tu foto de la publicación?')) return;
+  if (!(await confirmDialog('¿Sacamos tu foto de la publicación?', { confirmText: 'Sacar', danger: true }))) return;
 
   const anterior = estado.prof.photo_url;
   const { error } = await supabase

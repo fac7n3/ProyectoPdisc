@@ -6,6 +6,7 @@ import { formatPrice } from './cart-utils.js';
 import { categoryLabel } from './professional-categories.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
+import { confirmDialog } from './confirm-dialog.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -110,7 +111,7 @@ async function fetchRequests() {
   document.querySelectorAll('.btn-approve').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.dataset.id;
-      if (confirm('¿Estás seguro de aprobar este comercio?')) {
+      if (await confirmDialog('¿Estás seguro de aprobar este comercio?', { confirmText: 'Aprobar' })) {
         await approveRequest(id);
       }
     });
@@ -119,7 +120,7 @@ async function fetchRequests() {
   document.querySelectorAll('.btn-reject').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.dataset.id;
-      if (confirm('¿Estás seguro de rechazar este comercio?')) {
+      if (await confirmDialog('¿Estás seguro de rechazar este comercio?', { confirmText: 'Rechazar', danger: true })) {
         await rejectRequest(id);
       }
     });
@@ -248,7 +249,7 @@ async function fetchProfessionalRequests() {
       checkIcon.textContent = '✅';
       approveBtn.appendChild(checkIcon);
       approveBtn.addEventListener('click', async () => {
-        if (!confirm(`¿Publicar a "${req.full_name}" en Contratar?`)) return;
+        if (!(await confirmDialog(`¿Publicar a "${req.full_name}" en Contratar?`, { confirmText: 'Publicar' }))) return;
         await approveProfessionalRequest(req);
       });
       tdActions.appendChild(approveBtn);
@@ -261,7 +262,7 @@ async function fetchProfessionalRequests() {
       xIcon.textContent = '❌';
       rejectBtn.appendChild(xIcon);
       rejectBtn.addEventListener('click', async () => {
-        if (!confirm(`¿Rechazar la solicitud de "${req.full_name}"?`)) return;
+        if (!(await confirmDialog(`¿Rechazar la solicitud de "${req.full_name}"?`, { confirmText: 'Rechazar', danger: true }))) return;
         await rejectProfessionalRequest(req.id);
       });
       tdActions.appendChild(rejectBtn);
@@ -425,7 +426,7 @@ async function fetchProfessionals() {
     trashIcon.textContent = '🗑️';
     deleteBtn.appendChild(trashIcon);
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Borrar a "${pro.full_name}" del directorio?`)) return;
+      if (!(await confirmDialog(`¿Borrar a "${pro.full_name}" del directorio?`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: delErr } = await supabase.from('professionals').delete().eq('id', pro.id);
       if (delErr) {
         showToast(delErr.message || 'No se pudo borrar.', 'error');
@@ -639,7 +640,7 @@ async function fetchCategories() {
     xIcon.textContent = '🗑️';
     deleteBtn.appendChild(xIcon);
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Borrar la categoría "${cat.name}"? Los productos que la usaban quedarán sin rubro.`)) return;
+      if (!(await confirmDialog(`¿Borrar la categoría "${cat.name}"? Los productos que la usaban quedarán sin rubro.`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: deleteError } = await supabase.from('categories').delete().eq('id', cat.id);
       if (deleteError) {
         showToast('No se pudo borrar la categoría.', 'error');
@@ -762,7 +763,7 @@ async function fetchCoupons() {
     xIcon.textContent = '🗑️';
     deleteBtn.appendChild(xIcon);
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Borrar el cupón "${coupon.code}"?`)) return;
+      if (!(await confirmDialog(`¿Borrar el cupón "${coupon.code}"?`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: deleteError } = await supabase.from('coupons').delete().eq('id', coupon.id);
       if (deleteError) {
         showToast('No se pudo borrar el cupón.', 'error');
@@ -861,7 +862,7 @@ async function fetchStoresForModeration() {
       toggleBtn.appendChild(document.createTextNode(isSuspended ? ' Reactivar' : ' Suspender'));
       toggleBtn.addEventListener('click', async () => {
         const newStatus = isSuspended ? 'approved' : 'suspended';
-        if (!confirm(`¿${isSuspended ? 'Reactivar' : 'Suspender'} el comercio "${store.name}"?`)) return;
+        if (!(await confirmDialog(`¿${isSuspended ? 'Reactivar' : 'Suspender'} el comercio "${store.name}"?`, { confirmText: isSuspended ? 'Reactivar' : 'Suspender', danger: !isSuspended }))) return;
         const { error: updateError } = await supabase.from('stores').update({ status: newStatus }).eq('id', store.id);
         if (updateError) {
           showToast('No se pudo actualizar el comercio.', 'error');
@@ -935,7 +936,7 @@ function setupProductSearch() {
       toggleBtn.appendChild(toggleIcon);
       toggleBtn.appendChild(document.createTextNode(product.is_active ? ' Suspender' : ' Reactivar'));
       toggleBtn.addEventListener('click', async () => {
-        if (!confirm(`¿${product.is_active ? 'Suspender' : 'Reactivar'} "${product.title}"?`)) return;
+        if (!(await confirmDialog(`¿${product.is_active ? 'Suspender' : 'Reactivar'} "${product.title}"?`, { confirmText: product.is_active ? 'Suspender' : 'Reactivar', danger: product.is_active }))) return;
         const { error: rpcError } = await supabase.rpc('admin_set_product_active', {
           p_product_id: product.id,
           p_is_active: !product.is_active,
@@ -1213,7 +1214,7 @@ async function fetchShifts() {
     delBtn.appendChild(delIcon);
     delBtn.appendChild(document.createTextNode(' Quitar'));
     delBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Quitar el turno del ${tdDate.textContent}?`)) return;
+      if (!(await confirmDialog(`¿Quitar el turno del ${tdDate.textContent}?`, { confirmText: 'Quitar', danger: true }))) return;
       const { error: delErr } = await supabase.from('pharmacy_shifts').delete().eq('id', shift.id);
       if (delErr) {
         showToast(delErr.message || 'No se pudo quitar el turno.', 'error');
@@ -1398,7 +1399,7 @@ async function fetchEmergencyContacts() {
     trashIcon.textContent = '🗑️';
     deleteBtn.appendChild(trashIcon);
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm(`¿Borrar "${contact.name}"?`)) return;
+      if (!(await confirmDialog(`¿Borrar "${contact.name}"?`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: delErr } = await supabase.from('emergency_contacts').delete().eq('id', contact.id);
       if (delErr) {
         showToast(delErr.message || 'No se pudo borrar el servicio.', 'error');

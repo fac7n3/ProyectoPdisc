@@ -4594,6 +4594,7 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   font-size: 0.92rem;
   line-height: 1.45;
   color: var(--bl-text-secondary);
+  white-space: pre-line;
 }
 
 .bl-confirm-actions {

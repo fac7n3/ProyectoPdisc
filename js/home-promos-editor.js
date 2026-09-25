@@ -10,6 +10,7 @@
  */
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 import { slotLabel, HOME_PROMO_SLOTS } from './home-promos-utils.js';
 
 const BUCKET = 'home-promos';
@@ -168,7 +169,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
     const removeImgBtn = el('button', 'hp-btn hp-btn--ghost', 'Quitar imagen');
     removeImgBtn.type = 'button';
     removeImgBtn.addEventListener('click', async () => {
-      if (!confirm('¿Sacamos la imagen? El espacio vuelve a mostrar el banner de siempre.')) return;
+      if (!(await confirmDialog('¿Sacamos la imagen? El espacio vuelve a mostrar el banner de siempre.', { confirmText: 'Sacar', danger: true }))) return;
       removeImgBtn.disabled = true;
       const { error } = await supabase.from('home_promos').update({ image_url: null }).eq('id', promo.id);
       removeImgBtn.disabled = false;

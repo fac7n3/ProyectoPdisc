@@ -8,6 +8,7 @@
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
 import { buildDropdown } from './dropdown.js';
+import { confirmDialog } from './confirm-dialog.js';
 import {
   PRICE_TYPES,
   formatTarifa,
@@ -255,7 +256,7 @@ async function alternarActivo(servicio) {
 }
 
 async function eliminar(servicio) {
-  if (!window.confirm(`¿Borramos "${servicio.title}"?`)) return;
+  if (!(await confirmDialog(`¿Borramos "${servicio.title}"?`, { confirmText: 'Borrar', danger: true }))) return;
 
   const { error } = await supabase.from('professional_services').delete().eq('id', servicio.id);
   if (error) {

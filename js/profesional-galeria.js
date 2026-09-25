@@ -8,6 +8,7 @@
 
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 
 const MAX_FOTOS = 6;
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -181,7 +182,7 @@ async function guardarPie(foto, texto) {
 }
 
 async function eliminar(foto) {
-  if (!window.confirm('¿Borramos esta foto?')) return;
+  if (!(await confirmDialog('¿Borramos esta foto?', { confirmText: 'Borrar', danger: true }))) return;
 
   const { error } = await supabase.from('professional_promos').delete().eq('id', foto.id);
   if (error) {

@@ -13,6 +13,7 @@
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
 import { buildStarRating } from './reviews-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 
 let ctx = null;
 let resenas = [];
@@ -165,7 +166,7 @@ function formularioRespuesta(resena) {
 }
 
 async function guardarRespuesta(resena, valor, btn) {
-  if (valor === null && !window.confirm('¿Borramos tu respuesta? Deja de verse en tu tarjeta.')) return;
+  if (valor === null && !(await confirmDialog('¿Borramos tu respuesta? Deja de verse en tu tarjeta.', { confirmText: 'Borrar', danger: true }))) return;
 
   const etiqueta = btn.textContent;
   setLoading(btn, true);

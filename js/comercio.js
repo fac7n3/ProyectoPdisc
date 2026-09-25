@@ -4,6 +4,7 @@ import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -262,7 +263,7 @@ function buildStoreLogo(store, isOwner) {
 
   removeRow.addEventListener('click', async () => {
     closePopover();
-    if (!confirm('¿Eliminamos el logo del comercio?')) return;
+    if (!(await confirmDialog('¿Eliminamos el logo del comercio?', { confirmText: 'Eliminar', danger: true }))) return;
     const previousUrl = store.logo_url;
     try {
       const { error } = await supabase.from('stores').update({ logo_url: null }).eq('id', store.id);
