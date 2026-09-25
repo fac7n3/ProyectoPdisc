@@ -1,4 +1,5 @@
 import { supabase } from './auth-utils.js';
+import { confirmDialog } from './confirm-dialog.js';
 
 let starSeq = 0;
 
@@ -292,7 +293,8 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         deleteItem.textContent = 'Eliminar reseña';
         deleteItem.style.cssText = 'display: block; width: 100%; text-align: left; padding: 0.6rem 0.85rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: #ef4444;';
         deleteItem.addEventListener('click', async () => {
-          if (!confirm('¿Eliminar tu reseña? Esta acción no se puede deshacer.')) return;
+          const ok = await confirmDialog('¿Eliminar tu reseña? Esta acción no se puede deshacer.', { confirmText: 'Eliminar', danger: true });
+          if (!ok) return;
           try {
             await deleteOwnReview(targetType, targetId);
             await renderReviewsSection(container, targetType, targetId, { hideForm });
