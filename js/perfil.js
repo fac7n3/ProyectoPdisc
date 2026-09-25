@@ -17,6 +17,7 @@ import { buildDropdown } from "./dropdown.js";
 import { buildDatePicker } from "./datepicker.js";
 import { categoryLabel } from "./professional-categories.js";
 import { fetchStoreTransferData, buildTransferCard } from "./transfer-details.js";
+import { confirmDialog } from "./confirm-dialog.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -472,7 +473,8 @@ async function loadAddresses(userId) {
     delBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #dc2626; cursor: pointer;';
     delBtn.textContent = 'Eliminar';
     delBtn.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar esta dirección?')) return;
+      const ok = await confirmDialog('¿Eliminar esta dirección?', { confirmText: 'Eliminar', danger: true });
+      if (!ok) return;
       await supabase.from('user_addresses').delete().eq('id', addr.id);
       loadAddresses(userId);
     });
