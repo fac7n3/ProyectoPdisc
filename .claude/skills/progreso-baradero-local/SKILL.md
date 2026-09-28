@@ -4710,3 +4710,11 @@ círculo comparado contra el del chip activo, y la poda al cambiar de filtro.
 
 **Gotcha del harness:** contar llamadas por método a secas da falsos positivos — el panel manda un
 `PATCH profiles?id=eq.<uid>` propio al cargar. Hay que filtrar también por tabla.
+
+**Ajuste del mismo día:** el usuario reportó que el círculo apagado casi no se veía. Era
+`--bl-border` (`#e2e8f0`), pensado para bordes de tarjetas, no para el contorno de un control. Se
+midió el contraste contra el fondo del panel (`#f8fafc`) en el navegador: `--bl-text-muted`
+(`#94a3b8`) daba **2.45:1**, por debajo del **3:1** que pide WCAG 1.4.11 para la parte visual que
+identifica un control, y `--bl-text-secondary` (`#4a5568`) es un anillo demasiado pesado para algo
+que todavía no está marcado. Quedó `#64748b` (**4.55:1**), un hex suelto a propósito porque ningún
+token del proyecto cae en ese rango. El check del contraste quedó en el harness.

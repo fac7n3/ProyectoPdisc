@@ -87,7 +87,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **ícono de pausar** que ya usaba el menú de la fila. Cada uno pide
   confirmación con el cartel propio del sitio (`confirmDialog`): "¿Estás
   seguro de eliminar estas publicaciones?" (Cancelar / Eliminar) y "¿Estás
-  seguro de pausar las publicaciones?" (Cancelar / Pausar). **Decisión que no
+  seguro de pausar las publicaciones?" (Cancelar / Pausar). El borde del
+  círculo **apagado** va en `#64748b` y no en `--bl-border`: con el token
+  (`#e2e8f0`) casi no se veía, reportado por el usuario. Medido contra el fondo
+  del panel: `--bl-text-muted` daba 2.45:1, por debajo del 3:1 que pide WCAG
+  para el contorno de un control; `#64748b` da 4.55:1. **Decisión que no
   es obvia:** la selección se poda en cada render a lo que está visible, así
   que tildar tres, filtrar por "Pausadas" y tocar el tacho **no** puede
   llevarse puesta una publicación que ya no está en pantalla. Borrar en lote
