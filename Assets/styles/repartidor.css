@@ -1,0 +1,192 @@
+/* Panel de repartidor (pages/repartidor.html). Reusa los tokens de marca de
+   home.css (--bl-primary/--bl-accent/--bl-danger/--bl-success/--bl-border/
+   --bl-surface-alt/--bl-radius-*), sin sidebar propio -- son solo dos listas
+   (cola de pedidos + entregas en curso), no hace falta el shell de vender.js. */
+
+.rp-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.rp-status-card {
+  max-width: 640px;
+  margin: 2.5rem auto;
+  padding: 2rem;
+  background: var(--bl-surface-alt);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  text-align: center;
+}
+
+.rp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+
+.rp-header__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--bl-primary);
+  margin: 0 0 0.35rem;
+}
+
+.rp-header__sub {
+  margin: 0;
+  color: var(--bl-text-muted, #64748b);
+  max-width: 60ch;
+}
+
+.rp-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--bl-radius-pill);
+  border: 1px solid var(--bl-border);
+  background: #fff;
+  color: var(--bl-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rp-refresh-btn:hover {
+  background: var(--bl-surface-alt);
+}
+
+.rp-section {
+  margin-bottom: 2.25rem;
+}
+
+.rp-section__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--bl-primary);
+  margin: 0 0 0.9rem;
+}
+
+.rp-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.rp-empty {
+  grid-column: 1 / -1;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--bl-text-muted, #64748b);
+  background: var(--bl-surface-alt);
+  border-radius: var(--bl-radius-lg);
+  margin: 0;
+}
+
+.rp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--bl-border);
+  border-left: 5px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+}
+
+.rp-card--normal { border-left-color: var(--bl-success); }
+.rp-card--warning { border-left-color: var(--bl-accent); background: #fffbeb; }
+.rp-card--danger { border-left-color: var(--bl-danger); background: #fef2f2; }
+.rp-card--mine { border-left-color: var(--bl-primary); }
+
+.rp-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rp-card__code {
+  font-weight: 800;
+  color: var(--bl-primary);
+}
+
+.rp-card__wait {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.rp-card--warning .rp-card__wait { background: var(--bl-accent); color: #fff; }
+.rp-card--danger .rp-card__wait { background: var(--bl-danger); color: #fff; }
+
+.rp-card__wait--muted {
+  align-self: flex-start;
+  background: none;
+  padding: 0;
+  color: var(--bl-text-muted, #64748b);
+  font-weight: 500;
+}
+
+.rp-card__status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-primary);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.rp-card__store,
+.rp-card__address,
+.rp-card__buyer {
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.rp-card__items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--bl-text-muted, #64748b);
+}
+
+.rp-card__price {
+  font-weight: 700;
+  color: var(--bl-primary);
+}
+
+.rp-btn {
+  margin-top: 0.4rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--bl-radius-pill);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rp-btn--primary {
+  background: var(--bl-primary);
+  color: #fff;
+}
+
+.rp-btn--primary:hover {
+  background: var(--bl-primary-dark, #1d2f57);
+}
+
+.rp-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .rp-list { grid-template-columns: 1fr; }
+}

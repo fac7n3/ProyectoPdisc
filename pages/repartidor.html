@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="view-transition" content="same-origin" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <title>Mi panel de repartidor - Baradero Local</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#284175" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="../Assets/styles/a11y.css" />
+    <link rel="stylesheet" href="../Assets/styles/home.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="../Assets/styles/repartidor.css" />
+    <link rel="stylesheet" href="../Assets/styles/auth.css" />
+  </head>
+  <body>
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
+    <div id="loading-screen" class="auth-loading-screen" role="status" aria-live="polite">
+      <div class="auth-loading-spinner" aria-hidden="true">
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+        <div class="auth-loading-spinner__dot"></div>
+      </div>
+      <span class="auth-loading-text">Cargando</span>
+      <span class="auth-loading-subtext">Esto puede tomar unos segundos…</span>
+    </div>
+
+    <div id="main-content">
+      <nav class="navbar">
+        <div class="navbar__top">
+          <a href="./home.html" class="navbar__logo">
+            <img src="../Assets/images/Logos/logoazulpng.png" alt="Baradero Local" class="navbar__logo-img" />
+            <div class="navbar__logo-text">
+              <span class="navbar__logo-title">Baradero Local</span>
+              <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+            </div>
+          </a>
+          <div class="navbar__actions">
+            <div id="nav-notifications-wrap"></div>
+            <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+          </div>
+        </div>
+      </nav>
+
+      <main id="contenido-principal" tabindex="-1" class="rp-main">
+        <div id="rp-state-loading" class="bl-loading-block" role="status" aria-live="polite">
+          <div class="bl-spinner" aria-hidden="true">
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+            <div class="bl-spinner__dot"></div>
+          </div>
+          <p class="bl-loading-block__title">Cargando tu panel</p>
+          <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
+        </div>
+
+        <!-- Cuenta suspendida por el admin. -->
+        <div id="rp-suspended-view" class="rp-status-card" hidden>
+          <h1>Tu cuenta de repartidor está suspendida</h1>
+          <p>No podés tomar pedidos nuevos ni avanzar los que tenías. Si te parece un error, escribinos por Soporte desde tu perfil.</p>
+        </div>
+
+        <div id="rp-panel-view" class="rp-panel" hidden>
+          <header class="rp-header">
+            <div>
+              <h1 class="rp-header__title">Panel de repartidor</h1>
+              <p class="rp-header__sub">Los pedidos aparecen ordenados por llegada. Se pintan de amarillo a los 5 minutos sin que nadie los tome, y de rojo a los 10.</p>
+            </div>
+            <button type="button" class="rp-refresh-btn" id="rp-refresh"><i class="fa-solid fa-arrows-rotate"></i> Actualizar</button>
+          </header>
+
+          <section class="rp-section" aria-labelledby="rp-mine-title">
+            <h2 class="rp-section__title" id="rp-mine-title">Mis entregas en curso</h2>
+            <div id="rp-mine-list" class="rp-list"></div>
+          </section>
+
+          <section class="rp-section" aria-labelledby="rp-queue-title">
+            <h2 class="rp-section__title" id="rp-queue-title">Pedidos disponibles</h2>
+            <div id="rp-queue-list" class="rp-list"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="../js/repartidor.js"></script>
+  </body>
+</html>

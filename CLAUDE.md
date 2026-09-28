@@ -80,6 +80,56 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-28** — **Vuelve el rol repartidor**, a pedido del
+  usuario, con un alta distinta a la de F3-01: el rol `repartidor` y sus
+  tablas/RPCs (`delivery_requests`, `deliveries`, `claim_delivery`,
+  `update_delivery_status`, `admin_set_repartidor_suspended`) habían quedado
+  sin frontend desde que se sacó todo el apartado el 2026-09-16 (ver entrada
+  de esa fecha más abajo) -- la única forma de darlo de alta era que la
+  propia persona mandara una solicitud, y ese formulario ya no existe. Ahora
+  el admin lo agrega escribiendo el email de una cuenta ya registrada, sección
+  nueva "Repartidores" en `admin.html` (grupo Moderación, oculta para
+  `moderador`): RPC nueva `admin_set_repartidor_by_email(p_email)` (migración
+  `111_admin_repartidor_by_email.sql`, aplicada a producción), mismo patrón de
+  `approve_seller_request`/`approve_delivery_request` (protege `role`/
+  `is_suspended` con la bandera `app.role_change_authorized`, nunca pisa una
+  cuenta admin/moderador) más una guarda propia de este camino: rechaza si la
+  cuenta ya es `vendedor` (acá el admin tipea el email a mano, así que un
+  typo podía aterrizar en la cuenta de un comercio real y sacarle sin querer
+  el acceso a su panel, ya que `profiles.role`/`app_metadata.role` son de un
+  solo valor). Contraparte `admin_remove_repartidor_role` para sacarle el rol
+  (bloquea si tiene una entrega en curso), y la lista de la sección reusa
+  `admin_set_repartidor_suspended` (ya existía, sin ningún botón que la
+  llamara desde el 2026-09-16) para suspender/reactivar.
+  Panel nuevo `pages/repartidor.html` + `js/repartidor.js` (sin el shell de
+  `vender.js`: son solo dos listas, no hace falta sidebar): "Pedidos
+  disponibles" en orden de llegada (los que todavía no tiene ninguna fila en
+  `deliveries`) y "Mis entregas en curso". Cada tarjeta de la cola se pinta
+  según cuánto hace que nadie la toma -- normal, ámbar a los 5 minutos, rojo a
+  los 10 -- medido contra `orders.updated_at` (no hay una columna
+  `paid_at`/`available_at` dedicada; `updated_at` se toca por última vez
+  cuando el pago se confirma, así que es la mejor aproximación disponible sin
+  agregar una columna nueva). Se refresca solo cada 20s (mismo criterio de
+  polling que `toast-utils.js`). La dirección del comprador (`profiles.phone`)
+  solo se muestra en "Mis entregas": la RLS de `profiles`
+  (`profiles_select_order_participants`, F12-05) ya sólo se la deja ver al
+  repartidor una vez que la entrega es suya -- la cola "disponible" muestra
+  nada más lo que ya vive en la propia fila de `orders`
+  (`shipping_address`, dirección de texto libre, no el perfil del cliente).
+  `getPanelAccess()`/`SELLER_PANEL_PAGES` (`js/auth-utils.js`) suman
+  `repartidor` -> `repartidor.html`, así que el botón "Panel" del home y el
+  redirect post-login ya lo reconocen igual que a vendedor/profesional.
+  **No se pudo probar el flujo logueado de punta a punta** (mismo límite ya
+  documentado varias veces en este archivo: el entorno de esta sesión no
+  tiene salida de red hacia Supabase) -- sí se armó el `.env` local con la
+  anon key pública y se cargaron las dos páginas nuevas con Playwright contra
+  el build real para confirmar que no rompen nada al cargar sin sesión
+  (redirigen a login igual que el resto de los paneles, sin errores propios
+  -- el único `pageerror` que aparece, "Unexpected token '<'" de
+  `speed-insights.js` contra `/_vercel/speed-insights/script.js`, ya está
+  presente igual en `vender.html` sin tocar, es un artefacto de `vite
+  preview` en este entorno y no algo de esta tarea). Conviene caminar el
+  alta por email y la cola con datos reales una vez.
 - **Resuelto 2026-09-28** — **Fotos y fecha puntual en "Pedir presupuesto"**
   (`contratar.html`), a pedido del usuario: botón "Agregar fotos" (hasta 5,
   suben a un bucket privado nuevo, `professional-inquiry-attachments`, antes

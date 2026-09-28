@@ -104,6 +104,9 @@
               <button type="button" class="admin-nav__item" data-target="proofs">
                 <i class="admin-emoji" aria-hidden="true">🧾</i><span>Comprobantes</span>
               </button>
+              <button type="button" class="admin-nav__item" data-target="repartidores">
+                <i class="admin-emoji" aria-hidden="true">🛵</i><span>Repartidores</span>
+              </button>
             </div>
 
             <div class="admin-nav__group">
@@ -598,6 +601,39 @@
                         </tr>
                       </thead>
                       <tbody id="proofs-mod-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ===== Repartidores ===== -->
+              <section class="admin-section" data-section="repartidores">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Repartidores</h2>
+                    <p class="admin-section__subtitle">Convertí una cuenta ya registrada en repartidor escribiendo su email. La persona ya tiene que tener una cuenta creada en Baradero Local.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-repartidores"><i class="admin-emoji" aria-hidden="true">🔄</i> Refrescar</button>
+                </div>
+                <form class="admin-inline-form" id="repartidor-add-form">
+                  <div class="form-group">
+                    <label for="repartidor-email-input">Email de la cuenta</label>
+                    <input type="email" id="repartidor-email-input" placeholder="nombre@email.com" required />
+                  </div>
+                  <button type="submit" class="action-btn btn-approve"><i class="admin-emoji" aria-hidden="true">🛵</i> Agregar repartidor</button>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Repartidor</th>
+                          <th>Email</th>
+                          <th>Estado</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="repartidores-tbody"></tbody>
                     </table>
                   </div>
                 </div>

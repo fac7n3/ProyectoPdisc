@@ -882,6 +882,112 @@ async function fetchStoresForModeration() {
   });
 }
 
+// --- Repartidores (alta por email + suspender/quitar) ---
+
+async function fetchRepartidores() {
+  const tbody = document.getElementById('repartidores-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando repartidores...</td></tr>';
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, is_suspended')
+    .eq('role', 'repartidor')
+    .order('full_name');
+
+  if (error) {
+    console.error('Error fetching repartidores:', error);
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ef4444;">Error al cargar los repartidores.</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Todavía no hay repartidores cargados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach((rep) => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = rep.full_name || '(sin nombre)';
+    tr.appendChild(tdName);
+
+    const tdEmail = document.createElement('td');
+    tdEmail.textContent = rep.email;
+    tr.appendChild(tdEmail);
+
+    const tdStatus = document.createElement('td');
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `status-badge status-${rep.is_suspended ? 'suspended' : 'approved'}`;
+    statusBadge.textContent = rep.is_suspended ? 'suspendido' : 'activo';
+    tdStatus.appendChild(statusBadge);
+    tr.appendChild(tdStatus);
+
+    const tdActions = document.createElement('td');
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `action-btn ${rep.is_suspended ? 'btn-reactivate' : 'btn-suspend'}`;
+    const toggleIcon = document.createElement('i');
+    toggleIcon.className = 'admin-emoji';
+    toggleIcon.textContent = rep.is_suspended ? '✅' : '🚫';
+    toggleBtn.appendChild(toggleIcon);
+    toggleBtn.appendChild(document.createTextNode(rep.is_suspended ? ' Reactivar' : ' Suspender'));
+    toggleBtn.addEventListener('click', async () => {
+      const nextSuspended = !rep.is_suspended;
+      if (!(await confirmDialog(`¿${nextSuspended ? 'Suspender' : 'Reactivar'} a "${rep.full_name || rep.email}" como repartidor?`, { confirmText: nextSuspended ? 'Suspender' : 'Reactivar', danger: nextSuspended }))) return;
+      const { error: rpcError } = await supabase.rpc('admin_set_repartidor_suspended', { p_user_id: rep.id, p_suspended: nextSuspended });
+      if (rpcError) {
+        showToast(rpcError.message || 'No se pudo actualizar el repartidor.', 'error');
+        return;
+      }
+      showToast(`Repartidor ${nextSuspended ? 'suspendido' : 'reactivado'}.`, 'success');
+      fetchRepartidores();
+    });
+    tdActions.appendChild(toggleBtn);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'action-btn btn-reject';
+    const removeIcon = document.createElement('i');
+    removeIcon.className = 'admin-emoji';
+    removeIcon.textContent = '🗑️';
+    removeBtn.appendChild(removeIcon);
+    removeBtn.appendChild(document.createTextNode(' Quitar'));
+    removeBtn.addEventListener('click', async () => {
+      if (!(await confirmDialog(`¿Quitarle el rol de repartidor a "${rep.full_name || rep.email}"? Vuelve a ser una cuenta común.`, { confirmText: 'Quitar', danger: true }))) return;
+      const { error: rpcError } = await supabase.rpc('admin_remove_repartidor_role', { p_user_id: rep.id });
+      if (rpcError) {
+        showToast(rpcError.message || 'No se pudo quitar el repartidor.', 'error');
+        return;
+      }
+      showToast('Repartidor quitado.', 'success');
+      fetchRepartidores();
+    });
+    tdActions.appendChild(removeBtn);
+
+    tr.appendChild(tdActions);
+    tbody.appendChild(tr);
+  });
+}
+
+function setupRepartidorAddForm() {
+  document.getElementById('repartidor-add-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('repartidor-email-input');
+    const email = input.value.trim();
+    if (!email) return;
+
+    const { data, error } = await supabase.rpc('admin_set_repartidor_by_email', { p_email: email });
+    if (error) {
+      showToast(error.message || 'No se pudo agregar el repartidor.', 'error');
+      return;
+    }
+    showToast(`${data?.full_name || data?.email || 'Repartidor'} agregado.`, 'success');
+    input.value = '';
+    fetchRepartidores();
+  });
+}
+
 function setupProductSearch() {
   document.getElementById('product-search-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1987,6 +2093,7 @@ const SECTION_LOADERS = {
   'home-promos': fetchHomePromos,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
+  'repartidores': fetchRepartidores,
   'reviews-mod': fetchReportedReviews,
   'proofs': fetchPendingProofsAdmin,
   'revocations': fetchRevocationRequests,
@@ -2067,6 +2174,7 @@ function initAdminPage() {
   document.getElementById('btn-refresh-emergency-contacts').addEventListener('click', fetchEmergencyContacts);
   document.getElementById('btn-refresh-home-promos').addEventListener('click', fetchHomePromos);
   document.getElementById('btn-refresh-stores-mod').addEventListener('click', fetchStoresForModeration);
+  document.getElementById('btn-refresh-repartidores').addEventListener('click', fetchRepartidores);
   document.getElementById('btn-refresh-proofs').addEventListener('click', fetchPendingProofsAdmin);
   document.getElementById('btn-refresh-reviews-mod').addEventListener('click', fetchReportedReviews);
   document.getElementById('btn-refresh-revocations').addEventListener('click', fetchRevocationRequests);
@@ -2079,6 +2187,7 @@ function initAdminPage() {
   setupPharmacyForms();
   setupEmergencyContactForm();
   setupProductSearch();
+  setupRepartidorAddForm();
   setupSectionNav();
 
   // Abrir la primera sección visible (respeta el rol) y cargar solo esa.
@@ -2096,7 +2205,7 @@ function initAdminPage() {
 const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'professionals', 'metrics', 'categories', 'coupons',
   'pharmacies', 'emergency-contacts', 'home-promos',
-  'stores-mod', 'products-mod', 'proofs',
+  'stores-mod', 'products-mod', 'proofs', 'repartidores',
   'revocations', 'error-logs', 'audit-log',
 ];
 

@@ -6,5 +6,6 @@ Disallow: /pages/perfil.html
 Disallow: /pages/carrito.html
 Disallow: /pages/vender.html
 Disallow: /pages/profesional.html
+Disallow: /pages/repartidor.html
 Disallow: /pages/admin.html
 Disallow: /pages/mensajes.html

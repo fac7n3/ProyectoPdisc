@@ -229,7 +229,7 @@ export function checkUrlErrors() {
  * rol 'vendedor' en el JWT ni siquiera hacen falta.
  *
  * @param {import("@supabase/supabase-js").User|null} user
- * @returns {Promise<{ isAdmin: boolean, seller: 'vendedor'|'profesional'|null }>}
+ * @returns {Promise<{ isAdmin: boolean, seller: 'vendedor'|'profesional'|'repartidor'|null }>}
  */
 export async function getPanelAccess(user) {
   if (!user) return { isAdmin: false, seller: null };
@@ -240,6 +240,10 @@ export async function getPanelAccess(user) {
   const isAdmin = role === "admin" || role === "moderador";
 
   if (role === "vendedor") return { isAdmin: false, seller: "vendedor" };
+  // El repartidor sí se distingue por el rol (a diferencia de vendedor, no
+  // tiene el caso de la empleada sin rol propio) -- alta desde admin.html,
+  // ver admin_set_repartidor_by_email.
+  if (role === "repartidor") return { isAdmin: false, seller: "repartidor" };
 
   const [storeRes, staffRes, profRes] = await Promise.all([
     supabase.from("stores").select("id").eq("owner_id", user.id).limit(1),
@@ -264,6 +268,7 @@ export async function getPanelAccess(user) {
 export const SELLER_PANEL_PAGES = {
   vendedor: "vender.html",
   profesional: "profesional.html",
+  repartidor: "repartidor.html",
 };
 
 /**

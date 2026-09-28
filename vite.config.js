@@ -45,6 +45,7 @@ export default defineConfig({
         contratar: resolve(__dirname, 'pages/contratar.html'),
         profesional: resolve(__dirname, 'pages/profesional.html'),
         servicios: resolve(__dirname, 'pages/servicios.html'),
+        repartidor: resolve(__dirname, 'pages/repartidor.html'),
       }
     }
   }
