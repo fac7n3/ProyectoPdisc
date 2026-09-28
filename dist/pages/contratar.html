@@ -228,20 +228,72 @@
         outline: none; border-color: var(--bl-primary);
         box-shadow: 0 0 0 2px rgba(40, 65, 117, 0.12);
       }
-      .ct-modal__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.1rem; }
+      .ct-modal__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 1.1rem; }
       .ct-modal__error { color: var(--bl-danger, #dc2626); font-size: 0.86rem; margin: 0 0 0.75rem; }
       .ct-modal__submit { width: 100%; justify-content: center; text-decoration: none; }
+
+      /* --- Fotos del problema, en el modal de presupuesto --- */
+      .ct-modal__attach { margin-bottom: 1.1rem; }
+      .ct-modal__attach-btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.5rem 0.9rem; border: 1px dashed var(--bl-border);
+        border-radius: var(--bl-radius-pill); background: var(--bl-surface-alt);
+        color: var(--bl-text-secondary); font: inherit; font-size: 0.85rem; font-weight: 600;
+        cursor: pointer; transition: border-color .15s, color .15s;
+      }
+      .ct-modal__attach-btn:hover:not(:disabled) { border-color: var(--bl-primary); color: var(--bl-primary); }
+      .ct-modal__attach-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      .ct-modal__attach-hint { display: block; margin-top: 0.35rem; font-size: 0.78rem; color: var(--bl-text-muted); }
+      .ct-modal__thumbs {
+        display: flex; flex-wrap: wrap; gap: 0.5rem;
+        margin-top: 0.65rem;
+      }
+      .ct-modal__thumbs:empty { margin-top: 0; }
+      .ct-modal__thumb {
+        position: relative; width: 4.2rem; height: 4.2rem;
+        border-radius: var(--bl-radius-md); overflow: hidden; border: 1px solid var(--bl-border);
+      }
+      .ct-modal__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .ct-modal__thumb-remove {
+        position: absolute; top: 0.2rem; right: 0.2rem;
+        width: 1.35rem; height: 1.35rem; border-radius: 50%; border: none;
+        background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 0.7rem;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+      }
+      .ct-modal__thumb-remove:hover { background: rgba(0, 0, 0, 0.8); }
+
+      /* --- Selector de fecha puntual, al lado de los chips de "¿Para cuándo?" --- */
+      .ct-modal__date-chip {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.5rem 0.9rem; border-radius: var(--bl-radius-pill);
+        border: 1px solid var(--bl-border); background: var(--bl-surface);
+        color: var(--bl-text-secondary); font-size: 0.8125rem; font-weight: 600;
+        cursor: pointer; transition: all .15s;
+      }
+      .ct-modal__date-chip:hover { border-color: var(--bl-primary); color: var(--bl-primary); }
+      .ct-modal__date-chip.is-active { background: var(--bl-primary); border-color: var(--bl-primary); color: #fff; }
+      .ct-modal__date-input {
+        border: none; background: none; padding: 0; margin: 0;
+        font: inherit; font-size: 0.8125rem; font-weight: 600; color: inherit;
+        cursor: pointer; max-width: 8.2rem;
+      }
+      .ct-modal__date-input:focus { outline: none; }
+      /* El ícono nativo del date picker queda blanco en Chrome/Edge cuando el
+         chip está activo (fondo azul) -- sin esto se vuelve invisible. */
+      .ct-modal__date-chip.is-active .ct-modal__date-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 
       @media (max-width: 480px) {
         .ct-service { flex-direction: column; gap: 0.2rem; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/contratar-BKao0rhW.js"></script>
+    <script type="module" crossorigin src="/assets/contratar-FeQzFH3o.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-D3zoiEwc.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-J7ziBnWk.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CRQ1BW_R.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CMhCv_LD.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
     <link rel="stylesheet" crossorigin href="/assets/home-CswsZ4cf.css">
   </head>
