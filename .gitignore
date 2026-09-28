@@ -4,6 +4,7 @@ node_modules/
 .svelte-kit/
 context.md
 .mcp.json
+.claude/settings.local.json
 # Credenciales Jira (registro de commits)
 .jira.env
 
