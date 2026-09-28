@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-23. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-09-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,27 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-28** — **"Contratar" tardaba mucho en mostrar el
+  directorio**, reportado por el usuario. `loadProfessionals()`
+  (`js/contratar.js`) armaba la lista con 2 idas y vueltas seriadas al
+  backend: primero `SELECT professionals`, y recién con esos ids en mano, un
+  `Promise.all` con 5 `SELECT` más (reseñas, fotos, servicios, horarios,
+  zonas) -- la segunda tanda no podía arrancar hasta que terminara la
+  primera, aunque las 5 consultas de esa tanda ya corrían en paralelo entre
+  sí. Con el proyecto en `us-west-2` y los usuarios en Baradero, cada ida y
+  vuelta de más se nota. RPC nuevo `get_professionals_directory()`
+  (migración **109**, aplicada a producción) junta las 6 consultas en 1
+  sola: cada profesional activo con reseñas/horarios/servicios/zonas/fotos
+  ya agregados en columnas jsonb vía `LATERAL JOIN`. `SECURITY INVOKER`, con
+  los mismos filtros explícitos que ya tenía el código (`is_active` en
+  professionals/professional_services, `is_hidden=false` en reviews --
+  las policies `ALL` del admin no los aplican solas). Verificado con
+  `EXPLAIN`/pruebas directas contra la base real (incluida una fila con
+  horarios/servicios/zonas insertada en una transacción con ROLLBACK, para
+  confirmar el shape del jsonb que espera `buildCard()`). **No se pudo
+  probar en el navegador real de punta a punta**: el entorno de esta sesión
+  no tiene salida de red hacia Supabase (mismo límite ya documentado para el
+  panel de profesional) -- conviene abrir la página una vez a mano.
 - **Resuelto 2026-09-28** — **"Seleccionar varios" en Publicaciones** (panel de
   vendedor), a pedido del usuario: un toggle con un círculo que se pinta del
   azul del panel al prenderlo, debajo del buscador. Con el modo prendido cada
