@@ -80,6 +80,25 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-28** — **"Seleccionar varios" en Publicaciones** (panel de
+  vendedor), a pedido del usuario: un toggle con un círculo que se pinta del
+  azul del panel al prenderlo, debajo del buscador. Con el modo prendido cada
+  publicación muestra un tilde y, del lado derecho, aparecen un **tacho** y el
+  **ícono de pausar** que ya usaba el menú de la fila. Cada uno pide
+  confirmación con el cartel propio del sitio (`confirmDialog`): "¿Estás
+  seguro de eliminar estas publicaciones?" (Cancelar / Eliminar) y "¿Estás
+  seguro de pausar las publicaciones?" (Cancelar / Pausar). **Decisión que no
+  es obvia:** la selección se poda en cada render a lo que está visible, así
+  que tildar tres, filtrar por "Pausadas" y tocar el tacho **no** puede
+  llevarse puesta una publicación que ya no está en pantalla. Borrar en lote
+  limpia las fotos del bucket igual que el borrado de a uno (lee las URLs
+  antes del DELETE, porque `product_images` se va en cascada). De paso se
+  corrigió el texto del cartel de borrar **de a uno**, que avisaba que "esto
+  fallará si el producto ya fue comprado": no es cierto,
+  `order_items.product_id` es ON DELETE SET NULL (verificado contra la base) y
+  la venta sobrevive con el producto en NULL. 30 checks de Playwright sobre el
+  panel real, incluidos los dos carteles palabra por palabra y el pedido exacto
+  que sale a la base.
 - **Resuelto 2026-09-28** — se sacó la tarjeta **"Dinero disponible"** del
   resumen del panel de vendedor, a pedido del usuario. Prometía algo que la
   plataforma no hace: su "Retirar dinero" solo tiraba un toast de "muy pronto",

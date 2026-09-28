@@ -507,6 +507,24 @@
       .pub-chip.is-active { background: var(--bl-vendor-accent); border-color: var(--bl-vendor-accent); color: #fff; }
       .pub-count { color: var(--bl-text-secondary); font-size: 0.88rem; margin-left: auto; }
 
+      /* Selección múltiple de publicaciones */
+      .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
+      .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
+      .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
+      .pub-bulk__circle { width: 1.05rem; height: 1.05rem; border: 2px solid var(--bl-border); border-radius: 50%; flex-shrink: 0; transition: background-color 0.12s, border-color 0.12s; }
+      .pub-bulk__toggle:hover .pub-bulk__circle { border-color: var(--bl-vendor-accent); }
+      .pub-bulk__toggle[aria-pressed="true"] { color: var(--bl-vendor-accent); font-weight: 600; }
+      .pub-bulk__toggle[aria-pressed="true"] .pub-bulk__circle { background: var(--bl-vendor-accent); border-color: var(--bl-vendor-accent); }
+      .pub-bulk__actions { display: inline-flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+      .pub-bulk__actions[hidden] { display: none; }
+      .pub-bulk__count { font-size: 0.82rem; color: var(--bl-text-secondary); }
+      .pub-bulk__btn { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; border: 1px solid var(--bl-border); background: var(--bl-surface); border-radius: var(--bl-radius-md); color: var(--bl-text-secondary); font-size: 0.92rem; cursor: pointer; }
+      .pub-bulk__btn:hover:not(:disabled) { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
+      .pub-bulk__btn--danger:hover:not(:disabled) { border-color: var(--bl-danger); color: var(--bl-danger); }
+      .pub-bulk__btn:disabled { opacity: 0.45; cursor: default; }
+      .pub-row__check { width: 1.05rem; height: 1.05rem; flex-shrink: 0; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      .pub-row--checked { border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 1px var(--bl-vendor-accent); }
+
       .pub-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
       .pub-nomatch { color: var(--bl-text-secondary); padding: 1.5rem; text-align: center; }
       .pub-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); box-shadow: var(--bl-shadow-sm); position: relative; }
@@ -817,9 +835,10 @@
         .pub-row__main { flex-basis: calc(100% - 56px - 1rem); }
         .pub-row__cell { min-width: 0; flex: 1 1 auto; align-items: flex-start; text-align: left; }
         .pub-count { margin-left: 0; width: 100%; }
+        .pub-bulk__actions { margin-left: 0; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-CkpzM5wT.js"></script>
+    <script type="module" crossorigin src="/assets/vender-CspSo-uo.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CRQ1BW_R.js">
@@ -1493,6 +1512,23 @@
                   <button type="button" class="pub-chip" data-status="inactive">Pausadas</button>
                 </div>
                 <span class="pub-count" id="pub-count"></span>
+              </div>
+
+              <!-- Selección múltiple. El toggle está siempre; las acciones
+                   (eliminar / pausar en lote) recién aparecen al prenderlo. -->
+              <div class="pub-bulk">
+                <button type="button" class="pub-bulk__toggle" id="pub-select-toggle" aria-pressed="false">
+                  <span class="pub-bulk__circle" aria-hidden="true"></span> Seleccionar varios
+                </button>
+                <div class="pub-bulk__actions" id="pub-bulk-actions" hidden>
+                  <span class="pub-bulk__count" id="pub-bulk-count">Ninguna seleccionada</span>
+                  <button type="button" class="pub-bulk__btn pub-bulk__btn--danger" id="pub-bulk-delete" title="Eliminar las seleccionadas" aria-label="Eliminar las seleccionadas" disabled>
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="pub-bulk__btn" id="pub-bulk-pause" title="Pausar las seleccionadas" aria-label="Pausar las seleccionadas" disabled>
+                    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- Formulario de alta/edición. Oculto por defecto. Va ANTES del
