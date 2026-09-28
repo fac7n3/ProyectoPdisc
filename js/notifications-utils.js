@@ -212,7 +212,7 @@ export function buildNotificationTitle(n) {
   }
   if (n.type === 'support_ticket_status_change' && n.payload?.subject) {
     const statusText = SUPPORT_TICKET_STATUS_LABELS[n.payload.status] || n.payload.status;
-    return `Tu reclamo "${n.payload.subject}" pasó a: ${statusText}`;
+    return `Tu reclamo "${n.payload.subject}" fue ${statusText}`;
   }
   if (n.type === 'support_ticket_message' && n.payload?.subject) {
     return `Soporte respondió a tu reclamo "${n.payload.subject}"`;
