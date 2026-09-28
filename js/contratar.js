@@ -496,20 +496,17 @@ async function loadProfessionals() {
   // queda en blanco abajo de los chips hasta que llega todo.
   container.appendChild(buildLoadingBlock('Cargando el directorio'));
 
-  const { data: { session } } = await supabase.auth.getSession();
+  // Antes eran 2 idas y vueltas seriadas (professionals, y recién con esos
+  // ids el Promise.all de 5 consultas más). El RPC junta las 6 en 1 sola ida
+  // y vuelta (migración 109) -- con el proyecto en us-west-2 y los usuarios en
+  // Baradero, cada ida y vuelta de menos se nota. getSession() no pega a la
+  // red (lee la sesión local), así que correrlo en paralelo no ahorra nada
+  // real, pero tampoco cuesta nada dejarlo sin bloquear al RPC.
+  const [{ data: { session } }, { data, error }] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.rpc('get_professionals_directory'),
+  ]);
   currentUserId = session?.user?.id || null;
-
-  const { data, error } = await supabase
-    .from('professionals')
-    .select(`id, owner_id, full_name, category, specialty, description, phone, whatsapp, photo_url, serves_24h,
-      social_instagram, social_instagram_show, social_facebook, social_facebook_show,
-      social_tiktok, social_tiktok_show, social_x, social_x_show,
-      social_youtube, social_youtube_show, social_website, social_website_show`)
-    // La policy `professionals_select_public` ya filtra por is_active, pero la
-    // del admin (`professionals_all_admin`, cmd ALL) no: sin esto, una cuenta
-    // admin ve en el directorio público las publicaciones pausadas.
-    .eq('is_active', true)
-    .order('full_name', { ascending: true });
 
   if (error) {
     console.error('Error al cargar los profesionales:', error);
@@ -526,86 +523,15 @@ async function loadProfessionals() {
     return;
   }
 
-  // Reseñas y fotos promocionales: una sola consulta de cada una para toda
-  // la lista (no una por tarjeta). Las reseñas se agregan en promedio/cantidad
-  // -- "mientras más estrellas, mejor" ordena la lista -- las fotos se
-  // agrupan por profesional para pintarlas en su tarjeta al desplegarla.
-  const ids = professionals.map((p) => p.id);
-  const [
-    { data: reviewRows },
-    { data: promoRows },
-    { data: serviceRows },
-    { data: hourRows },
-    { data: areaRows },
-  ] = await Promise.all([
-    supabase
-      .from('reviews')
-      .select('target_id, rating')
-      .eq('target_type', 'professional')
-      .eq('is_hidden', false)
-      .in('target_id', ids),
-    supabase
-      .from('professional_promos')
-      .select('id, professional_id, image_url, description')
-      .in('professional_id', ids)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: true }),
-    supabase
-      .from('professional_services')
-      .select('professional_id, title, description, price_type, price_pesos')
-      .in('professional_id', ids)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true }),
-    supabase
-      .from('professional_business_hours')
-      .select('professional_id, day_of_week, open_time, close_time')
-      .in('professional_id', ids),
-    supabase
-      .from('professional_service_areas')
-      .select('professional_id, zone_name')
-      .in('professional_id', ids),
-  ]);
-
-  const promosByPro = new Map();
-  (promoRows || []).forEach((promo) => {
-    const list = promosByPro.get(promo.professional_id) || [];
-    list.push(promo);
-    promosByPro.set(promo.professional_id, list);
-  });
-  professionals.forEach((pro) => { pro._promos = promosByPro.get(pro.id) || []; });
-
-  // Servicios, horarios y zonas: se agrupan por profesional igual que las
-  // fotos, para pintarlos en su tarjeta al desplegarla.
-  const agruparPor = (filas, clave) => {
-    const mapa = new Map();
-    (filas || []).forEach((fila) => {
-      const lista = mapa.get(fila[clave]) || [];
-      lista.push(fila);
-      mapa.set(fila[clave], lista);
-    });
-    return mapa;
-  };
-  const serviciosPorPro = agruparPor(serviceRows, 'professional_id');
-  const horariosPorPro = agruparPor(hourRows, 'professional_id');
-  const zonasPorPro = agruparPor(areaRows, 'professional_id');
+  // El RPC ya trae horarios/servicios/zonas/fotos agregados por profesional;
+  // solo hace falta acomodarlos con el mismo nombre que espera buildCard().
   professionals.forEach((pro) => {
-    pro._servicios = serviciosPorPro.get(pro.id) || [];
-    pro._horarios = horariosPorPro.get(pro.id) || [];
-    pro._zonas = (zonasPorPro.get(pro.id) || []).map((z) => z.zone_name);
-  });
-
-  const reviewsByPro = new Map();
-  (reviewRows || []).forEach((r) => {
-    const entry = reviewsByPro.get(r.target_id) || { sum: 0, count: 0 };
-    entry.sum += r.rating;
-    entry.count += 1;
-    reviewsByPro.set(r.target_id, entry);
-  });
-
-  professionals.forEach((pro) => {
-    const stats = reviewsByPro.get(pro.id);
-    pro._ratingAvg = stats ? stats.sum / stats.count : 0;
-    pro._ratingCount = stats ? stats.count : 0;
+    pro._servicios = pro.servicios || [];
+    pro._horarios = pro.horarios || [];
+    pro._zonas = pro.zonas || [];
+    pro._promos = pro.promos || [];
+    pro._ratingAvg = pro.rating_avg || 0;
+    pro._ratingCount = pro.rating_count || 0;
   });
 
   professionals.sort((a, b) => {
