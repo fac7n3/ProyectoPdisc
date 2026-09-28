@@ -1301,6 +1301,7 @@ async function updateOrderStatus(orderId, newStatus) {
 // y se guarda apenas se elige el archivo, sin esperar al "Guardar cambios"
 // del resto del formulario. Bucket store-logos, migración 74_store_logo.sql.
 const MAX_STORE_LOGO_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 let currentStoreLogoUrl = null;
 
 function paintStoreLogo(url) {
@@ -1345,6 +1346,15 @@ function setupStoreLogoPicker() {
     if (!file) return;
     clearFail();
 
+    // file.type puede venir vacío (algunos navegadores/SO no reconocen la
+    // extensión, típico con HEIC de iPhone) -- ahí no hay de qué quejarse
+    // todavía, se termina de ver si se puede leer más abajo.
+    if (file.type && !ACCEPTED_LOGO_TYPES.includes(file.type)) {
+      fail('Tiene que ser una imagen JPG, PNG o WebP.');
+      fileInput.value = '';
+      return;
+    }
+
     if (file.size > MAX_STORE_LOGO_BYTES) {
       fail('Esa imagen pesa más de 5 MB. Probá con una más liviana.');
       fileInput.value = '';
@@ -1359,7 +1369,11 @@ function setupStoreLogoPicker() {
         return;
       }
     } catch {
-      fail('No pudimos leer esa imagen. Probá con otro archivo.');
+      // El caso más común: una foto de iPhone en formato HEIC/HEIF, que
+      // Chrome/Edge en Windows no pueden decodificar (Safari sí) -- por
+      // eso el mensaje sugiere puntualmente convertirla, no un genérico
+      // "probá con otro archivo" que no dice qué hay que cambiar.
+      fail('No pudimos leer esa imagen. Si la sacaste con un iPhone puede estar en formato HEIC: abrila y guardala/exportala como JPG o PNG, y volvé a intentar.');
       fileInput.value = '';
       return;
     }
