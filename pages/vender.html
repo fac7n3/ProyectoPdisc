@@ -513,7 +513,13 @@
       .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
       .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
-      .pub-bulk__circle { width: 1.05rem; height: 1.05rem; border: 2px solid var(--bl-border); border-radius: 50%; flex-shrink: 0; transition: background-color 0.12s, border-color 0.12s; }
+      /* Borde en #64748b y no en --bl-border (#e2e8f0): con el token, un círculo
+         vacío de 2px casi no se veía sobre el fondo del panel. Queda entre
+         --bl-text-muted (#94a3b8, medido en 2.45:1 contra el fondo, por debajo
+         del 3:1 que pide WCAG para el contorno de un control) y
+         --bl-text-secondary (#4a5568, un anillo demasiado pesado para algo
+         que todavía no está marcado). */
+      .pub-bulk__circle { width: 1.05rem; height: 1.05rem; border: 2px solid #64748b; border-radius: 50%; flex-shrink: 0; transition: background-color 0.12s, border-color 0.12s; }
       .pub-bulk__toggle:hover .pub-bulk__circle { border-color: var(--bl-vendor-accent); }
       .pub-bulk__toggle[aria-pressed="true"] { color: var(--bl-vendor-accent); font-weight: 600; }
       .pub-bulk__toggle[aria-pressed="true"] .pub-bulk__circle { background: var(--bl-vendor-accent); border-color: var(--bl-vendor-accent); }
