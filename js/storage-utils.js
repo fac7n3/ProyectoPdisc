@@ -86,31 +86,38 @@ export function storedFileName(path) {
 }
 
 /**
+ * Lee un File como `data:` URL (FileReader), no con `URL.createObjectURL`
+ * -- el `img-src` de la CSP de todas las páginas permite `data:` pero no
+ * `blob:` (mismo motivo ya documentado en home-promos-editor.js), así que
+ * un `blob:` puesto en un <img> nunca carga: el navegador lo bloquea en
+ * silencio y dispara `onerror`. La usan getImageDimensions() de acá abajo y
+ * el recorte del logo del comercio (js/vender.js).
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("No pudimos leer esa imagen."));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Ancho y alto reales de una imagen elegida en un <input type="file">. Se usa
  * para exigir que un logo sea cuadrado antes de subirlo -- se muestra en
  * círculo/cuadrado (`object-fit: cover`) en todos lados, así que una imagen
  * rectangular queda recortada de forma imprevisible.
- *
- * Lee el archivo como `data:` URL (FileReader), no con
- * `URL.createObjectURL` -- el `img-src` de la CSP de todas las páginas
- * permite `data:` pero no `blob:` (mismo motivo ya documentado en
- * home-promos-editor.js), así que un `blob:` en un <img> nunca cargaba: el
- * navegador lo bloqueaba en silencio, disparaba `onerror`, y esta función
- * rechazaba CUALQUIER imagen válida con "No pudimos leer esa imagen" antes
- * de llegar siquiera a mirar el archivo.
  * @param {File} file
  * @returns {Promise<{width: number, height: number}>}
  */
-export function getImageDimensions(file) {
+export async function getImageDimensions(file) {
+  const dataUrl = await fileToDataUrl(file);
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("No pudimos leer esa imagen."));
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      img.onerror = () => reject(new Error("No pudimos leer esa imagen."));
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("No pudimos leer esa imagen."));
+    img.src = dataUrl;
   });
 }
