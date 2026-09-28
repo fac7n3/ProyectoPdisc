@@ -22,6 +22,8 @@ const CUANDO = {
   sin_apuro: 'Sin apuro',
 };
 
+const ATTACH_BUCKET = 'professional-inquiry-attachments';
+
 let ctx = null;
 let consultas = [];
 let filtro = 'todas';
@@ -34,7 +36,7 @@ export function initConsultas(contexto) {
 async function cargar() {
   const { data, error } = await supabase
     .from('professional_inquiries')
-    .select('id, request_details, needed_when, contact_phone, status, created_at')
+    .select('id, request_details, needed_when, needed_date, contact_phone, status, created_at, attachments')
     .eq('professional_id', ctx.prof.id)
     .order('created_at', { ascending: false });
 
@@ -108,15 +110,21 @@ function tarjeta(consulta) {
 
   card.appendChild(el('p', 'of-inquiry__text', consulta.request_details));
 
+  const fotos = filaDeFotos(consulta.attachments);
+  if (fotos) card.appendChild(fotos);
+
   const meta = el('div', 'of-inquiry__meta');
   const tel = el('span');
   tel.appendChild(icono('fa-solid fa-phone'));
   tel.append(` ${consulta.contact_phone}`);
   meta.appendChild(tel);
-  if (consulta.needed_when && CUANDO[consulta.needed_when]) {
+  const cuandoTexto = consulta.needed_when === 'fecha' && consulta.needed_date
+    ? `Para el ${fechaPuntualLabel(consulta.needed_date)}`
+    : CUANDO[consulta.needed_when];
+  if (cuandoTexto) {
     const cuando = el('span');
     cuando.appendChild(icono('fa-regular fa-clock'));
-    cuando.append(` ${CUANDO[consulta.needed_when]}`);
+    cuando.append(` ${cuandoTexto}`);
     meta.appendChild(cuando);
   }
   card.appendChild(meta);
@@ -179,6 +187,56 @@ async function cambiarEstado(consulta, nuevoEstado, btn) {
   renderFiltros();
   render();
   ctx.refrescarResumen?.();
+}
+
+/** 'YYYY-MM-DD' -> "12 de octubre". +'T00:00:00' para que quede en hora
+ * local: sin eso `new Date('YYYY-MM-DD')` la interpreta en UTC y puede
+ * mostrar un día menos según la hora en que se mire. */
+function fechaPuntualLabel(iso) {
+  const fecha = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) return '';
+  return fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+}
+
+/**
+ * Fila de fotos adjuntas a la consulta, cada una abriéndose con su signed URL
+ * (el bucket es privado). Mismo patrón anti-popup-blocker que
+ * openAttachment() en support-utils.js: la pestaña se abre en blanco ANTES
+ * del await de createSignedUrl, porque Safari/Firefox bloquean en silencio
+ * un window.open() que ya perdió el gesto del usuario.
+ */
+function filaDeFotos(paths) {
+  if (!paths?.length) return null;
+  const { el, icono } = ctx;
+
+  const wrap = el('div', 'of-inquiry__photos');
+  paths.forEach((path, index) => {
+    const chip = el('button', 'of-btn of-btn--ghost of-btn--sm');
+    chip.type = 'button';
+    chip.appendChild(icono('fa-solid fa-image'));
+    chip.append(` Foto ${index + 1}`);
+    chip.addEventListener('click', () => abrirFoto(path, chip));
+    wrap.appendChild(chip);
+  });
+  return wrap;
+}
+
+async function abrirFoto(path, trigger) {
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+
+  trigger.disabled = true;
+  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(path, 60);
+  trigger.disabled = false;
+
+  if (error || !data?.signedUrl) {
+    tab?.close();
+    showToast('No se pudo abrir la foto.');
+    return;
+  }
+
+  if (tab) tab.location.replace(data.signedUrl);
+  else window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
 }
 
 /** "hace 5 minutos" / "ayer" / la fecha, para no mostrar un ISO crudo. */
