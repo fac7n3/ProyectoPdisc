@@ -9,6 +9,8 @@ import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professi
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import { getVisibleSocialLinks } from './store-contact-utils.js';
 import { formatTarifa } from './professional-service-utils.js';
+import { fileToDataUrl } from './storage-utils.js';
+import { localIsoDate } from './cart-utils.js';
 import {
   DIAS,
   agruparPorDia,
@@ -631,6 +633,12 @@ async function loadProfessionals() {
  * Pide sesión: la RLS de professional_inquiries exige client_id = auth.uid()
  * (sin eso sería un buzón anónimo sin captcha), y además hace falta la cuenta
  * para poder mostrarle después "tus consultas".
+ *
+ * Fotos y fecha puntual (migración 109): hasta 5 fotos del problema, subidas
+ * a un bucket privado ANTES del insert (mismo orden que support_tickets), y
+ * un selector de fecha al lado de los chips de "¿Para cuándo?" para cuando
+ * ninguno de los tres alcanza -- selecciona el valor 'fecha' y guarda el día
+ * puntual en needed_date.
  */
 
 const CUANDO_OPCIONES = [
@@ -639,7 +647,145 @@ const CUANDO_OPCIONES = [
   { valor: 'sin_apuro', label: 'Sin apuro' },
 ];
 
+const ATTACH_BUCKET = 'professional-inquiry-attachments';
+const MAX_ATTACH_FILES = 5;
+const MAX_ATTACH_BYTES = 5 * 1024 * 1024;
+
 let overlayConsulta = null;
+
+/**
+ * Selector de fotos del modal de presupuesto: botón "Agregar fotos" + grilla
+ * de miniaturas con su quitar. Las miniaturas son `data:` URL (FileReader),
+ * no `URL.createObjectURL` -- el `img-src` de la CSP de esta página permite
+ * `data:` pero no `blob:` (mismo motivo documentado en storage-utils.js), así
+ * que un `blob:` en el <img> se bloquea en silencio y nunca carga.
+ */
+function construirSelectorDeFotos() {
+  const root = el('div', 'ct-modal__attach');
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.hidden = true;
+
+  const boton = el('button', 'ct-modal__attach-btn');
+  boton.type = 'button';
+  const btnIcon = el('i', 'fa-regular fa-images');
+  btnIcon.setAttribute('aria-hidden', 'true');
+  boton.append(btnIcon, document.createTextNode(' Agregar fotos'));
+
+  const hint = el('span', 'ct-modal__attach-hint', `Hasta ${MAX_ATTACH_FILES} fotos, 5 MB cada una`);
+  const miniaturas = el('div', 'ct-modal__thumbs');
+  const error = el('p', 'ct-modal__error');
+  error.hidden = true;
+
+  root.append(boton, hint, miniaturas, error, input);
+
+  /** [{ file, dataUrl }] */
+  let items = [];
+
+  function fail(msg) {
+    error.textContent = msg;
+    error.hidden = false;
+  }
+
+  function render() {
+    miniaturas.replaceChildren(...items.map((item, index) => {
+      const thumb = el('div', 'ct-modal__thumb');
+      const img = document.createElement('img');
+      img.src = item.dataUrl;
+      img.alt = '';
+      thumb.appendChild(img);
+
+      const quitar = el('button', 'ct-modal__thumb-remove');
+      quitar.type = 'button';
+      quitar.setAttribute('aria-label', `Quitar ${item.file.name}`);
+      const x = el('i', 'fa-solid fa-xmark');
+      x.setAttribute('aria-hidden', 'true');
+      quitar.appendChild(x);
+      quitar.addEventListener('click', () => {
+        items.splice(index, 1);
+        error.hidden = true;
+        render();
+      });
+      thumb.appendChild(quitar);
+
+      return thumb;
+    }));
+
+    boton.disabled = items.length >= MAX_ATTACH_FILES;
+    hint.textContent = boton.disabled
+      ? `Llegaste al máximo de ${MAX_ATTACH_FILES} fotos`
+      : `Hasta ${MAX_ATTACH_FILES} fotos, 5 MB cada una`;
+  }
+
+  async function addFiles(fileList) {
+    error.hidden = true;
+    for (const file of Array.from(fileList || [])) {
+      if (items.length >= MAX_ATTACH_FILES) {
+        fail(`Podés sumar hasta ${MAX_ATTACH_FILES} fotos. El resto no se agregó.`);
+        break;
+      }
+      if (!file.type.startsWith('image/')) {
+        fail(`"${file.name}" no es una imagen.`);
+        continue;
+      }
+      if (file.size > MAX_ATTACH_BYTES) {
+        fail(`"${file.name}" pesa más de 5 MB.`);
+        continue;
+      }
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        items.push({ file, dataUrl });
+      } catch (e) {
+        console.error('Error leyendo la foto:', e);
+        fail('No pudimos leer esa foto.');
+      }
+    }
+    render();
+  }
+
+  boton.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    addFiles(input.files);
+    input.value = ''; // permite volver a elegir el mismo archivo
+  });
+
+  render();
+
+  return {
+    element: root,
+    getFiles: () => items.map((i) => i.file),
+  };
+}
+
+/** Sube las fotos elegidas al bucket, en la carpeta del cliente + el profesional al que le escribe. */
+async function subirFotosConsulta(files, userId, professionalId) {
+  const paths = [];
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    // Sanea el nombre: nada de "/" ni ".." que intente escapar de la carpeta
+    // {uid}/{professional_id}/ que exige la policy del bucket.
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '') || 'foto';
+    const path = `${userId}/${professionalId}/${Date.now() + i}-${safeName}`;
+    const { error } = await supabase.storage
+      .from(ATTACH_BUCKET)
+      .upload(path, file, { contentType: file.type || 'image/jpeg' });
+    if (error) {
+      await borrarFotosConsulta(paths);
+      throw error;
+    }
+    paths.push(path);
+  }
+  return paths;
+}
+
+async function borrarFotosConsulta(paths) {
+  if (!paths?.length) return;
+  const { error } = await supabase.storage.from(ATTACH_BUCKET).remove(paths);
+  if (error) console.warn('No se pudieron borrar las fotos de la consulta:', error.message);
+}
 
 async function abrirFormularioConsulta(pro) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -679,19 +825,60 @@ async function abrirFormularioConsulta(pro) {
   detalle.placeholder = 'Ej: tengo una pérdida abajo de la pileta de la cocina.';
   modal.appendChild(detalle);
 
+  const fotos = construirSelectorDeFotos();
+  modal.appendChild(fotos.element);
+
   modal.appendChild(el('span', 'ct-modal__label', '¿Para cuándo?'));
   const chips = el('div', 'ct-modal__chips');
   let cuandoElegido = 'sin_apuro';
+  let fechaElegida = '';
+
+  // Selector de fecha puntual, al lado de los chips de siempre: elegirlo
+  // pisa el chip activo (pasa needed_when a 'fecha'); borrarlo a mano vuelve
+  // a "Sin apuro".
+  const fechaChip = el('label', 'ct-modal__date-chip');
+  fechaChip.title = 'Elegir un día puntual';
+  const fechaIcon = el('i', 'fa-regular fa-calendar');
+  fechaIcon.setAttribute('aria-hidden', 'true');
+  const fechaInput = document.createElement('input');
+  fechaInput.type = 'date';
+  fechaInput.className = 'ct-modal__date-input';
+  fechaInput.min = localIsoDate();
+  fechaInput.setAttribute('aria-label', 'Elegir un día puntual');
+  fechaChip.append(fechaIcon, fechaInput);
+
+  const chipEls = new Map();
+
+  function marcarChipActivo(valor) {
+    chipEls.forEach((chip, v) => chip.classList.toggle('is-active', v === valor));
+    fechaChip.classList.toggle('is-active', valor === 'fecha');
+  }
+
+  function elegirCuando(valor) {
+    cuandoElegido = valor;
+    fechaElegida = '';
+    fechaInput.value = '';
+    marcarChipActivo(valor);
+  }
+
   CUANDO_OPCIONES.forEach((op) => {
     const chip = el('button', `ct-chip${op.valor === cuandoElegido ? ' is-active' : ''}`, op.label);
     chip.type = 'button';
-    chip.addEventListener('click', () => {
-      cuandoElegido = op.valor;
-      chips.querySelectorAll('.ct-chip').forEach((c) => c.classList.remove('is-active'));
-      chip.classList.add('is-active');
-    });
+    chip.addEventListener('click', () => elegirCuando(op.valor));
     chips.appendChild(chip);
+    chipEls.set(op.valor, chip);
   });
+
+  fechaInput.addEventListener('change', () => {
+    if (!fechaInput.value) {
+      elegirCuando('sin_apuro');
+      return;
+    }
+    cuandoElegido = 'fecha';
+    fechaElegida = fechaInput.value;
+    marcarChipActivo('fecha');
+  });
+  chips.appendChild(fechaChip);
   modal.appendChild(chips);
 
   const labelTel = el('label', 'ct-modal__label', 'Tu teléfono');
@@ -728,19 +915,40 @@ async function abrirFormularioConsulta(pro) {
     enviar.disabled = true;
     enviar.textContent = 'Enviando…';
 
-    const { error: errInsert } = await supabase.from('professional_inquiries').insert({
+    // Las fotos suben antes del insert (igual que support_tickets): si el
+    // insert falla después, se borran para no dejar archivos huérfanos.
+    const archivos = fotos.getFiles();
+    let rutasFotos = [];
+    if (archivos.length) {
+      try {
+        rutasFotos = await subirFotosConsulta(archivos, session.user.id, pro.id);
+      } catch (e) {
+        console.error('Error subiendo las fotos de la consulta:', e);
+        enviar.disabled = false;
+        enviar.textContent = 'Enviar consulta';
+        mostrarError('No pudimos subir las fotos. Probá de nuevo en un rato.');
+        return;
+      }
+    }
+
+    const nuevaConsulta = {
       professional_id: pro.id,
       client_id: session.user.id,
       request_details: texto,
       needed_when: cuandoElegido,
       contact_phone: tel,
-    });
+    };
+    if (cuandoElegido === 'fecha' && fechaElegida) nuevaConsulta.needed_date = fechaElegida;
+    if (rutasFotos.length) nuevaConsulta.attachments = rutasFotos;
+
+    const { error: errInsert } = await supabase.from('professional_inquiries').insert(nuevaConsulta);
 
     enviar.disabled = false;
     enviar.textContent = 'Enviar consulta';
 
     if (errInsert) {
       console.error('Error enviando la consulta:', errInsert);
+      if (rutasFotos.length) await borrarFotosConsulta(rutasFotos);
       mostrarError('No pudimos enviar tu consulta. Probá de nuevo en un rato.');
       return;
     }

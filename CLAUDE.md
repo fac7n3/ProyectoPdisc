@@ -80,6 +80,17 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-28** — **Fotos y fecha puntual en "Pedir presupuesto"**
+  (`contratar.html`), a pedido del usuario: botón "Agregar fotos" (hasta 5,
+  suben a un bucket privado nuevo, `professional-inquiry-attachments`, antes
+  del insert) y un `<input type="date">` con pinta de chip al lado de "Hoy /
+  Esta semana / Sin apuro" para un día puntual (`needed_when='fecha'` +
+  `needed_date`, migración 109). El panel del profesional
+  (`js/profesional-consultas.js`) muestra las fotos como chips que abren con
+  signed URL y, si corresponde, "Para el `<fecha>`" en vez de los tres
+  textos fijos. Detalle completo (el gotcha de CSP `data:` vs `blob:` de por
+  qué no se reusó el picker de adjuntos de soporte, la convención de paths
+  del bucket) en el skill `progreso-baradero-local`.
 - **Resuelto 2026-09-28** — **"Seleccionar varios" en Publicaciones** (panel de
   vendedor), a pedido del usuario: un toggle con un círculo que se pinta del
   azul del panel al prenderlo, debajo del buscador. Con el modo prendido cada

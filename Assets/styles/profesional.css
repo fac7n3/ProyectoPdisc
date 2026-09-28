@@ -404,6 +404,7 @@
 .of-inquiry__head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
 .of-inquiry__when { font-size: 0.8rem; color: var(--bl-text-muted); }
 .of-inquiry__text { color: var(--bl-text); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.of-inquiry__photos { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .of-inquiry__meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin-top: 0.75rem; font-size: 0.86rem; color: var(--bl-text-secondary); }
 .of-inquiry__actions { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
 

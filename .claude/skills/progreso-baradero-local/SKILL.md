@@ -5,6 +5,67 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Fotos y fecha puntual en "Pedir presupuesto" (2026-09-28)
+
+A pedido del usuario: el modal de presupuesto de `contratar.html`
+(`abrirFormularioConsulta()` en `js/contratar.js`) suma dos campos a los que
+ya tenía (migración 90) desde la 2026-09-17.
+
+**Fotos.** Botón "Agregar fotos" debajo de "¿Qué necesitás?", hasta 5
+imágenes de 5 MB cada una, con miniatura y quitar. Suben **antes** del
+insert (mismo orden que `support_tickets`, 73) a un bucket nuevo y privado,
+`professional-inquiry-attachments` -- privado porque una foto de "la pérdida
+abajo de la pileta" suele mostrar la casa de la persona, no es para servir
+por URL pública. Si el insert de la consulta falla después de subir las
+fotos, se borran (mismo motivo que la limpieza de `support_tickets`: no
+dejar archivos huérfanos pagando lugar en el bucket). **Gotcha de CSP:** las
+miniaturas usan `fileToDataUrl()` (`storage-utils.js`), no
+`URL.createObjectURL()` como el picker de adjuntos de reclamos
+(`support-utils.js`) -- el `img-src` de `contratar.html` permite `data:`
+pero no `blob:`, y un `<img src="blob:...">` se bloquea en silencio bajo esa
+CSP. Por esto no se reusó el picker de `support-utils.js` tal cual: se
+escribió uno propio, más chico (solo imágenes, sin PDF) en `contratar.js`.
+
+**Fecha puntual.** Al lado de los chips "Hoy"/"Esta semana"/"Sin apuro" hay
+un `<input type="date">` con pinta de chip (`.ct-modal__date-chip`). Elegir
+una fecha pasa `needed_when` a un cuarto valor, `'fecha'`, y guarda el día en
+la columna nueva `needed_date`; borrar la fecha a mano vuelve a "Sin apuro".
+`min` del input es `localIsoDate()` (`cart-utils.js`, hora **local** --
+`toISOString()` daría UTC y en Argentina se puede pisar el día por las 3
+horas de diferencia, mismo bug ya documentado para las ofertas del carrito).
+
+**Base:** migración `109_professional_inquiries_photos_and_date.sql`
+(aplicada a producción vía MCP de Supabase): `attachments text[]` (tope 5,
+mismo check que `support_tickets.attachments`), `needed_date date`, el
+`check` de `needed_when` ampliado a `'fecha'`, y un segundo `check` cruzado
+que exige `needed_date` solo (y siempre) cuando `needed_when = 'fecha'`, y
+que esa fecha no sea pasada. El trigger `protect_inquiry_content()` (90 --
+el profesional/admin solo puede tocar `status`) aprendió las dos columnas
+nuevas: sin eso el profesional podría reescribirle al vecino las fotos o la
+fecha pedida, mismo hueco que ya tapaba para el resto del contenido.
+
+Convención de paths del bucket: `{client_uid}/{professional_id}/{archivo}`
+-- con el `professional_id` como segundo segmento, la policy de `select` del
+profesional puede resolver que la foto es suya sin abrir la tabla
+`professional_inquiries` (que todavía no existe cuando se sube la foto, se
+sube antes del insert). Policies: insert/delete solo en la carpeta propia
+({uid}/...), select para el dueño **o** el profesional dueño de ese
+`professional_id` **o** admin.
+
+**Panel del profesional** (`js/profesional-consultas.js`): la consulta ahora
+trae `needed_date` y `attachments` en el `select`. Si `needed_when='fecha'`
+muestra "Para el 12 de octubre" en vez de uno de los tres textos fijos
+(`fechaPuntualLabel()`, con `+'T00:00:00'` para no correr el día por UTC).
+Las fotos salen como chips "Foto 1", "Foto 2"... (`of-btn of-btn--ghost
+of-btn--sm`, mismas clases que "Llamar"/"WhatsApp") que abren una signed URL
+de 60s en pestaña nueva al click -- no se cargan como `<img>` inline: habría
+que firmar cada una al renderizar la tarjeta, y con el bucket privado ya
+alcanza con abrir bajo demanda, mismo criterio que los adjuntos de reclamos
+de soporte. Mismo patrón anti-popup-blocker que `openAttachment()`
+(`support-utils.js`): la pestaña se abre en blanco ANTES del `await` de
+`createSignedUrl`, porque Safari/Firefox bloquean en silencio un
+`window.open()` que ya perdió el gesto del usuario.
+
 ## El selector de tipo de cuenta del registro (2026-09-17)
 
 `register.html` mostraba "Tipo de Cuenta: Cliente / Vendedor" desde la migración
