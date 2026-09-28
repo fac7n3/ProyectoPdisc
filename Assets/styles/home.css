@@ -1818,7 +1818,9 @@ button.coupon-chip:hover {
 }
 
 /* ===========================================================
-   SEGUNDO MOSAICO DE BANNERS (distribución en T, distinta a la de arriba)
+   SEGUNDO MOSAICO DE BANNERS (mismo grid que el de arriba: bloque grande a
+   la izquierda + los otros dos apilados a la derecha -- ver
+   .promo-mosaic__grid/.promo-mosaic__side, mismos valores acá abajo)
    =========================================================== */
 
 .promo-mosaic-2 {
@@ -1827,20 +1829,22 @@ button.coupon-chip:hover {
   padding: 0 1.5rem;
 }
 
-/* Fila 1: un banner ancho ocupando las dos columnas. Fila 2: dos banners
-   parejos, uno en cada columna. Lo opuesto al mosaico de arriba (que tenía
-   uno grande a un costado en vez de arriba). La fila 1 mide "auto": el
-   banner ancho tiene foto propia y se dimensiona solo por su aspect-ratio
-   chico -- una franja, no un banner grande -- pero un poco más alta que los
-   otros dos de al lado (13rem contra 8rem) para que la foto entre completa
-   sin recortarse (ver .promo-banner-2--wide). */
 .promo-mosaic-2__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 13rem 8rem;
+  grid-template-columns: 2fr 1fr;
   gap: 1rem;
 }
 
+.promo-mosaic-2__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Mismo tratamiento que .promo-banner de arriba: foto entera (contain, sin
+   recortar) con un degradé vertical liviano del color de la promo solo
+   abajo, para que "Novedades"/"Envíos"/"Comercios" se lean sin tapar la
+   foto. */
 .promo-banner-2 {
   position: relative;
   display: flex;
@@ -1849,69 +1853,49 @@ button.coupon-chip:hover {
   padding: 1.25rem;
   border-radius: var(--bl-radius-md);
   color: #fff;
-}
-
-/* Foto completa (sin recortar) pegada al borde derecho de la franja --
-   contain + background-position a la derecha, en vez de cover. El color
-   plano se degrada de sólido a la izquierda (donde va "Novedades") a
-   transparente donde arranca la foto, así no queda una franja de color
-   enorme y vacía si se centrara la imagen en una caja tan ancha y baja. */
-.promo-banner-2--wide {
-  grid-column: span 2;
-  background-image: linear-gradient(90deg, #7209b7 0%, #7209b7 45%, rgba(114, 9, 183, 0) 78%), url('../images/banners/promo-dulce-de-leche.webp');
-  background-size: 100% 100%, contain;
-  background-position: 0 0, right center;
-  background-repeat: no-repeat, no-repeat;
+  aspect-ratio: 900 / 507;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
-.promo-banner-2--wide:hover,
-.promo-banner-2--wide:focus-visible {
-  transform: scale(1.02);
+.promo-banner-2:hover,
+.promo-banner-2:focus-visible {
+  transform: scale(1.035);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
-/* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
-   no se lea como una repetición de la misma sección. El morado de "d" ya
-   queda puesto en el degradé de .promo-banner-2--wide (van siempre juntas
-   en el mismo elemento); acá solo quedan los otros dos.
-   Imágenes de PRUEBA (Assets/images/banners/promo-*-test.svg) -- mismo
-   patrón de dos capas que --wide (degradé sólido a transparente + foto
-   pegada a la derecha, contain). Reemplazar por fotos reales cuando haya. */
-.promo-banner-2--e,
-.promo-banner-2--f {
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+/* Paleta distinta a la del primer mosaico (morado/azul noche/frambuesa),
+   para que no se lea como una repetición de la misma sección. "d" es el
+   bloque grande (2fr): igual que .promo-banner--a, pierde el aspect-ratio
+   propio para estirarse a la altura real de la columna apilada de al lado. */
+.promo-banner-2--d {
+  background-color: #7209b7;
+  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
+  aspect-ratio: unset;
 }
 
-.promo-banner-2--e:hover,
-.promo-banner-2--e:focus-visible,
-.promo-banner-2--f:hover,
-.promo-banner-2--f:focus-visible {
-  transform: scale(1.02);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-}
-
+/* Imágenes de PRUEBA (Assets/images/banners/promo-*-test.svg) -- reemplazar
+   por fotos reales cuando haya. */
 .promo-banner-2--e {
   background-color: #14213d;
-  background-image: linear-gradient(90deg, #14213d 0%, #14213d 45%, rgba(20, 33, 61, 0) 78%), url('../images/banners/promo-envios-test.svg');
-  background-size: 100% 100%, contain;
-  background-position: 0 0, right center;
-  background-repeat: no-repeat, no-repeat;
+  background-image: linear-gradient(180deg, rgba(20, 33, 61, 0) 0%, rgba(20, 33, 61, 0) 40%, rgba(20, 33, 61, 0.15) 55%, rgba(20, 33, 61, 0.35) 75%, rgba(20, 33, 61, 0.6) 100%), url('../images/banners/promo-envios-test.svg');
 }
 
 .promo-banner-2--f {
   background-color: #d90368;
-  background-image: linear-gradient(90deg, #d90368 0%, #d90368 45%, rgba(217, 3, 104, 0) 78%), url('../images/banners/promo-comercios-test.svg');
-  background-size: 100% 100%, contain;
-  background-position: 0 0, right center;
-  background-repeat: no-repeat, no-repeat;
+  background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(217, 3, 104, 0.15) 55%, rgba(217, 3, 104, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
 }
 
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
-    grid-template-rows: 9rem 6.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  .promo-banner-2--d {
+    aspect-ratio: 900 / 507;
   }
 }
 
@@ -1919,7 +1903,7 @@ button.coupon-chip:hover {
    PROMO DE UN COMERCIO EN UN ESPACIO DEL MOSAICO (home_promos, migración 108)
    loadHomePromos() en home.js pone la imagen en --promo-img y agrega
    .is-store-promo. Dos clases de especificidad para pisar el
-   background-image/size fijo de cada variante (--a, --wide, --e...). La
+   background-image/size fijo de cada variante (--a, --d, --e...). La
    imagen va entera (contain, sin recortarle el texto propio) sobre el azul
    de marca, con una franja oscura abajo para que se lea el nombre del
    comercio.

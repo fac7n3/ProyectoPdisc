@@ -388,23 +388,25 @@
         </div>
       </section>
 
-      <!-- Segundo mosaico de banners: mismo estilo de color plano que el de
-           arriba (promo-mosaic), pero distribución distinta a propósito —
-           uno ancho arriba + dos parejas abajo, en vez de uno grande a un
-           costado + dos apiladas al otro. Mismos espacios asignables que el
-           de arriba (data-promo-slot). -->
+      <!-- Segundo mosaico de banners: mismo grid que el de arriba
+           (promo-mosaic) -- bloque grande a la izquierda + los otros dos
+           apilados a la derecha -- para que se lea como la misma sección,
+           no como dos secciones con distinta lógica. Mismos espacios
+           asignables que el de arriba (data-promo-slot). -->
       <section class="promo-mosaic-2" aria-label="Más promociones">
         <div class="promo-mosaic-2__grid">
-          <div class="promo-banner-2 promo-banner-2--wide promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
+          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
             <span class="promo-banner__eyebrow">Novedades</span>
           </div>
-          <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" role="button" tabindex="0" data-lightbox-alt="Envíos: Recibí en la puerta de tu casa" aria-label="Ver imagen ampliada: Recibí en la puerta de tu casa">
-            <span class="promo-banner__eyebrow">Envíos</span>
-            <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
-          </div>
-          <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
-            <span class="promo-banner__eyebrow">Comercios</span>
-            <span class="promo-banner__title">Sumate a Baradero Local</span>
+          <div class="promo-mosaic-2__side">
+            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" role="button" tabindex="0" data-lightbox-alt="Envíos: Recibí en la puerta de tu casa" aria-label="Ver imagen ampliada: Recibí en la puerta de tu casa">
+              <span class="promo-banner__eyebrow">Envíos</span>
+              <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
+            </div>
+            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
+              <span class="promo-banner__eyebrow">Comercios</span>
+              <span class="promo-banner__title">Sumate a Baradero Local</span>
+            </div>
           </div>
         </div>
       </section>
