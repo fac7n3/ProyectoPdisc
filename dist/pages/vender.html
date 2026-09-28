@@ -180,6 +180,39 @@
       .store-logo-picker__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       .store-logo-picker__error { color: var(--bl-danger, #ef4444); }
 
+      /* Recortador del logo (openLogoCropper en vender.js): se abre SIEMPRE
+         al elegir una imagen (sea cuadrada o no), overlay fijo con el mismo
+         criterio visual que el resto de los overlays del sitio (fondo
+         oscuro + tarjeta blanca centrada). */
+      .logo-crop-overlay {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(15, 23, 42, 0.75);
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem;
+      }
+      .logo-crop-card {
+        background: #fff; border-radius: var(--bl-radius-md, 12px);
+        padding: 1.25rem; max-width: 22rem; width: 100%;
+        display: flex; flex-direction: column; gap: 1rem; align-items: center;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+      }
+      .logo-crop-card__hint { margin: 0; font-size: 0.85rem; color: var(--bl-text-muted); text-align: center; }
+      /* overflow: hidden recorta la foto (más grande que el marco en el eje
+         que sobra) al cuadrado visible; touch-action: none evita que el
+         navegador haga scroll de la página mientras se arrastra en celular. */
+      .logo-crop-frame {
+        position: relative; width: 15rem; height: 15rem; max-width: 100%;
+        overflow: hidden; border-radius: var(--bl-radius-md, 12px);
+        background: var(--bl-surface-alt, #f1f5f9);
+        cursor: grab; touch-action: none;
+      }
+      .logo-crop-frame.is-dragging { cursor: grabbing; }
+      .logo-crop-frame img {
+        position: absolute; top: 0; left: 0;
+        max-width: none; pointer-events: none; user-select: none;
+      }
+      .logo-crop-card__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+
       /* Estilos del Panel */
       #dashboard-view {
         display: none;
@@ -776,20 +809,20 @@
         .pub-count { margin-left: 0; width: 100%; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-C4nnVLeh.js"></script>
+    <script type="module" crossorigin src="/assets/vender-CGIpM7Sg.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-CicwkAbx.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-D-ZGdVH0.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CRQ1BW_R.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-C9JeV_VR.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-4IYXErFn.js">
-    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-v6kyasvX.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-DGWo6RT7.js">
     <link rel="modulepreload" crossorigin href="/assets/nav-utils-C97ouXjB.js">
     <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-mpCEsJfu.js">
     <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-TSUibNak.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-CXBTyQ09.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-Bf683_SU.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
@@ -1062,9 +1095,11 @@
                     </div>
                     <div class="pf-field pf-field--full">
                       <label class="form-label" for="store-logo-file">Logo</label>
-                      <!-- El logo se sube apenas se elige el archivo (igual que el
-                           avatar de Mi perfil): no espera al "Guardar cambios" del
-                           resto del formulario. -->
+                      <!-- Al elegir el archivo se abre siempre el recortador
+                           (#store-logo-crop-overlay, ver openLogoCropper en
+                           vender.js) para acomodarlo en un cuadrado; recién al
+                           confirmar ahí se sube -- no espera al "Guardar
+                           cambios" del resto del formulario. -->
                       <div class="store-logo-picker">
                         <div class="store-logo-picker__preview" id="store-logo-preview"><i class="fa-solid fa-store" aria-hidden="true"></i></div>
                         <div class="store-logo-picker__field">
@@ -1073,8 +1108,21 @@
                             <button type="button" class="btn-outline" id="store-logo-pick-btn">Elegir imagen</button>
                             <button type="button" class="btn-outline" id="store-logo-remove-btn" hidden>Quitar</button>
                           </div>
-                          <small style="color: var(--bl-text-muted);">Se muestra en tu página. Formato JPG, PNG o WEBP, hasta 5 MB. Tiene que ser cuadrada (mismo ancho que alto).</small>
+                          <small style="color: var(--bl-text-muted);">Se muestra en tu página. Formato JPG, PNG o WEBP, hasta 5 MB. Después de elegirla la vas a poder acomodar en un cuadrado.</small>
                           <small class="store-logo-picker__error" id="store-logo-error" role="alert" hidden></small>
+                        </div>
+                      </div>
+
+                      <div class="logo-crop-overlay" id="store-logo-crop-overlay" hidden>
+                        <div class="logo-crop-card" role="dialog" aria-modal="true" aria-label="Acomodar el logo">
+                          <p class="logo-crop-card__hint">Arrastrá la imagen para elegir qué parte se ve en el logo.</p>
+                          <div class="logo-crop-frame" id="store-logo-crop-frame">
+                            <img id="store-logo-crop-img" alt="" draggable="false" />
+                          </div>
+                          <div class="logo-crop-card__actions">
+                            <button type="button" class="btn-outline" id="store-logo-crop-cancel">Cancelar</button>
+                            <button type="button" class="form-btn" style="width: auto; padding: 0.6rem 1.25rem;" id="store-logo-crop-save">Usar esta imagen</button>
+                          </div>
                         </div>
                       </div>
                     </div>

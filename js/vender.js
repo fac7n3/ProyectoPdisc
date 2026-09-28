@@ -6,7 +6,7 @@ import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
-import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
+import { removeStoredObjects, getImageDimensions, fileToDataUrl } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { sortOptionGroups, describeSelectedOptions } from './product-options-utils.js';
@@ -1325,6 +1325,135 @@ function paintStoreLogo(url) {
   }
 }
 
+// Tamaño del cuadro de recorte en CSS px -- tiene que coincidir con el
+// .logo-crop-frame del <style> de vender.html. La salida se recorta a una
+// resolución fija (LOGO_CROP_OUTPUT), de sobra para un logo, sin depender
+// del tamaño real en pantalla del recuadro.
+const LOGO_CROP_FRAME = 240;
+const LOGO_CROP_OUTPUT = 640;
+
+/**
+ * Deja acomodar (arrastrar) la imagen elegida dentro de un cuadro y
+ * devuelve el recorte resultante -- se abre SIEMPRE al elegir un archivo,
+ * sea cuadrado o no: un solo flujo previsible ("elegís imagen -> la
+ * acomodás -> confirmás") en vez de que a veces aparezca y a veces no.
+ * El cuadro muestra la imagen escalada para cubrirlo entero (el lado más
+ * chico ocupa el 100% del cuadro); solo hay margen para arrastrar en el
+ * eje que sobra. Si la imagen ya es cuadrada no sobra nada en ningún eje
+ * (offset fijo en 0,0): el cuadro se ve completo de entrada y arrastrar no
+ * hace nada, sin que haga falta un caso aparte para saltear el recortador.
+ * Al confirmar, un <canvas> recorta exactamente el cuadrado visible a
+ * resolución fija.
+ * @param {{dataUrl: string, width: number, height: number, mimeType: string}} img
+ * @returns {Promise<{blob: Blob, type: string} | null>} null si se canceló
+ */
+function openLogoCropper({ dataUrl, width, height, mimeType }) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('store-logo-crop-overlay');
+    const frame = document.getElementById('store-logo-crop-frame');
+    const imgEl = document.getElementById('store-logo-crop-img');
+    const cancelBtn = document.getElementById('store-logo-crop-cancel');
+    const saveBtn = document.getElementById('store-logo-crop-save');
+    if (!overlay || !frame || !imgEl || !cancelBtn || !saveBtn) { resolve(null); return; }
+
+    // "cover" del cuadro: el lado más chico de la imagen mide justo
+    // LOGO_CROP_FRAME, el más grande sobra -- ese sobrante es el único
+    // margen de arrastre posible en ese eje.
+    const scale = LOGO_CROP_FRAME / Math.min(width, height);
+    const scaledW = width * scale;
+    const scaledH = height * scale;
+    const minOffsetX = LOGO_CROP_FRAME - scaledW; // <= 0; 0 si no sobra nada en este eje
+    const minOffsetY = LOGO_CROP_FRAME - scaledH;
+    let offsetX = minOffsetX / 2; // arranca centrada
+    let offsetY = minOffsetY / 2;
+
+    imgEl.src = dataUrl;
+    imgEl.style.width = `${scaledW}px`;
+    imgEl.style.height = `${scaledH}px`;
+    const paint = () => { imgEl.style.transform = `translate(${offsetX}px, ${offsetY}px)`; };
+    paint();
+
+    const clamp = (value, min) => Math.min(0, Math.max(min, value));
+    let dragging = false;
+    let startX = 0, startY = 0, startOffsetX = 0, startOffsetY = 0;
+
+    const onPointerDown = (e) => {
+      dragging = true;
+      frame.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      startOffsetX = offsetX;
+      startOffsetY = offsetY;
+      frame.setPointerCapture?.(e.pointerId);
+    };
+    const onPointerMove = (e) => {
+      if (!dragging) return;
+      offsetX = clamp(startOffsetX + (e.clientX - startX), minOffsetX);
+      offsetY = clamp(startOffsetY + (e.clientY - startY), minOffsetY);
+      paint();
+    };
+    const onPointerUp = () => {
+      dragging = false;
+      frame.classList.remove('is-dragging');
+    };
+
+    frame.addEventListener('pointerdown', onPointerDown);
+    frame.addEventListener('pointermove', onPointerMove);
+    frame.addEventListener('pointerup', onPointerUp);
+    frame.addEventListener('pointercancel', onPointerUp);
+
+    const cleanup = () => {
+      frame.removeEventListener('pointerdown', onPointerDown);
+      frame.removeEventListener('pointermove', onPointerMove);
+      frame.removeEventListener('pointerup', onPointerUp);
+      frame.removeEventListener('pointercancel', onPointerUp);
+      cancelBtn.removeEventListener('click', onCancel);
+      saveBtn.removeEventListener('click', onSave);
+      overlay.hidden = true;
+      imgEl.src = '';
+      imgEl.style.transform = '';
+    };
+
+    function onCancel() {
+      cleanup();
+      resolve(null);
+    }
+
+    async function onSave() {
+      // decode() asegura que la imagen ya esté lista para dibujar -- por
+      // las dudas de que se apriete "Usar esta imagen" antes de que el
+      // data: URL termine de decodificarse (rarísimo, pero drawImage con
+      // una imagen todavía no decodificada saldría en blanco).
+      await imgEl.decode?.().catch(() => {});
+      // El recorte visible del cuadro (en px del recuadro) corresponde a un
+      // cuadrado de lado min(width,height) en la imagen ORIGINAL -- dividir
+      // por "scale" convierte de px del recuadro a px reales de la imagen.
+      // drawImage usa siempre el tamaño natural de <img>, no el CSS
+      // (width/height/transform) que se le puso para mostrarla arrastrable.
+      const srcSize = Math.min(width, height);
+      const srcX = -offsetX / scale;
+      const srcY = -offsetY / scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = LOGO_CROP_OUTPUT;
+      canvas.height = LOGO_CROP_OUTPUT;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgEl, srcX, srcY, srcSize, srcSize, 0, 0, LOGO_CROP_OUTPUT, LOGO_CROP_OUTPUT);
+      // PNG/WebP se mantienen (por la transparencia, típica en un logo);
+      // cualquier otra cosa sale como JPEG.
+      const outType = mimeType === 'image/png' || mimeType === 'image/webp' ? mimeType : 'image/jpeg';
+      canvas.toBlob((blob) => {
+        cleanup();
+        resolve(blob ? { blob, type: outType } : null);
+      }, outType, 0.92);
+    }
+
+    cancelBtn.addEventListener('click', onCancel);
+    saveBtn.addEventListener('click', onSave);
+
+    overlay.hidden = false;
+  });
+}
+
 function setupStoreLogoPicker() {
   const pickBtn = document.getElementById('store-logo-pick-btn');
   const removeBtn = document.getElementById('store-logo-remove-btn');
@@ -1338,6 +1467,42 @@ function setupStoreLogoPicker() {
     errorEl.hidden = false;
   };
   const clearFail = () => { if (errorEl) errorEl.hidden = true; };
+
+  // Compartida entre el único camino de subida que queda: siempre pasa por
+  // el recortador, así que siempre sube el Blob que salió del <canvas>.
+  const uploadStoreLogo = async (blob, contentType) => {
+    pickBtn.disabled = true;
+    pickBtn.textContent = 'Subiendo…';
+    const previousUrl = currentStoreLogoUrl;
+
+    try {
+      const ext = (contentType.split('/').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+      // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del bucket.
+      const path = `${currentUserId}/${Date.now()}.${ext || 'jpg'}`;
+
+      const { error: upErr } = await supabase.storage
+        .from('store-logos')
+        .upload(path, blob, { contentType });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
+      const publicUrl = pub?.publicUrl;
+      if (!publicUrl) throw new Error('No se pudo obtener la URL del logo.');
+
+      const { error: dbErr } = await supabase.from('stores').update({ logo_url: publicUrl }).eq('id', currentStoreId);
+      if (dbErr) throw dbErr;
+
+      paintStoreLogo(publicUrl);
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Listo, guardamos el logo.', 'success');
+    } catch (err) {
+      console.error('Error al subir el logo:', err);
+      fail(err.message || 'No pudimos subir el logo. Probá de nuevo.');
+    } finally {
+      pickBtn.disabled = false;
+      pickBtn.textContent = 'Elegir imagen';
+    }
+  };
 
   pickBtn.addEventListener('click', () => fileInput.click());
 
@@ -1361,13 +1526,10 @@ function setupStoreLogoPicker() {
       return;
     }
 
+    let width, height, dataUrl;
     try {
-      const { width, height } = await getImageDimensions(file);
-      if (width !== height) {
-        fail('La imagen tiene que ser cuadrada (mismo ancho que alto). Recortala y probá de nuevo.');
-        fileInput.value = '';
-        return;
-      }
+      ({ width, height } = await getImageDimensions(file));
+      dataUrl = await fileToDataUrl(file);
     } catch {
       // El caso más común: una foto de iPhone en formato HEIC/HEIF, que
       // Chrome/Edge en Windows no pueden decodificar (Safari sí) -- por
@@ -1378,38 +1540,13 @@ function setupStoreLogoPicker() {
       return;
     }
 
-    pickBtn.disabled = true;
-    pickBtn.textContent = 'Subiendo…';
-    const previousUrl = currentStoreLogoUrl;
+    // Se abre siempre, cuadrada o no -- ver el porqué en el comentario de
+    // openLogoCropper.
+    const cropped = await openLogoCropper({ dataUrl, width, height, mimeType: file.type });
+    fileInput.value = '';
+    if (!cropped) return; // canceló el recorte
 
-    try {
-      const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
-      // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del bucket.
-      const path = `${currentUserId}/${Date.now()}.${ext || 'jpg'}`;
-
-      const { error: upErr } = await supabase.storage
-        .from('store-logos')
-        .upload(path, file, { contentType: file.type || 'image/jpeg' });
-      if (upErr) throw upErr;
-
-      const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
-      const publicUrl = pub?.publicUrl;
-      if (!publicUrl) throw new Error('No se pudo obtener la URL del logo.');
-
-      const { error: dbErr } = await supabase.from('stores').update({ logo_url: publicUrl }).eq('id', currentStoreId);
-      if (dbErr) throw dbErr;
-
-      paintStoreLogo(publicUrl);
-      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
-      showToast('Listo, guardamos el logo.', 'success');
-    } catch (err) {
-      console.error('Error al subir el logo:', err);
-      fail(err.message || 'No pudimos subir el logo. Probá de nuevo.');
-    } finally {
-      pickBtn.disabled = false;
-      pickBtn.textContent = 'Elegir imagen';
-      fileInput.value = '';
-    }
+    await uploadStoreLogo(cropped.blob, cropped.type);
   });
 
   removeBtn?.addEventListener('click', async () => {
