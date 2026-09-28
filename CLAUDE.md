@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-28** — se sacó la tarjeta **"Dinero disponible"** del
+  resumen del panel de vendedor, a pedido del usuario. Prometía algo que la
+  plataforma no hace: su "Retirar dinero" solo tiraba un toast de "muy pronto",
+  y el número que mostraba (la suma de todo lo vendido) **no era plata a
+  retirar en ningún caso** -- lo pagado por transferencia va derecho a la
+  cuenta del comercio (no pasa por acá) y lo de Mercado Pago entra a la cuenta
+  de la plataforma mientras el split siga sin andar (A113-274). El resumen
+  queda con 3 tarjetas: Reputación, Ventas brutas y Ventas totales. La grilla
+  de `.rs-dash` pasó a 6 tramos de columna (cada tarjeta ocupa 2) para poder
+  seguir partiendo la fila de abajo en dos mitades iguales -- con 3 columnas,
+  "Pendientes en tus publicaciones" y "Pendientes en tus ventas" quedaban de
+  distinto ancho. 18 checks de Playwright sobre el panel real, en escritorio,
+  tablet y celular.
 - **Resuelto 2026-09-24** — el editor de opciones del producto **pedía crear
   "un tipo de opción" antes de poder cargar nada**, y ese paso previo no se
   entendía: el usuario creó un tipo llamado **"rosa"**, que en realidad es un
