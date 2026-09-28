@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Camioneta de envío">
+  <!-- Imagen de PRUEBA para el espacio mosaic_e del segundo mosaico del home
+       (ver CLAUDE.md: "Hoy no hay ningún espacio asignado"). Reemplazar por
+       una foto real cuando haya una, o dejarla si sirve como banner fijo. -->
+  <g fill="none" stroke-linecap="round">
+    <!-- líneas de velocidad -->
+    <rect x="40" y="150" width="60" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+    <rect x="60" y="175" width="50" height="10" rx="5" fill="#ffffff" opacity="0.4"/>
+    <rect x="30" y="200" width="45" height="10" rx="5" fill="#ffffff" opacity="0.3"/>
+
+    <!-- caja de carga -->
+    <rect x="150" y="110" width="250" height="150" rx="16" fill="#ffffff" opacity="0.96"/>
+    <rect x="178" y="140" width="194" height="10" rx="5" fill="#14213d" opacity="0.5"/>
+    <rect x="178" y="165" width="140" height="10" rx="5" fill="#14213d" opacity="0.35"/>
+
+    <!-- cabina -->
+    <path d="M400 260 L400 175 Q400 160 415 160 L455 160 Q470 160 480 174 L505 210 Q510 218 510 228 L510 260 Z" fill="#ffffff" opacity="0.96"/>
+    <path d="M420 178 L452 178 Q460 178 466 186 L480 206 L420 206 Z" fill="#14213d"/>
+
+    <!-- ruedas -->
+    <circle cx="215" cy="270" r="32" fill="#ffffff" opacity="0.96"/>
+    <circle cx="215" cy="270" r="13" fill="#14213d"/>
+    <circle cx="455" cy="270" r="32" fill="#ffffff" opacity="0.96"/>
+    <circle cx="455" cy="270" r="13" fill="#14213d"/>
+
+    <!-- parachoques -->
+    <rect x="150" y="255" width="360" height="14" rx="7" fill="#ffffff" opacity="0.5"/>
+  </g>
+</svg>

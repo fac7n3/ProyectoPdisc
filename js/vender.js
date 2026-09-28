@@ -2,7 +2,7 @@ import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
-import { renderSupportSection } from './support-utils.js';
+import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
@@ -652,7 +652,7 @@ const VENDOR_SECTION_COPY = {
   pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando, para que los prepares y avises cuando estén listos.' },
   pagos: { icon: 'fa-solid fa-money-check-dollar', title: 'Pagos por confirmar', desc: 'Transferencias que un vecino dice haber hecho: revisá el comprobante y confirmá el pago.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
-  'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Promo en el inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
+  'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
   notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de pedidos nuevos, pagos y novedades de tu comercio.' },
   soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Algo no anda como esperabas? Escribinos y te ayudamos.' },
@@ -1732,9 +1732,92 @@ function setupStoreProfileForm() {
   });
 }
 
-// --- Promo en el inicio (home_promos, migración 108) ---
+// --- Banner del inicio (home_promos, migración 108) ---
 // El admin elige qué comercio ocupa cada espacio de banner del home; acá el
 // dueño carga la imagen y la publicación de los espacios de SU comercio.
+
+const HOME_PROMO_PROS = [
+  'Aparecés en la portada del inicio: lo primero que ve cualquiera que entra al sitio, antes de buscar nada.',
+  'Más clicks directos a tu publicación, sin que el vecino tenga que buscarte o encontrarte de casualidad.',
+  'Te destacás como comercio activo y recomendado, no uno más en la lista de resultados.',
+  'Lo usás para lo que más te convenga en el momento: una oferta puntual, un producto nuevo, o simplemente darte a conocer.',
+  'No tiene costo extra: es un espacio que se asigna, no se paga aparte.',
+  'Podés cambiar la imagen y la publicación cuando quieras, sin esperar a nadie.',
+];
+
+const HOME_PROMO_CONS = [
+  'Solo te encuentran buscando o navegando por categoría: te perdés a la mayoría, que entra directo al inicio.',
+  'Quedás al mismo nivel que cualquier otro comercio, sin nada que te distinga de entrada.',
+  'Tus ofertas o novedades no tienen ningún lugar destacado donde mostrarse.',
+];
+
+function buildHomePromoEmptyState(storeName) {
+  const empty = document.createElement('div');
+  empty.className = 'hp-empty';
+
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-bullhorn';
+  icon.setAttribute('aria-hidden', 'true');
+  empty.appendChild(icon);
+
+  const text = document.createElement('p');
+  text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Si querés destacar una promoción, escribinos desde Soporte.';
+  empty.appendChild(text);
+
+  const perks = document.createElement('div');
+  perks.className = 'hp-empty__perks';
+
+  function perkGroup(modifier, title, items) {
+    const group = document.createElement('div');
+    group.className = `hp-empty__perk-group hp-empty__perk-group--${modifier}`;
+    const h = document.createElement('h4');
+    h.className = 'hp-empty__perk-title';
+    h.textContent = title;
+    group.appendChild(h);
+    const list = document.createElement('ul');
+    list.className = 'hp-empty__perk-list';
+    items.forEach((txt) => {
+      const li = document.createElement('li');
+      li.textContent = txt;
+      list.appendChild(li);
+    });
+    group.appendChild(list);
+    return group;
+  }
+
+  perks.append(
+    perkGroup('pro', 'Con un banner asignado', HOME_PROMO_PROS),
+    perkGroup('con', 'Sin un banner asignado', HOME_PROMO_CONS),
+  );
+  empty.appendChild(perks);
+
+  const askBtn = document.createElement('button');
+  askBtn.type = 'button';
+  askBtn.className = 'hp-btn hp-btn--primary';
+  askBtn.textContent = 'Pedir este espacio';
+  askBtn.addEventListener('click', async () => {
+    if (!(await confirmDialog('¿Le avisamos al equipo de Baradero Local que querés un espacio de banner en el inicio?', { confirmText: 'Pedirlo' }))) return;
+    askBtn.disabled = true;
+    askBtn.textContent = 'Enviando…';
+    try {
+      await submitSupportTicket(
+        'Quiero un espacio de banner en el inicio',
+        `Hola! Quiero pedir un espacio de banner en la página de inicio para destacar las promociones de ${storeName || 'mi comercio'}. Gracias!`,
+      );
+      showToast('Listo, le avisamos al equipo. Te contestamos por Soporte.', 'success');
+      askBtn.textContent = 'Ya lo pedimos ✓';
+    } catch (err) {
+      console.error('Error al pedir el espacio de banner:', err);
+      showToast('No se pudo enviar el pedido. Probá de nuevo.', 'error');
+      askBtn.disabled = false;
+      askBtn.textContent = 'Pedir este espacio';
+    }
+  });
+  empty.appendChild(askBtn);
+
+  return empty;
+}
+
 async function renderHomePromo(storeName) {
   const container = document.getElementById('home-promo-container');
   if (!container || !currentStoreId) return;
@@ -1756,15 +1839,7 @@ async function renderHomePromo(storeName) {
   }
 
   if (!data?.length) {
-    const empty = document.createElement('div');
-    empty.className = 'hp-empty';
-    const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-bullhorn';
-    icon.setAttribute('aria-hidden', 'true');
-    const text = document.createElement('p');
-    text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Si querés destacar una promoción, escribinos desde Soporte.';
-    empty.append(icon, text);
-    container.appendChild(empty);
+    container.appendChild(buildHomePromoEmptyState(storeName));
     return;
   }
 

@@ -380,6 +380,60 @@ ul, ol {
   to { transform: rotate(360deg); }
 }
 
+/* ── Pantalla de bienvenida al entrar al home (solo home.html) ──
+   Liviana a propósito: sin imágenes nuevas (el logo es el mismo archivo
+   que ya pide el navbar) ni librerías, solo el spinner de arriba. Se saca
+   con un fade de opacity (la transición más barata que hay) y initWelcomeSplash()
+   en home.js la saca del DOM en cuanto termina -- no queda pesando nada. */
+.bl-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  background: var(--bl-primary);
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.bl-splash.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bl-splash__logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  border-radius: 20px;
+  background: #fff;
+  padding: 0.8rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.bl-splash__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* El spinner por defecto usa el azul de marca (--uib-color: var(--bl-primary)),
+   invisible acá porque el fondo del splash es ese mismo azul. */
+.bl-splash .bl-spinner {
+  --uib-color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-splash {
+    transition: none;
+  }
+}
+
 .bl-loading-block {
   grid-column: 1 / -1;
   display: flex;
@@ -1821,13 +1875,38 @@ button.coupon-chip:hover {
 /* Paleta distinta a la del primer mosaico (rojo/amarillo/verde), para que
    no se lea como una repetición de la misma sección. El morado de "d" ya
    queda puesto en el degradé de .promo-banner-2--wide (van siempre juntas
-   en el mismo elemento); acá solo quedan los otros dos, todavía sin foto. */
+   en el mismo elemento); acá solo quedan los otros dos.
+   Imágenes de PRUEBA (Assets/images/banners/promo-*-test.svg) -- mismo
+   patrón de dos capas que --wide (degradé sólido a transparente + foto
+   pegada a la derecha, contain). Reemplazar por fotos reales cuando haya. */
+.promo-banner-2--e,
+.promo-banner-2--f {
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.promo-banner-2--e:hover,
+.promo-banner-2--e:focus-visible,
+.promo-banner-2--f:hover,
+.promo-banner-2--f:focus-visible {
+  transform: scale(1.02);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
 .promo-banner-2--e {
-  background: #14213d;
+  background-color: #14213d;
+  background-image: linear-gradient(90deg, #14213d 0%, #14213d 45%, rgba(20, 33, 61, 0) 78%), url('../images/banners/promo-envios-test.svg');
+  background-size: 100% 100%, contain;
+  background-position: 0 0, right center;
+  background-repeat: no-repeat, no-repeat;
 }
 
 .promo-banner-2--f {
-  background: #d90368;
+  background-color: #d90368;
+  background-image: linear-gradient(90deg, #d90368 0%, #d90368 45%, rgba(217, 3, 104, 0) 78%), url('../images/banners/promo-comercios-test.svg');
+  background-size: 100% 100%, contain;
+  background-position: 0 0, right center;
+  background-repeat: no-repeat, no-repeat;
 }
 
 @media (max-width: 640px) {
@@ -1909,6 +1988,18 @@ button.coupon-chip:hover {
   max-height: calc(100vh - 6rem);
   border-radius: var(--bl-radius-md);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+/* Se muestra solo cuando la imagen abierta es la de una promo con
+   publicación asignada: la 2da interacción (cerrar o tocar de nuevo) lleva
+   ahí -- ver closeLightbox() en home.js. */
+.promo-lightbox__hint {
+  margin: 0.85rem 0 0;
+  text-align: center;
+  color: #fff;
+  font-size: 0.85rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .promo-lightbox__close {
@@ -5169,4 +5260,77 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
 .hp-empty p {
   margin: 0;
   max-width: 50ch;
+}
+
+/* Pros/contras de no tener un espacio asignado + botón para pedirlo (estado
+   vacío de "Banner del inicio", js/vender.js). Dos columnas, alineadas a la
+   izquierda a diferencia del resto de .hp-empty (que va centrado) porque una
+   lista con viñetas se lee mejor así. */
+.hp-empty__perks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 60ch;
+  margin: 0.5rem 0;
+  text-align: left;
+}
+
+.hp-empty__perk-group {
+  padding: 0.9rem 1rem;
+  border-radius: var(--bl-radius-md);
+}
+
+.hp-empty__perk-group--pro {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.hp-empty__perk-group--con {
+  background: rgba(185, 28, 28, 0.06);
+}
+
+.hp-empty__perk-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.hp-empty__perk-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hp-empty__perk-list li {
+  position: relative;
+  padding-left: 1.35rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--bl-text-secondary);
+}
+
+.hp-empty__perk-group--pro .hp-empty__perk-list li::before {
+  content: '\2713';
+  position: absolute;
+  left: 0;
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.hp-empty__perk-group--con .hp-empty__perk-list li::before {
+  content: '\2715';
+  position: absolute;
+  left: 0;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .hp-empty__perks {
+    grid-template-columns: 1fr;
+  }
 }

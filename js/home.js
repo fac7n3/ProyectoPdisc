@@ -729,44 +729,64 @@ function getBannerImageUrl(banner) {
 }
 
 /**
- * Banners promocionales del home: click/Enter/Espacio en un banner
+ * Banners promocionales del home: click/Enter/Espacio en un banner abre
+ * SIEMPRE primero la imagen ampliada (data-lightbox-alt, ver
+ * .promo-lightbox-overlay en home.css) -- ni el banner fijo ni el de una
+ * promo real llevan a ningún lado de un solo toque.
  *  - con promo de un comercio cargada (data-promo-href, lo pone
- *    loadHomePromos) => va a la publicación del comercio;
- *  - con foto fija (data-lightbox-alt) => abre la imagen ampliada (ver
- *    .promo-lightbox-overlay en home.css);
- *  - sin ninguna de las dos (espacio libre de color plano) => nada.
+ *    loadHomePromos) => la 2da interacción (cerrar con la X/afuera/Esc, o
+ *    tocar la imagen ampliada de nuevo) recién ahí lleva a la publicación;
+ *  - con foto fija sin promo => cerrar no hace nada más que cerrar, como
+ *    siempre;
+ *  - espacio sin ninguna imagen (no debería pasar, toda promo viva trae
+ *    imagen) => por las dudas, el click va directo a la publicación.
  * Se decide en el momento del click, así da igual si las promos terminaron de
  * cargar antes o después de cablear los listeners.
  */
 function initPromoBanners() {
   const overlay = document.getElementById('promo-lightbox');
   const img = document.getElementById('promo-lightbox-img');
+  const hint = document.getElementById('promo-lightbox-hint');
   const closeBtn = document.getElementById('promo-lightbox-close');
   const banners = document.querySelectorAll('[data-promo-slot]');
   if (!banners.length) return;
 
   let lastTrigger = null;
+  // A dónde lleva la 2da interacción, si la imagen abierta es la de una
+  // promo con publicación asignada. null en un banner decorativo.
+  let pendingHref = null;
 
   const openLightbox = (banner) => {
     if (!overlay || !img || !closeBtn) return;
     lastTrigger = banner;
+    pendingHref = banner.dataset.promoHref || null;
     img.src = getBannerImageUrl(banner);
     img.alt = banner.dataset.lightboxAlt || '';
+    if (hint) hint.hidden = !pendingHref;
     overlay.classList.add('is-open');
     closeBtn.focus();
   };
 
+  // "Cerrar" (X, click afuera, Esc) o tocar la imagen de nuevo: las dos
+  // formas de la 2da interacción que pide el producto. Si la imagen era la
+  // de una promo con publicación, en vez de solo cerrar, lleva ahí.
   const closeLightbox = () => {
+    const href = pendingHref;
     overlay.classList.remove('is-open');
     img.src = '';
+    pendingHref = null;
+    if (href) {
+      window.location.href = href;
+      return;
+    }
     if (lastTrigger) lastTrigger.focus();
   };
 
   const activate = (banner) => {
-    if (banner.dataset.promoHref) {
-      window.location.href = banner.dataset.promoHref;
-    } else if (banner.dataset.lightboxAlt) {
+    if (banner.dataset.lightboxAlt) {
       openLightbox(banner);
+    } else if (banner.dataset.promoHref) {
+      window.location.href = banner.dataset.promoHref;
     }
   };
 
@@ -786,6 +806,8 @@ function initPromoBanners() {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeLightbox();
   });
+  // Tocar la imagen ampliada de nuevo: la otra forma de "cerrar".
+  img?.addEventListener('click', closeLightbox);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeLightbox();
   });
@@ -837,15 +859,37 @@ async function loadHomePromos() {
     banner.style.setProperty('--promo-img', `url("${encodeURI(promo.image_url)}")`);
     banner.classList.add('is-store-promo');
     banner.dataset.promoHref = promoHref(promo);
-    delete banner.dataset.lightboxAlt;
-    banner.setAttribute('role', 'link');
+    // El click abre la imagen ampliada primero, igual que un banner fijo
+    // (ver initPromoBanners): la publicación recién se abre en la 2da
+    // interacción, así que el lightbox-alt se mantiene en vez de borrarse.
+    banner.dataset.lightboxAlt = promoAriaLabel(promo);
+    banner.setAttribute('role', 'button');
     banner.setAttribute('tabindex', '0');
-    banner.setAttribute('aria-label', promoAriaLabel(promo));
+    banner.setAttribute('aria-label', `${promoAriaLabel(promo)}. Se abre la imagen ampliada; cerrala o tocá de nuevo para ir a la publicación.`);
   });
+}
+
+/**
+ * Pantalla de bienvenida breve al entrar al home (#welcome-splash en
+ * home.html): se saca sola con un fade, no espera datos ni bloquea nada de
+ * lo que sigue cargando atrás. Con "Reducir animaciones" activo se saca de
+ * una, sin el fade.
+ */
+function initWelcomeSplash() {
+  const splash = document.getElementById('welcome-splash');
+  if (!splash) return;
+  const reduceMotion = getPref('reduceMotion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const remove = () => splash.remove();
+  setTimeout(() => {
+    if (reduceMotion) { remove(); return; }
+    splash.classList.add('is-hidden');
+    splash.addEventListener('transitionend', remove, { once: true });
+  }, reduceMotion ? 0 : 900);
 }
 
 // Inicializar todo
 document.addEventListener('DOMContentLoaded', () => {
+  initWelcomeSplash();
   initScrollTop();
   initNavbarScroll();
   initHeroCarousel();

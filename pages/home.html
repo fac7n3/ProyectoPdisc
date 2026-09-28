@@ -30,6 +30,26 @@
          categorias, que en TalkBack son mas de 20 pasos en cada pagina. -->
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
 
+    <!-- Pantalla de bienvenida breve, solo en el home (initWelcomeSplash en
+         home.js). Decorativa: aria-hidden y sin nada enfocable adentro, así
+         no le agrega pasos a nadie que navegue con teclado/lector de
+         pantalla. Sin recursos nuevos -- el logo es el mismo archivo que ya
+         pide el navbar de abajo (el navegador lo pide una sola vez) y el
+         spinner es el de 6 puntos que ya existe en el sitio, puro CSS. Se
+         saca sola a los ~900ms (antes si "Reducir animaciones" está
+         activo), no bloquea nada de lo que sigue cargando detrás. -->
+    <div class="bl-splash" id="welcome-splash" aria-hidden="true">
+      <img src="../Assets/images/Logos/logoazulpng.png" alt="" class="bl-splash__logo" />
+      <p class="bl-splash__title">¡Bienvenido a Baradero Local!</p>
+      <div class="bl-spinner">
+        <div class="bl-spinner__dot"></div>
+        <div class="bl-spinner__dot"></div>
+        <div class="bl-spinner__dot"></div>
+        <div class="bl-spinner__dot"></div>
+        <div class="bl-spinner__dot"></div>
+        <div class="bl-spinner__dot"></div>
+      </div>
+    </div>
 
     <!-- ====== BARRA DE NAVEGACIÓN ====== -->
     <!-- navbar--single-row: variante de una sola fila, por ahora SOLO en el
@@ -378,13 +398,13 @@
           <div class="promo-banner-2 promo-banner-2--wide promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
             <span class="promo-banner__eyebrow">Novedades</span>
           </div>
-          <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e">
+          <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" role="button" tabindex="0" data-lightbox-alt="Envíos: Recibí en la puerta de tu casa" aria-label="Ver imagen ampliada: Recibí en la puerta de tu casa">
             <span class="promo-banner__eyebrow">Envíos</span>
-            <span class="promo-banner__title">Espacio para un banner</span>
+            <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
           </div>
-          <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f">
+          <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
             <span class="promo-banner__eyebrow">Comercios</span>
-            <span class="promo-banner__title">Espacio para otro banner</span>
+            <span class="promo-banner__title">Sumate a Baradero Local</span>
           </div>
         </div>
       </section>
@@ -397,6 +417,7 @@
       <div class="promo-lightbox">
         <button type="button" class="promo-lightbox__close" id="promo-lightbox-close" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
         <img class="promo-lightbox__img" id="promo-lightbox-img" src="" alt="" />
+        <p class="promo-lightbox__hint" id="promo-lightbox-hint" hidden>Tocá la imagen o cerrá para ir a la publicación</p>
       </div>
     </div>
 
