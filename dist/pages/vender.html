@@ -190,6 +190,14 @@
         display: flex; align-items: center; justify-content: center;
         padding: 1rem;
       }
+      /* [hidden] del navegador pone display:none, pero con la misma
+         especificidad que .logo-crop-overlay{display:flex} de acá arriba --
+         en un empate gana la regla que viene después en la hoja de estilos
+         (la nuestra), así que el overlay quedaba visible apenas cargaba la
+         página, con la imagen vacía adentro, hasta que openLogoCropper()
+         recién le sacaba el hidden al elegir un archivo. Esta regla, más
+         específica, resuelve el empate a favor de ocultarlo. */
+      .logo-crop-overlay[hidden] { display: none; }
       .logo-crop-card {
         background: #fff; border-radius: var(--bl-radius-md, 12px);
         padding: 1.25rem; max-width: 22rem; width: 100%;
