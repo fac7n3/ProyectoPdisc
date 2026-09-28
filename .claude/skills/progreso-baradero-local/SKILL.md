@@ -4619,3 +4619,47 @@ aparece sola al elegir Variantes, con nombre por defecto y campo de escritura; n
 `#option-name`; **el caso exacto del usuario** (escribir "rosa" directo) crea la lista y guarda la
 opción en un solo paso; se cargan varias seguidas sin crear listas de más; el "Agregar otro tipo"
 suma una segunda lista que **no** se persiste hasta tener su primera opción.
+
+### 2026-09-28: fuera la tarjeta "Dinero disponible" del resumen del vendedor
+
+Pedido del usuario, con captura: sacar esa tarjeta de la fila de stats del Resumen.
+
+**Por qué estaba mal, más allá del pedido:** el número que mostraba era `incomeTotal`, la suma de
+`total_price` de todos los pedidos pagados del comercio -- o sea **ventas históricas**, no un saldo.
+Y no hay saldo: lo cobrado por transferencia va derecho a la cuenta bancaria del comercio sin pasar
+por la plataforma, y lo cobrado por Mercado Pago entra a la cuenta de la plataforma mientras el
+split de pagos siga pausado (A113-274). Su botón "Retirar dinero" solo tiraba un toast de "Muy
+pronto vas a poder retirar tu dinero desde acá".
+
+**Qué se tocó:**
+
+- `js/vender.js`: se borró la tarjeta y la constante `incomeTotal`, que se quedaba sin lectores.
+  La tarjeta de "Ventas totales" pasó de `area: 's4'` a `'s3'`.
+- `pages/vender.html` (el CSS del panel es inline): la fila superior pasó de
+  `repeat(4, 1fr) 1.3fr` a **`repeat(6, 1fr) 2.6fr`**, con cada stat ocupando 2 tramos.
+  **El motivo no es obvio:** con 3 columnas reales, `"p1 p1 p2"` dejaría las dos tarjetas de
+  Pendientes de distinto ancho; con 6 tramos se parten en `"p1 p1 p1 p2 p2 p2"`, mitades exactas.
+  El breakpoint de ≤900px pasó de 2 a 3 columnas (con 2, la tercera tarjeta quedaba sola y
+  estirada a lo ancho, con un hueco grande al lado -- verificado en captura antes de descartarlo).
+- Se borró la regla `.rs-stat__icon--money`, que quedaba sin ninguna tarjeta que la use.
+  **Ojo:** la misma clase sigue viva en `Assets/styles/profesional.css` y la usa
+  `js/profesional.js:319` -- esa no se toca.
+
+18 checks de Playwright sobre el build real del panel: que no quede ni "Dinero disponible" ni
+"Retirar dinero" en la página, que las otras tres tarjetas sigan con su valor correcto (que el
+borrado de `incomeTotal` no se haya llevado puesto otro cálculo), y la geometría medida a 1280 /
+900 / 600px -- misma altura y mismo ancho, sin hueco donde estaba la cuarta, sin texto desbordado
+y Pendientes en dos mitades iguales.
+
+**Gotcha del harness** (costó tres intentos, anotado para la próxima):
+1. El `dist/` del repo se construye **sin** variables de entorno, así que el bundle tira
+   "supabaseUrl is required" y no renderiza nada. Para probar hay que construir aparte con
+   `VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... npx vite build --outDir <scratchpad>`,
+   nunca sobre `dist/` (si no, la URL del proyecto queda commiteada en el build).
+2. El `clip` de `page.screenshot()` va en coordenadas **del documento**, y
+   `getBoundingClientRect()` las da **del viewport**: con la página scrolleada hay que sumarle
+   `window.scrollY` o la captura sale en blanco.
+3. El panel **se mueve solo a "Perfil de mi comercio"** unos segundos después de cargar
+   (onboarding), así que hay que volver a Resumen justo antes de medir o capturar.
+4. A ≤900px el sidebar es un cajón fuera de pantalla: un `click()` real se queda esperando para
+   siempre ("element is outside of the viewport"), va `dispatchEvent('click')`.

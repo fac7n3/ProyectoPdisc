@@ -2674,7 +2674,6 @@ async function renderResumen() {
     .reduce((s, o) => s + o.total_price, 0);
   const pctChange = salesPrev7d > 0 ? Math.round(((sales7d - salesPrev7d) / salesPrev7d) * 100) : null;
 
-  const incomeTotal = paidOrders.reduce((s, o) => s + o.total_price, 0);
   const orders30dCount = paidOrders.filter((o) => new Date(o.created_at) >= thirtyDaysAgo).length;
 
   const dailyTotals = [];
@@ -2687,7 +2686,7 @@ async function renderResumen() {
   }
   const catItems30d = catItems.filter((it) => it.orders?.created_at && new Date(it.orders.created_at) >= thirtyDaysAgo);
 
-  // Fila superior: 4 stats + "Impulsá tus ventas"
+  // Fila superior: 3 stats + "Impulsá tus ventas"
   dash.textContent = '';
   dash.appendChild(rsStatCard({
     area: 's1', icon: 'fa-star', iconVariant: 'rep', title: 'Reputación',
@@ -2701,12 +2700,7 @@ async function renderResumen() {
     delta: pctChange !== null ? { text: `${Math.abs(pctChange)}% vs. semana anterior`, positive: pctChange >= 0 } : null,
   }));
   dash.appendChild(rsStatCard({
-    area: 's3', icon: 'fa-wallet', iconVariant: 'money', title: 'Dinero disponible',
-    value: formatPrice(incomeTotal), sub: 'Para retirar',
-    action: { label: 'Retirar dinero', onClick: () => showToast('Muy pronto vas a poder retirar tu dinero desde acá.', 'success') },
-  }));
-  dash.appendChild(rsStatCard({
-    area: 's4', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
+    area: 's3', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
     value: String(orders30dCount), sub: 'Últimos 30 días',
     action: { label: 'Ver detalle', onClick: () => goToPedidos('all') },
   }));
