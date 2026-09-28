@@ -1889,6 +1889,22 @@ button.coupon-chip:hover {
   background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(217, 3, 104, 0.15) 55%, rgba(217, 3, 104, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
 }
 
+/* El banner "Envíos" (mosaic_e) queda como imagen fija sin ir a ningún
+   lado -- no tiene role="button"/tabindex en el HTML, y acá se le saca el
+   cursor de mano y la animación de hover que sí tienen el resto de los
+   banners clickeables. Si el admin le asigna una promo real de un comercio
+   (home_promos), loadHomePromos() en home.js le agrega .is-store-promo +
+   role/tabindex y vuelve a ser clickeable -- por eso el :not() de acá. */
+.promo-banner-2--e:not(.is-store-promo) {
+  cursor: default;
+}
+
+.promo-banner-2--e:not(.is-store-promo):hover,
+.promo-banner-2--e:not(.is-store-promo):focus-visible {
+  transform: none;
+  box-shadow: none;
+}
+
 @media (max-width: 640px) {
   .promo-mosaic-2__grid {
     grid-template-columns: 1fr;
