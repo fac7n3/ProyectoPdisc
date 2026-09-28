@@ -1300,7 +1300,7 @@ async function updateOrderStatus(orderId, newStatus) {
 // desde la propia vista del comercio (comercio.js, buildStoreLogo): se sube
 // y se guarda apenas se elige el archivo, sin esperar al "Guardar cambios"
 // del resto del formulario. Bucket store-logos, migración 74_store_logo.sql.
-const MAX_STORE_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_STORE_LOGO_BYTES = 5 * 1024 * 1024;
 let currentStoreLogoUrl = null;
 
 function paintStoreLogo(url) {
@@ -1346,7 +1346,7 @@ function setupStoreLogoPicker() {
     clearFail();
 
     if (file.size > MAX_STORE_LOGO_BYTES) {
-      fail('Esa imagen pesa más de 2 MB. Probá con una más liviana.');
+      fail('Esa imagen pesa más de 5 MB. Probá con una más liviana.');
       fileInput.value = '';
       return;
     }
