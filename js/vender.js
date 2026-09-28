@@ -629,6 +629,10 @@ let pubProducts = [];
 let pubSalesByProduct = new Map();
 let pubSearch = '';
 let pubStatus = 'all'; // 'all' | 'active' | 'inactive'
+// Selección múltiple ("Seleccionar varios"): modo prendido/apagado + ids tildados.
+// Los ids se podan en cada render a lo que está visible -- ver renderPublicaciones().
+let pubSelectMode = false;
+const pubSelected = new Set();
 
 // Sección "Pedidos" (stats + tabs + tabla): pedidos cacheados (con sus
 // order_items/producto) + estado de los filtros client-side (búsqueda,
@@ -3080,8 +3084,11 @@ function buildPubActions(p) {
   // Eliminar (misma confirmación/advertencia que antes).
   menu.appendChild(pubMenuItem('Eliminar', 'fa-trash', async () => {
     closePubMenus();
+    // El texto viejo avisaba que "esto fallará si el producto ya fue comprado":
+    // no es cierto. `order_items.product_id` es ON DELETE SET NULL (verificado
+    // contra la base), así que la venta sobrevive con el producto en NULL.
     const ok = await confirmDialog(
-      '¿Eliminar producto? (Atención: esto fallará si el producto ya fue comprado por alguien, requiere lógica avanzada en un entorno real)',
+      '¿Eliminar esta publicación? No se puede deshacer. Las ventas que ya hiciste quedan en tu historial.',
       { confirmText: 'Eliminar', danger: true }
     );
     if (!ok) return;
@@ -3120,6 +3127,22 @@ function buildPubActions(p) {
 function buildPubRow(p) {
   const row = document.createElement('div');
   row.className = 'pub-row' + (p.is_active ? '' : ' pub-row--paused');
+
+  if (pubSelectMode) {
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.className = 'pub-row__check';
+    check.checked = pubSelected.has(p.id);
+    check.setAttribute('aria-label', `Seleccionar "${p.title}"`);
+    row.classList.toggle('pub-row--checked', check.checked);
+    check.addEventListener('change', () => {
+      if (check.checked) pubSelected.add(p.id);
+      else pubSelected.delete(p.id);
+      row.classList.toggle('pub-row--checked', check.checked);
+      updatePubBulkBar();
+    });
+    row.appendChild(check);
+  }
 
   const thumb = document.createElement('img');
   thumb.className = 'pub-row__thumb';
@@ -3202,6 +3225,8 @@ function renderPublicaciones() {
 
   if (!pubProducts.length) {
     if (countEl) countEl.textContent = '0 publicaciones';
+    pubSelected.clear();
+    updatePubBulkBar();
     renderPubEmpty(list);
     return;
   }
@@ -3218,6 +3243,13 @@ function renderPublicaciones() {
     countEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'publicación' : 'publicaciones'}`;
   }
 
+  // La selección se limita SIEMPRE a lo que se está viendo: si alguien tilda
+  // tres, después filtra por "Pausadas" y toca el tacho, no puede llevarse
+  // puesta una publicación que ya no tiene en pantalla.
+  const visibles = new Set(filtered.map((p) => p.id));
+  pubSelected.forEach((id) => { if (!visibles.has(id)) pubSelected.delete(id); });
+  updatePubBulkBar();
+
   if (!filtered.length) {
     const note = document.createElement('p');
     note.className = 'pub-nomatch';
@@ -3227,6 +3259,120 @@ function renderPublicaciones() {
   }
 
   filtered.forEach((p) => list.appendChild(buildPubRow(p)));
+}
+
+/** Refresca el contador y habilita/deshabilita el tacho y el pausar del lote. */
+function updatePubBulkBar() {
+  const actions = document.getElementById('pub-bulk-actions');
+  if (!actions) return;
+  actions.hidden = !pubSelectMode;
+
+  const n = pubSelected.size;
+  const countEl = document.getElementById('pub-bulk-count');
+  if (countEl) {
+    countEl.textContent = n === 0
+      ? 'Ninguna seleccionada'
+      : `${n} ${n === 1 ? 'seleccionada' : 'seleccionadas'}`;
+  }
+  ['pub-bulk-delete', 'pub-bulk-pause'].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = n === 0;
+  });
+}
+
+/** Prende/apaga el modo selección. Al apagarlo se pierde lo tildado, a propósito. */
+function setPubSelectMode(on) {
+  pubSelectMode = on;
+  if (!on) pubSelected.clear();
+  const toggle = document.getElementById('pub-select-toggle');
+  if (toggle) toggle.setAttribute('aria-pressed', String(on));
+  renderPublicaciones();
+}
+
+/**
+ * Eliminar en lote.
+ *
+ * `order_items.product_id` es ON DELETE SET NULL (verificado contra la base),
+ * así que borrar un producto ya vendido no falla: la venta sobrevive con el
+ * producto en NULL y el comercio conserva su historial.
+ *
+ * Las URLs de las fotos se leen ANTES del delete: `product_images` se va en
+ * cascada y después no habría forma de saber qué archivos quedaron sueltos en
+ * el bucket (mismo criterio que el borrado de a uno).
+ */
+async function bulkDeletePublicaciones() {
+  const ids = [...pubSelected];
+  if (!ids.length) return;
+
+  const ok = await confirmDialog('¿Estás seguro de eliminar estas publicaciones?', {
+    confirmText: 'Eliminar',
+    cancelText: 'Cancelar',
+    danger: true,
+  });
+  if (!ok) return;
+
+  const { data: imgRows } = await supabase
+    .from('product_images')
+    .select('url')
+    .in('product_id', ids);
+  const imageUrls = [
+    ...pubProducts.filter((p) => ids.includes(p.id)).map((p) => p.image_url),
+    ...(imgRows || []).map((r) => r.url),
+  ];
+
+  // `.select('id')` para saber cuántas filas se fueron de verdad: si la RLS
+  // rechazara alguna, Supabase no tira error, devuelve menos filas.
+  const { data: borradas, error } = await supabase
+    .from('products')
+    .delete()
+    .in('id', ids)
+    .select('id');
+
+  if (error) {
+    showToast('No se pudieron eliminar las publicaciones.', 'error');
+    console.error(error);
+    return;
+  }
+
+  await removeStoredObjects(supabase, 'products', imageUrls);
+
+  const n = (borradas || []).length;
+  if (n < ids.length) {
+    showToast(`Se eliminaron ${n} de ${ids.length} publicaciones.`, 'error');
+  } else {
+    showToast(n === 1 ? 'Publicación eliminada' : `${n} publicaciones eliminadas`, 'success');
+  }
+  setPubSelectMode(false);
+  fetchProducts();
+}
+
+/** Pausar en lote (is_active = false). Una que ya estaba pausada no cambia nada. */
+async function bulkPausePublicaciones() {
+  const ids = [...pubSelected];
+  if (!ids.length) return;
+
+  const ok = await confirmDialog('¿Estás seguro de pausar las publicaciones?', {
+    confirmText: 'Pausar',
+    cancelText: 'Cancelar',
+  });
+  if (!ok) return;
+
+  const { data: pausadas, error } = await supabase
+    .from('products')
+    .update({ is_active: false })
+    .in('id', ids)
+    .select('id');
+
+  if (error) {
+    showToast('No se pudieron pausar las publicaciones.', 'error');
+    console.error(error);
+    return;
+  }
+
+  const n = (pausadas || []).length;
+  showToast(n === 1 ? 'Publicación pausada' : `${n} publicaciones pausadas`, 'success');
+  setPubSelectMode(false);
+  fetchProducts();
 }
 
 /** Wire de los controles de la sección Publicaciones (menú Publicar, búsqueda, chips). Una sola vez. */
@@ -3272,6 +3418,13 @@ function initPublicacionesControls() {
       renderPublicaciones();
     });
   });
+
+  // "Seleccionar varios" + las dos acciones en lote.
+  document.getElementById('pub-select-toggle')?.addEventListener('click', () => {
+    setPubSelectMode(!pubSelectMode);
+  });
+  document.getElementById('pub-bulk-delete')?.addEventListener('click', bulkDeletePublicaciones);
+  document.getElementById('pub-bulk-pause')?.addEventListener('click', bulkPausePublicaciones);
 
   // Cerrar los menús de acciones (⋮) de fila al clickear afuera.
   document.addEventListener('click', closePubMenus);

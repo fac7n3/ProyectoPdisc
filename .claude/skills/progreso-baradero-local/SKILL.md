@@ -4663,3 +4663,50 @@ y Pendientes en dos mitades iguales.
    (onboarding), así que hay que volver a Resumen justo antes de medir o capturar.
 4. A ≤900px el sidebar es un cajón fuera de pantalla: un `click()` real se queda esperando para
    siempre ("element is outside of the viewport"), va `dispatchEvent('click')`.
+
+### 2026-09-28: "Seleccionar varios" en Publicaciones (borrar y pausar en lote)
+
+Pedido del usuario, con captura marcada: un "Seleccionar varios" con un círculo al lado que se
+pinte del azul de la página al presionarlo, y al prenderlo un tacho de basura y el ícono de pausar
+del lado derecho, cada uno con su cartel de confirmación.
+
+**Cómo quedó:**
+
+- Barra nueva `.pub-bulk` debajo de `#pub-toolbar`: el toggle a la izquierda (donde está el
+  buscador) y las acciones a la derecha (donde está el contador de publicaciones), que es
+  exactamente dónde los marcó el usuario.
+- El círculo es un `<span>` de 1.05rem con borde; al prenderse se llena con `--bl-vendor-accent`,
+  el mismo azul del chip "Todas". El estado vive en `aria-pressed` del botón, no en una clase
+  aparte: el CSS lo lee con `[aria-pressed="true"]`, así el lector de pantalla y el estilo no se
+  pueden desincronizar.
+- Con el modo prendido, `buildPubRow` antepone un checkbox a cada fila y la fila tildada se
+  resalta con `.pub-row--checked`.
+- Los dos botones arrancan deshabilitados y hay un contador ("2 seleccionadas" / "Ninguna
+  seleccionada"): sin eso, un tacho que no hace nada al tocarlo parece roto.
+- Al terminar cualquiera de las dos acciones se apaga el modo selección y se recarga la lista.
+
+**La decisión que no es obvia — la selección se poda a lo visible.** En cada `renderPublicaciones()`
+se sacan del `Set` los ids que el filtro dejó afuera. Sin eso: tildo tres, escribo algo en el
+buscador o toco "Pausadas", y el tacho se lleva puestas publicaciones que ya no están en pantalla.
+Es el clásico borrado a ciegas, y la única defensa barata es que lo seleccionado nunca sobreviva a
+un cambio de filtro. Está cubierto por un check.
+
+**Borrar en lote y las fotos:** se leen las URLs (`p.image_url` + `product_images`) **antes** del
+DELETE, igual que el borrado de a uno, porque `product_images` se va en cascada y después no habría
+forma de saber qué archivos quedaron huérfanos en el bucket. El delete usa `.select('id')` para
+saber cuántas filas se fueron **de verdad**: si la RLS rechazara alguna, Supabase no tira error,
+devuelve menos filas.
+
+**Corregido de paso:** el cartel de borrar **de a uno** decía "Atención: esto fallará si el producto
+ya fue comprado por alguien, requiere lógica avanzada en un entorno real". Es falso —
+`order_items.product_id` es `ON DELETE SET NULL` (verificado contra `pg_constraint` en producción,
+`confdeltype='n'`), así que borrar un producto vendido funciona y la venta queda en el historial con
+el producto en NULL. Dejarlo hubiera sido contradictorio con el cartel nuevo, en la misma pantalla.
+
+30 checks de Playwright sobre el panel real (productos y respuestas de PostgREST mockeados): los dos
+carteles palabra por palabra con sus botones, que Cancelar no mande nada, que el PATCH de pausar
+lleve las dos elegidas y `is_active:false`, que el DELETE lleve solo la elegida, el color del
+círculo comparado contra el del chip activo, y la poda al cambiar de filtro.
+
+**Gotcha del harness:** contar llamadas por método a secas da falsos positivos — el panel manda un
+`PATCH profiles?id=eq.<uid>` propio al cargar. Hay que filtrar también por tabla.
