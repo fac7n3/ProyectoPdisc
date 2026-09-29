@@ -34,6 +34,22 @@
         color: var(--sh-fg, var(--bl-text));
         margin-bottom: 2rem;
       }
+      /* Banner opcional (stores.banner_url): ancho completo arriba del header;
+         el logo se monta un poco encima para que se sienta parte del banner. */
+      .store-header__banner {
+        width: 100%;
+        height: clamp(120px, 22vw, 240px);
+        overflow: hidden;
+      }
+      .store-header__banner img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .store-header.has-banner .store-header__top { padding-top: 0; }
+      .store-header.has-banner .store-header__logo-wrap { margin-top: -42px; }
+      .store-header.has-banner .store-header__title { margin-top: 1.25rem; }
       .store-header__top {
         padding: 3rem 4.5rem 1.75rem 1.5rem;
         text-align: center;
@@ -656,19 +672,19 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/comercio-CaXb4Vi9.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CQz1TkY8.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CC9gmXFj.js">
+    <script type="module" crossorigin src="/assets/comercio-C8z4hkM1.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BDlNDiCH.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-Bg0BTVQ5.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CRQ1BW_R.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-Da71L4JW.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-DspnDCKf.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CReotPq4.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-BbQjXW8u.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-YkCtyu0Z.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-uApRcbut.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-kAR2rUhB.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-4XNfHFsK.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-CDY7FFVO.css">
     <link rel="stylesheet" crossorigin href="/assets/home-CswsZ4cf.css">
   </head>
   <body>

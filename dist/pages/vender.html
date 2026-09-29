@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">
     <title>Vender - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -511,6 +511,9 @@
       .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
       .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
+      .pub-bulk__toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+      .pub-bulk__toggle:disabled:hover { color: var(--bl-text-secondary); }
+      .pub-bulk__toggle:disabled:hover .pub-bulk__circle { border-color: #64748b; }
       /* Borde en #64748b y no en --bl-border (#e2e8f0): con el token, un círculo
          vacío de 2px casi no se veía sobre el fondo del panel. Queda entre
          --bl-text-muted (#94a3b8, medido en 2.45:1 contra el fondo, por debajo
@@ -695,6 +698,9 @@
 
       /* Zona de carga de fotos */
       .pubform__drop { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1.75rem 1rem; border: 2px dashed var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface-alt); color: var(--bl-text-secondary); text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+      .is-invalid { border-color: #dc2626 !important; background: #fef2f2 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); animation: bl-invalid-pulse 0.6s ease-out; }
+      @keyframes bl-invalid-pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); } 100% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); } }
+      @media (prefers-reduced-motion: reduce) { .is-invalid { animation: none; } }
       .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); outline: none; }
       .pubform__drop i { font-size: 1.6rem; color: var(--bl-vendor-accent); }
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
@@ -844,21 +850,21 @@
         .pub-bulk__actions { margin-left: 0; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-BEJ_frJE.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CQz1TkY8.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CC9gmXFj.js">
+    <script type="module" crossorigin src="/assets/vender-BPnu57ko.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BDlNDiCH.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-Bg0BTVQ5.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CRQ1BW_R.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-BS6p7jw1.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-C9JeV_VR.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
-    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-Cg6yXugp.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-YkCtyu0Z.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-fwM9lVNh.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-DsPZXMgA.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-uApRcbut.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-DX5zcis4.js">
     <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-CzS2JtGy.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-DEH69WPc.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-Bf683_SU.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
@@ -1548,7 +1554,7 @@
                   <h2 class="pubform__title" id="add-product-form-title">Publicar nuevo producto</h2>
                 </div>
 
-                <form id="add-product-form" class="pubform__form">
+                <form id="add-product-form" class="pubform__form" novalidate>
                   <!-- Qué se va a publicar. Decide si se muestra el bloque de
                        opciones: quien sube un producto simple no tiene por qué
                        ver nada de colores ni sabores. -->
