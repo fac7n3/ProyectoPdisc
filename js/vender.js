@@ -3530,6 +3530,18 @@ function resetProductGallery() {
   renderProductGallery();
 }
 
+/** Envuelve en rojo unos segundos el campo que hay que corregir y lo enfoca. */
+function flagInvalidField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('is-invalid');
+  void el.offsetWidth; // reinicia la animación si ya estaba marcado
+  el.classList.add('is-invalid');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (id !== 'prod-drop') el.focus({ preventScroll: true });
+  setTimeout(() => el.classList.remove('is-invalid'), 3500);
+}
+
 /**
  * Traduce el error de la base a un motivo legible. Los triggers/RLS del
  * proyecto ya devuelven mensajes en español; los códigos genéricos de
@@ -4183,27 +4195,33 @@ function setupDashboardEvents() {
 
     if (!isValidProductTitle(titleValue)) {
       showToast("El nombre del producto debe tener entre 3 y 150 caracteres.", "error");
+      flagInvalidField('prod-name');
       return;
     }
     if (!isValidPrice(priceValue)) {
       showToast("El precio debe ser un número entero mayor a 0.", "error");
+      flagInvalidField('prod-price');
       return;
     }
     if (!isValidStock(stockValue)) {
       showToast("El stock debe ser un número entero mayor o igual a 0.", "error");
+      flagInvalidField('prod-stock');
       return;
     }
     if (comparePriceValue && (!isValidPrice(comparePriceValue) || comparePriceValue <= priceValue)) {
       showToast("El precio de oferta debe ser un número entero mayor al precio actual.", "error");
+      flagInvalidField('prod-compare-price');
       return;
     }
 
     if (!document.getElementById('prod-desc').value.trim()) {
       showToast("Falta la descripción del producto: contales a tus clientes de qué se trata.", "error");
+      flagInvalidField('prod-desc');
       return;
     }
     if (productImages.length === 0) {
       showToast("Falta al menos una foto del producto.", "error");
+      flagInvalidField('prod-drop');
       return;
     }
 

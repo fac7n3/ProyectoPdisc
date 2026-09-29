@@ -697,6 +697,9 @@
 
       /* Zona de carga de fotos */
       .pubform__drop { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1.75rem 1rem; border: 2px dashed var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface-alt); color: var(--bl-text-secondary); text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+      .is-invalid { border-color: #dc2626 !important; background: #fef2f2 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); animation: bl-invalid-pulse 0.6s ease-out; }
+      @keyframes bl-invalid-pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); } 100% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); } }
+      @media (prefers-reduced-motion: reduce) { .is-invalid { animation: none; } }
       .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); outline: none; }
       .pubform__drop i { font-size: 1.6rem; color: var(--bl-vendor-accent); }
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
