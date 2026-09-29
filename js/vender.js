@@ -3538,7 +3538,7 @@ function flagInvalidField(id) {
   void el.offsetWidth; // reinicia la animación si ya estaba marcado
   el.classList.add('is-invalid');
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  if (id !== 'prod-drop') el.focus({ preventScroll: true });
+  if (el.matches('input, textarea, select')) el.focus({ preventScroll: true });
   setTimeout(() => el.classList.remove('is-invalid'), 3500);
 }
 
@@ -4214,6 +4214,12 @@ function setupDashboardEvents() {
       return;
     }
 
+    const catRadios = document.querySelectorAll('input[name="prod-category"]');
+    if (Array.from(catRadios).some((r) => r.required) && !getProductCategorySlug()) {
+      showToast("Elegí una categoría para el producto.", "error");
+      flagInvalidField('prod-category-options');
+      return;
+    }
     if (!document.getElementById('prod-desc').value.trim()) {
       showToast("Falta la descripción del producto: contales a tus clientes de qué se trata.", "error");
       flagInvalidField('prod-desc');
