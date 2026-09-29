@@ -38,12 +38,17 @@
         color: var(--sh-fg, var(--bl-text));
         margin-bottom: 2rem;
       }
-      /* Banner opcional (stores.banner_url): ancho completo arriba del header;
-         el logo se monta un poco encima para que se sienta parte del banner. */
+      /* Banner opcional (stores.banner_url): fondo del bloque del nombre, de
+         borde a borde hasta la línea que lo separa de la barra de datos (el
+         border-bottom de .store-header__top). Recomendado 1600x400 px. Un
+         degradé oscuro asegura que el nombre se lea sobre cualquier foto, así
+         que con banner las letras pasan a blanco. Sin overflow:hidden en
+         __top: recortaría el cartelito del logo. */
+      .store-header__top { position: relative; isolation: isolate; }
       .store-header__banner {
-        width: 100%;
-        height: clamp(120px, 22vw, 240px);
-        overflow: hidden;
+        position: absolute;
+        inset: 0;
+        z-index: -2;
       }
       .store-header__banner img {
         width: 100%;
@@ -51,9 +56,22 @@
         object-fit: cover;
         display: block;
       }
-      .store-header.has-banner .store-header__top { padding-top: 0; }
-      .store-header.has-banner .store-header__logo-wrap { margin-top: -42px; }
-      .store-header.has-banner .store-header__title { margin-top: 1.25rem; }
+      .store-header.has-banner .store-header__top::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.55));
+      }
+      .store-header.has-banner .store-header__top,
+      .store-header.has-banner .store-header__title,
+      .store-header.has-banner .store-header__description {
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      }
+      .store-header.has-banner button.store-header__icon-btn { color: #fff; }
+      .store-header.has-banner button.store-header__icon-btn.is-favorite { color: #ef4444; }
+      .store-header.has-banner .store-header__top { min-height: 14rem; }
       .store-header__top {
         padding: 3rem 4.5rem 1.75rem 1.5rem;
         text-align: center;
