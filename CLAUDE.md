@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-29** — **Banner del comercio hasta la línea gris**, a pedido
+  del usuario. El banner (`stores.banner_url`, migración `113_store_banner.sql`,
+  cargado desde el lápiz "Personalizar" del header) ya existía como una franja
+  arriba del header; ahora es el **fondo del bloque del nombre**, de borde a
+  borde hasta el `border-bottom` que lo separa de la barra de datos
+  (`applyHeaderBanner` en `js/comercio.js`, CSS en `pages/comercio.html`). Con
+  banner, degradé oscuro + letras blancas. El cartelito del lápiz muestra la
+  recomendación: **1600 × 400 px (4:1), JPG o WebP, hasta 3 MB**. **Gotcha:** dos
+  sesiones armaron el banner en paralelo (misma migración 113); quedó la de
+  `main` (imagen en el bucket `store-logos`). Quedó un bucket vacío
+  `store-banners` en Supabase, sin policies ni uso (no se puede borrar por SQL).
+  Sin probar logueado (sin red a Supabase); el CSS se verificó con una maqueta.
 - **Resuelto 2026-09-29** — **facu.cells no podía publicar productos**
   ("No tenés permiso para publicar…", error 42501). No era el alias bancario
   (lo tenía cargado): la cuenta dueña del comercio (`shueywater@gmail.com`,

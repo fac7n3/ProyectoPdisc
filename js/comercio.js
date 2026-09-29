@@ -9,6 +9,7 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_BANNER_BYTES = 3 * 1024 * 1024;
+const BANNER_HINT = 'Banner recomendado: 1600 × 400 px (proporción 4:1), JPG o WebP, hasta 3 MB. En celular se recorta por los costados: dejá lo importante al centro.';
 
 /** Tarjeta de producto (misma estructura que antes, extraída para poder re-renderizarla al filtrar). */
 function buildProductCard(product, store) {
@@ -104,9 +105,12 @@ function applyHeaderColors(header, bg, fg) {
   if (fg) header.style.setProperty('--sh-fg', fg); else header.style.removeProperty('--sh-fg');
 }
 
-/** Pone (o saca) la imagen de banner arriba del header. */
+/** Pone (o saca) la imagen de banner de fondo del bloque del nombre: ocupa
+ *  todo el ancho hasta la línea que lo separa de la barra de datos. */
 function applyHeaderBanner(header, url) {
-  let wrap = header.querySelector(':scope > .store-header__banner');
+  const top = header.querySelector(':scope > .store-header__top');
+  if (!top) return;
+  let wrap = top.querySelector(':scope > .store-header__banner');
   if (!url) {
     wrap?.remove();
     header.classList.remove('has-banner');
@@ -118,7 +122,7 @@ function applyHeaderBanner(header, url) {
     const img = document.createElement('img');
     img.alt = '';
     wrap.appendChild(img);
-    header.prepend(wrap);
+    top.prepend(wrap);
   }
   wrap.querySelector('img').src = url;
   header.classList.add('has-banner');
@@ -185,6 +189,11 @@ function buildColorPopover(store, header) {
   bannerFile.accept = 'image/*';
   bannerFile.hidden = true;
   popover.appendChild(bannerFile);
+
+  const bannerHint = document.createElement('p');
+  bannerHint.className = 'store-popover__hint';
+  bannerHint.textContent = BANNER_HINT;
+  popover.appendChild(bannerHint);
 
   const bannerAdd = document.createElement('button');
   bannerAdd.type = 'button';
@@ -459,8 +468,6 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
   const header = document.createElement('header');
   header.className = 'store-header';
   applyHeaderColors(header, store.header_bg_color, store.header_text_color);
-  applyHeaderBanner(header, store.banner_url);
-
   // --- Bloque superior: logo + título + descripción + ícono ---
   const top = document.createElement('div');
   top.className = 'store-header__top';
@@ -516,6 +523,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
   }
 
   header.appendChild(top);
+  applyHeaderBanner(header, store.banner_url);
 
   if (isOwner) {
     const editColorBtn = document.createElement('button');
