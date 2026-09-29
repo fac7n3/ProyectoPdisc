@@ -857,6 +857,11 @@ export async function initAccountMenu() {
         { href: './admin.html', icon: 'fa-solid fa-user-shield', label: 'Panel de administración' },
       ]));
     }
+    if (role === 'repartidor') {
+      panel.appendChild(buildSection('Repartir', [
+        { href: './repartidor.html', icon: 'fa-solid fa-motorcycle', label: 'Panel de repartidor' },
+      ]));
+    }
 
     // Publicarse como profesional/técnico ("Contratar") no cambia el rol de
     // la cuenta (sigue siendo 'cliente' o el que tenga) -- por eso este caso

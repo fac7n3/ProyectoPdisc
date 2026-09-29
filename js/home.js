@@ -18,6 +18,13 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 const PANEL_LABELS = {
   vendedor: 'Panel de vendedor',
   profesional: 'Panel de profesional/técnico',
+  repartidor: 'Panel de repartidor',
+};
+
+const PANEL_ICONS = {
+  vendedor: 'fa-solid fa-shop',
+  profesional: 'fa-solid fa-screwdriver-wrench',
+  repartidor: 'fa-solid fa-motorcycle',
 };
 
 /**
@@ -129,7 +136,7 @@ function renderPanelAction({ isAdmin, seller, role }) {
   menu.setAttribute('aria-label', 'Elegí un panel');
 
   [
-    { href: `./${SELLER_PANEL_PAGES[seller]}`, icon: seller === 'profesional' ? 'fa-solid fa-screwdriver-wrench' : 'fa-solid fa-shop', label: PANEL_LABELS[seller] },
+    { href: `./${SELLER_PANEL_PAGES[seller]}`, icon: PANEL_ICONS[seller], label: PANEL_LABELS[seller] },
     { href: './admin.html', icon: 'fa-solid fa-user-shield', label: adminLabel },
   ].forEach(({ href, icon, label }) => {
     const item = document.createElement('a');

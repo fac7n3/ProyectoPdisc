@@ -227,6 +227,10 @@ function setRolePanelLink(jwtRole) {
     if (label) label.textContent = 'Panel de profesional/técnico';
     applyPanelLink(rolePanelLink, 'role-panel-icon', 'fa-solid fa-screwdriver-wrench', './profesional.html');
     applyPanelLink(ajustesPanelLink, 'ajustes-panel-icon', 'fa-solid fa-screwdriver-wrench', './profesional.html');
+  } else if (jwtRole === 'repartidor') {
+    if (label) label.textContent = 'Panel de repartidor';
+    applyPanelLink(rolePanelLink, 'role-panel-icon', 'fa-solid fa-motorcycle', './repartidor.html');
+    applyPanelLink(ajustesPanelLink, 'ajustes-panel-icon', 'fa-solid fa-motorcycle', './repartidor.html');
   }
 }
 
