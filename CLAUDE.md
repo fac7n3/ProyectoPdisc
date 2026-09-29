@@ -80,6 +80,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-09-29** — **facu.cells no podía publicar productos**
+  ("No tenés permiso para publicar…", error 42501). No era el alias bancario
+  (lo tenía cargado): la cuenta dueña del comercio (`shueywater@gmail.com`,
+  admin en el JWT) había quedado con `profiles.role='repartidor'` tras el alta
+  por email de la sección "Repartidores", y `products_insert_merged` mira
+  `profiles.role` (`vendedor`/`admin`) o `store_staff`, no el JWT. Se corrigió
+  el dato (`profiles.role='vendedor'`, con la bandera
+  `app.role_change_authorized`) y se cerró el hueco en
+  `admin_set_repartidor_by_email` (migración `112_repartidor_by_email_guard_store_owners.sql`,
+  aplicada a producción): ahora rechaza cuentas dueñas o empleadas de un
+  comercio y cuentas admin/moderador en el JWT, además de `vendedor`. Esa cuenta
+  sigue siendo admin en `app_metadata.role` (no se tocó). La guarda nueva no se
+  probó con datos reales (sin transacción de prueba), conviene un intento de
+  alta por email de una cuenta dueña de comercio para ver el rechazo.
 - **Resuelto 2026-09-28** — **Vuelve el rol repartidor**, a pedido del
   usuario, con un alta distinta a la de F3-01: el rol `repartidor` y sus
   tablas/RPCs (`delivery_requests`, `deliveries`, `claim_delivery`,
