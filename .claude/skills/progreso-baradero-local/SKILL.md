@@ -4779,3 +4779,11 @@ midió el contraste contra el fondo del panel (`#f8fafc`) en el navegador: `--bl
 identifica un control, y `--bl-text-secondary` (`#4a5568`) es un anillo demasiado pesado para algo
 que todavía no está marcado. Quedó `#64748b` (**4.55:1**), un hex suelto a propósito porque ningún
 token del proyecto cae en ese rango. El check del contraste quedó en el harness.
+
+## 2026-09-29 — facu.cells no podía publicar: rol `repartidor` pisado en `profiles`
+
+- **Síntoma:** al subir un producto con la cuenta de facu.cells, el panel decía "No tenés permiso para publicar…" (`js/vender.js`, mapeo del código `42501`).
+- **Diagnóstico:** el alias bancario (migración 107) estaba cargado (`facu.parques`), así que no era eso. La policy `products_insert_merged` exige `seller_id = auth.uid()` con `profiles.role in ('vendedor','admin')`, o una fila en `store_staff` para ese comercio. El dueño (`shueywater@gmail.com`) tenía `profiles.role='repartidor'` (por `admin_set_repartidor_by_email`, migración 111) pero `app_metadata.role='admin'` en el JWT: dos valores desincronizados, y la policy lee el de `profiles`.
+- **Arreglo de datos:** `profiles.role='vendedor'` para esa cuenta (con `set_config('app.role_change_authorized','true',true)`, sin la bandera el trigger `prevent_role_update_on_profile` lo bloquea). El JWT quedó en `admin`.
+- **Arreglo de código:** migración `112_repartidor_by_email_guard_store_owners.sql` (aplicada). `admin_set_repartidor_by_email` ahora también rechaza si la cuenta es dueña de un `stores.owner_id`, está en `store_staff`, o tiene `admin`/`moderador` en `raw_app_meta_data.role`. Se sacó la excepción que evitaba pisar el JWT de admin/moderador, porque esos casos ya no llegan a ese punto.
+- **Sin probar:** la guarda nueva no se corrió contra datos reales (no hubo transacción con ROLLBACK). Gotcha general: `profiles.role` y `app_metadata.role` son valores separados; las policies de RLS de productos usan el primero, el frontend (`getPanelAccess`) usa el segundo.
