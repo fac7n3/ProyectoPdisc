@@ -8,6 +8,7 @@ import { confirmDialog } from './confirm-dialog.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_BANNER_BYTES = 3 * 1024 * 1024;
 
 /** Tarjeta de producto (misma estructura que antes, extraída para poder re-renderizarla al filtrar). */
 function buildProductCard(product, store) {
@@ -103,6 +104,48 @@ function applyHeaderColors(header, bg, fg) {
   if (fg) header.style.setProperty('--sh-fg', fg); else header.style.removeProperty('--sh-fg');
 }
 
+/** Pone (o saca) la imagen de banner arriba del header. */
+function applyHeaderBanner(header, url) {
+  let wrap = header.querySelector(':scope > .store-header__banner');
+  if (!url) {
+    wrap?.remove();
+    header.classList.remove('has-banner');
+    return;
+  }
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.className = 'store-header__banner';
+    const img = document.createElement('img');
+    img.alt = '';
+    wrap.appendChild(img);
+    header.prepend(wrap);
+  }
+  wrap.querySelector('img').src = url;
+  header.classList.add('has-banner');
+}
+
+/** Sube el banner a store-logos/{uid del dueño}/ y actualiza stores.banner_url. */
+async function uploadStoreBanner(file, store) {
+  const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
+  const path = `${store.owner_id}/banner-${Date.now()}.${ext || 'jpg'}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('store-logos')
+    .upload(path, file, { contentType: file.type || 'image/jpeg' });
+  if (upErr) throw upErr;
+
+  const { data: pub } = supabase.storage.from('store-logos').getPublicUrl(path);
+  const publicUrl = pub?.publicUrl;
+  if (!publicUrl) throw new Error('No se pudo obtener la URL del banner.');
+
+  const { error: dbErr } = await supabase.from('stores').update({ banner_url: publicUrl }).eq('id', store.id);
+  if (dbErr) {
+    await removeStoredObjects(supabase, 'store-logos', [publicUrl]);
+    throw dbErr;
+  }
+  return publicUrl;
+}
+
 /** Popover de color del header (solo lo ve el dueño del comercio). */
 function buildColorPopover(store, header) {
   const popover = document.createElement('div');
@@ -135,6 +178,74 @@ function buildColorPopover(store, header) {
   resetBtn.className = 'store-popover__reset';
   resetBtn.textContent = 'Quitar color';
   popover.appendChild(resetBtn);
+
+  // --- Banner ---
+  const bannerFile = document.createElement('input');
+  bannerFile.type = 'file';
+  bannerFile.accept = 'image/*';
+  bannerFile.hidden = true;
+  popover.appendChild(bannerFile);
+
+  const bannerAdd = document.createElement('button');
+  bannerAdd.type = 'button';
+  bannerAdd.className = 'store-popover__row store-popover__row--btn';
+  popover.appendChild(bannerAdd);
+
+  const bannerRemove = document.createElement('button');
+  bannerRemove.type = 'button';
+  bannerRemove.className = 'store-popover__reset';
+  bannerRemove.textContent = 'Quitar banner';
+  popover.appendChild(bannerRemove);
+
+  const syncBannerUi = () => {
+    bannerAdd.textContent = store.banner_url ? 'Cambiar banner' : 'Añadir banner';
+    bannerRemove.hidden = !store.banner_url;
+  };
+  syncBannerUi();
+
+  bannerAdd.addEventListener('click', () => bannerFile.click());
+
+  bannerFile.addEventListener('change', async () => {
+    const file = bannerFile.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_BANNER_BYTES) {
+      showToast('Esa imagen pesa más de 3 MB. Probá con una más liviana.', 'error');
+      bannerFile.value = '';
+      return;
+    }
+    const previousUrl = store.banner_url;
+    try {
+      const publicUrl = await uploadStoreBanner(file, store);
+      store.banner_url = publicUrl;
+      applyHeaderBanner(header, publicUrl);
+      syncBannerUi();
+      if (previousUrl) await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Listo, guardamos el banner.', 'success');
+    } catch (err) {
+      console.error('Error al subir el banner del comercio:', err);
+      showToast('No pudimos subir el banner. Probá de nuevo.', 'error');
+    } finally {
+      bannerFile.value = '';
+    }
+  });
+
+  bannerRemove.addEventListener('click', async () => {
+    popover.classList.remove('is-open');
+    if (!(await confirmDialog('¿Quitamos el banner del comercio?', { confirmText: 'Quitar', danger: true }))) return;
+    const previousUrl = store.banner_url;
+    try {
+      const { error } = await supabase.from('stores').update({ banner_url: null }).eq('id', store.id);
+      if (error) throw error;
+      store.banner_url = null;
+      applyHeaderBanner(header, null);
+      syncBannerUi();
+      await removeStoredObjects(supabase, 'store-logos', [previousUrl]);
+      showToast('Sacamos el banner.', 'success');
+    } catch (err) {
+      console.error('Error al sacar el banner del comercio:', err);
+      showToast('No pudimos sacar el banner. Probá de nuevo.', 'error');
+    }
+  });
 
   // Vista previa instantánea mientras se elige (sin guardar todavía).
   bgInput.addEventListener('input', () => applyHeaderColors(header, bgInput.value, fgInput.value || store.header_text_color));
@@ -348,6 +459,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
   const header = document.createElement('header');
   header.className = 'store-header';
   applyHeaderColors(header, store.header_bg_color, store.header_text_color);
+  applyHeaderBanner(header, store.banner_url);
 
   // --- Bloque superior: logo + título + descripción + ícono ---
   const top = document.createElement('div');
@@ -409,8 +521,8 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const editColorBtn = document.createElement('button');
     editColorBtn.type = 'button';
     editColorBtn.className = 'store-header__icon-btn';
-    editColorBtn.dataset.tooltip = 'Editar color';
-    editColorBtn.setAttribute('aria-label', 'Editar color');
+    editColorBtn.dataset.tooltip = 'Personalizar';
+    editColorBtn.setAttribute('aria-label', 'Personalizar');
     const pencilIcon = document.createElement('i');
     pencilIcon.className = 'fa-solid fa-pen';
     editColorBtn.appendChild(pencilIcon);
