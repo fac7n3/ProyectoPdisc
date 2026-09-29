@@ -3263,6 +3263,20 @@ function renderPublicaciones() {
 
 /** Refresca el contador y habilita/deshabilita el tacho y el pausar del lote. */
 function updatePubBulkBar() {
+  // Con menos de dos publicaciones en la cuenta no hay nada que seleccionar "en
+  // varios": el botón queda deshabilitado (y se apaga el modo si quedó prendido
+  // porque se borró una publicación).
+  const toggleBtn = document.getElementById('pub-select-toggle');
+  const canSelectMany = pubProducts.length >= 2;
+  if (toggleBtn) {
+    toggleBtn.disabled = !canSelectMany;
+    toggleBtn.title = canSelectMany ? '' : 'Necesitás al menos dos publicaciones para seleccionar varias';
+  }
+  if (!canSelectMany && pubSelectMode) {
+    setPubSelectMode(false);
+    return;
+  }
+
   const actions = document.getElementById('pub-bulk-actions');
   if (!actions) return;
   actions.hidden = !pubSelectMode;
