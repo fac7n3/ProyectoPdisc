@@ -3530,6 +3530,32 @@ function resetProductGallery() {
   renderProductGallery();
 }
 
+/**
+ * Traduce el error de la base a un motivo legible. Los triggers/RLS del
+ * proyecto ya devuelven mensajes en español; los códigos genéricos de
+ * Postgres se explican acá.
+ */
+function describeProductSaveError(error, isEditing) {
+  const action = isEditing ? 'guardar los cambios' : 'publicar el producto';
+  const msg = String(error?.message || '');
+  const looksSpanish = /[áéíóúñ¿]|\b(debés|tenés|falta|inválid|no se puede|no podés)\b/i.test(msg);
+  if (error?.code === 'P0001' && msg && looksSpanish) return msg;
+  switch (error?.code) {
+    case '42501': return `No tenés permiso para ${action} en este comercio.`;
+    case '23502': {
+      const col = msg.match(/column "(\w+)"/);
+      return `No se pudo ${action}: falta completar un dato obligatorio${col ? ` (${col[1]})` : ''}.`;
+    }
+    case '23514': return `No se pudo ${action}: algún valor (precio, stock o texto) no es válido.`;
+    case '23505': return `No se pudo ${action}: ya existe un producto igual.`;
+    case '22001': return `No se pudo ${action}: hay un texto demasiado largo.`;
+    case '22P02': case '22003': return `No se pudo ${action}: el precio o el stock tienen un valor no válido.`;
+    default: break;
+  }
+  if (!navigator.onLine || /failed to fetch|network/i.test(msg)) return `No se pudo ${action}: revisá tu conexión a internet.`;
+  return msg ? `No se pudo ${action}: ${msg}` : `No se pudo ${action}. Probá de nuevo en un momento.`;
+}
+
 /** Suma archivos elegidos a la galería, descartando los que no sirven. */
 function addFilesToGallery(files) {
   Array.from(files || []).forEach((file) => {
@@ -4172,6 +4198,15 @@ function setupDashboardEvents() {
       return;
     }
 
+    if (!document.getElementById('prod-desc').value.trim()) {
+      showToast("Falta la descripción del producto: contales a tus clientes de qué se trata.", "error");
+      return;
+    }
+    if (productImages.length === 0) {
+      showToast("Falta al menos una foto del producto.", "error");
+      return;
+    }
+
     setLoading(btnSubmit, true, submitLabel);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -4220,7 +4255,7 @@ function setupDashboardEvents() {
     }
 
     if (error) {
-      showToast(isEditing ? "Error al guardar los cambios" : "Error al guardar el producto", "error");
+      showToast(describeProductSaveError(error, isEditing), "error");
       console.error(error);
       setLoading(btnSubmit, false, submitLabel);
       return;
