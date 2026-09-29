@@ -38,6 +38,22 @@
         color: var(--sh-fg, var(--bl-text));
         margin-bottom: 2rem;
       }
+      /* Banner opcional (stores.banner_url): ancho completo arriba del header;
+         el logo se monta un poco encima para que se sienta parte del banner. */
+      .store-header__banner {
+        width: 100%;
+        height: clamp(120px, 22vw, 240px);
+        overflow: hidden;
+      }
+      .store-header__banner img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .store-header.has-banner .store-header__top { padding-top: 0; }
+      .store-header.has-banner .store-header__logo-wrap { margin-top: -42px; }
+      .store-header.has-banner .store-header__title { margin-top: 1.25rem; }
       .store-header__top {
         padding: 3rem 4.5rem 1.75rem 1.5rem;
         text-align: center;
