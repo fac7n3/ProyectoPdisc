@@ -513,6 +513,9 @@
       .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
       .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
+      .pub-bulk__toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+      .pub-bulk__toggle:disabled:hover { color: var(--bl-text-secondary); }
+      .pub-bulk__toggle:disabled:hover .pub-bulk__circle { border-color: #64748b; }
       /* Borde en #64748b y no en --bl-border (#e2e8f0): con el token, un círculo
          vacío de 2px casi no se veía sobre el fondo del panel. Queda entre
          --bl-text-muted (#94a3b8, medido en 2.45:1 contra el fondo, por debajo
