@@ -1,13 +1,26 @@
 import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { buildDropdown } from './dropdown.js';
+import { formatDueDate } from './order-utils.js';
 
+// Texto genérico de cada tipo. Los avisos de pedidos traen el número en el
+// payload (migración 115) y usan ORDER_TITLES; este queda para los viejos.
 const TYPE_LABELS = {
   order_created: 'Nuevo pedido recibido',
-  order_paid: 'Un pedido fue pagado',
-  payment_rejected: 'Un comprobante fue rechazado',
+  order_paid: 'Tu pago fue confirmado',
+  order_paid_seller: 'Te pagaron un pedido',
+  payment_rejected: 'El comercio no pudo confirmar tu pago',
+  transfer_notified: 'Un comprador avisó que transfirió',
+  payment_proof_uploaded: 'Te mandaron un comprobante',
+  payment_due_soon: 'Un pedido tuyo está por vencer',
+  order_ready_for_pickup: 'Tu pedido está listo para retirar',
   order_shipped: 'Tu pedido está en camino',
   order_delivered: 'Tu pedido fue entregado',
+  order_cancelled: 'El comercio canceló tu pedido',
+  order_cancelled_by_buyer: 'Un comprador canceló su pedido',
+  order_expired: 'Un pedido tuyo se canceló por falta de pago',
+  order_expired_seller: 'Un pedido se canceló por falta de pago',
+  revocation_accepted: 'El comercio aceptó tu arrepentimiento',
   new_review: 'Recibiste una nueva reseña',
   revocation_requested: 'Un cliente solicitó arrepentimiento de compra',
   seller_request_approved: '¡Tu solicitud de vendedor fue aprobada!',
@@ -51,8 +64,18 @@ const SUPPORT_TICKET_STATUS_LABELS = {
 const TYPE_TONE = {
   order_created: 'success',
   order_paid: 'success',
+  order_paid_seller: 'success',
+  order_ready_for_pickup: 'success',
   order_shipped: 'success',
   order_delivered: 'success',
+  revocation_accepted: 'info',
+  transfer_notified: 'accent',
+  payment_proof_uploaded: 'accent',
+  payment_due_soon: 'accent',
+  order_cancelled: 'danger',
+  order_cancelled_by_buyer: 'danger',
+  order_expired: 'danger',
+  order_expired_seller: 'info',
   seller_request_approved: 'success',
   professional_request_approved: 'success',
   payment_rejected: 'danger',
@@ -106,7 +129,20 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       if (comment) return stars ? `${stars} — ${comment}` : comment;
       return stars || null;
     }
+    case 'payment_rejected':
+    case 'order_cancelled':
+    case 'order_cancelled_by_buyer':
+      if (p.reason) return `Motivo: ${p.reason}`;
+      return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
     case 'order_created':
+    case 'order_paid_seller':
+    case 'transfer_notified':
+    case 'payment_proof_uploaded':
+    case 'payment_due_soon':
+    case 'order_ready_for_pickup':
+    case 'order_expired':
+    case 'order_expired_seller':
+    case 'revocation_accepted':
       return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
     // Los manda mp-webhook cuando el pago no cierra: sin los dos montos, el
     // aviso no dice nada accionable.
@@ -119,9 +155,8 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
     case 'order_paid':
     case 'order_shipped':
     case 'order_delivered':
-    case 'payment_rejected':
     case 'revocation_requested': {
-      const total = p.order_id ? orderAmountMap[p.order_id] : null;
+      const total = p.total_price ?? (p.order_id ? orderAmountMap[p.order_id] : null);
       return total ? `Pedido por ${formatPrice(total)}` : null;
     }
     default:
@@ -147,20 +182,30 @@ function buildNotificationLink(n) {
     // Recibidas por el dueño del comercio -- van a "Pedidos" de su panel,
     // con el N° de pedido precargado en el buscador que ya existe ahí.
     case 'order_created':
+    case 'order_paid_seller':
+    case 'transfer_notified':
+    case 'payment_proof_uploaded':
+    case 'order_cancelled_by_buyer':
+    case 'order_expired_seller':
     case 'revocation_requested':
     case 'mp_payment_amount_mismatch':
     case 'mp_payment_refunded':
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
-      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pagos', label: 'Revisar' };
+      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pedidos', label: 'Revisar' };
     }
 
     // Recibidas por el cliente -- van a "Mis compras" en su perfil.
     case 'order_paid':
     case 'payment_rejected':
+    case 'payment_due_soon':
+    case 'order_ready_for_pickup':
     case 'order_shipped':
     case 'order_delivered':
+    case 'order_cancelled':
+    case 'order_expired':
+    case 'revocation_accepted':
       return p.order_id ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' } : null;
 
     case 'new_review':
@@ -193,6 +238,31 @@ function buildNotificationLink(n) {
   }
 }
 
+/** Títulos de los avisos de pedidos, con el número (#BL-1066) que ve todo el mundo. */
+const ORDER_TITLES = {
+  order_created: (p, ref) => (p.payment_method === 'efectivo'
+    ? `Nuevo pedido ${ref}: se paga en efectivo, ya podés prepararlo`
+    : `Nuevo pedido ${ref}: esperando la transferencia`),
+  order_paid: (p, ref) => (p.total_price
+    ? `Tu pago de ${formatPrice(p.total_price)} fue confirmado (pedido ${ref})`
+    : `Tu pago del pedido ${ref} fue confirmado`),
+  order_paid_seller: (p, ref) => `¡Te pagaron el pedido ${ref}! Ya podés prepararlo`,
+  transfer_notified: (p, ref) => `El comprador avisó que transfirió el pedido ${ref}`,
+  payment_proof_uploaded: (p, ref) => `Te mandaron el comprobante del pedido ${ref}`,
+  payment_rejected: (p, ref) => `El comercio no pudo confirmar tu pago del pedido ${ref}`,
+  payment_due_soon: (p, ref) => (p.payment_due_at
+    ? `Tu pedido ${ref} vence ${formatDueDate(p.payment_due_at)}: completá la transferencia`
+    : `Tu pedido ${ref} está por vencer: completá la transferencia`),
+  order_ready_for_pickup: (p, ref) => `Tu pedido ${ref} está listo para retirar`,
+  order_shipped: (p, ref) => `Tu pedido ${ref} está en camino`,
+  order_delivered: (p, ref) => `Tu pedido ${ref} fue entregado. ¡Contanos qué tal!`,
+  order_cancelled: (p, ref) => `El comercio canceló tu pedido ${ref}`,
+  order_cancelled_by_buyer: (p, ref) => `El comprador canceló el pedido ${ref}`,
+  order_expired: (p, ref) => `Tu pedido ${ref} se canceló porque no se completó el pago`,
+  order_expired_seller: (p, ref) => `El pedido ${ref} se canceló por falta de pago (el stock volvió)`,
+  revocation_accepted: (p, ref) => `El comercio aceptó tu arrepentimiento del pedido ${ref}`,
+};
+
 /**
  * Título corto de una notificación (mismo texto que ya arma el centro de
  * notificaciones para cada tipo). Factorizado acá para que el centro de
@@ -201,6 +271,9 @@ function buildNotificationLink(n) {
  * switch en dos archivos.
  */
 export function buildNotificationTitle(n) {
+  const orderTitle = ORDER_TITLES[n.type];
+  if (orderTitle && n.payload?.order_number) return orderTitle(n.payload, `#BL-${n.payload.order_number}`);
+
   // F12-09: a diferencia del resto (siempre texto genérico), un aviso de
   // stock sin decir de qué producto es casi inútil -- el cliente puede
   // tener varios pendientes en productos distintos.

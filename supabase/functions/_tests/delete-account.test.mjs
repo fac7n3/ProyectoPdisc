@@ -1,10 +1,11 @@
 // Baja de cuenta: que borre en el orden correcto y no deje datos personales
 // atrás. Correr con `node supabase/functions/_tests/delete-account.test.mjs`.
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { makeFakeSupabase } from './fake-supabase.mjs';
 import { loadEdgeFunction } from './load-edge.mjs';
 
-const FN = new URL('../delete-account/index.ts', import.meta.url).pathname;
+const FN = fileURLToPath(new URL('../delete-account/index.ts', import.meta.url));
 const ENV = {
   SUPABASE_URL: 'https://x.supabase.co',
   SUPABASE_ANON_KEY: 'anon',

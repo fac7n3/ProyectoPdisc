@@ -18,6 +18,13 @@ import { buildDatePicker } from "./datepicker.js";
 import { categoryLabel } from "./professional-categories.js";
 import { fetchStoreTransferData, buildTransferCard } from "./transfer-details.js";
 import { confirmDialog } from "./confirm-dialog.js";
+import {
+  ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS,
+  orderLabel, canPrepare, awaitingTransfer, awaitingMercadoPago, showsPickupCode,
+  timelineSteps, eventLabel, formatDueDate, deliveryQrUrl,
+} from "./order-utils.js";
+import { getPaymentProvider } from "./payment-providers.js";
+import qrcode from "qrcode-generator";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -1076,26 +1083,210 @@ async function loadFavoritos(userId) {
 }
 
 // --- Compras: Cargar desde DB ---
+// El flujo del pedido (qué paso sigue, vencimientos, código de retiro) sale
+// de js/order-utils.js, el mismo que usa el panel del vendedor.
 
-const ORDER_STATUS_LABELS = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  shipped: 'Enviado',
-  ready_for_pickup: 'Listo para retirar',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
-};
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text != null) node.textContent = text;
+  return node;
+}
 
-const PAYMENT_METHOD_LABELS = {
-  simulado: 'Pago simulado',
-  transferencia: 'Transferencia',
-  mercadopago: 'Mercado Pago',
-};
+/** QR como imagen GIF (data:, que la CSP de esta página permite). */
+function buildQrImage(text) {
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  const img = document.createElement('img');
+  img.src = qr.createDataURL(4, 0);
+  img.alt = 'Código QR del pedido';
+  return img;
+}
 
-const DELIVERY_METHOD_LABELS = {
-  pickup: 'Retiro en el local',
-  delivery: 'Envío a domicilio',
-};
+function buildTimeline(order, events) {
+  const list = el('ol', 'ord-timeline');
+  timelineSteps(order, events).forEach((step) => {
+    const li = el('li', 'ord-timeline__step');
+    if (step.done) li.classList.add('is-done');
+    if (step.current) li.classList.add('is-current');
+    if (step.key === 'cancelled') li.classList.add('is-cancelled');
+    li.appendChild(document.createTextNode(step.label));
+    if (step.date) {
+      li.appendChild(el('span', 'ord-timeline__date', new Date(step.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
+    }
+    list.appendChild(li);
+  });
+  return list;
+}
+
+/** Código de retiro + QR: el comercio (o el repartidor) se lo pide para entregar. */
+function buildPickupCodeBlock(order, code) {
+  const box = el('div', 'ord-code');
+  const qrWrap = el('div', 'ord-code__qr');
+  qrWrap.appendChild(buildQrImage(deliveryQrUrl(window.location.origin, order, code)));
+  const text = el('div');
+  text.appendChild(el('span', 'ord-code__label', 'Código de retiro'));
+  text.appendChild(el('span', 'ord-code__value', code));
+  text.appendChild(el('p', 'ord-code__hint', order.delivery_method === 'delivery'
+    ? 'Dáselo a quien te traiga el pedido (o que escanee el QR). Sin el código no te lo pueden entregar.'
+    : 'Mostralo en el comercio al retirar (o que escaneen el QR). Así saben que sos vos.'));
+  box.append(qrWrap, text);
+  return box;
+}
+
+/** "¿Qué tal tu compra?" al terminar: calificar al comercio desde el mismo pedido. */
+function buildReviewBlock(order, alreadyReviewed) {
+  const wrap = el('div', 'compra-review');
+  const storeName = order.stores?.name || 'el comercio';
+  if (alreadyReviewed) {
+    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `¡Gracias! Ya calificaste a ${storeName}.`));
+    return wrap;
+  }
+  wrap.appendChild(el('p', 'compra-review__title', `¿Qué tal tu compra en ${storeName}?`));
+  const stars = buildStarRating({ ariaLabel: `Calificá a ${storeName}` });
+  wrap.appendChild(stars.element);
+  const comment = el('textarea', 'bl-confirm-input compra-review__comment');
+  comment.rows = 2;
+  comment.maxLength = 500;
+  comment.placeholder = 'Contá cómo te fue (opcional)';
+  comment.setAttribute('aria-label', 'Comentario de la reseña');
+  wrap.appendChild(comment);
+  const send = el('button', 'bl-btn bl-btn-primary compra-review__btn', 'Enviar reseña');
+  send.type = 'button';
+  send.addEventListener('click', async () => {
+    const rating = stars.getValue();
+    if (!rating) {
+      showToast('Elegí de 1 a 5 estrellas.', 'error');
+      return;
+    }
+    send.disabled = true;
+    try {
+      await submitReview('store', order.store_id, rating, comment.value.trim());
+      showToast('¡Gracias por tu reseña!', 'success');
+      await loadCompras(order.client_id);
+    } catch (err) {
+      console.error('Error al enviar la reseña', err);
+      showToast(err.message || 'No se pudo enviar la reseña.', 'error');
+      send.disabled = false;
+    }
+  });
+  wrap.appendChild(send);
+  return wrap;
+}
+
+/** Lo que el comprador necesita saber (y puede hacer) según en qué va el pedido. */
+function buildCompraNextStep(order, ctx) {
+  const wrap = el('div', 'compra-next');
+  const events = ctx.eventsByOrder.get(order.id) || [];
+  const storeName = order.stores?.name || 'El comercio';
+
+  if (order.status === 'cancelled') {
+    let text;
+    if (order.revocation_resolved_at) text = `${storeName} aceptó tu arrepentimiento. Coordiná con el comercio la devolución.`;
+    else if (order.cancelled_by === 'system') text = 'Se canceló porque venció el plazo para pagar. El stock volvió al comercio.';
+    else if (order.cancelled_by === 'buyer') text = 'Cancelaste este pedido.';
+    else text = `${storeName} canceló el pedido${order.cancel_reason ? `: ${order.cancel_reason}` : '.'}`;
+    wrap.appendChild(el('p', 'ord-alert ord-alert--danger', text));
+    if (order.payment_status === 'paid' && order.cancelled_by !== 'system') {
+      wrap.appendChild(el('p', 'ord-alert', 'Como ya lo habías pagado, el comercio tiene que devolverte la plata. Si no se comunica, escribile o contactá a Soporte.'));
+    }
+    return wrap;
+  }
+
+  if (awaitingTransfer(order)) {
+    const lastRejection = [...events].reverse().find((e) => e.kind === 'payment_rejected');
+    const lastNotice = [...events].reverse().find((e) => e.kind === 'transfer_notified' || e.kind === 'proof_uploaded');
+    if (lastRejection && (!lastNotice || new Date(lastRejection.created_at) > new Date(lastNotice.created_at))) {
+      wrap.appendChild(el('p', 'ord-alert ord-alert--danger',
+        `${storeName} no pudo confirmar tu pago${lastRejection.note ? `: ${lastRejection.note}` : ''}. Revisá la transferencia y volvé a avisar.`));
+    }
+    if (order.transfer_notified_at) {
+      wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `Avisaste que transferiste. ${storeName} lo va a confirmar y te llega un aviso.`));
+    } else if (order.payment_due_at) {
+      wrap.appendChild(el('p', 'ord-alert ord-alert--warn',
+        `Tenés hasta ${formatDueDate(order.payment_due_at)} para transferir. Si no, el pedido se cancela solo.`));
+    }
+    return wrap;
+  }
+
+  if (awaitingMercadoPago(order)) {
+    if (order.payment_due_at) {
+      wrap.appendChild(el('p', 'ord-alert ord-alert--warn', `Todavía no se completó el pago. Tenés hasta ${formatDueDate(order.payment_due_at)}.`));
+    }
+    const pay = el('button', 'bl-btn bl-btn-primary compra-next__btn', 'Pagar con Mercado Pago');
+    pay.type = 'button';
+    pay.addEventListener('click', async () => {
+      pay.disabled = true;
+      // Al volver de Mercado Pago no hay que vaciar el carrito: lo que esté
+      // tildado ahí ahora no es este pedido (ver handleMercadoPagoReturn).
+      try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
+      const result = await getPaymentProvider('mercadopago').pay([order.id]);
+      if (!result.success) {
+        showToast(result.message || 'No se pudo iniciar el pago.', 'error');
+        pay.disabled = false;
+      }
+    });
+    wrap.appendChild(pay);
+    return wrap;
+  }
+
+  if (order.status === 'ready_for_pickup') {
+    const address = order.stores?.address ? ` en ${order.stores.address}` : '';
+    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `¡Listo para retirar${address}!${order.payment_method === 'efectivo' ? ` Llevá ${formatPrice(order.total_price)} en efectivo.` : ''}`));
+  } else if (order.status === 'shipped') {
+    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `Tu pedido está en camino.${order.payment_method === 'efectivo' ? ` Tené ${formatPrice(order.total_price)} en efectivo para pagar al recibirlo.` : ''}`));
+  } else if (canPrepare(order)) {
+    const cash = order.payment_method === 'efectivo'
+      ? ` Pagás ${formatPrice(order.total_price)} en efectivo al ${order.delivery_method === 'delivery' ? 'recibirlo' : 'retirarlo'}.`
+      : '';
+    wrap.appendChild(el('p', 'ord-alert', `${storeName} está preparando tu pedido. Te avisamos cuando esté ${order.delivery_method === 'delivery' ? 'en camino' : 'listo para retirar'}.${cash}`));
+  }
+
+  const code = ctx.codeByOrder.get(order.id);
+  if (code && showsPickupCode(order)) wrap.appendChild(buildPickupCodeBlock(order, code));
+
+  if (order.status === 'completed') wrap.appendChild(buildReviewBlock(order, ctx.reviewedStoreIds.has(order.store_id)));
+
+  return wrap.childElementCount ? wrap : null;
+}
+
+/** Historial completo, plegado: la línea de tiempo ya cuenta lo principal. */
+function buildCompraHistory(order, events) {
+  if (!events.length) return null;
+  const details = el('details', 'compra-history');
+  details.appendChild(el('summary', null, 'Ver historial del pedido'));
+  const list = el('ol', 'ord-events');
+  [...events].reverse().forEach((e) => {
+    const li = el('li', 'ord-events__item');
+    li.appendChild(el('span', 'ord-events__date', new Date(e.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })));
+    li.appendChild(el('span', 'ord-events__text', eventLabel(e, { viewer: 'buyer', paymentMethod: order.payment_method })));
+    list.appendChild(li);
+  });
+  details.appendChild(list);
+  return details;
+}
+
+/** El comprador cancela lo que todavía no pagó (7): el stock vuelve al toque. */
+function buildCompraCancelButton(order) {
+  if (order.status !== 'pending' || order.payment_status !== 'pending') return null;
+  const btn = el('button', 'ord-link ord-link--danger compra-cancel', 'Cancelar pedido');
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    const ok = await confirmDialog(`¿Cancelar el pedido ${orderLabel(order)}? Le avisamos al comercio.`, { confirmText: 'Sí, cancelar', cancelText: 'Volver', danger: true });
+    if (!ok) return;
+    btn.disabled = true;
+    const { error } = await supabase.rpc('cancel_order', { p_order_id: order.id, p_reason: null });
+    if (error) {
+      showToast(error.message || 'No se pudo cancelar el pedido.', 'error');
+      btn.disabled = false;
+      return;
+    }
+    showToast('Pedido cancelado.', 'success');
+    await loadCompras(order.client_id);
+  });
+  return btn;
+}
 
 /**
  * Construye la card de una orden con DOM API (nunca innerHTML): el nombre
@@ -1103,11 +1294,11 @@ const DELIVERY_METHOD_LABELS = {
  * se tratan como no confiables — mismo criterio que F1-01 en comercio.js/
  * producto.js.
  */
-function buildCompraItem(order, transferInfoByStoreId) {
+function buildCompraItem(order, ctx) {
   const date = new Date(order.created_at).toLocaleDateString('es-AR');
-  const shortId = order.id.split('-')[0].toUpperCase();
   const statusText = ORDER_STATUS_LABELS[order.status] || order.status;
   const storeName = order.stores?.name || 'Comercio';
+  const events = ctx.eventsByOrder.get(order.id) || [];
 
   const item = document.createElement('div');
   item.className = 'compra-item';
@@ -1118,7 +1309,7 @@ function buildCompraItem(order, transferInfoByStoreId) {
 
   const idSpan = document.createElement('span');
   idSpan.className = 'compra-id';
-  idSpan.textContent = `Orden #${shortId} — ${storeName}`;
+  idSpan.textContent = `Pedido ${orderLabel(order)} — ${storeName}`;
   info.appendChild(idSpan);
 
   const dateSpan = document.createElement('span');
@@ -1127,6 +1318,8 @@ function buildCompraItem(order, transferInfoByStoreId) {
   const paymentLabel = PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || '';
   dateSpan.textContent = `${date} · ${methodLabel} · ${paymentLabel}`;
   info.appendChild(dateSpan);
+
+  info.appendChild(buildTimeline(order, events));
 
   if (order.order_items?.length) {
     const itemsList = document.createElement('ul');
@@ -1148,9 +1341,7 @@ function buildCompraItem(order, transferInfoByStoreId) {
       // a la ficha sí usa product_id en vivo -- products_select_purchased
       // (migración 68) permite verla aunque el vendedor la haya pausado.
       const title = oi.title || 'Producto';
-      // Lo que eligió (Color: Rojo · Talle: M), congelado en el pedido: si el
-      // vendedor después renombra o borra esa opción, el recibo sigue diciendo
-      // qué compró -- mismo criterio que el título de acá arriba.
+      // Lo que eligió (Color: Rojo · Talle: M), congelado en el pedido.
       const chosen = describeSelectedOptions(oi.selected_options);
       const text = `${oi.quantity}x ${title}${chosen ? ` (${chosen})` : ''} — ${formatPrice(oi.price * oi.quantity)}`;
       const textEl = document.createElement(oi.product_id ? 'a' : 'span');
@@ -1176,6 +1367,10 @@ function buildCompraItem(order, transferInfoByStoreId) {
     info.appendChild(itemsList);
   }
 
+  if (order.delivery_method === 'delivery' && order.shipping_address) {
+    info.appendChild(el('span', 'compra-date', `Envío a: ${order.shipping_address}`));
+  }
+
   const statusDiv = document.createElement('div');
   const statusSpan = document.createElement('span');
   statusSpan.className = `compra-status compra-status--${order.status}`;
@@ -1183,11 +1378,20 @@ function buildCompraItem(order, transferInfoByStoreId) {
   statusDiv.appendChild(statusSpan);
   info.appendChild(statusDiv);
 
-  const proofSection = buildPaymentProofSection(order, transferInfoByStoreId);
+  const nextStep = buildCompraNextStep(order, ctx);
+  if (nextStep) info.appendChild(nextStep);
+
+  const proofSection = buildPaymentProofSection(order, ctx.transferInfoByStoreId);
   if (proofSection) info.appendChild(proofSection);
 
   const revocationSection = buildRevocationSection(order);
   if (revocationSection) info.appendChild(revocationSection);
+
+  const history = buildCompraHistory(order, events);
+  if (history) info.appendChild(history);
+
+  const cancelBtn = buildCompraCancelButton(order);
+  if (cancelBtn) info.appendChild(cancelBtn);
 
   item.appendChild(info);
 
@@ -1199,8 +1403,10 @@ function buildCompraItem(order, transferInfoByStoreId) {
   return item;
 }
 
-/** true si el pedido coincide con el texto buscado (n° de orden, comercio o producto). */
+/** true si el pedido coincide con el texto buscado (n° de pedido, comercio o producto). */
 function orderMatchesQuery(order, q) {
+  const numberTerm = q.replace(/^#?\s*bl-?\s*/, '');
+  if (/^\d+$/.test(numberTerm) && String(order.order_number || '').includes(numberTerm)) return true;
   const shortId = order.id.split('-')[0].toLowerCase();
   if (shortId.includes(q)) return true;
   if ((order.stores?.name || '').toLowerCase().includes(q)) return true;
@@ -1281,7 +1487,7 @@ function applyComprasFilter() {
     comprasContainer.appendChild(emptyMsg);
   } else {
     orders.forEach((order) => {
-      comprasContainer.appendChild(buildCompraItem(order, comprasTransferInfoByStoreId));
+      comprasContainer.appendChild(buildCompraItem(order, comprasCtx));
     });
   }
 
@@ -1460,9 +1666,7 @@ function buildProofPicker() {
  * nuevo. El vendedor lo confirma/rechaza desde vender.js.
  */
 function buildPaymentProofSection(order, transferInfoByStoreId) {
-  if (order.payment_method !== 'transferencia' || order.payment_status !== 'pending') {
-    return null;
-  }
+  if (!awaitingTransfer(order)) return null;
 
   const wrap = document.createElement('div');
   wrap.className = 'compra-proof';
@@ -1476,6 +1680,7 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
     store: transferInfoByStoreId?.get(order.store_id),
     storeName: order.stores?.name,
     orderId: order.id,
+    orderNumber: order.order_number,
     total: order.total_price,
     compact: true,
   }));
@@ -1493,19 +1698,38 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
     return wrap;
   }
 
-  if (latestProof?.status === 'rejected') {
-    const msg = document.createElement('p');
-    msg.className = 'compra-proof__message compra-proof__message--error';
-    msg.textContent = 'El comprobante anterior fue rechazado. Subí uno nuevo.';
-    wrap.appendChild(msg);
+  // 9: avisar "Ya transferí" sin tener que subir nada. Frena el vencimiento
+  // del pedido y le llega un aviso al comercio para que confirme.
+  if (!order.transfer_notified_at) {
+    const notifyBtn = document.createElement('button');
+    notifyBtn.type = 'button';
+    notifyBtn.className = 'bl-btn bl-btn-primary compra-proof__btn';
+    notifyBtn.textContent = 'Ya transferí, avisale al comercio';
+    notifyBtn.addEventListener('click', async () => {
+      notifyBtn.disabled = true;
+      const { error } = await supabase.rpc('notify_transfer_sent', { p_order_id: order.id });
+      if (error) {
+        showToast(error.message || 'No se pudo avisar al comercio.', 'error');
+        notifyBtn.disabled = false;
+        return;
+      }
+      showToast('Listo, le avisamos al comercio. Te llega un aviso cuando confirme el pago.', 'success');
+      await loadCompras(order.client_id);
+    });
+    wrap.appendChild(notifyBtn);
   }
+
+  const optional = document.createElement('p');
+  optional.className = 'compra-proof__message';
+  optional.textContent = 'Si tenés el comprobante (captura o PDF), subilo: ayuda a que lo confirmen más rápido.';
+  wrap.appendChild(optional);
 
   const picker = buildProofPicker();
   wrap.appendChild(picker.element);
 
   const uploadBtn = document.createElement('button');
   uploadBtn.type = 'button';
-  uploadBtn.className = 'bl-btn bl-btn-primary compra-proof__btn';
+  uploadBtn.className = 'bl-btn compra-proof__btn';
   uploadBtn.textContent = 'Subir comprobante';
   // Deshabilitado hasta que haya archivo: es más claro que dejarlo apretable
   // para contestar con un toast de reproche.
@@ -1609,7 +1833,9 @@ function buildRevocationSection(order) {
 
 /** Caché de la última carga, para poder filtrar sin volver a pegarle a la DB. */
 let comprasCache = [];
-let comprasTransferInfoByStoreId = new Map();
+// Lo que necesita cada tarjeta además del pedido: datos para transferir,
+// historial (order_events), código de retiro y comercios ya calificados.
+let comprasCtx = { transferInfoByStoreId: new Map(), eventsByOrder: new Map(), codeByOrder: new Map(), reviewedStoreIds: new Set() };
 let comprasStatusFilter = 'todas';
 
 async function loadCompras(userId) {
@@ -1618,8 +1844,10 @@ async function loadCompras(userId) {
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
-        id, client_id, store_id, status, payment_method, payment_status, delivery_method, created_at, total_price, revocation_requested_at,
-        stores ( name ),
+        id, order_number, client_id, store_id, status, payment_method, payment_status, delivery_method, shipping_address,
+        created_at, total_price, payment_due_at, transfer_notified_at, cancel_reason, cancelled_by,
+        revocation_requested_at, revocation_resolved_at,
+        stores ( name, address ),
         order_items ( quantity, price, title, selected_options, product_id, products ( image_url ) ),
         payment_proofs ( status, created_at )
       `)
@@ -1627,6 +1855,27 @@ async function loadCompras(userId) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // Historial, códigos de retiro y reseñas ya hechas, en tres consultas en
+    // lote (no una por pedido). Si alguna falla, la tarjeta sale igual sin ese dato.
+    const orderIds = (orders || []).map((o) => o.id);
+    const storeIds = [...new Set((orders || []).filter((o) => o.status === 'completed').map((o) => o.store_id).filter(Boolean))];
+    const [eventsRes, codesRes, reviewsRes] = await Promise.all([
+      orderIds.length
+        ? supabase.from('order_events').select('order_id, kind, note, actor, created_at').in('order_id', orderIds).order('created_at', { ascending: true })
+        : { data: [] },
+      orderIds.length ? supabase.from('order_pickup_codes').select('order_id, code').in('order_id', orderIds) : { data: [] },
+      storeIds.length
+        ? supabase.from('reviews').select('target_id').eq('target_type', 'store').eq('client_id', userId).in('target_id', storeIds)
+        : { data: [] },
+    ]);
+    const eventsByOrder = new Map();
+    (eventsRes.data || []).forEach((e) => {
+      if (!eventsByOrder.has(e.order_id)) eventsByOrder.set(e.order_id, []);
+      eventsByOrder.get(e.order_id).push(e);
+    });
+    const codeByOrder = new Map((codesRes.data || []).map((c) => [c.order_id, c.code]));
+    const reviewedStoreIds = new Set((reviewsRes.data || []).map((r) => r.target_id));
 
     // A113-299: aparte de la query de arriba a propósito (ver por qué en
     // carrito.js/loadTransferInfo) -- `stores.transfer_info` puede no existir
@@ -1643,7 +1892,7 @@ async function loadCompras(userId) {
     const transferInfoByStoreId = await fetchStoreTransferData(supabase, pendingTransferStoreIds);
 
     comprasCache = orders || [];
-    comprasTransferInfoByStoreId = transferInfoByStoreId;
+    comprasCtx = { transferInfoByStoreId, eventsByOrder, codeByOrder, reviewedStoreIds };
 
     applyComprasFilter();
   } catch (err) {
@@ -2424,6 +2673,7 @@ async function renderFullProfile(user) {
   // ?tab=compras&order=<id> (o ?tab=soporte) -- abre la sección y resalta la fila.
   await comprasPromise;
   handleNotificationDeepLink();
+  showMercadoPagoReturnBanner();
 }
 
 function flashHighlight(el) {
@@ -2469,6 +2719,25 @@ if (logoutBtn) {
   });
 }
 
+// Pedidos que se acaban de pagar con Mercado Pago (external_reference, que MP
+// agrega a la URL de vuelta): se resaltan y se anuncian arriba de "Mis compras".
+let mpReturn = null;
+
+/** (1) "¡Listo! Pedido #BL-1066": el cartel de compra confirmada al volver de Mercado Pago. */
+function showMercadoPagoReturnBanner() {
+  if (!mpReturn || !comprasContainer) return;
+  const orders = comprasCache.filter((o) => mpReturn.orderIds.includes(o.id));
+  const labels = orders.map((o) => orderLabel(o)).join(', ');
+  const banner = document.createElement('p');
+  banner.className = `ord-alert ${mpReturn.status === 'success' ? 'ord-alert--ok' : 'ord-alert--warn'} compra-mp-banner`;
+  banner.textContent = mpReturn.status === 'success'
+    ? `¡Listo! Tu pago fue aprobado${labels ? ` (pedido ${labels})` : ''}. El comercio ya lo está preparando: te avisamos cuando esté listo.`
+    : `Tu pago${labels ? ` del pedido ${labels}` : ''} está en revisión en Mercado Pago. Te avisamos apenas se acredite.`;
+  comprasContainer.before(banner);
+  orders.forEach((o) => flashHighlight(document.getElementById(`order-${o.id}`)));
+  mpReturn = null;
+}
+
 /**
  * back_urls.success/pending de mp-create-preference (Edge Function) traen de
  * vuelta acá con `?mp=success`/`?mp=pending` una vez que Mercado Pago aprobó
@@ -2482,10 +2751,19 @@ function handleMercadoPagoReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get('mp');
   if (status !== 'success' && status !== 'pending') return;
+  const orderIds = (params.get('external_reference') || '').split(',').map((s) => s.trim()).filter(Boolean);
+  mpReturn = { status, orderIds };
 
   // Solo lo comprado: si el usuario había dejado productos en pendiente en el
-  // carrito, no los pagó y tienen que seguir ahí (ver cart-utils.js).
-  clearPurchasedFromCart();
+  // carrito, no los pagó y tienen que seguir ahí (ver cart-utils.js). Si el
+  // pago era un reintento desde "Mis compras", lo tildado en el carrito no
+  // tiene nada que ver con este pedido: no se toca.
+  let isRetry = false;
+  try {
+    isRetry = sessionStorage.getItem('bl_mp_retry') === '1';
+    sessionStorage.removeItem('bl_mp_retry');
+  } catch { /* sin storage: se vacía como siempre */ }
+  if (!isRetry) clearPurchasedFromCart();
   updateCartBadge();
   showToast(
     status === 'success'

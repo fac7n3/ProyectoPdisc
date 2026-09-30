@@ -4803,3 +4803,40 @@ token del proyecto cae en ese rango. El check del contraste quedó en el harness
 - **Frontend (`js/vender.js`):** en la tarjeta del pedido (Pedidos), bloque ámbar "Pago por transferencia…" con el botón "Confirmar pago". Solo se ve si `isStoreOwner` y el pedido es por transferencia, pendiente y no cancelado. Pide confirmación con `confirmDialog` ("¿Ya te llegó la transferencia de $X?") y al terminar refresca Pedidos y "Pagos por confirmar". El select de `renderAllOrders` ahora trae `payment_method`.
 - **Bug de paso:** la pestaña/estadística "Pendientes de pago" contaba pedidos cancelados (`cancelled/pending` existe en producción). `pedidosTabMatches` ahora los excluye.
 - **Verificado:** la RPC contra la base real en transacción con ROLLBACK (un extraño es rechazado, el dueño confirma, queda `paid/paid`, se crea 1 notificación, la segunda vez es rechazada). La UI con Playwright y datos mockeados: el botón aparece solo en el pedido correcto, el diálogo sale con el texto y el monto, el RPC recibe el `p_order_id` correcto y la tarjeta pasa a "Pagado". Gotcha para las pruebas en SQL: `'texto' || jsonb` intenta convertir el texto a JSON y falla; usar `r::text`.
+
+## 2026-09-30 — Flujo completo del pedido "como Mercado Libre" (migraciones 115 y 116)
+
+- **Pedido del usuario:** pensar el flujo entero (compra → pago → notificaciones → despacho → entrega, número de pedido, QR). Se le presentó una lista de 40 opciones y eligió todas las recomendadas (1, 2, 3, 6, 7, 8a, 9, 10, 11, 13, 14, 16, 17, 20, 21, 22, 26, 27, 28, 29, 34, 35, 36, 38) más los arreglos A–G.
+- **Lo que estaba roto (auditado contra la base real):** (A) los cambios de estado del vendedor eran un UPDATE directo sin ningún aviso al comprador. (B) Los pedidos con envío no tenían acciones del vendedor, solo las podía avanzar un repartidor. (C) El vendedor nunca veía `shipping_address`. (D) `expire_pending_orders` cancelaba transferencias a las 72 h aunque hubiera un comprobante esperando, sin avisar a nadie. (E) El link de `order_paid` iba siempre a "Mis compras", pero `mp-webhook` se lo mandaba al vendedor. (F) Tres formatos distintos de número de pedido según la pantalla. (G) Subir un comprobante no le avisaba al vendedor. Además, **`mp-webhook` marcaba el pedido como `rejected` con el primer intento de tarjeta rechazado**: si el comprador reintentaba en el mismo checkout y pagaba, el pago aprobado se ignoraba (buscaba `payment_status = 'pending'`).
+- **Base (`db/schema/115_order_flow.sql`):**
+  - `orders.order_number` correlativo desde 1001 (#BL-1001), con backfill por `created_at` con `orders_set_updated_at` apagado (el panel del repartidor usa `updated_at`).
+  - `payment_due_at`, `transfer_notified_at`, `payment_reminder_sent_at`, `cancel_reason`, `cancelled_by`, `revocation_resolved_at`.
+  - `payment_method` acepta `'efectivo'`.
+  - `order_pickup_codes`: 4 dígitos, RLS **solo para el comprador**. El vendedor se lo pide y lo valida `advance_order_status`.
+  - `order_events`: historial. La RLS es "puedo ver el pedido", vía subconsulta a `orders`.
+  - **Trigger central `orders_after_change`:** avisa en cada cambio de estado venga de donde venga y escribe el historial. Se sacaron los `create_notification` sueltos de `create_order`, `confirm_*` y `update_delivery_status`, y el de `mp-webhook`. Al vendedor no se le avisa lo que hizo él mismo (`_order_actor`), ni el alta de un pedido de MP (se entera cuando se paga). `payment_proofs_after_insert` le avisa del comprobante.
+  - **RPC nuevas:** `advance_order_status` (valida transiciones y el código; `p_skip_code` para "entregar sin código"), `cancel_order` (comprador sin pagar, o vendedor con motivo; un pedido sin pagar queda `rejected` para que no se pueda pagar después por MP), `reject_transfer_payment` (8a: el pedido sigue abierto con 24 h más), `notify_transfer_sent` (frena el vencimiento), `accept_order_revocation`.
+  - **Cambios a lo existente:** `claim_delivery` ya no toma un pedido que el comercio despachó. `expire_pending_orders` usa `payment_due_at`, no vence lo avisado ni lo que tiene comprobante, y manda el recordatorio `payment_due_soon` un día antes. Se corrigieron las notificaciones viejas `order_paid` del vendedor a `order_paid_seller`.
+- **`116_order_flow_lockdown.sql`** (aplicar **después** de publicar el frontend): `revoke update (status) on orders from authenticated` y código obligatorio para el repartidor.
+- **Frontend:**
+  - `js/order-utils.js` concentra la lógica del flujo, con tests (15).
+  - Panel del vendedor:
+    - Tarjetas con chips de pago, entrega y alertas.
+    - Botón del siguiente paso, y confirmar/rechazar el pago con motivo.
+    - Entregar con código, cancelar con motivo, WhatsApp al comprador con mensaje según el estado.
+    - Detalle en `<dialog>` con línea de tiempo e historial.
+    - Pestañas nuevas; "Pagos por confirmar" dejó de ser sección y es una pestaña.
+    - Link del QR (`?entregar=<id>&codigo=`) que abre la entrega con el código cargado.
+    - Sonido y contador en el título al llegar un pedido (evento `bl:new-notifications` de `toast-utils.js`).
+  - "Mis compras": línea de tiempo, vencimiento, "Ya transferí", motivo de rechazo, reintento de MP (con `bl_mp_retry` para no vaciar el carrito al volver), cancelar, código de retiro + QR (`qrcode-generator`, GIF `data:`), reseña al comercio e historial plegado.
+  - Carrito: efectivo ("al retirar/al recibir"), pantalla "¡Listo! Pedido #BL-…", y en transferencia el vencimiento y "Ya transferí".
+  - Repartidor: número nuevo y código al entregar.
+  - Admin: número nuevo.
+  - `formDialog` en `confirm-dialog.js` (motivo a elegir o texto).
+- **Verificado:** 41 checks de la migración contra la base real en una transacción con ROLLBACK (antes de aplicar), tests de `mp-webhook` (incluido rechazo → aprobado) y Playwright con Supabase simulado en el panel del vendedor, "Mis compras" y el carrito.
+- **Gotchas:**
+  - `apply_migration` a producción lo frena el clasificador del modo auto: hay que pedir el permiso explícito al usuario.
+  - Los tests de edge functions usaban `new URL(...).pathname` (se rompe en Windows): se cambió a `fileURLToPath`.
+  - En SQL de pruebas, `'texto' || jsonb` intenta parsear el texto como JSON.
+  - `<dialog>` necesita `margin: auto` por el reset global.
+  - `vender.js` y otros archivos tienen CRLF: los scripts de splice tienen que buscar marcadores con `\r?\n`.

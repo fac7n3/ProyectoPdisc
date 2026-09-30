@@ -387,6 +387,23 @@ body {
 .compra-status--completed { background: #bbf7d0; color: #166534; }
 .compra-status--shipped { background: #bfdbfe; color: #1e3a8a; }
 .compra-status--cancelled { background: #fecaca; color: #991b1b; }
+.compra-status--ready_for_pickup { background: #bfdbfe; color: #1e3a8a; }
+
+/* Flujo del pedido (js/order-utils.js): con la línea de tiempo, el código de
+   retiro y los avisos, la tarjeta crece para abajo -- la info ocupa todo el
+   ancho y el total queda arriba a la derecha. */
+.compra-item { align-items: flex-start; gap: 1rem; }
+.compra-info { flex: 1; min-width: 0; gap: 0.45rem; }
+.compra-info > .ord-timeline { margin: 0.5rem 0 0.25rem; }
+.compra-next { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.35rem; }
+.compra-next__btn { align-self: flex-start; }
+.compra-review { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.85rem; border: 1px solid var(--bl-perfil-border); border-radius: var(--radius-md); }
+.compra-review__title { margin: 0; font-weight: 600; }
+.compra-review__btn { align-self: flex-start; }
+.compra-history summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--bl-perfil-primary); }
+.compra-history .ord-events { margin-top: 0.6rem; }
+.compra-cancel { margin-top: 0.25rem; }
+.compra-mp-banner { margin-bottom: 1rem; }
 
 .compra-total {
   font-weight: 700;
@@ -465,6 +482,14 @@ a.compra-item-text:hover {
   width: fit-content;
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
+}
+
+/* "Subir comprobante" es secundario al lado de "Ya transferí": con borde,
+   no relleno (sin esto, deshabilitado quedaba casi invisible sobre el blanco). */
+.compra-proof__btn:not(.bl-btn-primary) {
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-perfil-primary);
+  color: var(--bl-perfil-primary);
 }
 
 .compra-proof__btn[disabled] {

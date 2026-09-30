@@ -17,6 +17,7 @@ import {
 } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
 import { fetchStoreTransferData, buildTransferCard } from './transfer-details.js';
+import { orderLabel, formatDueDate } from './order-utils.js';
 import { hasTransferData } from './transfer-details-utils.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
@@ -46,7 +47,7 @@ let savedAddresses = [];
  * libre en vez de sus direcciones guardadas.
  */
 let refreshDeliveryUI = () => {};
-let paymentMethod = 'mercadopago'; // 'mercadopago' | 'transferencia' — ver initPaymentMethodEvents()
+let paymentMethod = 'mercadopago'; // 'mercadopago' | 'transferencia' | 'efectivo' — ver initPaymentMethodEvents()
 
 /**
  * Filtro por comercio: 'all' o el nombre de un comercio.
@@ -593,6 +594,8 @@ function initDeliveryEvents() {
         ? 'Envío (Envío a domicilio)'
         : 'Envío (Retiro en el local)';
     }
+    const cashText = document.getElementById('payment-efectivo-text');
+    if (cashText) cashText.textContent = deliveryMethod === 'delivery' ? 'Efectivo al recibir' : 'Efectivo al retirar';
     renderCart();
   }
 
@@ -729,14 +732,14 @@ function initPaymentMethodEvents() {
     header.classList.toggle('is-open', isHidden);
   });
 
-  mercadopagoRadio.addEventListener('change', syncPaymentMethod);
-  transferenciaRadio.addEventListener('change', syncPaymentMethod);
+  document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
+    radio.addEventListener('change', syncPaymentMethod);
+  });
   syncPaymentMethod(); // sincroniza con lo que esté marcado por default en el HTML
 }
 
 function syncPaymentMethod() {
-  const transferenciaRadio = document.getElementById('payment-transferencia');
-  paymentMethod = transferenciaRadio?.checked ? 'transferencia' : 'mercadopago';
+  paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'mercadopago';
   renderTransferInfo();
 }
 
@@ -834,9 +837,13 @@ async function showTransferStep(orders) {
       store: stores.get(o.store_id),
       storeName: storeNameById.get(o.store_id),
       orderId: o.order_id,
+      orderNumber: o.order_number,
       total: o.total_price,
     }));
   });
+
+  const titleEl = document.getElementById('transfer-step-title');
+  if (titleEl && orders.length === 1) titleEl.textContent = `Pedido ${orderLabel({ id: orders[0].order_id, order_number: orders[0].order_number })} reservado`;
 
   const lead = document.getElementById('transfer-step-lead');
   if (lead && orders.length > 1) {
@@ -845,10 +852,36 @@ async function showTransferStep(orders) {
       'Hacé una transferencia a cada uno con su monto.';
   }
 
+  // (2) Hasta cuándo tiene para pagar: pasado ese momento el pedido se cancela solo.
+  const dueEl = document.getElementById('transfer-step-due');
+  const dueAt = orders[0]?.payment_due_at;
+  if (dueEl && dueAt) {
+    dueEl.textContent = `Tenés hasta ${formatDueDate(dueAt)} para transferir. Si no, el pedido se cancela solo. ` +
+      'Estos datos quedan guardados en "Mis compras".';
+  }
+
   // Con un solo pedido, "Mis compras" abre directo resaltando ese pedido.
+  const comprasHref = orders.length === 1
+    ? `./perfil.html?tab=compras&order=${encodeURIComponent(orders[0].order_id)}`
+    : './perfil.html?tab=compras';
   const proofLink = document.getElementById('transfer-step-proof');
-  if (proofLink && orders.length === 1) {
-    proofLink.href = `./perfil.html?tab=compras&order=${encodeURIComponent(orders[0].order_id)}`;
+  if (proofLink) proofLink.href = comprasHref;
+
+  // (9) "Ya transferí": le avisa a cada comercio y frena el vencimiento.
+  const notifyBtn = document.getElementById('transfer-step-notify');
+  if (notifyBtn) {
+    notifyBtn.onclick = async () => {
+      notifyBtn.disabled = true;
+      const results = await Promise.all(orders.map((o) => supabase.rpc('notify_transfer_sent', { p_order_id: o.order_id })));
+      const failed = results.find((r) => r.error);
+      if (failed) {
+        showCartToast(failed.error.message || 'No se pudo avisar al comercio. Probá desde "Mis compras".', 'error');
+        notifyBtn.disabled = false;
+        return;
+      }
+      showCartToast('Listo, le avisamos al comercio. Te llega un aviso cuando confirme el pago.', 'success');
+      setTimeout(() => { window.location.href = comprasHref; }, 1500);
+    };
   }
 
   // style.display y no [hidden]: .cart-layout trae display:grid, que le gana
@@ -857,6 +890,54 @@ async function showTransferStep(orders) {
   if (layout) layout.style.display = 'none';
   const title = document.querySelector('.cart-page__title');
   if (title) title.textContent = 'Pagá por transferencia';
+  step.hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  step.focus({ preventScroll: true });
+}
+
+/**
+ * (1) "¡Listo!" de un pedido en efectivo: no hay nada que pagar ahora, así que
+ * en vez de un toast y un redirect se muestra el número de cada pedido y qué
+ * pasa después. El código de retiro vive en "Mis compras".
+ */
+function showCashStep(orders) {
+  const step = document.getElementById('cash-step');
+  const list = document.getElementById('cash-step-orders');
+  if (!step || !list) return;
+
+  const total = orders.reduce((acc, o) => acc + o.total_price, 0);
+  const when = deliveryMethod === 'delivery' ? 'al recibirlo' : 'al retirarlo';
+  const lead = document.getElementById('cash-step-lead');
+  if (lead) {
+    lead.textContent = orders.length > 1
+      ? `Tu compra se dividió en ${orders.length} pedidos, uno por comercio. Pagás ${formatPrice(total)} en efectivo ${when}. Te avisamos cuando cada uno esté listo.`
+      : `Pagás ${formatPrice(total)} en efectivo ${when}. Te avisamos cuando esté listo.`;
+  }
+  const title = document.getElementById('cash-step-title');
+  if (title && orders.length === 1) title.textContent = `¡Listo! Pedido ${orderLabel({ id: orders[0].order_id, order_number: orders[0].order_number })}`;
+
+  list.textContent = '';
+  orders.forEach((o) => {
+    const li = document.createElement('li');
+    li.className = 'cash-step__order';
+    const name = document.createElement('span');
+    const number = document.createElement('strong');
+    number.textContent = orderLabel({ id: o.order_id, order_number: o.order_number });
+    name.append(number, ` · ${storeNameById.get(o.store_id) || 'Comercio'}`);
+    const amount = document.createElement('span');
+    amount.textContent = formatPrice(o.total_price);
+    li.append(name, amount);
+    list.appendChild(li);
+  });
+
+  const link = document.getElementById('cash-step-orders-link');
+  if (link && orders.length === 1) link.href = `./perfil.html?tab=compras&order=${encodeURIComponent(orders[0].order_id)}`;
+
+  // style.display y no [hidden]: .cart-layout trae display:grid (mismo gotcha que showTransferStep).
+  const layout = document.querySelector('.cart-layout');
+  if (layout) layout.style.display = 'none';
+  const pageTitle = document.querySelector('.cart-page__title');
+  if (pageTitle) pageTitle.textContent = 'Compra confirmada';
   step.hidden = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });
   step.focus({ preventScroll: true });
@@ -1244,6 +1325,13 @@ function initCartEvents() {
         clearPurchasedFromCart();
         updateCartBadge();
         await showTransferStep(orders);
+        return;
+      }
+
+      if (paymentMethod === 'efectivo') {
+        clearPurchasedFromCart();
+        updateCartBadge();
+        showCashStep(orders);
         return;
       }
 

@@ -1,11 +1,12 @@
 // Armado de la preferencia de pago: que lo que llega en el body no pueda
 // romper la función ni confundir al usuario con un error equivocado.
 // Correr con `node supabase/functions/_tests/mp-create-preference.test.mjs`.
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { makeFakeSupabase } from './fake-supabase.mjs';
 import { loadEdgeFunction } from './load-edge.mjs';
 
-const FN = new URL('../mp-create-preference/index.ts', import.meta.url).pathname;
+const FN = fileURLToPath(new URL('../mp-create-preference/index.ts', import.meta.url));
 const ENV = {
   MP_ACCESS_TOKEN: 'TOKEN_GLOBAL', SITE_URL: 'https://sitio',
   SUPABASE_URL: 'https://x.supabase.co', SUPABASE_ANON_KEY: 'anon',

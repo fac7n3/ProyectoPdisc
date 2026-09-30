@@ -1234,12 +1234,28 @@
   border: 1px solid var(--bl-border);
   background: var(--bl-surface);
   color: var(--bl-text);
+  font-family: inherit;
   font-weight: 600;
   font-size: 0.9375rem;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .trf-step__btn:hover { background: var(--bl-surface-hover); }
+.trf-step__btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* "¡Listo!" en efectivo: un renglón por pedido (uno por comercio). */
+.cash-step__orders { list-style: none; margin: 0 0 1.25rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cash-step__order {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+}
+.cash-step__order strong { color: var(--bl-primary); }
 
 .trf-step__btn--primary {
   background: var(--bl-primary);
