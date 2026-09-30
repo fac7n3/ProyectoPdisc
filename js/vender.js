@@ -904,7 +904,7 @@ function buildPedidoProductCell(order) {
   info.appendChild(name);
 
   // Qué le pidieron exactamente. Sin esto el vendedor no sabe de qué color
-  // despachar: esta fila es el único lugar donde ve el pedido (la vista de
+  // despachar: esta tarjeta es el único lugar donde ve el pedido (la vista de
   // detalle todavía no existe, ver el botón "Ver detalle" más abajo).
   const firstOptions = describeSelectedOptions(first?.selected_options);
   if (firstOptions) {
@@ -917,7 +917,7 @@ function buildPedidoProductCell(order) {
   if (items.length > 1) {
     // Con varios ítems se listan los demás (hasta 3) en vez del conteo pelado:
     // "2 productos" no alcanza para preparar el pedido si cada uno tiene su
-    // color. El resto queda como conteo para no romper el alto de la fila.
+    // color. El resto queda como conteo para no estirar de más la tarjeta.
     const rest = items.slice(1);
     rest.slice(0, 3).forEach((it) => {
       const line = document.createElement('span');
@@ -971,41 +971,37 @@ function buildPedidoBuyerCell(order) {
   return cell;
 }
 
-/** Fila de la tabla de Pedidos: N° (con la fecha abajo), producto, comprador, estado, total, acciones. */
-function buildPedidoRow(order) {
-  const tr = document.createElement('tr');
+/** Tarjeta vertical de un pedido: N° + fecha y estado arriba, productos, comprador, y al pie el total con las acciones. */
+function buildPedidoCard(order) {
+  const card = rsEl('article', 'pd-card');
 
-  const orderCell = document.createElement('td');
-  orderCell.appendChild(rsEl('span', 'pd-cell-order', `#BL-${order.id.split('-')[0].slice(0, 5).toUpperCase()}`));
-  // Antes era su propia columna -- ver .pd-cell-order__date en vender.html
-  // sobre por qué se movió acá.
-  orderCell.appendChild(rsEl('span', 'pd-cell-order__date', new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
+  const head = rsEl('div', 'pd-card__head');
+  const orderInfo = document.createElement('div');
+  orderInfo.appendChild(rsEl('span', 'pd-cell-order', `#BL-${order.id.split('-')[0].slice(0, 5).toUpperCase()}`));
+  orderInfo.appendChild(rsEl('span', 'pd-cell-order__date', new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
   if (order.revocation_requested_at) {
     const revocationBadge = rsEl('div', null, '⚠ Arrepentimiento solicitado');
     revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.15rem 0.5rem; border-radius: var(--bl-radius-md); font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; display: inline-block;';
-    orderCell.appendChild(revocationBadge);
+    orderInfo.appendChild(revocationBadge);
   }
-  tr.appendChild(orderCell);
+  head.appendChild(orderInfo);
+  head.appendChild(rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS_VENDER[order.status] || order.status));
+  card.appendChild(head);
 
-  const productCell = document.createElement('td');
-  productCell.appendChild(buildPedidoProductCell(order));
-  tr.appendChild(productCell);
+  const productSection = rsEl('div', 'pd-card__section');
+  productSection.appendChild(buildPedidoProductCell(order));
+  card.appendChild(productSection);
 
-  const buyerCell = document.createElement('td');
-  buyerCell.appendChild(buildPedidoBuyerCell(order));
-  tr.appendChild(buyerCell);
+  const buyerSection = rsEl('div', 'pd-card__section');
+  buyerSection.appendChild(buildPedidoBuyerCell(order));
+  card.appendChild(buyerSection);
 
-  const statusCell = document.createElement('td');
-  const badge = rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS_VENDER[order.status] || order.status);
-  statusCell.appendChild(badge);
-  tr.appendChild(statusCell);
+  const foot = rsEl('div', 'pd-card__foot');
+  const totalWrap = document.createElement('div');
+  totalWrap.appendChild(rsEl('span', 'pd-card__total-label', 'Total'));
+  totalWrap.appendChild(rsEl('span', 'pd-cell-total', formatPrice(order.total_price)));
+  foot.appendChild(totalWrap);
 
-  const totalCell = document.createElement('td');
-  totalCell.className = 'pd-cell-total';
-  totalCell.textContent = formatPrice(order.total_price);
-  tr.appendChild(totalCell);
-
-  const actionsCell = document.createElement('td');
   const actionsWrap = rsEl('div', 'pd-row-actions');
   const detailBtn = rsEl('button', 'pd-detail-btn', 'Detalle');
   detailBtn.type = 'button';
@@ -1015,10 +1011,10 @@ function buildPedidoRow(order) {
   actionsWrap.appendChild(detailBtn);
   const kebab = buildOrdActions(order);
   if (kebab) actionsWrap.appendChild(kebab);
-  actionsCell.appendChild(actionsWrap);
-  tr.appendChild(actionsCell);
+  foot.appendChild(actionsWrap);
+  card.appendChild(foot);
 
-  return tr;
+  return card;
 }
 
 /** Menú de acciones (⋮) del pedido -- mismo componente que buildPubActions, sin kebab si no hay ninguna acción disponible. */
@@ -1095,9 +1091,9 @@ function sortPedidos(list, sort) {
 }
 
 function renderPedidosEmptyState(title, sub) {
-  const table = document.getElementById('pedidos-table');
+  const list = document.getElementById('pedidos-list');
   const box = document.getElementById('pedidos-empty');
-  if (table) table.hidden = true;
+  if (list) list.hidden = true;
   if (!box) return;
   box.hidden = false;
   box.className = 'pub-empty';
@@ -1185,14 +1181,13 @@ function renderPedidosTips() {
   });
 }
 
-/** Aplica pestaña + filtros del menú "Filtros" + búsqueda (N° de pedido, comprador o producto) sobre ordCache y renderiza la tabla. */
+/** Aplica pestaña + filtros del menú "Filtros" + búsqueda (N° de pedido, comprador o producto) sobre ordCache y renderiza las tarjetas. */
 function renderPedidos() {
   renderPedidosStats();
 
-  const tbody = document.getElementById('pedidos-tbody');
-  const table = document.getElementById('pedidos-table');
-  if (!tbody) return;
-  tbody.textContent = '';
+  const list = document.getElementById('pedidos-list');
+  if (!list) return;
+  list.textContent = '';
 
   if (!ordCache.length) {
     renderPedidosEmptyState('Todavía no tenés pedidos', 'Cuando alguien te compre, vas a verlo acá.');
@@ -1220,10 +1215,10 @@ function renderPedidos() {
     return;
   }
 
-  if (table) table.hidden = false;
+  list.hidden = false;
   const emptyBox = document.getElementById('pedidos-empty');
   if (emptyBox) emptyBox.hidden = true;
-  filtered.forEach((o) => tbody.appendChild(buildPedidoRow(o)));
+  filtered.forEach((o) => list.appendChild(buildPedidoCard(o)));
 }
 
 /** Navega a "Pedidos" con una pestaña puntual ya seleccionada (usado desde Resumen). */
