@@ -849,7 +849,7 @@ async function renderAllOrders() {
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, client_id, status, payment_status, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, title, selected_options, products(title, image_url))')
+    .select('id, client_id, status, payment_status, payment_method, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, title, selected_options, products(title, image_url))')
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -996,6 +996,22 @@ function buildPedidoCard(order) {
   buyerSection.appendChild(buildPedidoBuyerCell(order));
   card.appendChild(buyerSection);
 
+  // El comprador casi nunca sube comprobante (avisa por WhatsApp desde el
+  // paso "Transferí"), así que el pago se confirma desde acá, sin depender de
+  // "Pagos por confirmar". Solo el dueño: el RPC rechaza a los empleados.
+  if (isStoreOwner && order.payment_method === 'transferencia' && order.payment_status === 'pending' && order.status !== 'cancelled') {
+    const pay = rsEl('div', 'pd-card__pay');
+    const payText = rsEl('p', 'pd-card__pay-text');
+    payText.innerHTML = '<i class="fa-solid fa-building-columns"></i> ';
+    payText.appendChild(document.createTextNode('Pago por transferencia. Confirmalo cuando veas la plata en tu cuenta.'));
+    pay.appendChild(payText);
+    const payBtn = rsEl('button', 'form-btn pd-card__pay-btn', 'Confirmar pago');
+    payBtn.type = 'button';
+    payBtn.addEventListener('click', () => confirmOrderTransferPayment(order, payBtn));
+    pay.appendChild(payBtn);
+    card.appendChild(pay);
+  }
+
   const foot = rsEl('div', 'pd-card__foot');
   const totalWrap = document.createElement('div');
   totalWrap.appendChild(rsEl('span', 'pd-card__total-label', 'Total'));
@@ -1074,7 +1090,9 @@ function buildOrdActions(order) {
 
 function pedidosTabMatches(order, tab) {
   switch (tab) {
-    case 'pending_payment': return order.payment_status === 'pending';
+    // Un pedido cancelado antes de pagarse queda con payment_status 'pending':
+    // no es un pago que esté por llegar.
+    case 'pending_payment': return order.payment_status === 'pending' && order.status !== 'cancelled';
     case 'shipping': return order.delivery_method === 'delivery' && (order.status === 'paid' || order.status === 'shipped');
     case 'completed': return order.status === 'completed';
     case 'cancelled': return order.status === 'cancelled';
@@ -1279,6 +1297,26 @@ function initPedidosControls() {
   });
 
   renderPedidosTips();
+}
+
+async function confirmOrderTransferPayment(order, btn) {
+  const ok = await confirmDialog(
+    `¿Ya te llegó la transferencia de ${formatPrice(order.total_price)}? Revisá tu cuenta antes de confirmar: al comprador le avisamos que el pedido está pagado.`,
+    { title: 'Confirmar pago', confirmText: 'Sí, me llegó' },
+  );
+  if (!ok) return;
+
+  btn.disabled = true;
+  const { error } = await supabase.rpc('seller_confirm_transfer_payment', { p_order_id: order.id });
+  if (error) {
+    btn.disabled = false;
+    showToast(error.message || 'No se pudo confirmar el pago.', 'error');
+    return;
+  }
+
+  showToast('Pago confirmado.', 'success');
+  renderAllOrders();
+  renderPendingPayments();
 }
 
 async function updateOrderStatus(orderId, newStatus) {
