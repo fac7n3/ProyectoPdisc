@@ -4840,3 +4840,4 @@ token del proyecto cae en ese rango. El check del contraste quedó en el harness
   - En SQL de pruebas, `'texto' || jsonb` intenta parsear el texto como JSON.
   - `<dialog>` necesita `margin: auto` por el reset global.
   - `vender.js` y otros archivos tienen CRLF: los scripts de splice tienen que buscar marcadores con `\r?\n`.
+- **Publicado el mismo día (con el OK del usuario):** 115 aplicada (65 pedidos numerados 1001-1065, con códigos e historial; 4 avisos `order_paid` viejos pasaron a `order_paid_seller`) → `mp-webhook` v6 (`verify_jwt=false` como antes; antes de desplegar se comparó el código activo contra `main` y coincidía) → merge a `main` + deploy de Vercel READY y verificado con curl → 116 aplicada y probada con ROLLBACK (UPDATE directo = "permission denied", el RPC anda). La prueba consumió el #BL-1066: el primer pedido real es el #BL-1067.

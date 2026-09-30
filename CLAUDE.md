@@ -80,25 +80,24 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **PENDIENTE (2026-09-30) — Flujo completo del pedido, listo en la rama
-  `A113-flujo-pedidos-completo` pero SIN publicar.** Número de pedido
-  (#BL-1001), código de retiro + QR, línea de tiempo, avisos en cada paso,
-  efectivo, "Ya transferí", rechazo de pago con motivo, cancelar con motivo,
-  detalle del pedido, arrepentimiento, reseña al entregar (detalle en el skill).
-  **Orden para publicarlo, sin saltear pasos:**
-  1. Aplicar `db/schema/115_order_flow.sql` en producción. Es compatible con el
-     frontend viejo. Ya se probó entera contra la base real en una transacción
-     con ROLLBACK (41 checks). La aplicación directa la frenó el modo auto, así
-     que hace falta el OK del usuario.
-  2. Desplegar la Edge Function `mp-webhook`. Ya no manda `order_paid` (lo
-     manda el trigger nuevo) y un intento de tarjeta rechazado ya no cierra el
-     pedido. **Si se aplica la 115 sin desplegar esto, al vendedor le llega
-     doble aviso de pago con Mercado Pago.**
-  3. Mergear la rama a `main`. El frontend nuevo necesita las columnas y las
-     funciones de la 115: **no mergear antes del paso 1**.
-  4. Recién con el frontend publicado, aplicar
-     `db/schema/116_order_flow_lockdown.sql` (saca el UPDATE directo de
-     `orders.status` y exige el código al repartidor).
+- **Resuelto 2026-09-30 — Flujo completo del pedido, publicado.** Número de
+  pedido (#BL-1001), código de retiro + QR, línea de tiempo, avisos en cada
+  paso, efectivo, "Ya transferí", rechazo de pago con motivo, cancelar con
+  motivo, detalle del pedido, arrepentimiento y reseña al entregar (detalle en
+  el skill). Se publicó en este orden, con el OK del usuario:
+  1. Migración 115 aplicada: los 65 pedidos existentes quedaron numerados
+     #BL-1001 a #BL-1065, con código e historial.
+  2. `mp-webhook` v6 desplegada.
+  3. Merge a `main`, con el deploy de Vercel verificado.
+  4. Migración 116 aplicada: `orders.status` ya no se puede cambiar por la API
+     directa, solo con los RPC del flujo (probado: da "permission denied").
+
+  **Ojo con el orden al tocar esto:** los avisos de pedido los manda el
+  trigger `orders_after_change`; no agregar `create_notification` sueltos en
+  RPCs o Edge Functions, porque se duplican. **Sin probar con cuentas
+  reales:** conviene hacer una compra de prueba de punta a punta. El #BL-1066
+  se consumió en una prueba con ROLLBACK (las secuencias no vuelven atrás), así
+  que el primer pedido real va a ser el #BL-1067.
 - **Resuelto 2026-09-29** — **Banner del comercio hasta la línea gris**, a pedido
   del usuario. El banner (`stores.banner_url`, migración `113_store_banner.sql`,
   cargado desde el lápiz "Personalizar" del header) ya existía como una franja
