@@ -599,8 +599,8 @@
 
       /* Una sola columna: con el sidebar de "Mi cuenta" (260px) restándole
          ancho a mc-content (tope 1200px en el shell), no sobra lugar para una
-         segunda columna de 260px al lado de una tabla de 6 columnas sin forzar
-         scroll lateral -- "Recordá" pasa a ir abajo, a lo ancho. */
+         segunda columna de 260px al lado de las tarjetas de pedidos --
+         "Recordá" pasa a ir abajo, a lo ancho. */
       .pd-body { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
       .pd-main { min-width: 0; }
 
@@ -621,28 +621,33 @@
       .pd-tab__count { color: var(--bl-text-muted); font-size: 0.82rem; }
       .pd-tab.is-active .pd-tab__count { color: var(--bl-vendor-accent); }
 
-      .pd-table-wrap { overflow-x: auto; }
-      .pd-table { width: 100%; border-collapse: collapse; }
-      .pd-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bl-text-muted); padding: 0 0.6rem 0.6rem; font-weight: 700; }
-      .pd-table td { padding: 0.65rem 0.6rem; border-top: 1px solid var(--bl-border-light); vertical-align: middle; }
-      .pd-table tr:hover td { background: var(--bl-surface-alt); }
+      /* Cada pedido es una tarjeta vertical (a pedido del usuario: la tabla de
+         6 columnas quedaba apretada con el sidebar al lado y recortaba nombres).
+         La grilla pone tantas tarjetas por fila como entren. */
+      .pd-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
+      .pd-list[hidden] { display: none; }
+      .pd-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+      .pd-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
+      .pd-card__section { border-top: 1px solid var(--bl-border-light); padding-top: 0.9rem; }
+      /* margin-top: auto -- el pie queda abajo de todo aunque la tarjeta de al
+         lado tenga más productos y estire la fila. */
+      .pd-card__foot { margin-top: auto; border-top: 1px solid var(--bl-border-light); padding-top: 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+      .pd-card__total-label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bl-text-muted); }
       .pd-cell-order { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
-      /* Fecha del pedido, como subtítulo debajo del N° -- antes era su propia
-         columna; movida acá para no sumar un ancho fijo más a una fila que ya
-         tiene seis. */
       .pd-cell-order__date { display: block; font-weight: 400; font-size: 0.76rem; color: var(--bl-text-muted); margin-top: 0.15rem; }
-      .pd-cell-product { display: flex; align-items: center; gap: 0.55rem; }
-      .pd-cell-product__thumb { width: 34px; height: 34px; border-radius: var(--bl-radius-sm); object-fit: cover; background: var(--bl-surface-alt); flex-shrink: 0; }
-      .pd-cell-product__name { font-weight: 600; color: var(--bl-text); display: block; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pd-cell-product__sub { display: block; font-size: 0.78rem; color: var(--bl-text-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      /* Qué opción le pidieron (Color: Rojo). Va más marcado que el resto de la
-         celda: es el dato que necesita para preparar el pedido. */
-      .pd-cell-product__options { display: block; font-size: 0.78rem; font-weight: 600; color: var(--bl-primary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pd-cell-buyer { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
-      .pd-cell-buyer__avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bl-vendor-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
-      .pd-cell-buyer__name { font-weight: 600; color: var(--bl-text); display: block; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pd-cell-buyer__loc { display: block; font-size: 0.78rem; color: var(--bl-text-muted); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .pd-cell-total { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
+      .pd-cell-product, .pd-cell-buyer { display: flex; align-items: flex-start; gap: 0.65rem; }
+      .pd-cell-product > div, .pd-cell-buyer > div { min-width: 0; }
+      .pd-cell-product__thumb { width: 48px; height: 48px; border-radius: var(--bl-radius-md); object-fit: cover; background: var(--bl-surface-alt); flex-shrink: 0; }
+      .pd-cell-product__name { font-weight: 600; color: var(--bl-text); display: block; overflow-wrap: anywhere; }
+      .pd-cell-product__sub { display: block; font-size: 0.8rem; color: var(--bl-text-muted); margin-top: 0.15rem; overflow-wrap: anywhere; }
+      /* Qué opción le pidieron (Color: Rojo). Va más marcado que el resto:
+         es el dato que necesita para preparar el pedido. */
+      .pd-cell-product__options { display: block; font-size: 0.8rem; font-weight: 600; color: var(--bl-primary); margin-top: 0.15rem; overflow-wrap: anywhere; }
+      .pd-cell-buyer { align-items: center; }
+      .pd-cell-buyer__avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--bl-vendor-accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+      .pd-cell-buyer__name { font-weight: 600; color: var(--bl-text); display: block; overflow-wrap: anywhere; }
+      .pd-cell-buyer__loc { display: block; font-size: 0.8rem; color: var(--bl-text-muted); }
+      .pd-cell-total { font-size: 1.2rem; font-weight: 700; color: var(--bl-text); white-space: nowrap; }
       .pd-detail-btn { background: none; border: 1px solid var(--bl-border); color: var(--bl-vendor-accent); padding: 0.3rem 0.55rem; border-radius: var(--bl-radius-md); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
       .pd-detail-btn:hover { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.06); }
       .pd-row-actions { display: flex; align-items: center; gap: 0.35rem; justify-content: flex-end; }
@@ -659,16 +664,6 @@
       @media (max-width: 1100px) {
         .pd-dash { grid-template-columns: repeat(3, 1fr); }
         .pd-chart { grid-column: 1 / -1; }
-      }
-      /* Con el sidebar de 260px todavía al lado (el drawer recién entra a los
-         900px), mc-content queda angosto -- se achican foto/avatar y se
-         acortan los nombres para no forzar el scroll lateral de la tabla en
-         este rango. */
-      @media (max-width: 1300px) {
-        .pd-cell-product__thumb { width: 28px; height: 28px; }
-        .pd-cell-product__name, .pd-cell-product__sub, .pd-cell-product__options { max-width: 130px; }
-        .pd-cell-buyer__avatar { width: 24px; height: 24px; }
-        .pd-cell-buyer__name, .pd-cell-buyer__loc { max-width: 90px; }
       }
       @media (max-width: 640px) {
         .pd-dash { grid-template-columns: repeat(2, 1fr); }
@@ -1399,22 +1394,8 @@
                     <button type="button" class="pd-tab" data-tab="cancelled">Cancelados <span class="pd-tab__count" id="pd-tab-count-cancelled"></span></button>
                   </div>
 
-                  <div class="pd-table-wrap">
-                    <table class="pd-table">
-                      <thead>
-                        <tr>
-                          <th>Pedido</th>
-                          <th>Producto</th>
-                          <th>Comprador</th>
-                          <th>Estado</th>
-                          <th>Total</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody id="pedidos-tbody"></tbody>
-                    </table>
-                    <div id="pedidos-empty" hidden></div>
-                  </div>
+                  <div class="pd-list" id="pedidos-list"></div>
+                  <div id="pedidos-empty" hidden></div>
                 </div>
 
                 <aside class="pd-aside">
@@ -1445,7 +1426,7 @@
             <section class="mc-section" data-section="soporte" hidden>
             <!-- Soporte / reclamos (F12-11) -->
             <div style="margin-top: 3rem;">
-              <div id="support-container"></div>
+              <div id="support-container" style="--tkt-col: none;"></div>
             </div>
 
             </section>
