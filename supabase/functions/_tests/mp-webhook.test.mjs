@@ -1,8 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { makeFakeSupabase } from './fake-supabase.mjs';
 import { loadEdgeFunction } from './load-edge.mjs';
 
-const FN = new URL('../mp-webhook/index.ts', import.meta.url).pathname;
+const FN = fileURLToPath(new URL('../mp-webhook/index.ts', import.meta.url));
 const ENV = {
   MP_ACCESS_TOKEN: 'TOKEN_GLOBAL', MP_CLIENT_ID: 'cid', MP_CLIENT_SECRET: 'csec',
   SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'srk',
@@ -53,7 +54,8 @@ console.log('--- mp-webhook ---\n');
     assert.equal(r.orders[0].payment_status, 'paid');
     assert.equal(r.orders[0].status, 'paid');
     assert.equal(r.orders[0].payment_id, '99');
-    assert.equal(r.rpcs.filter(c => c.args.p_type === 'order_paid').length, 1);
+    // El aviso de "pagado" lo manda el trigger de la base (migración 115), no el webhook.
+    assert.equal(r.rpcs.filter(c => c.args.p_type === 'order_paid').length, 0);
   });
 }
 
@@ -152,8 +154,10 @@ console.log('--- mp-webhook ---\n');
   const req = () => new Request('https://x/?type=payment&data.id=99');
   await mk().handler(req());
   await mk().handler(req());
-  run('el mismo webhook dos veces -> una sola notificación', () =>
-    assert.equal(sb.__rpcCalls.filter(c => c.args.p_type === 'order_paid').length, 1));
+  run('el mismo webhook dos veces -> queda pagado, sin avisos propios', () => {
+    assert.equal(tables.orders[0].payment_status, 'paid');
+    assert.equal(sb.__rpcCalls.length, 0);
+  });
 }
 
 // 10. Rechazado
@@ -162,7 +166,25 @@ console.log('--- mp-webhook ---\n');
     orders: [pendingOrder(A, 5000)], stores: [STORE],
     payment: { id: 99, status: 'rejected', transaction_amount: 5000, external_reference: A },
   });
-  run('pago rechazado -> rejected', () => assert.equal(r.orders[0].payment_status, 'rejected'));
+  // Un intento rechazado no cierra el pedido: el comprador puede reintentar
+  // con otra tarjeta en el mismo checkout (ver el test siguiente).
+  run('pago rechazado -> el pedido sigue pendiente', () => assert.equal(r.orders[0].payment_status, 'pending'));
+}
+
+// 10b. Rechazado y después aprobado (reintento con otra tarjeta) -> pagado
+{
+  const tables = { orders: [pendingOrder(A, 5000)], stores: [STORE] };
+  const sb = makeFakeSupabase(tables);
+  const hit = (status, id) => loadEdgeFunction(FN, {
+    env: ENV, createClient: () => sb,
+    fetchImpl: async () => ({ ok: true, json: async () => ({ id, status, transaction_amount: 5000, external_reference: A }) }),
+  }).handler(new Request(`https://x/?type=payment&data.id=${id}`));
+  await hit('rejected', 98);
+  await hit('approved', 99);
+  run('rechazo y después aprobado -> paid (antes quedaba rejected)', () => {
+    assert.equal(tables.orders[0].payment_status, 'paid');
+    assert.equal(tables.orders[0].payment_id, '99');
+  });
 }
 
 // 11. Dos tiendas con el mismo mp_collector_id -> no confirma en silencio, lo loguea

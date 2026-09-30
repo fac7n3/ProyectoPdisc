@@ -14,7 +14,12 @@ import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
-import { confirmDialog } from './confirm-dialog.js';
+import { confirmDialog, formDialog } from './confirm-dialog.js';
+import {
+  ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
+  orderLabel, orderRef, canPrepare, awaitingTransfer, buyerSaysPaid, nextSellerAction, timelineSteps, eventLabel,
+  formatDueDate, toWhatsappNumber, sellerWhatsappMessage,
+} from './order-utils.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -609,7 +614,6 @@ let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (sto
 const STAFF_PERMISSION_SECTIONS = [
   { key: 'publicaciones', label: 'Publicaciones' },
   { key: 'pedidos', label: 'Pedidos' },
-  { key: 'pagos', label: 'Pagos por confirmar' },
   { key: 'notificaciones', label: 'Notificaciones' },
   { key: 'soporte', label: 'Soporte' },
 ];
@@ -638,10 +642,11 @@ const pubSelected = new Set();
 // order_items/producto) + estado de los filtros client-side (búsqueda,
 // pestaña de estado, orden, filtro de entrega del menú "Filtros").
 let ordCache = [];
+let currentStoreName = '';
 let ordPhoneByClientId = new Map();
 let ordNameByClientId = new Map();
 let ordSearch = '';
-let pedidosTab = 'all'; // 'all' | 'pending_payment' | 'shipping' | 'completed' | 'cancelled'
+let pedidosTab = 'all'; // 'all' | 'to_confirm' | 'pending_payment' | 'to_prepare' | 'in_progress' | 'completed' | 'cancelled'
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
@@ -653,8 +658,7 @@ const VENDOR_SECTION_COPY = {
   resumen: { icon: 'fa-solid fa-chart-simple', title: 'Resumen', desc: 'De un vistazo: cómo viene tu comercio hoy — pedidos, ventas y lo que necesita tu atención.' },
   'perfil-comercio': { icon: 'fa-solid fa-pen', title: 'Perfil de mi comercio', desc: 'Los datos que ve un vecino antes de comprarte: nombre, horarios, dirección y medios de pago.' },
   publicaciones: { icon: 'fa-solid fa-image', title: 'Publicaciones', desc: 'Acá cargás y editás lo que vendés: fotos, precios y stock de cada producto.' },
-  pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando, para que los prepares y avises cuando estén listos.' },
-  pagos: { icon: 'fa-solid fa-money-check-dollar', title: 'Pagos por confirmar', desc: 'Transferencias que un vecino dice haber hecho: revisá el comprobante y confirmá el pago.' },
+  pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando: confirmá los pagos, prepará cada uno y avisá cuando esté listo.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
@@ -726,6 +730,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   }
 
   currentStoreId = store.id;
+  currentStoreName = store.name || '';
   const previewLink = document.getElementById('preview-store-link');
   if (previewLink) previewLink.href = `./comercio.html?id=${store.id}`;
   currentStoreHasProfile = Boolean(store.description && store.description.trim());
@@ -792,7 +797,6 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   await fetchProducts();
   await Promise.all([
     renderAllOrders(),
-    renderPendingPayments(),
     renderResumen(),
   ]);
 
@@ -801,23 +805,27 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   }
 
   applyOrderDeepLink();
+  applyDeliverDeepLink();
+  initOrderAlerts();
 }
 
 /**
  * A113-271: al venir de una notificación de pedido (`vender.html?order=<id>#pedidos`)
- * precarga el buscador de "Pedidos" con el N° corto del pedido, reusando el
- * filtro que ya existe ahí -- no hace falta un anchor por fila.
+ * precarga el buscador de "Pedidos" con el número del pedido (#BL-1066) y
+ * abre su detalle.
  */
 function applyOrderDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get('order');
   if (!orderId) return;
 
-  const shortId = orderId.split('-')[0].toUpperCase();
+  const order = ordCache.find((o) => o.id === orderId);
+  const ref = order ? orderRef(order) : orderId.split('-')[0].toUpperCase();
   const searchInput = document.getElementById('pedidos-search');
-  if (searchInput) searchInput.value = shortId;
-  ordSearch = shortId;
+  if (searchInput) searchInput.value = ref;
+  ordSearch = ref;
   setPedidosTab('all');
+  if (order) openOrderDetail(order);
 
   const url = new URL(window.location);
   url.searchParams.delete('order');
@@ -825,15 +833,9 @@ function applyOrderDeepLink() {
 }
 
 // --- F5-06: gestión de pedidos ---
-
-const ORDER_STATUS_LABELS_VENDER = {
-  pending: 'Pendiente',
-  paid: 'Pagado',
-  shipped: 'Enviado',
-  ready_for_pickup: 'Listo para retirar',
-  completed: 'Completado',
-  cancelled: 'Cancelado',
-};
+// Flujo completo (migración 115): cada paso pasa por un RPC que valida quién
+// puede hacerlo y avisa al comprador (trigger orders_after_change). Qué botón
+// mostrar en cada estado sale de js/order-utils.js, compartido con "Mis compras".
 
 const ORDER_STATUS_BADGE_VARIANT = {
   pending: 'pending',
@@ -844,12 +846,14 @@ const ORDER_STATUS_BADGE_VARIANT = {
   cancelled: 'cancelled',
 };
 
+const ORDER_SELECT = 'id, order_number, client_id, status, payment_status, payment_method, delivery_method, shipping_address, delivery_fee, total_price, created_at, payment_due_at, transfer_notified_at, cancel_reason, cancelled_by, revocation_requested_at, revocation_resolved_at, order_items(quantity, price, title, selected_options, products(title, image_url)), payment_proofs(id, status, receipt_url, created_at), deliveries(id, status)';
+
 async function renderAllOrders() {
   if (!currentStoreId) return;
 
   const { data: orders, error } = await supabase
     .from('orders')
-    .select('id, client_id, status, payment_status, payment_method, delivery_method, total_price, created_at, revocation_requested_at, order_items(quantity, price, title, selected_options, products(title, image_url))')
+    .select(ORDER_SELECT)
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -875,6 +879,19 @@ async function renderAllOrders() {
   ordNameByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.full_name]));
 
   renderPedidos();
+  refreshOpenOrderDetail();
+}
+
+/** Con un repartidor asignado, el pedido lo avanza él, no el comercio. */
+function orderHasCourier(order) {
+  return (order.deliveries || []).some((d) => d.status !== 'cancelled');
+}
+
+/** El último comprobante sin revisar, si hay. */
+function pendingProof(order) {
+  return (order.payment_proofs || [])
+    .filter((p) => p.status === 'pending')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
 }
 
 /** Ícono + nombre del primer producto del pedido, con "· N productos" si tiene más de uno. */
@@ -896,16 +913,13 @@ function buildPedidoProductCell(order) {
   name.className = 'pd-cell-product__name';
   // `title` (textContent) es el nombre congelado al momento de la compra
   // (order_items.title); el join a products es solo el respaldo para pedidos
-  // viejos que no lo tienen. El atributo `title` (tooltip) es el nombre
-  // completo, por si el recorte de la celda se come parte del texto.
+  // viejos que no lo tienen.
   const productName = first?.title || first?.products?.title || 'Producto eliminado';
-  name.textContent = productName;
+  name.textContent = `${first?.quantity > 1 ? `${first.quantity}x ` : ''}${productName}`;
   name.title = productName;
   info.appendChild(name);
 
-  // Qué le pidieron exactamente. Sin esto el vendedor no sabe de qué color
-  // despachar: esta tarjeta es el único lugar donde ve el pedido (la vista de
-  // detalle todavía no existe, ver el botón "Ver detalle" más abajo).
+  // Qué le pidieron exactamente. Sin esto el vendedor no sabe de qué color despachar.
   const firstOptions = describeSelectedOptions(first?.selected_options);
   if (firstOptions) {
     const opts = document.createElement('span');
@@ -917,7 +931,7 @@ function buildPedidoProductCell(order) {
   if (items.length > 1) {
     // Con varios ítems se listan los demás (hasta 3) en vez del conteo pelado:
     // "2 productos" no alcanza para preparar el pedido si cada uno tiene su
-    // color. El resto queda como conteo para no estirar de más la tarjeta.
+    // color. El resto queda como conteo; el detalle los muestra todos.
     const rest = items.slice(1);
     rest.slice(0, 3).forEach((it) => {
       const line = document.createElement('span');
@@ -940,8 +954,18 @@ function buildPedidoProductCell(order) {
   }
 
   cell.appendChild(info);
-
   return cell;
+}
+
+/** Link de WhatsApp al comprador con el mensaje según el estado, o null sin celular. */
+function buyerWhatsappHref(order) {
+  const number = toWhatsappNumber(ordPhoneByClientId.get(order.client_id));
+  if (!number) return null;
+  const text = sellerWhatsappMessage(order, {
+    storeName: currentStoreName,
+    buyerName: ordNameByClientId.get(order.client_id),
+  });
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }
 
 function buildPedidoBuyerCell(order) {
@@ -961,32 +985,135 @@ function buildPedidoBuyerCell(order) {
   info.appendChild(nameEl);
   // El comprador solo puede escribirle al vendedor por WhatsApp (ver
   // store-contact-utils.js) -- nunca llamarlo. Al revés sí: acá el vendedor
-  // tiene el celular del comprador, por si necesita escribirle o llamarlo
-  // (ej. coordinar una entrega).
-  const locEl = rsEl('span', 'pd-cell-buyer__loc', phone || 'Baradero');
-  locEl.title = phone || 'Baradero';
-  info.appendChild(locEl);
+  // tiene el celular del comprador, por si necesita escribirle o llamarlo.
+  info.appendChild(rsEl('span', 'pd-cell-buyer__loc', phone || 'Sin celular cargado'));
   cell.appendChild(info);
+
+  const waHref = buyerWhatsappHref(order);
+  if (waHref) {
+    const wa = document.createElement('a');
+    wa.className = 'pd-wa';
+    wa.href = waHref;
+    wa.target = '_blank';
+    wa.rel = 'noopener noreferrer';
+    wa.setAttribute('aria-label', `Escribirle a ${name} por WhatsApp`);
+    wa.title = 'Escribirle por WhatsApp';
+    wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i>';
+    cell.appendChild(wa);
+  }
 
   return cell;
 }
 
-/** Tarjeta vertical de un pedido: N° + fecha y estado arriba, productos, comprador, y al pie el total con las acciones. */
+function ordChip(text, variant = '', icon = '') {
+  const chip = rsEl('span', `ord-chip${variant ? ` ord-chip--${variant}` : ''}`);
+  if (icon) chip.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i> `;
+  chip.appendChild(document.createTextNode(text));
+  return chip;
+}
+
+/** Cómo paga, cómo se entrega y lo que necesita atención, en chips. */
+function buildOrderChips(order) {
+  const chips = rsEl('div', 'ord-chips');
+  chips.appendChild(ordChip(PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'Pago', '',
+    order.payment_method === 'efectivo' ? 'fa-money-bill-wave' : 'fa-credit-card'));
+  chips.appendChild(ordChip(order.delivery_method === 'delivery' ? 'Envío' : 'Retiro', '',
+    order.delivery_method === 'delivery' ? 'fa-truck' : 'fa-store'));
+
+  if (awaitingTransfer(order)) {
+    if (pendingProof(order)) chips.appendChild(ordChip('Mandó comprobante', 'warn', 'fa-receipt'));
+    else if (order.transfer_notified_at) chips.appendChild(ordChip('Avisó que transfirió', 'warn', 'fa-bell'));
+    else if (order.payment_due_at) chips.appendChild(ordChip(`Vence ${formatDueDate(order.payment_due_at)}`, '', 'fa-clock'));
+  }
+  if (order.revocation_requested_at && !order.revocation_resolved_at && order.status !== 'cancelled') {
+    chips.appendChild(ordChip('Pidió arrepentimiento', 'danger', 'fa-rotate-left'));
+  }
+  if (orderHasCourier(order)) chips.appendChild(ordChip('Lo lleva un repartidor', 'info', 'fa-motorcycle'));
+  return chips;
+}
+
+/**
+ * Lo que el vendedor tiene que hacer con este pedido ahora (o por qué está
+ * cerrado). Se usa en la tarjeta y en el detalle, así los dos ofrecen lo mismo.
+ */
+function buildOrderActionBlock(order) {
+  if (order.status === 'cancelled') {
+    const reason = order.cancel_reason ? `: ${order.cancel_reason}` : '';
+    const who = order.cancelled_by === 'buyer' ? 'Lo canceló el comprador' : order.cancelled_by === 'system' ? 'Se canceló solo' : 'Cancelado';
+    return rsEl('p', 'ord-note', `${who}${reason}`);
+  }
+
+  const block = rsEl('div', 'ord-action');
+
+  if (awaitingTransfer(order)) {
+    block.classList.add('ord-action--pay');
+    const proof = pendingProof(order);
+    let text;
+    if (proof) text = `El comprador mandó el comprobante de ${formatPrice(order.total_price)}. Revisá tu cuenta y confirmá.`;
+    else if (order.transfer_notified_at) text = `El comprador avisó que transfirió ${formatPrice(order.total_price)}. Revisá tu cuenta y confirmá.`;
+    else text = `Esperando la transferencia de ${formatPrice(order.total_price)}${order.payment_due_at ? `. Vence ${formatDueDate(order.payment_due_at)}` : ''}.`;
+    block.appendChild(rsEl('p', 'ord-action__text', text));
+
+    if (!isStoreOwner) {
+      block.appendChild(rsEl('p', 'ord-action__hint', 'El dueño del comercio es quien confirma los pagos.'));
+      return block;
+    }
+
+    const btns = rsEl('div', 'ord-action__btns');
+    const confirmBtn = rsEl('button', 'form-btn ord-action__primary', 'Confirmar pago');
+    confirmBtn.type = 'button';
+    confirmBtn.addEventListener('click', () => confirmOrderTransferPayment(order, confirmBtn));
+    const rejectBtn = rsEl('button', 'btn-outline ord-action__secondary', 'Rechazar');
+    rejectBtn.type = 'button';
+    rejectBtn.addEventListener('click', () => rejectOrderTransferPayment(order));
+    btns.append(confirmBtn, rejectBtn);
+    block.appendChild(btns);
+    if (proof) {
+      const proofBtn = rsEl('button', 'ord-link', 'Ver comprobante');
+      proofBtn.type = 'button';
+      proofBtn.addEventListener('click', () => openProofFile(proof.receipt_url));
+      block.appendChild(proofBtn);
+    }
+    return block;
+  }
+
+  const next = nextSellerAction(order, { hasCourier: orderHasCourier(order) });
+  if (next) {
+    if (order.payment_method === 'efectivo' && order.payment_status === 'pending') {
+      block.appendChild(rsEl('p', 'ord-action__text', `Se paga en efectivo: cobrale ${formatPrice(order.total_price)} al entregar.`));
+    }
+    const btn = rsEl('button', 'form-btn ord-action__primary');
+    btn.type = 'button';
+    btn.innerHTML = `<i class="fa-solid ${next.icon}" aria-hidden="true"></i> `;
+    btn.appendChild(document.createTextNode(next.label));
+    btn.addEventListener('click', () => advanceOrder(order, next, btn));
+    block.appendChild(btn);
+  }
+
+  if (isStoreOwner && order.revocation_requested_at && !order.revocation_resolved_at) {
+    block.appendChild(rsEl('p', 'ord-action__text', 'El comprador pidió el arrepentimiento de la compra (tiene derecho por ley). Coordiná la devolución y aceptalo: el pedido se cancela y el stock vuelve.'));
+    const revBtn = rsEl('button', 'btn-outline ord-action__secondary', 'Aceptar arrepentimiento');
+    revBtn.type = 'button';
+    revBtn.addEventListener('click', () => acceptOrderRevocation(order));
+    block.appendChild(revBtn);
+  }
+
+  return block.childElementCount ? block : null;
+}
+
+/** Tarjeta vertical de un pedido: N° + fecha y estado, chips, productos, comprador, qué hacer y al pie el total. */
 function buildPedidoCard(order) {
   const card = rsEl('article', 'pd-card');
 
   const head = rsEl('div', 'pd-card__head');
   const orderInfo = document.createElement('div');
-  orderInfo.appendChild(rsEl('span', 'pd-cell-order', `#BL-${order.id.split('-')[0].slice(0, 5).toUpperCase()}`));
+  orderInfo.appendChild(rsEl('span', 'pd-cell-order', orderLabel(order)));
   orderInfo.appendChild(rsEl('span', 'pd-cell-order__date', new Date(order.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
-  if (order.revocation_requested_at) {
-    const revocationBadge = rsEl('div', null, '⚠ Arrepentimiento solicitado');
-    revocationBadge.style.cssText = 'color: #b45309; background: #fef3c7; padding: 0.15rem 0.5rem; border-radius: var(--bl-radius-md); font-size: 0.7rem; font-weight: 600; margin-top: 0.25rem; display: inline-block;';
-    orderInfo.appendChild(revocationBadge);
-  }
   head.appendChild(orderInfo);
-  head.appendChild(rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS_VENDER[order.status] || order.status));
+  head.appendChild(rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS[order.status] || order.status));
   card.appendChild(head);
+
+  card.appendChild(buildOrderChips(order));
 
   const productSection = rsEl('div', 'pd-card__section');
   productSection.appendChild(buildPedidoProductCell(order));
@@ -994,23 +1121,13 @@ function buildPedidoCard(order) {
 
   const buyerSection = rsEl('div', 'pd-card__section');
   buyerSection.appendChild(buildPedidoBuyerCell(order));
+  if (order.delivery_method === 'delivery' && order.shipping_address) {
+    buyerSection.appendChild(rsEl('p', 'pd-card__address', `Entregar en: ${order.shipping_address}`));
+  }
   card.appendChild(buyerSection);
 
-  // El comprador casi nunca sube comprobante (avisa por WhatsApp desde el
-  // paso "Transferí"), así que el pago se confirma desde acá, sin depender de
-  // "Pagos por confirmar". Solo el dueño: el RPC rechaza a los empleados.
-  if (isStoreOwner && order.payment_method === 'transferencia' && order.payment_status === 'pending' && order.status !== 'cancelled') {
-    const pay = rsEl('div', 'pd-card__pay');
-    const payText = rsEl('p', 'pd-card__pay-text');
-    payText.innerHTML = '<i class="fa-solid fa-building-columns"></i> ';
-    payText.appendChild(document.createTextNode('Pago por transferencia. Confirmalo cuando veas la plata en tu cuenta.'));
-    pay.appendChild(payText);
-    const payBtn = rsEl('button', 'form-btn pd-card__pay-btn', 'Confirmar pago');
-    payBtn.type = 'button';
-    payBtn.addEventListener('click', () => confirmOrderTransferPayment(order, payBtn));
-    pay.appendChild(payBtn);
-    card.appendChild(pay);
-  }
+  const action = buildOrderActionBlock(order);
+  if (action) card.appendChild(action);
 
   const foot = rsEl('div', 'pd-card__foot');
   const totalWrap = document.createElement('div');
@@ -1021,9 +1138,7 @@ function buildPedidoCard(order) {
   const actionsWrap = rsEl('div', 'pd-row-actions');
   const detailBtn = rsEl('button', 'pd-detail-btn', 'Detalle');
   detailBtn.type = 'button';
-  detailBtn.addEventListener('click', () => {
-    showToast('La vista de detalle del pedido llega pronto. Mientras tanto usá el menú de acciones (⋮) para gestionarlo.', 'success');
-  });
+  detailBtn.addEventListener('click', () => openOrderDetail(order));
   actionsWrap.appendChild(detailBtn);
   const kebab = buildOrdActions(order);
   if (kebab) actionsWrap.appendChild(kebab);
@@ -1039,27 +1154,18 @@ function buildOrdActions(order) {
   menu.className = 'pub-actions__menu';
   menu.hidden = true;
 
-  // El seguimiento de pedidos con envío queda fuera de esta vista por ahora
-  // (logística pendiente) -- acá el vendedor solo gestiona directamente el
-  // retiro en el local.
-  if (order.delivery_method === 'pickup' && order.status === 'paid') {
-    menu.appendChild(pubMenuItem('Listo para retirar', 'fa-box', () => {
+  const waHref = buyerWhatsappHref(order);
+  if (waHref) {
+    menu.appendChild(pubMenuItem('Escribir por WhatsApp', 'fa-comment', () => {
       closePubMenus();
-      updateOrderStatus(order.id, 'ready_for_pickup');
+      window.open(waHref, '_blank', 'noopener,noreferrer');
     }));
   }
 
-  if (order.delivery_method === 'pickup' && order.status === 'ready_for_pickup') {
-    menu.appendChild(pubMenuItem('Marcar entregado', 'fa-check', () => {
+  if (order.status !== 'completed' && order.status !== 'cancelled') {
+    menu.appendChild(pubMenuItem('Cancelar pedido', 'fa-ban', () => {
       closePubMenus();
-      updateOrderStatus(order.id, 'completed');
-    }));
-  }
-
-  if (['pending', 'paid'].includes(order.status)) {
-    menu.appendChild(pubMenuItem('Cancelar pedido', 'fa-ban', async () => {
-      closePubMenus();
-      if (await confirmDialog('¿Cancelar este pedido?', { confirmText: 'Sí, cancelar', danger: true })) updateOrderStatus(order.id, 'cancelled');
+      cancelOrderBySeller(order);
     }, true));
   }
 
@@ -1088,12 +1194,376 @@ function buildOrdActions(order) {
   return wrap;
 }
 
+// --- Detalle del pedido (35) + línea de tiempo (34) ---
+
+let detailOrderId = null;
+
+function buildTimeline(order, events) {
+  const list = rsEl('ol', 'ord-timeline');
+  timelineSteps(order, events).forEach((step) => {
+    const li = rsEl('li', 'ord-timeline__step');
+    if (step.done) li.classList.add('is-done');
+    if (step.current) li.classList.add('is-current');
+    if (step.key === 'cancelled') li.classList.add('is-cancelled');
+    li.appendChild(document.createTextNode(step.label));
+    if (step.date) {
+      li.appendChild(rsEl('span', 'ord-timeline__date', new Date(step.date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })));
+    }
+    list.appendChild(li);
+  });
+  return list;
+}
+
+function detailSection(title, ...children) {
+  const section = rsEl('section', 'pd-detail__section');
+  section.appendChild(rsEl('h3', 'pd-detail__h', title));
+  children.filter(Boolean).forEach((c) => section.appendChild(c));
+  return section;
+}
+
+function detailRow(label, value) {
+  const row = rsEl('div', 'pd-detail__row');
+  row.append(rsEl('span', 'pd-detail__label', label), rsEl('span', 'pd-detail__value', value));
+  return row;
+}
+
+function renderOrderDetail(order, events) {
+  const body = document.getElementById('pd-detail-body');
+  if (!body) return;
+  body.textContent = '';
+
+  const head = rsEl('div', 'pd-detail__head');
+  const title = rsEl('div');
+  title.appendChild(rsEl('h2', 'pd-detail__title', `Pedido ${orderLabel(order)}`));
+  title.appendChild(rsEl('p', 'pd-detail__sub', new Date(order.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })));
+  head.append(title, rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS[order.status] || order.status));
+  body.appendChild(head);
+
+  body.appendChild(buildTimeline(order, events || []));
+
+  const action = buildOrderActionBlock(order);
+  if (action) body.appendChild(action);
+
+  // Productos + cuentas. El descuento no se guarda aparte: sale de la diferencia.
+  const items = rsEl('ul', 'pd-detail__items');
+  let itemsTotal = 0;
+  (order.order_items || []).forEach((it) => {
+    const lineTotal = it.price * it.quantity;
+    itemsTotal += lineTotal;
+    const li = rsEl('li', 'pd-detail__item');
+    const img = document.createElement('img');
+    img.src = it.products?.image_url || '/img/no-image.svg';
+    img.alt = '';
+    img.loading = 'lazy';
+    const text = rsEl('div');
+    text.appendChild(rsEl('span', 'pd-detail__item-name', `${it.quantity}x ${it.title || it.products?.title || 'Producto'}`));
+    const opts = describeSelectedOptions(it.selected_options);
+    if (opts) text.appendChild(rsEl('span', 'pd-cell-product__options', opts));
+    li.append(img, text, rsEl('span', 'pd-detail__item-price', formatPrice(lineTotal)));
+    items.appendChild(li);
+  });
+  const fee = order.delivery_method === 'delivery' ? (order.delivery_fee || 0) : 0;
+  const discount = itemsTotal + fee - order.total_price;
+  body.appendChild(detailSection('Productos', items,
+    detailRow('Productos', formatPrice(itemsTotal)),
+    order.delivery_method === 'delivery' ? detailRow('Envío', fee ? formatPrice(fee) : 'Gratis') : null,
+    discount > 0 ? detailRow('Descuento', `-${formatPrice(discount)}`) : null,
+    detailRow('Total', formatPrice(order.total_price)),
+  ));
+
+  body.appendChild(detailSection('Entrega',
+    detailRow('Forma', DELIVERY_METHOD_LABELS[order.delivery_method] || '-'),
+    order.delivery_method === 'delivery' ? detailRow('Dirección', order.shipping_address || 'Sin dirección') : null,
+    orderHasCourier(order) ? detailRow('Repartidor', 'Asignado') : null,
+  ));
+
+  const proofs = [...(order.payment_proofs || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const proofList = proofs.length ? rsEl('div', 'pd-detail__proofs') : null;
+  proofs.forEach((p, i) => {
+    const btn = rsEl('button', 'ord-link', `Comprobante ${proofs.length - i} (${{ pending: 'sin revisar', confirmed: 'confirmado', rejected: 'rechazado' }[p.status] || p.status})`);
+    btn.type = 'button';
+    btn.addEventListener('click', () => openProofFile(p.receipt_url));
+    proofList.appendChild(btn);
+  });
+  body.appendChild(detailSection('Pago',
+    detailRow('Medio', PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || '-'),
+    detailRow('Estado', { pending: 'Pendiente', paid: 'Pagado', rejected: 'Rechazado', needs_review: 'Para revisar' }[order.payment_status] || order.payment_status),
+    awaitingTransfer(order) && order.payment_due_at ? detailRow('Vence', formatDueDate(order.payment_due_at)) : null,
+    proofList,
+  ));
+
+  const buyerName = ordNameByClientId.get(order.client_id) || 'Comprador';
+  const waHref = buyerWhatsappHref(order);
+  let wa = null;
+  if (waHref) {
+    wa = document.createElement('a');
+    wa.className = 'btn-outline pd-detail__wa';
+    wa.href = waHref;
+    wa.target = '_blank';
+    wa.rel = 'noopener noreferrer';
+    wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i> ';
+    wa.appendChild(document.createTextNode('Escribirle por WhatsApp'));
+  }
+  body.appendChild(detailSection('Comprador',
+    detailRow('Nombre', buyerName),
+    detailRow('Celular', ordPhoneByClientId.get(order.client_id) || 'Sin cargar'),
+    wa,
+  ));
+
+  const history = rsEl('ol', 'ord-events');
+  if (events === null) {
+    history.appendChild(rsEl('li', 'ord-events__item', 'Cargando…'));
+  } else {
+    [...events].reverse().forEach((e) => {
+      const li = rsEl('li', 'ord-events__item');
+      li.appendChild(rsEl('span', 'ord-events__date', new Date(e.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })));
+      li.appendChild(rsEl('span', 'ord-events__text', eventLabel(e, { viewer: 'seller', paymentMethod: order.payment_method })));
+      history.appendChild(li);
+    });
+  }
+  body.appendChild(detailSection('Historial', history));
+
+  if (order.status !== 'completed' && order.status !== 'cancelled') {
+    const cancelBtn = rsEl('button', 'ord-link ord-link--danger', 'Cancelar pedido');
+    cancelBtn.type = 'button';
+    cancelBtn.addEventListener('click', () => cancelOrderBySeller(order));
+    body.appendChild(cancelBtn);
+  }
+}
+
+async function openOrderDetail(order) {
+  const dialog = document.getElementById('pd-detail');
+  if (!dialog) return;
+  detailOrderId = order.id;
+  renderOrderDetail(order, null);
+  if (!dialog.open) dialog.showModal();
+
+  const { data: events, error } = await supabase
+    .from('order_events')
+    .select('kind, note, actor, created_at')
+    .eq('order_id', order.id)
+    .order('created_at', { ascending: true });
+  if (error) console.error('Error al cargar el historial del pedido:', error);
+  if (detailOrderId === order.id && dialog.open) renderOrderDetail(order, events || []);
+}
+
+/** Después de cada cambio se recarga la lista: si el detalle estaba abierto, se redibuja con los datos nuevos. */
+function refreshOpenOrderDetail() {
+  const dialog = document.getElementById('pd-detail');
+  if (!dialog?.open || !detailOrderId) return;
+  const order = ordCache.find((o) => o.id === detailOrderId);
+  if (order) openOrderDetail(order);
+}
+
+function initOrderDetailDialog() {
+  const dialog = document.getElementById('pd-detail');
+  if (!dialog) return;
+  document.getElementById('pd-detail-close')?.addEventListener('click', () => dialog.close());
+  // Click en el fondo oscuro (fuera de la tarjeta) cierra, igual que el resto de los carteles.
+  dialog.addEventListener('mousedown', (e) => { if (e.target === dialog) dialog.close(); });
+  dialog.addEventListener('close', () => { detailOrderId = null; });
+}
+
+// --- Acciones del vendedor sobre un pedido ---
+
+/** Corre un RPC del flujo del pedido, avisa el resultado y recarga la lista. */
+async function runOrderRpc(fn, args, successMsg, btn) {
+  if (btn) btn.disabled = true;
+  const { error } = await supabase.rpc(fn, args);
+  if (error) {
+    if (btn) btn.disabled = false;
+    console.error(`Error en ${fn}:`, error);
+    showToast(error.message || 'No se pudo actualizar el pedido.', 'error');
+    return false;
+  }
+  showToast(successMsg, 'success');
+  await renderAllOrders();
+  return true;
+}
+
+async function confirmOrderTransferPayment(order, btn) {
+  const ok = await confirmDialog(
+    `¿Ya te llegó la transferencia de ${formatPrice(order.total_price)}? Revisá tu cuenta antes de confirmar: al comprador le avisamos que el pedido está pagado.`,
+    { title: `Confirmar pago del pedido ${orderLabel(order)}`, confirmText: 'Sí, me llegó' },
+  );
+  if (!ok) return;
+  await runOrderRpc('seller_confirm_transfer_payment', { p_order_id: order.id }, 'Pago confirmado. Ya podés preparar el pedido.', btn);
+}
+
+async function rejectOrderTransferPayment(order) {
+  const res = await formDialog(
+    'Contanos por qué. Se lo avisamos al comprador para que lo resuelva: el pedido sigue abierto y le damos un día más para pagar.',
+    { title: `Rechazar el pago del pedido ${orderLabel(order)}`, confirmText: 'Rechazar pago', danger: true, choices: PAYMENT_REJECT_REASONS },
+  );
+  if (!res) return;
+  await runOrderRpc('reject_transfer_payment', { p_order_id: order.id, p_reason: res.value }, 'Le avisamos al comprador el motivo.');
+}
+
+async function advanceOrder(order, next, btn) {
+  if (next.status === 'completed') {
+    await deliverOrder(order);
+    return;
+  }
+  const question = next.status === 'ready_for_pickup'
+    ? `¿El pedido ${orderLabel(order)} ya está listo para retirar? Le avisamos al comprador.`
+    : `¿Ya salió el pedido ${orderLabel(order)}? Le avisamos al comprador que está en camino.`;
+  const ok = await confirmDialog(question, { confirmText: next.label });
+  if (!ok) return;
+  await runOrderRpc('advance_order_status', { p_order_id: order.id, p_status: next.status },
+    next.status === 'ready_for_pickup' ? 'Listo. Le avisamos al comprador que puede pasar a retirarlo.' : 'Listo. Le avisamos al comprador que va en camino.', btn);
+}
+
+/** Entregar pidiendo el código de retiro (o el que trae el QR escaneado). */
+async function deliverOrder(order, presetCode = '') {
+  const cash = order.payment_method === 'efectivo' && order.payment_status === 'pending';
+  const res = await formDialog(
+    `Pedile al comprador el código de 4 números que tiene en "Mis compras" (o escaneá su QR con la cámara).${cash ? ` Cobrale ${formatPrice(order.total_price)} en efectivo.` : ''}`,
+    {
+      title: `Entregar el pedido ${orderLabel(order)}`,
+      confirmText: cash ? 'Cobrado y entregado' : 'Entregar',
+      input: { label: 'Código de retiro', placeholder: '0000', inputMode: 'numeric', maxLength: 4, pattern: /^\d{4}$/, value: presetCode },
+      extraText: 'Entregar sin código',
+    },
+  );
+  if (!res) return;
+  if (res.extra) {
+    const sure = await confirmDialog('¿Entregar sin el código? Hacelo solo si conocés a quien lo retira: el código es lo que prueba que es el comprador.', { confirmText: 'Entregar igual', danger: true });
+    if (!sure) return;
+  }
+  await runOrderRpc('advance_order_status', {
+    p_order_id: order.id, p_status: 'completed', p_code: res.extra ? null : res.value, p_skip_code: res.extra,
+  }, '¡Entregado! Le avisamos al comprador.');
+}
+
+async function cancelOrderBySeller(order) {
+  const paid = order.payment_status === 'paid';
+  const res = await formDialog(
+    paid
+      ? `Este pedido ya está pagado: si lo cancelás, tenés que devolverle ${formatPrice(order.total_price)} al comprador. Contanos por qué, se lo avisamos.`
+      : 'Contanos por qué, se lo avisamos al comprador. El stock vuelve a tus publicaciones.',
+    { title: `Cancelar el pedido ${orderLabel(order)}`, confirmText: 'Cancelar pedido', cancelText: 'Volver', danger: true, choices: SELLER_CANCEL_REASONS },
+  );
+  if (!res) return;
+  await runOrderRpc('cancel_order', { p_order_id: order.id, p_reason: res.value }, 'Pedido cancelado. Le avisamos al comprador.');
+}
+
+async function acceptOrderRevocation(order) {
+  const ok = await confirmDialog(
+    `El pedido ${orderLabel(order)} se cancela y el stock vuelve. Acordate de coordinar con el comprador la devolución del producto y de la plata.`,
+    { title: 'Aceptar arrepentimiento', confirmText: 'Aceptar', danger: true },
+  );
+  if (!ok) return;
+  await runOrderRpc('accept_order_revocation', { p_order_id: order.id }, 'Arrepentimiento aceptado. Le avisamos al comprador.');
+}
+
+/**
+ * Abre un comprobante (bucket privado) con una URL firmada. La pestaña se
+ * abre ANTES del await: el bloqueador de popups de Safari/Firefox corta
+ * window.open() en cuanto termina el gesto del usuario, y el await de
+ * createSignedUrl lo termina (mismo fix que js/support-utils.js openAttachment()).
+ */
+async function openProofFile(path) {
+  const tab = window.open('', '_blank');
+  if (tab) tab.opener = null;
+  const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 60);
+  if (error || !data?.signedUrl) {
+    tab?.close();
+    showToast('No se pudo abrir el comprobante.', 'error');
+    return;
+  }
+  if (tab) tab.location.replace(data.signedUrl);
+  else window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+}
+
+/**
+ * QR del comprador (21): al escanearlo con la cámara del celular se abre
+ * `vender.html?entregar=<id>&codigo=1234#pedidos`, y acá se ofrece entregar
+ * ese pedido con el código ya cargado.
+ */
+function applyDeliverDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const orderId = params.get('entregar');
+  if (!orderId) return;
+  const code = (params.get('codigo') || '').replace(/\D/g, '').slice(0, 4);
+
+  const url = new URL(window.location);
+  url.searchParams.delete('entregar');
+  url.searchParams.delete('codigo');
+  window.history.replaceState({}, '', url);
+
+  const order = ordCache.find((o) => o.id === orderId);
+  if (!order) {
+    showToast('Ese pedido no es de tu comercio, o no está entre tus últimos pedidos.', 'error');
+    return;
+  }
+  location.hash = 'pedidos';
+  if (order.status === 'completed' || order.status === 'cancelled' || orderHasCourier(order) || !nextSellerAction(order)) {
+    showToast(order.status === 'completed' ? `El pedido ${orderLabel(order)} ya estaba entregado.` : `El pedido ${orderLabel(order)} no se puede entregar ahora.`, order.status === 'completed' ? 'success' : 'error');
+    openOrderDetail(order);
+    return;
+  }
+  deliverOrder(order, code);
+}
+
+// --- Aviso de pedido nuevo en el panel (29): sonido + contador en la pestaña ---
+
+const SELLER_ALERT_TYPES = new Set(['order_created', 'order_paid_seller', 'transfer_notified', 'payment_proof_uploaded', 'order_cancelled_by_buyer', 'revocation_requested']);
+let unseenOrderAlerts = 0;
+let baseDocumentTitle = document.title;
+
+function playOrderChime() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [880, 1320].forEach((freq, i) => {
+      const start = ctx.currentTime + i * 0.18;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.32);
+    });
+    setTimeout(() => ctx.close(), 1000);
+  } catch { /* sin audio (navegador viejo o bloqueado): no pasa nada */ }
+}
+
+function initOrderAlerts() {
+  baseDocumentTitle = document.title;
+  window.addEventListener('bl:new-notifications', (e) => {
+    const relevant = (e.detail || []).filter((n) => SELLER_ALERT_TYPES.has(n.type));
+    if (!relevant.length) return;
+    playOrderChime();
+    renderAllOrders();
+    if (document.hidden) {
+      unseenOrderAlerts += relevant.length;
+      document.title = `(${unseenOrderAlerts}) ${baseDocumentTitle}`;
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && unseenOrderAlerts) {
+      unseenOrderAlerts = 0;
+      document.title = baseDocumentTitle;
+    }
+  });
+}
+
+// --- Pestañas, filtros y estadísticas ---
+
 function pedidosTabMatches(order, tab) {
   switch (tab) {
-    // Un pedido cancelado antes de pagarse queda con payment_status 'pending':
-    // no es un pago que esté por llegar.
-    case 'pending_payment': return order.payment_status === 'pending' && order.status !== 'cancelled';
-    case 'shipping': return order.delivery_method === 'delivery' && (order.status === 'paid' || order.status === 'shipped');
+    case 'to_confirm': return awaitingTransfer(order) && buyerSaysPaid(order);
+    // Esperando que el comprador pague (el efectivo se cobra al entregar: no espera nada).
+    case 'pending_payment': return order.status === 'pending' && order.payment_status === 'pending'
+      && order.payment_method !== 'efectivo' && !(awaitingTransfer(order) && buyerSaysPaid(order));
+    case 'to_prepare': return canPrepare(order) && !orderHasCourier(order);
+    case 'in_progress': return order.status === 'ready_for_pickup' || order.status === 'shipped'
+      || (order.status === 'paid' && orderHasCourier(order));
     case 'completed': return order.status === 'completed';
     case 'cancelled': return order.status === 'cancelled';
     default: return true;
@@ -1134,7 +1604,9 @@ function pdStat(icon, variant, title, value, sub) {
   return card;
 }
 
-/** Franja de stats + torta de "Ventas de los últimos 7 días" (misma línea SVG que Resumen) + contadores de las pestañas. */
+const PEDIDOS_COUNTED_TABS = ['to_confirm', 'pending_payment', 'to_prepare', 'in_progress', 'completed', 'cancelled'];
+
+/** Franja de stats + línea de "Ventas de los últimos 7 días" (misma línea SVG que Resumen) + contadores de las pestañas. */
 function renderPedidosStats() {
   const dash = document.getElementById('pedidos-dash');
   if (!dash) return;
@@ -1148,18 +1620,15 @@ function renderPedidosStats() {
   sevenDaysAgo.setDate(now.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
+  const byTab = Object.fromEntries(PEDIDOS_COUNTED_TABS.map((tab) => [tab, ordCache.filter((o) => pedidosTabMatches(o, tab))]));
   const total30d = ordCache.filter((o) => new Date(o.created_at) >= thirtyDaysAgo);
-  const pendingPayment = ordCache.filter((o) => pedidosTabMatches(o, 'pending_payment'));
-  const shipping = ordCache.filter((o) => pedidosTabMatches(o, 'shipping'));
-  const completed = ordCache.filter((o) => pedidosTabMatches(o, 'completed'));
-  const cancelled = ordCache.filter((o) => pedidosTabMatches(o, 'cancelled'));
   const sum = (arr) => arr.reduce((s, o) => s + o.total_price, 0);
 
   dash.appendChild(pdStat('fa-bag-shopping', 'total', 'Total de pedidos', String(total30d.length), 'Últimos 30 días'));
-  dash.appendChild(pdStat('fa-hourglass-half', 'pending', 'Pendientes de pago', String(pendingPayment.length), formatPrice(sum(pendingPayment))));
-  dash.appendChild(pdStat('fa-truck', 'shipping', 'Envíos en curso', String(shipping.length), formatPrice(sum(shipping))));
-  dash.appendChild(pdStat('fa-circle-check', 'completed', 'Completados', String(completed.length), formatPrice(sum(completed))));
-  dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(cancelled.length), formatPrice(sum(cancelled))));
+  dash.appendChild(pdStat('fa-hourglass-half', 'pending', 'Pagos por confirmar', String(byTab.to_confirm.length), formatPrice(sum(byTab.to_confirm))));
+  dash.appendChild(pdStat('fa-box-open', 'shipping', 'Para preparar', String(byTab.to_prepare.length), formatPrice(sum(byTab.to_prepare))));
+  dash.appendChild(pdStat('fa-circle-check', 'completed', 'Entregados', String(byTab.completed.length), formatPrice(sum(byTab.completed))));
+  dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(byTab.cancelled.length), formatPrice(sum(byTab.cancelled))));
 
   const chartCard = rsEl('div', 'pd-chart');
   chartCard.appendChild(rsEl('div', 'pd-chart__label', 'Ventas de los últimos 7 días'));
@@ -1176,11 +1645,9 @@ function renderPedidosStats() {
   chartCard.appendChild(rsLineChart(dailyTotals));
   dash.appendChild(chartCard);
 
-  ['pending_payment', 'shipping', 'completed', 'cancelled'].forEach((tab) => {
+  PEDIDOS_COUNTED_TABS.forEach((tab) => {
     const el = document.getElementById(`pd-tab-count-${tab}`);
-    if (!el) return;
-    const map = { pending_payment: pendingPayment, shipping, completed, cancelled };
-    el.textContent = map[tab].length ? `(${map[tab].length})` : '';
+    if (el) el.textContent = byTab[tab].length ? `(${byTab[tab].length})` : '';
   });
 }
 
@@ -1188,9 +1655,9 @@ function renderPedidosTips() {
   const list = document.getElementById('pedidos-tips');
   if (!list || list.childElementCount) return; // contenido estático: se arma una sola vez
   [
-    'Enviá tus pedidos a tiempo: mantené una buena reputación.',
-    'Confirmá los pagos por transferencia para liberar tus ventas.',
-    'Ofrecé una buena atención a tus compradores.',
+    'Marcá cada paso (listo, despachado, entregado): al comprador le llega el aviso solo.',
+    'Pedí el código de retiro al entregar: así sabés que es el comprador.',
+    'Confirmá las transferencias apenas veas la plata: el pedido no se puede preparar antes.',
   ].forEach((text) => {
     const li = document.createElement('li');
     li.innerHTML = '<i class="fa-solid fa-circle-check"></i> ';
@@ -1217,12 +1684,15 @@ function renderPedidos() {
 
   const term = ordSearch.trim().toLowerCase();
   if (term) {
+    // "#BL-1066", "bl1066" o "1066" buscan el número de pedido.
+    const numberTerm = term.replace(/^#?\s*bl-?\s*/, '');
     filtered = filtered.filter((o) => {
+      const numberMatch = /^\d+$/.test(numberTerm) && String(o.order_number || '').includes(numberTerm);
       const idMatch = o.id.split('-')[0].toLowerCase().includes(term);
       const phone = (ordPhoneByClientId.get(o.client_id) || '').toLowerCase();
       const name = (ordNameByClientId.get(o.client_id) || '').toLowerCase();
-      const productMatch = (o.order_items || []).some((it) => (it.products?.title || '').toLowerCase().includes(term));
-      return idMatch || phone.includes(term) || name.includes(term) || productMatch;
+      const productMatch = (o.order_items || []).some((it) => (it.title || it.products?.title || '').toLowerCase().includes(term));
+      return numberMatch || idMatch || phone.includes(term) || name.includes(term) || productMatch;
     });
   }
 
@@ -1255,7 +1725,7 @@ function setPedidosTab(tab) {
   renderPedidos();
 }
 
-/** Wire de los controles de la sección Pedidos (búsqueda, pestañas, menú Filtros, atajos del sidebar). Una sola vez. */
+/** Wire de los controles de la sección Pedidos (búsqueda, pestañas, menú Filtros, atajos del sidebar, detalle). Una sola vez. */
 function initPedidosControls() {
   document.getElementById('pedidos-search')?.addEventListener('input', (e) => {
     ordSearch = e.target.value;
@@ -1297,39 +1767,7 @@ function initPedidosControls() {
   });
 
   renderPedidosTips();
-}
-
-async function confirmOrderTransferPayment(order, btn) {
-  const ok = await confirmDialog(
-    `¿Ya te llegó la transferencia de ${formatPrice(order.total_price)}? Revisá tu cuenta antes de confirmar: al comprador le avisamos que el pedido está pagado.`,
-    { title: 'Confirmar pago', confirmText: 'Sí, me llegó' },
-  );
-  if (!ok) return;
-
-  btn.disabled = true;
-  const { error } = await supabase.rpc('seller_confirm_transfer_payment', { p_order_id: order.id });
-  if (error) {
-    btn.disabled = false;
-    showToast(error.message || 'No se pudo confirmar el pago.', 'error');
-    return;
-  }
-
-  showToast('Pago confirmado.', 'success');
-  renderAllOrders();
-  renderPendingPayments();
-}
-
-async function updateOrderStatus(orderId, newStatus) {
-  const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-
-  if (error) {
-    console.error('Error al actualizar el pedido:', error);
-    showToast('No se pudo actualizar el pedido.', 'error');
-    return;
-  }
-
-  showToast('Pedido actualizado.', 'success');
-  renderAllOrders();
+  initOrderDetailDialog();
 }
 
 // --- Logo del comercio (Perfil de mi comercio) ---
@@ -2692,13 +3130,16 @@ async function renderResumen() {
     supabase.from('reviews').select('rating, client_id').eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
     supabase.from('orders').select('total_price, created_at, status, client_id').eq('store_id', currentStoreId).eq('payment_status', 'paid'),
     supabase.from('order_items').select('quantity, price, products(categories(name)), orders!inner(store_id, payment_status, created_at)').eq('orders.store_id', currentStoreId).eq('orders.payment_status', 'paid'),
-    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('store_id', currentStoreId).eq('payment_method', 'transferencia').eq('payment_status', 'pending'),
+    supabase.from('orders').select('id, status, payment_status, payment_method, transfer_notified_at, payment_proofs(status), deliveries(status)').eq('store_id', currentStoreId).in('status', ['pending', 'paid']),
   ]);
 
   const reviews = rev.data || [];
   const paidOrders = ord.data || [];
   const catItems = cat.data || [];
-  const pendingPayCount = pay.count || 0;
+  // Mismos criterios que las pestañas de Pedidos (pedidosTabMatches).
+  const openOrders = pay.data || [];
+  const pendingPayCount = openOrders.filter((o) => pedidosTabMatches(o, 'to_confirm')).length;
+  const toPrepareCount = openOrders.filter((o) => pedidosTabMatches(o, 'to_prepare')).length;
 
   const reviewCount = reviews.length;
   const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
@@ -2748,7 +3189,8 @@ async function renderResumen() {
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
   dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
-    { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pagos', alert: pendingPayCount > 0 },
+    { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pedidos', tab: 'to_confirm', alert: pendingPayCount > 0 },
+    { label: 'Pedidos para preparar', count: toPrepareCount, section: 'pedidos', tab: 'to_prepare', alert: toPrepareCount > 0 },
     { label: 'Ventas para calificar', count: salesToRate, section: 'pedidos', tab: 'completed' },
   ], { label: 'Ir a pedidos', section: 'pedidos' }));
 
@@ -2763,156 +3205,6 @@ async function renderResumen() {
 }
 
 // (El insights provisional F12-13 se reemplazó por renderResumen, arriba.)
-
-// --- F2-04: comprobantes de transferencia por confirmar ---
-
-async function renderPendingPayments() {
-  const container = document.getElementById('pending-payments-container');
-  if (!container || !currentStoreId) return;
-
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select(`
-      id, total_price, created_at,
-      payment_proofs ( id, status, receipt_url, created_at )
-    `)
-    .eq('store_id', currentStoreId)
-    .eq('payment_method', 'transferencia')
-    .eq('payment_status', 'pending')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error al cargar pagos pendientes', error);
-    return;
-  }
-
-  // Solo órdenes con un comprobante todavía sin revisar
-  const withPendingProof = (orders || [])
-    .map((order) => {
-      const proof = (order.payment_proofs || [])
-        .filter((p) => p.status === 'pending')
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-      return proof ? { order, proof } : null;
-    })
-    .filter(Boolean);
-
-  container.textContent = '';
-
-  if (withPendingProof.length === 0) {
-    renderPendingPaymentsEmpty(container);
-    return;
-  }
-
-  withPendingProof.forEach(({ order, proof }) => {
-    container.appendChild(buildPendingPaymentRow(order, proof));
-  });
-}
-
-function renderPendingPaymentsEmpty(container) {
-  const box = document.createElement('div');
-  box.className = 'pub-empty';
-  const icon = document.createElement('i');
-  icon.className = 'fa-regular fa-rectangle-list pub-empty__icon';
-  box.appendChild(icon);
-  const title = document.createElement('p');
-  title.className = 'pub-empty__title';
-  title.textContent = 'No hay comprobantes pendientes';
-  box.appendChild(title);
-  const sub = document.createElement('p');
-  sub.className = 'pub-empty__sub';
-  sub.textContent = 'Los comprobantes de transferencia que suban tus clientes van a aparecer acá.';
-  box.appendChild(sub);
-  container.appendChild(box);
-}
-
-/** Fila estilo ML (clases pub-*), pero con Confirmar/Rechazar/Ver siempre visibles -- son
- * acciones primarias acá, no tiene sentido esconderlas detrás de un menú ⋮ como en Ventas/Publicaciones. */
-function buildPendingPaymentRow(order, proof) {
-  const row = document.createElement('div');
-  row.className = 'pub-row';
-
-  const icon = document.createElement('div');
-  icon.className = 'pub-row__thumb pub-row__thumb--icon';
-  const iconEl = document.createElement('i');
-  iconEl.className = 'fa-solid fa-receipt';
-  icon.appendChild(iconEl);
-  row.appendChild(icon);
-
-  const main = document.createElement('div');
-  main.className = 'pub-row__main';
-  const title = document.createElement('span');
-  title.className = 'pub-row__title';
-  title.textContent = `Orden #${order.id.split('-')[0].toUpperCase()}`;
-  main.appendChild(title);
-  const sub = document.createElement('span');
-  sub.style.cssText = 'display: block; color: var(--bl-text-secondary); font-size: 0.85rem;';
-  const proofDate = new Date(proof.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
-  sub.textContent = `${formatPrice(order.total_price)} · Comprobante subido el ${proofDate}`;
-  main.appendChild(sub);
-  row.appendChild(main);
-
-  const actions = document.createElement('div');
-  actions.style.cssText = 'display: flex; gap: 0.5rem; flex-shrink: 0;';
-
-  const viewBtn = document.createElement('button');
-  viewBtn.type = 'button';
-  viewBtn.className = 'btn-outline';
-  viewBtn.style.cssText = 'padding: 0.5rem 0.9rem;';
-  viewBtn.textContent = 'Ver comprobante';
-  viewBtn.addEventListener('click', async () => {
-    // Se abre la pestaña ANTES del await: el bloqueador de popups de
-    // Safari/Firefox corta window.open() en cuanto termina el gesto del
-    // usuario, y el await de createSignedUrl lo termina (mismo fix que
-    // js/support-utils.js openAttachment()).
-    const tab = window.open('', '_blank');
-    if (tab) tab.opener = null;
-    const { data, error } = await supabase.storage
-      .from('payment-proofs')
-      .createSignedUrl(proof.receipt_url, 60);
-    if (error || !data?.signedUrl) {
-      tab?.close();
-      showToast('No se pudo abrir el comprobante.', 'error');
-      return;
-    }
-    if (tab) tab.location.replace(data.signedUrl);
-    else window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
-  });
-  actions.appendChild(viewBtn);
-
-  const approveBtn = document.createElement('button');
-  approveBtn.type = 'button';
-  approveBtn.className = 'form-btn';
-  approveBtn.style.cssText = 'width: auto; padding: 0.5rem 1rem;';
-  approveBtn.textContent = 'Confirmar';
-  approveBtn.addEventListener('click', () => handlePaymentDecision(proof.id, true));
-  actions.appendChild(approveBtn);
-
-  const rejectBtn = document.createElement('button');
-  rejectBtn.type = 'button';
-  rejectBtn.className = 'btn-outline';
-  rejectBtn.style.cssText = 'padding: 0.5rem 0.9rem; border-color: #ef4444; color: #ef4444;';
-  rejectBtn.textContent = 'Rechazar';
-  rejectBtn.addEventListener('click', () => handlePaymentDecision(proof.id, false));
-  actions.appendChild(rejectBtn);
-
-  row.appendChild(actions);
-  return row;
-}
-
-async function handlePaymentDecision(proofId, approve) {
-  const { error } = await supabase.rpc('confirm_transfer_payment', {
-    p_proof_id: proofId,
-    p_approve: approve,
-  });
-
-  if (error) {
-    showToast(error.message || 'No se pudo procesar el comprobante.', 'error');
-    return;
-  }
-
-  showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
-  await renderPendingPayments();
-}
 
 /**
  * F12-15: onboarding para el vendedor recién aprobado -- antes caía a un

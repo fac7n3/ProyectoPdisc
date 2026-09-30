@@ -4746,6 +4746,170 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   }
 }
 
+.bl-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* formDialog: la misma tarjeta con un motivo a elegir y/o un campo de texto. */
+.bl-confirm-card--form { max-width: 26rem; }
+.bl-confirm-fields { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+.bl-confirm-choices { display: flex; flex-direction: column; gap: 0.35rem; }
+.bl-confirm-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  font-size: 0.9rem;
+  color: var(--bl-text);
+  cursor: pointer;
+}
+.bl-confirm-choice:has(input:checked) { border-color: var(--bl-primary); background: rgba(40, 65, 117, 0.06); }
+.bl-confirm-label { font-size: 0.85rem; font-weight: 600; color: var(--bl-text); }
+.bl-confirm-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  font: inherit;
+  font-size: 1rem;
+  color: var(--bl-text);
+  background: var(--bl-surface);
+  resize: vertical;
+}
+.bl-confirm-input:focus { outline: 2px solid var(--bl-primary); outline-offset: 1px; border-color: var(--bl-primary); }
+.bl-confirm-extra {
+  margin-top: 0.8rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--bl-text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ===== Pedidos (js/order-utils.js): piezas que comparten el panel del
+   vendedor y "Mis compras" ===== */
+.ord-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.ord-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.ord-chip--warn { background: #fef3c7; color: #92400e; }
+.ord-chip--danger { background: #fee2e2; color: #b91c1c; }
+.ord-chip--info { background: #dbeafe; color: #1d4ed8; }
+.ord-chip--ok { background: #dcfce7; color: #166534; }
+
+.ord-note { margin: 0; font-size: 0.84rem; color: var(--bl-text-secondary); }
+
+.ord-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bl-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ord-link--danger { color: var(--bl-danger); }
+
+/* Línea de tiempo: puntos unidos por una línea, verde lo que ya pasó. */
+.ord-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+.ord-timeline__step {
+  position: relative;
+  padding: 1.35rem 0.2rem 0;
+  text-align: center;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  color: var(--bl-text-muted);
+}
+.ord-timeline__step::before {
+  content: '';
+  position: absolute;
+  top: 0.2rem;
+  left: 50%;
+  z-index: 1;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-left: -0.425rem;
+  box-sizing: border-box;
+  border: 2px solid var(--bl-border);
+  border-radius: 50%;
+  background: var(--bl-surface);
+}
+.ord-timeline__step::after {
+  content: '';
+  position: absolute;
+  top: 0.575rem;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--bl-border);
+}
+.ord-timeline__step:first-child::after { display: none; }
+.ord-timeline__step.is-done { color: var(--bl-text-secondary); }
+.ord-timeline__step.is-done::before { border-color: var(--bl-success); background: var(--bl-success); }
+.ord-timeline__step.is-done::after { background: var(--bl-success); }
+.ord-timeline__step.is-current { color: var(--bl-text); font-weight: 700; }
+.ord-timeline__step.is-current:not(.is-done)::before { border-color: var(--bl-primary); box-shadow: 0 0 0 3px rgba(40, 65, 117, 0.15); }
+.ord-timeline__step.is-cancelled::before { border-color: var(--bl-danger); background: var(--bl-danger); }
+.ord-timeline__step.is-cancelled::after { background: var(--bl-danger); }
+.ord-timeline__date { display: block; margin-top: 0.1rem; font-weight: 400; font-size: 0.68rem; color: var(--bl-text-muted); }
+
+/* Historial (order_events), del más nuevo al más viejo. */
+.ord-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.ord-events__item { display: flex; gap: 0.75rem; font-size: 0.84rem; color: var(--bl-text); }
+.ord-events__date { flex-shrink: 0; width: 7.5rem; color: var(--bl-text-muted); }
+
+/* Código de retiro + QR del comprador ("Mis compras"). */
+.ord-code {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem;
+  border: 1px dashed var(--bl-primary);
+  border-radius: var(--bl-radius-md);
+  background: rgba(40, 65, 117, 0.04);
+}
+.ord-code__qr { flex-shrink: 0; width: 112px; height: 112px; background: #fff; border-radius: var(--bl-radius-sm); padding: 4px; box-sizing: border-box; }
+.ord-code__qr img, .ord-code__qr svg { display: block; width: 100%; height: 100%; }
+.ord-code__label { display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--bl-text-muted); }
+.ord-code__value { display: block; margin: 0.15rem 0 0.3rem; font-size: 1.9rem; font-weight: 800; letter-spacing: 0.3em; color: var(--bl-primary); font-variant-numeric: tabular-nums; }
+.ord-code__hint { margin: 0; font-size: 0.8rem; color: var(--bl-text-secondary); line-height: 1.35; }
+
+/* Avisos dentro de un pedido del comprador (vencimiento, pago rechazado, etc.). */
+.ord-alert { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--bl-radius-md); font-size: 0.85rem; line-height: 1.4; background: var(--bl-surface-alt); color: var(--bl-text); }
+.ord-alert--warn { background: #fef3c7; color: #78350f; }
+.ord-alert--danger { background: #fee2e2; color: #7f1d1d; }
+.ord-alert--ok { background: #dcfce7; color: #14532d; }
+
+@media (max-width: 480px) {
+  .ord-code { flex-direction: column; text-align: center; }
+  .ord-events__date { width: 6rem; }
+}
+
 .store-logo-skeleton {
   flex: 0 0 auto;
   width: 90px;

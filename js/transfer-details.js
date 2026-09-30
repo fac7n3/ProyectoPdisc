@@ -16,8 +16,9 @@
 import { formatPrice } from './cart-utils.js';
 import {
   buildBankFields, extraTransferNotes, hasTransferData, buildContactInfo,
-  shortOrderRef, amountForCopy, buildTransferWhatsappMessage,
+  amountForCopy, buildTransferWhatsappMessage,
 } from './transfer-details-utils.js';
+import { orderRef as buildOrderRef } from './order-utils.js';
 
 const TRANSFER_COLUMNS = 'id, transfer_info, transfer_alias, transfer_cbu, transfer_holder, transfer_bank';
 
@@ -152,14 +153,15 @@ function buildGroupTitle(iconClass, text) {
  * @param {object} opts.store  fila de fetchStoreTransferData (puede faltar)
  * @param {string} opts.storeName nombre de respaldo si `store` no llegó
  * @param {string} opts.orderId
+ * @param {number} [opts.orderNumber] número corto (#BL-1066); sin él, el prefijo del uuid
  * @param {number} opts.total  monto del pedido, en pesos enteros
  * @param {boolean} [opts.compact] versión para "Mis compras": sin encabezado
  *   propio (la tarjeta del pedido ya muestra comercio y número).
  * @returns {HTMLElement}
  */
-export function buildTransferCard({ store, storeName, orderId, total, compact = false }) {
+export function buildTransferCard({ store, storeName, orderId, orderNumber = null, total, compact = false }) {
   const name = store?.name || storeName || 'Comercio';
-  const orderRef = shortOrderRef(orderId);
+  const orderRef = buildOrderRef({ id: orderId, order_number: orderNumber });
   const amountLabel = formatPrice(total);
 
   const card = document.createElement(compact ? 'div' : 'article');
@@ -249,7 +251,9 @@ export function buildTransferCard({ store, storeName, orderId, total, compact = 
     wa.href = `https://wa.me/${contact.whatsappDigits}?text=${text}`;
     wa.target = '_blank';
     wa.rel = 'noopener noreferrer';
-    wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Avisar que transferí';
+    // "Escribirle", no "Avisar que transferí": el aviso dentro de la
+    // plataforma es el botón "Ya transferí" (notify_transfer_sent).
+    wa.innerHTML = '<i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Escribirle por WhatsApp';
     actions.appendChild(wa);
     contactGroup.appendChild(actions);
     card.appendChild(contactGroup);

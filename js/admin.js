@@ -7,6 +7,7 @@ import { categoryLabel } from './professional-categories.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
 import { confirmDialog } from './confirm-dialog.js';
+import { orderLabel } from './order-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 async function fetchRequests() {
@@ -1069,7 +1070,7 @@ async function fetchPendingProofsAdmin() {
 
   const { data, error } = await supabase
     .from('payment_proofs')
-    .select('id, receipt_url, created_at, orders(id, total_price, stores(name))')
+    .select('id, receipt_url, created_at, orders(id, order_number, total_price, stores(name))')
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
@@ -1090,7 +1091,7 @@ async function fetchPendingProofsAdmin() {
     const tr = document.createElement('tr');
 
     const tdOrder = document.createElement('td');
-    tdOrder.textContent = order ? `#${order.id.split('-')[0].toUpperCase()}` : '-';
+    tdOrder.textContent = order ? orderLabel(order) : '-';
     tr.appendChild(tdOrder);
 
     const tdStore = document.createElement('td');
@@ -1667,7 +1668,7 @@ async function fetchRevocationRequests() {
 
   const { data, error } = await supabase
     .from('orders')
-    .select('id, status, total_price, revocation_requested_at, stores(name)')
+    .select('id, order_number, status, total_price, revocation_requested_at, stores(name)')
     .not('revocation_requested_at', 'is', null)
     .order('revocation_requested_at', { ascending: false });
 
@@ -1687,7 +1688,7 @@ async function fetchRevocationRequests() {
     const tr = document.createElement('tr');
 
     const tdOrder = document.createElement('td');
-    tdOrder.textContent = `#${order.id.slice(0, 8).toUpperCase()}`;
+    tdOrder.textContent = orderLabel(order);
     tr.appendChild(tdOrder);
 
     const tdStore = document.createElement('td');

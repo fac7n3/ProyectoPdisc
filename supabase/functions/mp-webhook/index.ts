@@ -327,7 +327,10 @@ Deno.serve(async (req: Request) => {
         .select("id, store_id");
 
       if (error) throw error;
-      await notifyStoreOwners(supabase, updated ?? [], "order_paid");
+      // Los avisos de "pagado" (al comprador y al vendedor) los manda el
+      // trigger orders_after_change (migración 115), igual para cualquier
+      // medio de pago. Mandarlo también acá duplicaba el del vendedor.
+      console.log(`Pago ${payment.id}: ${updated?.length ?? 0} pedido(s) marcado(s) como pagados.`);
     } else if (DISPUTED_STATUSES.includes(payment.status)) {
       // Devolución, contracargo o disputa abierta: la plata ya no está, pero
       // hasta ahora la orden se quedaba en `paid` para siempre y el vendedor
@@ -346,16 +349,15 @@ Deno.serve(async (req: Request) => {
       await notifyStoreOwners(supabase, disputed ?? [], "mp_payment_refunded", {
         mp_status: payment.status,
       });
-    } else if (payment.status === "rejected" || payment.status === "cancelled") {
-      const { error } = await supabase
-        .from("orders")
-        .update({ payment_status: "rejected" })
-        .in("id", orderIds)
-        .eq("payment_method", "mercadopago")
-        .eq("payment_status", "pending");
-      if (error) throw error;
     }
-    // "pending"/"in_process": no hacemos nada todavía, esperamos otro webhook.
+    // "rejected"/"cancelled": NO se toca el pedido. En el checkout de Mercado
+    // Pago el comprador puede reintentar con otra tarjeta dentro del mismo
+    // pago, y cada intento manda su webhook: si el primer rechazo marcaba el
+    // pedido como rechazado (y devolvía el stock), el pago aprobado que
+    // llegaba después ya no encontraba el pedido "pending" y se ignoraba --
+    // el comprador pagaba y el pedido quedaba rechazado. Si nunca se paga, lo
+    // cancela expire_pending_orders al vencer (24 h) y avisa al comprador.
+    // "pending"/"in_process": tampoco, esperamos otro webhook.
 
     return new Response("ok", { status: 200 });
   } catch (err) {

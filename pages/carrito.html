@@ -149,6 +149,11 @@
                 <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
                 Transferencia bancaria
               </label>
+              <!-- El texto cambia con la forma de entrega (carrito.js, syncPaymentMethod). -->
+              <label class="delivery-option">
+                <input type="radio" name="payment-method" id="payment-efectivo" value="efectivo" />
+                <span id="payment-efectivo-text">Efectivo al retirar</span>
+              </label>
               <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
                    carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
                    datos completos y copiables aparecen después de "Iniciar pago". -->
@@ -218,20 +223,48 @@
 
         <ol class="trf-steps">
           <li><span class="trf-steps__n">1</span> Transferí el monto exacto a cada comercio</li>
-          <li><span class="trf-steps__n">2</span> Guardá el comprobante (captura o PDF)</li>
-          <li><span class="trf-steps__n">3</span> Subilo en "Mis compras" para que el comercio confirme</li>
+          <li><span class="trf-steps__n">2</span> Tocá "Ya transferí" para avisarle al comercio</li>
+          <li><span class="trf-steps__n">3</span> El comercio confirma el pago y te llega un aviso</li>
         </ol>
 
         <div class="trf-step__cards" id="transfer-step-cards"></div>
 
         <p class="trf-step__note">
           <i class="fa-regular fa-clock" aria-hidden="true"></i>
-          Estos datos quedan guardados en "Mis compras", dentro de cada pedido, por si los necesitás más tarde.
+          <span id="transfer-step-due">Estos datos quedan guardados en "Mis compras", dentro de cada pedido, por si los necesitás más tarde.</span>
         </p>
 
         <div class="trf-step__actions">
-          <a class="trf-step__btn trf-step__btn--primary" id="transfer-step-proof" href="./perfil.html?tab=compras">
-            <i class="fa-solid fa-upload" aria-hidden="true"></i> Ya transferí, subir comprobante
+          <button type="button" class="trf-step__btn trf-step__btn--primary" id="transfer-step-notify">
+            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Ya transferí
+          </button>
+          <a class="trf-step__btn" id="transfer-step-proof" href="./perfil.html?tab=compras">Lo hago más tarde</a>
+        </div>
+      </section>
+
+      <!-- "¡Listo!" de un pedido en efectivo: no hay nada que pagar ahora, solo
+           el número de pedido y qué pasa después. Poblado por carrito.js
+           (showCashStep). -->
+      <section class="trf-step" id="cash-step" hidden aria-labelledby="cash-step-title" tabindex="-1">
+        <div class="trf-step__hero">
+          <div class="trf-step__icon"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></div>
+          <div>
+            <h2 class="trf-step__title" id="cash-step-title">¡Listo! Tu pedido está hecho</h2>
+            <p class="trf-step__lead" id="cash-step-lead"></p>
+          </div>
+        </div>
+
+        <ol class="trf-steps">
+          <li><span class="trf-steps__n">1</span> El comercio prepara tu pedido</li>
+          <li><span class="trf-steps__n">2</span> Te avisamos cuando esté listo</li>
+          <li><span class="trf-steps__n">3</span> Pagás en efectivo y mostrás tu código de retiro</li>
+        </ol>
+
+        <ul class="cash-step__orders" id="cash-step-orders"></ul>
+
+        <div class="trf-step__actions">
+          <a class="trf-step__btn trf-step__btn--primary" id="cash-step-orders-link" href="./perfil.html?tab=compras">
+            <i class="fa-solid fa-receipt" aria-hidden="true"></i> Ver mi pedido y el código
           </a>
           <a class="trf-step__btn" href="./home.html">Seguir comprando</a>
         </div>

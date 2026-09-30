@@ -14,9 +14,10 @@
  */
 import { supabase, showToast, guardPage } from './auth-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
-import { confirmDialog } from './confirm-dialog.js';
+import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { formatPrice } from './cart-utils.js';
 import { describeSelectedOptions } from './product-options-utils.js';
+import { orderLabel } from './order-utils.js';
 import './speed-insights.js';
 
 const WARNING_MS = 5 * 60 * 1000;
@@ -25,10 +26,6 @@ const REFRESH_MS = 20 * 1000;
 
 const estado = { user: null };
 let refreshTimer = null;
-
-function shortOrderCode(id) {
-  return `#BL-${id.split('-')[0].slice(0, 5).toUpperCase()}`;
-}
 
 function timeAgoLabel(ms) {
   const totalMin = Math.floor(ms / 60000);
@@ -75,7 +72,7 @@ function buildQueueCard(order) {
   card.dataset.updatedAt = order.updated_at || order.created_at;
 
   const head = el('div', 'rp-card__head');
-  head.appendChild(el('span', 'rp-card__code', shortOrderCode(order.id)));
+  head.appendChild(el('span', 'rp-card__code', orderLabel(order)));
   const waitBadge = el('span', 'rp-card__wait', timeAgoLabel(ms));
   head.appendChild(waitBadge);
   card.appendChild(head);
@@ -88,7 +85,7 @@ function buildQueueCard(order) {
   const takeBtn = el('button', 'rp-btn rp-btn--primary', 'Tomar pedido');
   takeBtn.type = 'button';
   takeBtn.addEventListener('click', async () => {
-    if (!(await confirmDialog(`¿Tomar el pedido ${shortOrderCode(order.id)}?`, { confirmText: 'Tomar pedido' }))) return;
+    if (!(await confirmDialog(`¿Tomar el pedido ${orderLabel(order)}?`, { confirmText: 'Tomar pedido' }))) return;
     takeBtn.disabled = true;
     const { error } = await supabase.rpc('claim_delivery', { p_order_id: order.id });
     if (error) {
@@ -110,7 +107,7 @@ function buildMineCard({ delivery, order }, clientById) {
   const card = el('article', 'rp-card rp-card--mine');
 
   const head = el('div', 'rp-card__head');
-  head.appendChild(el('span', 'rp-card__code', shortOrderCode(order.id)));
+  head.appendChild(el('span', 'rp-card__code', orderLabel(order)));
   const statusLabel = delivery.status === 'picked_up' ? 'En camino' : 'Asignado';
   head.appendChild(el('span', 'rp-card__status', statusLabel));
   card.appendChild(head);
@@ -133,10 +130,21 @@ function buildMineCard({ delivery, order }, clientById) {
   actionBtn.type = 'button';
   actionBtn.addEventListener('click', async () => {
     const nextStatus = delivery.status === 'picked_up' ? 'delivered' : 'picked_up';
-    const label = nextStatus === 'delivered' ? 'entregado' : 'en camino';
-    if (!(await confirmDialog(`¿Marcar el pedido ${shortOrderCode(order.id)} como ${label}?`, { confirmText: 'Confirmar' }))) return;
+    let code = null;
+    if (nextStatus === 'delivered') {
+      // El comprador tiene el código de retiro en "Mis compras": sin él no se entrega.
+      const res = await formDialog('Pedile al comprador el código de 4 números que tiene en "Mis compras".', {
+        title: `Entregar el pedido ${orderLabel(order)}`,
+        confirmText: 'Entregar',
+        input: { label: 'Código de retiro', placeholder: '0000', inputMode: 'numeric', maxLength: 4, pattern: /^\d{4}$/ },
+      });
+      if (!res) return;
+      code = res.value;
+    } else if (!(await confirmDialog(`¿Marcar el pedido ${orderLabel(order)} como en camino?`, { confirmText: 'Confirmar' }))) {
+      return;
+    }
     actionBtn.disabled = true;
-    const { error } = await supabase.rpc('update_delivery_status', { p_delivery_id: delivery.id, p_new_status: nextStatus });
+    const { error } = await supabase.rpc('update_delivery_status', { p_delivery_id: delivery.id, p_new_status: nextStatus, p_code: code });
     if (error) {
       showToast(error.message || 'No se pudo actualizar el pedido.', 'error');
       actionBtn.disabled = false;
@@ -164,7 +172,7 @@ async function loadPanel() {
   const [{ data: orders, error: ordersError }, { data: deliveries, error: delError }] = await Promise.all([
     supabase
       .from('orders')
-      .select('id, client_id, total_price, shipping_address, created_at, updated_at, order_items(quantity, title, selected_options), stores(name, address)')
+      .select('id, order_number, status, client_id, total_price, shipping_address, created_at, updated_at, order_items(quantity, title, selected_options), stores(name, address)')
       .eq('delivery_method', 'delivery')
       .eq('payment_status', 'paid')
       .order('created_at', { ascending: true })
@@ -181,7 +189,9 @@ async function loadPanel() {
   const takenOrderIds = new Set((deliveries || []).map((d) => d.order_id));
   const ordersById = new Map((orders || []).map((o) => [o.id, o]));
 
-  const available = (orders || []).filter((o) => !takenOrderIds.has(o.id));
+  // Solo lo pagado que nadie movió todavía: si el comercio ya lo despachó
+  // (o lo entregó) por su cuenta, no está para repartir.
+  const available = (orders || []).filter((o) => o.status === 'paid' && !takenOrderIds.has(o.id));
   const mine = (deliveries || [])
     .filter((d) => d.repartidor_id === estado.user.id && ['assigned', 'picked_up'].includes(d.status))
     .map((d) => ({ delivery: d, order: ordersById.get(d.order_id) }))

@@ -148,6 +148,9 @@ async function pollOnce(userId) {
       showNotificationToast({ title: buildNotificationTitle(n), href: link?.href || null });
     });
     try { localStorage.setItem(LAST_SEEN_KEY, notifications[0].id); } catch { /* no-op */ }
+    // La página que quiera reaccionar (ej. el panel del vendedor: sonido +
+    // recargar pedidos) escucha esto en vez de hacer su propio polling.
+    window.dispatchEvent(new CustomEvent('bl:new-notifications', { detail: newOnes }));
   }
 }
 
