@@ -1096,3 +1096,67 @@ body.modal-open {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* --- Vista previa instantánea al apretar un producto (js/product-modal.js) ---
+   El modal se pinta YA con lo que la tarjeta ya muestra (foto, comercio,
+   nombre, precio) y estos bloques ocupan el lugar de lo que todavía no llegó
+   (reseñas, envío, stock, botones), así el click responde al instante en vez de
+   mostrar una pantalla casi vacía con un spinner. Misma estética que
+   .skeleton-img (home.css); keyframes propios para no depender de esa hoja. El
+   brillo se frena con "Reducir animaciones" (a11y.css + prefers-reduced-motion). */
+.pm-skel {
+  display: block;
+  border-radius: var(--bl-radius-sm);
+  background: linear-gradient(90deg, #e2e8f0 25%, #edf2f7 37%, #e2e8f0 63%);
+  background-size: 400% 100%;
+  animation: pm-skel-shimmer 1.4s ease infinite;
+}
+
+@keyframes pm-skel-shimmer { to { background-position: -400% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-skel {
+    animation: none;
+    background: #e2e8f0;
+  }
+}
+
+.pm-skel--pill {
+  width: 7rem;
+  height: 1.4rem;
+  margin-bottom: 0.6rem;
+  border-radius: var(--bl-radius-pill);
+}
+
+.pm-skel--line {
+  width: 70%;
+  height: 0.8rem;
+}
+
+.pm-skel--short { width: 40%; }
+
+.pm-skel--price {
+  width: 6rem;
+  height: 1.6rem;
+}
+
+/* Misma altura que .pm-btn (padding 0.7rem + línea de texto), para que al
+   llegar los botones reales el bloque no "salte". */
+.pm-skel--btn {
+  flex: 1;
+  /* min-height y no height: en celular .pm-actions es una columna y ahí el
+     flex-basis de `flex: 1` (0) pisa el height, así que el bloque colapsaba. */
+  min-height: 2.6rem;
+  border-radius: var(--bl-radius-lg);
+}
+
+/* En celular la hoja está anclada abajo y la completa casi siempre llega al
+   alto máximo (95vh: las pestañas y los relacionados la llenan). Si la vista
+   previa ocupara solo lo que mide su contenido, al llegar los datos la hoja
+   crecería hacia arriba y el nombre y el precio se correrían ~230 px. Con el
+   mismo alto desde el principio, lo de arriba se queda en su lugar. */
+@media (max-width: 768px) {
+  .product-modal[aria-busy="true"] {
+    min-height: 95vh;
+  }
+}

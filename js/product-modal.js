@@ -12,7 +12,8 @@
 import { supabase } from './auth-utils.js';
 import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
-import { fetchReviewsSummary, renderReviewsSection } from './reviews-utils.js';
+import { renderReviewsSection } from './reviews-utils.js';
+import { fetchProductDetail, prefetchProductDetail } from './product-detail-api.js';
 
 // ── Seguridad ───────────────────────────────────────────────
 function escapeHTML(str) {
@@ -26,18 +27,17 @@ function escapeHTML(str) {
 }
 
 // ── Datos reales del producto (Supabase) ────────────────────
+// Una sola consulta (RPC get_product_detail, migración 117) que trae el
+// producto con comercio, fotos, opciones y el resumen de reseñas. Antes eran
+// una consulta con joins anidados (~1 s en la base: las policies de RLS se
+// encadenan) más el resumen de reseñas por separado; apretar un producto
+// tardaba muchísimo. Ver js/product-detail-api.js. Tira si el producto no
+// existe o no se puede ver.
 async function fetchProductData(productId) {
-  const [{ data: product, error }, reviewSummary, { data: { session } }] = await Promise.all([
-    supabase
-      .from('products')
-      .select('id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, stores(id, name, owner_id, delivery_fee, free_shipping_threshold), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
-      .eq('id', productId)
-      .single(),
-    fetchReviewsSummary('product', productId),
+  const [product, { data: { session } }] = await Promise.all([
+    fetchProductDetail(productId),
     supabase.auth.getSession(),
   ]);
-
-  if (error || !product) throw error || new Error('Producto no encontrado');
 
   // F12-14: mismo criterio que buildPriceRow (cart-utils.js) -- una oferta
   // vencida se muestra como precio normal, sin tachado.
@@ -71,10 +71,10 @@ async function fetchProductData(productId) {
     badgeType = 'envio';
   }
 
-  // Rating real (reviews-utils.js, F7-01) -- si no hay reseñas, no se fabrica
-  // un promedio ni una cantidad de "vendidos".
-  const rating = reviewSummary.average;
-  const ratingCount = reviewSummary.count;
+  // Rating real (F7-01) -- si no hay reseñas, no se fabrica un promedio ni una
+  // cantidad de "vendidos". review_average viene en null cuando no hay ninguna.
+  const rating = product.review_average;
+  const ratingCount = product.review_count ?? 0;
   const fullStars = rating ? Math.floor(rating) : 0;
   const halfStars = rating && rating - Math.floor(rating) >= 0.5 ? 1 : 0;
   const emptyStars = Math.max(0, 5 - fullStars - halfStars);
@@ -181,6 +181,79 @@ function buildLoadingHTML() {
         </div>
         <p class="bl-loading-block__title">Cargando</p>
         <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
+      </div>
+    </div>
+  `;
+}
+
+// ── Vista previa instantánea ───────────────────────────────
+// Al apretar una tarjeta el modal se pinta YA con lo que la tarjeta ya
+// muestra (foto, comercio, nombre, precio) y el resto (stock, opciones,
+// reseñas, botones) se completa cuando llega la consulta. Antes se veía un
+// "Cargando… esto puede tomar unos segundos" sobre una pantalla casi vacía y
+// el click parecía no hacer nada.
+
+/**
+ * Lo que la tarjeta clickeada ya muestra. Las tarjetas de las grillas
+ * (.product-card) y las de favoritos de Mi perfil (.fav-card) tienen clases
+ * distintas; los links de "Mis compras" no traen nada utilizable. Devuelve
+ * null si no hay ni el nombre (entonces se muestra el spinner de siempre).
+ */
+function readCardPreview(card) {
+  const text = (selector) => card.querySelector(selector)?.textContent?.trim() || '';
+  const title = text('.product-card__name') || text('.fav-title');
+  if (!title) return null;
+  return {
+    title,
+    shop: text('.product-card__shop'),
+    price: text('.product-card__price') || text('.fav-price'),
+    priceOld: text('.product-card__price-old'),
+    discount: text('.product-card__discount'),
+    image: card.querySelector('.product-card__image img, img')?.getAttribute('src') || '',
+  };
+}
+
+function buildPreviewHTML(p) {
+  const name = escapeHTML(p.title);
+  // Lo que la tarjeta no tenía (ej. la página de un comercio no repite el
+  // nombre del comercio en cada tarjeta) queda como bloque de carga.
+  const shopHTML = p.shop
+    ? `<div class="pm-shop">${escapeHTML(p.shop)}</div>`
+    : '<div class="pm-skel pm-skel--pill" aria-hidden="true"></div>';
+  const priceHTML = p.price
+    ? `<span class="pm-price">${escapeHTML(p.price)}</span>`
+    : '<span class="pm-skel pm-skel--price" aria-hidden="true"></span>';
+  const oldPriceHTML = p.priceOld ? `<span class="pm-price-old">${escapeHTML(p.priceOld)}</span>` : '';
+  const discountHTML = p.discount ? `<span class="pm-discount-tag">${escapeHTML(p.discount)}</span>` : '';
+  const imageHTML = p.image ? `<img class="pm-gallery__img" src="${encodeURI(p.image)}" alt="${name}" />` : '';
+
+  return `
+    <div class="product-modal" role="dialog" aria-modal="true" aria-label="Cargando ${name}" aria-busy="true">
+      <div class="pm-topbar">
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <div class="pm-topbar__actions">
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="pm-main">
+        <div class="pm-gallery-col">
+          <div class="pm-gallery">${imageHTML}</div>
+        </div>
+        <div class="pm-info">
+          ${shopHTML}
+          <h2 class="pm-name">${name}</h2>
+          <div class="pm-rating"><span class="pm-skel pm-skel--line pm-skel--short" aria-hidden="true"></span></div>
+          <div class="pm-price-block">
+            <div class="pm-price-row">${priceHTML}${oldPriceHTML}${discountHTML}</div>
+            <div class="pm-shipping"><span class="pm-skel pm-skel--line" aria-hidden="true"></span></div>
+          </div>
+          <div class="pm-stock"><span class="pm-skel pm-skel--line pm-skel--short" aria-hidden="true"></span></div>
+          <div class="pm-actions" aria-hidden="true">
+            <span class="pm-skel pm-skel--btn"></span>
+            <span class="pm-skel pm-skel--btn"></span>
+          </div>
+          <p class="sr-only" role="status" aria-live="polite">Cargando el detalle del producto…</p>
+        </div>
       </div>
     </div>
   `;
@@ -538,7 +611,10 @@ async function openProductModal(card, { skipHistoryPush = false } = {}) {
   const overlay = document.createElement('div');
   overlay.className = 'product-modal-overlay';
   overlay.id = 'pm-overlay';
-  overlay.innerHTML = buildLoadingHTML();
+  // Vista previa con lo que la tarjeta ya muestra; solo si no hay nada que
+  // mostrar (ej. el link de "Mis compras") queda el spinner de siempre.
+  const preview = readCardPreview(card);
+  overlay.innerHTML = preview ? buildPreviewHTML(preview) : buildLoadingHTML();
   document.body.appendChild(overlay);
   currentOverlay = overlay;
 
@@ -890,10 +966,11 @@ function bindModalEvents(overlay, data) {
     const handler = () => {
       const relId = relCard.dataset.relatedId;
       const targetCard = document.getElementById(relId);
-      if (targetCard) {
-        closeProductModal();
-        setTimeout(() => openProductModal(targetCard), 450);
-      }
+      // openProductModal ya cierra el modal anterior por su cuenta. Antes se
+      // esperaban 450 ms fijos (a que terminara la animación de cierre) antes
+      // de siquiera empezar a pedir el producto: medio segundo de "nada" en
+      // cada producto relacionado.
+      if (targetCard) openProductModal(targetCard);
     };
     relCard.addEventListener('click', handler);
     relCard.addEventListener('keydown', (e) => {
@@ -953,9 +1030,57 @@ function bindModalEvents(overlay, data) {
   setTimeout(() => firstFocusable?.focus(), 100);
 }
 
+// ── Pedido adelantado ──────────────────────────────────────
+// Cuando el mouse se queda un instante sobre una tarjeta (o se apoya el dedo)
+// ya hay intención de abrirla: se pide el detalle sin esperar el click, y el
+// click lo encuentra listo (ver product-detail-utils.js: se consume una sola
+// vez y vence a los 15 s). Cada pedido es una consulta de pocos ms, así que
+// el costo de adelantarse a un click que nunca llega es despreciable.
+const HOVER_INTENT_MS = 100;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** La tarjeta de producto bajo el puntero, o null (las de comercio/profesional son enlaces y no llevan id). */
+function productCardFrom(e) {
+  const card = e.target.closest?.('.product-card');
+  if (!card || !UUID_RE.test(card.id) || card.matches('a[href]')) return null;
+  // Sumar al carrito o marcar favorito no abre el modal.
+  if (e.target.closest('.product-card__add, .product-card__wishlist')) return null;
+  return card;
+}
+
+function bindProductPrefetch(grid) {
+  let hoverTimer = null;
+  let hoverCard = null;
+
+  grid.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse') return; // en táctil no hay hover
+    const card = productCardFrom(e);
+    if (!card || card === hoverCard) return;
+    clearTimeout(hoverTimer);
+    hoverCard = card;
+    hoverTimer = setTimeout(() => prefetchProductDetail(card.id), HOVER_INTENT_MS);
+  });
+
+  grid.addEventListener('pointerout', (e) => {
+    if (!hoverCard) return;
+    // `pointerout` también salta al pasar de un hijo a otro de la MISMA
+    // tarjeta: solo cuenta salir de ella.
+    if (e.relatedTarget && hoverCard.contains(e.relatedTarget)) return;
+    clearTimeout(hoverTimer);
+    hoverCard = null;
+  });
+
+  // Apoyar el dedo (o apretar el mouse) viene ~100 ms antes del click.
+  grid.addEventListener('pointerdown', (e) => {
+    const card = productCardFrom(e);
+    if (card) prefetchProductDetail(card.id);
+  });
+}
+
 // ── Inicializar click en tarjetas ──────────────────────────
 function initProductModal() {
   document.querySelectorAll('.products__grid').forEach(grid => {
+    bindProductPrefetch(grid);
     grid.addEventListener('click', (e) => {
       const clickedAction = e.target.closest('.product-card__add, .product-card__wishlist');
       if (clickedAction) return;

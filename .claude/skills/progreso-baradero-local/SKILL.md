@@ -5,6 +5,133 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## Click en un producto lento: `get_product_detail` (2026-10-01) — migración 117, SIN aplicar
+
+A pedido del usuario ("la página tiene un tiempo de carga muy alto cuando
+apretás un producto"). **Estado al escribir esto: código listo en la rama
+`claude/brave-curie-hix7ln`, migración 117 probada contra la base real pero NO
+aplicada a producción.** Cuando se aplique, actualizar la entrada de
+"Pendientes activos" de CLAUDE.md a "Resuelto".
+
+### Cómo se encontró (para repetirlo la próxima vez)
+
+Sin acceso de red a Supabase desde el sandbox, pero sí por el conector MCP:
+
+1. **Logs de la API** (`query_logs`, fuente `edge_logs`): `response.origin_time`
+   (lo que ve el navegador) y `response.headers.x_envoy_upstream_service_time`
+   (lo que tardó la base). La resta es el viaje de red: ~130-280 ms, porque el
+   proyecto está en us-west-2 y los usuarios en Baradero. Agrupando por ruta, la
+   consulta del modal (`/rest/v1/products` con `product_options` en el select)
+   daba **1052 ms promedio / 5052 ms p95 en la base**, contra 77 ms un listado.
+2. **`EXPLAIN (ANALYZE)` como un cliente común** (`set local role authenticated`
+   + `set_config('request.jwt.claims', ...)`): 256 ms de planificación + 128 ms de
+   ejecución para UN producto, plan de 256 subplanes / 801 initplans (71 scans de
+   `stores`, 35 de `store_staff`, 21 de `orders`) con la base casi vacía.
+3. Una ráfaga del 2026-09-30 (~20:23 hora argentina) mostró que **todo** se
+   enlentece: hasta `profiles?select=avatar_url&id=eq.X` tardó 9,2 s. La
+   consulta pesada satura la instancia y deja en cola al resto.
+
+### Causa
+
+Las policies anidadas vuelven a consultar `products` y esta arrastra el resto:
+`product_images_select_merged`, `product_options_select_merged` y
+`product_option_values_select_merged` hacen `EXISTS (select from products ...)`;
+`products_select_merged` mira `orders`/`order_items` (compró el producto),
+`stores` y `store_staff`, cada una con sus propias policies. Postgres lo expande
+al **planificar**, en cada request (PostgREST cambia de rol por request, no
+reusa plan). Medido: como `authenticated` la consulta vieja dio 7820 / 2592 /
+677 ms (frío -> tibio); como `anon` solo 21 / 11 / 11 ms (no se investigó por
+qué el plan de `anon` es tanto más chico). O sea que **lo sufre sobre todo quien
+tiene la sesión iniciada**.
+
+### Qué se hizo
+
+- **`db/schema/117_get_product_detail_rpc.sql`**: `get_product_detail(p_product_id uuid) returns jsonb`,
+  `SECURITY DEFINER`, `stable`, `search_path = public`, ejecutable por
+  `anon` + `authenticated`. Devuelve producto + `stores` (con `contact_method`
+  y `whatsapp`, que usa `producto.js`) + `product_images` + `product_options`
+  (con sus valores) + `review_count`/`review_average`, en el mismo formato que
+  devolvía el `.select()` de antes. Devuelve `NULL` si no existe o no es visible.
+  **La regla de visibilidad está copiada a mano de `products_select_merged`**
+  (activo + comercio aprobado / admin por JWT / `seller_id` / `store_staff` /
+  compró el producto): si esa policy cambia, hay que cambiar la función. Lo que
+  devuelve de más a propósito: fotos y opciones siempre que el producto es
+  visible (antes cada policy anidada las filtraba con reglas apenas distintas,
+  p. ej. un comprador no veía las fotos extra de un producto después pausado).
+- **`js/product-detail-utils.js`** (puro, con `node js/product-detail-utils.test.mjs`,
+  18 chequeos, verificados con mutaciones) + **`js/product-detail-api.js`**
+  (cableado a Supabase): `fetchProductDetail(id)` y `prefetchProductDetail(id)`.
+  - **Respaldo:** si PostgREST dice `PGRST202`/`42883` (la función no existe),
+    usa las consultas de siempre y se acuerda de no volver a probar el RPC. Otros
+    errores se propagan sin caer al respaldo (reintentar por la vía pesada
+    duplicaría la espera). **El orden de publicación (código vs. migración) no
+    importa.**
+  - **Pedido adelantado:** el mouse se queda 100 ms sobre una tarjeta
+    (`pointerover`, solo mouse) o se apoya el dedo/mouse (`pointerdown`): se pide
+    el detalle sin esperar el click. Se consume una sola vez y vence a los 15 s
+    (nada de stock/precio viejos). **Solo se adelanta por la vía barata**: si la
+    función no existe no se adelanta nada, porque el respaldo es la consulta
+    pesada y dispararla por cada tarjeta frenada empeoraría la saturación.
+    `Agregar` y el corazón de la tarjeta no disparan nada.
+- **`js/product-modal.js`**: vista previa instantánea (`readCardPreview` +
+  `buildPreviewHTML`): al apretar, el modal se pinta con la foto, el comercio, el
+  nombre y el precio que la tarjeta ya muestra, y bloques grises (`.pm-skel`) donde
+  faltan reseñas/envío/stock/botones. Tarjetas sin nombre (los links de "Mis
+  compras") siguen mostrando el spinner. En celular la hoja de la vista previa
+  mide `95vh` (`.product-modal[aria-busy="true"]`), el mismo alto que la completa,
+  para que lo de arriba no se corra al llegar los datos (medido: nombre en la
+  misma posición antes y después). **Se sacó la espera fija de 450 ms** al abrir
+  un producto relacionado (`openProductModal` ya cierra el anterior solo).
+- **`js/producto.js`** (la página `producto.html`: buscador, avisos, banners, panel
+  del vendedor) usa la misma consulta.
+
+### Verificación (y qué NO está verificado)
+
+- **Contra la base real, en una transacción que se deshace sola** (un `DO` que crea
+  la función, prueba y termina con un `raise exception` que devuelve el
+  resultado en el mensaje): 12 combinaciones de rol y cuenta (anon + 7 cuentas
+  reales que cubren admin, 4 dueños, empleado, 4 compradores y un cliente sin
+  pedidos; varias cuentas cumplen más de un rol a la vez) × 58 productos -> **0
+  diferencias** entre lo que ve la RLS y lo que devuelve la función (productos visibles, cantidad de
+  fotos/opciones/valores, campos base y tipos JSON, promedio/cantidad de reseñas).
+  Tiempos (cliente común, un producto con 1 foto y 2 grupos de opciones): consulta
+  vieja 7820 / 2592 / 677 ms -> función 25 / 3 / 3 ms. **Gotcha del método:** dentro
+  del `DO`, un alias llamado como una variable del bloque (`r`) la pisa
+  (`record "r" has no field ...`): usar alias distintos.
+- **Navegador (Chromium + Playwright 1.56) con Supabase simulado** (el sandbox no
+  llega a la red): 46 chequeos, contra el `dist/` real; como visitante y con una
+  sesión simulada (comprador / dueña del comercio). Los tiempos salen de un
+  **modelo** con valores medidos (red 250 ms, base 700 ms vieja / 5 ms nueva): ~1030 ms
+  -> ~15 ms hasta ver el producto y ~305 ms completo (~35-50 ms con el mouse
+  encima antes del click); un relacionado pasó de ~1440 ms a ~22 ms. Con la base al
+  promedio real (1050 ms) el "antes" da ~1360 ms. **No es una medición de producción.**
+- **Sin probar:** el recorrido real contra producción (no hay red a Supabase desde
+  el sandbox) ni la RLS con una sesión real de punta a punta. Conviene abrir un
+  producto logueado a mano una vez aplicada la 117.
+
+### Gotchas para el futuro
+
+- **Cualquier embed que pase por `products`, `product_images`, `product_options` o
+  `product_option_values` cuesta ~250 ms de planificación para un usuario logueado.**
+  Si hace falta una consulta nueva sobre producto + algo anidado, mejor un RPC
+  definer con la visibilidad explícita que un `.select()` con joins.
+- El preflight CORS **no** es el problema: `OPTIONS` se contesta en el borde de
+  Cloudflare en Buenos Aires (`origin_time` p50 = 0 ms).
+- Las fotos tampoco: 67 archivos, 209 KB de promedio (7 de más de 1 MB).
+- **Mismo problema sin resolver:** `carrito.js` (validación de frescura) pide
+  `products?...&id=in.(...)` y `product_options?...&product_id=in.(...)` con joins
+  anidados y en la ráfaga tardaron 3-13 s; `create_order` tuvo, dentro de la base, promedio
+  2,9 s / p95 9,9 s (24 h, solo 6 llamadas; no se investigó si es por lo mismo: es
+  definer, así que no pasa por RLS). La salida de fondo es hacer baratas las policies anidadas
+  (`product_images`/`product_options`/`product_option_values`, y la rama de
+  `orders`/`order_items` de `products_select_merged`) con una función auxiliar
+  `SECURITY DEFINER` opaca para el planificador; hay que preservar la semántica exacta
+  (p. ej. las fotos de un producto pausado solo las ve el vendedor o un admin) y
+  probarla igual que la 117: transacción deshecha + comparación por identidad.
+- Observación aparte: en el modal de escritorio, un producto con opciones deja los
+  botones de compra parcialmente tapados por el `max-height: 400px` de `.pm-info`
+  (hay que scrollear esa columna). Ya estaba así, no se tocó.
+
 ## Fotos y fecha puntual en "Pedir presupuesto" (2026-09-28)
 
 A pedido del usuario: el modal de presupuesto de `contratar.html`

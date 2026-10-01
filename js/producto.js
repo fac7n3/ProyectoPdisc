@@ -2,6 +2,7 @@ import { supabase } from './auth-utils.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
+import { fetchProductDetail } from './product-detail-api.js';
 import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
 import { buildContactAction } from './store-contact-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -26,16 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const [{ data: product, error }, { data: { session } }] = await Promise.all([
-      supabase
-        .from('products')
-        .select('*, stores(name, id, contact_method, whatsapp, owner_id), product_images(url, position), product_options(id, name, position, product_option_values(id, value, is_available, position))')
-        .eq('id', productId)
-        .single(),
+    // Misma consulta única que usa el modal (RPC get_product_detail, migración
+    // 117; ver js/product-detail-api.js): antes era un select con joins
+    // anidados que tardaba ~1 s en la base. Tira si no existe o no se puede ver.
+    const [product, { data: { session } }] = await Promise.all([
+      fetchProductDetail(productId),
       supabase.auth.getSession(),
     ]);
-
-    if (error || !product) throw error || new Error('Producto no encontrado');
 
     document.title = `${product.title} — Baradero Local`;
     // El h1 (invisible) es lo que TalkBack anuncia al entrar y lo que usa
