@@ -504,6 +504,31 @@ async function fetchIdsWithOptions(productIds) {
 }
 
 /**
+ * ¿Cuáles de estos productos son de un comercio del usuario logueado?
+ *
+ * Mismo criterio que el modal y la ficha (`stores.owner_id`). Una sola consulta
+ * por render y solo con sesión; sin sesión (o ante un error) devuelve vacío y
+ * las tarjetas quedan como siempre -- la seguridad real del pedido no pasa por
+ * acá, `create_order` ya rechaza comprarle a uno mismo.
+ */
+async function fetchOwnProductIds(productIds) {
+  if (productIds.length === 0) return new Set();
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  if (!uid) return new Set();
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, stores!inner(owner_id)')
+    .in('id', productIds)
+    .eq('stores.owner_id', uid);
+  if (error) {
+    console.error('Error al mirar qué productos son del usuario:', error);
+    return new Set();
+  }
+  return new Set((data || []).map((row) => row.id));
+}
+
+/**
  * Inicializar botones de agregar al carrito en product-cards del DOM.
  * Se puede llamar cada vez que se renderizan nuevas cards.
  *
@@ -515,9 +540,26 @@ async function fetchIdsWithOptions(productIds) {
  */
 export function initCartButtons() {
   const buttons = [...document.querySelectorAll('.product-card__add')];
-  const idsWithOptions = fetchIdsWithOptions(
-    [...new Set(buttons.map((b) => b.dataset.productId || b.closest('.product-card')?.id).filter(Boolean))]
-  );
+  const productIds = [...new Set(buttons.map((b) => b.dataset.productId || b.closest('.product-card')?.id).filter(Boolean))];
+  const idsWithOptions = fetchIdsWithOptions(productIds);
+  const ownIds = fetchOwnProductIds(productIds);
+
+  // En tus propios productos el botón dice "Tu producto" y solo deja verlos.
+  ownIds.then((own) => {
+    buttons.forEach((btn) => {
+      const id = btn.dataset.productId || btn.closest('.product-card')?.id;
+      if (!id || !own.has(id)) return;
+      btn.classList.add('product-card__add--own');
+      btn.disabled = false; // sin stock también se puede mirar
+      btn.style.cssText = '';
+      btn.title = '';
+      btn.replaceChildren();
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-store';
+      btn.appendChild(icon);
+      btn.append(' Tu producto');
+    });
+  });
 
   buttons.forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -537,6 +579,13 @@ export function initCartButtons() {
         ? Number(card.dataset.price)
         : parsePrice(card?.querySelector('.product-card__price')?.textContent || '0');
       const priceOld = parsePrice(priceOldText);
+
+      if ((await ownIds).has(id)) {
+        // Es tu producto: no se agrega al carrito, solo se abre para verlo.
+        if (card && typeof window.openProductModal === 'function') window.openProductModal(card);
+        else window.location.href = `./producto.html?id=${encodeURIComponent(id)}`;
+        return;
+      }
 
       if ((await idsWithOptions).has(id)) {
         // Tiene opciones: que las elija en el modal. openProductModal lo

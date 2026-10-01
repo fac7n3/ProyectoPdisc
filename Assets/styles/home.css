@@ -3393,6 +3393,18 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   transform: scale(0.97);
 }
 
+/* Producto propio (vista del vendedor): "Tu producto" no agrega nada, solo
+   abre la ficha, así que se ve como botón secundario y no como "Agregar". */
+.product-card__add--own,
+.product-card__add--own:hover {
+  background: transparent;
+  color: var(--bl-primary);
+  box-shadow: inset 0 0 0 1.5px var(--bl-primary);
+}
+.product-card__add--own:hover {
+  background: rgba(40, 65, 117, 0.06);
+}
+
 /* ===========================================================
    PIE DE PÁGINA
    =========================================================== */
