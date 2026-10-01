@@ -3227,7 +3227,7 @@ async function renderResumen() {
   }));
   dash.appendChild(rsPromoCard());
 
-  dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
+  dash.appendChild(rsPendingCard('Estado de tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
     { label: 'Publicaciones inactivas', count: currentInactiveProductCount, section: 'publicaciones', pubStatus: 'inactive' },
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
