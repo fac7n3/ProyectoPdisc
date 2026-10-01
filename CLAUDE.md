@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-01** — **La flecha de arriba a la derecha del navbar ya
+  vuelve a donde estabas**, no siempre al inicio (a pedido del usuario). Era un
+  `<a href="home.html">` fijo en ~9 páginas. Ahora un handler global en
+  `js/auth-utils.js` (`handleNavBack`) hace `history.back()` si hay una página
+  anterior del propio sitio y cae al inicio solo si no la hay (URL tipeada, link
+  externo). **Mi perfil**: las secciones (Soporte, Compras, Ajustes…) eran solo
+  show/hide sin historial, así que "atrás" se salía de la página; ahora
+  `openSection` (`js/perfil.js`) empuja un estado `history.state.blSection` y un
+  `popstate` abre/cierra la sección, por lo que la flecha desde Soporte vuelve
+  al hub de Mi perfil. **Gotcha:** cualquier `history.replaceState` en `perfil.js`
+  debe pasar `window.history.state` (no `{}`) o borra la sección del historial.
+  Verificado con Playwright (sesión mockeada) sobre el build real.
 - **Resuelto 2026-09-30 — Flujo completo del pedido, publicado.** Número de
   pedido (#BL-1001), código de retiro + QR, línea de tiempo, avisos en cada
   paso, efectivo, "Ya transferí", rechazo de pago con motivo, cancelar con
