@@ -80,6 +80,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-01** — **Se sacó el pago en efectivo** (al retirar / al
+  recibir), a pedido del usuario. Fuera del checkout (`carrito.html`/`carrito.js`,
+  paso "¡Listo!" en efectivo incluido), de `payment-providers.js`,
+  `order-utils.js` (+ tests), avisos, "Mis compras" y panel de vendedor. Migración
+  `117_remove_cash_payment.sql`: `orders.payment_method` ya no admite
+  `'efectivo'` (se verificó antes que no había ningún pedido en efectivo). Los
+  medios de pago quedan: Mercado Pago, transferencia y simulado (solo admin).
+  **Ojo:** "efectivo" dentro de Mercado Pago (Rapipago / Pago Fácil, que ofrece
+  su propio checkout) **no** se tocó: no se excluye nada en `mp-create-preference`
+  y los términos y la guía de usuario todavía lo mencionan.
 - **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
   del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
   de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,

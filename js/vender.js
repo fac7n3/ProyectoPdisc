@@ -1016,8 +1016,7 @@ function ordChip(text, variant = '', icon = '') {
 /** Cómo paga, cómo se entrega y lo que necesita atención, en chips. */
 function buildOrderChips(order) {
   const chips = rsEl('div', 'ord-chips');
-  chips.appendChild(ordChip(PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'Pago', '',
-    order.payment_method === 'efectivo' ? 'fa-money-bill-wave' : 'fa-credit-card'));
+  chips.appendChild(ordChip(PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'Pago', '', 'fa-credit-card'));
   chips.appendChild(ordChip(order.delivery_method === 'delivery' ? 'Envío' : 'Retiro', '',
     order.delivery_method === 'delivery' ? 'fa-truck' : 'fa-store'));
 
@@ -1080,9 +1079,6 @@ function buildOrderActionBlock(order) {
 
   const next = nextSellerAction(order, { hasCourier: orderHasCourier(order) });
   if (next) {
-    if (order.payment_method === 'efectivo' && order.payment_status === 'pending') {
-      block.appendChild(rsEl('p', 'ord-action__text', `Se paga en efectivo: cobrale ${formatPrice(order.total_price)} al entregar.`));
-    }
     const btn = rsEl('button', 'form-btn ord-action__primary');
     btn.type = 'button';
     btn.innerHTML = `<i class="fa-solid ${next.icon}" aria-hidden="true"></i> `;
@@ -1416,12 +1412,11 @@ async function advanceOrder(order, next, btn) {
 
 /** Entregar pidiendo el código de retiro (o el que trae el QR escaneado). */
 async function deliverOrder(order, presetCode = '') {
-  const cash = order.payment_method === 'efectivo' && order.payment_status === 'pending';
   const res = await formDialog(
-    `Pedile al comprador el código de 4 números que tiene en "Mis compras" (o escaneá su QR con la cámara).${cash ? ` Cobrale ${formatPrice(order.total_price)} en efectivo.` : ''}`,
+    `Pedile al comprador el código de 4 números que tiene en "Mis compras" (o escaneá su QR con la cámara).`,
     {
       title: `Entregar el pedido ${orderLabel(order)}`,
-      confirmText: cash ? 'Cobrado y entregado' : 'Entregar',
+      confirmText: 'Entregar',
       input: { label: 'Código de retiro', placeholder: '0000', inputMode: 'numeric', maxLength: 4, pattern: /^\d{4}$/, value: presetCode },
       extraText: 'Entregar sin código',
     },
@@ -1559,9 +1554,9 @@ function initOrderAlerts() {
 function pedidosTabMatches(order, tab) {
   switch (tab) {
     case 'to_confirm': return awaitingTransfer(order) && buyerSaysPaid(order);
-    // Esperando que el comprador pague (el efectivo se cobra al entregar: no espera nada).
+    // Esperando que el comprador pague.
     case 'pending_payment': return order.status === 'pending' && order.payment_status === 'pending'
-      && order.payment_method !== 'efectivo' && !(awaitingTransfer(order) && buyerSaysPaid(order));
+      && !(awaitingTransfer(order) && buyerSaysPaid(order));
     case 'to_prepare': return canPrepare(order) && !orderHasCourier(order);
     case 'in_progress': return order.status === 'ready_for_pickup' || order.status === 'shipped'
       || (order.status === 'paid' && orderHasCourier(order));

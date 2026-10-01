@@ -1256,14 +1256,11 @@ function buildCompraNextStep(order, ctx) {
 
   if (order.status === 'ready_for_pickup') {
     const address = order.stores?.address ? ` en ${order.stores.address}` : '';
-    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `¡Listo para retirar${address}!${order.payment_method === 'efectivo' ? ` Llevá ${formatPrice(order.total_price)} en efectivo.` : ''}`));
+    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `¡Listo para retirar${address}!`));
   } else if (order.status === 'shipped') {
-    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `Tu pedido está en camino.${order.payment_method === 'efectivo' ? ` Tené ${formatPrice(order.total_price)} en efectivo para pagar al recibirlo.` : ''}`));
+    wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `Tu pedido está en camino.`));
   } else if (canPrepare(order)) {
-    const cash = order.payment_method === 'efectivo'
-      ? ` Pagás ${formatPrice(order.total_price)} en efectivo al ${order.delivery_method === 'delivery' ? 'recibirlo' : 'retirarlo'}.`
-      : '';
-    wrap.appendChild(el('p', 'ord-alert', `${storeName} está preparando tu pedido. Te avisamos cuando esté ${order.delivery_method === 'delivery' ? 'en camino' : 'listo para retirar'}.${cash}`));
+    wrap.appendChild(el('p', 'ord-alert', `${storeName} está preparando tu pedido. Te avisamos cuando esté ${order.delivery_method === 'delivery' ? 'en camino' : 'listo para retirar'}.`));
   }
 
   const code = ctx.codeByOrder.get(order.id);

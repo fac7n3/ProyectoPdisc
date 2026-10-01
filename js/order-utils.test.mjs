@@ -22,12 +22,9 @@ test('transferencia sin pagar: no se prepara ni hay botón', () => {
   assert.equal(showsPickupCode(base), false);
 });
 
-test('efectivo pendiente: ya se prepara', () => {
-  const o = { ...base, payment_method: 'efectivo' };
-  assert.equal(canPrepare(o), true);
-  assert.equal(nextSellerAction(o).status, 'ready_for_pickup');
-  assert.equal(showsPickupCode(o), true);
-  assert.equal(nextSellerAction({ ...o, status: 'ready_for_pickup' }).label, 'Cobrado y entregado');
+test('un pedido pendiente sin pago acreditado no se prepara', () => {
+  assert.equal(canPrepare({ ...base, payment_method: 'transferencia' }), false);
+  assert.equal(canPrepare({ ...base, payment_method: 'mercadopago' }), false);
 });
 
 test('pagado con envío: despachar y después entregar con código', () => {
@@ -61,12 +58,6 @@ test('línea de tiempo: pagado y listo para retirar', () => {
   assert.equal(steps[1].date, 'P');
 });
 
-test('línea de tiempo: efectivo son 3 pasos y el último es "pagado"', () => {
-  const steps = timelineSteps({ ...base, payment_method: 'efectivo', delivery_method: 'delivery' });
-  assert.deepEqual(steps.map((s) => s.label), ['Pedido hecho', 'En camino', 'Recibido y pagado']);
-  assert.equal(steps.findIndex((s) => s.current), 1);
-});
-
 test('línea de tiempo: completado marca el último como actual', () => {
   const steps = timelineSteps({ ...base, status: 'completed', payment_status: 'paid' });
   assert.ok(steps.every((s) => s.done));
@@ -83,7 +74,6 @@ test('eventos según quién mira', () => {
   assert.equal(eventLabel({ kind: 'transfer_notified' }, { viewer: 'buyer' }), 'Avisaste que transferiste');
   assert.equal(eventLabel({ kind: 'transfer_notified' }, { viewer: 'seller' }), 'El comprador avisó que transfirió');
   assert.equal(eventLabel({ kind: 'payment_rejected', note: 'No me llegó' }), 'El comercio no pudo confirmar el pago: No me llegó');
-  assert.equal(eventLabel({ kind: 'paid' }, { paymentMethod: 'efectivo' }), 'Cobrado en efectivo');
   assert.equal(eventLabel({ kind: 'cancelled', actor: 'buyer' }, { viewer: 'seller' }), 'El comprador lo canceló');
 });
 

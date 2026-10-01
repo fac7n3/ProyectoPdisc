@@ -20,7 +20,6 @@ export const ORDER_STATUS_LABELS = {
 export const PAYMENT_METHOD_LABELS = {
   mercadopago: 'Mercado Pago',
   transferencia: 'Transferencia',
-  efectivo: 'Efectivo',
   simulado: 'Pago simulado',
 };
 
@@ -55,10 +54,9 @@ export function orderLabel(order) {
   return `#${orderRef(order)}`;
 }
 
-/** ¿El comercio ya puede prepararlo? Pagado, o en efectivo (se cobra al entregar). */
+/** ¿El comercio ya puede prepararlo? Solo cuando el pago está acreditado. */
 export function canPrepare(order) {
-  return order.status === 'paid'
-    || (order.status === 'pending' && order.payment_method === 'efectivo' && order.payment_status === 'pending');
+  return order.status === 'paid';
 }
 
 /** Pedido por transferencia que todavía espera la plata. */
@@ -84,7 +82,7 @@ export function buyerSaysPaid(order) {
  */
 export function nextSellerAction(order, { hasCourier = false } = {}) {
   if (hasCourier || order.status === 'completed' || order.status === 'cancelled') return null;
-  const deliverLabel = order.payment_method === 'efectivo' ? 'Cobrado y entregado' : 'Marcar entregado';
+  const deliverLabel = 'Marcar entregado';
 
   if (order.delivery_method === 'delivery') {
     if (canPrepare(order)) return { status: 'shipped', label: 'Marcar despachado', icon: 'fa-truck' };
@@ -103,8 +101,7 @@ export function showsPickupCode(order) {
 
 /**
  * Pasos de la línea de tiempo (Pedido hecho → Pagado → Listo/En camino →
- * Entregado), con su fecha si ya pasó. En efectivo el pago va junto con la
- * entrega, así que son tres pasos. Cancelado: dos.
+ * Entregado), con su fecha si ya pasó. Cancelado: dos.
  * @param {object} order
  * @param {{ kind: string, created_at: string }[]} events historial (order_events)
  * @returns {{ key: string, label: string, done: boolean, current: boolean, date: string|null }[]}
@@ -122,18 +119,12 @@ export function timelineSteps(order, events = []) {
 
   const rank = { pending: 0, paid: 1, ready_for_pickup: 2, shipped: 2, completed: 3 }[order.status] ?? 0;
   const prepared = { key: 'prepared', label: delivery ? 'En camino' : 'Listo para retirar', done: rank >= 2, date: at(delivery ? 'shipped' : 'ready_for_pickup') };
-  const steps = order.payment_method === 'efectivo'
-    ? [
-      { key: 'created', label: 'Pedido hecho', done: true, date: order.created_at || at('created') },
-      prepared,
-      { key: 'completed', label: delivery ? 'Recibido y pagado' : 'Retirado y pagado', done: rank >= 3, date: at('completed') },
-    ]
-    : [
-      { key: 'created', label: 'Pedido hecho', done: true, date: order.created_at || at('created') },
-      { key: 'paid', label: 'Pago confirmado', done: order.payment_status === 'paid' || rank >= 1, date: at('paid') },
-      prepared,
-      { key: 'completed', label: 'Entregado', done: rank >= 3, date: at('completed') },
-    ];
+  const steps = [
+    { key: 'created', label: 'Pedido hecho', done: true, date: order.created_at || at('created') },
+    { key: 'paid', label: 'Pago confirmado', done: order.payment_status === 'paid' || rank >= 1, date: at('paid') },
+    prepared,
+    { key: 'completed', label: 'Entregado', done: rank >= 3, date: at('completed') },
+  ];
 
   const firstPending = steps.findIndex((s) => !s.done);
   return steps.map((s, i) => ({ ...s, current: firstPending === -1 ? i === steps.length - 1 : i === firstPending }));
@@ -155,10 +146,9 @@ const EVENT_LABELS = {
 };
 
 /** Texto de un evento del historial, según quién lo mira. Incluye el motivo si lo hay. */
-export function eventLabel(event, { viewer = 'buyer', paymentMethod = null } = {}) {
+export function eventLabel(event, { viewer = 'buyer' } = {}) {
   const entry = EVENT_LABELS[event.kind];
   let label = typeof entry === 'object' && entry ? entry[viewer] : entry || event.kind;
-  if (event.kind === 'paid' && paymentMethod === 'efectivo') label = 'Cobrado en efectivo';
   if (event.kind === 'cancelled' && event.actor === 'buyer') label = viewer === 'buyer' ? 'Lo cancelaste' : 'El comprador lo canceló';
   return event.note ? `${label}: ${event.note}` : label;
 }

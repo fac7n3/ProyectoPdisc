@@ -73,21 +73,8 @@ const transferenciaProvider = {
   },
 };
 
-const efectivoProvider = {
-  name: 'efectivo',
-  /**
-   * Efectivo al retirar o al recibir: no hay nada que pagar ahora. El
-   * comercio ya puede preparar el pedido y lo marca cobrado al entregarlo
-   * (advance_order_status, migración 115).
-   * @returns {Promise<{success: boolean, pending: boolean}>}
-   */
-  async pay() {
-    return { success: true, pending: true };
-  },
-};
-
 /**
- * @param {string} method - 'simulado' | 'transferencia' | 'mercadopago' | 'efectivo'
+ * @param {string} method - 'simulado' | 'transferencia' | 'mercadopago'
  * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, redirecting?: boolean, message?: string}>}}
  */
 export function getPaymentProvider(method) {
@@ -98,8 +85,6 @@ export function getPaymentProvider(method) {
       return transferenciaProvider;
     case 'mercadopago':
       return mercadopagoProvider;
-    case 'efectivo':
-      return efectivoProvider;
     default:
       throw new Error(`Método de pago no soportado todavía: ${method}`);
   }

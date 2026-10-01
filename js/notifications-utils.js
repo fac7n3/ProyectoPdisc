@@ -240,9 +240,7 @@ function buildNotificationLink(n) {
 
 /** Títulos de los avisos de pedidos, con el número (#BL-1066) que ve todo el mundo. */
 const ORDER_TITLES = {
-  order_created: (p, ref) => (p.payment_method === 'efectivo'
-    ? `Nuevo pedido ${ref}: se paga en efectivo, ya podés prepararlo`
-    : `Nuevo pedido ${ref}: esperando la transferencia`),
+  order_created: (p, ref) => `Nuevo pedido ${ref}: esperando la transferencia`,
   order_paid: (p, ref) => (p.total_price
     ? `Tu pago de ${formatPrice(p.total_price)} fue confirmado (pedido ${ref})`
     : `Tu pago del pedido ${ref} fue confirmado`),
