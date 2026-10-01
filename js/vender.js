@@ -600,6 +600,7 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 let currentStoreHasAlias = null;
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
+let currentInactiveProductCount = 0; // Resumen: productos pausados/inactivos
 let currentUserFirstName = 'vendedor'; // Resumen: nombre para el saludo "¡Hola, {nombre}!"
 let currentUserId = null; // Resumen: para detectar preguntas sin responder (último mensaje no es mío)
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
@@ -2860,6 +2861,8 @@ function rsPendingCard(title, icon, area, rows, footer) {
       if (r.href) window.location.href = r.href;
       else if (r.section === 'pedidos') goToPedidos(r.tab || 'all');
       else location.hash = r.section;
+      // "Publicaciones inactivas" abre la lista ya filtrada por las pausadas.
+      if (r.pubStatus) document.querySelector(`#pub-toolbar .pub-chip[data-status="${r.pubStatus}"]`)?.click();
     });
     row.appendChild(rsEl('span', 'rs-pending-row__label', r.label));
     const right = rsEl('span', 'rs-pending-row__right');
@@ -3226,6 +3229,7 @@ async function renderResumen() {
 
   dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
+    { label: 'Publicaciones inactivas', count: currentInactiveProductCount, section: 'publicaciones', pubStatus: 'inactive' },
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
   dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
@@ -3337,6 +3341,7 @@ async function fetchProducts() {
 
   // Resumen: "Productos Activos" -- solo los is_active (para la card de pendientes).
   currentActiveProductCount = products.filter((p) => p.is_active).length;
+  currentInactiveProductCount = products.length - currentActiveProductCount;
   const statProducts = document.getElementById('stat-products-count');
   if (statProducts) statProducts.textContent = currentActiveProductCount;
 
