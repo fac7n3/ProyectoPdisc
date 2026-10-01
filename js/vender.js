@@ -3031,6 +3031,8 @@ function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
 
   // Columna izquierda: ventas brutas de los últimos 7 días (línea)
   const left = rsEl('div');
+  left.id = 'resumen-sales-gross';
+  left.style.scrollMarginTop = '1rem';
   left.appendChild(rsEl('div', 'rs-metrics__label', 'Ventas brutas de los últimos 7 días'));
   left.appendChild(rsEl('div', 'rs-metrics__figure', formatPrice(sales7d)));
   if (pctChange !== null) {
@@ -3213,6 +3215,7 @@ async function renderResumen() {
     area: 's2', icon: 'fa-sack-dollar', iconVariant: 'sales', title: 'Ventas brutas',
     value: formatPrice(sales7d), sub: 'Últimos 7 días',
     delta: pctChange !== null ? { text: `${Math.abs(pctChange)}% vs. semana anterior`, positive: pctChange >= 0 } : null,
+    action: { label: 'Ver detalle', onClick: () => document.getElementById('resumen-sales-gross')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) },
   }));
   dash.appendChild(rsStatCard({
     area: 's3', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
