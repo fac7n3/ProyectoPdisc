@@ -1566,7 +1566,8 @@ function pedidosTabMatches(order, tab) {
       || (order.status === 'paid' && orderHasCourier(order));
     case 'completed': return order.status === 'completed';
     case 'cancelled': return order.status === 'cancelled';
-    default: return true;
+    // "Todos" no incluye los cancelados: tienen su propia pestaña.
+    default: return order.status !== 'cancelled';
   }
 }
 
