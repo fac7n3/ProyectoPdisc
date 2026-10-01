@@ -3169,8 +3169,7 @@ async function renderResumen() {
 
   const reviewCount = reviews.length;
   const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
-  const reviewedClientIds = new Set(reviews.map((r) => r.client_id).filter(Boolean));
-  const salesToRate = paidOrders.filter((o) => o.status === 'completed' && o.client_id && !reviewedClientIds.has(o.client_id)).length;
+  const deliveredCount = paidOrders.filter((o) => o.status === 'completed').length;
 
   const sales7d = paidOrders.filter((o) => new Date(o.created_at) >= sevenDaysAgo).reduce((s, o) => s + o.total_price, 0);
   const salesPrev7d = paidOrders
@@ -3227,15 +3226,15 @@ async function renderResumen() {
   }));
   dash.appendChild(rsPromoCard());
 
-  dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
+  dash.appendChild(rsPendingCard('Estado de tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
     { label: 'Publicaciones inactivas', count: currentInactiveProductCount, section: 'publicaciones', pubStatus: 'inactive' },
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
-  dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
+  dash.appendChild(rsPendingCard('Estado de tus ventas', 'fa-truck-fast', 'p2', [
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pedidos', tab: 'to_confirm', alert: pendingPayCount > 0 },
     { label: 'Pedidos para preparar', count: toPrepareCount, section: 'pedidos', tab: 'to_prepare', alert: toPrepareCount > 0 },
-    { label: 'Ventas para calificar', count: salesToRate, section: 'pedidos', tab: 'completed' },
+    { label: 'Entregados', count: deliveredCount, section: 'pedidos', tab: 'completed' },
   ], { label: 'Ir a pedidos', section: 'pedidos' }));
 
   // Novedades / ¿Necesitás ayuda?
