@@ -456,6 +456,8 @@
       .rs-metrics__label { font-size: 0.82rem; color: var(--bl-text-secondary); margin-bottom: 0.3rem; }
       .rs-metrics__figure { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
       .rs-line { width: 100%; height: auto; margin-top: 0.75rem; }
+      .rs-sales30 { margin-top: 1.25rem; scroll-margin-top: 1rem; }
+      .rs-sales30 .rs-line { max-width: 640px; }
       .rs-line__grid { stroke: var(--bl-border-light); stroke-width: 1; }
       .rs-line__axis { fill: var(--bl-text-muted); font-size: 9px; }
       .rs-line__path { fill: none; stroke: var(--bl-vendor-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -579,7 +581,7 @@
       .pd-header__title i { color: var(--bl-vendor-accent); font-size: 1.15rem; }
       .pd-header__sub { color: var(--bl-text-secondary); margin: 0.3rem 0 0; font-size: 0.92rem; }
 
-      .pd-dash { display: grid; grid-template-columns: repeat(5, 1fr) 1.6fr; gap: 0.85rem; margin-bottom: 1.25rem; }
+      .pd-dash { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.85rem; margin-bottom: 1.25rem; }
       .pd-stat { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
       .pd-stat__top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
       .pd-stat__icon { width: 30px; height: 30px; border-radius: var(--bl-radius-md); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
@@ -591,9 +593,6 @@
       .pd-stat__title { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; }
       .pd-stat__value { font-size: 1.25rem; font-weight: 700; color: var(--bl-text); line-height: 1.15; }
       .pd-stat__sub { font-size: 0.72rem; color: var(--bl-text-muted); margin-top: 0.2rem; }
-
-      .pd-chart { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
-      .pd-chart__label { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; margin-bottom: 0.2rem; }
 
       /* Una sola columna: con el sidebar de "Mi cuenta" (260px) restándole
          ancho a mc-content (tope 1200px en el shell), no sobra lugar para una
@@ -700,7 +699,6 @@
 
       @media (max-width: 1100px) {
         .pd-dash { grid-template-columns: repeat(3, 1fr); }
-        .pd-chart { grid-column: 1 / -1; }
       }
       @media (max-width: 640px) {
         .pd-dash { grid-template-columns: repeat(2, 1fr); }
@@ -884,7 +882,7 @@
         .pub-bulk__actions { margin-left: 0; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/vender-DcUaKxs_.js"></script>
+    <script type="module" crossorigin src="/assets/vender-BFql_84m.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DM-AlAwo.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-CbEx1Yqe.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CkgV1SVI.js">

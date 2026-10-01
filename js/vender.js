@@ -1607,7 +1607,7 @@ function pdStat(icon, variant, title, value, sub) {
 
 const PEDIDOS_COUNTED_TABS = ['to_confirm', 'pending_payment', 'to_prepare', 'in_progress', 'completed', 'cancelled'];
 
-/** Franja de stats + línea de "Ventas de los últimos 7 días" (misma línea SVG que Resumen) + contadores de las pestañas. */
+/** Franja de stats + contadores de las pestañas. */
 function renderPedidosStats() {
   const dash = document.getElementById('pedidos-dash');
   if (!dash) return;
@@ -1617,9 +1617,6 @@ function renderPedidosStats() {
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
   thirtyDaysAgo.setHours(0, 0, 0, 0);
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(now.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
 
   const byTab = Object.fromEntries(PEDIDOS_COUNTED_TABS.map((tab) => [tab, ordCache.filter((o) => pedidosTabMatches(o, tab))]));
   const total30d = ordCache.filter((o) => new Date(o.created_at) >= thirtyDaysAgo);
@@ -1630,21 +1627,6 @@ function renderPedidosStats() {
   dash.appendChild(pdStat('fa-box-open', 'shipping', 'Para preparar', String(byTab.to_prepare.length), formatPrice(sum(byTab.to_prepare))));
   dash.appendChild(pdStat('fa-circle-check', 'completed', 'Entregados', String(byTab.completed.length), formatPrice(sum(byTab.completed))));
   dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(byTab.cancelled.length), formatPrice(sum(byTab.cancelled))));
-
-  const chartCard = rsEl('div', 'pd-chart');
-  chartCard.appendChild(rsEl('div', 'pd-chart__label', 'Ventas de los últimos 7 días'));
-  const dailyTotals = [];
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(sevenDaysAgo);
-    day.setDate(day.getDate() + i);
-    const key = day.toISOString().slice(0, 10);
-    const total = ordCache
-      .filter((o) => o.payment_status === 'paid' && o.created_at.slice(0, 10) === key)
-      .reduce((s, o) => s + o.total_price, 0);
-    dailyTotals.push({ day, total });
-  }
-  chartCard.appendChild(rsLineChart(dailyTotals));
-  dash.appendChild(chartCard);
 
   PEDIDOS_COUNTED_TABS.forEach((tab) => {
     const el = document.getElementById(`pd-tab-count-${tab}`);
@@ -2960,13 +2942,17 @@ function rsHelpCard() {
   return card;
 }
 
-/** Línea de ventas brutas de los últimos 7 días (SVG, sin librería). */
-function rsLineChart(dailyTotals) {
+/**
+ * Línea de ventas por día (SVG, sin librería). `formatValue` da el texto del eje
+ * Y (pesos por defecto; la de cantidad de ventas pasa enteros); `labelEvery`
+ * espacia las fechas del eje X cuando hay muchos días (la de 30 días).
+ */
+function rsLineChart(dailyTotals, { formatValue = formatPrice, labelEvery = 1, minMax = 1 } = {}) {
   const svgNS = 'http://www.w3.org/2000/svg';
   const W = 480, H = 160, padL = 46, padR = 8, padT = 10, padB = 22;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
-  const maxTotal = Math.max(1, ...dailyTotals.map((d) => d.total));
+  const maxTotal = Math.max(minMax, ...dailyTotals.map((d) => d.total));
   const n = dailyTotals.length;
   const stepX = n > 1 ? chartW / (n - 1) : 0;
   const points = dailyTotals.map((d, i) => ({
@@ -2993,11 +2979,12 @@ function rsLineChart(dailyTotals) {
     label.setAttribute('class', 'rs-line__axis');
     label.setAttribute('x', '2');
     label.setAttribute('y', (y + 3).toFixed(1));
-    label.textContent = formatPrice(Math.round(maxTotal * frac));
+    label.textContent = formatValue(Math.round(maxTotal * frac));
     svg.appendChild(label);
   });
 
-  points.forEach((p) => {
+  points.forEach((p, i) => {
+    if (i % labelEvery !== 0 && i !== n - 1) return;
     const label = document.createElementNS(svgNS, 'text');
     label.setAttribute('class', 'rs-line__axis');
     label.setAttribute('x', p.x.toFixed(1));
@@ -3111,6 +3098,39 @@ function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
   return card;
 }
 
+/** "Ventas totales de los últimos 30 días": cantidad de ventas por día (misma línea que Métricas de negocio). */
+function rsSales30Card(dailyCounts, total30d, pctChange) {
+  const card = rsEl('div', 'rs-card rs-sales30');
+  card.id = 'resumen-sales30';
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-solid fa-chart-line"></i> ';
+  title.appendChild(document.createTextNode('Ventas totales de los últimos 30 días'));
+  card.appendChild(title);
+
+  card.appendChild(rsEl('div', 'rs-metrics__label', 'Cantidad de ventas por día'));
+  card.appendChild(rsEl('div', 'rs-metrics__figure', String(total30d)));
+  if (pctChange !== null) {
+    const delta = rsEl('div', 'rs-stat__delta' + (pctChange < 0 ? ' rs-stat__delta--down' : ''));
+    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}"></i> `;
+    delta.appendChild(document.createTextNode(`${Math.abs(pctChange)}% vs. 30 días anteriores`));
+    card.appendChild(delta);
+  }
+  // minMax 2 + enteros: el eje Y marca 0 / 1 / 2 en vez de decimales sin sentido.
+  const peak = Math.max(2, ...dailyCounts.map((d) => d.total));
+  card.appendChild(rsLineChart(dailyCounts, {
+    formatValue: (v) => String(v),
+    labelEvery: 5,
+    minMax: peak % 2 === 0 ? peak : peak + 1,
+  }));
+  return card;
+}
+
+/** Día local (YYYY-MM-DD): toISOString() es UTC y corría de día las ventas de la noche en Argentina (UTC-3). */
+function localDayKey(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 async function renderResumen() {
   const dash = document.getElementById('resumen-dash');
   const grid2 = document.getElementById('resumen-grid2');
@@ -3159,10 +3179,26 @@ async function renderResumen() {
   for (let i = 0; i < 7; i++) {
     const day = new Date(sevenDaysAgo);
     day.setDate(day.getDate() + i);
-    const key = day.toISOString().slice(0, 10);
-    const total = paidOrders.filter((o) => o.created_at.slice(0, 10) === key).reduce((s, o) => s + o.total_price, 0);
+    const key = localDayKey(day);
+    const total = paidOrders.filter((o) => localDayKey(new Date(o.created_at)) === key).reduce((s, o) => s + o.total_price, 0);
     dailyTotals.push({ day, total });
   }
+  // Cantidad de ventas por día en los últimos 30 días + comparación con los 30 anteriores.
+  const countByDay = new Map();
+  paidOrders.forEach((o) => {
+    const k = localDayKey(new Date(o.created_at));
+    countByDay.set(k, (countByDay.get(k) || 0) + 1);
+  });
+  const dailyCounts = [];
+  for (let i = 0; i < 30; i++) {
+    const day = new Date(thirtyDaysAgo);
+    day.setDate(day.getDate() + i);
+    dailyCounts.push({ day, total: countByDay.get(localDayKey(day)) || 0 });
+  }
+  const prevThirtyDaysAgo = new Date(thirtyDaysAgo);
+  prevThirtyDaysAgo.setDate(prevThirtyDaysAgo.getDate() - 30);
+  const ordersPrev30dCount = paidOrders.filter((o) => { const d = new Date(o.created_at); return d >= prevThirtyDaysAgo && d < thirtyDaysAgo; }).length;
+  const pctChange30d = ordersPrev30dCount > 0 ? Math.round(((orders30dCount - ordersPrev30dCount) / ordersPrev30dCount) * 100) : null;
   const catItems30d = catItems.filter((it) => it.orders?.created_at && new Date(it.orders.created_at) >= thirtyDaysAgo);
 
   // Fila superior: 3 stats + "Impulsá tus ventas"
@@ -3181,7 +3217,7 @@ async function renderResumen() {
   dash.appendChild(rsStatCard({
     area: 's3', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
     value: String(orders30dCount), sub: 'Últimos 30 días',
-    action: { label: 'Ver detalle', onClick: () => goToPedidos('all') },
+    action: { label: 'Ver detalle', onClick: () => document.getElementById('resumen-sales30')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) },
   }));
   dash.appendChild(rsPromoCard());
 
@@ -3203,6 +3239,7 @@ async function renderResumen() {
   // Métricas de negocio
   metricsContainer.textContent = '';
   metricsContainer.appendChild(rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d));
+  metricsContainer.appendChild(rsSales30Card(dailyCounts, orders30dCount, pctChange30d));
 }
 
 // (El insights provisional F12-13 se reemplazó por renderResumen, arriba.)

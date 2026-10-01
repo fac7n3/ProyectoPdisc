@@ -80,6 +80,15 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
+  del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
+  de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,
+  "Ventas totales de los últimos 30 días" (`rsSales30Card`, cantidad de ventas
+  por día + % vs. los 30 días anteriores), debajo de Métricas de negocio; el
+  "Ver detalle" de la tarjeta "Ventas totales" ahora baja hasta ella en vez de
+  ir a Pedidos. `rsLineChart` acepta `formatValue`/`labelEvery`/`minMax`. De paso,
+  los gráficos agrupan por **día local** (`localDayKey`): `toISOString()` es UTC y
+  mandaba al día siguiente las ventas de 21:00 a 24:00 en Argentina.
 - **Resuelto 2026-10-01** — **La flecha de arriba a la derecha del navbar ya
   vuelve a donde estabas**, no siempre al inicio (a pedido del usuario). Era un
   `<a href="home.html">` fijo en ~9 páginas. Ahora un handler global en
