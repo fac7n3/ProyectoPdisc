@@ -80,6 +80,24 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-01** — **Tests del flujo del pedido**, uno por cada mejora
+  de la lista de 40 (numerados igual). Frontend: `js/order-utils.test.mjs` (23)
+  y `js/notifications-utils.test.mjs` (7, con stub de Supabase vía
+  `registerHooks`). Base: **`db/tests/order_flow.test.sql`** (23), que se corre
+  entero contra producción (SQL Editor o MCP) y **no deja nada**: termina en
+  ROLLBACK, cada test se deshace solo, los pedidos de prueba usan una
+  secuencia temporal y `create_order` una secuencia de prueba vía ALTER del
+  default (va último: bloquea `orders` unos milisegundos). Verificado: 23/23 y,
+  después, la secuencia real intacta (1085) y cero datos de prueba. Para poder
+  testearlas, `orderHasCourier`, `pedidosTabMatches` e `isSellerOrderAlert`
+  pasaron de `vender.js` a `order-utils.js`. Arreglado de paso: a
+  `expire_pending_orders` le faltaba el `as $$` en `115_order_flow.sql` (en
+  producción estaba bien; el archivo no compilaba). **Ojo:** el trigger que
+  devuelve el stock al cancelar (`orders_release_stock` →
+  `_restock_order_items`, columna `orders.stock_released_at`) existe en
+  producción pero **no está en ningún archivo de `db/schema/`**, igual que el
+  grant de columna de `orders`. Y `npm test` no corre en Windows (el script
+  usa un `for` de bash y npm lo ejecuta con cmd): correr el loop en Git Bash.
 - **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
   del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
   de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,

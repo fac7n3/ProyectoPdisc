@@ -77,6 +77,35 @@ export function buyerSaysPaid(order) {
     || (order.payment_proofs || []).some((p) => p.status === 'pending');
 }
 
+/** Con un repartidor asignado, el pedido lo avanza él, no el comercio. */
+export function orderHasCourier(order) {
+  return (order.deliveries || []).some((d) => d.status !== 'cancelled');
+}
+
+/** Pestañas de Pedidos del panel del vendedor ("Pagos por confirmar" es una de ellas). */
+export function pedidosTabMatches(order, tab) {
+  switch (tab) {
+    case 'to_confirm': return awaitingTransfer(order) && buyerSaysPaid(order);
+    // Esperando que el comprador pague (el efectivo se cobra al entregar: no espera nada).
+    case 'pending_payment': return order.status === 'pending' && order.payment_status === 'pending'
+      && order.payment_method !== 'efectivo' && !(awaitingTransfer(order) && buyerSaysPaid(order));
+    case 'to_prepare': return canPrepare(order) && !orderHasCourier(order);
+    case 'in_progress': return order.status === 'ready_for_pickup' || order.status === 'shipped'
+      || (order.status === 'paid' && orderHasCourier(order));
+    case 'completed': return order.status === 'completed';
+    case 'cancelled': return order.status === 'cancelled';
+    // "Todos" no incluye los cancelados: tienen su propia pestaña.
+    default: return order.status !== 'cancelled';
+  }
+}
+
+const SELLER_ALERT_TYPES = new Set(['order_created', 'order_paid_seller', 'transfer_notified', 'payment_proof_uploaded', 'order_cancelled_by_buyer', 'revocation_requested']);
+
+/** ¿Este aviso hace sonar el panel del vendedor y suma al contador de la pestaña? */
+export function isSellerOrderAlert(notification) {
+  return SELLER_ALERT_TYPES.has(notification?.type);
+}
+
 /**
  * El botón principal del vendedor en la tarjeta, o null si no le toca nada.
  * Con un repartidor asignado no hay paso: lo avanza él.

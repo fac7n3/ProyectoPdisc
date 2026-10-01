@@ -4841,3 +4841,24 @@ token del proyecto cae en ese rango. El check del contraste quedó en el harness
   - `<dialog>` necesita `margin: auto` por el reset global.
   - `vender.js` y otros archivos tienen CRLF: los scripts de splice tienen que buscar marcadores con `\r?\n`.
 - **Publicado el mismo día (con el OK del usuario):** 115 aplicada (65 pedidos numerados 1001-1065, con códigos e historial; 4 avisos `order_paid` viejos pasaron a `order_paid_seller`) → `mp-webhook` v6 (`verify_jwt=false` como antes; antes de desplegar se comparó el código activo contra `main` y coincidía) → merge a `main` + deploy de Vercel READY y verificado con curl → 116 aplicada y probada con ROLLBACK (UPDATE directo = "permission denied", el RPC anda). La prueba consumió el #BL-1066: el primer pedido real es el #BL-1067.
+
+## 2026-10-01 — Tests del flujo del pedido, uno por mejora
+
+- **Pedido del usuario:** "un test unitario de cada una de las funciones" de la lista de 40 del 2026-09-30. Se testeó lo implementado (1, 2, 3, 6, 7, 8a, 9, 10, 11, 13, 14, 16, 17, 20, 21, 22, 26, 27, 28, 29, 34, 35, 36, 38 y los arreglos A–G); los nombres de los tests llevan el número de la lista.
+- **Frontend:**
+  - `js/order-utils.test.mjs` (23): reescrito por número de mejora, conserva todas las verificaciones anteriores.
+  - `js/notifications-utils.test.mjs` (7): títulos y links de cada aviso de pedido. El módulo importa `auth-utils.js` (cliente de Supabase con `import.meta.env`) y `dropdown.js`: el test los reemplaza por un `data:` URL con `module.registerHooks` (Node ≥ 22.15), y pone un `sessionStorage` falso porque `cart-utils.js` sincroniza el carrito al cargar.
+  - `orderHasCourier`, `pedidosTabMatches` (pestañas de Pedidos, incluida "Pagos por confirmar") e `isSellerOrderAlert` (qué avisos hacen sonar el panel) pasaron de `vender.js` a `order-utils.js` para poder testearlas.
+- **Base: `db/tests/order_flow.test.sql` (23 tests).** Se pega entero en el SQL Editor o en `execute_sql` y devuelve una fila por test. Cómo está armado para poder correrlo contra producción:
+  - `begin; … select resultados; rollback;` (el MCP devuelve el último resultado con filas, el del select).
+  - Usuarios, comercio y producto de prueba con uuids fijos `00000000-0000-4000-8000-00000000b00N`; se loguea con `set_config('request.jwt.claims', …, true)` y para probar RLS se hace `set local role authenticated` / `reset role` dentro del bloque.
+  - Cada test es un `do $$ … raise exception 'OK'; exception when others then insert into _t …`: la subtransacción se deshace siempre, así el stock arranca en 10 en cada test y no se pisan.
+  - Los pedidos de prueba toman el número de una secuencia temporal (`_tseq`, desde 9000001): la secuencia real no vuelve atrás con ROLLBACK.
+  - `create_order` no deja elegir el número: para sus dos tests el default de `orders.order_number` apunta a `public._test_order_number_seq` (ALTER dentro de la transacción). Va al final porque bloquea `orders` hasta el ROLLBACK.
+  - `expire_pending_orders` recorre también los pedidos reales; lo que les hace se deshace con el test.
+- **Verificado:** 23/23 contra producción; después, secuencia real en 1085 sin cambios, default restaurado y cero datos de prueba. El arnés se probó fallando a propósito (`ok` falso, `throws` sin error y con otro error → ❌). En JS, romper `canPrepare` hace fallar los tests 3 y 22.
+- **Encontrado:**
+  - En `115_order_flow.sql`, a `expire_pending_orders` le faltaba el `as $$` (el archivo no compilaba; en producción la función está bien). Arreglado.
+  - El trigger que devuelve el stock (`orders_release_stock`, BEFORE UPDATE → `_restock_order_items`, marca `orders.stock_released_at`) existe en producción pero no en `db/schema/`. Los tests 7, 11, 16 y 38 dependen de él.
+  - `npm test` no corre en Windows: el script es un `for` de bash y npm lo ejecuta con cmd. En Git Bash: `for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do node "$f" || exit 1; done`.
+- **Sin test unitario (es pura pantalla):** la pantalla "¡Listo!" en sí, el botón de reintentar MP, el sonido, el `<dialog>` de detalle y el bloque de reseña. Se cubre la lógica que los decide (`orderLabel`, `awaitingMercadoPago`, `isSellerOrderAlert`, `timelineSteps`/`eventLabel`, aviso `order_delivered`); el reintento con un pago rechazado antes está en `mp-webhook.test.mjs`.

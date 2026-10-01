@@ -1208,6 +1208,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public
+as $$
 declare
   r record;
 begin

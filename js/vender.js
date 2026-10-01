@@ -18,7 +18,7 @@ import { confirmDialog, formDialog } from './confirm-dialog.js';
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
   orderLabel, orderRef, canPrepare, awaitingTransfer, buyerSaysPaid, nextSellerAction, timelineSteps, eventLabel,
-  formatDueDate, toWhatsappNumber, sellerWhatsappMessage,
+  formatDueDate, toWhatsappNumber, sellerWhatsappMessage, orderHasCourier, pedidosTabMatches, isSellerOrderAlert,
 } from './order-utils.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -883,11 +883,6 @@ async function renderAllOrders() {
   refreshOpenOrderDetail();
 }
 
-/** Con un repartidor asignado, el pedido lo avanza él, no el comercio. */
-function orderHasCourier(order) {
-  return (order.deliveries || []).some((d) => d.status !== 'cancelled');
-}
-
 /** El último comprobante sin revisar, si hay. */
 function pendingProof(order) {
   return (order.payment_proofs || [])
@@ -1508,7 +1503,6 @@ function applyDeliverDeepLink() {
 
 // --- Aviso de pedido nuevo en el panel (29): sonido + contador en la pestaña ---
 
-const SELLER_ALERT_TYPES = new Set(['order_created', 'order_paid_seller', 'transfer_notified', 'payment_proof_uploaded', 'order_cancelled_by_buyer', 'revocation_requested']);
 let unseenOrderAlerts = 0;
 let baseDocumentTitle = document.title;
 
@@ -1537,7 +1531,7 @@ function playOrderChime() {
 function initOrderAlerts() {
   baseDocumentTitle = document.title;
   window.addEventListener('bl:new-notifications', (e) => {
-    const relevant = (e.detail || []).filter((n) => SELLER_ALERT_TYPES.has(n.type));
+    const relevant = (e.detail || []).filter(isSellerOrderAlert);
     if (!relevant.length) return;
     playOrderChime();
     renderAllOrders();
@@ -1555,22 +1549,6 @@ function initOrderAlerts() {
 }
 
 // --- Pestañas, filtros y estadísticas ---
-
-function pedidosTabMatches(order, tab) {
-  switch (tab) {
-    case 'to_confirm': return awaitingTransfer(order) && buyerSaysPaid(order);
-    // Esperando que el comprador pague (el efectivo se cobra al entregar: no espera nada).
-    case 'pending_payment': return order.status === 'pending' && order.payment_status === 'pending'
-      && order.payment_method !== 'efectivo' && !(awaitingTransfer(order) && buyerSaysPaid(order));
-    case 'to_prepare': return canPrepare(order) && !orderHasCourier(order);
-    case 'in_progress': return order.status === 'ready_for_pickup' || order.status === 'shipped'
-      || (order.status === 'paid' && orderHasCourier(order));
-    case 'completed': return order.status === 'completed';
-    case 'cancelled': return order.status === 'cancelled';
-    // "Todos" no incluye los cancelados: tienen su propia pestaña.
-    default: return order.status !== 'cancelled';
-  }
-}
 
 function sortPedidos(list, sort) {
   const copy = [...list];
