@@ -89,7 +89,19 @@ let currentUserId = null;
 // --- Navegación del hub: la grilla y la sección abierta se turnan ---
 // scrollToId (ej. desde Ajustes -> "Ver" de Contraseña) lleva directo a esa
 // sub-sección de adentro de la pestaña en vez de al tope.
+// Cada sección que se abre deja una entrada en el historial (history.state.
+// blSection), así la flecha del navbar y el "atrás" del navegador vuelven al
+// hub de Mi perfil (o a la sección anterior) en vez de salirse de la página.
+// El handler de popstate de más abajo es quien muestra/oculta al retroceder.
 function openSection(targetId, scrollToId) {
+  if (!document.getElementById(targetId)) return;
+  if (window.history.state?.blSection !== targetId) {
+    window.history.pushState({ blSection: targetId }, '', window.location.href);
+  }
+  showSection(targetId, scrollToId);
+}
+
+function showSection(targetId, scrollToId) {
   const targetPane = document.getElementById(targetId);
   if (!targetPane) return;
 
@@ -125,11 +137,22 @@ function closeSection() {
   if (accountHub) accountHub.style.display = "grid";
 }
 
+window.addEventListener("popstate", (e) => {
+  const target = e.state?.blSection;
+  if (target && document.getElementById(target)) showSection(target);
+  else if (!e.state?.pmProduct) closeSection();
+});
+
 sectionLinks.forEach((el) => {
   el.addEventListener("click", () => openSection(el.dataset.target, el.dataset.scrollTo));
 });
 
-if (sectionBack) sectionBack.addEventListener("click", closeSection);
+// Si la sección se abrió desde el hub, "Volver a mi perfil" retrocede en el
+// historial (popstate cierra); si se abrió directo por un link, solo cierra.
+if (sectionBack) sectionBack.addEventListener("click", () => {
+  if (window.history.state?.blSection) window.history.back();
+  else closeSection();
+});
 
 
 // --- Función auxiliar ---
@@ -2705,7 +2728,7 @@ function handleNotificationDeepLink() {
     const url = new URL(window.location);
     url.searchParams.delete('tab');
     url.searchParams.delete('order');
-    window.history.replaceState({}, '', url);
+    window.history.replaceState(window.history.state, '', url);
   }
 }
 
@@ -2777,7 +2800,7 @@ function handleMercadoPagoReturn() {
 
   const url = new URL(window.location);
   url.searchParams.delete('mp');
-  window.history.replaceState({}, '', url);
+  window.history.replaceState(window.history.state, '', url);
 }
 
 // --- Inicialización con Guard ---
