@@ -2925,7 +2925,7 @@ function rsHelpCard() {
 
   const rows = [
     { title: 'Chat en vivo', sub: 'Muy pronto', onClick: () => showToast('El chat en vivo va a estar disponible próximamente. Mientras tanto, podés escribirnos por correo o dejarnos un reclamo en Soporte.', 'success') },
-    { title: 'Centro de ayuda', sub: 'Preguntas frecuentes', href: './info.html' },
+    { title: 'Centro de ayuda', sub: 'Preguntas frecuentes', onClick: () => { location.hash = 'soporte'; } },
     { title: 'Soporte por correo', sub: 'soporte@baraderolocal.com.ar', href: 'mailto:soporte@baraderolocal.com.ar' },
   ];
   rows.forEach((r) => {
