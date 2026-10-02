@@ -22,7 +22,7 @@ import { fetchReviewsSummary } from './reviews-utils.js';
 import { createProductDetailFetcher } from './product-detail-utils.js';
 
 // Las consultas de siempre, solo para cuando la función get_product_detail
-// (migración 117) todavía no está en la base. Ojo: son las lentas -- los joins
+// (migración 118) todavía no está en la base. Ojo: son las lentas -- los joins
 // anidados disparan en cadena las policies de products/orders/stores.
 const LEGACY_SELECT = [
   'id, title, description, price, compare_at_price, offer_expires_at, stock, image_url',

@@ -27,7 +27,7 @@ function escapeHTML(str) {
 }
 
 // ── Datos reales del producto (Supabase) ────────────────────
-// Una sola consulta (RPC get_product_detail, migración 117) que trae el
+// Una sola consulta (RPC get_product_detail, migración 118) que trae el
 // producto con comercio, fotos, opciones y el resumen de reseñas. Antes eran
 // una consulta con joins anidados (~1 s en la base: las policies de RLS se
 // encadenan) más el resumen de reseñas por separado; apretar un producto

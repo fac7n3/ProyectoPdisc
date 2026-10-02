@@ -4,7 +4,7 @@
  * Correr con:  node js/product-detail-utils.test.mjs
  *
  * Importa porque es el camino de cada click en un producto: si el respaldo
- * falla, apretar un producto muestra un error mientras la migración 117 no
+ * falla, apretar un producto muestra un error mientras la migración 118 no
  * esté aplicada; si el pedido adelantado se pasa de listo, muestra stock o
  * precios viejos.
  */

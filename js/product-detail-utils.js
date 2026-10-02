@@ -9,13 +9,13 @@
  * Por qué existe: apretar un producto tardaba mucho. El modal armaba el
  * detalle con una consulta con joins anidados que, con las policies de RLS
  * encadenadas, le costaba ~1 s a la base (p95 ~5 s) más 3 pedidos de red.
- * La migración 117 (get_product_detail) lo resuelve en una sola consulta que
- * tarda unos pocos ms. Ver db/schema/117_get_product_detail_rpc.sql.
+ * La migración 118 (get_product_detail) lo resuelve en una sola consulta que
+ * tarda unos pocos ms. Ver db/schema/118_get_product_detail_rpc.sql.
  *
  * Dos cosas que hace este módulo:
  *
  * 1. **Respaldo si la función todavía no está en la base.** Si PostgREST dice
- *    que `get_product_detail` no existe (la 117 sin aplicar), se usan las
+ *    que `get_product_detail` no existe (la 118 sin aplicar), se usan las
  *    consultas de siempre y se acuerda de no volver a probar el RPC en cada
  *    click. Así el orden de publicación (código vs. migración) no importa.
  *

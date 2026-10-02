@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     // Misma consulta única que usa el modal (RPC get_product_detail, migración
-    // 117; ver js/product-detail-api.js): antes era un select con joins
+    // 118; ver js/product-detail-api.js): antes era un select con joins
     // anidados que tardaba ~1 s en la base. Tira si no existe o no se puede ver.
     const [product, { data: { session } }] = await Promise.all([
       fetchProductDetail(productId),
