@@ -80,6 +80,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — el cartel (toast) "Elegí sabor antes de comprar" salía
+  **detrás** del modal del producto: `.toast` tenía `z-index: 200` y el overlay del
+  modal `500`. Ahora el toast va en `11000` (`Assets/styles/home.css`), por encima
+  de todo, incluidos los carteles de confirmación (`10500`). Afecta a cualquier
+  `showToast` disparado con un modal abierto (favoritos, agregar al carrito, etc.).
 - **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
   del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
   de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,
