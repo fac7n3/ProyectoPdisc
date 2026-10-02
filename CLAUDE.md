@@ -105,9 +105,16 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Gotcha general:** cualquier tipo de conexión nuevo (otro esquema, otro host)
   hay que sumarlo al `connect-src` de TODAS las páginas, y el chequeo que lo
   caza es cargar la página en un navegador real y buscar `Refused to connect`
-  (evento `securitypolicyviolation`). **Sin probar contra los servidores reales
-  de Realtime** (sin red a Supabase): la confirmación en producción son
-  conexiones `/realtime/v1/websocket` con status 101 en los logs de la API.
+  (evento `securitypolicyviolation`). **Falta confirmarlo en producción:** el
+  CSP corregido ya se sirve en vivo (verificado en `login.html` tras el deploy;
+  el service worker pide el HTML primero a la red, así que una recarga alcanza),
+  pero al cerrar la sesión ninguna cuenta con sesión iniciada había recargado
+  todavía, y el sandbox no llega a Supabase. Para confirmarlo, con la sesión
+  iniciada: F12 -> Red -> filtro WS, tiene que aparecer `.../realtime/v1/websocket`
+  con estado 101 y ya no el "Refused to connect" en la consola. Del lado de
+  Supabase, antes del arreglo había 0 pedidos a `/realtime/` en `edge_logs` y
+  `realtime_logs` solo tenía chequeos de salud (no se comprobó cuál de las dos
+  fuentes registra el websocket).
 - **Resuelto 2026-10-02** — **La sección "Reseñas" del panel de profesional salía en
   blanco** apenas había una reseña (reportado por el usuario, con captura). Causa:
   `js/profesional-resenas.js` usaba `buildStarRating` (el selector de estrellas

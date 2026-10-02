@@ -93,20 +93,38 @@ violación y 0 conexiones (las otras 3, `info`, `privacidad` y `terminos`, son
 estáticas: no abren el socket, ni antes ni después); después, **0 violaciones en
 las 22**, y las 19 conectan y unen sus canales.
 
-### Cómo confirmarlo en producción
+### Publicado, y cómo confirmarlo en producción
 
-Con el deploy publicado y una cuenta con la sesión iniciada navegando: en los logs
-de la API de Supabase (`query_logs`, fuente `edge_logs`) deben aparecer pedidos a
-`/realtime/v1/websocket` con **status 101** (Switching Protocols). Antes del
-arreglo no podía haber ninguno: el navegador ni llegaba a pedirlos. **Línea de
-base medida antes de publicar** (consulta `select … from logs where source =
-'edge_logs' and log_attributes['request.path'] like '/realtime/%'`, últimas 24 h):
-**0 pedidos**, contra 849 a `/rest/v1/notifications` en el mismo día (el polling
-de 30 s: el respaldo estaba haciendo todo el trabajo). **Lo que no se
-probó:** contra los servidores reales de Realtime (sin red a Supabase desde el
-sandbox); sí que la publicación `supabase_realtime` (migración 117) tenga las
-tablas y que la RLS deje pasar cada evento: eso era del trabajo de la otra sesión y
-sigue siendo lo que conviene mirar la primera vez que alguien lo use de verdad.
+Mergeado a `main` el 2026-10-02 (merge `674c26c`); deploy de Vercel
+`dpl_8mJHa1u1vHapvLM3VPpc51Hk1AEK` en READY. Se verificó en vivo, con
+`web_fetch_vercel_url` (el sandbox no llega a `vercel.app` por curl), que
+`pages/login.html` sirve `connect-src 'self' https://*.supabase.co
+wss://*.supabase.co …` y que la respuesta **no** trae un header
+`Content-Security-Policy` aparte (si lo trajera, mandaría sobre el `<meta>` y el
+arreglo no alcanzaría). El service worker (`public/sw.js`) pide los HTML primero
+a la red (el caché es solo respaldo offline) y los assets llevan hash: **una
+recarga alcanza**, nadie queda con el HTML viejo cacheado.
+
+**Todavía no se vio una conexión real.** Al cerrar la sesión ninguna cuenta con
+sesión iniciada había recargado desde el deploy (el tráfico de
+`/rest/v1/notifications`, que solo hacen las cuentas con sesión, se cortó a las
+22:01Z; el deploy quedó listo a las 22:00:51Z). Lo que sí se midió antes de
+publicar, como línea de base: **0 pedidos a `/realtime/%`** en `edge_logs`
+(últimas 24 h; consulta `select … from logs where source = 'edge_logs' and
+log_attributes['request.path'] like '/realtime/%'`), contra 849 a
+`/rest/v1/notifications` ese día (el polling de 30 s: el respaldo estaba haciendo
+todo el trabajo), y `realtime_logs` con solo chequeos de salud
+(`GET /api/tenants/<id>/health`). **No se comprobó cuál de las dos fuentes
+registra el websocket** (`edge_logs` o `realtime_logs`): mirar las dos.
+
+Para confirmarlo, lo más directo es del lado del navegador: con la sesión
+iniciada, F12 -> Red -> filtro WS, tiene que aparecer
+`.../realtime/v1/websocket?apikey=...` con estado 101, y la consola ya no debe
+mostrar "Refused to connect" ni `[tiempo real: ...] CHANNEL_ERROR`. **Lo que no
+se probó:** contra los servidores reales de Realtime (sin red a Supabase desde el
+sandbox). Esto es la primera vez que ese camino corre de verdad, así que conviene
+mirar también que la publicación `supabase_realtime` (migración 117) tenga las
+tablas y que la RLS deje pasar cada evento: eso era del trabajo de la otra sesión.
 
 ## Click en un producto lento: `get_product_detail` (2026-10-02) — migración 118, aplicada
 
