@@ -4892,3 +4892,28 @@ Pedido del usuario: que las notificaciones salten al instante, en todos los disp
 - **Gotcha del harness:** la respuesta mockeada de un `count: 'exact', head: true` necesita `access-control-expose-headers: content-range`; si no, supabase-js lee 0.
 - **Visto y no tocado:** `orders_select_merged` no incluye al rol `repartidor`, así que su cola probablemente sale vacía con datos reales.
 
+### 2026-10-02 (continuación): notificación emergente con forma de notificación de celular
+
+- **Pedido del usuario:** "que se muestren en la parte inferior de la pantalla como una notificación de cualquier app, así la persona la lee". Antes era un cartel chico (campanita + una línea) abajo a la derecha, que se iba a los 5 s.
+- **Ahora** (`showNotificationToast` en `js/toast-utils.js`, CSS `.bl-toast*` en `home.css`):
+  - Contenedor fijo **abajo al centro**, 440 px de ancho (en celular el ancho de la pantalla menos 1 rem), respetando `safe-area-inset-bottom`.
+  - Tarjeta: encabezado con `/icon.svg` + "BARADERO LOCAL · ahora" (`#64748b` por contraste), título en negrita, detalle de 2 líneas (`buildNotificationPreview(n)` en `notifications-utils.js`, que usa el payload sin consultas extra) y la acción en azul.
+  - Entra deslizándose desde abajo. Se apilan hasta 3.
+  - Dura 8 s y el tiempo se frena con `mouseenter`/`focusin`/`pointerdown` (contador `holds`).
+  - Se cierra con la X o deslizando de costado o hacia abajo (pointer events, `touch-action: pan-y`). Un deslizamiento no cuenta como toque.
+  - Tocarla la abre y la marca como leída (`onOpen` → `markNotificationRead`). Espera hasta 800 ms antes de navegar; si no, el cambio de página cortaba el PATCH (lo agarró el test: en una corrida pasaba y en otra no). Con Ctrl/Cmd no se espera.
+  - La X ya no está anidada adentro del `<a>`: el link es `.bl-toast__main` y el botón es su hermano.
+  - `#BL-1070` va en un `<span>` con `nowrap`.
+  - Con movimiento reducido (sistema o Ajustes), sin desplazamientos.
+- **Verificado:** 20 checks de Playwright en escritorio (1280) y celular (390, táctil):
+  - posición y contenido;
+  - el número de pedido en un renglón;
+  - no se va con el mouse encima;
+  - se va sola al salir;
+  - tocarla navega y hace el PATCH de leída;
+  - la X no navega;
+  - deslizar con `Input.dispatchTouchEvent` la cierra sin navegar.
+  
+  Además se repasaron los 26 checks de tiempo real (siguen pasando).
+- **Gotcha del test:** el sitio tiene scrollbar propia de 10 px (`html::-webkit-scrollbar`) y `clientWidth` igual devuelve 1280. El contenedor fijo se centra sobre 1270, así que mide 635 y no 640: está bien centrado.
+

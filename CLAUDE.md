@@ -80,6 +80,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — **Las notificaciones emergentes ahora se ven como
+  una notificación de celular**, abajo y al centro (a pedido del usuario: el
+  cartelito chico de la esquina derecha se pasaba sin leer). Ícono y nombre de
+  la app, "ahora", título en negrita, una línea de detalle
+  (`buildNotificationPreview`) y la acción ("Ver pedido →"). Duran 8 s (antes
+  5), se frenan con el mouse/dedo encima, se cierran con la X o deslizándolas, y
+  **tocarla la abre y la marca como leída** (espera hasta 0,8 s a que se guarde
+  antes de navegar: si no, el cambio de página cortaba el pedido). El número
+  #BL-1070 no se parte en el guion. Todo en `js/toast-utils.js` +
+  `Assets/styles/home.css`; documentado en `docs/brand-guidelines.md`. 20
+  checks de Playwright en escritorio y celular (incluido deslizar con eventos
+  táctiles reales).
 - **Resuelto 2026-10-02** — **Todo el sitio en tiempo real** (Supabase Realtime),
   a pedido del usuario. Antes no se usaba Realtime en ningún lado: los avisos se
   pedían cada 30 s y el resto recién aparecía al recargar. Ahora, en todas las
