@@ -3561,7 +3561,10 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   font-size: 0.875rem;
   font-weight: 500;
   box-shadow: var(--bl-shadow-lg);
-  z-index: 200;
+  /* Por encima de TODO (modal de producto: 500, carteles de confirmación:
+     10500): un aviso como "Elegí sabor antes de comprar" salía detrás del
+     modal desde el que se disparaba y no se veía. */
+  z-index: 11000;
   transform: translateY(120%);
   opacity: 0;
   transition: all 0.3s ease;

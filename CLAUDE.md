@@ -80,6 +80,23 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — **"Budin" (Beruru) no se podía comprar**: tenía dos
+  tipos de opción llamados "Vainilla" y "Chokolate", **sin ningún valor adentro**
+  (mismo error de armado que el caso "rosa"). En el modal se veían como dos
+  títulos sueltos, imposibles de tocar, y como el modal y `create_order` exigen
+  elegir una opción de **cada** tipo, no había forma de comprarlo. Se corrigió el
+  dato directo en la base: un solo tipo "Sabor" con las opciones Vainilla y
+  Chokolate (se dejó la grafía "Chokolate" tal cual la cargó el comercio). Sin
+  cambios de código. **Ojo:** `create_order` cuenta como grupo a cualquier fila de
+  `product_options`, aunque no tenga valores -- el editor ya no deja crear grupos
+  vacíos (ver 2026-09-24), pero si algún día aparece otro producto "imposible de
+  comprar" con opciones, la consulta que lo caza es `product_options` sin filas en
+  `product_option_values`.
+- **Resuelto 2026-10-02** — el cartel (toast) "Elegí sabor antes de comprar" salía
+  **detrás** del modal del producto: `.toast` tenía `z-index: 200` y el overlay del
+  modal `500`. Ahora el toast va en `11000` (`Assets/styles/home.css`), por encima
+  de todo, incluidos los carteles de confirmación (`10500`). Afecta a cualquier
+  `showToast` disparado con un modal abierto (favoritos, agregar al carrito, etc.).
 - **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
   del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
   de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,
