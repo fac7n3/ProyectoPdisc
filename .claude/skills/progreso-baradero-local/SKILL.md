@@ -5196,3 +5196,35 @@ Pedido del usuario: que las notificaciones salten al instante, en todos los disp
   - **Logo:** el ícono es el mismo logo del navbar. Se importa `../Assets/images/Logos/logoazulpng.png` en `toast-utils.js`, así Vite le pone el mismo nombre con hash que en el header y sale de la caché. Antes iba `/icon.svg`, que a 20 px el usuario veía "celeste, no azul oscuro".
   - Verificado: 24 checks, incluido que el `src` del logo del aviso coincida con el de `.navbar__logo-img`.
 
+
+## 2026-10-02 — Fotos para los productos que salían "sin imagen" (migración 120)
+
+A pedido del usuario ("cambiá los productos que no les cargan las fotos por fotos que sí carguen,
+coherentes con el producto"). Auditado contra la base real: de 60 productos, **11 activos mostraban
+el placeholder `/img/no-image.svg`** (las 5 prendas de Indumentaria La Moda, los 5 de PetShop
+Huellitas y el asado de Carnicería El Novillo). Todo lo demás carga: las fotos de Beruru/facu.cells
+existen en el bucket `products` (verificado en `storage.objects`) y las `/img/*.webp` del seed están
+en `public/img`. Quedan sin foto a propósito el "Producto Test Split P06" (tienda de prueba) y 8
+productos viejos inactivos sin comercio (no se ven en ningún lado).
+
+**Dónde viven las fotos:** en `public/img/` (y copiadas a `dist/img/`, Vite copia `public/` tal
+cual), no en Storage ni en URLs externas: el CSP solo permite `img-src 'self' data:
+*.googleusercontent.com *.supabase.co`, y el sandbox no puede subir binarios a Storage.
+
+**Orden de publicación:** la remera usa `prod-ropa.webp` (ya publicada, estaba sin usar) y se
+actualizó en la base en el momento. Las otras 10 apuntan a archivos nuevos, así que el UPDATE
+(`db/schema/120_fotos_productos_sin_imagen.sql`) se aplica **recién cuando el deploy de `main` ya
+sirve esos archivos**; antes pasarían de "sin imagen" a imagen rota. Cada UPDATE solo pisa la fila si
+sigue con el placeholder.
+
+**Origen de las imágenes** (el sandbox no llega a Unsplash/Pexels/Wikimedia; solo a GitHub):
+campera = Magento 2 sample data (Luma); zapatillas = Vendure mock-data (Unsplash); alimento, hueso,
+gato y shampoo = Odoo `design-themes/theme_pawtastic` (LGPL-3). Jean, pack de medias (con logo de
+una marca), collar y asado salieron de repos públicos sin licencia declarada: **reemplazarlas por
+fotos propias antes del lanzamiento real.** Gotcha de la búsqueda: la búsqueda de código de GitHub
+dejó de responder a mitad de la sesión (403 "sessions are bound to their configured
+repositories"); los repos públicos sí se pueden clonar con `git clone --filter=blob:none`.
+
+**Visto de paso, sin tocar:** varios productos de seed cargan pero con una foto genérica de su
+rubro que no coincide (ej. "Cable USB-C" y "Mouse" muestran unos auriculares, "Fernet" y "Vino"
+muestran botellas de agua/gaseosa, los 5 del kiosco la misma pila de golosinas).
