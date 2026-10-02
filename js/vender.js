@@ -4055,6 +4055,11 @@ function renderProductGallery() {
 function openProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
+  // "Seleccionar varios" es del listado: mientras se crea o edita una
+  // publicación no tiene que verse (y se sale del modo selección).
+  if (pubSelectMode) setPubSelectMode(false);
+  const bulk = document.getElementById('pub-bulk');
+  if (bulk) bulk.hidden = true;
 }
 
 /** Al alta o editar un producto: llevar el scroll arriba de todo, donde
@@ -4068,6 +4073,8 @@ function scrollToProductForm() {
 function closeProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = true;
+  const bulk = document.getElementById('pub-bulk');
+  if (bulk) bulk.hidden = false;
 }
 
 /** F5-04: sube una foto al bucket 'products' y devuelve su URL pública (null si falló). */
