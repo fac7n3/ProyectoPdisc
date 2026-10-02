@@ -512,6 +512,7 @@
       .pub-count { color: var(--bl-text-secondary); font-size: 0.88rem; margin-left: auto; }
 
       /* Selección múltiple de publicaciones */
+      .pub-bulk[hidden] { display: none; }
       .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
       .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
@@ -541,7 +542,10 @@
       .pub-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
       .pub-nomatch { color: var(--bl-text-secondary); padding: 1.5rem; text-align: center; }
       .pub-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); box-shadow: var(--bl-shadow-sm); position: relative; }
-      .pub-row--paused { opacity: 0.68; }
+      /* La opacidad va en el contenido y NO en la fila entera: en la fila, el menú
+         de los tres puntos (hijo de .pub-actions) se veía semitransparente y
+         quedaba atrapado debajo de la fila siguiente. */
+      .pub-row--paused > :not(.pub-actions) { opacity: 0.68; }
       .pub-row__thumb { width: 56px; height: 56px; border-radius: var(--bl-radius-md); object-fit: cover; flex-shrink: 0; background: var(--bl-surface-alt); }
       .pub-row__thumb--icon { display: flex; align-items: center; justify-content: center; color: var(--bl-text-muted); font-size: 1.25rem; }
       .pub-row__main { flex: 1 1 auto; min-width: 0; }
@@ -1524,7 +1528,7 @@
 
               <!-- Selección múltiple. El toggle está siempre; las acciones
                    (eliminar / pausar en lote) recién aparecen al prenderlo. -->
-              <div class="pub-bulk">
+              <div class="pub-bulk" id="pub-bulk">
                 <button type="button" class="pub-bulk__toggle" id="pub-select-toggle" aria-pressed="false">
                   <span class="pub-bulk__circle" aria-hidden="true"></span> Seleccionar varios
                 </button>
