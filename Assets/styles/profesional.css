@@ -204,6 +204,9 @@
   font-weight: 600;
 }
 .mc-navlink:hover { background: var(--bl-surface-hover); }
+/* Los accesos que son <button> (Resumen, Notificaciones, Soporte) con display:flex
+   se achicaban al ancho de su texto: solo se podía clicar sobre las letras. */
+button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
 .mc-content { flex: 1 1 auto; min-width: 0; }
 .mc-section[hidden] { display: none; }
