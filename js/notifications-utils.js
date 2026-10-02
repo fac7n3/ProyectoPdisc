@@ -127,7 +127,9 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       const review = p.review_id ? reviewMap[p.review_id] : null;
       const rating = review?.rating ?? p.rating;
       const stars = rating ? '★'.repeat(rating) + '☆'.repeat(5 - rating) : '';
-      const comment = review?.comment?.trim();
+      // El comentario viaja en el propio payload (migración 119), así el aviso
+      // emergente lo muestra al instante sin pedirlo aparte.
+      const comment = (review?.comment ?? p.comment)?.trim();
       if (comment) return stars ? `${stars} — ${comment}` : comment;
       return stars || null;
     }
@@ -210,10 +212,11 @@ function buildNotificationLink(n) {
     case 'revocation_accepted':
       return p.order_id ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' } : null;
 
+    // La reseña la recibe el dueño: lo lleva a la sección "Reseñas" de su panel
+    // (donde está lo que escribieron, en vivo), no a la página pública.
     case 'new_review':
-      if (p.target_type === 'product' && p.target_id) return { href: `./producto.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver producto' };
-      if (p.target_type === 'store' && p.target_id) return { href: `./comercio.html?id=${encodeURIComponent(p.target_id)}`, label: 'Ver comercio' };
-      if (p.target_type === 'professional' && p.target_id) return { href: `./contratar.html?pro=${encodeURIComponent(p.target_id)}`, label: 'Ver tu publicación' };
+      if (p.target_type === 'product' || p.target_type === 'store') return { href: './vender.html#resenas', label: 'Ver reseña' };
+      if (p.target_type === 'professional') return { href: './profesional.html#resenas', label: 'Ver reseña' };
       return null;
 
     case 'support_ticket_status_change':
