@@ -24,8 +24,9 @@ import { renderSupportSection } from './support-utils.js';
 import { initServicios } from './profesional-servicios.js';
 import { initDisponibilidad } from './profesional-disponibilidad.js';
 import { initGaleria } from './profesional-galeria.js';
-import { initConsultas } from './profesional-consultas.js';
-import { initResenas } from './profesional-resenas.js';
+import { initConsultas, recargarConsultas } from './profesional-consultas.js';
+import { initResenas, recargarResenas, respondiendoResena } from './profesional-resenas.js';
+import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import { initMetricas } from './profesional-metricas.js';
 import { confirmDialog } from './confirm-dialog.js';
 import './speed-insights.js';
@@ -211,6 +212,36 @@ function montarPanel() {
   renderSupportSection(document.getElementById('of-support'));
 
   renderResumen();
+  initPanelLive();
+}
+
+/**
+ * Tiempo real: un pedido de presupuesto nuevo o una reseña nueva aparecen
+ * solos en su sección y en el Resumen, sin recargar, en todos los
+ * dispositivos donde esté abierto el panel. La RLS de las dos tablas ya
+ * limita lo que llega; el filtro es para no recibir de más.
+ */
+function initPanelLive() {
+  const profId = estado.prof?.id;
+  if (!profId) return;
+  const refreshResumen = createRefresher(renderResumen, { delay: 800 });
+  const refreshConsultas = createRefresher(recargarConsultas);
+  const refreshResenas = createRefresher(recargarResenas, { isBusy: respondiendoResena });
+
+  subscribeToChanges('panel-profesional', [
+    { table: 'professional_inquiries', filter: `professional_id=eq.${profId}` },
+    { table: 'reviews', filter: `target_id=eq.${profId}` },
+  ], (change) => {
+    if (change.table === 'professional_inquiries') refreshConsultas();
+    else refreshResenas();
+    refreshResumen();
+  }, {
+    onResync: () => {
+      refreshConsultas();
+      refreshResenas();
+      refreshResumen();
+    },
+  });
 }
 
 /**

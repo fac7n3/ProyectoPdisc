@@ -4841,3 +4841,54 @@ token del proyecto cae en ese rango. El check del contraste quedó en el harness
   - `<dialog>` necesita `margin: auto` por el reset global.
   - `vender.js` y otros archivos tienen CRLF: los scripts de splice tienen que buscar marcadores con `\r?\n`.
 - **Publicado el mismo día (con el OK del usuario):** 115 aplicada (65 pedidos numerados 1001-1065, con códigos e historial; 4 avisos `order_paid` viejos pasaron a `order_paid_seller`) → `mp-webhook` v6 (`verify_jwt=false` como antes; antes de desplegar se comparó el código activo contra `main` y coincidía) → merge a `main` + deploy de Vercel READY y verificado con curl → 116 aplicada y probada con ROLLBACK (UPDATE directo = "permission denied", el RPC anda). La prueba consumió el #BL-1066: el primer pedido real es el #BL-1067.
+
+## 2026-10-02 — Todo el sitio en tiempo real (Supabase Realtime, migración 117)
+
+Pedido del usuario: que las notificaciones salten al instante, en todos los dispositivos con la cuenta abierta, sin recargar, y que lo mismo pase con cualquier otra cosa que hasta ahora necesitaba recargar.
+
+- **Antes:** no había ningún `supabase.channel` en el proyecto. `toast-utils.js` pedía la lista de notificaciones cada 30 s; la campanita solo se recalculaba al cerrar el desplegable; pedidos, compras, reclamos, consultas, admin y carrito recién cambiaban al recargar (el carrito ni eso: `initCartSync` mezclaba una sola vez por pestaña).
+- **`117_realtime_publication.sql`** (aplicada, verificada contra `pg_publication_tables`): `notifications`, `orders`, `payment_proofs`, `deliveries`, `support_tickets`, `support_ticket_messages`, `professional_inquiries`, `seller_requests`, `professional_requests`, `reviews`, `user_carts`. Las 11 con RLS activa (chequeado antes). Realtime corre la policy de SELECT con el JWT de cada suscriptor. Excepción: los DELETE no pasan por RLS y llegan con solo la PK.
+- **`js/realtime-utils.js`:**
+  - `subscribeToChanges(name, sources, onChange, { onResync })`. Nombre de canal único (si se repite, `supabase.channel()` devuelve el existente y no se le pueden sumar escuchas después de suscribir).
+  - `onResync` se llama al reconectar, al volver a la pestaña tras ≥15 s oculta, con el evento `online`, si la primera conexión tardó >3 s, y **cada 30 s mientras el canal no esté conectado** (respaldo si un proxy bloquea websockets).
+  - Al `SIGNED_OUT` se cierran todos los canales.
+  - `createRefresher(fn, { delay, isBusy })`: agrupa ráfagas, nunca dos recargas a la vez, reintenta cada 2 s mientras `isBusy()`.
+  - `isEditingWithin(root)`: foco en un input, o un input/textarea/radio/archivo distinto de su valor por defecto (excluye `type=search`).
+- **Notificaciones (`js/notifications-live.js` + `toast-utils.js`):**
+  - Un canal por página: INSERT/UPDATE filtrados por `user_id`, y DELETE sin filtro (no se puede filtrar). Los DELETE de ids que la página no conoce (`rememberNotificationIds` desde `fetchNotifications`) se ignoran.
+  - Emite `bl:notifications-changed` (`INSERT`/`UPDATE`/`DELETE`/`RESYNC`).
+  - `auth-utils.js` lo arranca en **todas** las páginas con sesión (import dinámico de `toast-utils.js` por la dependencia circular). Así salta en Contratar, Servicios, Farmacias y el admin, que no tienen campanita. También al `SIGNED_IN`.
+  - Toasts: el INSERT llega por Realtime. `catchUp` (al abrir y en cada RESYNC) compara contra el puntero `bl_toast_last_notif_at` (fecha). Se migra solo desde el viejo `bl_toast_last_notif_id`. `shownIds` evita duplicados entre el aviso en vivo y la puesta al día.
+  - **Bug viejo corregido:** con el puntero por id, si la persona borraba justo esa notificación, las 30 últimas se mostraban como nuevas.
+  - `toMs()` normaliza el formato de fecha: Realtime puede mandar `2026-10-02 15:04:05.123456+00`, y Safari viejo no acepta más de 3 decimales.
+  - `bl:new-notifications` ahora sale aunque los toasts estén apagados, así que el sonido de pedido del vendedor suena igual. La preferencia dice "avisos emergentes".
+  - Campanita (`nav-utils.js`) y tarjeta del hub (`perfil.js`): recalculan el número con cada evento.
+  - `renderNotificationsSection` registra cada contenedor (`liveSections`) y lo redibuja conservando búsqueda, filtro, foco y cursor. Arma el fragmento antes de reemplazar, para que no parpadee. Los contenedores desconectados se sueltan.
+- **Otras vistas:**
+  - **Vendedor (`initOrdersLive`):** `orders` filtrado por `store_id` + `payment_proofs` (RLS). Recarga pedidos al toque y el resumen con 1,5 s de margen. Publicaciones (stock y vendidos) solo con un INSERT o un pedido cancelado, y nunca con un menú "⋯" abierto. Sirve también al empleado, que no recibe notificaciones.
+  - **Solicitud en revisión (`watchRequestStatus`):** al cambiar el estado, `refreshSession()` (el JWT trae el rol nuevo) y recarga.
+  - **Mis compras (`initComprasLive`):** `orders` filtrado por `client_id`. No redibuja con una reseña a medio escribir o un comprobante elegido. `applyComprasFilter` conserva los "Ver historial" abiertos.
+  - **Soporte (usuario):** `renderSupportSection` separa formulario y lista (`.tkt-listarea`); en vivo solo se redibuja la lista, conservando los hilos abiertos. Un mensaje nuevo recarga solo su hilo si está abierto (`thread._reload`); si está cerrado, se marca para recargar al abrirlo. De paso, el `replaceState({})` del deep link `?ticket=` pasó a `history.state` (gotcha de `blSection`).
+  - **Admin (`initAdminLive`):** solicitudes de comercio y de profesional, comprobantes, reseñas reportadas, arrepentimientos, reclamos y métricas. Solo las secciones ya abiertas, sin la fila "Cargando..." (`loadQuietly`/`setLoadingRow`), y no encima de una respuesta a medio escribir. Un mensaje nuevo recarga solo los mensajes del hilo abierto (`renderAdminThreadMessages`), sin tocar la respuesta en curso. Las secciones de configuración siguen a mano.
+  - **Profesional (`initPanelLive`):** `professional_inquiries` y `reviews` filtrados por su id → `recargarConsultas` / `recargarResenas` (no con el cuadro de respuesta abierto) + resumen.
+  - **Repartidor:** `orders` (`delivery_method=eq.delivery`) + `deliveries`. El intervalo de 20 s queda porque además repinta los colores por tiempo de espera.
+- **Carrito entre dispositivos (`cart-utils.js`):**
+  - `initCartLive` corre en cada página (antes `initCartSync` cortaba por `bl_cart_synced`; ahora en navegaciones posteriores hace `catchUpCart`).
+  - El remoto **reemplaza** al local (no mezcla: cada push sube el carrito entero) y no se vuelve a subir. Dispara `bl:cart-changed`, que `carrito.js` redibuja (no durante el pago ni en "Transferí"/"¡Listo!"; si hay productos desconocidos revalida).
+  - Eco propio: `recentPushes` (15 s) comparado con **`canonicalJson`**, porque jsonb reordena las claves.
+  - `bl_cart_unsynced`: si un push falló o se cortó al navegar, la puesta al día vuelve a subir lo local en vez de pisarlo con la nube.
+  - Entre pestañas del mismo navegador alcanza con el evento `storage`.
+  - `pushCartToCloud` ahora tira si el upsert devuelve error (los que lo llaman ya tenían `.catch`).
+- **Verificado:** `npm test` y build OK. Además, 26 checks de Playwright sobre `vite preview` con sesión y REST mockeados y un servidor de Realtime falso (`page.routeWebSocket`, protocolo vsn 2.0.0). Cubren:
+  - toast en ~20 ms con texto y link, sin duplicar;
+  - campanita 1→2→1→0 con INSERT, UPDATE y DELETE;
+  - DELETE ajeno sin consultas;
+  - desplegable abierto que conserva búsqueda y foco;
+  - carrito remoto → badge, y eco con claves reordenadas ignorado;
+  - Mis compras cambia de estado solo y no pisa una reseña a medio escribir;
+  - Contratar sin campanita recibe el toast;
+  - con el websocket cerrado, el aviso llega por el respaldo de 30 s.
+  El harness quedó en el scratchpad (no versionado).
+- **Gotcha del harness:** la respuesta mockeada de un `count: 'exact', head: true` necesita `access-control-expose-headers: content-range`; si no, supabase-js lee 0.
+- **Visto y no tocado:** `orders_select_merged` no incluye al rol `repartidor`, así que su cola probablemente sale vacía con datos reales.
+

@@ -614,7 +614,24 @@ if (typeof window !== "undefined") {
   }
 
   // Suscribirse a cambios de estado de autenticación
-  supabase.auth.onAuthStateChange(() => {
+  supabase.auth.onAuthStateChange((event, session) => {
     updateNavbarProfile();
+    // Inicio de sesión sin recargar (ej. el popup de Google): también en vivo.
+    if (event === "SIGNED_IN" && session) startLiveNotifications(session.user.id);
   });
+
+  // Notificaciones en tiempo real en TODAS las páginas con sesión, tengan o
+  // no la campanita (Contratar, Servicios, Farmacias, el panel de admin...):
+  // un aviso nuevo salta como toast apenas llega, en cada dispositivo donde
+  // esté abierta la cuenta. Import dinámico porque toast-utils importa este
+  // mismo módulo (por el cliente de Supabase) y no puede cargarse antes.
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) startLiveNotifications(session.user.id);
+  });
+}
+
+function startLiveNotifications(userId) {
+  import("./toast-utils.js")
+    .then((m) => m.initNotificationToasts(userId))
+    .catch((err) => console.error("No se pudieron activar las notificaciones en vivo:", err));
 }

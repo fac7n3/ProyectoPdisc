@@ -13,6 +13,7 @@
  */
 import { supabase } from './auth-utils.js';
 import { formatFileSize, storedFileName } from './storage-utils.js';
+import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
 const STATUS_LABELS = {
@@ -580,6 +581,13 @@ function buildTicketForm(container) {
  * Sección compartida "Contactar a soporte" — formulario + lista de reclamos
  * propios con estado, hilo de mensajes expandible, adjuntos y cancelación.
  */
+/**
+ * Contenedores con la sección de soporte dibujada: su zona de lista (lo único
+ * que se redibuja en vivo -- el formulario de "nuevo reclamo" no se toca, así
+ * no se pierde lo que la persona está escribiendo) y si ya quedó escuchando.
+ */
+const liveByContainer = new WeakMap();
+
 export async function renderSupportSection(container) {
   // El formulario anterior se va con el textContent = '': liberar antes sus
   // miniaturas, que son objectURL y no los recoge el GC solos.
@@ -587,14 +595,67 @@ export async function renderSupportSection(container) {
   container.textContent = '';
   container.appendChild(buildTicketForm(container));
 
+  const listArea = document.createElement('div');
+  listArea.className = 'tkt-listarea';
+  container.appendChild(listArea);
+
   // fetchMyTickets tarda: sin esto queda el formulario solo, con un hueco
   // mudo donde después aparece la lista. Mismo bloque de carga que usa la
   // grilla del buscador.
-  const loading = buildLoadingBlock('Cargando tus reclamos');
-  container.appendChild(loading);
-  const tickets = await fetchMyTickets();
-  loading.remove();
+  listArea.appendChild(buildLoadingBlock('Cargando tus reclamos'));
+  await renderTicketList(listArea, container);
+  initSupportLive(container, listArea);
+}
 
+/**
+ * Reclamos en tiempo real: cuando soporte responde o cambia el estado, el hilo
+ * abierto muestra la respuesta y el estado se actualiza solo, sin recargar (y
+ * en todos los dispositivos donde la cuenta esté abierta). La RLS de las dos
+ * tablas ya limita lo que llega a los reclamos propios.
+ */
+async function initSupportLive(container, listArea) {
+  const existing = liveByContainer.get(container);
+  if (existing) {
+    existing.listArea = listArea;
+    return;
+  }
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId || liveByContainer.has(container)) return;
+
+  const live = { listArea };
+  liveByContainer.set(container, live);
+  const refreshList = createRefresher(() => {
+    if (live.listArea.isConnected) return renderTicketList(live.listArea, container);
+    return undefined;
+  });
+
+  subscribeToChanges('mis-reclamos', [
+    { table: 'support_tickets', filter: `user_id=eq.${userId}` },
+    { table: 'support_ticket_messages', event: 'INSERT' },
+  ], (change) => {
+    if (change.table === 'support_tickets') {
+      refreshList();
+      return;
+    }
+    // Respuesta nueva: si ese hilo está abierto se redibuja solo él; si está
+    // cerrado, se marca para que la próxima vez que se abra la pida de nuevo.
+    const ticketId = change.new?.ticket_id;
+    const thread = ticketId ? document.getElementById(`ticket-thread-${ticketId}`) : null;
+    if (!thread || !live.listArea.contains(thread)) return;
+    if (thread.classList.contains('tkt-thread--open')) thread._reload?.();
+    else delete thread.dataset.loaded;
+  }, { onResync: refreshList });
+}
+
+/** La lista "Mis reclamos" dentro de `listArea`. Conserva los hilos abiertos. */
+async function renderTicketList(listArea, container) {
+  const tickets = await fetchMyTickets();
+  const openIds = new Set(
+    Array.from(listArea.querySelectorAll('.tkt-thread--open')).map((t) => t.id.replace('ticket-thread-', ''))
+  );
+
+  const fragment = document.createDocumentFragment();
   const listHead = document.createElement('div');
   listHead.className = 'tkt-listhead';
   const listTitle = document.createElement('h3');
@@ -607,7 +668,7 @@ export async function renderSupportSection(container) {
     count.textContent = tickets.length;
     listHead.appendChild(count);
   }
-  container.appendChild(listHead);
+  fragment.appendChild(listHead);
 
   if (tickets.length === 0) {
     const empty = document.createElement('div');
@@ -620,7 +681,8 @@ export async function renderSupportSection(container) {
     const emptyHint = document.createElement('span');
     emptyHint.textContent = 'Cuando envíes uno vas a poder seguir la conversación desde acá.';
     empty.append(emptyIcon, emptyText, emptyHint);
-    container.appendChild(empty);
+    fragment.appendChild(empty);
+    listArea.replaceChildren(fragment);
     return;
   }
 
@@ -692,6 +754,9 @@ export async function renderSupportSection(container) {
     top.setAttribute('aria-controls', thread.id);
     row.appendChild(thread);
 
+    // Lo usa la escucha en vivo para traer una respuesta nueva a este hilo.
+    thread._reload = () => renderTicketThread(thread, t, myId, container);
+
     top.addEventListener('click', async () => {
       const isOpen = thread.classList.toggle('tkt-thread--open');
       row.classList.toggle('tkt-item--open', isOpen);
@@ -705,7 +770,13 @@ export async function renderSupportSection(container) {
     list.appendChild(row);
   }
 
-  container.appendChild(list);
+  fragment.appendChild(list);
+  listArea.replaceChildren(fragment);
+
+  // Los hilos que estaban abiertos antes de redibujar se vuelven a abrir.
+  openIds.forEach((id) => {
+    list.querySelector(`#ticket-${CSS.escape(id)} .tkt-item__top`)?.click();
+  });
 
   // A113-271: click en una notificación de soporte trae acá con ?ticket=<id>
   // -- abre el hilo de ese reclamo puntual y lo lleva a la vista.
@@ -721,7 +792,9 @@ export async function renderSupportSection(container) {
     }
     const url = new URL(window.location);
     url.searchParams.delete('ticket');
-    window.history.replaceState({}, '', url);
+    // history.state y no {}: en Mi perfil guarda la sección abierta (blSection)
+    // y pisarlo rompía la flecha de "atrás" (ver el gotcha en CLAUDE.md).
+    window.history.replaceState(window.history.state, '', url);
   }
 }
 

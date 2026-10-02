@@ -5,6 +5,8 @@ import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-uti
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { getPref, setPref } from "./settings-utils.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
+import { onNotificationsChanged } from "./notifications-live.js";
+import { subscribeToChanges, createRefresher, isEditingWithin } from "./realtime-utils.js";
 import { submitReview, buildStarRating } from "./reviews-utils.js";
 import { renderSupportSection, submitSupportTicket } from "./support-utils.js";
 import { initNotificationsBell, initAccountMenu } from "./nav-utils.js";
@@ -1487,6 +1489,14 @@ function renderComprasStatusChips() {
 function applyComprasFilter() {
   const q = (comprasFilterInput?.value || '').trim().toLowerCase();
 
+  // "Ver historial del pedido" abierto: se vuelve a abrir después de dibujar,
+  // así un cambio de filtro o una actualización en vivo no lo cierra.
+  const openHistoryIds = new Set(
+    Array.from(comprasContainer.querySelectorAll('.compra-item'))
+      .filter((item) => item.querySelector('details.compra-history[open]'))
+      .map((item) => item.id)
+  );
+
   const clearBtn = document.getElementById('compras-filter-clear');
   if (clearBtn) clearBtn.hidden = !q;
 
@@ -1510,11 +1520,33 @@ function applyComprasFilter() {
     comprasContainer.appendChild(emptyMsg);
   } else {
     orders.forEach((order) => {
-      comprasContainer.appendChild(buildCompraItem(order, comprasCtx));
+      const item = buildCompraItem(order, comprasCtx);
+      if (openHistoryIds.has(item.id)) item.querySelector('details.compra-history')?.setAttribute('open', '');
+      comprasContainer.appendChild(item);
     });
   }
 
   renderComprasStatusChips();
+}
+
+/**
+ * "Mis compras" en tiempo real: cuando el comercio confirma el pago, marca el
+ * pedido listo, lo despacha o lo cancela (o el pedido vence), la tarjeta se
+ * actualiza sola, en todos los dispositivos donde esté abierta la cuenta. La
+ * RLS de `orders` ya hace que solo lleguen los pedidos propios; el filtro es
+ * para no recibir de más.
+ *
+ * No redibuja mientras la persona está escribiendo una reseña o tiene elegido
+ * un comprobante sin subir: espera a que termine (isEditingWithin).
+ */
+function initComprasLive(userId) {
+  if (!comprasContainer) return;
+  const refresh = createRefresher(() => loadCompras(userId), {
+    isBusy: () => isEditingWithin(comprasContainer),
+  });
+  subscribeToChanges('mis-compras', [
+    { table: 'orders', filter: `client_id=eq.${userId}` },
+  ], refresh, { onResync: refresh });
 }
 
 function setupComprasFilter() {
@@ -2675,6 +2707,7 @@ async function renderFullProfile(user) {
   loadFavoritos(user.id);
   setupComprasFilter();
   const comprasPromise = loadCompras(user.id);
+  initComprasLive(user.id);
   const notificacionesContainer = document.getElementById("notificaciones-container");
   if (notificacionesContainer) renderNotificationsSection(notificacionesContainer, user.id);
   initNotificationsBell();
@@ -2683,11 +2716,16 @@ async function renderFullProfile(user) {
   renderPanelLink(user);
   initPanelHomeVisibility(user);
 
-  // Aviso en la tarjeta del hub si hay notificaciones sin leer.
+  // Aviso en la tarjeta del hub si hay notificaciones sin leer. En vivo: se
+  // prende con una nueva y se apaga al leerlas, también desde otro dispositivo.
   const notifCardBadge = document.getElementById("notif-card-badge");
   if (notifCardBadge) {
-    const unread = await fetchUnreadCount(user.id);
-    if (unread > 0) notifCardBadge.style.display = "block";
+    const paintNotifCardBadge = async () => {
+      const unread = await fetchUnreadCount(user.id);
+      notifCardBadge.style.display = unread > 0 ? "block" : "none";
+    };
+    onNotificationsChanged(createRefresher(paintNotifCardBadge, { delay: 200 }));
+    await paintNotifCardBadge();
   }
   const supportContainer = document.getElementById("support-container");
   if (supportContainer) renderSupportSection(supportContainer);

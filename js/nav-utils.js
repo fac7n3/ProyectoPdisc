@@ -17,6 +17,8 @@ import { supabase, showToast } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { renderNotificationsSection, fetchUnreadCount } from './notifications-utils.js';
 import { initNotificationToasts } from './toast-utils.js';
+import { onNotificationsChanged } from './notifications-live.js';
+import { createRefresher } from './realtime-utils.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -690,10 +692,16 @@ export async function initNotificationsBell() {
 
   refreshBadge(); // en bg: espera la sesión adentro, no bloquea el render del botón
 
+  // En tiempo real: una notificación nueva sube el número al instante, y
+  // leerla o borrarla en otro dispositivo lo baja acá también. El contenido
+  // del desplegable abierto se redibuja solo (renderNotificationsSection).
+  const scheduleBadge = createRefresher(refreshBadge, { delay: 200 });
+  onNotificationsChanged(scheduleBadge);
+
   // A113-268: toasts de notificaciones nuevas -- se enganchan acá porque
   // esta función ya corre en todas las páginas con navbar y ya resuelve la
   // sesión (sessionReady), así que no hace falta que cada página la llame
-  // por separado.
+  // por separado. initNotificationToasts también abre el canal de Realtime.
   sessionReady.then((s) => { if (s) initNotificationToasts(s.user.id); });
 }
 

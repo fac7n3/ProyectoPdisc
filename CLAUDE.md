@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-09-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,6 +80,38 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — **Todo el sitio en tiempo real** (Supabase Realtime),
+  a pedido del usuario. Antes no se usaba Realtime en ningún lado: los avisos se
+  pedían cada 30 s y el resto recién aparecía al recargar. Ahora, en todas las
+  páginas con sesión (también las que no tienen campanita), una notificación
+  nueva salta al instante como toast, en cada dispositivo con la cuenta abierta;
+  la campanita, la tarjeta de Mi perfil y el centro de notificaciones abierto se
+  actualizan solos, y leer/borrar en un dispositivo baja el número en los otros.
+  También en vivo: pedidos, resumen y stock del panel de vendedor (incluido el
+  empleado, que no recibe notificaciones), "Mis compras", reclamos (usuario y
+  admin, con el hilo abierto), consultas y reseñas del profesional, la cola del
+  repartidor, las secciones de trabajo entrante del admin, la pantalla de
+  "solicitud en revisión" (pasa sola al panel al aprobarse) y el **carrito entre
+  dispositivos**. Migración **117** (aplicada): 11 tablas a la publicación
+  `supabase_realtime`; Realtime respeta la RLS. Piezas: `js/realtime-utils.js`
+  (`subscribeToChanges` con puesta al día al reconectar / volver a la pestaña /
+  `online`, y **polling de respaldo cada 30 s si el websocket no conecta**;
+  `createRefresher` agrupa ráfagas y espera si la persona está escribiendo,
+  `isEditingWithin`) y `js/notifications-live.js` (un canal por página, evento
+  `bl:notifications-changed`). **Gotchas:** (1) los DELETE de Realtime no se
+  pueden filtrar y llegan los de todas las cuentas con solo el id: se ignoran los
+  ids que la página no conoce; (2) `user_carts.items` es jsonb y Postgres
+  reordena las claves: los carritos se comparan con `canonicalJson`, si no el eco
+  propio parece un cambio ajeno; (3) el puntero de "último aviso mostrado" pasó
+  de id a fecha (`bl_toast_last_notif_at`): con el id, borrar esa notificación
+  hacía que las 30 últimas salieran de golpe como nuevas. El sonido de pedido
+  nuevo del vendedor ahora suena aunque los avisos emergentes estén apagados.
+  Verificado con 26 checks de Playwright sobre el build real con un servidor de
+  Realtime simulado (sin red a Supabase en el entorno). **Sin probar con dos
+  dispositivos reales:** conviene abrir la cuenta en el celu y la compu y hacer
+  una compra de prueba. **Visto de paso, sin tocar:** la cola del repartidor
+  probablemente sale vacía, porque la RLS de `orders` no deja leer pedidos al
+  rol `repartidor` (solo cliente, comercio, empleado y admin).
 - **Resuelto 2026-10-02** — **"Budin" (Beruru) no se podía comprar**: tenía dos
   tipos de opción llamados "Vainilla" y "Chokolate", **sin ningún valor adentro**
   (mismo error de armado que el caso "rosa"). En el modal se veían como dos

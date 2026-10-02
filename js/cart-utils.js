@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { itemLineKey } from './product-options-utils.js';
+import { subscribeToChanges } from './realtime-utils.js';
 
 export const CART_KEY = 'bl_cart';
 
@@ -29,14 +30,140 @@ export function saveCart(cart) {
   pushCartToCloud(cart).catch((err) => console.error('Error al sincronizar el carrito:', err));
 }
 
+/**
+ * Marca "este navegador tiene cambios del carrito que todavía no llegaron a la
+ * nube" (un push que falló o que se cortó al navegar). Mientras esté, la
+ * puesta al día en vivo no pisa el carrito local con el de la nube: lo vuelve
+ * a subir. En localStorage para que sobreviva al cambio de página.
+ */
+const CART_DIRTY_KEY = 'bl_cart_unsynced';
+
+function setCartDirty(dirty) {
+  try {
+    if (dirty) localStorage.setItem(CART_DIRTY_KEY, '1');
+    else localStorage.removeItem(CART_DIRTY_KEY);
+  } catch { /* sin storage: no hay nada que recordar */ }
+}
+
+function isCartDirty() {
+  try { return localStorage.getItem(CART_DIRTY_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * JSON con las claves ordenadas, para comparar carritos. Hace falta porque
+ * `user_carts.items` es jsonb y Postgres reordena las claves de cada objeto al
+ * guardarlo: el mismo carrito vuelve por Realtime con otro JSON.stringify.
+ */
+export function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort()
+      .filter((k) => value[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value ?? null);
+}
+
+/**
+ * Lo que esta pestaña subió en los últimos segundos. Realtime le devuelve a
+ * esta misma pestaña cada cambio que ella hizo (el "eco"); si dos clicks
+ * rápidos se suben en paralelo, el eco del primero puede llegar después del
+ * segundo click, y aplicarlo haría saltar el carrito para atrás.
+ */
+const ECHO_WINDOW_MS = 15 * 1000;
+const recentPushes = [];
+
+function rememberPush(json) {
+  const now = Date.now();
+  recentPushes.push({ json, at: now });
+  while (recentPushes.length && (recentPushes.length > 20 || now - recentPushes[0].at > ECHO_WINDOW_MS)) {
+    recentPushes.shift();
+  }
+}
+
+function isOwnEcho(json) {
+  const now = Date.now();
+  return recentPushes.some((p) => p.json === json && now - p.at <= ECHO_WINDOW_MS);
+}
+
 /** Sube el carrito actual a user_carts (upsert). No hace nada si no hay sesión. */
 export async function pushCartToCloud(cart) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
-  await supabase
+  const json = canonicalJson(cart || []);
+  rememberPush(json);
+  setCartDirty(true);
+  const { error } = await supabase
     .from('user_carts')
     .upsert({ user_id: session.user.id, items: cart }, { onConflict: 'user_id' });
+  if (error) throw error;
+  // Solo se limpia si lo subido sigue siendo lo último: si mientras tanto
+  // hubo otro cambio, ese push todavía está en camino.
+  if (canonicalJson(getCart()) === json) setCartDirty(false);
+}
+
+/**
+ * El carrito cambió en otro dispositivo (o en otra pestaña): se reemplaza el
+ * local por ese y se avisa a la página (evento `bl:cart-changed`), sin volver
+ * a subirlo. Reemplazar y no mezclar: cada cambio sube el carrito entero, así
+ * que el de la nube ya es el resultado final -- mezclarlo sumaría cantidades
+ * dos veces y no dejaría sacar productos desde el otro dispositivo.
+ */
+function applyRemoteCart(items) {
+  if (!Array.isArray(items)) return;
+  const json = canonicalJson(items);
+  if (json === canonicalJson(getCart())) return;
+  if (isOwnEcho(json)) return;
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  updateCartBadge();
+  window.dispatchEvent(new CustomEvent('bl:cart-changed', { detail: { source: 'remote' } }));
+}
+
+/** Trae el carrito de la nube y lo aplica, salvo que haya cambios locales sin subir. */
+async function catchUpCart(userId) {
+  if (isCartDirty()) {
+    pushCartToCloud(getCart()).catch((err) => console.error('Error al sincronizar el carrito:', err));
+    return;
+  }
+  const { data, error } = await supabase
+    .from('user_carts')
+    .select('items')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.error('Error al traer el carrito de la nube:', error);
+    return;
+  }
+  // Sin fila todavía: el carrito nunca se subió, no hay nada que aplicar.
+  if (data && !isCartDirty()) applyRemoteCart(data.items || []);
+}
+
+let cartLiveStarted = false;
+
+/**
+ * El mismo carrito en todos los dispositivos, en tiempo real: lo que se agrega
+ * en el celular aparece en la compu sin recargar (badge del navbar y, si está
+ * abierta, la página del carrito). Entre pestañas del mismo navegador alcanza
+ * con el evento `storage` (comparten el localStorage).
+ */
+function initCartLive(userId) {
+  if (cartLiveStarted) return;
+  cartLiveStarted = true;
+
+  subscribeToChanges('carrito', [
+    { table: 'user_carts', filter: `user_id=eq.${userId}` },
+  ], (change) => {
+    if (change.eventType === 'DELETE') return;
+    applyRemoteCart(change.new?.items);
+  }, { onResync: () => catchUpCart(userId) });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key !== CART_KEY) return;
+    updateCartBadge();
+    window.dispatchEvent(new CustomEvent('bl:cart-changed', { detail: { source: 'tab' } }));
+  });
 }
 
 /**
@@ -77,10 +204,17 @@ const CART_SYNCED_FLAG = 'bl_cart_synced';
  * repetir el merge en cada navegación entre páginas.
  */
 export async function initCartSync() {
-  if (sessionStorage.getItem(CART_SYNCED_FLAG)) return;
-
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
+
+  initCartLive(session.user.id);
+
+  // Ya se mezcló en esta pestaña: solo hace falta ponerse al día con lo que
+  // haya cambiado en otro dispositivo mientras se navegaba entre páginas.
+  if (sessionStorage.getItem(CART_SYNCED_FLAG)) {
+    catchUpCart(session.user.id);
+    return;
+  }
 
   sessionStorage.setItem(CART_SYNCED_FLAG, '1');
 

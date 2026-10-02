@@ -2,6 +2,7 @@ import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
+import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
@@ -147,6 +148,7 @@ async function checkSellerState(user) {
       notice.style.display = 'block';
       notice.textContent = `Tu solicitud para "${req.shop_name}" está en estado: ${req.status}. Te avisaremos cuando esté aprobada.`;
     }
+    watchRequestStatus('seller_requests', user.id, req.status);
     return;
   }
 
@@ -175,12 +177,39 @@ async function checkSellerState(user) {
     showProfessionalStatus(profReq.status === 'pending'
       ? `Tu solicitud para publicarte como ${profReq.full_name} está pendiente de aprobación. Te avisaremos cuando esté lista.`
       : `Tu solicitud para publicarte como ${profReq.full_name} fue rechazada. Escribinos por Soporte si tenés dudas.`);
+    watchRequestStatus('professional_requests', user.id, profReq.status);
     return;
   }
 
   reveal('register');
   const tipo = new URLSearchParams(window.location.search).get('tipo');
   showRegisterForms(tipo === 'servicio' ? 'profesional' : 'comercio');
+}
+
+/**
+ * Con la solicitud en revisión, la página queda escuchando su fila: cuando el
+ * admin la aprueba (o la rechaza) se pasa sola al panel nuevo, sin que la
+ * persona tenga que recargar. Antes de recargar se renueva la sesión, porque
+ * la aprobación cambia el rol del JWT (app_metadata.role) y el token viejo
+ * todavía dice "cliente".
+ */
+function watchRequestStatus(table, userId, currentStatus) {
+  let reloading = false;
+  const reloadIfChanged = (status) => {
+    if (reloading || !status || status === currentStatus) return;
+    reloading = true;
+    supabase.auth.refreshSession()
+      .catch(() => { /* sin sesión renovada igual se recarga: checkSellerState mira la DB */ })
+      .finally(() => window.location.reload());
+  };
+  subscribeToChanges(`solicitud-${table}`, [
+    { table, event: 'UPDATE', filter: `user_id=eq.${userId}` },
+  ], (change) => reloadIfChanged(change.new?.status), {
+    onResync: async () => {
+      const { data } = await supabase.from(table).select('status').eq('user_id', userId).maybeSingle();
+      reloadIfChanged(data?.status);
+    },
+  });
 }
 
 /** Alterna entre el toggle+formularios y el estado de una solicitud de profesional
@@ -807,7 +836,57 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
 
   applyOrderDeepLink();
   applyDeliverDeepLink();
+  initOrdersLive();
   initOrderAlerts();
+}
+
+// --- Tiempo real: pedidos, resumen y stock sin recargar ---
+// Antes, un pedido nuevo (o un pago confirmado, un "ya transferí", una
+// cancelación del comprador) recién aparecía al recargar, o a los 30s cuando
+// el polling de notificaciones lo detectaba -- y un empleado, que no recibe
+// esas notificaciones, no se enteraba nunca. Ahora el panel escucha los
+// pedidos de su comercio por Supabase Realtime (migración 117) y se actualiza
+// solo, en todos los dispositivos donde esté abierto. La RLS de `orders` y
+// `payment_proofs` ya limita lo que llega al dueño y a sus empleados.
+
+let refreshOrdersLive = () => {};
+
+function initOrdersLive() {
+  if (!currentStoreId) return;
+
+  const pedidosList = () => document.getElementById('pedidos-list');
+  refreshOrdersLive = createRefresher(renderAllOrders, {
+    isBusy: () => isEditingWithin(pedidosList()),
+  });
+  // El resumen hace varias consultas: va con más margen, para que una ráfaga
+  // de cambios (pedido + pago + stock) termine en una sola recarga.
+  const refreshResumen = createRefresher(renderResumen, { delay: 1500 });
+  // Stock y "vendidos" de Publicaciones: solo cambian con un pedido nuevo o
+  // uno cancelado (el stock vuelve). No se redibuja con un menú de "⋯" abierto.
+  const refreshProducts = createRefresher(fetchProducts, {
+    delay: 1500,
+    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden])')),
+  });
+
+  const onOrderChange = (change) => {
+    refreshOrdersLive();
+    refreshResumen();
+    if (change.eventType === 'INSERT' || change.new?.status === 'cancelled') refreshProducts();
+  };
+
+  subscribeToChanges('pedidos-comercio', [
+    { table: 'orders', filter: `store_id=eq.${currentStoreId}` },
+    // Comprobante subido o revisado: la tarjeta del pedido muestra su estado.
+    // Sin filtro (la tabla no tiene store_id): la RLS deja pasar solo los de
+    // este comercio.
+    { table: 'payment_proofs' },
+  ], onOrderChange, {
+    onResync: () => {
+      refreshOrdersLive();
+      refreshResumen();
+      refreshProducts();
+    },
+  });
 }
 
 /**
@@ -1540,7 +1619,9 @@ function initOrderAlerts() {
     const relevant = (e.detail || []).filter((n) => SELLER_ALERT_TYPES.has(n.type));
     if (!relevant.length) return;
     playOrderChime();
-    renderAllOrders();
+    // La lista ya se actualiza sola por Realtime (initOrdersLive); esto es por
+    // si el aviso llega antes: el refresher junta las dos en una sola recarga.
+    refreshOrdersLive();
     if (document.hidden) {
       unseenOrderAlerts += relevant.length;
       document.title = `(${unseenOrderAlerts}) ${baseDocumentTitle}`;
