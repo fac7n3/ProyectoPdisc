@@ -644,6 +644,7 @@ let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (sto
 const STAFF_PERMISSION_SECTIONS = [
   { key: 'publicaciones', label: 'Publicaciones' },
   { key: 'pedidos', label: 'Pedidos' },
+  { key: 'resenas', label: 'Reseñas' },
   { key: 'notificaciones', label: 'Notificaciones' },
   { key: 'soporte', label: 'Soporte' },
 ];
@@ -689,6 +690,7 @@ const VENDOR_SECTION_COPY = {
   'perfil-comercio': { icon: 'fa-solid fa-pen', title: 'Perfil de mi comercio', desc: 'Los datos que ve un vecino antes de comprarte: nombre, horarios, dirección y medios de pago.' },
   publicaciones: { icon: 'fa-solid fa-image', title: 'Publicaciones', desc: 'Acá cargás y editás lo que vendés: fotos, precios y stock de cada producto.' },
   pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando: confirmá los pagos, prepará cada uno y avisá cuando esté listo.' },
+  resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
@@ -828,6 +830,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   await Promise.all([
     renderAllOrders(),
     renderResumen(),
+    renderResenas(),
   ]);
 
   if (isStoreOwner) {
@@ -837,7 +840,164 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   applyOrderDeepLink();
   applyDeliverDeepLink();
   initOrdersLive();
+  initReviewsLive();
   initOrderAlerts();
+}
+
+// --- Sección "Reseñas" (tiempo real) ---
+// Lo que escribieron los clientes sobre el comercio (target_type 'store') y
+// sobre cada uno de sus productos ('product'). Las reseñas no tienen una FK al
+// comercio, así que se piden en dos consultas: las del comercio por su id, y
+// las de los productos por la lista de ids que ya tiene cargada Publicaciones.
+// Cada reseña nueva (o editada, o escondida por un moderador) llega por
+// Realtime y la lista se redibuja sola; la nueva se marca unos segundos.
+// El aviso emergente (migración 119) muestra el mismo texto que la tarjeta.
+const REVIEW_COLUMNS = 'id, target_type, target_id, rating, comment, created_at, owner_reply, owner_replied_at';
+let resenasCache = [];
+let resenasKnownIds = null; // null hasta la primera carga: ahí nada es "nueva"
+let resenasFilter = 'all'; // 'all' | 'store' | 'product'
+
+function reviewStars(rating) {
+  const r = Math.max(0, Math.min(5, Math.round(rating || 0)));
+  return '★'.repeat(r) + '☆'.repeat(5 - r);
+}
+
+function isMyReviewTarget(targetType, targetId) {
+  if (targetType === 'store') return targetId === currentStoreId;
+  if (targetType === 'product') return pubProducts.some((p) => p.id === targetId);
+  return false;
+}
+
+async function fetchMyReviews() {
+  if (!currentStoreId) return null;
+  const productIds = pubProducts.map((p) => p.id);
+  const [storeRes, productRes] = await Promise.all([
+    supabase.from('reviews').select(REVIEW_COLUMNS).eq('target_type', 'store').eq('target_id', currentStoreId).eq('is_hidden', false),
+    productIds.length
+      ? supabase.from('reviews').select(REVIEW_COLUMNS).eq('target_type', 'product').in('target_id', productIds).eq('is_hidden', false)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (storeRes.error || productRes.error) {
+    console.error('Error al cargar las reseñas del comercio:', storeRes.error || productRes.error);
+    return null;
+  }
+  return [...(storeRes.data || []), ...(productRes.data || [])]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+function buildReviewCard(review, { isNew }) {
+  const card = rsEl('article', 'rv-card' + (isNew ? ' rv-card--new' : ''));
+  card.dataset.reviewId = review.id;
+
+  const top = rsEl('div', 'rv-card__top');
+  const stars = rsEl('span', 'rv-card__stars', reviewStars(review.rating));
+  stars.setAttribute('aria-label', `${review.rating} de 5 estrellas`);
+  if (isNew) stars.appendChild(rsEl('span', 'rv-card__new', 'Nueva'));
+  top.appendChild(stars);
+  top.appendChild(rsEl('span', 'rv-card__date', new Date(review.created_at).toLocaleString('es-AR', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })));
+  card.appendChild(top);
+
+  const comment = (review.comment || '').trim();
+  card.appendChild(rsEl('p', 'rv-card__comment' + (comment ? '' : ' rv-card__comment--empty'), comment || 'Dejó solo las estrellas, sin comentario.'));
+
+  if (review.target_type === 'product') {
+    const product = pubProducts.find((p) => p.id === review.target_id);
+    const target = rsEl('a', 'rv-card__target');
+    target.href = `./producto.html?id=${encodeURIComponent(review.target_id)}`;
+    target.appendChild(rsEl('i', 'fa-solid fa-box'));
+    target.appendChild(document.createTextNode(product?.title || 'Producto'));
+    card.appendChild(target);
+  } else {
+    const target = rsEl('span', 'rv-card__target');
+    target.appendChild(rsEl('i', 'fa-solid fa-store'));
+    target.appendChild(document.createTextNode('Tu comercio'));
+    card.appendChild(target);
+  }
+
+  if (review.owner_reply) {
+    const reply = rsEl('div', 'rv-card__reply');
+    reply.appendChild(rsEl('strong', null, 'Tu respuesta'));
+    reply.appendChild(document.createTextNode(review.owner_reply));
+    card.appendChild(reply);
+  }
+  return card;
+}
+
+function renderResenasView(newIds) {
+  const list = document.getElementById('resenas-list');
+  const summary = document.getElementById('resenas-summary');
+  if (!list || !summary) return;
+
+  // Resumen: siempre sobre todas, el filtro no lo cambia.
+  summary.replaceChildren();
+  if (resenasCache.length) {
+    const avg = resenasCache.reduce((sum, r) => sum + r.rating, 0) / resenasCache.length;
+    summary.appendChild(rsEl('span', 'rv-summary__score', avg.toFixed(1)));
+    summary.appendChild(rsEl('span', 'rv-summary__stars', reviewStars(avg)));
+    const nStore = resenasCache.filter((r) => r.target_type === 'store').length;
+    const nProd = resenasCache.length - nStore;
+    summary.appendChild(rsEl('span', 'rv-summary__count', `${resenasCache.length} reseña${resenasCache.length === 1 ? '' : 's'} · ${nStore} del comercio · ${nProd} de productos`));
+  }
+
+  const visible = resenasFilter === 'all' ? resenasCache : resenasCache.filter((r) => r.target_type === resenasFilter);
+  if (!visible.length) {
+    const empty = rsEl('div', 'rv-empty');
+    empty.appendChild(rsEl('i', 'fa-regular fa-star'));
+    empty.appendChild(rsEl('p', null, resenasCache.length
+      ? 'No hay reseñas en esta categoría.'
+      : 'Todavía no te dejaron reseñas. Cuando alguien escriba una, la vas a ver acá al instante.'));
+    list.replaceChildren(empty);
+    return;
+  }
+  list.replaceChildren(...visible.map((r) => buildReviewCard(r, { isNew: newIds.has(r.id) })));
+}
+
+async function renderResenas() {
+  const reviews = await fetchMyReviews();
+  if (!reviews) return; // falló la consulta: se deja lo que había
+  const newIds = new Set();
+  if (resenasKnownIds) reviews.forEach((r) => { if (!resenasKnownIds.has(r.id)) newIds.add(r.id); });
+  resenasKnownIds = new Set(reviews.map((r) => r.id));
+  resenasCache = reviews;
+  renderResenasView(newIds);
+}
+
+function initReviewsLive() {
+  if (!currentStoreId) return;
+
+  document.getElementById('resenas-filters')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('.pub-chip');
+    if (!chip) return;
+    resenasFilter = chip.dataset.filter;
+    document.querySelectorAll('#resenas-filters .pub-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+    renderResenasView(new Set());
+  });
+
+  const refreshResenas = createRefresher(renderResenas, { delay: 400 });
+  // La reputación del Resumen (promedio y cantidad) sale de las mismas reseñas.
+  const refreshResumenForReviews = createRefresher(renderResumen, { delay: 1500 });
+  const refreshAll = () => { refreshResenas(); refreshResumenForReviews(); };
+
+  // Sin filtro de servidor: `reviews` no tiene store_id y los productos del
+  // comercio cambian (se publica uno nuevo y su reseña tiene que entrar sin
+  // recargar). Las reseñas son públicas, así que no llega nada que otro no
+  // pueda leer ya; acá se descarta lo que no es de este comercio.
+  subscribeToChanges('resenas-comercio', [{ table: 'reviews' }], (change) => {
+    if (change.eventType === 'DELETE') {
+      if (resenasCache.some((r) => r.id === change.old?.id)) refreshAll();
+      return;
+    }
+    const row = change.new || {};
+    if (isMyReviewTarget(row.target_type, row.target_id) || resenasCache.some((r) => r.id === row.id)) refreshAll();
+  }, { onResync: refreshAll });
+
+  // Segundo camino: el aviso de "nueva reseña" también dispara la recarga, por
+  // si el evento de la tabla se perdió.
+  window.addEventListener('bl:new-notifications', (e) => {
+    if ((e.detail || []).some((n) => n?.type === 'new_review')) refreshAll();
+  });
 }
 
 // --- Tiempo real: pedidos, resumen y stock sin recargar ---
