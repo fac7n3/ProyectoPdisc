@@ -80,6 +80,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — **La sección "Reseñas" del panel de profesional salía en
+  blanco** apenas había una reseña (reportado por el usuario, con captura). Causa:
+  `js/profesional-resenas.js` usaba `buildStarRating` (el selector de estrellas
+  **clickeable** del formulario de reseñas, que devuelve `{ element, getValue }`, no
+  un nodo) para dibujar las estrellas de solo lectura; `appendChild` tiraba un
+  TypeError y la lista no se pintaba -- ni siquiera el estado vacío. O sea que esa
+  sección **nunca pudo mostrar una reseña real** desde que se armó el panel
+  (2026-09-17); con cero reseñas andaba, y por eso no se había visto. Ahora usa
+  `buildStarsText` (texto ★★★★☆, `.of-review__stars`). Verificado en el navegador
+  (reseña existente + una nueva por Realtime + el aviso con el comentario). **Gotcha:**
+  `buildStarRating` es solo para el formulario; para mostrar estrellas usar
+  `buildStarsText`. Sin revisar con datos: las demás secciones de ese panel
+  (consultas, servicios, fotos) podrían tener un bug parecido, escondido mientras
+  estuvieron vacías.
 - **Resuelto 2026-10-02** — **Las reseñas llegan en tiempo real** (a pedido del
   usuario: "si alguien publica una reseña aparece automáticamente en tu panel y se
   muestra lo que escribieron, además de la notificación"). (1) **Sección nueva
