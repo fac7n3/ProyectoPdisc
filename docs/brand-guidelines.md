@@ -269,9 +269,11 @@ No hay una escala documentada formalmente; el patrón observado en el CSS real u
 
 ### Notificación emergente
 
-Cuando llega una notificación nueva (`js/toast-utils.js`), aparece **abajo y al
-centro**, con forma de notificación de celular, para que se lea: ícono de la
-app (`/icon.svg`) + "BARADERO LOCAL · ahora", título en negrita, una línea de
+Cuando llega una notificación nueva (`js/toast-utils.js`), aparece **abajo a la
+derecha** (en celular, abajo de todo con casi todo el ancho), con forma de
+notificación de celular, para que se lea: el mismo logo del navbar
+(`Assets/images/Logos/logoazulpng.png`; `/icon.svg` a 20 px se veía celeste) +
+"BARADERO LOCAL · ahora", título en negrita, una línea de
 detalle y la acción en `--bl-primary` ("Ver pedido →"). Dura 8 s, se frena
 mientras el mouse o el dedo están encima, y se cierra con la X o deslizándola.
 En celular ocupa casi todo el ancho. El texto del encabezado va en `#64748b`, no
@@ -326,4 +328,4 @@ Principios de la identidad en movimiento, sin repetir la especificación técnic
 | Versión | Fecha | Cambios |
 |---|---|---|
 | v1.0 | 2026-08-03 | Identidad inicial, construida a partir del sistema visual ya en producción (`Assets/styles/*.css`, logo, video Remotion) y de un panel de marketing (skills `product-marketing`, `marketing-council`, `brand`). |
-| v1.1 | 2026-10-02 | Componente "Notificación emergente" (abajo al centro, estilo notificación de celular). |
+| v1.1 | 2026-10-02 | Componente "Notificación emergente" (abajo a la derecha, estilo notificación de celular, con el logo del navbar). |
