@@ -80,6 +80,53 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02 — Click en un producto lento: migración 118 aplicada y publicada.**
+  Reportado por el usuario ("tiempo de carga muy alto cuando apretás un
+  producto"). Medido en producción (logs de la API, 24 h): la consulta del
+  modal tardaba ~1050 ms de promedio **dentro de la base** (p95 ~5 s) contra
+  ~77 ms de un listado común; para quien tiene la sesión iniciada, la primera
+  consulta en frío llegó a 7,8 s (medido: el visitante sin sesión tarda 11-21 ms).
+  **Causa:** los joins anidados (`product_images`, `product_options` ->
+  `product_option_values`) disparan en cadena las policies de `products`, que a
+  su vez miran `orders`/`order_items`/`stores`/`store_staff`: el plan de UN
+  producto tiene 256 subplanes (256 ms solo en planificar). Y se paga en cada
+  request, así que bajo carga satura la instancia: en una ráfaga hasta un
+  `select` de `profiles` por id tardó 9 s.
+  **Arreglo:** RPC `get_product_detail`
+  (`db/schema/118_get_product_detail_rpc.sql`, SECURITY DEFINER): producto +
+  comercio + fotos + opciones + promedio y cantidad de reseñas en UNA consulta.
+  **Copia a mano la regla de visibilidad de `products_select_merged`: si esa
+  policy cambia, hay que cambiar la función también.** Del lado del navegador:
+  vista previa instantánea del modal con lo que ya muestra la tarjeta, pedido
+  adelantado al quedarse el mouse 100 ms / apoyar el dedo, y se sacó la espera
+  fija de 450 ms al abrir un relacionado. Lo usan el modal
+  (`js/product-modal.js`) y `producto.html` por `js/product-detail-api.js`, con
+  **respaldo a las consultas de siempre si la función no existe**. Detalle y
+  método de prueba en el skill `progreso-baradero-local`.
+  **Número de migración:** nació como 117, pero `main` ya tenía la 117
+  (`117_realtime_publication`, otra sesión, mismo día): se aplicó a producción
+  como `118_get_product_detail_rpc` (versión `20261002212906`) y el archivo se
+  renombró (mismo criterio que 74->75 y 107->108).
+  **Verificado**, antes de aplicar (en transacciones deshechas) y de nuevo
+  contra la función ya instalada (solo lectura): el cuerpo en producción es
+  idéntico al archivo (md5 `42b0f2bd...`), ejecutan solo `anon`,
+  `authenticated` y `service_role` (nada a `PUBLIC`), y con anon + 7 cuentas
+  reales (admin, dueños, empleado, compradores, cliente) x 59 productos hay 0
+  diferencias de visibilidad, de campos y de reseñas respecto de la RLS. **Una
+  sola diferencia de fotos, la prevista:** un comprador ve las fotos extra de un
+  producto que después se pausó (la policy vieja se las ocultaba; ya podía ver
+  el producto y su foto principal). Para un usuario logueado la consulta vieja
+  tardó 406/2111/5964 ms y la función 42/3/3 ms.
+  **Sin probar de punta a punta en un navegador contra producción** (el
+  sandbox no llega a Supabase): los tiempos del navegador salen de una
+  simulación con los valores medidos (~1030 ms -> ~15 ms hasta ver el producto,
+  ~305 ms completo); conviene abrir un producto logueado a mano una vez.
+  **Mismo problema, sin resolver:** `carrito.js` pide `products` y
+  `product_options` con joins anidados y en esa ráfaga tardó 3-13 s; la salida
+  de fondo es hacer baratas las policies anidadas con una función auxiliar
+  SECURITY DEFINER (probarla igual: transacción deshecha + comparación por
+  identidad). `create_order` también tuvo promedio 2,9 s / p95 9,9 s dentro de la base
+  (24 h, 6 llamadas), sin investigar si es lo mismo.
 - **Resuelto 2026-10-02** — **Las notificaciones emergentes ahora se ven como
   una notificación de celular**, abajo a la derecha (en celular, abajo de todo
   con casi todo el ancho), a pedido del usuario. Primero se probó abajo al
