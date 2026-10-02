@@ -581,6 +581,29 @@
       .pub-empty__btn:hover { background: var(--bl-vendor-accent-dark); }
 
       /* --- Pedidos (stats + torta de estados + tabla) --- */
+      /* Reseñas del comercio (tiempo real) */
+      .rv-summary { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.25rem; margin-bottom: 1rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card); }
+      .rv-summary__score { font-size: 2rem; font-weight: 800; color: var(--bl-text); line-height: 1; }
+      .rv-summary__stars { color: #f59e0b; font-size: 1.05rem; letter-spacing: 0.08em; }
+      .rv-summary__count { color: var(--bl-text-secondary); font-size: 0.9rem; }
+      .rv-filters { margin-bottom: 1rem; }
+      .rv-list { display: flex; flex-direction: column; gap: 0.75rem; }
+      .rv-card { padding: 1rem 1.15rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-sm); }
+      .rv-card--new { animation: rv-new 6s ease-out; }
+      @keyframes rv-new { 0% { box-shadow: 0 0 0 3px var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.1); } 100% { box-shadow: var(--bl-shadow-sm); background: var(--bl-surface); } }
+      .rv-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+      .rv-card__stars { color: #f59e0b; font-weight: 700; letter-spacing: 0.08em; }
+      .rv-card__new { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.5rem; border-radius: var(--bl-radius-pill); background: var(--bl-vendor-accent); color: #fff; font-size: 0.68rem; font-weight: 700; letter-spacing: 0; vertical-align: middle; }
+      .rv-card__date { color: var(--bl-text-muted); font-size: 0.8rem; }
+      .rv-card__comment { margin: 0 0 0.6rem; color: var(--bl-text); overflow-wrap: anywhere; white-space: pre-wrap; }
+      .rv-card__comment--empty { color: var(--bl-text-muted); font-style: italic; }
+      .rv-card__target { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 600; color: var(--bl-text-secondary); text-decoration: none; padding: 0.2rem 0.6rem; background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); max-width: 100%; }
+      a.rv-card__target:hover { color: var(--bl-vendor-accent); }
+      .rv-card__reply { margin-top: 0.7rem; padding: 0.6rem 0.75rem; background: var(--bl-surface-alt); border-left: 3px solid var(--bl-vendor-accent); border-radius: 0 var(--bl-radius-sm) var(--bl-radius-sm) 0; font-size: 0.88rem; }
+      .rv-card__reply strong { display: block; font-size: 0.75rem; color: var(--bl-vendor-accent); margin-bottom: 0.15rem; }
+      .rv-empty { text-align: center; padding: 2.5rem 1.5rem; color: var(--bl-text-secondary); background: var(--bl-surface); border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-lg); }
+      .rv-empty i { font-size: 2rem; color: var(--bl-text-muted); display: block; margin-bottom: 0.6rem; }
+
       .pd-wrap { margin-top: 0.5rem; }
       .pd-header { margin-bottom: 1.25rem; }
       .pd-header__title { font-size: 1.4rem; font-weight: 700; color: var(--bl-text); display: flex; align-items: center; gap: 0.6rem; }
@@ -1090,6 +1113,7 @@
                      junto al resto de las pestañas. Lo mismo "Pagos por confirmar",
                      que ahora es una pestaña de Pedidos. -->
                 <button type="button" class="mc-navitem" data-section="pedidos">Pedidos</button>
+                <button type="button" class="mc-navitem" data-section="resenas">Reseñas</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="promo-inicio">Banner del inicio</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
@@ -1462,6 +1486,25 @@
               <div id="pd-detail-body"></div>
             </dialog>
 
+            </section>
+
+            <!-- === Reseñas (tiempo real) ===
+                 Lo que escribieron los clientes sobre el comercio y sobre cada
+                 producto. Se arma y se actualiza sola desde js/vender.js (renderResenas). -->
+            <section class="mc-section" data-section="resenas" hidden>
+              <div class="pd-wrap">
+                <div class="pd-header">
+                  <div class="pd-header__title"><i class="fa-regular fa-star"></i> Reseñas</div>
+                  <p class="pd-header__sub">Lo que opinan tus clientes, apenas lo escriben. No hace falta recargar.</p>
+                </div>
+                <div class="rv-summary" id="resenas-summary"></div>
+                <div class="pub-chips rv-filters" id="resenas-filters" role="group" aria-label="Filtrar reseñas">
+                  <button type="button" class="pub-chip is-active" data-filter="all">Todas</button>
+                  <button type="button" class="pub-chip" data-filter="store">De mi comercio</button>
+                  <button type="button" class="pub-chip" data-filter="product">De mis productos</button>
+                </div>
+                <div class="rv-list" id="resenas-list" aria-live="polite"></div>
+              </div>
             </section>
 
             <!-- === Notificaciones === -->

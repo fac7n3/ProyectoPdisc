@@ -108,6 +108,34 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (evento `securitypolicyviolation`). **Sin probar contra los servidores reales
   de Realtime** (sin red a Supabase): la confirmación en producción son
   conexiones `/realtime/v1/websocket` con status 101 en los logs de la API.
+- **Resuelto 2026-10-02** — **Las reseñas llegan en tiempo real** (a pedido del
+  usuario: "si alguien publica una reseña aparece automáticamente en tu panel y se
+  muestra lo que escribieron, además de la notificación"). (1) **Sección nueva
+  "Reseñas"** en el panel de vendedor (sidebar → Ventas, también para empleados,
+  con su permiso `resenas`): lista lo que escribieron sobre el comercio y sobre
+  cada producto (estrellas, comentario, a qué producto, fecha), con filtro y un
+  resumen; la reseña que llega se agrega sola y se marca "Nueva"
+  (`renderResenas`/`initReviewsLive` en `js/vender.js`). El Resumen (reputación)
+  también se refresca. Antes el vendedor **no tenía dónde leer sus reseñas** salvo
+  la página pública. (2) **El aviso emergente ahora muestra lo que escribieron**:
+  migración **119** (`notify_new_review`): el payload de `new_review` trae
+  `comment` (recortado a 200); sin comentario no se agrega la clave. El aviso ahora
+  lleva a `vender.html#resenas` (o `profesional.html#resenas`) en vez de a la página
+  pública. (3) **Quien mira un producto o comercio ve la reseña nueva al instante**
+  (`watchReviewsLive` en `js/reviews-utils.js`): se redibuja con el promedio, pero
+  **nunca pisa una reseña a medio escribir** ni un menú "⋯" abierto. Probado con un
+  Realtime simulado por websocket (Playwright `routeWebSocket`, protocolo Phoenix
+  v2): 20 checks entre el panel y la página pública; la migración se probó contra la
+  base real en una transacción que se deshace. **Gotchas:** la suscripción del panel
+  va **sin filtro de servidor** a propósito (`reviews` no tiene `store_id` y se
+  publican productos nuevos); se descarta del lado del cliente lo que no es del
+  comercio. Los DELETE de Realtime no se pueden filtrar, así que ante cualquier baja
+  la página pública vuelve a pedir su lista. **Sin tiempo real todavía:** stock y
+  precio en las grillas públicas (`products` no está en la publicación), y las
+  reseñas de la tarjeta del directorio "Contratar".
+  **(Ojo: el Realtime simulado con `routeWebSocket` no pasa por el CSP del
+  navegador, así que nada de esto conectaba en producción hasta el arreglo de
+  la entrada de arriba, "El tiempo real estaba bloqueado por el CSP".)**
 - **Resuelto 2026-10-02 — Click en un producto lento: migración 118 aplicada y publicada.**
   Reportado por el usuario ("tiempo de carga muy alto cuando apretás un
   producto"). Medido en producción (logs de la API, 24 h): la consulta del

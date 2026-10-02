@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
+import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 
 let starSeq = 0;
 
@@ -167,6 +168,53 @@ export async function deleteOwnReview(targetType, targetId) {
 export function buildStarsText(rating) {
   const rounded = Math.round(rating);
   return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
+}
+
+// --- Tiempo real: una reseña nueva aparece sin recargar ---
+// Quien está mirando el producto o el comercio ve la reseña (y el promedio) en
+// cuanto alguien la escribe. Una suscripción por contenedor; se vuelve a
+// dibujar solo si la persona NO está escribiendo su propia reseña ni con el
+// menú "⋯" abierto (se le perdería lo escrito).
+const liveReviews = new Set();
+
+function watchReviewsLive(container, targetType, targetId, opts) {
+  const key = `${targetType}:${targetId}`;
+
+  // El modal rápido arma un contenedor nuevo en cada producto que se abre:
+  // los que ya no están en la página se sueltan acá para no acumular canales.
+  liveReviews.forEach((live) => { if (!live.container.isConnected) live.stop(); });
+
+  const existing = [...liveReviews].find((live) => live.container === container);
+  if (existing?.key === key) {
+    existing.opts = opts;
+    return;
+  }
+  existing?.stop();
+
+  const live = { container, key, opts, stop: null };
+  const refresh = createRefresher(() => {
+    if (!container.isConnected) { live.stop(); return undefined; }
+    return renderReviewsSection(container, targetType, targetId, live.opts);
+  }, {
+    delay: 400,
+    isBusy: () => isEditingWithin(container) || Boolean(container.querySelector('.bl-review-menu-btn.is-active')),
+  });
+
+  const unsubscribe = subscribeToChanges(`resenas-${targetType}`, [
+    { table: 'reviews', filter: `target_id=eq.${targetId}` },
+    // Los DELETE no se pueden filtrar: llegan todos, con solo el id. Una baja
+    // es rara, así que ante cualquiera se vuelve a pedir esta lista.
+    { table: 'reviews', event: 'DELETE' },
+  ], (change) => {
+    if (change.eventType !== 'DELETE' && change.new?.target_type !== targetType) return;
+    refresh();
+  }, { onResync: refresh });
+
+  live.stop = () => {
+    unsubscribe();
+    liveReviews.delete(live);
+  };
+  liveReviews.add(live);
 }
 
 /**
@@ -345,6 +393,8 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
   if (!hideForm) {
     buildReviewForm(formWrap, targetType, targetId, ownReview, () => renderReviewsSection(container, targetType, targetId, { hideForm }));
   }
+
+  watchReviewsLive(container, targetType, targetId, { hideForm });
 }
 
 function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted) {
