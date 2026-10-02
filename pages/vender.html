@@ -458,6 +458,8 @@
       .rs-metrics__label { font-size: 0.82rem; color: var(--bl-text-secondary); margin-bottom: 0.3rem; }
       .rs-metrics__figure { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
       .rs-line { width: 100%; height: auto; margin-top: 0.75rem; }
+      .rs-sales30 { margin-top: 1.25rem; scroll-margin-top: 1rem; }
+      .rs-sales30 .rs-line { max-width: 640px; }
       .rs-line__grid { stroke: var(--bl-border-light); stroke-width: 1; }
       .rs-line__axis { fill: var(--bl-text-muted); font-size: 9px; }
       .rs-line__path { fill: none; stroke: var(--bl-vendor-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -510,6 +512,7 @@
       .pub-count { color: var(--bl-text-secondary); font-size: 0.88rem; margin-left: auto; }
 
       /* Selección múltiple de publicaciones */
+      .pub-bulk[hidden] { display: none; }
       .pub-bulk { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: -0.35rem 0 1rem; }
       .pub-bulk__toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0.35rem 0; font: inherit; font-size: 0.88rem; color: var(--bl-text-secondary); cursor: pointer; }
       .pub-bulk__toggle:hover { color: var(--bl-vendor-accent); }
@@ -539,7 +542,10 @@
       .pub-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
       .pub-nomatch { color: var(--bl-text-secondary); padding: 1.5rem; text-align: center; }
       .pub-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); box-shadow: var(--bl-shadow-sm); position: relative; }
-      .pub-row--paused { opacity: 0.68; }
+      /* La opacidad va en el contenido y NO en la fila entera: en la fila, el menú
+         de los tres puntos (hijo de .pub-actions) se veía semitransparente y
+         quedaba atrapado debajo de la fila siguiente. */
+      .pub-row--paused > :not(.pub-actions) { opacity: 0.68; }
       .pub-row__thumb { width: 56px; height: 56px; border-radius: var(--bl-radius-md); object-fit: cover; flex-shrink: 0; background: var(--bl-surface-alt); }
       .pub-row__thumb--icon { display: flex; align-items: center; justify-content: center; color: var(--bl-text-muted); font-size: 1.25rem; }
       .pub-row__main { flex: 1 1 auto; min-width: 0; }
@@ -581,7 +587,7 @@
       .pd-header__title i { color: var(--bl-vendor-accent); font-size: 1.15rem; }
       .pd-header__sub { color: var(--bl-text-secondary); margin: 0.3rem 0 0; font-size: 0.92rem; }
 
-      .pd-dash { display: grid; grid-template-columns: repeat(5, 1fr) 1.6fr; gap: 0.85rem; margin-bottom: 1.25rem; }
+      .pd-dash { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.85rem; margin-bottom: 1.25rem; }
       .pd-stat { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
       .pd-stat__top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
       .pd-stat__icon { width: 30px; height: 30px; border-radius: var(--bl-radius-md); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
@@ -593,9 +599,6 @@
       .pd-stat__title { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; }
       .pd-stat__value { font-size: 1.25rem; font-weight: 700; color: var(--bl-text); line-height: 1.15; }
       .pd-stat__sub { font-size: 0.72rem; color: var(--bl-text-muted); margin-top: 0.2rem; }
-
-      .pd-chart { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1rem; box-shadow: var(--bl-shadow-card); }
-      .pd-chart__label { font-size: 0.76rem; color: var(--bl-text-secondary); font-weight: 600; margin-bottom: 0.2rem; }
 
       /* Una sola columna: con el sidebar de "Mi cuenta" (260px) restándole
          ancho a mc-content (tope 1200px en el shell), no sobra lugar para una
@@ -702,7 +705,6 @@
 
       @media (max-width: 1100px) {
         .pd-dash { grid-template-columns: repeat(3, 1fr); }
-        .pd-chart { grid-column: 1 / -1; }
       }
       @media (max-width: 640px) {
         .pd-dash { grid-template-columns: repeat(2, 1fr); }
@@ -1526,7 +1528,7 @@
 
               <!-- Selección múltiple. El toggle está siempre; las acciones
                    (eliminar / pausar en lote) recién aparecen al prenderlo. -->
-              <div class="pub-bulk">
+              <div class="pub-bulk" id="pub-bulk">
                 <button type="button" class="pub-bulk__toggle" id="pub-select-toggle" aria-pressed="false">
                   <span class="pub-bulk__circle" aria-hidden="true"></span> Seleccionar varios
                 </button>

@@ -5,13 +5,16 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
-## Click en un producto lento: `get_product_detail` (2026-10-01) — migración 117, SIN aplicar
+## Click en un producto lento: `get_product_detail` (2026-10-02) — migración 118, aplicada
 
 A pedido del usuario ("la página tiene un tiempo de carga muy alto cuando
-apretás un producto"). **Estado al escribir esto: código listo en la rama
-`claude/brave-curie-hix7ln`, migración 117 probada contra la base real pero NO
-aplicada a producción.** Cuando se aplique, actualizar la entrada de
-"Pendientes activos" de CLAUDE.md a "Resuelto".
+apretás un producto"). **Estado: migración 118 aplicada a producción el
+2026-10-02 (versión `20261002212906`) y código mergeado a `main`.** Nació como
+117, pero `main` ya tenía la `117_realtime_publication` (otra sesión, aplicada el
+mismo día): se aplicó como `118_get_product_detail_rpc` y el archivo se renombró
+(mismo criterio que 74->75 y 107->108). **Al mergear una rama con migración
+nueva, mirar siempre `db/schema/` y `list_migrations` de `main` antes de
+aplicar:** otras sesiones trabajan en paralelo y toman números.
 
 ### Cómo se encontró (para repetirlo la próxima vez)
 
@@ -46,7 +49,7 @@ tiene la sesión iniciada**.
 
 ### Qué se hizo
 
-- **`db/schema/117_get_product_detail_rpc.sql`**: `get_product_detail(p_product_id uuid) returns jsonb`,
+- **`db/schema/118_get_product_detail_rpc.sql`**: `get_product_detail(p_product_id uuid) returns jsonb`,
   `SECURITY DEFINER`, `stable`, `search_path = public`, ejecutable por
   `anon` + `authenticated`. Devuelve producto + `stores` (con `contact_method`
   y `whatsapp`, que usa `producto.js`) + `product_images` + `product_options`
@@ -107,7 +110,31 @@ tiene la sesión iniciada**.
   promedio real (1050 ms) el "antes" da ~1360 ms. **No es una medición de producción.**
 - **Sin probar:** el recorrido real contra producción (no hay red a Supabase desde
   el sandbox) ni la RLS con una sesión real de punta a punta. Conviene abrir un
-  producto logueado a mano una vez aplicada la 117.
+  producto logueado a mano una vez publicado.
+
+### Ya aplicada: qué se comprobó en producción (2026-10-02)
+
+- El cuerpo guardado en `pg_proc.prosrc` es **idéntico al archivo** (md5
+  `42b0f2bd7363143c9b27da337ec68268`, 2836 caracteres). Dueño `postgres`,
+  `SECURITY DEFINER`, `STABLE`, `search_path=public`. Ejecutan `anon`,
+  `authenticated` y `service_role` (el default de Supabase); **nada a `PUBLIC`**.
+  Después se mandó `notify pgrst, 'reload schema'` por las dudas (Supabase ya lo
+  hace solo con el DDL).
+- La prueba de equivalencia se **repitió contra la función ya instalada** (solo
+  lectura, mismo `DO` con `raise exception`, sin el `create function`): 59
+  productos (uno más que en la primera prueba), 12 combinaciones de rol/cuenta,
+  **0 diferencias de visibilidad**, 0 de campos base/tipos y 0 de reseñas.
+  **Una sola diferencia de fotos, la prevista** (`dif 1c626dd2`: la función da
+  fotos/opciones/valores = 1/1/2 y la RLS 0/1/2): un comprador reciente ve la
+  foto extra de un producto ya pausado (Budin), que la policy de
+  `product_images` le ocultaba. Es la misma persona que ya puede ver el producto
+  y su foto principal.
+- Tiempos para un usuario logueado (cliente sin pedidos, Budin): consulta vieja
+  **406 / 2111 / 5964 ms**, función **42 / 3 / 3 ms**. Como anon, 15 / 11 / 11 vs
+  1 / 1 / 1.
+- **Budin cambió entre las dos pruebas** (otra sesión le corrigió los datos: ahora
+  tiene 1 grupo "Sabor" con 2 valores, antes eran 2 grupos sin valores). No
+  afecta a la función; sí explica que el conteo de opciones de la prueba cambie.
 
 ### Gotchas para el futuro
 
@@ -127,7 +154,7 @@ tiene la sesión iniciada**.
   `orders`/`order_items` de `products_select_merged`) con una función auxiliar
   `SECURITY DEFINER` opaca para el planificador; hay que preservar la semántica exacta
   (p. ej. las fotos de un producto pausado solo las ve el vendedor o un admin) y
-  probarla igual que la 117: transacción deshecha + comparación por identidad.
+  probarla igual que la 118: transacción deshecha + comparación por identidad.
 - Observación aparte: en el modal de escritorio, un producto con opciones deja los
   botones de compra parcialmente tapados por el `max-height: 400px` de `.pm-info`
   (hay que scrollear esa columna). Ya estaba así, no se tocó.
@@ -4968,3 +4995,83 @@ token del proyecto cae en ese rango. El check del contraste quedó en el harness
   - `<dialog>` necesita `margin: auto` por el reset global.
   - `vender.js` y otros archivos tienen CRLF: los scripts de splice tienen que buscar marcadores con `\r?\n`.
 - **Publicado el mismo día (con el OK del usuario):** 115 aplicada (65 pedidos numerados 1001-1065, con códigos e historial; 4 avisos `order_paid` viejos pasaron a `order_paid_seller`) → `mp-webhook` v6 (`verify_jwt=false` como antes; antes de desplegar se comparó el código activo contra `main` y coincidía) → merge a `main` + deploy de Vercel READY y verificado con curl → 116 aplicada y probada con ROLLBACK (UPDATE directo = "permission denied", el RPC anda). La prueba consumió el #BL-1066: el primer pedido real es el #BL-1067.
+
+## 2026-10-02 — Todo el sitio en tiempo real (Supabase Realtime, migración 117)
+
+Pedido del usuario: que las notificaciones salten al instante, en todos los dispositivos con la cuenta abierta, sin recargar, y que lo mismo pase con cualquier otra cosa que hasta ahora necesitaba recargar.
+
+- **Antes:** no había ningún `supabase.channel` en el proyecto. `toast-utils.js` pedía la lista de notificaciones cada 30 s; la campanita solo se recalculaba al cerrar el desplegable; pedidos, compras, reclamos, consultas, admin y carrito recién cambiaban al recargar (el carrito ni eso: `initCartSync` mezclaba una sola vez por pestaña).
+- **`117_realtime_publication.sql`** (aplicada, verificada contra `pg_publication_tables`): `notifications`, `orders`, `payment_proofs`, `deliveries`, `support_tickets`, `support_ticket_messages`, `professional_inquiries`, `seller_requests`, `professional_requests`, `reviews`, `user_carts`. Las 11 con RLS activa (chequeado antes). Realtime corre la policy de SELECT con el JWT de cada suscriptor. Excepción: los DELETE no pasan por RLS y llegan con solo la PK.
+- **`js/realtime-utils.js`:**
+  - `subscribeToChanges(name, sources, onChange, { onResync })`. Nombre de canal único (si se repite, `supabase.channel()` devuelve el existente y no se le pueden sumar escuchas después de suscribir).
+  - `onResync` se llama al reconectar, al volver a la pestaña tras ≥15 s oculta, con el evento `online`, si la primera conexión tardó >3 s, y **cada 30 s mientras el canal no esté conectado** (respaldo si un proxy bloquea websockets).
+  - Al `SIGNED_OUT` se cierran todos los canales.
+  - `createRefresher(fn, { delay, isBusy })`: agrupa ráfagas, nunca dos recargas a la vez, reintenta cada 2 s mientras `isBusy()`.
+  - `isEditingWithin(root)`: foco en un input, o un input/textarea/radio/archivo distinto de su valor por defecto (excluye `type=search`).
+- **Notificaciones (`js/notifications-live.js` + `toast-utils.js`):**
+  - Un canal por página: INSERT/UPDATE filtrados por `user_id`, y DELETE sin filtro (no se puede filtrar). Los DELETE de ids que la página no conoce (`rememberNotificationIds` desde `fetchNotifications`) se ignoran.
+  - Emite `bl:notifications-changed` (`INSERT`/`UPDATE`/`DELETE`/`RESYNC`).
+  - `auth-utils.js` lo arranca en **todas** las páginas con sesión (import dinámico de `toast-utils.js` por la dependencia circular). Así salta en Contratar, Servicios, Farmacias y el admin, que no tienen campanita. También al `SIGNED_IN`.
+  - Toasts: el INSERT llega por Realtime. `catchUp` (al abrir y en cada RESYNC) compara contra el puntero `bl_toast_last_notif_at` (fecha). Se migra solo desde el viejo `bl_toast_last_notif_id`. `shownIds` evita duplicados entre el aviso en vivo y la puesta al día.
+  - **Bug viejo corregido:** con el puntero por id, si la persona borraba justo esa notificación, las 30 últimas se mostraban como nuevas.
+  - `toMs()` normaliza el formato de fecha: Realtime puede mandar `2026-10-02 15:04:05.123456+00`, y Safari viejo no acepta más de 3 decimales.
+  - `bl:new-notifications` ahora sale aunque los toasts estén apagados, así que el sonido de pedido del vendedor suena igual. La preferencia dice "avisos emergentes".
+  - Campanita (`nav-utils.js`) y tarjeta del hub (`perfil.js`): recalculan el número con cada evento.
+  - `renderNotificationsSection` registra cada contenedor (`liveSections`) y lo redibuja conservando búsqueda, filtro, foco y cursor. Arma el fragmento antes de reemplazar, para que no parpadee. Los contenedores desconectados se sueltan.
+- **Otras vistas:**
+  - **Vendedor (`initOrdersLive`):** `orders` filtrado por `store_id` + `payment_proofs` (RLS). Recarga pedidos al toque y el resumen con 1,5 s de margen. Publicaciones (stock y vendidos) solo con un INSERT o un pedido cancelado, y nunca con un menú "⋯" abierto. Sirve también al empleado, que no recibe notificaciones.
+  - **Solicitud en revisión (`watchRequestStatus`):** al cambiar el estado, `refreshSession()` (el JWT trae el rol nuevo) y recarga.
+  - **Mis compras (`initComprasLive`):** `orders` filtrado por `client_id`. No redibuja con una reseña a medio escribir o un comprobante elegido. `applyComprasFilter` conserva los "Ver historial" abiertos.
+  - **Soporte (usuario):** `renderSupportSection` separa formulario y lista (`.tkt-listarea`); en vivo solo se redibuja la lista, conservando los hilos abiertos. Un mensaje nuevo recarga solo su hilo si está abierto (`thread._reload`); si está cerrado, se marca para recargar al abrirlo. De paso, el `replaceState({})` del deep link `?ticket=` pasó a `history.state` (gotcha de `blSection`).
+  - **Admin (`initAdminLive`):** solicitudes de comercio y de profesional, comprobantes, reseñas reportadas, arrepentimientos, reclamos y métricas. Solo las secciones ya abiertas, sin la fila "Cargando..." (`loadQuietly`/`setLoadingRow`), y no encima de una respuesta a medio escribir. Un mensaje nuevo recarga solo los mensajes del hilo abierto (`renderAdminThreadMessages`), sin tocar la respuesta en curso. Las secciones de configuración siguen a mano.
+  - **Profesional (`initPanelLive`):** `professional_inquiries` y `reviews` filtrados por su id → `recargarConsultas` / `recargarResenas` (no con el cuadro de respuesta abierto) + resumen.
+  - **Repartidor:** `orders` (`delivery_method=eq.delivery`) + `deliveries`. El intervalo de 20 s queda porque además repinta los colores por tiempo de espera.
+- **Carrito entre dispositivos (`cart-utils.js`):**
+  - `initCartLive` corre en cada página (antes `initCartSync` cortaba por `bl_cart_synced`; ahora en navegaciones posteriores hace `catchUpCart`).
+  - El remoto **reemplaza** al local (no mezcla: cada push sube el carrito entero) y no se vuelve a subir. Dispara `bl:cart-changed`, que `carrito.js` redibuja (no durante el pago ni en "Transferí"/"¡Listo!"; si hay productos desconocidos revalida).
+  - Eco propio: `recentPushes` (15 s) comparado con **`canonicalJson`**, porque jsonb reordena las claves.
+  - `bl_cart_unsynced`: si un push falló o se cortó al navegar, la puesta al día vuelve a subir lo local en vez de pisarlo con la nube.
+  - Entre pestañas del mismo navegador alcanza con el evento `storage`.
+  - `pushCartToCloud` ahora tira si el upsert devuelve error (los que lo llaman ya tenían `.catch`).
+- **Verificado:** `npm test` y build OK. Además, 26 checks de Playwright sobre `vite preview` con sesión y REST mockeados y un servidor de Realtime falso (`page.routeWebSocket`, protocolo vsn 2.0.0). Cubren:
+  - toast en ~20 ms con texto y link, sin duplicar;
+  - campanita 1→2→1→0 con INSERT, UPDATE y DELETE;
+  - DELETE ajeno sin consultas;
+  - desplegable abierto que conserva búsqueda y foco;
+  - carrito remoto → badge, y eco con claves reordenadas ignorado;
+  - Mis compras cambia de estado solo y no pisa una reseña a medio escribir;
+  - Contratar sin campanita recibe el toast;
+  - con el websocket cerrado, el aviso llega por el respaldo de 30 s.
+  El harness quedó en el scratchpad (no versionado).
+- **Gotcha del harness:** la respuesta mockeada de un `count: 'exact', head: true` necesita `access-control-expose-headers: content-range`; si no, supabase-js lee 0.
+- **Visto y no tocado:** `orders_select_merged` no incluye al rol `repartidor`, así que su cola probablemente sale vacía con datos reales.
+
+### 2026-10-02 (continuación): notificación emergente con forma de notificación de celular
+
+- **Pedido del usuario:** "que se muestren en la parte inferior de la pantalla como una notificación de cualquier app, así la persona la lee". Antes era un cartel chico (campanita + una línea) abajo a la derecha, que se iba a los 5 s.
+- **Ahora** (`showNotificationToast` en `js/toast-utils.js`, CSS `.bl-toast*` en `home.css`):
+  - Contenedor fijo **abajo al centro**, 440 px de ancho (en celular el ancho de la pantalla menos 1 rem), respetando `safe-area-inset-bottom`.
+  - Tarjeta: encabezado con `/icon.svg` + "BARADERO LOCAL · ahora" (`#64748b` por contraste), título en negrita, detalle de 2 líneas (`buildNotificationPreview(n)` en `notifications-utils.js`, que usa el payload sin consultas extra) y la acción en azul.
+  - Entra deslizándose desde abajo. Se apilan hasta 3.
+  - Dura 8 s y el tiempo se frena con `mouseenter`/`focusin`/`pointerdown` (contador `holds`).
+  - Se cierra con la X o deslizando de costado o hacia abajo (pointer events, `touch-action: pan-y`). Un deslizamiento no cuenta como toque.
+  - Tocarla la abre y la marca como leída (`onOpen` → `markNotificationRead`). Espera hasta 800 ms antes de navegar; si no, el cambio de página cortaba el PATCH (lo agarró el test: en una corrida pasaba y en otra no). Con Ctrl/Cmd no se espera.
+  - La X ya no está anidada adentro del `<a>`: el link es `.bl-toast__main` y el botón es su hermano.
+  - `#BL-1070` va en un `<span>` con `nowrap`.
+  - Con movimiento reducido (sistema o Ajustes), sin desplazamientos.
+- **Verificado:** 20 checks de Playwright en escritorio (1280) y celular (390, táctil):
+  - posición y contenido;
+  - el número de pedido en un renglón;
+  - no se va con el mouse encima;
+  - se va sola al salir;
+  - tocarla navega y hace el PATCH de leída;
+  - la X no navega;
+  - deslizar con `Input.dispatchTouchEvent` la cierra sin navegar.
+  
+  Además se repasaron los 26 checks de tiempo real (siguen pasando).
+- **Gotcha del test:** el sitio tiene scrollbar propia de 10 px (`html::-webkit-scrollbar`) y `clientWidth` igual devuelve 1280. El contenedor fijo se centra sobre 1270, así que mide 635 y no 640: está bien centrado.
+- **Ajuste del mismo día, a pedido del usuario:**
+  - **Posición:** abajo a la **derecha** en compu (`right: 1.25rem`, 400 px de ancho). En celular sigue abajo de todo con casi todo el ancho.
+  - **Logo:** el ícono es el mismo logo del navbar. Se importa `../Assets/images/Logos/logoazulpng.png` en `toast-utils.js`, así Vite le pone el mismo nombre con hash que en el header y sale de la caché. Antes iba `/icon.svg`, que a 20 px el usuario veía "celeste, no azul oscuro".
+  - Verificado: 24 checks, incluido que el `src` del logo del aviso coincida con el de `.navbar__logo-img`.
+

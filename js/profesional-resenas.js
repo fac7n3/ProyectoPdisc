@@ -20,12 +20,26 @@ let resenas = [];
 /** id de la reseña con el cuadro de respuesta abierto. */
 let respondiendo = null;
 
+let cargada = false;
+
 export function initResenas(contexto) {
   ctx = contexto;
   ctx.alMostrar('resenas', cargar);
 }
 
+/** Tiempo real (lo llama profesional.js). Ver recargarConsultas. */
+export function recargarResenas() {
+  if (cargada) return cargar();
+  return undefined;
+}
+
+/** Con el cuadro de respuesta abierto no se redibuja: se perdería lo escrito. */
+export function respondiendoResena() {
+  return respondiendo !== null;
+}
+
 async function cargar() {
+  cargada = true;
   const { data, error } = await supabase
     .from('reviews')
     .select('id, rating, comment, created_at, owner_reply, owner_replied_at')

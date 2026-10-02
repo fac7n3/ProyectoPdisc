@@ -303,6 +303,38 @@ function markHomeIntent(e) {
   try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
 }
 
+// --- Flecha "Volver" del navbar ---
+// Antes era un <a href="home.html"> fijo: desde Soporte (o cualquier otra
+// pantalla) tirabas siempre al inicio, en vez de volver adonde estabas. Ahora
+// vuelve a la página anterior del historial. Cae al inicio solo cuando no hay
+// una "anterior" propia del sitio (URL tipeada, link externo, pestaña nueva) --
+// ahí history.back() sacaría a la persona del sitio o no haría nada.
+// `history.state.blSection` lo deja Mi perfil al abrir una sección (Soporte,
+// Compras, etc.): es una vuelta interna del mismo documento, así que no hay
+// referrer que mirar y siempre se puede retroceder.
+function hasSiteHistory() {
+  if (window.history.state?.blSection) return true;
+  if (window.history.length <= 1 || !document.referrer) return false;
+  try {
+    return new URL(document.referrer).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function handleNavBack(e) {
+  const circle = e.target.closest?.(".navbar__action-circle");
+  if (!circle || !circle.querySelector(".fa-arrow-left")) return;
+  e.preventDefault();
+  if (hasSiteHistory()) {
+    window.history.back();
+    return;
+  }
+  // Sin a dónde volver: es un "llevame al inicio" explícito, igual que el logo.
+  try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
+  window.location.href = circle.getAttribute("href") || "./home.html";
+}
+
 // --- Destino post-login según el rol (A113-270) ---
 // El vendedor arranca en vender.html y el profesional ya publicado en
 // profesional.html (su panel propio desde 2026-09-17); el resto sigue yendo a
@@ -572,6 +604,7 @@ export async function updateNavbarProfile() {
 if (typeof window !== "undefined") {
   // Click en el logo del navbar = "llevame al inicio" (ver markHomeIntent).
   document.addEventListener("click", markHomeIntent, true);
+  document.addEventListener("click", handleNavBack);
 
   // Escuchar cuando el DOM esté listo
   if (document.readyState === "loading") {
@@ -581,7 +614,24 @@ if (typeof window !== "undefined") {
   }
 
   // Suscribirse a cambios de estado de autenticación
-  supabase.auth.onAuthStateChange(() => {
+  supabase.auth.onAuthStateChange((event, session) => {
     updateNavbarProfile();
+    // Inicio de sesión sin recargar (ej. el popup de Google): también en vivo.
+    if (event === "SIGNED_IN" && session) startLiveNotifications(session.user.id);
   });
+
+  // Notificaciones en tiempo real en TODAS las páginas con sesión, tengan o
+  // no la campanita (Contratar, Servicios, Farmacias, el panel de admin...):
+  // un aviso nuevo salta como toast apenas llega, en cada dispositivo donde
+  // esté abierta la cuenta. Import dinámico porque toast-utils importa este
+  // mismo módulo (por el cliente de Supabase) y no puede cargarse antes.
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) startLiveNotifications(session.user.id);
+  });
+}
+
+function startLiveNotifications(userId) {
+  import("./toast-utils.js")
+    .then((m) => m.initNotificationToasts(userId))
+    .catch((err) => console.error("No se pudieron activar las notificaciones en vivo:", err));
 }

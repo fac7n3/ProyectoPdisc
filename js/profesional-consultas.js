@@ -28,12 +28,27 @@ let ctx = null;
 let consultas = [];
 let filtro = 'todas';
 
+/** Si la sección ya se abrió alguna vez (antes no hay nada dibujado que actualizar). */
+let cargada = false;
+
 export function initConsultas(contexto) {
   ctx = contexto;
   ctx.alMostrar('consultas', cargar);
 }
 
+/**
+ * Tiempo real: una consulta nueva (o un cambio de estado hecho desde otro
+ * dispositivo) llega por Realtime y la lista se redibuja sola. Lo llama
+ * profesional.js; si la sección todavía no se abrió no hace nada, porque la
+ * primera vez que se abra ya la pide de cero.
+ */
+export function recargarConsultas() {
+  if (cargada) return cargar();
+  return undefined;
+}
+
 async function cargar() {
+  cargada = true;
   const { data, error } = await supabase
     .from('professional_inquiries')
     .select('id, request_details, needed_when, needed_date, contact_phone, status, created_at, attachments')

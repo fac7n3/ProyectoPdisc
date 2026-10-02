@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-01. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -80,7 +80,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Pendiente 2026-10-01 — Click en un producto lento: migración 117 SIN aplicar.**
+- **Resuelto 2026-10-02 — Click en un producto lento: migración 118 aplicada y publicada.**
   Reportado por el usuario ("tiempo de carga muy alto cuando apretás un
   producto"). Medido en producción (logs de la API, 24 h): la consulta del
   modal tardaba ~1050 ms de promedio **dentro de la base** (p95 ~5 s) contra
@@ -93,7 +93,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   request, así que bajo carga satura la instancia: en una ráfaga hasta un
   `select` de `profiles` por id tardó 9 s.
   **Arreglo:** RPC `get_product_detail`
-  (`db/schema/117_get_product_detail_rpc.sql`, SECURITY DEFINER): producto +
+  (`db/schema/118_get_product_detail_rpc.sql`, SECURITY DEFINER): producto +
   comercio + fotos + opciones + promedio y cantidad de reseñas en UNA consulta.
   **Copia a mano la regla de visibilidad de `products_select_merged`: si esa
   policy cambia, hay que cambiar la función también.** Del lado del navegador:
@@ -101,23 +101,116 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   adelantado al quedarse el mouse 100 ms / apoyar el dedo, y se sacó la espera
   fija de 450 ms al abrir un relacionado. Lo usan el modal
   (`js/product-modal.js`) y `producto.html` por `js/product-detail-api.js`, con
-  **respaldo a las consultas de siempre si la función no existe**: el orden de
-  publicación no importa. Detalle y método de prueba en el skill
-  `progreso-baradero-local`.
-  **Verificado** contra la base real en transacciones deshechas: anon + 7 cuentas
-  reales (admin, dueños, empleado, compradores, cliente) × 58 productos, 0
-  diferencias de visibilidad/fotos/opciones/reseñas; 7820/2592/677 ms ->
-  25/3/3 ms. **Falta:** (1) aplicar la 117 a producción (con el OK del
-  usuario) y (2) mergear a `main`. **Sin probar de punta a punta en
-  producción** (el sandbox no llega a Supabase): los tiempos del navegador salen
-  de una simulación con los valores medidos (~1030 ms -> ~15 ms hasta ver el
-  producto, ~305 ms completo).
+  **respaldo a las consultas de siempre si la función no existe**. Detalle y
+  método de prueba en el skill `progreso-baradero-local`.
+  **Número de migración:** nació como 117, pero `main` ya tenía la 117
+  (`117_realtime_publication`, otra sesión, mismo día): se aplicó a producción
+  como `118_get_product_detail_rpc` (versión `20261002212906`) y el archivo se
+  renombró (mismo criterio que 74->75 y 107->108).
+  **Verificado**, antes de aplicar (en transacciones deshechas) y de nuevo
+  contra la función ya instalada (solo lectura): el cuerpo en producción es
+  idéntico al archivo (md5 `42b0f2bd...`), ejecutan solo `anon`,
+  `authenticated` y `service_role` (nada a `PUBLIC`), y con anon + 7 cuentas
+  reales (admin, dueños, empleado, compradores, cliente) x 59 productos hay 0
+  diferencias de visibilidad, de campos y de reseñas respecto de la RLS. **Una
+  sola diferencia de fotos, la prevista:** un comprador ve las fotos extra de un
+  producto que después se pausó (la policy vieja se las ocultaba; ya podía ver
+  el producto y su foto principal). Para un usuario logueado la consulta vieja
+  tardó 406/2111/5964 ms y la función 42/3/3 ms.
+  **Sin probar de punta a punta en un navegador contra producción** (el
+  sandbox no llega a Supabase): los tiempos del navegador salen de una
+  simulación con los valores medidos (~1030 ms -> ~15 ms hasta ver el producto,
+  ~305 ms completo); conviene abrir un producto logueado a mano una vez.
   **Mismo problema, sin resolver:** `carrito.js` pide `products` y
   `product_options` con joins anidados y en esa ráfaga tardó 3-13 s; la salida
   de fondo es hacer baratas las policies anidadas con una función auxiliar
   SECURITY DEFINER (probarla igual: transacción deshecha + comparación por
   identidad). `create_order` también tuvo promedio 2,9 s / p95 9,9 s dentro de la base
   (24 h, 6 llamadas), sin investigar si es lo mismo.
+- **Resuelto 2026-10-02** — **Las notificaciones emergentes ahora se ven como
+  una notificación de celular**, abajo a la derecha (en celular, abajo de todo
+  con casi todo el ancho), a pedido del usuario. Primero se probó abajo al
+  centro; el usuario la prefirió a la derecha, y con **el mismo logo del navbar**
+  (`logoazulpng.png`, importado en el JS): `/icon.svg` a 20 px se veía celeste.
+  Logo y nombre de la app, "ahora", título en negrita, una línea de detalle
+  (`buildNotificationPreview`) y la acción ("Ver pedido →"). Duran 8 s (antes
+  5), se frenan con el mouse/dedo encima, se cierran con la X o deslizándolas, y
+  **tocarla la abre y la marca como leída** (espera hasta 0,8 s a que se guarde
+  antes de navegar: si no, el cambio de página cortaba el pedido). El número
+  #BL-1070 no se parte en el guion. Todo en `js/toast-utils.js` +
+  `Assets/styles/home.css`; documentado en `docs/brand-guidelines.md`. 20
+  checks de Playwright en escritorio y celular (incluido deslizar con eventos
+  táctiles reales).
+- **Resuelto 2026-10-02** — **Todo el sitio en tiempo real** (Supabase Realtime),
+  a pedido del usuario. Antes no se usaba Realtime en ningún lado: los avisos se
+  pedían cada 30 s y el resto recién aparecía al recargar. Ahora, en todas las
+  páginas con sesión (también las que no tienen campanita), una notificación
+  nueva salta al instante como toast, en cada dispositivo con la cuenta abierta;
+  la campanita, la tarjeta de Mi perfil y el centro de notificaciones abierto se
+  actualizan solos, y leer/borrar en un dispositivo baja el número en los otros.
+  También en vivo: pedidos, resumen y stock del panel de vendedor (incluido el
+  empleado, que no recibe notificaciones), "Mis compras", reclamos (usuario y
+  admin, con el hilo abierto), consultas y reseñas del profesional, la cola del
+  repartidor, las secciones de trabajo entrante del admin, la pantalla de
+  "solicitud en revisión" (pasa sola al panel al aprobarse) y el **carrito entre
+  dispositivos**. Migración **117** (aplicada): 11 tablas a la publicación
+  `supabase_realtime`; Realtime respeta la RLS. Piezas: `js/realtime-utils.js`
+  (`subscribeToChanges` con puesta al día al reconectar / volver a la pestaña /
+  `online`, y **polling de respaldo cada 30 s si el websocket no conecta**;
+  `createRefresher` agrupa ráfagas y espera si la persona está escribiendo,
+  `isEditingWithin`) y `js/notifications-live.js` (un canal por página, evento
+  `bl:notifications-changed`). **Gotchas:** (1) los DELETE de Realtime no se
+  pueden filtrar y llegan los de todas las cuentas con solo el id: se ignoran los
+  ids que la página no conoce; (2) `user_carts.items` es jsonb y Postgres
+  reordena las claves: los carritos se comparan con `canonicalJson`, si no el eco
+  propio parece un cambio ajeno; (3) el puntero de "último aviso mostrado" pasó
+  de id a fecha (`bl_toast_last_notif_at`): con el id, borrar esa notificación
+  hacía que las 30 últimas salieran de golpe como nuevas. El sonido de pedido
+  nuevo del vendedor ahora suena aunque los avisos emergentes estén apagados.
+  Verificado con 26 checks de Playwright sobre el build real con un servidor de
+  Realtime simulado (sin red a Supabase en el entorno). **Sin probar con dos
+  dispositivos reales:** conviene abrir la cuenta en el celu y la compu y hacer
+  una compra de prueba. **Visto de paso, sin tocar:** la cola del repartidor
+  probablemente sale vacía, porque la RLS de `orders` no deja leer pedidos al
+  rol `repartidor` (solo cliente, comercio, empleado y admin).
+- **Resuelto 2026-10-02** — **"Budin" (Beruru) no se podía comprar**: tenía dos
+  tipos de opción llamados "Vainilla" y "Chokolate", **sin ningún valor adentro**
+  (mismo error de armado que el caso "rosa"). En el modal se veían como dos
+  títulos sueltos, imposibles de tocar, y como el modal y `create_order` exigen
+  elegir una opción de **cada** tipo, no había forma de comprarlo. Se corrigió el
+  dato directo en la base: un solo tipo "Sabor" con las opciones Vainilla y
+  Chokolate (se dejó la grafía "Chokolate" tal cual la cargó el comercio). Sin
+  cambios de código. **Ojo:** `create_order` cuenta como grupo a cualquier fila de
+  `product_options`, aunque no tenga valores -- el editor ya no deja crear grupos
+  vacíos (ver 2026-09-24), pero si algún día aparece otro producto "imposible de
+  comprar" con opciones, la consulta que lo caza es `product_options` sin filas en
+  `product_option_values`.
+- **Resuelto 2026-10-02** — el cartel (toast) "Elegí sabor antes de comprar" salía
+  **detrás** del modal del producto: `.toast` tenía `z-index: 200` y el overlay del
+  modal `500`. Ahora el toast va en `11000` (`Assets/styles/home.css`), por encima
+  de todo, incluidos los carteles de confirmación (`10500`). Afecta a cualquier
+  `showToast` disparado con un modal abierto (favoritos, agregar al carrito, etc.).
+- **Resuelto 2026-10-01** — **Gráficos de ventas del panel de vendedor**, a pedido
+  del usuario. Se sacó la mini línea "Ventas de los últimos 7 días" de la franja
+  de Pedidos (quedan las 5 tarjetas). En **Resumen** hay una tarjeta nueva,
+  "Ventas totales de los últimos 30 días" (`rsSales30Card`, cantidad de ventas
+  por día + % vs. los 30 días anteriores), debajo de Métricas de negocio; el
+  "Ver detalle" de la tarjeta "Ventas totales" ahora baja hasta ella en vez de
+  ir a Pedidos. `rsLineChart` acepta `formatValue`/`labelEvery`/`minMax`. De paso,
+  los gráficos agrupan por **día local** (`localDayKey`): `toISOString()` es UTC y
+  mandaba al día siguiente las ventas de 21:00 a 24:00 en Argentina.
+- **Resuelto 2026-10-01** — **La flecha de arriba a la derecha del navbar ya
+  vuelve a donde estabas**, no siempre al inicio (a pedido del usuario). Era un
+  `<a href="home.html">` fijo en ~9 páginas. Ahora un handler global en
+  `js/auth-utils.js` (`handleNavBack`) hace `history.back()` si hay una página
+  anterior del propio sitio y cae al inicio solo si no la hay (URL tipeada, link
+  externo). **Mi perfil**: las secciones (Soporte, Compras, Ajustes…) eran solo
+  show/hide sin historial, así que "atrás" se salía de la página; ahora
+  `openSection` (`js/perfil.js`) empuja un estado `history.state.blSection` y un
+  `popstate` abre/cierra la sección, por lo que la flecha desde Soporte vuelve
+  al hub de Mi perfil. **Gotcha:** cualquier `history.replaceState` en `perfil.js`
+  debe pasar `window.history.state` (no `{}`) o borra la sección del historial.
+  Verificado con Playwright (sesión mockeada) sobre el build real.
 - **Resuelto 2026-09-30 — Flujo completo del pedido, publicado.** Número de
   pedido (#BL-1001), código de retiro + QR, línea de tiempo, avisos en cada
   paso, efectivo, "Ya transferí", rechazo de pago con motivo, cancelar con

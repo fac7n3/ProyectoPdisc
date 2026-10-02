@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { itemLineKey } from './product-options-utils.js';
+import { subscribeToChanges } from './realtime-utils.js';
 
 export const CART_KEY = 'bl_cart';
 
@@ -29,14 +30,140 @@ export function saveCart(cart) {
   pushCartToCloud(cart).catch((err) => console.error('Error al sincronizar el carrito:', err));
 }
 
+/**
+ * Marca "este navegador tiene cambios del carrito que todavía no llegaron a la
+ * nube" (un push que falló o que se cortó al navegar). Mientras esté, la
+ * puesta al día en vivo no pisa el carrito local con el de la nube: lo vuelve
+ * a subir. En localStorage para que sobreviva al cambio de página.
+ */
+const CART_DIRTY_KEY = 'bl_cart_unsynced';
+
+function setCartDirty(dirty) {
+  try {
+    if (dirty) localStorage.setItem(CART_DIRTY_KEY, '1');
+    else localStorage.removeItem(CART_DIRTY_KEY);
+  } catch { /* sin storage: no hay nada que recordar */ }
+}
+
+function isCartDirty() {
+  try { return localStorage.getItem(CART_DIRTY_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * JSON con las claves ordenadas, para comparar carritos. Hace falta porque
+ * `user_carts.items` es jsonb y Postgres reordena las claves de cada objeto al
+ * guardarlo: el mismo carrito vuelve por Realtime con otro JSON.stringify.
+ */
+export function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort()
+      .filter((k) => value[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value ?? null);
+}
+
+/**
+ * Lo que esta pestaña subió en los últimos segundos. Realtime le devuelve a
+ * esta misma pestaña cada cambio que ella hizo (el "eco"); si dos clicks
+ * rápidos se suben en paralelo, el eco del primero puede llegar después del
+ * segundo click, y aplicarlo haría saltar el carrito para atrás.
+ */
+const ECHO_WINDOW_MS = 15 * 1000;
+const recentPushes = [];
+
+function rememberPush(json) {
+  const now = Date.now();
+  recentPushes.push({ json, at: now });
+  while (recentPushes.length && (recentPushes.length > 20 || now - recentPushes[0].at > ECHO_WINDOW_MS)) {
+    recentPushes.shift();
+  }
+}
+
+function isOwnEcho(json) {
+  const now = Date.now();
+  return recentPushes.some((p) => p.json === json && now - p.at <= ECHO_WINDOW_MS);
+}
+
 /** Sube el carrito actual a user_carts (upsert). No hace nada si no hay sesión. */
 export async function pushCartToCloud(cart) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
-  await supabase
+  const json = canonicalJson(cart || []);
+  rememberPush(json);
+  setCartDirty(true);
+  const { error } = await supabase
     .from('user_carts')
     .upsert({ user_id: session.user.id, items: cart }, { onConflict: 'user_id' });
+  if (error) throw error;
+  // Solo se limpia si lo subido sigue siendo lo último: si mientras tanto
+  // hubo otro cambio, ese push todavía está en camino.
+  if (canonicalJson(getCart()) === json) setCartDirty(false);
+}
+
+/**
+ * El carrito cambió en otro dispositivo (o en otra pestaña): se reemplaza el
+ * local por ese y se avisa a la página (evento `bl:cart-changed`), sin volver
+ * a subirlo. Reemplazar y no mezclar: cada cambio sube el carrito entero, así
+ * que el de la nube ya es el resultado final -- mezclarlo sumaría cantidades
+ * dos veces y no dejaría sacar productos desde el otro dispositivo.
+ */
+function applyRemoteCart(items) {
+  if (!Array.isArray(items)) return;
+  const json = canonicalJson(items);
+  if (json === canonicalJson(getCart())) return;
+  if (isOwnEcho(json)) return;
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  updateCartBadge();
+  window.dispatchEvent(new CustomEvent('bl:cart-changed', { detail: { source: 'remote' } }));
+}
+
+/** Trae el carrito de la nube y lo aplica, salvo que haya cambios locales sin subir. */
+async function catchUpCart(userId) {
+  if (isCartDirty()) {
+    pushCartToCloud(getCart()).catch((err) => console.error('Error al sincronizar el carrito:', err));
+    return;
+  }
+  const { data, error } = await supabase
+    .from('user_carts')
+    .select('items')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.error('Error al traer el carrito de la nube:', error);
+    return;
+  }
+  // Sin fila todavía: el carrito nunca se subió, no hay nada que aplicar.
+  if (data && !isCartDirty()) applyRemoteCart(data.items || []);
+}
+
+let cartLiveStarted = false;
+
+/**
+ * El mismo carrito en todos los dispositivos, en tiempo real: lo que se agrega
+ * en el celular aparece en la compu sin recargar (badge del navbar y, si está
+ * abierta, la página del carrito). Entre pestañas del mismo navegador alcanza
+ * con el evento `storage` (comparten el localStorage).
+ */
+function initCartLive(userId) {
+  if (cartLiveStarted) return;
+  cartLiveStarted = true;
+
+  subscribeToChanges('carrito', [
+    { table: 'user_carts', filter: `user_id=eq.${userId}` },
+  ], (change) => {
+    if (change.eventType === 'DELETE') return;
+    applyRemoteCart(change.new?.items);
+  }, { onResync: () => catchUpCart(userId) });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key !== CART_KEY) return;
+    updateCartBadge();
+    window.dispatchEvent(new CustomEvent('bl:cart-changed', { detail: { source: 'tab' } }));
+  });
 }
 
 /**
@@ -77,10 +204,17 @@ const CART_SYNCED_FLAG = 'bl_cart_synced';
  * repetir el merge en cada navegación entre páginas.
  */
 export async function initCartSync() {
-  if (sessionStorage.getItem(CART_SYNCED_FLAG)) return;
-
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
+
+  initCartLive(session.user.id);
+
+  // Ya se mezcló en esta pestaña: solo hace falta ponerse al día con lo que
+  // haya cambiado en otro dispositivo mientras se navegaba entre páginas.
+  if (sessionStorage.getItem(CART_SYNCED_FLAG)) {
+    catchUpCart(session.user.id);
+    return;
+  }
 
   sessionStorage.setItem(CART_SYNCED_FLAG, '1');
 
@@ -504,6 +638,31 @@ async function fetchIdsWithOptions(productIds) {
 }
 
 /**
+ * ¿Cuáles de estos productos son de un comercio del usuario logueado?
+ *
+ * Mismo criterio que el modal y la ficha (`stores.owner_id`). Una sola consulta
+ * por render y solo con sesión; sin sesión (o ante un error) devuelve vacío y
+ * las tarjetas quedan como siempre -- la seguridad real del pedido no pasa por
+ * acá, `create_order` ya rechaza comprarle a uno mismo.
+ */
+async function fetchOwnProductIds(productIds) {
+  if (productIds.length === 0) return new Set();
+  const { data: { session } } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  if (!uid) return new Set();
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, stores!inner(owner_id)')
+    .in('id', productIds)
+    .eq('stores.owner_id', uid);
+  if (error) {
+    console.error('Error al mirar qué productos son del usuario:', error);
+    return new Set();
+  }
+  return new Set((data || []).map((row) => row.id));
+}
+
+/**
  * Inicializar botones de agregar al carrito en product-cards del DOM.
  * Se puede llamar cada vez que se renderizan nuevas cards.
  *
@@ -515,9 +674,26 @@ async function fetchIdsWithOptions(productIds) {
  */
 export function initCartButtons() {
   const buttons = [...document.querySelectorAll('.product-card__add')];
-  const idsWithOptions = fetchIdsWithOptions(
-    [...new Set(buttons.map((b) => b.dataset.productId || b.closest('.product-card')?.id).filter(Boolean))]
-  );
+  const productIds = [...new Set(buttons.map((b) => b.dataset.productId || b.closest('.product-card')?.id).filter(Boolean))];
+  const idsWithOptions = fetchIdsWithOptions(productIds);
+  const ownIds = fetchOwnProductIds(productIds);
+
+  // En tus propios productos el botón dice "Tu producto" y solo deja verlos.
+  ownIds.then((own) => {
+    buttons.forEach((btn) => {
+      const id = btn.dataset.productId || btn.closest('.product-card')?.id;
+      if (!id || !own.has(id)) return;
+      btn.classList.add('product-card__add--own');
+      btn.disabled = false; // sin stock también se puede mirar
+      btn.style.cssText = '';
+      btn.title = '';
+      btn.replaceChildren();
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-store';
+      btn.appendChild(icon);
+      btn.append(' Tu producto');
+    });
+  });
 
   buttons.forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -537,6 +713,13 @@ export function initCartButtons() {
         ? Number(card.dataset.price)
         : parsePrice(card?.querySelector('.product-card__price')?.textContent || '0');
       const priceOld = parsePrice(priceOldText);
+
+      if ((await ownIds).has(id)) {
+        // Es tu producto: no se agrega al carrito, solo se abre para verlo.
+        if (card && typeof window.openProductModal === 'function') window.openProductModal(card);
+        else window.location.href = `./producto.html?id=${encodeURIComponent(id)}`;
+        return;
+      }
 
       if ((await idsWithOptions).has(id)) {
         // Tiene opciones: que las elija en el modal. openProductModal lo

@@ -2,6 +2,7 @@ import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
+import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
@@ -147,6 +148,7 @@ async function checkSellerState(user) {
       notice.style.display = 'block';
       notice.textContent = `Tu solicitud para "${req.shop_name}" está en estado: ${req.status}. Te avisaremos cuando esté aprobada.`;
     }
+    watchRequestStatus('seller_requests', user.id, req.status);
     return;
   }
 
@@ -175,12 +177,39 @@ async function checkSellerState(user) {
     showProfessionalStatus(profReq.status === 'pending'
       ? `Tu solicitud para publicarte como ${profReq.full_name} está pendiente de aprobación. Te avisaremos cuando esté lista.`
       : `Tu solicitud para publicarte como ${profReq.full_name} fue rechazada. Escribinos por Soporte si tenés dudas.`);
+    watchRequestStatus('professional_requests', user.id, profReq.status);
     return;
   }
 
   reveal('register');
   const tipo = new URLSearchParams(window.location.search).get('tipo');
   showRegisterForms(tipo === 'servicio' ? 'profesional' : 'comercio');
+}
+
+/**
+ * Con la solicitud en revisión, la página queda escuchando su fila: cuando el
+ * admin la aprueba (o la rechaza) se pasa sola al panel nuevo, sin que la
+ * persona tenga que recargar. Antes de recargar se renueva la sesión, porque
+ * la aprobación cambia el rol del JWT (app_metadata.role) y el token viejo
+ * todavía dice "cliente".
+ */
+function watchRequestStatus(table, userId, currentStatus) {
+  let reloading = false;
+  const reloadIfChanged = (status) => {
+    if (reloading || !status || status === currentStatus) return;
+    reloading = true;
+    supabase.auth.refreshSession()
+      .catch(() => { /* sin sesión renovada igual se recarga: checkSellerState mira la DB */ })
+      .finally(() => window.location.reload());
+  };
+  subscribeToChanges(`solicitud-${table}`, [
+    { table, event: 'UPDATE', filter: `user_id=eq.${userId}` },
+  ], (change) => reloadIfChanged(change.new?.status), {
+    onResync: async () => {
+      const { data } = await supabase.from(table).select('status').eq('user_id', userId).maybeSingle();
+      reloadIfChanged(data?.status);
+    },
+  });
 }
 
 /** Alterna entre el toggle+formularios y el estado de una solicitud de profesional
@@ -600,6 +629,7 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 let currentStoreHasAlias = null;
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
+let currentInactiveProductCount = 0; // Resumen: productos pausados/inactivos
 let currentUserFirstName = 'vendedor'; // Resumen: nombre para el saludo "¡Hola, {nombre}!"
 let currentUserId = null; // Resumen: para detectar preguntas sin responder (último mensaje no es mío)
 let isStoreOwner = true; // F12-16: false si el usuario entra como empleado (store_staff), no dueño
@@ -806,7 +836,57 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
 
   applyOrderDeepLink();
   applyDeliverDeepLink();
+  initOrdersLive();
   initOrderAlerts();
+}
+
+// --- Tiempo real: pedidos, resumen y stock sin recargar ---
+// Antes, un pedido nuevo (o un pago confirmado, un "ya transferí", una
+// cancelación del comprador) recién aparecía al recargar, o a los 30s cuando
+// el polling de notificaciones lo detectaba -- y un empleado, que no recibe
+// esas notificaciones, no se enteraba nunca. Ahora el panel escucha los
+// pedidos de su comercio por Supabase Realtime (migración 117) y se actualiza
+// solo, en todos los dispositivos donde esté abierto. La RLS de `orders` y
+// `payment_proofs` ya limita lo que llega al dueño y a sus empleados.
+
+let refreshOrdersLive = () => {};
+
+function initOrdersLive() {
+  if (!currentStoreId) return;
+
+  const pedidosList = () => document.getElementById('pedidos-list');
+  refreshOrdersLive = createRefresher(renderAllOrders, {
+    isBusy: () => isEditingWithin(pedidosList()),
+  });
+  // El resumen hace varias consultas: va con más margen, para que una ráfaga
+  // de cambios (pedido + pago + stock) termine en una sola recarga.
+  const refreshResumen = createRefresher(renderResumen, { delay: 1500 });
+  // Stock y "vendidos" de Publicaciones: solo cambian con un pedido nuevo o
+  // uno cancelado (el stock vuelve). No se redibuja con un menú de "⋯" abierto.
+  const refreshProducts = createRefresher(fetchProducts, {
+    delay: 1500,
+    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden])')),
+  });
+
+  const onOrderChange = (change) => {
+    refreshOrdersLive();
+    refreshResumen();
+    if (change.eventType === 'INSERT' || change.new?.status === 'cancelled') refreshProducts();
+  };
+
+  subscribeToChanges('pedidos-comercio', [
+    { table: 'orders', filter: `store_id=eq.${currentStoreId}` },
+    // Comprobante subido o revisado: la tarjeta del pedido muestra su estado.
+    // Sin filtro (la tabla no tiene store_id): la RLS deja pasar solo los de
+    // este comercio.
+    { table: 'payment_proofs' },
+  ], onOrderChange, {
+    onResync: () => {
+      refreshOrdersLive();
+      refreshResumen();
+      refreshProducts();
+    },
+  });
 }
 
 /**
@@ -1539,7 +1619,9 @@ function initOrderAlerts() {
     const relevant = (e.detail || []).filter((n) => SELLER_ALERT_TYPES.has(n.type));
     if (!relevant.length) return;
     playOrderChime();
-    renderAllOrders();
+    // La lista ya se actualiza sola por Realtime (initOrdersLive); esto es por
+    // si el aviso llega antes: el refresher junta las dos en una sola recarga.
+    refreshOrdersLive();
     if (document.hidden) {
       unseenOrderAlerts += relevant.length;
       document.title = `(${unseenOrderAlerts}) ${baseDocumentTitle}`;
@@ -1566,7 +1648,8 @@ function pedidosTabMatches(order, tab) {
       || (order.status === 'paid' && orderHasCourier(order));
     case 'completed': return order.status === 'completed';
     case 'cancelled': return order.status === 'cancelled';
-    default: return true;
+    // "Todos" no incluye los cancelados: tienen su propia pestaña.
+    default: return order.status !== 'cancelled';
   }
 }
 
@@ -1606,7 +1689,7 @@ function pdStat(icon, variant, title, value, sub) {
 
 const PEDIDOS_COUNTED_TABS = ['to_confirm', 'pending_payment', 'to_prepare', 'in_progress', 'completed', 'cancelled'];
 
-/** Franja de stats + línea de "Ventas de los últimos 7 días" (misma línea SVG que Resumen) + contadores de las pestañas. */
+/** Franja de stats + contadores de las pestañas. */
 function renderPedidosStats() {
   const dash = document.getElementById('pedidos-dash');
   if (!dash) return;
@@ -1616,9 +1699,6 @@ function renderPedidosStats() {
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
   thirtyDaysAgo.setHours(0, 0, 0, 0);
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(now.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
 
   const byTab = Object.fromEntries(PEDIDOS_COUNTED_TABS.map((tab) => [tab, ordCache.filter((o) => pedidosTabMatches(o, tab))]));
   const total30d = ordCache.filter((o) => new Date(o.created_at) >= thirtyDaysAgo);
@@ -1629,21 +1709,6 @@ function renderPedidosStats() {
   dash.appendChild(pdStat('fa-box-open', 'shipping', 'Para preparar', String(byTab.to_prepare.length), formatPrice(sum(byTab.to_prepare))));
   dash.appendChild(pdStat('fa-circle-check', 'completed', 'Entregados', String(byTab.completed.length), formatPrice(sum(byTab.completed))));
   dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(byTab.cancelled.length), formatPrice(sum(byTab.cancelled))));
-
-  const chartCard = rsEl('div', 'pd-chart');
-  chartCard.appendChild(rsEl('div', 'pd-chart__label', 'Ventas de los últimos 7 días'));
-  const dailyTotals = [];
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(sevenDaysAgo);
-    day.setDate(day.getDate() + i);
-    const key = day.toISOString().slice(0, 10);
-    const total = ordCache
-      .filter((o) => o.payment_status === 'paid' && o.created_at.slice(0, 10) === key)
-      .reduce((s, o) => s + o.total_price, 0);
-    dailyTotals.push({ day, total });
-  }
-  chartCard.appendChild(rsLineChart(dailyTotals));
-  dash.appendChild(chartCard);
 
   PEDIDOS_COUNTED_TABS.forEach((tab) => {
     const el = document.getElementById(`pd-tab-count-${tab}`);
@@ -2877,6 +2942,8 @@ function rsPendingCard(title, icon, area, rows, footer) {
       if (r.href) window.location.href = r.href;
       else if (r.section === 'pedidos') goToPedidos(r.tab || 'all');
       else location.hash = r.section;
+      // "Publicaciones inactivas" abre la lista ya filtrada por las pausadas.
+      if (r.pubStatus) document.querySelector(`#pub-toolbar .pub-chip[data-status="${r.pubStatus}"]`)?.click();
     });
     row.appendChild(rsEl('span', 'rs-pending-row__label', r.label));
     const right = rsEl('span', 'rs-pending-row__right');
@@ -2939,7 +3006,7 @@ function rsHelpCard() {
 
   const rows = [
     { title: 'Chat en vivo', sub: 'Muy pronto', onClick: () => showToast('El chat en vivo va a estar disponible próximamente. Mientras tanto, podés escribirnos por correo o dejarnos un reclamo en Soporte.', 'success') },
-    { title: 'Centro de ayuda', sub: 'Preguntas frecuentes', href: './info.html' },
+    { title: 'Centro de ayuda', sub: 'Preguntas frecuentes', onClick: () => { location.hash = 'soporte'; } },
     { title: 'Soporte por correo', sub: 'soporte@baraderolocal.com.ar', href: 'mailto:soporte@baraderolocal.com.ar' },
   ];
   rows.forEach((r) => {
@@ -2959,13 +3026,17 @@ function rsHelpCard() {
   return card;
 }
 
-/** Línea de ventas brutas de los últimos 7 días (SVG, sin librería). */
-function rsLineChart(dailyTotals) {
+/**
+ * Línea de ventas por día (SVG, sin librería). `formatValue` da el texto del eje
+ * Y (pesos por defecto; la de cantidad de ventas pasa enteros); `labelEvery`
+ * espacia las fechas del eje X cuando hay muchos días (la de 30 días).
+ */
+function rsLineChart(dailyTotals, { formatValue = formatPrice, labelEvery = 1, minMax = 1 } = {}) {
   const svgNS = 'http://www.w3.org/2000/svg';
   const W = 480, H = 160, padL = 46, padR = 8, padT = 10, padB = 22;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
-  const maxTotal = Math.max(1, ...dailyTotals.map((d) => d.total));
+  const maxTotal = Math.max(minMax, ...dailyTotals.map((d) => d.total));
   const n = dailyTotals.length;
   const stepX = n > 1 ? chartW / (n - 1) : 0;
   const points = dailyTotals.map((d, i) => ({
@@ -2992,11 +3063,12 @@ function rsLineChart(dailyTotals) {
     label.setAttribute('class', 'rs-line__axis');
     label.setAttribute('x', '2');
     label.setAttribute('y', (y + 3).toFixed(1));
-    label.textContent = formatPrice(Math.round(maxTotal * frac));
+    label.textContent = formatValue(Math.round(maxTotal * frac));
     svg.appendChild(label);
   });
 
-  points.forEach((p) => {
+  points.forEach((p, i) => {
+    if (i % labelEvery !== 0 && i !== n - 1) return;
     const label = document.createElementNS(svgNS, 'text');
     label.setAttribute('class', 'rs-line__axis');
     label.setAttribute('x', p.x.toFixed(1));
@@ -3043,6 +3115,8 @@ function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
 
   // Columna izquierda: ventas brutas de los últimos 7 días (línea)
   const left = rsEl('div');
+  left.id = 'resumen-sales-gross';
+  left.style.scrollMarginTop = '1rem';
   left.appendChild(rsEl('div', 'rs-metrics__label', 'Ventas brutas de los últimos 7 días'));
   left.appendChild(rsEl('div', 'rs-metrics__figure', formatPrice(sales7d)));
   if (pctChange !== null) {
@@ -3110,6 +3184,39 @@ function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
   return card;
 }
 
+/** "Ventas totales de los últimos 30 días": cantidad de ventas por día (misma línea que Métricas de negocio). */
+function rsSales30Card(dailyCounts, total30d, pctChange) {
+  const card = rsEl('div', 'rs-card rs-sales30');
+  card.id = 'resumen-sales30';
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-solid fa-chart-line"></i> ';
+  title.appendChild(document.createTextNode('Ventas totales de los últimos 30 días'));
+  card.appendChild(title);
+
+  card.appendChild(rsEl('div', 'rs-metrics__label', 'Cantidad de ventas por día'));
+  card.appendChild(rsEl('div', 'rs-metrics__figure', String(total30d)));
+  if (pctChange !== null) {
+    const delta = rsEl('div', 'rs-stat__delta' + (pctChange < 0 ? ' rs-stat__delta--down' : ''));
+    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}"></i> `;
+    delta.appendChild(document.createTextNode(`${Math.abs(pctChange)}% vs. 30 días anteriores`));
+    card.appendChild(delta);
+  }
+  // minMax 2 + enteros: el eje Y marca 0 / 1 / 2 en vez de decimales sin sentido.
+  const peak = Math.max(2, ...dailyCounts.map((d) => d.total));
+  card.appendChild(rsLineChart(dailyCounts, {
+    formatValue: (v) => String(v),
+    labelEvery: 5,
+    minMax: peak % 2 === 0 ? peak : peak + 1,
+  }));
+  return card;
+}
+
+/** Día local (YYYY-MM-DD): toISOString() es UTC y corría de día las ventas de la noche en Argentina (UTC-3). */
+function localDayKey(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 async function renderResumen() {
   const dash = document.getElementById('resumen-dash');
   const grid2 = document.getElementById('resumen-grid2');
@@ -3143,8 +3250,7 @@ async function renderResumen() {
 
   const reviewCount = reviews.length;
   const avgRating = reviewCount ? reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0;
-  const reviewedClientIds = new Set(reviews.map((r) => r.client_id).filter(Boolean));
-  const salesToRate = paidOrders.filter((o) => o.status === 'completed' && o.client_id && !reviewedClientIds.has(o.client_id)).length;
+  const deliveredCount = paidOrders.filter((o) => o.status === 'completed').length;
 
   const sales7d = paidOrders.filter((o) => new Date(o.created_at) >= sevenDaysAgo).reduce((s, o) => s + o.total_price, 0);
   const salesPrev7d = paidOrders
@@ -3158,10 +3264,26 @@ async function renderResumen() {
   for (let i = 0; i < 7; i++) {
     const day = new Date(sevenDaysAgo);
     day.setDate(day.getDate() + i);
-    const key = day.toISOString().slice(0, 10);
-    const total = paidOrders.filter((o) => o.created_at.slice(0, 10) === key).reduce((s, o) => s + o.total_price, 0);
+    const key = localDayKey(day);
+    const total = paidOrders.filter((o) => localDayKey(new Date(o.created_at)) === key).reduce((s, o) => s + o.total_price, 0);
     dailyTotals.push({ day, total });
   }
+  // Cantidad de ventas por día en los últimos 30 días + comparación con los 30 anteriores.
+  const countByDay = new Map();
+  paidOrders.forEach((o) => {
+    const k = localDayKey(new Date(o.created_at));
+    countByDay.set(k, (countByDay.get(k) || 0) + 1);
+  });
+  const dailyCounts = [];
+  for (let i = 0; i < 30; i++) {
+    const day = new Date(thirtyDaysAgo);
+    day.setDate(day.getDate() + i);
+    dailyCounts.push({ day, total: countByDay.get(localDayKey(day)) || 0 });
+  }
+  const prevThirtyDaysAgo = new Date(thirtyDaysAgo);
+  prevThirtyDaysAgo.setDate(prevThirtyDaysAgo.getDate() - 30);
+  const ordersPrev30dCount = paidOrders.filter((o) => { const d = new Date(o.created_at); return d >= prevThirtyDaysAgo && d < thirtyDaysAgo; }).length;
+  const pctChange30d = ordersPrev30dCount > 0 ? Math.round(((orders30dCount - ordersPrev30dCount) / ordersPrev30dCount) * 100) : null;
   const catItems30d = catItems.filter((it) => it.orders?.created_at && new Date(it.orders.created_at) >= thirtyDaysAgo);
 
   // Fila superior: 3 stats + "Impulsá tus ventas"
@@ -3176,22 +3298,24 @@ async function renderResumen() {
     area: 's2', icon: 'fa-sack-dollar', iconVariant: 'sales', title: 'Ventas brutas',
     value: formatPrice(sales7d), sub: 'Últimos 7 días',
     delta: pctChange !== null ? { text: `${Math.abs(pctChange)}% vs. semana anterior`, positive: pctChange >= 0 } : null,
+    action: { label: 'Ver detalle', onClick: () => document.getElementById('resumen-sales-gross')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) },
   }));
   dash.appendChild(rsStatCard({
     area: 's3', icon: 'fa-cart-shopping', iconVariant: 'orders', title: 'Ventas totales',
     value: String(orders30dCount), sub: 'Últimos 30 días',
-    action: { label: 'Ver detalle', onClick: () => goToPedidos('all') },
+    action: { label: 'Ver detalle', onClick: () => document.getElementById('resumen-sales30')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) },
   }));
   dash.appendChild(rsPromoCard());
 
-  dash.appendChild(rsPendingCard('Pendientes en tus publicaciones', 'fa-clipboard-list', 'p1', [
+  dash.appendChild(rsPendingCard('Estado de tus publicaciones', 'fa-clipboard-list', 'p1', [
     { label: 'Publicaciones activas', count: currentActiveProductCount, section: 'publicaciones' },
+    { label: 'Publicaciones inactivas', count: currentInactiveProductCount, section: 'publicaciones', pubStatus: 'inactive' },
   ], { label: 'Ir a publicaciones', section: 'publicaciones' }));
 
-  dash.appendChild(rsPendingCard('Pendientes en tus ventas', 'fa-truck-fast', 'p2', [
+  dash.appendChild(rsPendingCard('Estado de tus ventas', 'fa-truck-fast', 'p2', [
     { label: 'Pagos por confirmar', count: pendingPayCount, section: 'pedidos', tab: 'to_confirm', alert: pendingPayCount > 0 },
     { label: 'Pedidos para preparar', count: toPrepareCount, section: 'pedidos', tab: 'to_prepare', alert: toPrepareCount > 0 },
-    { label: 'Ventas para calificar', count: salesToRate, section: 'pedidos', tab: 'completed' },
+    { label: 'Entregados', count: deliveredCount, section: 'pedidos', tab: 'completed' },
   ], { label: 'Ir a pedidos', section: 'pedidos' }));
 
   // Novedades / ¿Necesitás ayuda?
@@ -3202,6 +3326,7 @@ async function renderResumen() {
   // Métricas de negocio
   metricsContainer.textContent = '';
   metricsContainer.appendChild(rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d));
+  metricsContainer.appendChild(rsSales30Card(dailyCounts, orders30dCount, pctChange30d));
 }
 
 // (El insights provisional F12-13 se reemplazó por renderResumen, arriba.)
@@ -3296,6 +3421,7 @@ async function fetchProducts() {
 
   // Resumen: "Productos Activos" -- solo los is_active (para la card de pendientes).
   currentActiveProductCount = products.filter((p) => p.is_active).length;
+  currentInactiveProductCount = products.length - currentActiveProductCount;
   const statProducts = document.getElementById('stat-products-count');
   if (statProducts) statProducts.textContent = currentActiveProductCount;
 
@@ -4010,6 +4136,11 @@ function renderProductGallery() {
 function openProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
+  // "Seleccionar varios" es del listado: mientras se crea o edita una
+  // publicación no tiene que verse (y se sale del modo selección).
+  if (pubSelectMode) setPubSelectMode(false);
+  const bulk = document.getElementById('pub-bulk');
+  if (bulk) bulk.hidden = true;
 }
 
 /** Al alta o editar un producto: llevar el scroll arriba de todo, donde
@@ -4023,6 +4154,8 @@ function scrollToProductForm() {
 function closeProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = true;
+  const bulk = document.getElementById('pub-bulk');
+  if (bulk) bulk.hidden = false;
 }
 
 /** F5-04: sube una foto al bucket 'products' y devuelve su URL pública (null si falló). */

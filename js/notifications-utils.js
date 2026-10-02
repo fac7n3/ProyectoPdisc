@@ -2,6 +2,8 @@ import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { formatDueDate } from './order-utils.js';
+import { rememberNotificationIds, onNotificationsChanged, startNotificationsLive } from './notifications-live.js';
+import { createRefresher } from './realtime-utils.js';
 
 // Texto genérico de cada tipo. Los avisos de pedidos traen el número en el
 // payload (migración 115) y usan ORDER_TITLES; este queda para los viejos.
@@ -295,6 +297,16 @@ export function buildNotificationTitle(n) {
 
 export { buildNotificationLink };
 
+/**
+ * Línea de detalle de una notificación, sin consultas extra (lo que trae el
+ * payload): la usan los avisos emergentes (js/toast-utils.js) debajo del
+ * título. El centro de notificaciones arma una más completa con los mapas.
+ */
+export function buildNotificationPreview(n) {
+  if (n.type === 'support_ticket_message' && n.payload?.message) return n.payload.message;
+  return buildPreviewText(n, { reviewMap: {}, orderAmountMap: {} });
+}
+
 export async function fetchNotifications(userId) {
   const { data, error } = await supabase
     .from('notifications')
@@ -307,6 +319,7 @@ export async function fetchNotifications(userId) {
     console.error('Error al cargar notificaciones:', error);
     return [];
   }
+  rememberNotificationIds(data);
   return data || [];
 }
 
@@ -443,17 +456,66 @@ function buildNotificationRow(n, maps, { onChange }) {
   return row;
 }
 
-/** Arma el centro de notificaciones dentro de `container` (DOM API, sin innerHTML). */
-export async function renderNotificationsSection(container, userId) {
-  container.textContent = '';
+/**
+ * Centros de notificaciones dibujados en la página (el desplegable de la
+ * campanita, la sección de "Mi perfil", la de los paneles), con lo que la
+ * persona tenía escrito en el buscador y el filtro elegido. Cuando llega un
+ * cambio por Realtime se vuelven a dibujar todos sin perder eso.
+ */
+const liveSections = new Map();
+let liveListenerReady = false;
 
+function ensureLiveListener() {
+  if (liveListenerReady) return;
+  liveListenerReady = true;
+  onNotificationsChanged(() => {
+    liveSections.forEach((entry, container) => {
+      // El desplegable arma un contenedor nuevo cada vez que se abre: los
+      // que ya no están en la página se sueltan.
+      if (!container.isConnected) {
+        liveSections.delete(container);
+        return;
+      }
+      entry.refresh();
+    });
+  });
+}
+
+/**
+ * Arma el centro de notificaciones dentro de `container` (DOM API, sin
+ * innerHTML) y lo deja en vivo: una notificación nueva, leída o borrada desde
+ * otro dispositivo aparece sola, sin recargar.
+ */
+export async function renderNotificationsSection(container, userId) {
+  if (!container || !userId) return;
+  let entry = liveSections.get(container);
+  if (!entry) {
+    entry = { userId, search: '', filter: 'all' };
+    // delay corto: también lo usan "Marcar como leída" y "Borrar" (onChange).
+    entry.refresh = createRefresher(() => drawNotificationsSection(container, entry), { delay: 150 });
+    liveSections.set(container, entry);
+  }
+  entry.userId = userId;
+  ensureLiveListener();
+  startNotificationsLive(userId);
+  await drawNotificationsSection(container, entry);
+}
+
+async function drawNotificationsSection(container, entry) {
+  const { userId } = entry;
   const notifications = await fetchNotifications(userId);
+
+  // Si el buscador tenía el foco, se le devuelve después de redibujar (una
+  // actualización en vivo no puede cortarle la escritura a nadie).
+  const prevSearch = container.querySelector('.notif-search');
+  const hadFocus = Boolean(prevSearch && document.activeElement === prevSearch);
+  const caret = hadFocus ? prevSearch.selectionStart : null;
 
   if (notifications.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'notif-empty';
     empty.textContent = 'No tenés notificaciones todavía.';
-    container.appendChild(empty);
+    container.replaceChildren(empty);
     return;
   }
 
@@ -481,8 +543,11 @@ export async function renderNotificationsSection(container, userId) {
 
   // onChange: mark/delete cambian el estado en el servidor -- se vuelve a
   // pedir todo en vez de mantener un segundo estado local sincronizado
-  // (mismo patrón que ya usaban "marcar como leída"/"marcar todas").
-  const onChange = () => renderNotificationsSection(container, userId);
+  // (mismo patrón que ya usaban "marcar como leída"/"marcar todas"). El mismo
+  // cambio vuelve después por Realtime: el refresher junta los dos en uno.
+  const onChange = () => entry.refresh();
+
+  const fragment = document.createDocumentFragment();
 
   const toolbar = document.createElement('div');
   toolbar.className = 'notif-toolbar';
@@ -492,6 +557,7 @@ export async function renderNotificationsSection(container, userId) {
   searchInput.className = 'notif-search';
   searchInput.placeholder = 'Buscar en tus notificaciones...';
   searchInput.setAttribute('aria-label', 'Buscar notificaciones');
+  searchInput.value = entry.search;
   toolbar.appendChild(searchInput);
 
   const filterDropdown = buildDropdown({
@@ -500,9 +566,12 @@ export async function renderNotificationsSection(container, userId) {
       { value: 'unread', label: 'No leídas' },
       { value: 'important', label: 'Importantes' },
     ],
-    value: 'all',
+    value: entry.filter,
     ariaLabel: 'Filtrar notificaciones',
-    onSelect: applyFilters,
+    onSelect: (value) => {
+      entry.filter = value;
+      applyFilters();
+    },
   });
   toolbar.appendChild(filterDropdown.element);
 
@@ -519,11 +588,11 @@ export async function renderNotificationsSection(container, userId) {
     toolbar.appendChild(markAllBtn);
   }
 
-  container.appendChild(toolbar);
+  fragment.appendChild(toolbar);
 
   const list = document.createElement('div');
   list.className = 'notif-list';
-  container.appendChild(list);
+  fragment.appendChild(list);
 
   function applyFilters() {
     const search = searchInput.value.trim().toLowerCase();
@@ -547,7 +616,17 @@ export async function renderNotificationsSection(container, userId) {
     filtered.forEach((n) => list.appendChild(buildNotificationRow(n, maps, { onChange })));
   }
 
-  searchInput.addEventListener('input', applyFilters);
+  searchInput.addEventListener('input', () => {
+    entry.search = searchInput.value;
+    applyFilters();
+  });
 
   applyFilters();
+  // Recién ahora se reemplaza lo que había: armar todo antes evita que una
+  // actualización en vivo haga parpadear la lista (vacía y llena de nuevo).
+  container.replaceChildren(fragment);
+  if (hadFocus) {
+    searchInput.focus({ preventScroll: true });
+    if (caret != null) searchInput.setSelectionRange(caret, caret);
+  }
 }
