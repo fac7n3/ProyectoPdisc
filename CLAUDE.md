@@ -20,7 +20,7 @@
 1. **`git pull` en `main`** siempre primero (ver aviso arriba).
 2. **Una rama nueva por tarea**, creada desde el `main` recién actualizado — nunca commitear directo en `main`:
    `git checkout -b A113-XXX-slug-corto` (clave de Jira de la subtarea + descripción corta, ej. `A113-201-checkout-envio`).
-3. Al terminar: mergear esa rama a `main` (o PR si el cambio es grande/riesgoso) y borrarla. El commit que cierra la tarea debe incluir la clave `A113-XXX` (hook `post-commit`, ver "Flujo de trabajo y tracking"). **Ojo:** cada push a `main` dispara deploy automático a producción en Vercel — mergear solo cuando la tarea esté realmente terminada, no a mitad de camino.
+3. Al terminar: mergear esa rama a `main` (o PR si el cambio es grande/riesgoso). El commit que cierra la tarea debe incluir la clave `A113-XXX` (hook `post-commit`, ver "Flujo de trabajo y tracking"). **Ojo:** cada push a `main` dispara deploy automático a producción en Vercel — mergear solo cuando la tarea esté realmente terminada, no a mitad de camino.
 4. Si `git pull` trae conflicto con cambios locales sin commitear: `git stash -u` antes de pull, nunca `git checkout .` ni `reset --hard` para "sacárselos de encima".
 
 ## Qué es
@@ -80,6 +80,34 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02 — El tiempo real estaba bloqueado por el CSP del navegador.**
+  El tiempo real publicado ese mismo día (entrada "Todo el sitio en tiempo real",
+  más abajo) **nunca conectó en producción**: el `<meta>` CSP de cada página
+  tenía `connect-src 'self' https://*.supabase.co ...` y el websocket va por
+  `wss://`, que `https://*.supabase.co` no cubre (en CSP el esquema `https` no
+  incluye `wss`). El navegador lo rechazaba con "Refused to connect to
+  'wss://...supabase.co/realtime/v1/websocket'" y cada vista caía al polling de
+  respaldo de 30 s: nada se rompía, pero no había tiempo real. **Los tests no lo
+  vieron** porque simulaban el websocket con `page.routeWebSocket` de Playwright,
+  que reemplaza `WebSocket` dentro de la página y nunca llega al chequeo de CSP
+  del navegador.
+  **Arreglo:** `wss://*.supabase.co` en el `connect-src` de las 22 páginas (21 de
+  `pages/` + `index.html`; el CSP está copiado a mano en cada HTML, no hay un
+  lugar único) y **`js/csp.test.mjs`** (corre con `npm test`): falla si una
+  página, nueva o editada, no permite `https://` y `wss://` de Supabase en
+  `connect-src` (verificado: falla en las 22 con el CSP anterior).
+  **Verificado con un websocket REAL contra Chromium real** (no simulado): con el
+  CSP anterior, violación de `connect-src` y 0 conexiones en 19 de 22 páginas
+  (las otras 3 son estáticas y no usan tiempo real); con el corregido, 0
+  violaciones en las 22, conecta, une los canales (`notifications`,
+  `user_carts`) y un aviso empujado por el servidor aparece como toast. Cómo se
+  hace (el sandbox no llega a Supabase) está en el skill `progreso-baradero-local`.
+  **Gotcha general:** cualquier tipo de conexión nuevo (otro esquema, otro host)
+  hay que sumarlo al `connect-src` de TODAS las páginas, y el chequeo que lo
+  caza es cargar la página en un navegador real y buscar `Refused to connect`
+  (evento `securitypolicyviolation`). **Sin probar contra los servidores reales
+  de Realtime** (sin red a Supabase): la confirmación en producción son
+  conexiones `/realtime/v1/websocket` con status 101 en los logs de la API.
 - **Resuelto 2026-10-02 — Click en un producto lento: migración 118 aplicada y publicada.**
   Reportado por el usuario ("tiempo de carga muy alto cuando apretás un
   producto"). Medido en producción (logs de la API, 24 h): la consulta del
@@ -142,7 +170,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   checks de Playwright en escritorio y celular (incluido deslizar con eventos
   táctiles reales).
 - **Resuelto 2026-10-02** — **Todo el sitio en tiempo real** (Supabase Realtime),
-  a pedido del usuario. Antes no se usaba Realtime en ningún lado: los avisos se
+  a pedido del usuario. **(Ojo: no conectaba en producción por el CSP hasta el
+  arreglo de la entrada de arriba.)** Antes no se usaba Realtime en ningún lado: los avisos se
   pedían cada 30 s y el resto recién aparecía al recargar. Ahora, en todas las
   páginas con sesión (también las que no tienen campanita), una notificación
   nueva salta al instante como toast, en cada dispositivo con la cuenta abierta;
