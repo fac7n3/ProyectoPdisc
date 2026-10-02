@@ -12,7 +12,7 @@
  */
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
-import { buildStarRating } from './reviews-utils.js';
+import { buildStarsText } from './reviews-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
 let ctx = null;
@@ -80,7 +80,14 @@ function tarjeta(resena) {
   const card = el('div', 'of-review');
 
   const head = el('div', 'of-review__head');
-  head.appendChild(buildStarRating({ value: resena.rating, ariaLabel: `${resena.rating} de 5 estrellas` }));
+  // Estrellas de solo lectura. Antes se usaba buildStarRating, que es el
+  // selector clickeable del formulario y devuelve { element, getValue }, no un
+  // nodo: appendChild tiraba y, con al menos una reseña, la sección quedaba en
+  // blanco (nunca llegó a mostrar una reseña real).
+  const estrellas = el('span', 'of-review__stars', buildStarsText(resena.rating));
+  estrellas.setAttribute('role', 'img');
+  estrellas.setAttribute('aria-label', `${resena.rating} de 5 estrellas`);
+  head.appendChild(estrellas);
   head.appendChild(el('span', 'of-inquiry__when', fechaCorta(resena.created_at)));
   card.appendChild(head);
 
