@@ -297,6 +297,16 @@ export function buildNotificationTitle(n) {
 
 export { buildNotificationLink };
 
+/**
+ * Línea de detalle de una notificación, sin consultas extra (lo que trae el
+ * payload): la usan los avisos emergentes (js/toast-utils.js) debajo del
+ * título. El centro de notificaciones arma una más completa con los mapas.
+ */
+export function buildNotificationPreview(n) {
+  if (n.type === 'support_ticket_message' && n.payload?.message) return n.payload.message;
+  return buildPreviewText(n, { reviewMap: {}, orderAmountMap: {} });
+}
+
 export async function fetchNotifications(userId) {
   const { data, error } = await supabase
     .from('notifications')

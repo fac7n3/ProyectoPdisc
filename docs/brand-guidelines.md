@@ -265,6 +265,17 @@ No hay una escala documentada formalmente; el patrón observado en el CSS real u
 | Modal de producto (`.product-modal`) | `--bl-radius-xl` 1rem (esquinas superiores en mobile fullscreen) |
 | Inputs del sistema `--bl-*` | `--bl-radius-md` 0.5rem |
 | Badges/pills (`--bl-radius-pill`) | 50rem (círculo perfecto en cualquier alto) |
+| Notificación emergente (`.bl-toast`) | 1.125rem (18px), como una notificación de celular |
+
+### Notificación emergente
+
+Cuando llega una notificación nueva (`js/toast-utils.js`), aparece **abajo y al
+centro**, con forma de notificación de celular, para que se lea: ícono de la
+app (`/icon.svg`) + "BARADERO LOCAL · ahora", título en negrita, una línea de
+detalle y la acción en `--bl-primary` ("Ver pedido →"). Dura 8 s, se frena
+mientras el mouse o el dedo están encima, y se cierra con la X o deslizándola.
+En celular ocupa casi todo el ancho. El texto del encabezado va en `#64748b`, no
+en `--bl-text-muted` (que no llega a 4.5:1 en letra chica).
 
 ---
 
@@ -315,3 +326,4 @@ Principios de la identidad en movimiento, sin repetir la especificación técnic
 | Versión | Fecha | Cambios |
 |---|---|---|
 | v1.0 | 2026-08-03 | Identidad inicial, construida a partir del sistema visual ya en producción (`Assets/styles/*.css`, logo, video Remotion) y de un panel de marketing (skills `product-marketing`, `marketing-council`, `brand`). |
+| v1.1 | 2026-10-02 | Componente "Notificación emergente" (abajo al centro, estilo notificación de celular). |
