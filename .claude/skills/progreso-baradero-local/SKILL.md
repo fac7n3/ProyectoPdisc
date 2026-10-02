@@ -5,6 +5,109 @@ description: Historial detallado de todas las fases completadas (F0 a F12) del p
 
 # Historial de fases — Baradero Local
 
+## El tiempo real estaba bloqueado por el CSP (2026-10-02) — sin migración
+
+A pedido del usuario, después de que apareció en la consola, durante las pruebas
+del modal de producto, un "Refused to connect to 'wss://…supabase.co/realtime/v1/websocket'".
+Era real: **el tiempo real que se había publicado ese mismo día (migración 117,
+`js/realtime-utils.js`) nunca conectó en producción**, en ninguna página.
+
+### Causa
+
+Cada página lleva su CSP en un `<meta http-equiv="Content-Security-Policy">`, con
+`connect-src 'self' https://*.supabase.co …`. El websocket de Realtime va por
+`wss://`, y en CSP un origen `https://` **no** cubre `wss://` (el esquema es parte
+de lo que se compara). El navegador lo rechazaba antes de abrir el socket y
+`realtime-js` lo informaba como `CHANNEL_ERROR … transport failure`.
+
+**Nadie lo notó porque el sitio no se rompe:** `realtime-utils.js` tiene tres redes
+de seguridad (reconexión, vuelta a la pestaña, y **polling cada 30 s** para los
+canales que no conectan), así que cada vista seguía actualizándose como antes del
+tiempo real, solo que sin tiempo real. Los tests de la otra sesión tampoco lo
+vieron: usaban `page.routeWebSocket`, que **reemplaza `WebSocket` dentro de la
+página** por un simulacro y nunca llega al chequeo de CSP del navegador. Un test
+así pasa aunque producción esté bloqueada.
+
+### Arreglo
+
+- `wss://*.supabase.co` sumado al `connect-src` de las **22 páginas** (21 de
+  `pages/` + `index.html`). Es una línea por archivo, copiada a mano en cada HTML:
+  no hay un lugar único para el CSP. `dist/` reconstruido.
+- **`js/csp.test.mjs`** (corre con `npm test`): recorre las 22 páginas y falla si
+  alguna no permite `https://*.supabase.co` **y** `wss://*.supabase.co` en
+  `connect-src` (o si no tiene CSP / no define `connect-src`). Trae su propio
+  autochequeo (detecta el CSP sin `wss`, acepta comillas simples, no confunde un
+  `wss` puesto en otra directiva). Verificado: contra los HTML de antes del arreglo
+  falla en las 22 páginas; con el arreglo, pasa. Es el seguro para una página
+  nueva armada por copia de una vieja.
+- **Gotcha general:** cualquier tipo de conexión nuevo (otro esquema, otro host:
+  una API de mapas, otro websocket) hay que sumarlo al `connect-src` de **todas**
+  las páginas que lo usen, y `js/csp.test.mjs` solo cuida a Supabase. El chequeo
+  que lo caza es cargar la página en un navegador real y buscar el evento
+  `securitypolicyviolation` / el mensaje `Refused to connect`.
+
+### Cómo se verificó (con un websocket REAL, no simulado)
+
+El sandbox no llega a Supabase, así que se armó un arnés (en el scratchpad de la
+sesión, **no versionado**; es lo que hay que rehacer la próxima vez que haga falta
+probar tiempo real de verdad). La receta, porque los detalles no son obvios:
+
+1. **Servidor "Realtime" propio**: HTTPS con certificado autofirmado (CN y SAN =
+   `otzhdwuaffcplrveuadc.supabase.co`) que atiende el `upgrade` a
+   `/realtime/v1/websocket` con RFC 6455 a mano y el protocolo Phoenix: responde
+   `phx_join` con `phx_reply {status:'ok', response:{postgres_changes:[…]}}`
+   devolviendo los bindings pedidos con un `id` cada uno (así lo valida
+   `realtime-js`), `heartbeat` con un `phx_reply`, y para empujar un cambio manda
+   `[null, null, topic, 'postgres_changes', {ids:[id], data:{type:'INSERT', table,
+   record, …}}]`.
+2. **Chromium con tres argumentos**: `--host-resolver-rules=MAP
+   otzhdwuaffcplrveuadc.supabase.co 127.0.0.1:<puerto>` (el navegador cree que
+   habla con Supabase), `--ignore-certificate-errors` y, **clave**,
+   `--proxy-server=direct://`. Sin ese último el navegador hereda el proxy del
+   entorno (`HTTPS_PROXY`), intenta el túnel hacia el host real y el socket muere
+   con `close:1006` / `ERR_TUNNEL_CONNECTION_FAILED`: parece un bug de la página y
+   es del entorno. `--no-proxy-server` y las listas de bypass no lo evitaron.
+3. **REST simulado** con `context.route('https://<host>/**')` (con CORS: el
+   origen de la página es `http://127.0.0.1`). La sesión se simula con un JWT
+   armado a mano en `localStorage` (`sb-otzhdwuaffcplrveuadc-auth-token`) y
+   `/auth/v1/user`.
+4. **Cargar la página desde `http://127.0.0.1:<puerto>`** (un servidor estático
+   sobre `dist/`), no desde `about:blank` ni `file://`: desde ahí los fetch a
+   loopback fallan.
+5. Para ver el bloqueo: un listener de `securitypolicyviolation` y un `Proxy` sobre
+   `window.WebSocket` que anota cada intento y sus eventos `open`/`error`/`close`
+   (el evento `websocket` de Playwright **no se dispara** si el socket nunca se
+   abre, o sea justo en el caso roto).
+
+**Resultado, en `home.html` con sesión simulada:**
+
+| | `dist/` de producción (antes) | `dist/` corregido |
+|---|---|---|
+| violaciones de CSP | 1 (`connect-src` `wss://…/realtime/v1/websocket`) | 0 |
+| conexiones al servidor | 0 (el socket termina en `error`) | 1 |
+| canales unidos | 0 (`CHANNEL_ERROR … transport failure`) | 2 (`user_carts` `*`; `notifications` INSERT/UPDATE/DELETE) |
+| un INSERT empujado por el servidor | nada | evento `bl:notifications-changed` y toast "Recibiste una nueva reseña" |
+
+**Barrido de las 22 páginas** (con la sesión simulada): antes, 19 con la
+violación y 0 conexiones (las otras 3, `info`, `privacidad` y `terminos`, son
+estáticas: no abren el socket, ni antes ni después); después, **0 violaciones en
+las 22**, y las 19 conectan y unen sus canales.
+
+### Cómo confirmarlo en producción
+
+Con el deploy publicado y una cuenta con la sesión iniciada navegando: en los logs
+de la API de Supabase (`query_logs`, fuente `edge_logs`) deben aparecer pedidos a
+`/realtime/v1/websocket` con **status 101** (Switching Protocols). Antes del
+arreglo no podía haber ninguno: el navegador ni llegaba a pedirlos. **Línea de
+base medida antes de publicar** (consulta `select … from logs where source =
+'edge_logs' and log_attributes['request.path'] like '/realtime/%'`, últimas 24 h):
+**0 pedidos**, contra 849 a `/rest/v1/notifications` en el mismo día (el polling
+de 30 s: el respaldo estaba haciendo todo el trabajo). **Lo que no se
+probó:** contra los servidores reales de Realtime (sin red a Supabase desde el
+sandbox); sí que la publicación `supabase_realtime` (migración 117) tenga las
+tablas y que la RLS deje pasar cada evento: eso era del trabajo de la otra sesión y
+sigue siendo lo que conviene mirar la primera vez que alguien lo use de verdad.
+
 ## Click en un producto lento: `get_product_detail` (2026-10-02) — migración 118, aplicada
 
 A pedido del usuario ("la página tiene un tiempo de carga muy alto cuando
