@@ -405,6 +405,110 @@ async function cancelTicket(ticketId) {
 }
 
 /**
+ * Borra un reclamo ya cancelado (policy `support_tickets_delete_own_cancelled`,
+ * migración 118). Mismo cuidado que `cancelTicket`: la RLS rechaza sin dar
+ * error, devuelve cero filas, así que se chequea con `.select()`. El filtro por
+ * estado es doble seguro: nunca se borra algo que no esté cancelado. Los
+ * adjuntos se sacan del bucket DESPUÉS de borrar la fila, y sin tirar si
+ * fallan (un archivo suelto es mejor que un reclamo que no se pudo borrar).
+ */
+async function deleteTicket(ticket) {
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .delete()
+    .eq('id', ticket.id)
+    .eq('status', 'cancelled')
+    .select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('No se pudo eliminar el reclamo. Recargá la página y probá de nuevo.');
+  await removeAttachments(ticket.attachments || []);
+}
+
+/** Cierra los menús "⋮" de las filas (clic afuera / Esc). Se engancha una sola vez. */
+let ticketMenusWired = false;
+function closeTicketMenus() {
+  document.querySelectorAll('.tkt-item__menu:not([hidden])').forEach((menu) => {
+    menu.hidden = true;
+    menu.parentElement?.querySelector('.tkt-item__menubtn')?.setAttribute('aria-expanded', 'false');
+  });
+}
+function wireTicketMenus() {
+  if (ticketMenusWired) return;
+  ticketMenusWired = true;
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('.tkt-item__menuwrap')) closeTicketMenus();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeTicketMenus();
+  });
+}
+
+/**
+ * Botón redondo "⋮" de un reclamo cancelado, con una lista chica: "Eliminar
+ * reclamo". Reemplaza a la flecha, que en un reclamo cancelado no llevaba a nada
+ * que se pudiera hacer. Va FUERA del botón que despliega el hilo (un <button>
+ * adentro de otro no es HTML válido).
+ */
+function buildTicketMenu(ticket, onDeleted) {
+  const wrap = document.createElement('div');
+  wrap.className = 'tkt-item__menuwrap';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'tkt-item__menubtn';
+  btn.setAttribute('aria-label', 'Más opciones del reclamo');
+  btn.setAttribute('aria-haspopup', 'menu');
+  btn.setAttribute('aria-expanded', 'false');
+  const dots = document.createElement('i');
+  dots.className = 'fa-solid fa-ellipsis-vertical';
+  dots.setAttribute('aria-hidden', 'true');
+  btn.appendChild(dots);
+
+  const menu = document.createElement('div');
+  menu.className = 'tkt-item__menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'tkt-item__menuitem tkt-item__menuitem--danger';
+  del.setAttribute('role', 'menuitem');
+  const trash = document.createElement('i');
+  trash.className = 'fa-solid fa-trash';
+  trash.setAttribute('aria-hidden', 'true');
+  del.append(trash, document.createTextNode(' Eliminar reclamo'));
+  menu.appendChild(del);
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = menu.hidden;
+    closeTicketMenus();
+    menu.hidden = !willOpen;
+    btn.setAttribute('aria-expanded', String(willOpen));
+  });
+
+  del.addEventListener('click', async () => {
+    closeTicketMenus();
+    const ok = await confirmDialog('¿Eliminar este reclamo? Se borra para siempre y no se puede deshacer.', {
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Volver',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteTicket(ticket);
+      showToast('Reclamo eliminado.', 'success');
+      await onDeleted();
+    } catch (err) {
+      showToast(err.message || 'No se pudo eliminar.', 'error');
+    }
+  });
+
+  wrap.append(btn, menu);
+  return wrap;
+}
+
+/**
  * Bloque "cargando" con el spinner de 6 puntos del proyecto. Mismo markup que
  * arma la grilla del buscador (js/search.js) para que la espera se vea igual
  * en todos lados.
@@ -741,12 +845,21 @@ async function renderTicketList(listArea, container) {
     statusSpan.textContent = statusLabel(t.status);
     top.appendChild(statusSpan);
 
-    const chevron = document.createElement('i');
-    chevron.className = 'fa-solid fa-chevron-down tkt-item__chev';
-    chevron.setAttribute('aria-hidden', 'true');
-    top.appendChild(chevron);
-
-    row.appendChild(top);
+    if (t.status === 'cancelled') {
+      // Cancelado: en vez de la flecha, el "⋮" con "Eliminar reclamo". Se arma
+      // una cabecera para que el botón quede AL LADO del que despliega el hilo.
+      wireTicketMenus();
+      const head = document.createElement('div');
+      head.className = 'tkt-item__head';
+      head.append(top, buildTicketMenu(t, () => renderTicketList(listArea, container)));
+      row.appendChild(head);
+    } else {
+      const chevron = document.createElement('i');
+      chevron.className = 'fa-solid fa-chevron-down tkt-item__chev';
+      chevron.setAttribute('aria-hidden', 'true');
+      top.appendChild(chevron);
+      row.appendChild(top);
+    }
 
     const thread = document.createElement('div');
     thread.className = 'tkt-thread';

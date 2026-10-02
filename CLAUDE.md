@@ -80,6 +80,23 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-02** — **Eliminar un reclamo cancelado** (Soporte, en Mi perfil
+  y en el panel de vendedor/profesional), a pedido del usuario: se acumulaban sin
+  forma de sacarlos. En un reclamo **cancelado** la flecha de la fila se reemplaza por
+  un botón redondo "⋮" que despliega una lista chica con "Eliminar reclamo" (pide
+  confirmación; `buildTicketMenu`/`deleteTicket` en `js/support-utils.js`). Los
+  abiertos y resueltos siguen con su flecha. Migración **118**
+  (`support_tickets_delete_own_cancelled`): hasta ahora `support_tickets` **no tenía
+  ninguna policy de DELETE**, así que borrar era imposible aunque el permiso de tabla
+  existiera. La regla deja borrar solo al dueño y solo si está cancelado; se probó
+  contra la base real en una transacción que se deshace (otra cuenta -> 0 filas,
+  propio sin cancelar -> 0, propio cancelado -> 1). Los mensajes del hilo se van por
+  `ON DELETE CASCADE`. **Dato que apareció de paso:** en producción siguen sin existir
+  el bucket `support-attachments` ni la columna `attachments` (la migración 73 sin
+  aplicar), así que hoy los reclamos no tienen adjuntos; el borrado ya los saca del
+  bucket cuando existan. **Ojo con los números:** la rama `claude/quitar-efectivo`
+  trae un `117_remove_cash_payment.sql` que choca con el `117_realtime_publication`
+  de `main` -- hay que renumerarlo (119 en adelante) antes de mergearla.
 - **Resuelto 2026-10-02** — **Todo el sitio en tiempo real** (Supabase Realtime),
   a pedido del usuario. Antes no se usaba Realtime en ningún lado: los avisos se
   pedían cada 30 s y el resto recién aparecía al recargar. Ahora, en todas las

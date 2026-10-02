@@ -4576,6 +4576,74 @@ a.bl-toast:hover { border-color: var(--bl-primary); }
   transform: rotate(180deg);
 }
 
+/* ===== Reclamo cancelado: cabecera con el "⋮" y su lista (Eliminar reclamo) ===== */
+.tkt-item__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tkt-item__head .tkt-item__top {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tkt-item__menuwrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+.tkt-item__menubtn {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bl-border);
+  border-radius: 50%;
+  background: var(--bl-surface);
+  color: var(--bl-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.tkt-item__menubtn:hover,
+.tkt-item__menubtn[aria-expanded="true"] {
+  background: var(--bl-surface-hover);
+  color: var(--bl-text);
+}
+.tkt-item__menubtn:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+.tkt-item__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 11rem;
+  padding: 0.3rem;
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  box-shadow: var(--bl-shadow-lg);
+}
+.tkt-item__menu[hidden] { display: none; }
+.tkt-item__menuitem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: none;
+  border: 0;
+  border-radius: var(--bl-radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--bl-text);
+  cursor: pointer;
+}
+.tkt-item__menuitem:hover { background: var(--bl-surface-hover); }
+.tkt-item__menuitem--danger,
+.tkt-item__menuitem--danger i { color: var(--bl-danger); }
+
 /* ===== Reclamo original, arriba del hilo ===== */
 .tkt-original {
   padding: 0.75rem 0.85rem;
