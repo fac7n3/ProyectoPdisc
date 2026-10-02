@@ -81,9 +81,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
 - **Resuelto 2026-10-02** — **Las notificaciones emergentes ahora se ven como
-  una notificación de celular**, abajo y al centro (a pedido del usuario: el
-  cartelito chico de la esquina derecha se pasaba sin leer). Ícono y nombre de
-  la app, "ahora", título en negrita, una línea de detalle
+  una notificación de celular**, abajo a la derecha (en celular, abajo de todo
+  con casi todo el ancho), a pedido del usuario. Primero se probó abajo al
+  centro; el usuario la prefirió a la derecha, y con **el mismo logo del navbar**
+  (`logoazulpng.png`, importado en el JS): `/icon.svg` a 20 px se veía celeste.
+  Logo y nombre de la app, "ahora", título en negrita, una línea de detalle
   (`buildNotificationPreview`) y la acción ("Ver pedido →"). Duran 8 s (antes
   5), se frenan con el mouse/dedo encima, se cierran con la X o deslizándolas, y
   **tocarla la abre y la marca como leída** (espera hasta 0,8 s a que se guarde

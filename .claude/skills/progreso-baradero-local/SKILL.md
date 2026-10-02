@@ -4916,4 +4916,8 @@ Pedido del usuario: que las notificaciones salten al instante, en todos los disp
   
   Además se repasaron los 26 checks de tiempo real (siguen pasando).
 - **Gotcha del test:** el sitio tiene scrollbar propia de 10 px (`html::-webkit-scrollbar`) y `clientWidth` igual devuelve 1280. El contenedor fijo se centra sobre 1270, así que mide 635 y no 640: está bien centrado.
+- **Ajuste del mismo día, a pedido del usuario:**
+  - **Posición:** abajo a la **derecha** en compu (`right: 1.25rem`, 400 px de ancho). En celular sigue abajo de todo con casi todo el ancho.
+  - **Logo:** el ícono es el mismo logo del navbar. Se importa `../Assets/images/Logos/logoazulpng.png` en `toast-utils.js`, así Vite le pone el mismo nombre con hash que en el header y sale de la caché. Antes iba `/icon.svg`, que a 20 px el usuario veía "celeste, no azul oscuro".
+  - Verificado: 24 checks, incluido que el `src` del logo del aviso coincida con el de `.navbar__logo-img`.
 

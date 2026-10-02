@@ -4,8 +4,8 @@
  *
  * Capa nueva y reusable: cualquier página puede llamar a
  * `initNotificationToasts(userId)` para que, mientras esa pestaña esté
- * abierta, cada notificación nueva del usuario aparezca abajo de la pantalla
- * con forma de notificación de celular (2026-10-02, a pedido del usuario: el
+ * abierta, cada notificación nueva del usuario aparezca abajo a la derecha
+ * (abajo de todo en celular) con forma de notificación de celular (2026-10-02, a pedido del usuario: el
  * cartelito chico de la esquina se pasaba sin leer): ícono y nombre de la app,
  * "ahora", título en negrita, una línea de detalle y la acción ("Ver pedido").
  * Se apilan, máximo 3 a la vez. Duran 8 s, pero el tiempo se frena mientras
@@ -29,13 +29,17 @@ import {
   fetchNotifications, buildNotificationTitle, buildNotificationLink, buildNotificationPreview, markNotificationRead,
 } from './notifications-utils.js';
 import { getPref } from './settings-utils.js';
+// El mismo logo del navbar (Vite le pone el mismo nombre con hash, así que el
+// navegador ya lo tiene en caché). Antes iba /icon.svg, que a 20 px se veía
+// celeste y no del azul oscuro de la marca.
+import appLogoUrl from '../Assets/images/Logos/logoazulpng.png';
 import { startNotificationsLive, onNotificationsChanged } from './notifications-live.js';
 
 const MAX_TOASTS = 3;
 const AUTO_DISMISS_MS = 8000;
 /** Cuánto hay que deslizarla (px) para que se cierre. */
 const SWIPE_DISMISS_PX = 70;
-const APP_ICON_SRC = '/icon.svg';
+const APP_ICON_SRC = appLogoUrl;
 // Fecha (created_at) de la última notificación ya mostrada en este navegador.
 // Hasta el 2026-10-02 se guardaba el id (LEGACY_LAST_SEEN_KEY), y eso tenía un
 // problema: si la persona borraba justo esa notificación, el id dejaba de

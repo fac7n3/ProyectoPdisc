@@ -3129,15 +3129,14 @@ button.coupon-chip:hover {
    Se apilan de a una (máx. 3, ver toast-utils.js), con ícono de campanita +
    texto corto, y desaparecen solas a los ~5s o con el botón de cerrar. ── */
 /* Notificaciones emergentes (js/toast-utils.js): con forma de notificación de
-   celular, abajo y al centro, para que se lean (2026-10-02, a pedido del
-   usuario: el cartelito chico de la esquina pasaba desapercibido). */
+   celular, para que se lean (2026-10-02, a pedido del usuario). Abajo a la
+   derecha en compu; en celular, abajo de todo con casi todo el ancho. */
 #bl-toast-container {
   position: fixed;
-  left: 50%;
-  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
+  right: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
   z-index: 10000;
-  width: min(440px, calc(100vw - 1.5rem));
+  width: min(400px, calc(100vw - 1.5rem));
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -3207,6 +3206,7 @@ a.bl-toast__main:focus-visible {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .bl-toast__app {
@@ -3272,6 +3272,7 @@ a.bl-toast__main:focus-visible {
 
 @media (max-width: 640px) {
   #bl-toast-container {
+    right: 0.5rem;
     width: calc(100vw - 1rem);
     bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
   }
