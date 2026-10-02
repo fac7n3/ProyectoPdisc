@@ -18,6 +18,7 @@ import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { formatPrice } from './cart-utils.js';
 import { describeSelectedOptions } from './product-options-utils.js';
 import { orderLabel } from './order-utils.js';
+import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import './speed-insights.js';
 
 const WARNING_MS = 5 * 60 * 1000;
@@ -221,6 +222,16 @@ async function initPanel() {
   document.getElementById('rp-refresh').addEventListener('click', () => loadPanel());
 
   await loadPanel();
+
+  // Tiempo real: un pedido que se acaba de pagar aparece en la cola al
+  // instante, y uno que tomó otro repartidor desaparece, sin esperar al
+  // próximo refresco. El intervalo de abajo queda igual: además de traer
+  // datos, es lo que repinta las tarjetas de ámbar/rojo con el paso del tiempo.
+  const refreshLive = createRefresher(loadPanel);
+  subscribeToChanges('repartidor', [
+    { table: 'orders', filter: 'delivery_method=eq.delivery' },
+    { table: 'deliveries' },
+  ], refreshLive, { onResync: refreshLive });
 
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadPanel, REFRESH_MS);

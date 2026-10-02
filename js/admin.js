@@ -8,11 +8,29 @@ import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding
 import { buildPromoEditorCard } from './home-promos-editor.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { orderLabel } from './order-utils.js';
+import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
+
+// Una recarga en vivo (initAdminLive) no muestra la fila de "Cargando...": la
+// tabla quedaría parpadeando cada vez que llega algo. Las recargas a mano (abrir
+// la sección, el botón "Refrescar") sí la muestran.
+let quietLoad = false;
+function setLoadingRow(tbody, html) {
+  if (!quietLoad) tbody.innerHTML = html;
+}
+/** Corre un loader sin la fila de carga. El innerHTML de carga va antes del primer await de cada loader, así que alcanza con apagarlo durante la llamada sincrónica. */
+function loadQuietly(loader) {
+  quietLoad = true;
+  try {
+    return loader();
+  } finally {
+    quietLoad = false;
+  }
+}
 
 async function fetchRequests() {
   const tbody = document.getElementById('requests-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>');
 
   const { data, error } = await supabase
     .from('seller_requests')
@@ -184,7 +202,7 @@ function buildPhotoThumb(photoUrl, alt) {
 
 async function fetchProfessionalRequests() {
   const tbody = document.getElementById('professional-requests-tbody');
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando solicitudes...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="8" style="text-align:center;">Cargando solicitudes...</td></tr>');
 
   const { data, error } = await supabase
     .from('professional_requests')
@@ -1066,7 +1084,7 @@ function setupProductSearch() {
 
 async function fetchPendingProofsAdmin() {
   const tbody = document.getElementById('proofs-mod-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando comprobantes...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="4" style="text-align:center;">Cargando comprobantes...</td></tr>');
 
   const { data, error } = await supabase
     .from('payment_proofs')
@@ -1586,7 +1604,7 @@ function setupEmergencyContactForm() {
 
 async function fetchReportedReviews() {
   const tbody = document.getElementById('reviews-mod-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando reseñas reportadas...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="4" style="text-align:center;">Cargando reseñas reportadas...</td></tr>');
 
   const { data, error } = await supabase
     .from('reviews')
@@ -1664,7 +1682,7 @@ async function fetchReportedReviews() {
 async function fetchRevocationRequests() {
   const tbody = document.getElementById('revocations-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando solicitudes...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="5" style="text-align:center;">Cargando solicitudes...</td></tr>');
 
   const { data, error } = await supabase
     .from('orders')
@@ -1803,7 +1821,7 @@ const SUPPORT_STATUSES = ['open', 'in_progress', 'resolved', 'cancelled'];
 async function fetchSupportTickets() {
   const tbody = document.getElementById('support-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Cargando reclamos...</td></tr>';
+  setLoadingRow(tbody, '<tr><td colspan="6" style="text-align:center;">Cargando reclamos...</td></tr>');
 
   // select('*') y no la lista de columnas: trae los adjuntos (migración 73)
   // sin que el panel se rompa donde esa migración todavía no corrió.
@@ -1829,9 +1847,17 @@ async function fetchSupportTickets() {
     : { data: [] };
   const emailByUserId = new Map((profiles || []).map((p) => [p.id, p.email]));
 
+  // Hilos abiertos antes de redibujar (una recarga en vivo no los cierra).
+  const openThreadIds = new Set(
+    Array.from(tbody.querySelectorAll('tr.ticket-thread-row')).map((r) => r.dataset.ticketId)
+  );
+  const reopen = [];
+
   tbody.innerHTML = '';
   data.forEach((ticket) => {
     const tr = document.createElement('tr');
+    tr.dataset.ticketId = ticket.id;
+    if (openThreadIds.has(ticket.id)) reopen.push([tr, ticket]);
 
     const tdDate = document.createElement('td');
     tdDate.textContent = new Date(ticket.created_at).toLocaleString('es-AR');
@@ -1892,39 +1918,16 @@ async function fetchSupportTickets() {
 
     tbody.appendChild(tr);
   });
+
+  reopen.forEach(([tr, ticket]) => toggleAdminTicketThread(tr, ticket));
 }
 
-async function toggleAdminTicketThread(tr, ticket) {
-  const existing = tr.nextSibling;
-  if (existing && existing.classList?.contains('ticket-thread-row')) {
-    existing.remove();
-    return;
-  }
-
-  const threadRow = document.createElement('tr');
-  threadRow.classList.add('ticket-thread-row');
-  const threadCell = document.createElement('td');
-  threadCell.colSpan = 6;
-  threadCell.style.cssText = 'padding: 1rem; background: var(--bl-surface-alt, #f0f4f8);';
-
-  // Las capturas que mandó el usuario, antes del hilo: el bucket es privado,
-  // así que cada una se abre con su signed URL (misma pieza que ve el usuario).
-  const chips = buildAttachmentChips(ticket.attachments);
-  if (chips) threadCell.appendChild(chips);
-
-  const threadDiv = document.createElement('div');
-  threadDiv.style.cssText = 'max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem;';
-  threadCell.appendChild(threadDiv);
-
-  const loadingP = document.createElement('p');
-  loadingP.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
-  loadingP.textContent = 'Cargando mensajes...';
-  threadDiv.appendChild(loadingP);
-
+/** Los mensajes de un reclamo dentro de `threadDiv` (se puede volver a llamar para actualizarlos). */
+async function renderAdminThreadMessages(threadDiv, ticketId) {
   const { data: messages, error } = await supabase
     .from('support_ticket_messages')
     .select('id, sender_id, message, created_at')
-    .eq('ticket_id', ticket.id)
+    .eq('ticket_id', ticketId)
     .order('created_at', { ascending: true });
 
   threadDiv.innerHTML = '';
@@ -1954,6 +1957,42 @@ async function toggleAdminTicketThread(tr, ticket) {
       threadDiv.appendChild(bubble);
     });
   }
+  threadDiv.scrollTop = threadDiv.scrollHeight;
+}
+
+async function toggleAdminTicketThread(tr, ticket) {
+  const existing = tr.nextSibling;
+  if (existing && existing.classList?.contains('ticket-thread-row')) {
+    existing.remove();
+    return;
+  }
+
+  const threadRow = document.createElement('tr');
+  threadRow.classList.add('ticket-thread-row');
+  const threadCell = document.createElement('td');
+  threadCell.colSpan = 6;
+  threadCell.style.cssText = 'padding: 1rem; background: var(--bl-surface-alt, #f0f4f8);';
+
+  // Las capturas que mandó el usuario, antes del hilo: el bucket es privado,
+  // así que cada una se abre con su signed URL (misma pieza que ve el usuario).
+  const chips = buildAttachmentChips(ticket.attachments);
+  if (chips) threadCell.appendChild(chips);
+
+  const threadDiv = document.createElement('div');
+  threadDiv.style.cssText = 'max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem;';
+  threadCell.appendChild(threadDiv);
+
+  // Lo usa la escucha en vivo: una respuesta nueva (del usuario, o de otro
+  // admin) aparece en el hilo abierto sin tocar la respuesta a medio escribir.
+  threadRow.dataset.ticketId = ticket.id;
+  threadRow._reloadMessages = () => renderAdminThreadMessages(threadDiv, ticket.id);
+
+  const loadingP = document.createElement('p');
+  loadingP.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
+  loadingP.textContent = 'Cargando mensajes...';
+  threadDiv.appendChild(loadingP);
+
+  await renderAdminThreadMessages(threadDiv, ticket.id);
 
   if (ticket.status !== 'cancelled' && ticket.status !== 'resolved') {
     const replyForm = document.createElement('div');
@@ -2194,6 +2233,73 @@ function initAdminPage() {
   // Abrir la primera sección visible (respeta el rol) y cargar solo esa.
   const firstNav = document.querySelector('.admin-nav__item[data-target]:not([hidden])');
   showSection(firstNav ? firstNav.dataset.target : 'metrics');
+
+  initAdminLive();
+}
+
+// --- Tiempo real ---
+// Las secciones que reciben trabajo de afuera (una solicitud nueva, un
+// comprobante, una reseña reportada, un arrepentimiento, un reclamo o su
+// respuesta) se actualizan solas apenas pasa, sin el botón "Refrescar". Solo
+// las que ya se abrieron alguna vez: las otras se cargan de cero al abrirlas.
+// Las de configuración (categorías, cupones, farmacias...) siguen a mano: las
+// cambia el mismo admin que las está mirando.
+//
+// La RLS decide qué llega: un moderador, por ejemplo, no recibe pedidos.
+const LIVE_SECTIONS = {
+  seller_requests: { 'seller-requests': fetchRequests },
+  professional_requests: { professionals: fetchProfessionalRequests },
+  payment_proofs: { proofs: fetchPendingProofsAdmin },
+  reviews: { 'reviews-mod': fetchReportedReviews },
+  orders: { revocations: fetchRevocationRequests },
+  support_tickets: { support: fetchSupportTickets },
+};
+
+function initAdminLive() {
+  const refreshers = new Map();
+  const refresherFor = (key, loader, delay) => {
+    if (!refreshers.has(key)) {
+      const section = () => document.querySelector(`.admin-section[data-section="${key}"]`);
+      refreshers.set(key, createRefresher(() => loadQuietly(loader), {
+        delay,
+        // No se redibuja encima de una respuesta a medio escribir.
+        isBusy: () => isEditingWithin(section()),
+      }));
+    }
+    return refreshers.get(key);
+  };
+
+  const refreshSection = (key, loader) => {
+    if (loadedSections.has(key)) refresherFor(key, loader)();
+  };
+  // Las métricas (la sección de inicio) cuentan casi todo: con más margen,
+  // para que una ráfaga de cambios termine en una sola recarga.
+  const refreshMetrics = () => refreshSection('metrics', loadGlobalMetrics);
+  refresherFor('metrics', loadGlobalMetrics, 1500);
+
+  const refreshAll = () => {
+    Object.values(LIVE_SECTIONS).forEach((sections) => {
+      Object.entries(sections).forEach(([key, loader]) => refreshSection(key, loader));
+    });
+    refreshMetrics();
+  };
+
+  subscribeToChanges('admin', [
+    ...Object.keys(LIVE_SECTIONS).map((table) => ({ table })),
+    { table: 'support_ticket_messages', event: 'INSERT' },
+  ], (change) => {
+    if (change.table === 'support_ticket_messages') {
+      // Respuesta nueva en un hilo abierto: solo se recargan sus mensajes.
+      const ticketId = change.new?.ticket_id;
+      const row = ticketId
+        ? document.querySelector(`#support-tbody tr.ticket-thread-row[data-ticket-id="${CSS.escape(ticketId)}"]`)
+        : null;
+      row?._reloadMessages?.();
+      return;
+    }
+    Object.entries(LIVE_SECTIONS[change.table] || {}).forEach(([key, loader]) => refreshSection(key, loader));
+    refreshMetrics();
+  }, { onResync: refreshAll });
 }
 
 // F12-17: roles de admin granulares. 'moderador' es un rol más acotado --

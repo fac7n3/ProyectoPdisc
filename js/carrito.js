@@ -48,6 +48,9 @@ let savedAddresses = [];
  */
 let refreshDeliveryUI = () => {};
 let paymentMethod = 'mercadopago'; // 'mercadopago' | 'transferencia' | 'efectivo' — ver initPaymentMethodEvents()
+// true mientras "Iniciar pago" está creando el pedido: un cambio del carrito
+// que llega en vivo desde otro dispositivo no redibuja en ese momento.
+let checkoutInProgress = false;
 
 /**
  * Filtro por comercio: 'all' o el nombre de un comercio.
@@ -1257,6 +1260,7 @@ function initCartEvents() {
 
     checkoutBtn.disabled = true;
     checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    checkoutInProgress = true;
 
     try {
       // create_order vuelve a leer el precio real de cada producto en el
@@ -1352,6 +1356,7 @@ function initCartEvents() {
       console.error(err);
       showCartToast('Error de conexión al procesar el pedido.', 'error');
     } finally {
+      checkoutInProgress = false;
       // renderCart() reconstruye el botón con el texto/estado que corresponda
       // (total real, o deshabilitado si no quedó nada tildado) — antes acá se
       // repetía un texto fijo que ahora sería mentira.
@@ -1628,7 +1633,26 @@ function handleMercadoPagoReturn() {
   window.history.replaceState({}, '', url);
 }
 
+/**
+ * El carrito cambió en otro dispositivo o en otra pestaña (ver initCartLive en
+ * cart-utils.js): se redibuja sin recargar. No durante un pago en curso ni con
+ * la pantalla "Transferí"/"¡Listo!" a la vista: ahí el carrito ya no se muestra.
+ * Si llegó un producto que esta página todavía no conoce (comercio, envío,
+ * stock), se revalida como al abrir la página.
+ */
+function initCartLiveRender() {
+  window.addEventListener('bl:cart-changed', () => {
+    const layout = document.querySelector('.cart-layout');
+    if (layout && layout.style.display === 'none') return;
+    if (checkoutInProgress) return;
+    renderCart();
+    const hasUnknownProduct = getCart().some((item) => !productStoreId.has(item.id));
+    if (hasUnknownProduct) validateCartFreshness();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initCartLiveRender();
   renderCart();
   updateCartBadge();
   initNotificationsBell();
