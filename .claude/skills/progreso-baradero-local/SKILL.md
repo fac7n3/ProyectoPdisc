@@ -5244,7 +5244,9 @@ más adelante.
   `.rs-grid2 > .rs-card:only-child` ya no aplica con dos tarjetas, así que la de la izquierda se
   achica a media pantalla). Sección nueva en el sidebar arriba de Notificaciones. El link usa
   `.rs-link--azul` (`profesional.css`): el `.rs-link` de ese panel es ámbar (`--bl-oficios-accent`).
-- Las dos secciones nuevas son un estado vacío ("Estamos preparando las recomendaciones").
+- Las dos secciones nuevas arrancaron como estado vacío; después el usuario pasó las 7
+  recomendaciones (lista numerada `.rc-list`/`.rc-item`, HTML estático en ambas páginas, texto
+  tal cual lo dio el usuario, en tercera persona; la 6 dice "productos" o "servicios").
   Entradas agregadas también a `VENDOR_SECTION_COPY` / `PROF_SECTION_COPY` (bienvenida al panel).
 - Verificado con una maqueta estática con el CSS real de cada panel; no con el panel logueado
   (sin red a Supabase). `dist/` no se reconstruyó: el build local necesita la anon key.

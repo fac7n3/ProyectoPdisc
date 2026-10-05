@@ -607,6 +607,11 @@
       .rv-card__reply strong { display: block; font-size: 0.75rem; color: var(--bl-vendor-accent); margin-bottom: 0.15rem; }
       .rv-empty { text-align: center; padding: 2.5rem 1.5rem; color: var(--bl-text-secondary); background: var(--bl-surface); border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-lg); }
       .rv-empty i { font-size: 2rem; color: var(--bl-text-muted); display: block; margin-bottom: 0.6rem; }
+      /* Recomendaciones: lista numerada de tarjetas */
+      .rc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+      .rc-item { display: flex; align-items: center; gap: 0.9rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1.1rem; box-shadow: var(--bl-shadow-card); }
+      .rc-item__num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; background: rgba(var(--bl-vendor-accent-rgb), 0.12); color: var(--bl-vendor-accent); }
+      .rc-item__text { color: var(--bl-text); font-size: 0.95rem; line-height: 1.4; }
 
       .pd-wrap { margin-top: 0.5rem; }
       .pd-header { margin-bottom: 1.25rem; }
@@ -1521,10 +1526,15 @@
                   <div class="pd-header__title"><i class="fa-regular fa-lightbulb"></i> Recomendaciones para impulsar tus ventas</div>
                   <p class="pd-header__sub">Ideas simples para que más vecinos te encuentren y te compren.</p>
                 </div>
-                <div class="rv-empty" id="recomendaciones-list">
-                  <i class="fa-regular fa-lightbulb"></i>
-                  <p>Estamos preparando las recomendaciones. Muy pronto las vas a ver acá.</p>
-                </div>
+                <ol class="rc-list" id="recomendaciones-list">
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">1</span><span class="rc-item__text">Buenas imágenes o imágenes llamativas.</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">2</span><span class="rc-item__text">Ser respetuosos con sus clientes y demás personas.</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">3</span><span class="rc-item__text">Estar siempre atentos a consultas, pedidos y notificaciones.</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">4</span><span class="rc-item__text">Agregar sus redes sociales (si tienen).</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">5</span><span class="rc-item__text">Ser constantes con sus publicaciones.</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">6</span><span class="rc-item__text">Descripciones coherentes con sus productos.</span></li>
+                  <li class="rc-item"><span class="rc-item__num" aria-hidden="true">7</span><span class="rc-item__text">Tratar de evitar la acumulación de muchos pedidos o consultas.</span></li>
+                </ol>
               </div>
             </section>
 

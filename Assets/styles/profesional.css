@@ -507,3 +507,9 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
  * de modo y en el lightbox de Contratar. */
 .mc-shell[hidden] { display: none; }
 .bl-loading-block[hidden] { display: none; }
+
+/* Recomendaciones: lista numerada de tarjetas */
+.rc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.rc-item { display: flex; align-items: center; gap: 0.9rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 0.9rem 1.1rem; box-shadow: var(--bl-shadow-card); }
+.rc-item__num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; background: #fef3c7; color: var(--bl-oficios-accent); }
+.rc-item__text { color: var(--bl-text); font-size: 0.95rem; line-height: 1.4; }

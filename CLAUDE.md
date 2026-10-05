@@ -80,19 +80,23 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-05 — Apartado "Recomendaciones" en los paneles de vendedor y profesional
-  (el contenido todavía NO está: lo pasa el usuario).** Cada Resumen tiene una tarjeta
-  nueva con link azul "Ir a recomendaciones ›" y una descripción corta: en el de vendedor va
-  debajo de Novedades ("Recomendaciones para impulsar tus ventas"; Novedades y la tarjeta
-  comparten la columna `.rs-col`); en el de profesional va al lado de "Todo en orden", que
-  pasó a media pantalla ("Recomendaciones para impulsar tu emprendimiento"). El link lleva a
-  una sección nueva `recomendaciones` (en el sidebar de ambos) que hoy es solo un estado
-  vacío "Estamos preparando las recomendaciones": **falta cargar las recomendaciones en
-  `pages/vender.html` (`#recomendaciones-list`) y `pages/profesional.html`**. En el de
-  vendedor la ven dueño y empleados (no es una clave de `STAFF_PERMISSION_SECTIONS`).
-  El link del profesional usa `.rs-link--azul` porque su `.rs-link` normal es ámbar.
-  Verificado con una maqueta con el CSS real (no con el panel logueado: sin red a Supabase).
-  `dist/` sin reconstruir (el entorno no tenía la anon key; Vercel construye por su cuenta).
+- **Hecho 2026-10-05 — Apartado "Recomendaciones" en los paneles de vendedor y profesional.**
+  Cada Resumen tiene una tarjeta con link azul "Ir a recomendaciones ›" y una descripción
+  corta: en el de vendedor va debajo de Novedades ("Recomendaciones para impulsar tus
+  ventas"; Novedades y la tarjeta comparten la columna `.rs-col`); en el de profesional va al
+  lado de "Todo en orden", que pasó a media pantalla ("Recomendaciones para impulsar tu
+  emprendimiento"). El link lleva a la sección `recomendaciones` (en el sidebar de ambos),
+  que muestra **7 recomendaciones** como lista numerada de tarjetas (`.rc-list`/`.rc-item`),
+  escritas a mano en `pages/vender.html` (`#recomendaciones-list`) y `pages/profesional.html`
+  (`#of-recomendaciones`): imágenes llamativas, respeto, atender consultas/pedidos/avisos,
+  redes sociales, constancia, descripciones coherentes y no acumular pedidos. El texto es el
+  que pasó el usuario (en tercera persona: "sus clientes"); solo la 6 dice "productos" o
+  "servicios" según el panel. Para sumar o cambiar una, editar el `<li>` en ambos HTML. En el
+  de vendedor la ven dueño y empleados (no es una clave de `STAFF_PERMISSION_SECTIONS`).
+  El link y los números del profesional van en azul / ámbar (`.rs-link--azul`; su
+  `.rs-link` normal es ámbar). Verificado con una maqueta con el CSS real (no con el panel
+  logueado: sin red a Supabase). `dist/` sin reconstruir (sin la anon key en el entorno;
+  Vercel construye por su cuenta).
 - **Resuelto 2026-10-05 — La campanita del navbar también se filtra por perfil dentro de los
   paneles**, reportado por el usuario con captura (el desplegable de la campanita del panel de
   profesional mostraba pedidos de compra). La entrada anterior solo había filtrado la sección
