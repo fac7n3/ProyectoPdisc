@@ -12,6 +12,7 @@ import { confirmDialog } from './confirm-dialog.js';
 import {
   PRICE_TYPES,
   formatTarifa,
+  formatPrecioInput,
   parsePrecio,
   validarServicio,
 } from './professional-service-utils.js';
@@ -162,9 +163,29 @@ function abrirFormulario(servicio) {
   inputPrecio.type = 'text';
   inputPrecio.id = 'of-service-price';
   inputPrecio.inputMode = 'numeric';
-  inputPrecio.placeholder = '25000';
-  inputPrecio.value = servicio?.price_pesos ? String(servicio.price_pesos) : '';
-  campoPrecio.append(lblPrecio, inputPrecio);
+  inputPrecio.placeholder = '25.000';
+  inputPrecio.value = servicio?.price_pesos ? formatPrecioInput(servicio.price_pesos) : '';
+  inputPrecio.autocomplete = 'off';
+  // Separador de miles mientras se escribe, como en el panel del vendedor.
+  // parsePrecio() saca el número real al guardar. Se conserva la posición del
+  // cursor contando los dígitos que quedaron a su izquierda.
+  inputPrecio.addEventListener('input', () => {
+    const pos = inputPrecio.selectionStart ?? inputPrecio.value.length;
+    const digitosAntes = inputPrecio.value.slice(0, pos).replace(/[^0-9]/g, '').length;
+    inputPrecio.value = formatPrecioInput(inputPrecio.value);
+    let nueva = 0;
+    let vistos = 0;
+    while (nueva < inputPrecio.value.length && vistos < digitosAntes) {
+      if (/[0-9]/.test(inputPrecio.value[nueva])) vistos++;
+      nueva++;
+    }
+    inputPrecio.setSelectionRange(nueva, nueva);
+  });
+  const envoltura = el('div', 'pf-money');
+  const signo = el('span', 'pf-money__sign', '$');
+  signo.setAttribute('aria-hidden', 'true');
+  envoltura.append(signo, inputPrecio);
+  campoPrecio.append(lblPrecio, envoltura);
   campoPrecio.hidden = (servicio?.price_type || 'from') === 'quote';
 
   grid.append(campoTitulo, campoDesc, campoTipo, campoPrecio);

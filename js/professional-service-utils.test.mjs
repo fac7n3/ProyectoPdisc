@@ -3,6 +3,7 @@ import {
   PRICE_TYPES,
   formatTarifa,
   parsePrecio,
+  formatPrecioInput,
   validarServicio,
 } from "./professional-service-utils.js";
 
@@ -84,3 +85,18 @@ check("los tres tipos de precio están declarados", () => {
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");
+
+console.log("formatPrecioInput");
+{
+  assert.equal(formatPrecioInput("999"), "999");
+  assert.equal(formatPrecioInput("1000"), "1.000");
+  assert.equal(formatPrecioInput("25000"), "25.000");
+  assert.equal(formatPrecioInput("1234567"), "1.234.567");
+  assert.equal(formatPrecioInput("$ 25.000"), "25.000");
+  assert.equal(formatPrecioInput("abc"), "");
+  assert.equal(formatPrecioInput(""), "");
+  assert.equal(formatPrecioInput(null), "");
+  assert.equal(formatPrecioInput("007"), "7");
+  // ida y vuelta con parsePrecio
+  assert.equal(parsePrecio(formatPrecioInput("1234567")), 1234567);
+}

@@ -34,6 +34,13 @@ export function formatTarifa(servicio) {
   return tipo === 'from' ? `Desde ${pesos(monto)}` : pesos(monto);
 }
 
+/** Pesos con separador de miles mientras se tipea ("25000" -> "25.000").
+ *  Mismo criterio que el panel del vendedor. Vacío si no hay dígitos. */
+export function formatPrecioInput(texto) {
+  const digitos = String(texto ?? '').replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+  return digitos ? Number(digitos).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '';
+}
+
 /** Deja solo los dígitos de lo que se tipeó: la gente escribe "25.000" o
  *  "$ 25.000" y la columna es integer. */
 export function parsePrecio(texto) {

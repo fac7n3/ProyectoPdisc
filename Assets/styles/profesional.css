@@ -204,6 +204,9 @@
   font-weight: 600;
 }
 .mc-navlink:hover { background: var(--bl-surface-hover); }
+/* Los accesos que son <button> (Resumen, Notificaciones, Soporte) con display:flex
+   se achicaban al ancho de su texto: solo se podía clicar sobre las letras. */
+button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
 .mc-content { flex: 1 1 auto; min-width: 0; }
 .mc-section[hidden] { display: none; }
@@ -269,6 +272,7 @@
 .rs-promo__next { position: absolute; top: 0.9rem; right: 0.9rem; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; }
 .rs-promo__next:hover { background: rgba(255, 255, 255, 0.24); }
 .rs-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.rs-grid2 > .rs-card:only-child { grid-column: 1 / -1; }
 .rs-help-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
 .rs-help-row:last-child { border-bottom: none; }
 .rs-help-row:hover .rs-help-row__title { color: var(--bl-oficios-accent); }
@@ -310,6 +314,9 @@
 .pf-field { display: flex; flex-direction: column; }
 .pf-field--full { grid-column: 1 / -1; }
 .pf-field .form-label { margin-bottom: 0.4rem; }
+.pf-money { position: relative; }
+.pf-money__sign { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-secondary); font-weight: 600; pointer-events: none; }
+.pf-money .form-input { padding-left: 1.9rem; }
 .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
 .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-oficios-accent); cursor: pointer; }
 .pf-radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; padding: 0.25rem 0; }
