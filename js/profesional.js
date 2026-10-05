@@ -208,7 +208,7 @@ function montarPanel() {
   initResenas(ctx);
   initMetricas(ctx);
 
-  renderNotificationsSection(document.getElementById('of-notifications'), estado.user.id);
+  renderNotificationsSection(document.getElementById('of-notifications'), estado.user.id, { scope: 'profesional' });
   renderSupportSection(document.getElementById('of-support'));
 
   renderResumen();

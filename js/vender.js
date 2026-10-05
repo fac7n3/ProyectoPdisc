@@ -818,7 +818,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   }
 
   const notificacionesContainer = document.getElementById('notificaciones-container');
-  if (notificacionesContainer) await renderNotificationsSection(notificacionesContainer, user.id);
+  if (notificacionesContainer) await renderNotificationsSection(notificacionesContainer, user.id, { scope: 'comercio' });
 
   const supportContainer = document.getElementById('support-container');
   if (supportContainer) await renderSupportSection(supportContainer);

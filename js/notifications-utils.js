@@ -310,32 +310,69 @@ export function buildNotificationPreview(n) {
   return buildPreviewText(n, { reviewMap: {}, orderAmountMap: {} });
 }
 
-export async function fetchNotifications(userId) {
+/** Avisos que son del lado "profesional" de la cuenta (directorio Contratar). */
+const PROFESSIONAL_ONLY_TYPES = [
+  'professional_inquiry_new',
+  'professional_request_approved',
+  'professional_request_rejected',
+];
+/** Avisos que valen para cualquier panel (los reclamos son de la cuenta). */
+const SHARED_TYPES = ['support_ticket_status_change', 'support_ticket_message'];
+
+/**
+ * Una misma cuenta puede ser comerciante, profesional y además comprar, y todos
+ * sus avisos caen en la misma tabla. Cada panel muestra solo los suyos:
+ *   - 'profesional': consultas de presupuesto, reseñas de SU publicación, el
+ *     alta en Contratar y los reclamos.
+ *   - 'comercio': todo menos lo del lado profesional.
+ *   - sin scope (campanita del navbar, Mi perfil): todo.
+ * @param {{ type: string, payload?: object }} n
+ * @param {'profesional'|'comercio'|undefined} scope
+ */
+export function notificationInScope(n, scope) {
+  if (!scope) return true;
+  const esProfesional = PROFESSIONAL_ONLY_TYPES.includes(n.type)
+    || (n.type === 'new_review' && n.payload?.target_type === 'professional');
+  if (scope === 'profesional') return esProfesional || SHARED_TYPES.includes(n.type);
+  if (scope === 'comercio') return !esProfesional;
+  return true;
+}
+
+const NOTIFICATIONS_LIMIT = 30;
+
+export async function fetchNotifications(userId, { scope } = {}) {
+  // Con scope se piden más y se filtran acá: si no, los 30 más nuevos podrían
+  // ser todos de la otra cara de la cuenta y el panel saldría vacío.
   const { data, error } = await supabase
     .from('notifications')
     .select('id, type, payload, read_at, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .limit(30);
+    .limit(scope ? 150 : NOTIFICATIONS_LIMIT);
 
   if (error) {
     console.error('Error al cargar notificaciones:', error);
     return [];
   }
+  // El puntero de "último aviso mostrado" es de la cuenta, no del panel.
   rememberNotificationIds(data);
-  return data || [];
+  if (!scope) return data || [];
+  return (data || []).filter((n) => notificationInScope(n, scope)).slice(0, NOTIFICATIONS_LIMIT);
 }
 
 export async function markNotificationRead(id) {
   await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
 }
 
-export async function markAllNotificationsRead(userId) {
-  await supabase
+export async function markAllNotificationsRead(userId, ids) {
+  let query = supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('read_at', null);
+  // Con ids solo se marcan las que el panel está mostrando.
+  if (ids?.length) query = query.in('id', ids);
+  await query;
 }
 
 export async function deleteNotification(id) {
@@ -489,24 +526,25 @@ function ensureLiveListener() {
  * innerHTML) y lo deja en vivo: una notificación nueva, leída o borrada desde
  * otro dispositivo aparece sola, sin recargar.
  */
-export async function renderNotificationsSection(container, userId) {
+export async function renderNotificationsSection(container, userId, { scope } = {}) {
   if (!container || !userId) return;
   let entry = liveSections.get(container);
   if (!entry) {
-    entry = { userId, search: '', filter: 'all' };
+    entry = { userId, scope, search: '', filter: 'all' };
     // delay corto: también lo usan "Marcar como leída" y "Borrar" (onChange).
     entry.refresh = createRefresher(() => drawNotificationsSection(container, entry), { delay: 150 });
     liveSections.set(container, entry);
   }
   entry.userId = userId;
+  entry.scope = scope;
   ensureLiveListener();
   startNotificationsLive(userId);
   await drawNotificationsSection(container, entry);
 }
 
 async function drawNotificationsSection(container, entry) {
-  const { userId } = entry;
-  const notifications = await fetchNotifications(userId);
+  const { userId, scope } = entry;
+  const notifications = await fetchNotifications(userId, { scope });
 
   // Si el buscador tenía el foco, se le devuelve después de redibujar (una
   // actualización en vivo no puede cortarle la escritura a nadie).
@@ -585,7 +623,8 @@ async function drawNotificationsSection(container, entry) {
     markAllBtn.className = 'notif-mark-all';
     markAllBtn.textContent = `Marcar las ${unreadCount} como leídas`;
     markAllBtn.addEventListener('click', async () => {
-      await markAllNotificationsRead(userId);
+      // Solo las de este panel: las del otro lado de la cuenta no se tocan.
+      await markAllNotificationsRead(userId, notifications.filter((n) => !n.read_at).map((n) => n.id));
       onChange();
     });
     toolbar.appendChild(markAllBtn);
