@@ -80,6 +80,31 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — "Cambiar de cuenta" en Mi perfil → Tu cuenta**, a pedido del
+  usuario (una persona con cuenta de comercio y personal). Fila nueva "Cuenta" con el
+  botón "Cambiar de cuenta (N)", que despliega la lista de cuentas guardadas en este
+  dispositivo, "Agregar otra cuenta" y "Quitar". **Cómo se asegura que sea la misma
+  persona:** para agregar una cuenta hay que **iniciar sesión en ella** (correo +
+  contraseña, o "Agregar una cuenta de Google"); no hay forma de sumar la de otro.
+  **Cómo funciona:** cada cuenta guarda su sesión (access + refresh token) en
+  `localStorage` (`bl_linked_accounts_v1`, `js/linked-accounts.js` + lógica pura en
+  `js/linked-accounts-utils.js`, ambas con tests); cambiar es
+  `supabase.auth.setSession()` y la página se recarga sola en `perfil.html?tab=mis-datos`
+  (`js/account-switcher.js`). La contraseña se verifica con un cliente de Supabase
+  aparte (`persistSession:false`) que **no toca la sesión del navegador**. El mismo
+  cambio deja de lado el carrito local (`resetLocalCartState`: el de cada cuenta vive
+  en la nube) para que no se mezcle. **Cerrar sesión (menú, Mi perfil, cerrar en todos
+  los dispositivos, baja de cuenta) borra todas las cuentas guardadas** del
+  dispositivo. **Gotchas:** (1) los tokens de una cuenta inactiva no se pueden
+  tocar (rotan al usarse): la activa se actualiza en la lista antes de irse; si una
+  sesión guardada ya no sirve, se saca de la lista y se avisa; (2) el alta con
+  Google vuelve por `login.html` (el único redirect habilitado) y
+  `resolvePostLoginRedirect` (auth-utils) completa la vinculación con
+  `completePendingLink` y manda de vuelta a Mi perfil; (3) hay un tope de 5 cuentas.
+  **Riesgo asumido:** los tokens de las otras cuentas quedan en el localStorage de
+  ese navegador (igual que ya pasa con la sesión activa): en un dispositivo
+  compartido hay que cerrar sesión. Verificado con Supabase simulado (token,
+  refresh y user) en el navegador; **sin probar con Google ni con cuentas reales**.
 - **Resuelto 2026-10-05 — Las notificaciones del panel de profesional mostraban las de
   comerciante y de compras**, reportado por el usuario con captura (una misma cuenta
   es comerciante, profesional y además compra: todos sus avisos caen en

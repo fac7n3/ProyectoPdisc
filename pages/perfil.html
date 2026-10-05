@@ -225,6 +225,18 @@
                   <span id="role-panel-label">Panel</span>
                 </a>
               </div>
+              <!-- Cambiar entre las cuentas de la misma persona (js/account-switcher.js). -->
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Cuenta</span>
+                  <span class="datos-row__value" id="card-account-email">—</span>
+                </div>
+                <button type="button" class="datos-btn" id="account-switch-toggle" aria-expanded="false" aria-controls="account-switch-panel">
+                  <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+                  <span>Cambiar de cuenta</span>
+                </button>
+              </div>
+              <div class="acct-panel" id="account-switch-panel" hidden></div>
               <div class="datos-row datos-row--static">
                 <div class="datos-row__main">
                   <span class="datos-row__label">Comprás en Baradero Local desde</span>

@@ -1084,6 +1084,46 @@ a.compra-item-text:hover {
 
 .datos-row__error[hidden] { display: none; }
 
+/* --- Cambiar de cuenta (js/account-switcher.js) --- */
+.acct-panel {
+  padding: 0.25rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--bl-perfil-border);
+  background: var(--bl-perfil-bg);
+}
+.acct-panel[hidden] { display: none; }
+.acct-panel__lead { margin: 1rem 0 0.75rem; color: var(--bl-perfil-hint); font-size: 0.9rem; }
+.acct-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.acct-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bl-perfil-surface);
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-md);
+}
+.acct-row__avatar {
+  flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bl-perfil-primary); color: #fff; font-weight: 700;
+}
+.acct-row__text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.acct-row__name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-row__email { font-size: 0.85rem; color: var(--bl-perfil-hint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-row__badge {
+  flex-shrink: 0; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.6rem;
+  border-radius: 999px; background: var(--bl-perfil-bg); color: var(--bl-perfil-primary);
+  border: 1px solid var(--bl-perfil-border);
+}
+.acct-row__actions { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
+.acct-add { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--bl-perfil-border); }
+.acct-add__title { margin: 0 0 0.25rem; font-size: 0.95rem; }
+.acct-add__hint { margin: 0 0 0.75rem; color: var(--bl-perfil-hint); font-size: 0.85rem; }
+.acct-add__form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.acct-add__google { margin-top: 0.5rem; padding-left: 0; }
+@media (max-width: 640px) {
+  .acct-row { flex-wrap: wrap; }
+  .acct-row__actions { width: 100%; justify-content: flex-end; }
+}
+
 /* --- Botones de la sección --- */
 .datos-btn {
   display: inline-flex;

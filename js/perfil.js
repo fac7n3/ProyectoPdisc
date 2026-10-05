@@ -20,6 +20,8 @@ import { buildDatePicker } from "./datepicker.js";
 import { categoryLabel } from "./professional-categories.js";
 import { fetchStoreTransferData, buildTransferCard } from "./transfer-details.js";
 import { confirmDialog } from "./confirm-dialog.js";
+import { initAccountSwitcher } from "./account-switcher.js";
+import { clearLinkedAccounts } from "./linked-accounts.js";
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS,
   orderLabel, canPrepare, awaitingTransfer, awaitingMercadoPago, showsPickupCode,
@@ -374,6 +376,7 @@ function initSignOutAll() {
     btn.textContent = "Cerrando…";
 
     try {
+      clearLinkedAccounts();
       const { error } = await supabase.auth.signOut({ scope: "global" });
       if (error) throw error;
       // El redirect a login lo hace el listener de SIGNED_OUT que ya monta
@@ -2519,6 +2522,7 @@ function setupPrivacyActions(user) {
 
       if (!error) {
         showToast("Listo, borramos tu cuenta. ¡Gracias por haber pasado!", "success");
+        clearLinkedAccounts();
         await supabase.auth.signOut();
         window.location.href = "./home.html";
         return;
@@ -2714,6 +2718,11 @@ async function renderFullProfile(user) {
   initAccountMenu();
   renderAffiliationBadges(user.id);
   renderPanelLink(user);
+  initAccountSwitcher({
+    toggle: document.getElementById("account-switch-toggle"),
+    panel: document.getElementById("account-switch-panel"),
+    current: document.getElementById("card-account-email"),
+  });
   initPanelHomeVisibility(user);
 
   // Aviso en la tarjeta del hub si hay notificaciones sin leer. En vivo: se
@@ -2775,6 +2784,7 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
     showToast("Cerrando sesión...", "success");
     setTimeout(async () => {
+      clearLinkedAccounts();
       await supabase.auth.signOut();
     }, 800);
   });
