@@ -312,6 +312,36 @@ ul, ol {
   border-color: var(--bl-primary);
 }
 
+/* Badge del carrito en el navbar */
+.navbar__action-circle {
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 50rem;
+  background: var(--bl-danger);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-family: var(--bl-font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.cart-badge:empty,
+.cart-badge[data-count="0"] {
+  display: none;
+}
+
+
 /* ── Campanita de notificaciones ── */
 #nav-notifications-wrap {
   position: relative;
