@@ -50,11 +50,14 @@ check("completePendingLink: suma la cuenta nueva al volver de Google", () => {
   assert.equal(completePendingLink(ses("3", "c@c.com")), false);
 });
 
-check("completePendingLink: si Google devolvió la misma cuenta, no agrega nada", () => {
+check("completePendingLink: si todavía se ve la cuenta de partida, no agrega nada y la marca queda", () => {
   clearLinkedAccounts();
   markLinkPending("1");
   assert.equal(completePendingLink(ses("1", "a@a.com")), false);
   assert.deepEqual(loadLinkedAccounts(), []);
+  // más tarde se abre la sesión nueva: ahí sí se suma
+  assert.equal(completePendingLink(ses("2", "b@b.com")), true);
+  assert.deepEqual(loadLinkedAccounts().map((e) => e.id), ["2"]);
 });
 
 check("completePendingLink: sin vinculación en curso, o vencida, no agrega", () => {

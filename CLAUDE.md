@@ -80,6 +80,15 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — "Cambiar de cuenta": la cuenta nueva podía no quedar guardada
+  al agregarla con Google.** Pedido del usuario: que al agregar una cuenta queden las dos
+  (o más) en la lista, también desde el perfil de la nueva. Con contraseña ya quedaban
+  todas (verificado: A→B→C, cada perfil lista a las demás). Con Google había una carrera:
+  si `login.html` leía todavía la sesión vieja al volver, `completePendingLink` **gastaba**
+  la marca pendiente sin sumar nada. Ahora **no gasta la marca si ve la cuenta de partida**
+  y Mi perfil también llama a `completePendingLink` al cargar (abre el panel solo y avisa).
+  **Sigue siendo por dispositivo:** la lista vive en el navegador y "Cerrar sesión" la borra
+  (decisión de seguridad para dispositivos compartidos).
 - **Resuelto 2026-10-05 — El botón del home decía "Vender" un instante y después "Panel"**
   (vendedores y profesionales), reportado por el usuario. Saber si la cuenta tiene panel
   requiere consultas a la base (`getPanelAccess`), así que el HTML salía con "Vender" y

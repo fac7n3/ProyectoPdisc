@@ -24,6 +24,7 @@ import {
   rememberAccount,
   forgetAccount,
   markLinkPending,
+  completePendingLink,
   resetLocalCartState,
 } from './linked-accounts.js';
 import {
@@ -297,8 +298,11 @@ export async function initAccountSwitcher({ toggle, panel: panelNode, current })
     panel.hidden = !abrir;
   });
 
-  // Volvió de agregar una cuenta con Google: se deja abierto el panel.
-  if (new URLSearchParams(window.location.search).get('cuenta') === 'agregada') {
+  // Volvió de agregar una cuenta con Google: se deja abierto el panel. Si la
+  // vuelta por login.html no llegó a sumar la cuenta (la marca sigue pendiente),
+  // se suma acá: Mi perfil es la otra puerta de entrada a esa vinculación.
+  const sumadaAca = completePendingLink(session);
+  if (sumadaAca || new URLSearchParams(window.location.search).get('cuenta') === 'agregada') {
     await render();
     panel.hidden = false;
     toggle.setAttribute('aria-expanded', 'true');
