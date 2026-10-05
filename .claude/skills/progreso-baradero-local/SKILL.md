@@ -5228,3 +5228,23 @@ repositories"); los repos públicos sí se pueden clonar con `git clone --filter
 **Visto de paso, sin tocar:** varios productos de seed cargan pero con una foto genérica de su
 rubro que no coincide (ej. "Cable USB-C" y "Mouse" muestran unos auriculares, "Fernet" y "Vino"
 muestran botellas de agua/gaseosa, los 5 del kiosco la misma pila de golosinas).
+
+## 2026-10-05 — Apartado "Recomendaciones" (vendedor y profesional)
+
+Pedido del usuario con capturas: en el Resumen de cada panel, una tarjeta en el hueco marcado
+("Recomendaciones para impulsar tus ventas" / "...tu emprendimiento") con un link azul
+"Ir a recomendaciones" y una descripción corta. Las recomendaciones en sí las pasa el usuario
+más adelante.
+- **Vendedor** (`js/vender.js` `rsRecommendationsCard`, `pages/vender.html`): la tarjeta va debajo
+  de Novedades; ahora la columna derecha de `.rs-grid2` es un `.rs-col` (flex en columna) con las
+  dos. Sección nueva `data-section="recomendaciones"` en el grupo Ventas del sidebar, después de
+  Reseñas, visible también para empleados.
+- **Profesional** (`js/profesional.js` `recomendacionesCard`, `pages/profesional.html`): la
+  tarjeta va al lado de "Todo en orden"/"Para mejorar tu publicación" (la regla
+  `.rs-grid2 > .rs-card:only-child` ya no aplica con dos tarjetas, así que la de la izquierda se
+  achica a media pantalla). Sección nueva en el sidebar arriba de Notificaciones. El link usa
+  `.rs-link--azul` (`profesional.css`): el `.rs-link` de ese panel es ámbar (`--bl-oficios-accent`).
+- Las dos secciones nuevas son un estado vacío ("Estamos preparando las recomendaciones").
+  Entradas agregadas también a `VENDOR_SECTION_COPY` / `PROF_SECTION_COPY` (bienvenida al panel).
+- Verificado con una maqueta estática con el CSS real de cada panel; no con el panel logueado
+  (sin red a Supabase). `dist/` no se reconstruyó: el build local necesita la anon key.
