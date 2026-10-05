@@ -86,11 +86,13 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   16:00 a 20:00" / "Sábado 08:00 a 13:00"): `agruparDiasIguales` en
   `js/professional-hours-utils.js` (con tests). Solo junta días **consecutivos**
   (lunes-miércoles-viernes iguales siguen separados) y la semana se ordena de
-  lunes a domingo (`ORDEN_SEMANA`). (2) El panel (Horarios y zona) tiene un bloque
-  **"Cargar varios días de una vez"**: se eligen los días (chips + atajos "Lunes a
-  viernes / Lunes a sábado / Todos los días"), se pone el horario (una o dos
-  franjas) y "Aplicar" lo copia a cada día; después se ajusta un día puntual en la
-  lista de abajo. **Sin migración:** la base sigue guardando una fila por día y
+  lunes a domingo (`ORDEN_SEMANA`). (2) El panel (Horarios y zona) **ya no tiene una tarjeta por día**: solo el bloque
+  **"Cargar varios días de una vez"** (chips de días + atajos "Lunes a viernes /
+  Lunes a sábado / Todos los días", una o dos franjas, "Aplicar") y debajo la
+  lista "Horarios cargados" (una línea por grupo de días iguales, con una X para
+  quitarlo). Al aplicar, el formulario se limpia (sin días elegidos) para cargar
+  el grupo siguiente (ej. el sábado); volver a aplicar sobre los mismos días
+  sirve para corregir. **Sin migración:** la base sigue guardando una fila por día y
   franja (`professional_business_hours`), solo cambió cómo se carga y se muestra.
   Verificado en el navegador con Supabase simulado (no contra producción).
 - **Resuelto 2026-10-05 — Fotos para los 11 productos que salían "sin imagen"**

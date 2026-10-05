@@ -12,22 +12,25 @@
  */
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
-import { DIAS, ORDEN_SEMANA, agruparPorDia, formatearHora } from './professional-hours-utils.js';
+import { DIAS, ORDEN_SEMANA, agruparPorDia, agruparDiasIguales, formatearHora } from './professional-hours-utils.js';
 import { PROFESSIONAL_ZONES } from './professional-zones.js';
-
-const MAX_FRANJAS_POR_DIA = 2;
 
 let ctx = null;
 /** Estado en pantalla: por día, sus franjas {desde, hasta} en 'HH:MM'. */
 let porDia = DIAS.map(() => []);
 let zonasElegidas = new Set();
 /** Lo que se está armando en "Cargar varios días de una vez". */
-const rapido = {
-  dias: new Set([1, 2, 3, 4, 5]),
-  f1: { desde: '09:00', hasta: '13:00' },
-  f2: { desde: '16:00', hasta: '20:00' },
-  conSegunda: true,
-};
+const rapido = { dias: new Set(), f1: null, f2: null, conSegunda: true };
+
+/** Deja el formulario como nuevo: sin días elegidos y con el horario más común
+ *  del pueblo, para poder cargar el grupo siguiente (ej. el sábado). */
+function reiniciarRapido(diasElegidos = []) {
+  rapido.dias = new Set(diasElegidos);
+  rapido.f1 = { desde: '09:00', hasta: '13:00' };
+  rapido.f2 = { desde: '16:00', hasta: '20:00' };
+  rapido.conSegunda = true;
+}
+reiniciarRapido();
 
 export function initDisponibilidad(contexto) {
   ctx = contexto;
@@ -61,73 +64,48 @@ async function cargar() {
   const check24h = document.getElementById('of-24h');
   if (check24h) check24h.checked = !!ctx.prof.serves_24h;
 
+  // Si todavía no cargó nada, arranca con lunes a viernes elegido.
+  reiniciarRapido(porDia.some((f) => f.length) ? [] : [1, 2, 3, 4, 5]);
   renderRapido();
   renderHorarios();
   renderZonas();
 }
 
+/** Lista de lo que ya está cargado, una línea por grupo de días iguales (lo
+ *  mismo que va a ver el vecino en la tarjeta). */
 function renderHorarios() {
   const cont = document.getElementById('of-hours');
   if (!cont) return;
   const { el, icono } = ctx;
 
-  cont.replaceChildren(...ORDEN_SEMANA.map((valor) => DIAS.find((d) => d.valor === valor)).map((dia) => {
-    const fila = el('div', 'of-day');
-    fila.appendChild(el('div', 'of-day__name', dia.nombre));
+  const grupos = agruparDiasIguales(porDia.map((franjas) =>
+    franjas.map((f) => ({ open_time: f.desde, close_time: f.hasta }))
+  ));
 
-    const slots = el('div', 'of-day__slots');
-    const franjas = porDia[dia.valor];
+  if (!grupos.length) {
+    cont.replaceChildren(el('p', 'of-loaded__empty', 'Todavía no cargaste ningún horario.'));
+    return;
+  }
 
-    if (!franjas.length) {
-      slots.appendChild(el('span', 'of-day__closed', 'No atiendo este día'));
-    } else {
-      franjas.forEach((franja, i) => {
-        const slot = el('div', 'of-slot');
+  const lista = el('ul', 'of-loaded');
+  for (const grupo of grupos) {
+    const item = el('li', 'of-loaded__row');
+    item.appendChild(el('span', 'of-loaded__days', grupo.etiqueta));
+    item.appendChild(el('span', 'of-loaded__hours', grupo.texto));
 
-        const desde = document.createElement('input');
-        desde.type = 'time';
-        desde.value = franja.desde;
-        desde.setAttribute('aria-label', `${dia.nombre}: hora de apertura`);
-        desde.addEventListener('change', () => { franja.desde = desde.value; });
-
-        const hasta = document.createElement('input');
-        hasta.type = 'time';
-        hasta.value = franja.hasta;
-        hasta.setAttribute('aria-label', `${dia.nombre}: hora de cierre`);
-        hasta.addEventListener('change', () => { franja.hasta = hasta.value; });
-
-        const quitar = el('button', 'of-btn of-btn--ghost of-btn--sm');
-        quitar.type = 'button';
-        quitar.title = 'Quitar esta franja';
-        quitar.setAttribute('aria-label', `Quitar franja de ${dia.nombre}`);
-        quitar.appendChild(icono('fa-solid fa-xmark'));
-        quitar.addEventListener('click', () => {
-          franjas.splice(i, 1);
-          renderHorarios();
-        });
-
-        slot.append(desde, el('span', null, 'a'), hasta, quitar);
-        slots.appendChild(slot);
-      });
-    }
-
-    if (franjas.length < MAX_FRANJAS_POR_DIA) {
-      const agregar = el('button', 'of-btn of-btn--ghost of-btn--sm');
-      agregar.type = 'button';
-      agregar.appendChild(icono('fa-solid fa-plus'));
-      agregar.append(franjas.length ? ' Agregar otra franja' : ' Agregar horario');
-      agregar.addEventListener('click', () => {
-        // Arranca con el horario más común del pueblo, para que en la mayoría
-        // de los casos alcance con tocar "Guardar".
-        franjas.push(franjas.length ? { desde: '16:00', hasta: '20:00' } : { desde: '09:00', hasta: '13:00' });
-        renderHorarios();
-      });
-      slots.appendChild(agregar);
-    }
-
-    fila.appendChild(slots);
-    return fila;
-  }));
+    const quitar = el('button', 'of-btn of-btn--ghost of-btn--sm');
+    quitar.type = 'button';
+    quitar.title = 'Quitar este horario';
+    quitar.setAttribute('aria-label', `Quitar el horario de ${grupo.etiqueta}`);
+    quitar.appendChild(icono('fa-solid fa-xmark'));
+    quitar.addEventListener('click', () => {
+      for (const dia of grupo.dias) porDia[dia] = [];
+      renderHorarios();
+    });
+    item.appendChild(quitar);
+    lista.appendChild(item);
+  }
+  cont.replaceChildren(lista);
 }
 
 /* ---------------- Cargar varios días de una vez ---------------- */
@@ -154,8 +132,6 @@ function renderRapido() {
   const { el, icono } = ctx;
 
   const titulo = el('div', 'of-quick__title', 'Cargar varios días de una vez');
-  const ayuda = el('p', 'of-quick__hint',
-    'Elegí los días, poné el horario y tocá "Aplicar". Después podés ajustar un día puntual más abajo (por ejemplo, el sábado solo de mañana).');
 
   // Días + atajos
   const chips = el('div', 'of-chips');
@@ -223,10 +199,11 @@ function renderRapido() {
   aplicar.type = 'button';
   aplicar.addEventListener('click', aplicarRapido);
 
-  cont.replaceChildren(titulo, ayuda, chips, atajos, franjas, aplicar);
+  cont.replaceChildren(titulo, chips, atajos, franjas, aplicar);
 }
 
-/** Copia el horario armado arriba a cada día elegido (pisa lo que tuvieran). */
+/** Copia el horario armado arriba a cada día elegido (pisa lo que tuvieran:
+ *  volver a aplicar sobre los mismos días sirve para corregir un horario). */
 function aplicarRapido() {
   if (!rapido.dias.size) {
     showToast('Elegí al menos un día.');
@@ -253,8 +230,11 @@ function aplicarRapido() {
   for (const dia of rapido.dias) {
     porDia[dia] = franjas.map((f) => ({ ...f }));
   }
+  // El formulario se limpia para poder cargar el grupo siguiente (ej. el sábado).
+  reiniciarRapido();
+  renderRapido();
   renderHorarios();
-  showToast('Listo. Revisá los días y tocá "Guardar cambios".', 'success');
+  showToast('Horario agregado. Cuando termines, tocá "Guardar cambios".', 'success');
 }
 
 function renderZonas() {

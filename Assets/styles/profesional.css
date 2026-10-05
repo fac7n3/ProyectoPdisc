@@ -390,19 +390,20 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .of-empty p + p { margin-top: 0.4rem; }
 
 /* Horarios: una fila por día, con sus franjas. */
-.of-day { display: flex; align-items: flex-start; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--bl-border-light); flex-wrap: wrap; }
-.of-day:last-child { border-bottom: none; }
-.of-day__name { width: 6.5rem; flex-shrink: 0; font-weight: 600; color: var(--bl-text); padding-top: 0.35rem; }
-.of-day__slots { flex: 1; min-width: 12rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
 .of-slot { display: inline-flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
 .of-slot input[type="time"] { padding: 0.4rem 0.55rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-sm); font: inherit; }
 .of-slot input[type="time"]:focus { outline: none; border-color: var(--bl-oficios-accent); box-shadow: 0 0 0 2px rgba(var(--bl-oficios-accent-rgb), 0.12); }
-.of-day__closed { color: var(--bl-text-muted); font-size: 0.88rem; padding-top: 0.4rem; }
 .of-quick { background: var(--bl-surface-hover); border: 1px solid var(--bl-border-light); border-radius: var(--bl-radius-md); padding: 1rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 .of-quick__title { font-weight: 700; color: var(--bl-text); }
-.of-quick__hint { margin: -0.4rem 0 0; font-size: 0.85rem; color: var(--bl-text-secondary); }
 .of-quick__shortcuts { display: flex; flex-wrap: wrap; gap: 0.9rem; }
 .of-quick__slots { display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
+.of-loaded__title { margin: 1.1rem 0 0.5rem; font-size: 0.95rem; font-weight: 700; color: var(--bl-text); }
+.of-loaded { list-style: none; margin: 0; padding: 0; }
+.of-loaded__row { display: flex; align-items: center; gap: 1rem; padding: 0.7rem 0; border-bottom: 1px solid var(--bl-border-light); }
+.of-loaded__row:last-child { border-bottom: none; }
+.of-loaded__days { width: 6.5rem; flex-shrink: 0; font-weight: 600; color: var(--bl-text); }
+.of-loaded__hours { flex: 1; color: var(--bl-text-secondary); }
+.of-loaded__empty { margin: 0; color: var(--bl-text-muted); font-size: 0.9rem; }
 .of-link { background: none; border: none; padding: 0; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--bl-oficios-accent); cursor: pointer; }
 .of-link:hover { text-decoration: underline; }
 
@@ -471,8 +472,12 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 @media (max-width: 640px) {
   .of-row { flex-wrap: wrap; }
   .of-row__actions { width: 100%; }
-  .of-day__name { width: 100%; padding-top: 0; }
   .of-gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .of-loaded__row { flex-wrap: wrap; gap: 0.3rem 0.75rem; }
+  .of-loaded__days { width: auto; }
+  .of-loaded__hours { flex-basis: 100%; order: 3; }
+  .of-quick .of-slot { flex-wrap: nowrap; gap: 0.35rem; }
+  .of-quick .of-slot input[type="time"] { width: 6.9rem; min-width: 0; padding: 0.4rem 0.4rem; }
 }
 
 /* El shell y el bloque de carga tienen `display` de autor, que en cascada le
