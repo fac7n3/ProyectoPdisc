@@ -272,6 +272,7 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .rs-promo__next { position: absolute; top: 0.9rem; right: 0.9rem; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); border: none; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; }
 .rs-promo__next:hover { background: rgba(255, 255, 255, 0.24); }
 .rs-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.rs-grid2 > .rs-card:only-child { grid-column: 1 / -1; }
 .rs-help-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
 .rs-help-row:last-child { border-bottom: none; }
 .rs-help-row:hover .rs-help-row__title { color: var(--bl-oficios-accent); }

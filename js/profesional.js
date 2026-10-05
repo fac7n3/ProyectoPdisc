@@ -408,20 +408,7 @@ function renderResumenCards(cantServicios, consultasNuevas) {
     }
   }
 
-  const ayuda = el('div', 'rs-card');
-  const tAyuda = el('div', 'rs-card__title');
-  tAyuda.appendChild(icono('fa-solid fa-eye'));
-  tAyuda.appendChild(el('span', null, 'Cómo te ven'));
-  ayuda.appendChild(tAyuda);
-  ayuda.appendChild(el('p', 'rs-empty', 'Mirá tu tarjeta como la ve un vecino que te busca en Contratar.'));
-  const verBtn = el('button', 'rs-link', 'Ver mi perfil público →');
-  verBtn.type = 'button';
-  verBtn.addEventListener('click', () => {
-    window.open(`./contratar.html?pro=${estado.prof.id}`, '_blank', 'noopener');
-  });
-  ayuda.appendChild(verBtn);
-
-  cont.replaceChildren(card, ayuda);
+  cont.replaceChildren(card);
 }
 
 /* ================= Mis datos ================= */
