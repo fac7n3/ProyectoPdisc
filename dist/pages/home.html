@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/home-DY1SP_qd.js"></script>
+    <script type="module" crossorigin src="/assets/home-DVOsstBL.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DOBLYGwY.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-C5yywKYd.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CkgV1SVI.js">
@@ -109,11 +109,42 @@
          del navbar). -->
     <div class="category-bar">
       <div class="category-bar__inner category-bar__inner--home-actions">
-        <a href="./vender.html" class="home-action">Vender</a>
+        <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
         <a href="./contratar.html" class="home-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </div>
+    <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
+         renderPanelAction), pero eso se sabe recién después de consultar la
+         base. Sin esto, vendedores y profesionales veían "Vender" un instante y
+         después "Panel". Con la última respuesta guardada en este navegador
+         (bl_panel_hint) el botón sale bien en el primer pintado; sin ella, y con
+         sesión iniciada, queda oculto hasta saberlo (con tope de 3 s). -->
+    <script>
+      (function () {
+        try {
+          var link = document.getElementById('home-panel-action');
+          if (!link) return;
+          var uid = null;
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (/^sb-.*-auth-token$/.test(k)) {
+              var s = JSON.parse(localStorage.getItem(k));
+              uid = s && s.user && s.user.id;
+              break;
+            }
+          }
+          if (!uid) return; // sin sesión: es "Vender" para todo el mundo
+          var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
+          if (hint && hint.uid === uid) {
+            if (hint.href) { link.textContent = 'Panel'; link.setAttribute('href', hint.href); }
+            return;
+          }
+          link.style.visibility = 'hidden';
+          setTimeout(function () { link.style.visibility = ''; }, 3000);
+        } catch (e) { /* sin storage: queda como está */ }
+      })();
+    </script>
 
     <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <main id="contenido-principal" tabindex="-1">

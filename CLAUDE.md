@@ -80,6 +80,17 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — El botón del home decía "Vender" un instante y después "Panel"**
+  (vendedores y profesionales), reportado por el usuario. Saber si la cuenta tiene panel
+  requiere consultas a la base (`getPanelAccess`), así que el HTML salía con "Vender" y
+  cambiaba después. Ahora `js/home.js` guarda la última respuesta por cuenta en
+  `localStorage` (`bl_panel_hint` = `{uid, href|null}`) y un script chico en
+  `pages/home.html` (el botón tiene `id="home-panel-action"`) lo pinta bien en el primer
+  momento. **Sin respuesta guardada** (primera vez en ese navegador) y con sesión, el
+  botón queda **oculto** hasta saberlo (tope de 3 s) en vez de mostrar "Vender"; si la
+  respuesta guardada estaba vieja (ya no tiene panel) se corrige a "Vender". Quien no
+  tiene sesión no ve cambios. Verificado en el navegador con una base lenta simulada
+  (vendedor, admin, cliente, pistas viejas).
 - **Resuelto 2026-10-05 — "Cambiar de cuenta" en Mi perfil → Tu cuenta**, a pedido del
   usuario (una persona con cuenta de comercio y personal). Fila nueva "Cuenta" con el
   botón "Cambiar de cuenta (N)", que despliega la lista de cuentas guardadas en este

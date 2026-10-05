@@ -65,13 +65,52 @@ function cameToHomeOnPurpose() {
  * Corre apenas carga el módulo (no espera a DOMContentLoaded) para que la
  * redirección salga lo antes posible y el home no llegue a pintarse.
  */
+/** Última respuesta de "¿tiene panel?" para esta cuenta: la lee el script de
+ *  pages/home.html para pintar bien el botón desde el primer momento. */
+const PANEL_HINT_KEY = 'bl_panel_hint';
+
+function rememberPanelHint(uid, href) {
+  try { localStorage.setItem(PANEL_HINT_KEY, JSON.stringify({ uid, href })); } catch { /* sin storage */ }
+}
+
+/** El <a> de "Vender"/"Panel", sea cual sea el texto que tenga ahora. */
+function whenPanelLinkReady(fn) {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+  else fn();
+}
+
+/** Cliente sin panel: vuelve a "Vender" (por si el script del HTML lo había
+ *  cambiado con una respuesta vieja) y lo muestra. */
+function showVenderLink() {
+  whenPanelLinkReady(() => {
+    const link = document.getElementById('home-panel-action');
+    if (!link) return;
+    link.textContent = 'Vender';
+    link.setAttribute('href', './vender.html');
+    link.style.visibility = '';
+  });
+}
+
 async function initPanelAction() {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
   if (!user) return;
 
-  const { isAdmin, seller } = await getPanelAccess(user);
-  if (!isAdmin && !seller) return; // cliente común: la fila queda como está
+  let isAdmin = false;
+  let seller = null;
+  try {
+    ({ isAdmin, seller } = await getPanelAccess(user));
+  } catch (err) {
+    console.error('No se pudo saber si la cuenta tiene panel:', err);
+    showVenderLink();
+    return;
+  }
+  if (!isAdmin && !seller) { // cliente común: la fila queda como está
+    rememberPanelHint(user.id, null);
+    showVenderLink();
+    return;
+  }
+  rememberPanelHint(user.id, isAdmin && !seller ? './admin.html' : `./${SELLER_PANEL_PAGES[seller]}`);
 
   // XOR: exactamente un panel posible. Con los dos (isAdmin && seller) esto
   // da false y nunca se auto-redirige, igual que antes.
@@ -89,11 +128,7 @@ async function initPanelAction() {
   }
 
   // El <a> puede no estar en el DOM todavía si la sesión resolvió rapidísimo.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role }), { once: true });
-  } else {
-    renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role });
-  }
+  whenPanelLinkReady(() => renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role }));
 }
 initPanelAction();
 
@@ -104,8 +139,9 @@ initPanelAction();
  * abre un menú chico para elegir.
  */
 function renderPanelAction({ isAdmin, seller, role }) {
-  const link = document.querySelector('.home-action[href="./vender.html"]');
+  const link = document.getElementById('home-panel-action');
   if (!link) return;
+  link.style.visibility = '';
 
   const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
 
