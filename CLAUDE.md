@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — Las notificaciones del panel de profesional mostraban las de
+  comerciante y de compras**, reportado por el usuario con captura (una misma cuenta
+  es comerciante, profesional y además compra: todos sus avisos caen en
+  `notifications` por `user_id`). Ahora `renderNotificationsSection(container, userId,
+  { scope })` filtra por panel (`notificationInScope` en `js/notifications-utils.js`):
+  el de **profesional** muestra consultas de presupuesto, reseñas de SU publicación
+  (`new_review` con `target_type='professional'`), el alta en Contratar y los
+  reclamos; el de **vendedor** muestra todo menos lo del lado profesional. La
+  campanita del navbar y Mi perfil siguen mostrando todo (son de la cuenta). "Marcar
+  las N como leídas" marca solo las que el panel muestra. Con scope se piden 150 y
+  se filtra en el cliente (si no, los 30 más nuevos podían ser todos del otro lado).
+  Verificado con Supabase simulado. **Sin cambiar:** los avisos emergentes (toast) y
+  el contador de la campanita son de toda la cuenta.
 - **Resuelto 2026-10-05 — Horarios del profesional más cortos en la tarjeta**, a pedido
   del usuario ("se ve demasiado texto"). (1) La tarjeta de "Contratar" **junta los
   días seguidos con el mismo horario** en una línea ("Lun a Vie 08:00 a 13:00 y
