@@ -77,6 +77,50 @@ export function formatearFranjas(franjas) {
     .join(' y ');
 }
 
+/** Orden en que se muestra la semana (lunes primero, como en Argentina). Los
+ *  valores son los mismos de DIAS: 0 = domingo. */
+export const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+/**
+ * Etiqueta corta de un grupo de días seguidos ya ordenados según
+ * ORDEN_SEMANA: "Sábado", "Lun y Mar", "Lun a Vie".
+ * @param {number[]} dias valores de día (0 = domingo)
+ */
+export function etiquetaDias(dias) {
+  const info = (d) => DIAS.find((x) => x.valor === d);
+  if (!dias?.length) return '';
+  if (dias.length === 1) return info(dias[0]).nombre;
+  const primero = info(dias[0]).corto;
+  const ultimo = info(dias[dias.length - 1]).corto;
+  return dias.length === 2 ? `${primero} y ${ultimo}` : `${primero} a ${ultimo}`;
+}
+
+/**
+ * Junta los días seguidos que tienen exactamente el mismo horario, para que la
+ * tarjeta diga "Lun a Vie  08:00 a 13:00 y 16:00 a 20:00" en una sola línea en
+ * vez de repetir lo mismo cinco veces. Los días sin horario no aparecen.
+ * @param {{open_time: string, close_time: string}[][]} porDia lo que devuelve agruparPorDia()
+ * @returns {{ dias: number[], etiqueta: string, texto: string }[]}
+ */
+export function agruparDiasIguales(porDia) {
+  const grupos = [];
+  for (const dia of ORDEN_SEMANA) {
+    const texto = formatearFranjas(porDia?.[dia]);
+    if (!texto) continue;
+    const ultimo = grupos[grupos.length - 1];
+    // "Seguido" = el día anterior de la semana es el último del grupo. Así
+    // lunes-miércoles-viernes iguales NO se juntan (hay huecos).
+    const previo = ORDEN_SEMANA[ORDEN_SEMANA.indexOf(dia) - 1];
+    if (ultimo && ultimo.texto === texto && ultimo.dias[ultimo.dias.length - 1] === previo) {
+      ultimo.dias.push(dia);
+    } else {
+      grupos.push({ dias: [dia], etiqueta: '', texto });
+    }
+  }
+  for (const g of grupos) g.etiqueta = etiquetaDias(g.dias);
+  return grupos;
+}
+
 /**
  * ¿Está atendiendo en este momento?
  *

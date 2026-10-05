@@ -4,6 +4,8 @@ import {
   formatearHora,
   agruparPorDia,
   formatearFranjas,
+  agruparDiasIguales,
+  etiquetaDias,
   estaAbiertoAhora,
   resumenDisponibilidad,
 } from "./professional-hours-utils.js";
@@ -159,6 +161,65 @@ check("las urgencias 24 h ganan sobre cualquier horario", () => {
 
 check("sin horarios cargados no dice nada", () => {
   assert.equal(resumenDisponibilidad({ horarios: [] }, miercoles(10)), "");
+});
+
+
+console.log("agruparDiasIguales");
+const dia = (d, ...f) => f.map(([a, c]) => franja(d, a, c));
+const grupos = (filas) => agruparDiasIguales(agruparPorDia(filas)).map((g) => `${g.etiqueta} | ${g.texto}`);
+
+check("lunes a viernes iguales y sábado distinto: dos líneas", () => {
+  const filas = [1, 2, 3, 4, 5].flatMap((d) => dia(d, ["08:00", "13:00"], ["16:00", "20:00"]))
+    .concat(dia(6, ["08:00", "13:00"]));
+  assert.deepEqual(grupos(filas), [
+    "Lun a Vie | 08:00 a 13:00 y 16:00 a 20:00",
+    "Sábado | 08:00 a 13:00",
+  ]);
+});
+
+check("la semana arranca en lunes: sábado y domingo iguales van juntos", () => {
+  const filas = [6, 0].flatMap((d) => dia(d, ["09:00", "12:00"]));
+  assert.deepEqual(grupos(filas), ["Sáb y Dom | 09:00 a 12:00"]);
+});
+
+check("días iguales pero con un hueco en el medio no se juntan", () => {
+  const filas = [1, 3, 5].flatMap((d) => dia(d, ["09:00", "13:00"]));
+  assert.deepEqual(grupos(filas), [
+    "Lunes | 09:00 a 13:00",
+    "Miércoles | 09:00 a 13:00",
+    "Viernes | 09:00 a 13:00",
+  ]);
+});
+
+check("un día con una franja distinta corta el grupo", () => {
+  const filas = [
+    ...dia(1, ["09:00", "13:00"]),
+    ...dia(2, ["09:00", "13:00"]),
+    ...dia(3, ["09:00", "12:00"]),
+    ...dia(4, ["09:00", "13:00"]),
+  ];
+  assert.deepEqual(grupos(filas), [
+    "Lun y Mar | 09:00 a 13:00",
+    "Miércoles | 09:00 a 12:00",
+    "Jueves | 09:00 a 13:00",
+  ]);
+});
+
+check("los días sin horario no aparecen y sin horarios no hay grupos", () => {
+  assert.deepEqual(grupos([]), []);
+  assert.deepEqual(grupos(dia(2, ["10:00", "14:00"])), ["Martes | 10:00 a 14:00"]);
+});
+
+check("todos los días iguales: Lun a Dom", () => {
+  const filas = [0, 1, 2, 3, 4, 5, 6].flatMap((d) => dia(d, ["09:00", "18:00"]));
+  assert.deepEqual(grupos(filas), ["Lun a Dom | 09:00 a 18:00"]);
+});
+
+check("etiquetaDias", () => {
+  assert.equal(etiquetaDias([6]), "Sábado");
+  assert.equal(etiquetaDias([1, 2]), "Lun y Mar");
+  assert.equal(etiquetaDias([1, 2, 3, 4, 5]), "Lun a Vie");
+  assert.equal(etiquetaDias([]), "");
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");
