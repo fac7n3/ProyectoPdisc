@@ -207,6 +207,24 @@
 /* Los accesos que son <button> (Resumen, Notificaciones, Soporte) con display:flex
    se achicaban al ancho de su texto: solo se podía clicar sobre las letras. */
 button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
+/* Botón con borde (el de "Volver al inicio"). La página de vendedor lo define en
+   su propio <style>; acá faltaba y salía como texto suelto. */
+.btn-outline {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--bl-oficios-accent);
+  color: var(--bl-oficios-accent);
+  border-radius: var(--bl-radius-md);
+  font-weight: 600;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.2s;
+}
+.btn-outline:hover { background: var(--bl-oficios-accent); color: #fff; }
+/* "Volver al inicio" va en rojo (color inline): el hover tiñe de rojo claro en vez de
+   poner el fondo ámbar, que dejaba el texto rojo sobre ámbar. */
+#of-logout:hover { background: rgba(239, 68, 68, 0.08); }
 .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
 .mc-content { flex: 1 1 auto; min-width: 0; }
 .mc-section[hidden] { display: none; }
