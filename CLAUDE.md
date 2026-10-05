@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — Horarios del profesional más cortos en la tarjeta**, a pedido
+  del usuario ("se ve demasiado texto"). (1) La tarjeta de "Contratar" **junta los
+  días seguidos con el mismo horario** en una línea ("Lun a Vie 08:00 a 13:00 y
+  16:00 a 20:00" / "Sábado 08:00 a 13:00"): `agruparDiasIguales` en
+  `js/professional-hours-utils.js` (con tests). Solo junta días **consecutivos**
+  (lunes-miércoles-viernes iguales siguen separados) y la semana se ordena de
+  lunes a domingo (`ORDEN_SEMANA`). (2) El panel (Horarios y zona) tiene un bloque
+  **"Cargar varios días de una vez"**: se eligen los días (chips + atajos "Lunes a
+  viernes / Lunes a sábado / Todos los días"), se pone el horario (una o dos
+  franjas) y "Aplicar" lo copia a cada día; después se ajusta un día puntual en la
+  lista de abajo. **Sin migración:** la base sigue guardando una fila por día y
+  franja (`professional_business_hours`), solo cambió cómo se carga y se muestra.
+  Verificado en el navegador con Supabase simulado (no contra producción).
 - **Resuelto 2026-10-05 — Fotos para los 11 productos que salían "sin imagen"**
   (Indumentaria La Moda, PetShop Huellitas y el asado de Carnicería El Novillo).
   Fotos en `public/img/prod-ropa-*`, `prod-mascotas-*` y `prod-carniceria-*`; la

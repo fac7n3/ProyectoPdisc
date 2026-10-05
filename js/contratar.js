@@ -12,9 +12,8 @@ import { formatTarifa } from './professional-service-utils.js';
 import { fileToDataUrl } from './storage-utils.js';
 import { localIsoDate } from './cart-utils.js';
 import {
-  DIAS,
   agruparPorDia,
-  formatearFranjas,
+  agruparDiasIguales,
   estaAbiertoAhora,
   resumenDisponibilidad,
 } from './professional-hours-utils.js';
@@ -229,12 +228,11 @@ function buildCard(pro) {
     bloque.appendChild(el('h4', 'ct-card__block-title', 'Horarios'));
     const porDia = agruparPorDia(pro._horarios);
     const lista = el('ul', 'ct-hours');
-    DIAS.forEach((dia) => {
-      const texto = formatearFranjas(porDia[dia.valor]);
-      if (!texto) return;
+    // Los días seguidos con el mismo horario van en una sola línea.
+    agruparDiasIguales(porDia).forEach((grupo) => {
       const item = el('li', 'ct-hours__row');
-      item.appendChild(el('span', 'ct-hours__day', dia.nombre));
-      item.appendChild(el('span', 'ct-hours__range', texto));
+      item.appendChild(el('span', 'ct-hours__day', grupo.etiqueta));
+      item.appendChild(el('span', 'ct-hours__range', grupo.texto));
       lista.appendChild(item);
     });
     bloque.appendChild(lista);

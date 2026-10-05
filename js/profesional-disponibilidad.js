@@ -12,7 +12,7 @@
  */
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
-import { DIAS, agruparPorDia, formatearHora } from './professional-hours-utils.js';
+import { DIAS, ORDEN_SEMANA, agruparPorDia, formatearHora } from './professional-hours-utils.js';
 import { PROFESSIONAL_ZONES } from './professional-zones.js';
 
 const MAX_FRANJAS_POR_DIA = 2;
@@ -21,6 +21,13 @@ let ctx = null;
 /** Estado en pantalla: por día, sus franjas {desde, hasta} en 'HH:MM'. */
 let porDia = DIAS.map(() => []);
 let zonasElegidas = new Set();
+/** Lo que se está armando en "Cargar varios días de una vez". */
+const rapido = {
+  dias: new Set([1, 2, 3, 4, 5]),
+  f1: { desde: '09:00', hasta: '13:00' },
+  f2: { desde: '16:00', hasta: '20:00' },
+  conSegunda: true,
+};
 
 export function initDisponibilidad(contexto) {
   ctx = contexto;
@@ -54,6 +61,7 @@ async function cargar() {
   const check24h = document.getElementById('of-24h');
   if (check24h) check24h.checked = !!ctx.prof.serves_24h;
 
+  renderRapido();
   renderHorarios();
   renderZonas();
 }
@@ -63,7 +71,7 @@ function renderHorarios() {
   if (!cont) return;
   const { el, icono } = ctx;
 
-  cont.replaceChildren(...DIAS.map((dia) => {
+  cont.replaceChildren(...ORDEN_SEMANA.map((valor) => DIAS.find((d) => d.valor === valor)).map((dia) => {
     const fila = el('div', 'of-day');
     fila.appendChild(el('div', 'of-day__name', dia.nombre));
 
@@ -120,6 +128,133 @@ function renderHorarios() {
     fila.appendChild(slots);
     return fila;
   }));
+}
+
+/* ---------------- Cargar varios días de una vez ---------------- */
+
+const ATAJOS_DIAS = [
+  { texto: 'Lunes a viernes', dias: [1, 2, 3, 4, 5] },
+  { texto: 'Lunes a sábado', dias: [1, 2, 3, 4, 5, 6] },
+  { texto: 'Todos los días', dias: [1, 2, 3, 4, 5, 6, 0] },
+];
+
+/** Un <input type="time"> atado a una propiedad de un objeto. */
+function inputHora(objeto, clave, etiqueta) {
+  const input = document.createElement('input');
+  input.type = 'time';
+  input.value = objeto[clave];
+  input.setAttribute('aria-label', etiqueta);
+  input.addEventListener('change', () => { objeto[clave] = input.value; });
+  return input;
+}
+
+function renderRapido() {
+  const cont = document.getElementById('of-hours-quick');
+  if (!cont) return;
+  const { el, icono } = ctx;
+
+  const titulo = el('div', 'of-quick__title', 'Cargar varios días de una vez');
+  const ayuda = el('p', 'of-quick__hint',
+    'Elegí los días, poné el horario y tocá "Aplicar". Después podés ajustar un día puntual más abajo (por ejemplo, el sábado solo de mañana).');
+
+  // Días + atajos
+  const chips = el('div', 'of-chips');
+  for (const valor of ORDEN_SEMANA) {
+    const dia = DIAS.find((d) => d.valor === valor);
+    const activo = rapido.dias.has(valor);
+    const chip = el('button', `of-chip${activo ? ' is-active' : ''}`, dia.corto);
+    chip.type = 'button';
+    chip.setAttribute('aria-pressed', String(activo));
+    chip.setAttribute('aria-label', dia.nombre);
+    chip.addEventListener('click', () => {
+      if (rapido.dias.has(valor)) rapido.dias.delete(valor);
+      else rapido.dias.add(valor);
+      renderRapido();
+    });
+    chips.appendChild(chip);
+  }
+
+  const atajos = el('div', 'of-quick__shortcuts');
+  for (const atajo of ATAJOS_DIAS) {
+    const b = el('button', 'of-link', atajo.texto);
+    b.type = 'button';
+    b.addEventListener('click', () => {
+      rapido.dias = new Set(atajo.dias);
+      renderRapido();
+    });
+    atajos.appendChild(b);
+  }
+
+  // Franjas
+  const franjas = el('div', 'of-quick__slots');
+  const slot1 = el('div', 'of-slot');
+  slot1.append(
+    inputHora(rapido.f1, 'desde', 'Primera franja: hora de apertura'),
+    el('span', null, 'a'),
+    inputHora(rapido.f1, 'hasta', 'Primera franja: hora de cierre'),
+  );
+  franjas.appendChild(slot1);
+
+  if (rapido.conSegunda) {
+    const slot2 = el('div', 'of-slot');
+    const quitar = el('button', 'of-btn of-btn--ghost of-btn--sm');
+    quitar.type = 'button';
+    quitar.title = 'Quitar la segunda franja';
+    quitar.setAttribute('aria-label', 'Quitar la segunda franja');
+    quitar.appendChild(icono('fa-solid fa-xmark'));
+    quitar.addEventListener('click', () => { rapido.conSegunda = false; renderRapido(); });
+    slot2.append(
+      inputHora(rapido.f2, 'desde', 'Segunda franja: hora de apertura'),
+      el('span', null, 'a'),
+      inputHora(rapido.f2, 'hasta', 'Segunda franja: hora de cierre'),
+      quitar,
+    );
+    franjas.appendChild(slot2);
+  } else {
+    const otra = el('button', 'of-btn of-btn--ghost of-btn--sm');
+    otra.type = 'button';
+    otra.appendChild(icono('fa-solid fa-plus'));
+    otra.append(' Agregar otra franja');
+    otra.addEventListener('click', () => { rapido.conSegunda = true; renderRapido(); });
+    franjas.appendChild(otra);
+  }
+
+  const aplicar = el('button', 'of-btn', 'Aplicar a los días elegidos');
+  aplicar.type = 'button';
+  aplicar.addEventListener('click', aplicarRapido);
+
+  cont.replaceChildren(titulo, ayuda, chips, atajos, franjas, aplicar);
+}
+
+/** Copia el horario armado arriba a cada día elegido (pisa lo que tuvieran). */
+function aplicarRapido() {
+  if (!rapido.dias.size) {
+    showToast('Elegí al menos un día.');
+    return;
+  }
+  const franjas = [{ ...rapido.f1 }];
+  if (rapido.conSegunda) franjas.push({ ...rapido.f2 });
+
+  for (const f of franjas) {
+    if (!f.desde || !f.hasta) {
+      showToast('Completá las dos horas de cada franja.');
+      return;
+    }
+    if (f.hasta <= f.desde) {
+      showToast('El horario de cierre tiene que ser posterior al de apertura.');
+      return;
+    }
+  }
+  if (franjas.length === 2 && franjas[1].desde < franjas[0].hasta) {
+    showToast('Las dos franjas se pisan.');
+    return;
+  }
+
+  for (const dia of rapido.dias) {
+    porDia[dia] = franjas.map((f) => ({ ...f }));
+  }
+  renderHorarios();
+  showToast('Listo. Revisá los días y tocá "Guardar cambios".', 'success');
 }
 
 function renderZonas() {

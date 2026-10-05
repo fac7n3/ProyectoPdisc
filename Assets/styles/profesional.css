@@ -398,6 +398,13 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .of-slot input[type="time"] { padding: 0.4rem 0.55rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-sm); font: inherit; }
 .of-slot input[type="time"]:focus { outline: none; border-color: var(--bl-oficios-accent); box-shadow: 0 0 0 2px rgba(var(--bl-oficios-accent-rgb), 0.12); }
 .of-day__closed { color: var(--bl-text-muted); font-size: 0.88rem; padding-top: 0.4rem; }
+.of-quick { background: var(--bl-surface-hover); border: 1px solid var(--bl-border-light); border-radius: var(--bl-radius-md); padding: 1rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+.of-quick__title { font-weight: 700; color: var(--bl-text); }
+.of-quick__hint { margin: -0.4rem 0 0; font-size: 0.85rem; color: var(--bl-text-secondary); }
+.of-quick__shortcuts { display: flex; flex-wrap: wrap; gap: 0.9rem; }
+.of-quick__slots { display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
+.of-link { background: none; border: none; padding: 0; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--bl-oficios-accent); cursor: pointer; }
+.of-link:hover { text-decoration: underline; }
 
 /* Zonas de cobertura: chips que se prenden y apagan. */
 .of-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
