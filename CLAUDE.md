@@ -80,6 +80,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — La campanita del navbar también se filtra por perfil dentro de los
+  paneles**, reportado por el usuario con captura (el desplegable de la campanita del panel de
+  profesional mostraba pedidos de compra). La entrada anterior solo había filtrado la sección
+  "Notificaciones" del panel. Ahora `currentPanelScope()` (`js/notifications-utils.js`) deduce
+  el perfil de la página (`profesional.html` -> 'profesional', `vender.html` -> 'comercio') y
+  lo usan **por defecto** `fetchNotifications` (lista del desplegable), `fetchUnreadCount`
+  (número rojo; con scope se cuenta en el cliente) y los avisos emergentes
+  (`announce` en `js/toast-utils.js`). Pasar `{ scope: null }` desactiva el filtro. **Gotcha:**
+  el puntero de "último aviso visto" es de toda la cuenta, así que `catchUp` pide la lista
+  **sin filtro** y recién al anunciar filtra; si no, un panel adelantaba el puntero con una
+  fecha vieja y las otras páginas repetían avisos. Fuera de los paneles (inicio, Mi perfil,
+  etc.) se sigue viendo todo, a propósito: ahí el comerciante necesita enterarse de un
+  pedido nuevo. Verificado con Supabase y Realtime simulados.
 - **Resuelto 2026-10-05 — Campanita sin el círculo rojo en los paneles + doble ojo en la
   contraseña**, reportado por el usuario. (1) El badge de la campanita (`.cart-badge`,
   `#notif-badge`) estaba definido solo en `carrito.css`, que **no cargan**

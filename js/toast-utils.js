@@ -26,7 +26,7 @@
  * como punto de partida, para no inundar de golpe con avisos viejos.
  */
 import {
-  fetchNotifications, buildNotificationTitle, buildNotificationLink, buildNotificationPreview, markNotificationRead,
+  fetchNotifications, notificationInScope, currentPanelScope, buildNotificationTitle, buildNotificationLink, buildNotificationPreview, markNotificationRead,
 } from './notifications-utils.js';
 import { getPref } from './settings-utils.js';
 // El mismo logo del navbar (Vite le pone el mismo nombre con hash, así que el
@@ -293,9 +293,16 @@ function setLastSeen(createdAt) {
  * esta pestaña se saltean.
  */
 function announce(list) {
-  const fresh = list.filter((n) => n?.id && !shownIds.has(n.id));
+  const nuevas = list.filter((n) => n?.id && !shownIds.has(n.id));
+  if (!nuevas.length) return;
+  nuevas.forEach((n) => shownIds.add(n.id));
+
+  // Dentro de un panel (profesional / vendedor) solo se avisa lo de ese perfil:
+  // lo de los otros perfiles de la cuenta queda para su propio panel. El puntero
+  // de "último visto" es de toda la cuenta y avanza igual (ver catchUp).
+  const scope = currentPanelScope();
+  const fresh = nuevas.filter((n) => notificationInScope(n, scope));
   if (!fresh.length) return;
-  fresh.forEach((n) => shownIds.add(n.id));
 
   if (getPref('notifToasts')) {
     fresh.forEach((n) => {
@@ -333,7 +340,8 @@ async function catchUp(userId) {
   // al volver a encenderlos, no llegan de golpe todas las de mientras.
   let notifications;
   try {
-    notifications = await fetchNotifications(userId);
+    // Sin filtro: el puntero de "último visto" es de toda la cuenta.
+    notifications = await fetchNotifications(userId, { scope: null });
   } catch (err) {
     console.error('Error al buscar notificaciones nuevas para el toast:', err);
     return;
