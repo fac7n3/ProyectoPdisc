@@ -412,6 +412,16 @@ input[type="checkbox"] {
   padding-right: 3rem;
 }
 
+/* Edge (y otros navegadores de Windows) agregan su propio ojo para mostrar la
+   contraseña, que se sumaba al nuestro (.password-toggle-btn): dejamos solo el
+   del sitio. */
+.password-wrapper input::-ms-reveal,
+.password-wrapper input::-ms-clear,
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 .password-toggle-btn {
   position: absolute;
   right: 1rem;

@@ -80,6 +80,17 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Resuelto 2026-10-05 — Campanita sin el círculo rojo en los paneles + doble ojo en la
+  contraseña**, reportado por el usuario. (1) El badge de la campanita (`.cart-badge`,
+  `#notif-badge`) estaba definido solo en `carrito.css`, que **no cargan**
+  `vender.html`, `profesional.html` ni `repartidor.html`: ahí el número no se veía.
+  Se movió a `home.css` (que sí cargan todas las páginas con navbar). **Gotcha:**
+  estilos compartidos del navbar van en `home.css`, no en el CSS de una página.
+  (2) Edge pone su propio ojo ("mostrar contraseña") encima del nuestro en los campos de
+  contraseña de iniciar sesión, registrarse y nueva contraseña: se oculta con
+  `::-ms-reveal` / `::-ms-clear` en `auth.css`. **Sin probar en Edge real** (el sandbox
+  solo tiene Chromium; el selector `-ms-reveal` no existe ahí): la regla está en el CSS
+  construido.
 - **Resuelto 2026-10-05 — "Cambiar de cuenta": la cuenta nueva podía no quedar guardada
   al agregarla con Google.** Pedido del usuario: que al agregar una cuenta queden las dos
   (o más) en la lista, también desde el perfil de la nueva. Con contraseña ya quedaban
