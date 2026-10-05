@@ -314,6 +314,9 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .pf-field { display: flex; flex-direction: column; }
 .pf-field--full { grid-column: 1 / -1; }
 .pf-field .form-label { margin-bottom: 0.4rem; }
+.pf-money { position: relative; }
+.pf-money__sign { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-secondary); font-weight: 600; pointer-events: none; }
+.pf-money .form-input { padding-left: 1.9rem; }
 .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
 .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-oficios-accent); cursor: pointer; }
 .pf-radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; padding: 0.25rem 0; }
