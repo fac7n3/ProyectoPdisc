@@ -74,13 +74,21 @@ export function completePendingLink(session) {
   let pendiente;
   try {
     pendiente = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
-    localStorage.removeItem(PENDING_KEY);
   } catch {
+    localStorage.removeItem(PENDING_KEY);
     return false;
   }
-  if (!pendiente?.from || Date.now() - Number(pendiente.at) > PENDING_MAX_AGE_MS) return false;
-  if (!session?.user?.id || session.user.id === pendiente.from) return false;
+  if (!pendiente?.from || Date.now() - Number(pendiente.at) > PENDING_MAX_AGE_MS) {
+    try { localStorage.removeItem(PENDING_KEY); } catch { /* sin storage */ }
+    return false;
+  }
+  if (!session?.user?.id) return false;
+  // Misma cuenta que la de partida: puede ser que la página haya leído la sesión
+  // vieja antes de que se procesara la vuelta de Google. La marca NO se gasta:
+  // queda para cuando se abra la sesión nueva (vence sola a los 15 minutos).
+  if (session.user.id === pendiente.from) return false;
   rememberAccount(session);
+  try { localStorage.removeItem(PENDING_KEY); } catch { /* sin storage */ }
   return true;
 }
 
