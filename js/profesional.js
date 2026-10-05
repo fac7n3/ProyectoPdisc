@@ -47,6 +47,7 @@ const PROF_SECTION_COPY = {
   galeria: { icon: 'fa-regular fa-images', title: 'Fotos de trabajos', desc: 'Mostrá trabajos que ya hiciste: es lo que más convence a un vecino nuevo.' },
   consultas: { icon: 'fa-regular fa-comments', title: 'Consultas', desc: 'Los mensajes de vecinos interesados en contratarte.' },
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan quienes ya te contrataron.' },
+  recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para conseguir más clientes y hacer crecer tu emprendimiento.' },
   metricas: { icon: 'fa-solid fa-chart-line', title: 'Estadísticas', desc: 'Cuántos vecinos vieron tu publicación y te contactaron.' },
   notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de consultas nuevas y reseñas.' },
   soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Necesitás una mano? Escribinos.' },
@@ -408,7 +409,25 @@ function renderResumenCards(cantServicios, consultasNuevas) {
     }
   }
 
-  cont.replaceChildren(card);
+  cont.replaceChildren(card, recomendacionesCard());
+}
+
+/**
+ * "Recomendaciones para impulsar tu emprendimiento": va al lado de "Todo en orden"
+ * / "Para mejorar tu publicación" y lleva a la sección Recomendaciones.
+ */
+function recomendacionesCard() {
+  const card = el('div', 'rs-card');
+  const titulo = el('div', 'rs-card__title');
+  titulo.appendChild(icono('fa-regular fa-lightbulb'));
+  titulo.appendChild(el('span', null, 'Recomendaciones para impulsar tu emprendimiento'));
+  card.appendChild(titulo);
+  card.appendChild(el('p', 'rs-empty', 'Acá vas a encontrar ideas simples para conseguir más clientes: cómo mostrar mejor tus trabajos, responder a tiempo y ganarte la confianza de los vecinos.'));
+  const link = el('button', 'rs-link rs-link--azul', 'Ir a recomendaciones ›');
+  link.type = 'button';
+  link.addEventListener('click', () => { window.location.hash = 'recomendaciones'; });
+  card.appendChild(link);
+  return card;
 }
 
 /* ================= Mis datos ================= */

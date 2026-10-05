@@ -691,6 +691,7 @@ const VENDOR_SECTION_COPY = {
   publicaciones: { icon: 'fa-solid fa-image', title: 'Publicaciones', desc: 'Acá cargás y editás lo que vendés: fotos, precios y stock de cada producto.' },
   pedidos: { icon: 'fa-solid fa-receipt', title: 'Pedidos', desc: 'Los pedidos que te van llegando: confirmá los pagos, prepará cada uno y avisá cuando esté listo.' },
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
+  recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para vender más y destacarte entre los comercios de Baradero.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
@@ -3156,6 +3157,24 @@ function rsNoveltyCard() {
   return card;
 }
 
+/**
+ * "Recomendaciones para impulsar tus ventas": tarjeta del Resumen que lleva a la
+ * sección Recomendaciones. Va debajo de Novedades (rsResumenRightColumn).
+ */
+function rsRecommendationsCard() {
+  const card = rsEl('div', 'rs-card');
+  const title = rsEl('div', 'rs-card__title');
+  title.innerHTML = '<i class="fa-regular fa-lightbulb"></i> ';
+  title.appendChild(document.createTextNode('Recomendaciones para impulsar tus ventas'));
+  card.appendChild(title);
+  card.appendChild(rsEl('div', 'rs-empty', 'Acá vas a encontrar ideas simples para vender más: cómo mostrar mejor tus productos, atender tus pedidos y destacarte entre los comercios de Baradero.'));
+  const link = rsEl('button', 'rs-link', 'Ir a recomendaciones ›');
+  link.type = 'button';
+  link.addEventListener('click', () => { location.hash = 'recomendaciones'; });
+  card.appendChild(link);
+  return card;
+}
+
 function rsHelpCard() {
   const card = rsEl('div', 'rs-card');
   const title = rsEl('div', 'rs-card__title');
@@ -3481,7 +3500,10 @@ async function renderResumen() {
   // Novedades / ¿Necesitás ayuda?
   grid2.textContent = '';
   grid2.appendChild(rsHelpCard());
-  grid2.appendChild(rsNoveltyCard());
+  const rightCol = rsEl('div', 'rs-col');
+  rightCol.appendChild(rsNoveltyCard());
+  rightCol.appendChild(rsRecommendationsCard());
+  grid2.appendChild(rightCol);
 
   // Métricas de negocio
   metricsContainer.textContent = '';

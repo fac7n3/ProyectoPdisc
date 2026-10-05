@@ -450,6 +450,7 @@
 
       /* Novedades / ¿Necesitás ayuda? */
       .rs-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; align-items: start; margin-bottom: 1rem; }
+      .rs-col { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
       .rs-help-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--bl-border-light); cursor: pointer; }
       .rs-help-row:last-child { border-bottom: none; }
       .rs-help-row:hover .rs-help-row__title { color: var(--bl-vendor-accent); }
@@ -1117,6 +1118,7 @@
                      que ahora es una pestaña de Pedidos. -->
                 <button type="button" class="mc-navitem" data-section="pedidos">Pedidos</button>
                 <button type="button" class="mc-navitem" data-section="resenas">Reseñas</button>
+                <button type="button" class="mc-navitem" data-section="recomendaciones">Recomendaciones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="cupones">Mis cupones</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="promo-inicio">Banner del inicio</button>
                 <button type="button" class="mc-navitem mc-navitem--owner" data-section="empleados">Empleados</button>
@@ -1507,6 +1509,22 @@
                   <button type="button" class="pub-chip" data-filter="product">De mis productos</button>
                 </div>
                 <div class="rv-list" id="resenas-list" aria-live="polite"></div>
+              </div>
+            </section>
+
+            <!-- === Recomendaciones ===
+                 Consejos para vender más. Por ahora solo el cascarón: el contenido
+                 se carga cuando estén escritas las recomendaciones. -->
+            <section class="mc-section" data-section="recomendaciones" hidden>
+              <div class="pd-wrap">
+                <div class="pd-header">
+                  <div class="pd-header__title"><i class="fa-regular fa-lightbulb"></i> Recomendaciones para impulsar tus ventas</div>
+                  <p class="pd-header__sub">Ideas simples para que más vecinos te encuentren y te compren.</p>
+                </div>
+                <div class="rv-empty" id="recomendaciones-list">
+                  <i class="fa-regular fa-lightbulb"></i>
+                  <p>Estamos preparando las recomendaciones. Muy pronto las vas a ver acá.</p>
+                </div>
               </div>
             </section>
 
