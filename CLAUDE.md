@@ -80,15 +80,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Pendiente (2026-10-02) — aplicar la migración 120 después del deploy.** Los 11
-  productos de seed que salían "sin imagen" (Indumentaria La Moda, PetShop Huellitas, el
-  asado) ya tienen foto en `public/img/prod-ropa-*`, `prod-mascotas-*` y
-  `prod-carniceria-*` (rama `claude/productos-sin-fotos-rb1ixg`). La remera ya se
-  actualizó en la base (usa `prod-ropa.webp`, que ya estaba publicada); las otras 10 se
-  actualizan con `db/schema/120_fotos_productos_sin_imagen.sql` **recién cuando el
-  deploy de `main` sirva esos archivos** (antes quedarían rotas). Jean, medias, collar y
-  asado vienen de repos públicos sin licencia declarada: reemplazarlas por fotos propias
-  antes del lanzamiento. Detalle y origen de cada foto en el skill.
+- **Resuelto 2026-10-05 — Fotos para los 11 productos que salían "sin imagen"**
+  (Indumentaria La Moda, PetShop Huellitas y el asado de Carnicería El Novillo).
+  Fotos en `public/img/prod-ropa-*`, `prod-mascotas-*` y `prod-carniceria-*`; la
+  remera usa `prod-ropa.webp`. Migración 120 aplicada **después** de verificar que
+  el deploy de `main` ya servía los archivos (200 `image/webp`). Queda sin foto solo
+  el "Producto Test Split P06" (tienda de prueba). **Pendiente:** jean, medias (con
+  logo de una marca), collar y asado vienen de repos públicos sin licencia declarada:
+  reemplazarlas por fotos propias antes del lanzamiento. Origen de cada foto en el skill.
 - **Resuelto 2026-10-02 — El tiempo real estaba bloqueado por el CSP del navegador.**
   El tiempo real publicado ese mismo día (entrada "Todo el sitio en tiempo real",
   más abajo) **nunca conectó en producción**: el `<meta>` CSP de cada página

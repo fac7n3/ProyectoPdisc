@@ -5211,7 +5211,7 @@ productos viejos inactivos sin comercio (no se ven en ningún lado).
 cual), no en Storage ni en URLs externas: el CSP solo permite `img-src 'self' data:
 *.googleusercontent.com *.supabase.co`, y el sandbox no puede subir binarios a Storage.
 
-**Orden de publicación:** la remera usa `prod-ropa.webp` (ya publicada, estaba sin usar) y se
+**Orden de publicación (cumplido: migración 120 aplicada el 2026-10-05, con el deploy ya sirviendo los archivos):** la remera usa `prod-ropa.webp` (ya publicada, estaba sin usar) y se
 actualizó en la base en el momento. Las otras 10 apuntan a archivos nuevos, así que el UPDATE
 (`db/schema/120_fotos_productos_sin_imagen.sql`) se aplica **recién cuando el deploy de `main` ya
 sirve esos archivos**; antes pasarían de "sin imagen" a imagen rota. Cada UPDATE solo pisa la fila si
