@@ -80,6 +80,9 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-05 — Banda "Farmacias de turno" compacta en teléfono** (home), a pedido del
+  usuario: ocupaba 3 renglones. Con ancho <= 768px queda en una línea, "Farmacias de turno: Ver
+  más" (el texto largo va en `.farmacia-turno__detalle`, oculto en teléfono). Escritorio igual.
 - **Hecho 2026-10-05 — Apartado "Recomendaciones" en los paneles de vendedor y profesional.**
   Cada Resumen tiene una tarjeta con link azul "Ir a recomendaciones ›" y una descripción
   corta: en el de vendedor va debajo de Novedades ("Recomendaciones para impulsar tus

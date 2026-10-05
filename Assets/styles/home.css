@@ -3806,6 +3806,17 @@ html.bl-reduce-motion .bl-toast.is-leaving {
     height: 200px;
   }
 
+  /* Banda de farmacia compacta en teléfono: una sola línea, "Farmacias de
+     turno: Ver más" (el texto largo ocupaba tres renglones). */
+  .farmacia-turno {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .farmacia-turno__detalle {
+    display: none;
+  }
+
   /* En teléfono el carrusel se desliza con el dedo: las flechas sobran y
      además taparían el texto de la promo. */
   .hero__arrow {
