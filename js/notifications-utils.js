@@ -340,7 +340,23 @@ export function notificationInScope(n, scope) {
 
 const NOTIFICATIONS_LIMIT = 30;
 
-export async function fetchNotifications(userId, { scope } = {}) {
+/**
+ * A qué "perfil" pertenece la página donde estamos: en el panel de profesional
+ * solo se ven los avisos de profesional, y en el de vendedor los del comercio.
+ * Todo lo que muestra una campanita, un contador o un aviso emergente dentro de
+ * un panel usa esto, para que no se mezcle con los otros perfiles de la cuenta.
+ * Fuera de los paneles (inicio, Mi perfil...) es undefined: se ve todo.
+ * @returns {'profesional'|'comercio'|undefined}
+ */
+export function currentPanelScope() {
+  const page = (globalThis.location?.pathname || '').split('/').pop();
+  if (page === 'profesional.html') return 'profesional';
+  if (page === 'vender.html') return 'comercio';
+  return undefined;
+}
+
+/** `scope` omitido = el del panel donde estamos; `null` = sin filtro. */
+export async function fetchNotifications(userId, { scope = currentPanelScope() } = {}) {
   // Con scope se piden más y se filtran acá: si no, los 30 más nuevos podrían
   // ser todos de la otra cara de la cuenta y el panel saldría vacío.
   const { data, error } = await supabase
@@ -380,7 +396,23 @@ export async function deleteNotification(id) {
 }
 
 /** Cantidad de no leídas -- liviano (head:true), para el badge de la campanita. */
-export async function fetchUnreadCount(userId) {
+export async function fetchUnreadCount(userId, { scope = currentPanelScope() } = {}) {
+  if (scope) {
+    // El conteo del servidor no distingue de qué perfil es cada aviso: se traen
+    // las no leídas y se cuentan acá.
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, type, payload')
+      .eq('user_id', userId)
+      .is('read_at', null)
+      .limit(300);
+    if (error) {
+      console.error('Error al contar notificaciones no leídas:', error);
+      return 0;
+    }
+    return (data || []).filter((n) => notificationInScope(n, scope)).length;
+  }
+
   const { count, error } = await supabase
     .from('notifications')
     .select('id', { count: 'exact', head: true })
