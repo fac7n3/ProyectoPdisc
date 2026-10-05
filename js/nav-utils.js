@@ -16,6 +16,7 @@
 import { supabase, showToast } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { renderNotificationsSection, fetchUnreadCount } from './notifications-utils.js';
+import { clearLinkedAccounts } from './linked-accounts.js';
 import { initNotificationToasts } from './toast-utils.js';
 import { onNotificationsChanged } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
@@ -895,6 +896,7 @@ export async function initAccountMenu() {
           close();
           showToast('Cerrando sesión...', 'success');
           setTimeout(async () => {
+            clearLinkedAccounts();
             await supabase.auth.signOut();
             window.location.href = './home.html';
           }, 600);

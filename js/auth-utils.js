@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
 import { initErrorLogging } from "./error-logger.js";
 import { applyDevicePreferences } from "./settings-utils.js";
+import { completePendingLink } from "./linked-accounts.js";
 
 // Preferencias visuales elegidas en Perfil → Ajustes (hoy: "Reducir
 // animaciones"). Va acá porque este módulo lo importa cualquier página del
@@ -341,6 +342,10 @@ function handleNavBack(e) {
 // home.html como siempre. Solo se aplica cuando el caller no pidió
 // explícitamente otro destino (redirectTo).
 async function resolvePostLoginRedirect(user, explicitRedirectTo) {
+  // "Agregar otra cuenta con Google" (Mi perfil): al volver de Google se suma la
+  // cuenta a la lista del dispositivo y se vuelve a Mi perfil, no al inicio.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (completePendingLink(session)) return "../pages/perfil.html?tab=mis-datos&cuenta=agregada";
   if (explicitRedirectTo) return explicitRedirectTo;
   const panel = await sellerPanelPage(user);
   return panel ? `../pages/${panel}` : "../pages/home.html";

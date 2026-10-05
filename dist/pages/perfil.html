@@ -12,27 +12,27 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/perfil-BSWcdtw7.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BjvP2AqQ.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-bef_81D5.js">
+    <script type="module" crossorigin src="/assets/perfil-C1QYlEoG.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DOBLYGwY.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-C5yywKYd.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-Kb1UWUWS.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-CUfLb85o.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CkgV1SVI.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-BLETX5RK.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-wT_1tQBw.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-kfepW8HB.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CRJCULY8.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-ZHqP9h8G.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-B3J1ZFo5.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-C6t3cRf3.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-SYwmVVYG.js">
-    <link rel="modulepreload" crossorigin href="/assets/payment-providers-B-0xqFq5.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BblgVzLQ.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-B-D817xq.js">
+    <link rel="modulepreload" crossorigin href="/assets/payment-providers-GGy8oYNC.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BPNO4uhH.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-B4wIdeV7.js">
     <link rel="modulepreload" crossorigin href="/assets/phone-countries-i07KeGSP.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-Co2N9hyH.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-2frdDfTt.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-BPBfSEIv.css">
-    <link rel="stylesheet" crossorigin href="/assets/perfil-DfKyWQCG.css">
+    <link rel="stylesheet" crossorigin href="/assets/perfil-xj6OalBJ.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-BgCLc5NF.css">
     <link rel="stylesheet" crossorigin href="/assets/home-DAEhoe5G.css">
@@ -244,6 +244,18 @@
                   <span id="role-panel-label">Panel</span>
                 </a>
               </div>
+              <!-- Cambiar entre las cuentas de la misma persona (js/account-switcher.js). -->
+              <div class="datos-row datos-row--static">
+                <div class="datos-row__main">
+                  <span class="datos-row__label">Cuenta</span>
+                  <span class="datos-row__value" id="card-account-email">—</span>
+                </div>
+                <button type="button" class="datos-btn" id="account-switch-toggle" aria-expanded="false" aria-controls="account-switch-panel">
+                  <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+                  <span>Cambiar de cuenta</span>
+                </button>
+              </div>
+              <div class="acct-panel" id="account-switch-panel" hidden></div>
               <div class="datos-row datos-row--static">
                 <div class="datos-row__main">
                   <span class="datos-row__label">Comprás en Baradero Local desde</span>
