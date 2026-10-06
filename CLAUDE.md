@@ -82,7 +82,12 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
 - **Hecho 2026-10-06 — Categoría nueva "Zapatería" + talles de calzado a un toque**, a pedido del
   usuario. Misma mecánica que Supermercado: migración **122** (aplicada a producción, idempotente) +
-  ícono `fa-shoe-prints` en `CATEGORY_ICONS`. **Talles:** el comerciante ya podía cargar "Talle"
+  ícono en `CATEGORY_ICONS`. **Ícono = una zapatilla, no huellas** (pedido del usuario: Font
+  Awesome gratis solo trae `fa-shoe-prints`, que son pies): clase propia `bl-icon-zapatilla`
+  (`Assets/styles/home.css`, dibuja `public/img/icono-zapatilla.svg` como máscara con
+  `currentColor`, se usa como un ícono FA: `<i class="fa-solid bl-icon-zapatilla">`); la fila de
+  `categories` quedó con `icon='fa-solid bl-icon-zapatilla'` (migración **123**, aplicada).
+  Si hace falta otro ícono propio, repetir el patrón. **Talles:** el comerciante ya podía cargar "Talle"
   como opción del producto; ahora, si elige el rubro Zapatería en el formulario de publicación,
   (1) el formulario pasa solo a "Variantes" (nunca al revés, no borra nada), (2) la lista de
   opciones arranca llamada "Talle" en vez de "Color", y (3) aparece una tira "Tocá los talles que
