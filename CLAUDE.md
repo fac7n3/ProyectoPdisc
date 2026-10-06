@@ -80,6 +80,15 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-06 — Categoría nueva "Supermercado"**, a pedido del usuario. Las categorías son
+  filas de `categories` (las leen el mega-menú, el buscador, los filtros y los formularios de
+  vender), así que alcanzó con una fila: migración **121** (aplicada a producción, idempotente) +
+  ícono `fa-cart-shopping` en `CATEGORY_ICONS` (`js/nav-utils.js`). El link "Supermercado" del
+  footer de `home.html`, `comercios.html` y `search.html` llevaba a `?cat=almacen`; ahora va a
+  `?cat=supermercado`. **"Almacén" ya existía** (con su ícono) y no se tocó: el usuario pidió "dos
+  categorías" pero solo Supermercado era nueva; queda pendiente saber si quería otra más.
+  Verificado en el navegador con las categorías simuladas sobre un build aparte. Los comercios
+  existentes no tienen productos en Supermercado hasta que los carguen o recategoricen.
 - **Hecho 2026-10-05 — Banda "Farmacias de turno" compacta en teléfono** (home), a pedido del
   usuario: ocupaba 3 renglones. Con ancho <= 768px queda en una línea, "Farmacias de turno: Ver
   más" (el texto largo va en `.farmacia-turno__detalle`, oculto en teléfono). Escritorio igual.
