@@ -5639,3 +5639,17 @@ html.bl-reduce-motion .bl-toast.is-leaving {
     grid-template-columns: 1fr;
   }
 }
+
+/* Ícono propio de Zapatería: Font Awesome gratis solo trae huellas de pies
+   (fa-shoe-prints), y se pidió una zapatilla. Se dibuja con el SVG como máscara,
+   así toma el color del texto (currentColor) igual que un ícono de Font Awesome y
+   se usa del mismo modo: <i class="fa-solid bl-icon-zapatilla">. */
+.bl-icon-zapatilla {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  -webkit-mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
+  mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
+}

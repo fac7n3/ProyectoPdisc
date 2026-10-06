@@ -38,7 +38,7 @@ const CATEGORY_ICONS = {
   supermercado: 'fa-cart-shopping',
   tecnologia: 'fa-laptop',
   verduleria: 'fa-carrot',
-  zapateria: 'fa-shoe-prints',
+  zapateria: 'bl-icon-zapatilla', // ícono propio (home.css): zapatilla, no huellas
 };
 const CATEGORY_ICON_DEFAULT = 'fa-tag';
 
