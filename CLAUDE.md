@@ -80,6 +80,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-06 — Categoría nueva "Zapatería" + talles de calzado a un toque**, a pedido del
+  usuario. Misma mecánica que Supermercado: migración **122** (aplicada a producción, idempotente) +
+  ícono `fa-shoe-prints` en `CATEGORY_ICONS`. **Talles:** el comerciante ya podía cargar "Talle"
+  como opción del producto; ahora, si elige el rubro Zapatería en el formulario de publicación,
+  (1) el formulario pasa solo a "Variantes" (nunca al revés, no borra nada), (2) la lista de
+  opciones arranca llamada "Talle" en vez de "Color", y (3) aparece una tira "Tocá los talles que
+  tenés" con los números 33 a 46 (cada toque agrega ese talle; los ya cargados quedan apagados) y el
+  link "Cargar del 35 al 44" (inserta de una vez los que faltan). El talle agotado se marca con el
+  ojo, igual que cualquier opción, y el cliente los elige en el modal antes de comprar. Todo es de
+  interfaz (`js/vender.js`: `isShoeProduct`, `SHOE_SIZES`, `popt-sizes` en `vender.html`): **no hay
+  tabla ni columna nueva**, los talles son filas de `product_options`/`product_option_values`. La
+  tira aparece solo si el rubro es Zapatería y la lista se llama Talle/Número/Calzado. En un alta
+  nueva las opciones se cargan después del primer "Guardar producto" (como siempre). Verificado
+  en el navegador con Supabase simulado (14 checks); sin probar contra producción.
 - **Hecho 2026-10-06 — Categoría nueva "Supermercado"**, a pedido del usuario. Las categorías son
   filas de `categories` (las leen el mega-menú, el buscador, los filtros y los formularios de
   vender), así que alcanzó con una fila: migración **121** (aplicada a producción, idempotente) +

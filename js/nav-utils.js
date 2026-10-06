@@ -38,6 +38,7 @@ const CATEGORY_ICONS = {
   supermercado: 'fa-cart-shopping',
   tecnologia: 'fa-laptop',
   verduleria: 'fa-carrot',
+  zapateria: 'fa-shoe-prints',
 };
 const CATEGORY_ICON_DEFAULT = 'fa-tag';
 
