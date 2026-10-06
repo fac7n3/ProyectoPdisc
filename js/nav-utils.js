@@ -35,6 +35,7 @@ const CATEGORY_ICONS = {
   panaderia: 'fa-bread-slice',
   papeleria: 'fa-bag-shopping',
   ropa: 'fa-shirt',
+  supermercado: 'fa-cart-shopping',
   tecnologia: 'fa-laptop',
   verduleria: 'fa-carrot',
 };
