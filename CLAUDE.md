@@ -100,7 +100,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   ícono `fa-cart-shopping` en `CATEGORY_ICONS` (`js/nav-utils.js`). El link "Supermercado" del
   footer de `home.html`, `comercios.html` y `search.html` llevaba a `?cat=almacen`; ahora va a
   `?cat=supermercado`. **"Almacén" ya existía** (con su ícono) y no se tocó: el usuario pidió "dos
-  categorías" pero solo Supermercado era nueva; queda pendiente saber si quería otra más.
+  categorías" pero solo Supermercado era nueva; la otra era Zapatería (ver entrada de arriba).
   Verificado en el navegador con las categorías simuladas sobre un build aparte. Los comercios
   existentes no tienen productos en Supermercado hasta que los carguen o recategoricen.
 - **Hecho 2026-10-05 — Banda "Farmacias de turno" compacta en teléfono** (home), a pedido del
