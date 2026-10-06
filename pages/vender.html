@@ -365,7 +365,19 @@
          texto: solo se podía clicar sobre las letras. */
       button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
       .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
-      .mc-content { flex: 1 1 auto; min-width: 0; }
+      /* Formularios en línea de Cupones y Empleados (antes con el grid en el style=""):
+         en celular pasan a una columna, con 4 columnas fijas no entraban y
+         ensanchaban la página. */
+      .pub-form-row { background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; gap: 1rem; align-items: end; }
+      .pub-form-row--coupon { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+      .pub-form-row--staff { grid-template-columns: minmax(0, 1fr) auto; }
+      @media (max-width: 700px) {
+        .pub-form-row { padding: 1rem; }
+        .pub-form-row--coupon, .pub-form-row--staff { grid-template-columns: minmax(0, 1fr); }
+        .pub-form-row .form-btn { width: 100% !important; }
+      }
+      /* overflow-wrap: un mail o un link largo sin espacios no debe ensanchar la sección. */
+      .mc-content { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
       .mc-section[hidden] { display: none; }
       .mc-hamburger {
         display: none;
@@ -379,7 +391,9 @@
       .mc-backdrop[hidden] { display: none; }
 
       @media (max-width: 900px) {
-        .mc-shell { flex-direction: column; padding: 0 0.75rem; }
+        /* stretch: en columna, flex-start dejaba al contenido del ancho de su contenido
+           más ancho (un texto largo ensanchaba toda la página en el celular). */
+        .mc-shell { flex-direction: column; align-items: stretch; padding: 0 0.75rem; }
         .mc-sidebar {
           position: fixed;
           top: 0; left: 0; bottom: 0;
@@ -1371,7 +1385,7 @@
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
             <div class="pub-wrap" id="my-coupons-section">
               <div class="pub-header"><h2 class="pub-title">Mis cupones</h2></div>
-              <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+              <form id="my-coupon-form" class="pub-form-row pub-form-row--coupon">
                 <div>
                   <label class="form-label" for="my-coupon-code">Código</label>
                   <input type="text" id="my-coupon-code" class="form-input" placeholder="Ej: MITIENDA10" required />
@@ -1411,7 +1425,7 @@
               <p style="color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
                 Dale acceso a este panel a otra cuenta ya registrada en Baradero Local (nunca puede editar el perfil del comercio, los cupones ni la lista de empleados). Elegí qué secciones ve con los checks debajo de su nombre -- podés cambiarlas cuando quieras.
               </p>
-              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
+              <form id="store-staff-form" class="pub-form-row pub-form-row--staff">
                 <div>
                   <label class="form-label" for="store-staff-email">Email de la cuenta a agregar</label>
                   <input type="email" id="store-staff-email" class="form-input" placeholder="empleado@email.com" required />

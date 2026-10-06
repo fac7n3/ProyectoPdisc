@@ -80,6 +80,28 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-06 — La página ya no se mueve de costado en celular.** Pedido del usuario:
+  "quitá el scroll lateral de toda la página", **dejando** que los carruseles y filas internas
+  (hero, comercios cerca, categorías de Contratar, relacionados, pestañas, tablas del admin)
+  sigan deslizándose por dentro. Se midió a 320/375/414 px con Chromium (con y sin emulación
+  móvil, Supabase simulado con textos largos) en las 22 páginas y en **todas las secciones**
+  de vendedor, profesional, admin y las pestañas de Mi perfil. Desbordes reales encontrados y
+  arreglados de raíz: (1) el cartelito `data-tooltip` (home.css) de los botones de ícono, aunque
+  invisible, se salía del borde derecho y ensanchaba la página (pasaba en `comercio.html` con el
+  corazón de favoritos): en celular (`hover: none` / ≤768px) ya no se dibuja; (2) en celular
+  `.mc-shell` (vendedor y profesional) era columna con `align-items: flex-start`, así que un texto
+  largo sin espacios ensanchaba toda la sección: ahora `stretch` + `.mc-content` con
+  `max-width: 100%` y `overflow-wrap: anywhere`; (3) los formularios de **Cupones** y **Empleados**
+  del vendedor tenían el grid de 4 columnas en un `style=""`: pasaron a `.pub-form-row` y en
+  celular son una columna; (4) badge "Empleado de <comercio>" de Mi perfil con nombre largo:
+  `max-width: 100%` + `…`; Mi perfil con `overflow-wrap`; grilla de categorías (`.catpick`) con
+  `min-width: 0`; los horarios del panel de profesional pueden pasar a otra línea en 320 px.
+  **Red de seguridad** en `home.css` y `auth.css`: en ≤768px `body { overflow-wrap: break-word }`
+  y `html, body { overflow-x: clip }` (a diferencia de `hidden` no rompe `position: sticky`).
+  **Gotcha:** para medir esto el emulador móvil **agranda** `window.innerWidth` cuando la
+  página se ensancha (433/564/975 en vez de 375): comparar contra el ancho configurado, no
+  contra `innerWidth`. **Sin probar con datos reales ni en un celular físico**; `dist/` sin
+  reconstruir (sin la anon key en el entorno; Vercel construye por su cuenta).
 - **Hecho 2026-10-05 — Apartado "Recomendaciones" en los paneles de vendedor y profesional.**
   Cada Resumen tiene una tarjeta con link azul "Ir a recomendaciones ›" y una descripción
   corta: en el de vendedor va debajo de Novedades ("Recomendaciones para impulsar tus

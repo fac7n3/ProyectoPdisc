@@ -5250,3 +5250,20 @@ más adelante.
   Entradas agregadas también a `VENDOR_SECTION_COPY` / `PROF_SECTION_COPY` (bienvenida al panel).
 - Verificado con una maqueta estática con el CSS real de cada panel; no con el panel logueado
   (sin red a Supabase). `dist/` no se reconstruyó: el build local necesita la anon key.
+
+## 2026-10-06 — Sin scroll lateral de la página en celular
+
+Pedido: sacar el movimiento lateral de la página entera en mobile, manteniendo el deslizar
+interno de carruseles/filas. Método (sirve para repetirlo): build con `VITE_SUPABASE_URL` real y
+anon key falsa a un `--outDir` del scratchpad (nunca a `dist/`), un servidor estático chico y
+Playwright con Chromium sobre las 22 páginas, cada sección de los paneles (`#seccion`) y
+`perfil.html?tab=...`; Supabase simulado por `page.route` (respuesta genérica con textos largos
+y sin espacios, que es lo que ensancha las cajas). Se mide `scrollWidth` contra el ancho
+configurado (**no** `innerWidth`: con `isMobile` el navegador lo agranda) y se aísla el culpable
+ocultando elementos de a uno (bisección). Causas y arreglos: ver "Pendientes activos" en
+`CLAUDE.md` (cartelito `data-tooltip`, `.mc-shell` en columna con `flex-start`, formularios de
+Cupones/Empleados con grid en `style=""`, textos largos sin espacios) más el seguro global
+(`overflow-wrap: break-word` + `overflow-x: clip` en ≤768px, en `home.css` y `auth.css`).
+Carruseles que siguen deslizándose por dentro (a propósito): `#hero-track`, `#stores-carousel`,
+`#ct-categories`, `.store-cat-row__track`, `.pro-highlight__row`, `.pm-related__scroll`,
+`.pd-tabs` y `.table-container` del admin.

@@ -87,6 +87,11 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
+  /* "Empleado de <comercio con nombre largo>" no puede ser más ancho que su
+     fila: se corta con "…" en vez de ensanchar la página en celular. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background: #e6ecf9;
   color: var(--bl-perfil-primary);
 }
@@ -206,6 +211,9 @@ body {
 /* === Sección abierta === */
 .profile-content {
   display: block;
+  /* un mail, un link o un nombre largo sin espacios no debe ensanchar la página */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .section-back {

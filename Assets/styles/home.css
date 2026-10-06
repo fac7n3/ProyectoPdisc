@@ -80,6 +80,22 @@ html::-webkit-scrollbar-track { background: var(--bl-bg); }
 html::-webkit-scrollbar-thumb { background: var(--bl-text-muted); border-radius: var(--bl-radius-sm); }
 html::-webkit-scrollbar-thumb:hover { background: var(--bl-text-secondary); }
 
+/* Celular: la página nunca se mueve de costado.
+   - overflow-wrap: una palabra larguísima sin espacios (un mail, un link o
+     "aaaaaaaa…" en una reseña) se corta en vez de ensanchar la caja.
+   - overflow-x: clip en html/body: red de seguridad para cualquier cosa que
+     igual se salga del ancho; a diferencia de `hidden` no crea un contenedor
+     de scroll, así que no rompe los `position: sticky`. Los carruseles y
+     tablas con su propio scroll lateral siguen deslizándose por dentro. */
+@media (max-width: 768px) {
+  body { overflow-wrap: break-word; }
+}
+@supports (overflow-x: clip) {
+  @media (max-width: 768px) {
+    html, body { overflow-x: clip; }
+  }
+}
+
 /* Checkbox nativo: cada navegador lo dibuja con su propio color por defecto
    (el violeta/azul del sistema). Con accent-color se tiñe del azul de marca
    sin perder nada del checkbox real -- teclado, foco, lector de pantalla,
@@ -2610,13 +2626,14 @@ button.coupon-chip:hover {
    corte "Carnicería": 2 columnas en vez de 14 filas de scroll. */
 .catpick__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
 .catpick__opt {
   position: relative;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -2666,7 +2683,7 @@ button.coupon-chip:hover {
 
 .catpick__opt:has(.catpick__input:checked) .catpick__icon { color: var(--catpick-accent); }
 
-.catpick__name { color: var(--bl-text); }
+.catpick__name { color: var(--bl-text); min-width: 0; overflow-wrap: anywhere; }
 
 /* La elegida no se distingue solo por color: además lleva tilde. */
 .catpick__check {
@@ -5081,6 +5098,14 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
+}
+/* En celular no hay hover, así que el cartelito nunca se ve; y aunque esté
+   invisible, su caja (nowrap, centrada en el botón) se sale del borde derecho
+   cuando el botón está pegado a ese borde y ensancha la página entera -- el
+   navegador móvil la achica y aparece scroll lateral (pasaba en comercio.html
+   con el corazón de favoritos). Se saca de raíz. */
+@media (hover: none), (max-width: 768px) {
+  [data-tooltip]::after { display: none; }
 }
 
 /* ===========================================================

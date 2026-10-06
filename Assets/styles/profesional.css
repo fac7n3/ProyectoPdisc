@@ -226,7 +226,8 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
    poner el fondo ámbar, que dejaba el texto rojo sobre ámbar. */
 #of-logout:hover { background: rgba(239, 68, 68, 0.08); }
 .mc-navicon { width: 1.1rem; text-align: center; color: var(--bl-text-muted); }
-.mc-content { flex: 1 1 auto; min-width: 0; }
+/* overflow-wrap: un mail o un link largo sin espacios no debe ensanchar la sección. */
+.mc-content { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .mc-section[hidden] { display: none; }
 .mc-hamburger {
   display: none;
@@ -239,7 +240,8 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
 .mc-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 999; }
 .mc-backdrop[hidden] { display: none; }
 @media (max-width: 900px) {
-  .mc-shell { flex-direction: column; padding: 0 0.75rem; }
+  /* stretch: en columna, flex-start dejaba al contenido del ancho de su contenido. */
+  .mc-shell { flex-direction: column; align-items: stretch; padding: 0 0.75rem; }
   .mc-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 82%; max-width: 320px; z-index: 1000; transform: translateX(-100%); transition: transform 0.25s ease; border-radius: 0; border-top: none; overflow-y: auto; }
   .mc-sidebar.is-open { transform: translateX(0); }
   .mc-close { display: inline-flex; }
@@ -498,6 +500,12 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
   .of-loaded__hours { flex-basis: 100%; order: 3; }
   .of-quick .of-slot { flex-wrap: nowrap; gap: 0.35rem; }
   .of-quick .of-slot input[type="time"] { width: 6.9rem; min-width: 0; padding: 0.4rem 0.4rem; }
+}
+
+/* En pantallas de 320px los dos horarios + el botón de quitar no entran en una
+   sola línea: pueden pasar a la línea de abajo. */
+@media (max-width: 380px) {
+  .of-quick .of-slot { flex-wrap: wrap; }
 }
 
 /* El shell y el bloque de carga tienen `display` de autor, que en cascada le

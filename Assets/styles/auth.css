@@ -655,3 +655,19 @@ input[type="password"]::-ms-clear {
   font-weight: 600;
   text-decoration: underline;
 }
+
+/* Celular: la página nunca se mueve de costado.
+   - overflow-wrap: una palabra larguísima sin espacios (un mail, un link o
+     "aaaaaaaa…" en una reseña) se corta en vez de ensanchar la caja.
+   - overflow-x: clip en html/body: red de seguridad para cualquier cosa que
+     igual se salga del ancho; a diferencia de `hidden` no crea un contenedor
+     de scroll, así que no rompe los `position: sticky`. Los carruseles y
+     tablas con su propio scroll lateral siguen deslizándose por dentro. */
+@media (max-width: 768px) {
+  body { overflow-wrap: break-word; }
+}
+@supports (overflow-x: clip) {
+  @media (max-width: 768px) {
+    html, body { overflow-x: clip; }
+  }
+}
