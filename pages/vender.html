@@ -838,6 +838,15 @@
          agregado discreto al final, no como el primer paso obligatorio. */
       .popt-add-group { display: inline-flex; align-items: center; gap: 0.45rem; background: none; border: 1px dashed var(--bl-border); color: var(--bl-text-secondary); padding: 0.55rem 0.9rem; border-radius: var(--bl-radius-md); font: inherit; font-size: 0.875rem; cursor: pointer; align-self: flex-start; }
       .popt-add-group:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
+      /* Zapatería: números de calzado a un toque. */
+      .popt-sizes { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--bl-border); }
+      .popt-sizes__title { margin: 0 0 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--bl-text-muted); }
+      .popt-sizes__row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+      .popt-size { min-width: 2.6rem; padding: 0.4rem 0.5rem; border: 1px solid var(--bl-border); border-radius: 8px; background: var(--bl-surface); color: var(--bl-text); font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+      .popt-size:hover:not(:disabled) { border-color: var(--bl-primary); color: var(--bl-primary); }
+      .popt-size--on, .popt-size:disabled { background: var(--bl-surface-alt); color: var(--bl-text-muted); cursor: default; opacity: 0.7; }
+      .popt-sizes__all { border: none; background: none; padding: 0; font: inherit; font-size: 0.8125rem; font-weight: 600; color: var(--bl-primary); cursor: pointer; text-decoration: underline; }
+      .popt-sizes__all:disabled { opacity: 0.5; cursor: default; }
       .popt-add__row { display: flex; gap: 0.5rem; align-items: center; }
       .popt-add__row .form-input { flex: 1; min-width: 0; }
       .popt-add__row .btn-outline { padding: 0.6rem 1rem; white-space: nowrap; }
@@ -1736,7 +1745,7 @@
                     <!-- En un alta nueva todavía no hay product_id contra el cual
                          guardar las opciones: se avisa y se habilitan al guardar. -->
                     <p class="pubform__hint popt-pending" id="prod-options-pending" hidden>
-                      Guardá el producto y vas a poder cargar acá mismo sus colores, sabores o talles.
+                      Guardá el producto y vas a poder cargar acá mismo sus colores, sabores o talles (en Zapatería, los números de calzado a un toque).
                     </p>
                     <div id="prod-options-list" class="popt-list"></div>
                     <!-- El alta de una lista nueva la agrega el JS al final de la lista de

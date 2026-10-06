@@ -355,6 +355,24 @@ function getProductCategorySlug() {
   return document.querySelector('input[name="prod-category"]:checked')?.value || '';
 }
 
+/**
+ * Zapatería: el rubro donde "Talle" es lo primero que se carga. Es solo una
+ * ayuda de la interfaz (lista ya llamada "Talle" + botones con los números de
+ * calzado): el dato guardado es el de siempre, una lista de opciones.
+ */
+const SHOE_CATEGORY_SLUG = 'zapateria';
+const SHOE_SIZES = Array.from({ length: 14 }, (_, i) => String(33 + i)); // 33 a 46
+const SHOE_COMMON_RANGE = SHOE_SIZES.filter((n) => Number(n) >= 35 && Number(n) <= 44);
+
+function isShoeProduct() {
+  return getProductCategorySlug() === SHOE_CATEGORY_SLUG;
+}
+
+/** ¿Esta lista de opciones es la de talles? (el nombre lo escribe el vendedor) */
+function isSizeGroupName(name) {
+  return /^(talles?|n[uú]meros?|calzado)$/i.test(String(name || '').trim());
+}
+
 /** Marca una categoría (se usa al editar un producto ya guardado). */
 function setProductCategorySlug(slug) {
   document.querySelectorAll('input[name="prod-category"]').forEach((r) => {
@@ -4529,7 +4547,7 @@ async function renderProductOptionsManager(productId) {
   // La lista en borrador no existe en la base hasta que carga la primera opción
   // (ver agregarValor), así que abrir el formulario no deja grupos vacíos dando
   // vueltas.
-  const grupos = sorted.length ? sorted : [{ id: null, name: 'Color', values: [] }];
+  const grupos = sorted.length ? sorted : [{ id: null, name: isShoeProduct() ? 'Talle' : 'Color', values: [] }];
   grupos.forEach((group) => container.appendChild(buildOptionGroupRow(group, productId)));
 
   // El segundo tipo es el caso raro (una remera con Color Y Talle), así que va
@@ -4624,6 +4642,55 @@ function buildOptionGroupRow(group, productId) {
   addBtn.className = 'btn-outline';
   addBtn.textContent = 'Agregar';
 
+  /** Crea la lista en la base si todavía es un borrador. false = no se pudo. */
+  const asegurarLista = async () => {
+    if (group.id) return true;
+    const nombreLista = name.value.trim();
+    if (!nombreLista) {
+      showToast('Poné un nombre a la lista (ej: Color, Sabor, Talle).', 'error');
+      name.focus();
+      return false;
+    }
+    const { data, error } = await supabase
+      .from('product_options')
+      .insert({
+        product_id: productId,
+        name: nombreLista,
+        position: document.querySelectorAll('#prod-options-list .popt-group').length - 1,
+      })
+      .select('id')
+      .single();
+    if (error) {
+      showToast(error.code === '23505' ? `Ya tenés una lista llamada "${nombreLista}".` : 'No se pudo crear la lista.', 'error');
+      console.error(error);
+      return false;
+    }
+    group.id = data.id;
+    group.name = nombreLista;
+    return true;
+  };
+
+  /** Inserta una o varias opciones de una (una sola ida a la base). */
+  const insertarValores = async (valores) => {
+    if (!(await asegurarLista())) return false;
+    const base = (group.values || []).length;
+    const { error } = await supabase.from('product_option_values').insert(
+      valores.map((value, i) => ({ option_id: group.id, value, position: base + i }))
+    );
+    if (error) {
+      // 23505 = unique(option_id, value): ya existe esa opción en la lista.
+      showToast(
+        error.code === '23505'
+          ? (valores.length === 1 ? `"${valores[0]}" ya está cargada.` : 'Alguno de esos talles ya estaba cargado.')
+          : 'No se pudo agregar la opción.',
+        'error'
+      );
+      console.error(error);
+      return false;
+    }
+    return true;
+  };
+
   const agregarValor = async () => {
     const value = input.value.trim();
     if (!value) {
@@ -4631,44 +4698,7 @@ function buildOptionGroupRow(group, productId) {
       input.focus();
       return;
     }
-
-    // Lista en borrador: se crea recién acá, con el nombre que tenga el input.
-    if (!group.id) {
-      const nombreLista = name.value.trim();
-      if (!nombreLista) {
-        showToast('Poné un nombre a la lista (ej: Color, Sabor, Talle).', 'error');
-        name.focus();
-        return;
-      }
-      const { data, error } = await supabase
-        .from('product_options')
-        .insert({
-          product_id: productId,
-          name: nombreLista,
-          position: document.querySelectorAll('#prod-options-list .popt-group').length - 1,
-        })
-        .select('id')
-        .single();
-      if (error) {
-        showToast(error.code === '23505' ? `Ya tenés una lista llamada "${nombreLista}".` : 'No se pudo crear la lista.', 'error');
-        console.error(error);
-        return;
-      }
-      group.id = data.id;
-      group.name = nombreLista;
-    }
-
-    const { error } = await supabase.from('product_option_values').insert({
-      option_id: group.id,
-      value,
-      position: (group.values || []).length,
-    });
-    if (error) {
-      // 23505 = unique(option_id, value): ya existe esa opción en la lista.
-      showToast(error.code === '23505' ? `"${value}" ya está cargada.` : 'No se pudo agregar la opción.', 'error');
-      console.error(error);
-      return;
-    }
+    if (!(await insertarValores([value]))) return;
     input.value = '';
     await renderProductOptionsManager(productId);
     // Volver al mismo campo: lo normal es cargar varias seguidas.
@@ -4682,6 +4712,55 @@ function buildOptionGroupRow(group, productId) {
   });
   addWrap.appendChild(addBtn);
   row.appendChild(addWrap);
+
+  // Zapatería: números de calzado a un toque, para no escribir 35, 36, 37… uno
+  // por uno. Aparece solo si el rubro es Zapatería y la lista se llama "Talle"
+  // (el nombre es editable, así que se mira de nuevo al escribir).
+  const sizes = document.createElement('div');
+  sizes.className = 'popt-sizes';
+  const sizesTitle = document.createElement('p');
+  sizesTitle.className = 'popt-sizes__title';
+  sizesTitle.textContent = 'Tocá los talles que tenés:';
+  sizes.appendChild(sizesTitle);
+  const sizesRow = document.createElement('div');
+  sizesRow.className = 'popt-sizes__row';
+  sizes.appendChild(sizesRow);
+
+  const cargados = () => new Set((group.values || []).map((v) => String(v.value).trim()));
+
+  SHOE_SIZES.forEach((n) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'popt-size';
+    btn.textContent = n;
+    btn.dataset.size = n;
+    btn.setAttribute('aria-label', `Agregar talle ${n}`);
+    if (cargados().has(n)) { btn.disabled = true; btn.classList.add('popt-size--on'); }
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      if (await insertarValores([n])) await renderProductOptionsManager(productId);
+      else btn.disabled = false;
+    });
+    sizesRow.appendChild(btn);
+  });
+
+  const rango = document.createElement('button');
+  rango.type = 'button';
+  rango.className = 'popt-sizes__all';
+  rango.textContent = `Cargar del ${SHOE_COMMON_RANGE[0]} al ${SHOE_COMMON_RANGE[SHOE_COMMON_RANGE.length - 1]}`;
+  rango.addEventListener('click', async () => {
+    const faltan = SHOE_COMMON_RANGE.filter((n) => !cargados().has(n));
+    if (!faltan.length) return;
+    rango.disabled = true;
+    if (await insertarValores(faltan)) await renderProductOptionsManager(productId);
+    else rango.disabled = false;
+  });
+  sizes.appendChild(rango);
+
+  const syncSizes = () => { sizes.hidden = !(isShoeProduct() && isSizeGroupName(name.value)); };
+  name.addEventListener('input', syncSizes);
+  syncSizes();
+  row.appendChild(sizes);
 
   return row;
 }
@@ -4751,6 +4830,19 @@ function setupDashboardEvents() {
 
   document.querySelectorAll('input[name="prod-mode"]').forEach((radio) => {
     radio.addEventListener('change', handleProductModeChange);
+  });
+
+  // Zapatería: lo que hace falta cargar es el talle, así que se pasa solo a
+  // "Variantes" (nunca al revés: no se borra nada). Al cambiar de rubro se
+  // redibuja el editor para que aparezca o se vaya la ayuda de talles.
+  document.getElementById('prod-category-options')?.addEventListener('change', async () => {
+    if (isShoeProduct() && getProductMode() === 'single') {
+      setProductMode('variants');
+      showToast('En Zapatería cargás los talles disponibles como variantes.', 'success');
+    }
+    if (editingProductId && getProductMode() === 'variants') {
+      await renderProductOptionsManager(editingProductId);
+    }
   });
 
   const btnShowAdd = document.getElementById('btn-show-add-product');
