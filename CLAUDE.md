@@ -101,6 +101,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   pide confirmación para sentencias destructivas y se corta a los 60 s sin ella. Al borrarla, sacar
   también `perfumeria` de `CATEGORY_ICONS` (`js/nav-utils.js`). Mientras tanto se ve como categoría
   sin productos en el menú.
+- **Hecho 2026-10-07 — Forrajería con ícono de patita de perro** (`fa-paw`, en vez de la espiga
+  `fa-wheat-awn`), a pedido del usuario "en toda la página". Dos lugares, porque el ícono vive
+  en dos: la base (`categories.icon`, migración **124**, aplicada a producción; la leen los
+  selectores de rubro de los formularios de vender) y `CATEGORY_ICONS` de `js/nav-utils.js` (menú
+  de categorías y sugerencias del buscador). No había más lugares con la espiga. Verificado en el
+  menú con las categorías simuladas.
 - **Hecho 2026-10-06 — Productos con las fotos del Drive (panadería y perfumería)**, a pedido
   del usuario ("llenar de productos por doquier"). 113 fotos del Drive revisadas una por una;
   103 usadas (webp en `public/img/productos/`), 10 descartadas (marca de agua, no muestran lo
