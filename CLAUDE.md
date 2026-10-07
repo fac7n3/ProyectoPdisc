@@ -44,7 +44,8 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
   que se suba al Drive de la cuenta y se use en la página tiene que **coincidir con lo que dice el
   producto**: nombre, descripción y opciones salen de lo que se ve en la foto (marca, variedad,
   cantidad, presentación), no del nombre del archivo ni de lo que "debería" ser. El sufijo del
-  nombre del archivo dice el rubro (`panaderia`, `perfumeria`, ...). Antes de usar una foto,
+  nombre del archivo dice el rubro (`panaderia`, ...; **`perfumeria` en el Drive = categoría Limpieza**,
+  y lo de consumo diario de súper -pañuelos, toallitas, jabones, desodorantes, shampoo- va a Supermercado). Antes de usar una foto,
   mirarla: se descartan las que tienen marca de agua de otro sitio, las que no muestran lo que
   dice el nombre y las de góndola con muchas marcas. Si una foto muestra variantes (colores,
   fragancias, sabores), van como opciones del producto (`product_options`). Las fotos van al repo
@@ -90,6 +91,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-07 — "Perfumería" era "Limpieza"**: el usuario aclaró que confundió las dos.
+  Los 51 productos de la categoría Perfumería se movieron (migración **126**, aplicada por
+  `execute_sql`): **32 a Limpieza** (perfumes, cremas, kits de pelo, esmaltes, peines) y **19 a
+  Supermercado** (los 9 de Farmacia Central -pañuelos, protectores, toallitas, jabones-, los 6
+  desodorantes, shampoo, acondicionadores y crema para peinar). Perfumería Lavanda quedó con
+  `category_slug='limpieza'` y Farmacia Central con `'supermercado'`. **Pendiente:** borrar la
+  categoría Perfumería, que quedó vacía. El DELETE no se pudo correr porque el conector de Supabase
+  pide confirmación para sentencias destructivas y se corta a los 60 s sin ella. Al borrarla, sacar
+  también `perfumeria` de `CATEGORY_ICONS` (`js/nav-utils.js`). Mientras tanto se ve como categoría
+  sin productos en el menú.
 - **Hecho 2026-10-06 — Productos con las fotos del Drive (panadería y perfumería)**, a pedido
   del usuario ("llenar de productos por doquier"). 113 fotos del Drive revisadas una por una;
   103 usadas (webp en `public/img/productos/`), 10 descartadas (marca de agua, no muestran lo

@@ -5287,3 +5287,14 @@ más adelante.
   `product_option_values.value`: "Surtidos (jamón, queso, tomate, lechuga y huevo)" pasó a "Surtidos"
   y el detalle a la descripción. Resultado verificado: El Sol 11, La Espiga 13, Lavanda 42,
   Farmacia Central 9; 0 grupos de opciones sin valores; trigger de la 107 prendido.
+
+## 2026-10-07 — Perfumería pasa a Limpieza y Supermercado (migración 126)
+- El usuario confundió "perfumería" con "limpieza". 51 productos movidos: 32 a Limpieza y 19 a
+  Supermercado (Farmacia Central entera, `Desodorante %`, los 2 acondicionadores, el shampoo Elvive
+  Kera-Liso y la crema para peinar Sedal). Lavanda -> `limpieza`, Farmacia Central -> `supermercado`.
+- **Gotcha del conector de Supabase:** `apply_migration` y `execute_sql` con un DELETE se quedan
+  esperando una confirmación del usuario y se cortan a los 60 s ("timed out"), sin llegar a la base
+  (`pg_stat_activity` vacío, nada aplicado). No es un bloqueo de Postgres: los UPDATE del mismo bloque
+  corren en ~20 ms. Separar el DELETE y pedirle al usuario que lo apruebe cuando aparezca el aviso.
+- Pendiente: `delete from categories where slug='perfumeria'` (sin productos) + sacar `perfumeria` de
+  `CATEGORY_ICONS`.
