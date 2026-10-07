@@ -103,7 +103,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `proyectopdisc+lavanda@gmail.com` (Perfumería Lavanda: perfumes, desodorantes, cremas, pelo,
   uñas, peines). Las cuentas se crearon por SQL (rol vendedor); **la contraseña no está en el
   repo**. Los comercios de prueba no tienen alias bancario: la 125 apaga el trigger de la 107
-  solo mientras corre. Probada contra la base real en una transacción que se deshizo.
+  solo mientras corre. **Aplicada a producción el 2026-10-07** en 3 partes (`..._panaderias`,
+  `..._lavanda`, `..._farmacia`), después de verificar que el deploy servía las fotos (200
+  `image/webp`): El Sol 11 productos, La Espiga 13, Lavanda 42, Farmacia Central 9; 0 grupos de
+  opciones vacíos, trigger de la 107 prendido de nuevo. **Gotcha:** cada opción tiene tope de 40
+  caracteres (`product_option_values_value_check`): el detalle largo va en la descripción.
   Torta de Ricota y Galletas Surtidas (El Sol) siguen con la foto genérica: no había una que
   les corresponda. Ver la regla de fotos del Drive en "Decisiones de producto".
 - **Hecho 2026-10-06 — Categoría nueva "Zapatería" + talles de calzado a un toque**, a pedido del

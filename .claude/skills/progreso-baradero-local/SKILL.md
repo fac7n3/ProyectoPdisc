@@ -5281,3 +5281,9 @@ más adelante.
   del comercio, fotos en `product_images` desde la posición 0, opciones solo si el producto no
   tiene ninguna). Probada contra la base real con un `raise exception` al final (se deshace todo).
 - Torta de Ricota y Galletas Surtidas (El Sol) quedan con `prod-panaderia.webp`.
+- Aplicada a producción el 2026-10-07 en 3 partes (panaderías, Lavanda, Farmacia; cada una con sus
+  helpers en `pg_temp`, porque cada `apply_migration` corre en su propia sesión). El primer intento
+  de una sola vez falló entero (se deshizo solo) por el tope de 40 caracteres de
+  `product_option_values.value`: "Surtidos (jamón, queso, tomate, lechuga y huevo)" pasó a "Surtidos"
+  y el detalle a la descripción. Resultado verificado: El Sol 11, La Espiga 13, Lavanda 42,
+  Farmacia Central 9; 0 grupos de opciones sin valores; trigger de la 107 prendido.
