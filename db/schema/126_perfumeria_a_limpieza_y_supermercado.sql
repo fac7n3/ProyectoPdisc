@@ -1,4 +1,4 @@
--- 126_perfumeria_a_limpieza_y_supermercado.sql (2026-10-07)
+-- 126_perfumeria_a_limpieza_y_supermercado.sql (2026-10-07) -- DESHECHA por la 127 el mismo día.
 --
 -- El usuario confundió "perfumería" con "limpieza": las fotos del Drive con sufijo
 -- "perfumeria" van a la categoría Limpieza, y lo de consumo diario que se vende en

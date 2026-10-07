@@ -44,8 +44,8 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
   que se suba al Drive de la cuenta y se use en la página tiene que **coincidir con lo que dice el
   producto**: nombre, descripción y opciones salen de lo que se ve en la foto (marca, variedad,
   cantidad, presentación), no del nombre del archivo ni de lo que "debería" ser. El sufijo del
-  nombre del archivo dice el rubro (`panaderia`, ...; **`perfumeria` en el Drive = categoría Limpieza**,
-  y lo de consumo diario de súper -pañuelos, toallitas, jabones, desodorantes, shampoo- va a Supermercado). Antes de usar una foto,
+  nombre del archivo dice el rubro (`panaderia`, `perfumeria`, ...): va a la categoría de ese nombre
+  (`perfumeria` -> Perfumería, `limpieza` -> Limpieza). Antes de usar una foto,
   mirarla: se descartan las que tienen marca de agua de otro sitio, las que no muestran lo que
   dice el nombre y las de góndola con muchas marcas. Si una foto muestra variantes (colores,
   fragancias, sabores), van como opciones del producto (`product_options`). Las fotos van al repo
@@ -91,16 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-07 — "Perfumería" era "Limpieza"**: el usuario aclaró que confundió las dos.
-  Los 51 productos de la categoría Perfumería se movieron (migración **126**, aplicada por
-  `execute_sql`): **32 a Limpieza** (perfumes, cremas, kits de pelo, esmaltes, peines) y **19 a
-  Supermercado** (los 9 de Farmacia Central -pañuelos, protectores, toallitas, jabones-, los 6
-  desodorantes, shampoo, acondicionadores y crema para peinar). Perfumería Lavanda quedó con
-  `category_slug='limpieza'` y Farmacia Central con `'supermercado'`. **Pendiente:** borrar la
-  categoría Perfumería, que quedó vacía. El DELETE no se pudo correr porque el conector de Supabase
-  pide confirmación para sentencias destructivas y se corta a los 60 s sin ella. Al borrarla, sacar
-  también `perfumeria` de `CATEGORY_ICONS` (`js/nav-utils.js`). Mientras tanto se ve como categoría
-  sin productos en el menú.
+- **Hecho 2026-10-07 — Productos del Drive de perfumería, en Perfumería.** El usuario primero pidió
+  pasarlos a Limpieza/Supermercado (migración **126**: 32 a Limpieza, 19 a Supermercado) y el mismo
+  día pidió volver atrás: la categoría Perfumería se queda y **los 51 productos** de Perfumería
+  Lavanda y Farmacia Central están ahí (migración **127**, aplicada; los dos comercios con
+  `category_slug='perfumeria'`). Limpieza quedó con sus 5 productos de antes: el usuario va a subir
+  fotos de limpieza aparte. **Gotcha del conector de Supabase:** un DELETE por `execute_sql` o
+  `apply_migration` espera la confirmación del usuario y se corta a los 60 s sin llegar a la base;
+  los UPDATE corren normal.
 - **Hecho 2026-10-07 — Forrajería con ícono de patita de perro** (`fa-paw`, en vez de la espiga
   `fa-wheat-awn`), a pedido del usuario "en toda la página". Dos lugares, porque el ícono vive
   en dos: la base (`categories.icon`, migración **124**, aplicada a producción; la leen los

@@ -5296,5 +5296,6 @@ más adelante.
   esperando una confirmación del usuario y se cortan a los 60 s ("timed out"), sin llegar a la base
   (`pg_stat_activity` vacío, nada aplicado). No es un bloqueo de Postgres: los UPDATE del mismo bloque
   corren en ~20 ms. Separar el DELETE y pedirle al usuario que lo apruebe cuando aparezca el aviso.
-- Pendiente: `delete from categories where slug='perfumeria'` (sin productos) + sacar `perfumeria` de
-  `CATEGORY_ICONS`.
+- **Deshecho el mismo día (migración 127):** el usuario decidió quedarse con la categoría Perfumería y
+  volver a poner ahí los 51 productos (Lavanda y Farmacia Central enteras, comercios con
+  `category_slug='perfumeria'`). Limpieza queda para fotos de limpieza que va a subir. No se borró nada.
