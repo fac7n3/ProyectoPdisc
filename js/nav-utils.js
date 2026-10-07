@@ -27,7 +27,7 @@ const CATEGORY_ICONS = {
   bebidas: 'fa-wine-bottle',
   carniceria: 'fa-drumstick-bite',
   ferreteria: 'fa-screwdriver-wrench',
-  forrajeria: 'fa-wheat-awn',
+  forrajeria: 'fa-paw',
   kiosco: 'fa-store',
   lacteos: 'fa-cheese',
   libreria: 'fa-book',
