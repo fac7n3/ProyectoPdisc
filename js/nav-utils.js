@@ -34,6 +34,7 @@ const CATEGORY_ICONS = {
   limpieza: 'fa-spray-can-sparkles',
   panaderia: 'fa-bread-slice',
   papeleria: 'fa-bag-shopping',
+  perfumeria: 'fa-pump-soap',
   ropa: 'fa-shirt',
   supermercado: 'fa-cart-shopping',
   tecnologia: 'fa-laptop',
