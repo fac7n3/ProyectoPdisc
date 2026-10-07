@@ -40,6 +40,16 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **Envíos:** ambos (retiro en local + envío dentro de Baradero).
 - **Verificación de vendedor:** aprobación manual del admin **+** validar CUIT.
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
+- **Fotos del Drive para productos (regla permanente, pedido del usuario 2026-10-06):** toda foto
+  que se suba al Drive de la cuenta y se use en la página tiene que **coincidir con lo que dice el
+  producto**: nombre, descripción y opciones salen de lo que se ve en la foto (marca, variedad,
+  cantidad, presentación), no del nombre del archivo ni de lo que "debería" ser. El sufijo del
+  nombre del archivo dice el rubro (`panaderia`, `perfumeria`, ...). Antes de usar una foto,
+  mirarla: se descartan las que tienen marca de agua de otro sitio, las que no muestran lo que
+  dice el nombre y las de góndola con muchas marcas. Si una foto muestra variantes (colores,
+  fragancias, sabores), van como opciones del producto (`product_options`). Las fotos van al repo
+  (`public/img/productos/` + `dist/img/productos/`, webp cuadrado 800 px): el CSP no deja cargar
+  imágenes de otro host y el sandbox no llega a Supabase Storage.
 
 ## Identidad de marca
 Sistema de identidad de marca vivo, construido 2026-08-03 con las marketing skills instaladas
@@ -80,6 +90,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-06 — Productos con las fotos del Drive (panadería y perfumería)**, a pedido
+  del usuario ("llenar de productos por doquier"). 113 fotos del Drive revisadas una por una;
+  103 usadas (webp en `public/img/productos/`), 10 descartadas (marca de agua, no muestran lo
+  que dice el nombre, góndolas). **Categoría nueva Perfumería** (migración **124**, aplicada;
+  ícono `fa-pump-soap`). **Migración 125** (datos): 73 productos en 4 comercios, con nombre,
+  descripción y opciones (sabor, relleno, fragancia, color, tono...) sacadas de cada foto:
+  Panadería El Sol (seed: Pan Francés, Medialunas y Pan Integral dejan la foto genérica; suma
+  panes, bizcochos, facturas, tortas fritas), Farmacia Central (seed, estaba vacía: higiene
+  personal) y **dos cuentas de prueba nuevas** con su comercio: `proyectopdisc+laespiga@gmail.com`
+  (Panadería y Confitería La Espiga: tortas, tartas, alfajores, sándwiches de miga) y
+  `proyectopdisc+lavanda@gmail.com` (Perfumería Lavanda: perfumes, desodorantes, cremas, pelo,
+  uñas, peines). Las cuentas se crearon por SQL (rol vendedor); **la contraseña no está en el
+  repo**. Los comercios de prueba no tienen alias bancario: la 125 apaga el trigger de la 107
+  solo mientras corre. Probada contra la base real en una transacción que se deshizo.
+  Torta de Ricota y Galletas Surtidas (El Sol) siguen con la foto genérica: no había una que
+  les corresponda. Ver la regla de fotos del Drive en "Decisiones de producto".
 - **Hecho 2026-10-06 — Categoría nueva "Zapatería" + talles de calzado a un toque**, a pedido del
   usuario. Misma mecánica que Supermercado: migración **122** (aplicada a producción, idempotente) +
   ícono en `CATEGORY_ICONS`. **Ícono = una zapatilla, no huellas** (pedido del usuario: Font

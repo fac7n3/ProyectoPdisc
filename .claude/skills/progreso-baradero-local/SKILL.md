@@ -5250,3 +5250,34 @@ más adelante.
   Entradas agregadas también a `VENDOR_SECTION_COPY` / `PROF_SECTION_COPY` (bienvenida al panel).
 - Verificado con una maqueta estática con el CSS real de cada panel; no con el panel logueado
   (sin red a Supabase). `dist/` no se reconstruyó: el build local necesita la anon key.
+
+## 2026-10-06 — Productos con las fotos del Drive (migraciones 124 y 125)
+- Pedido: el usuario subió 113 fotos al Drive de proyectopdisc@gmail.com (sufijo del nombre = rubro:
+  panaderia / perfumeria). Crear cuentas de prueba, reemplazar fotos genéricas y llenar el sitio de
+  productos con nombre, descripción y opciones que coincidan con la foto. Regla permanente
+  documentada en CLAUDE.md ("Decisiones de producto").
+- **Cómo se bajan las fotos del Drive** (el sandbox no llega a drive.google.com): el conector de
+  Drive (`download_file_content`) devuelve el archivo en base64 dentro del resultado de la
+  herramienta; un script lee los `.jsonl` de la sesión (incluidos los de subagentes) y los
+  `tool-results/` y decodifica cada `{id, title, content}`. Cada foto pesa ~30K tokens de contexto:
+  bajarlas con subagentes chicos (haiku), de a 4-5 por agente y una por mensaje; con 26 por agente
+  se quedan sin contexto.
+- Conversión: webp 800x800, calidad 80. Fondo blanco en las esquinas -> se achica y se rellena de
+  blanco; foto de ambiente -> recorte cuadrado centrado; líneas anchas de productos (Natura body
+  splash, Ekos, Kaiak, Natura para ella) -> foto entera sobre una copia desenfocada de sí misma
+  (si no, el recorte corta frascos).
+- Descartadas a propósito: alfajores chocolate (marca de agua "C"), bolitas de fraile (marca
+  "Tarjetas Imprimibles"), brownie (firma), facturas 2 (© Dreamstime/Alamy), pan integral 2 (texto
+  arriba), pan integral 3 (son conchas, no pan integral), torta fritas dulces (otra masa),
+  bizcocho salado 3 (mezcla cuernitos), productos nivea y tintes de pelo (góndolas con muchas
+  marcas).
+- Cuentas de prueba: `proyectopdisc+laespiga@gmail.com` y `proyectopdisc+lavanda@gmail.com`,
+  creadas por SQL en `auth.users` + `auth.identities` (email confirmado, `raw_app_meta_data.role =
+  'vendedor'`) y `profiles.role = 'vendedor'` con la bandera `app.role_change_authorized`. La
+  contraseña se le pasó al usuario por chat; no va en el repo.
+- Migración 125: comercios nuevos con `status='approved'`, `contact_method='none'` y sin alias
+  bancario (no se inventa uno: podría ser de alguien real), así que apaga
+  `products_require_transfer_alias` mientras corre. Helpers en `pg_temp` (upsert por título dentro
+  del comercio, fotos en `product_images` desde la posición 0, opciones solo si el producto no
+  tiene ninguna). Probada contra la base real con un `raise exception` al final (se deshace todo).
+- Torta de Ricota y Galletas Surtidas (El Sol) quedan con `prod-panaderia.webp`.
