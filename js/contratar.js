@@ -769,7 +769,14 @@ async function abrirFormularioConsulta(pro) {
   fechaInput.className = 'ct-modal__date-input';
   fechaInput.min = localIsoDate();
   fechaInput.setAttribute('aria-label', 'Elegir un día puntual');
-  fechaChip.append(fechaIcon, fechaInput);
+  // Mientras no hay fecha, el chip dice "Elegir fecha" en vez del "dd/mm/aaaa"
+  // nativo (el input queda encima, transparente, y abre el calendario al tocar).
+  const fechaTexto = el('span', 'ct-modal__date-label', 'Elegir fecha');
+  fechaChip.classList.add('is-empty');
+  fechaChip.append(fechaIcon, fechaTexto, fechaInput);
+  fechaInput.addEventListener('click', () => {
+    try { fechaInput.showPicker(); } catch { /* navegador sin showPicker: queda el input nativo */ }
+  });
 
   const chipEls = new Map();
 
@@ -782,6 +789,7 @@ async function abrirFormularioConsulta(pro) {
     cuandoElegido = valor;
     fechaElegida = '';
     fechaInput.value = '';
+    fechaChip.classList.add('is-empty');
     marcarChipActivo(valor);
   }
 
@@ -794,6 +802,7 @@ async function abrirFormularioConsulta(pro) {
   });
 
   fechaInput.addEventListener('change', () => {
+    fechaChip.classList.toggle('is-empty', !fechaInput.value);
     if (!fechaInput.value) {
       elegirCuando('sin_apuro');
       return;

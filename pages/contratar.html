@@ -279,6 +279,12 @@
         cursor: pointer; max-width: 8.2rem;
       }
       .ct-modal__date-input:focus { outline: none; }
+      /* Sin fecha: se ve el texto "Elegir fecha" y el input queda encima, invisible. */
+      .ct-modal__date-chip { position: relative; }
+      .ct-modal__date-chip:not(.is-empty) .ct-modal__date-label { display: none; }
+      .ct-modal__date-chip.is-empty .ct-modal__date-input {
+        position: absolute; inset: 0; width: 100%; max-width: none; opacity: 0;
+      }
       /* El ícono nativo del date picker queda blanco en Chrome/Edge cuando el
          chip está activo (fondo azul) -- sin esto se vuelve invisible. */
       .ct-modal__date-chip.is-active .ct-modal__date-input::-webkit-calendar-picker-indicator { filter: invert(1); }
