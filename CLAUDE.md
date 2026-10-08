@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-07 — Búsqueda mejorada + eventos (migración 128, aplicada), a pedido del usuario
+  ("algo parecido a Mercado Libre").** Etapas 1 y 3 de un plan de 4. `search_products` tolera typos
+  (`pg_trgm`), plurales, género y sinónimos (tabla `search_synonyms`), exige todas las palabras y mira
+  categoría y valores de opciones. Tablas `search_events`/`product_views` con `admin_search_report`
+  (búsquedas con 0 resultados primero). **Pendiente:** etapa 2 (ranking con ventas/reseñas/stock/envío)
+  y etapa 4 (similares, comprados juntos, "para vos"); y una pantalla del reporte en el panel de admin.
+  **Gotcha:** medir la búsqueda siempre con sesión iniciada (las policies encadenadas multiplicaron x10
+  el tiempo hasta que las opciones pasaron por una función `SECURITY DEFINER`). Detalle en el skill.
 - **Hecho 2026-10-07 — Productos del Drive de perfumería, en Perfumería.** El usuario primero pidió
   pasarlos a Limpieza/Supermercado (migración **126**: 32 a Limpieza, 19 a Supermercado) y el mismo
   día pidió volver atrás: la categoría Perfumería se queda y **los 51 productos** de Perfumería

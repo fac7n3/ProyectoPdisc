@@ -20,6 +20,7 @@
 import { supabase } from './auth-utils.js';
 import { fetchReviewsSummary } from './reviews-utils.js';
 import { createProductDetailFetcher } from './product-detail-utils.js';
+import { logProductView } from './search-analytics.js';
 
 // Las consultas de siempre, solo para cuando la función get_product_detail
 // (migración 118) todavía no está en la base. Ojo: son las lentas -- los joins
@@ -49,8 +50,14 @@ const fetcher = createProductDetailFetcher({
   },
 });
 
-/** Detalle completo de un producto en una sola consulta. Tira si no existe o no se puede ver. */
-export const fetchProductDetail = fetcher.fetch;
+/**
+ * Detalle completo de un producto en una sola consulta. Tira si no existe o no se puede ver.
+ * Abrir el detalle cuenta como una vista (el pedido adelantado de abajo no).
+ */
+export const fetchProductDetail = (productId) => fetcher.fetch(productId).then((product) => {
+  logProductView(productId);
+  return product;
+});
 
 /** Lo pide por adelantado (hover/toque); el próximo fetchProductDetail del mismo id lo aprovecha. */
 export const prefetchProductDetail = fetcher.prefetch;

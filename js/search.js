@@ -6,6 +6,7 @@
 // estado sin resultados con recuperación.
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
+import { logSearch, logSearchClick } from './search-analytics.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 
@@ -219,6 +220,21 @@ const chipsEl = document.getElementById('active-filters');
 const loadMoreWrap = document.getElementById('load-more-wrap');
 const loadMoreBtn = document.getElementById('load-more-btn');
 
+// Se registra la búsqueda recién cuando la persona dejó de tipear (el campo de
+// la barra lateral busca con cada pausa: "zap", "zapa", "zapatillas" serían
+// tres búsquedas). Una misma consulta no se repite al cambiar un filtro.
+let searchLogTimer = null;
+let lastLoggedQuery = '';
+
+function scheduleSearchLog(query, results) {
+  clearTimeout(searchLogTimer);
+  if (!query || query === lastLoggedQuery) return;
+  searchLogTimer = setTimeout(() => {
+    lastLoggedQuery = query;
+    logSearch(query, results);
+  }, 1200);
+}
+
 // ── Búsqueda principal (RPC search_products) ────────────────
 async function runSearch({ append = false } = {}) {
   if (!grid) return;
@@ -287,6 +303,7 @@ async function runSearch({ append = false } = {}) {
     // Los comercios y profesionales no se paginan: solo se recalculan en una búsqueda nueva.
     const storeMatches = append ? 0 : await renderStoreResults();
     const proMatches = append ? 0 : await renderProfessionalResults();
+    if (!append) scheduleSearchLog(filterState.query, totalCount + storeMatches + proMatches);
 
     if ((!products || products.length === 0) && !append) {
       renderNoResults(storeMatches, proMatches);
@@ -758,4 +775,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if (typeof initProductModal === 'function') initProductModal();
+
+  // Qué resultado se abrió y en qué lugar estaba: mide si el orden sirve.
+  // Sumar al carrito, favoritos y las tarjetas de comercio (links) no cuentan.
+  grid?.addEventListener('click', (e) => {
+    if (!filterState.query || e.target.closest('.product-card__add, .product-card__wishlist, a[href]')) return;
+    const card = e.target.closest('article.product-card');
+    if (!card) return;
+    const position = [...grid.querySelectorAll('article.product-card')].indexOf(card) + 1;
+    logSearchClick(filterState.query, card.id, position);
+  });
 });

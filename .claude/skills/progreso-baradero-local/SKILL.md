@@ -5299,3 +5299,47 @@ más adelante.
 - **Deshecho el mismo día (migración 127):** el usuario decidió quedarse con la categoría Perfumería y
   volver a poner ahí los 51 productos (Lavanda y Farmacia Central enteras, comercios con
   `category_slug='perfumeria'`). Limpieza queda para fotos de limpieza que va a subir. No se borró nada.
+
+## 2026-10-07 — Búsqueda "tipo Mercado Libre" + eventos de búsqueda (migración 128)
+Pedido del usuario: acercar la búsqueda y las recomendaciones a las de Mercado Libre. Plan de 4
+etapas; se hicieron la **1 (matching)** y la **3 (datos)**. Pendientes: etapa 2 (ranking por
+ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados juntos, "para vos").
+- **`search_products`** (misma firma y columnas que la 51, el front no cambió): parte la consulta en
+  palabras (tope 8) y exige **todas**, en cualquier orden y campo; normaliza minúsculas/acentos/
+  puntuación (así `100%` y `_` ya no son comodines de `ilike`); plural (`-s`, `-es`), género
+  (`negra`->`negro`), **sinónimos** (`search_synonyms`, direccional: `celu`->`celular`, no al revés) y
+  **typos** con `pg_trgm` (`word_similarity >= 0.5`, solo palabras de 5+ letras). Puntaje por palabra:
+  entera en título 12 > comienzo de palabra 10 > dentro del título 7 > categoría/valores de opciones 5
+  > comercio 4 > descripción 2 > typo 3 (el typo puntúa menos que descripción solo por ser
+  aproximado, no por importar menos); +5 si la frase entera está en el título. Una consulta solo de
+  símbolos devuelve 0 (no "todo").
+- **Gotcha de performance (medido):** meter `product_options`/`product_option_values` en la función
+  la hizo ~10x más lenta para quien tiene sesión (135-240 ms contra 11-33 ms) por el costo de
+  *planificar* las policies encadenadas (el mismo problema que la 118), no de ejecutar. Solución:
+  `search_option_values(uuid[])` SECURITY DEFINER, que solo recibe ids que ya salieron filtrados por la
+  RLS de `products`. Quedó en ~35 ms logueado, ~16 ms anónimo. **Si se vuelve a tocar, medir logueado:
+  `set local role authenticated` + `request.jwt.claims` con un `sub` real (un uuid inventado rompe las
+  FK de los eventos).**
+- **Sin índice a propósito** (`-- ponytail:` en la migración): con 120 productos se arma el texto en
+  cada búsqueda. Pasados ~10-20 mil, pasar a texto normalizado materializado + GIN `gin_trgm_ops`.
+- **Eventos:** `search_events` (kind `search`/`click`, query, resultados, producto, posición) y
+  `product_views`; solo se escriben por `log_search_event` / `log_product_view` (SECURITY DEFINER, sin
+  `insert` directo para anon/authenticated); las lee solo el admin. `user_id` pasa a NULL al dar de baja
+  la cuenta. Sin límite de frecuencia (`-- ponytail:`). **`admin_search_report(p_days)`** devuelve
+  consulta / búsquedas / con 0 resultados / clics, con los 0 resultados primero: es la lista de
+  sinónimos y productos que faltan. **No tiene pantalla en el panel de admin todavía** (se llama por
+  RPC o SQL). Gotcha: Supabase da `EXECUTE` a `anon` en toda función nueva, `revoke ... from public` no
+  alcanza (`128b_revoke_anon_admin_search_report`).
+- **Front:** `js/search-analytics.js` (dispará-y-olvidate, ignora cualquier falla). `search.js`
+  registra la búsqueda a los 1,2 s de quedar quieta la consulta (el campo de la barra lateral busca con
+  cada pausa) y el clic con su posición; `product-detail-api.js` registra una vista por producto y
+  por carga de página (modal y `producto.html` pasan por ahí). Las sugerencias del buscador no se
+  registran.
+- **Probado** contra la base real en transacciones que se deshacen (`DO` que termina en `raise
+  exception` para devolver el resultado): 32 consultas de calidad, tiempos por rol, eventos, permisos
+  (anon no lee ni inserta directo, no-admin no ve el reporte). **No probado en el navegador contra
+  producción** (el entorno no llega a Supabase); el build de Vite compila.
+- **Tres tests de Edge Functions fallan en este worktree** (`delete-account`, `mp-create-preference`,
+  `mp-webhook`): falta el paquete `typescript` (no hay `node_modules`). No es por este cambio.
+- **Limitación conocida:** una palabra que es prefijo de otra rama de la misma categoría trae todo
+  (`perfume` -> 52 resultados porque la categoría se llama "Perfumería"; los perfumes salen primero).
