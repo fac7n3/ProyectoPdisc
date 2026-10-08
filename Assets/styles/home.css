@@ -3440,20 +3440,6 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   color: var(--bl-success);
 }
 
-.product-card__shipping {
-  font-size: 0.6875rem;
-  color: var(--bl-success);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.product-card__shipping i {
-  font-size: 0.625rem;
-}
-
 .product-card__rating {
   display: flex;
   align-items: center;
@@ -3479,9 +3465,8 @@ html.bl-reduce-motion .bl-toast.is-leaving {
 
 /* Botón agregar al carrito.
    margin-top:auto lo pega siempre al borde inferior de la tarjeta (el body
-   es flex-column): así queda en el mismo lugar en todas, tengan o no badge
-   de envío gratis arriba, en vez de quedar más arriba o más abajo según
-   cuánto contenido haya antes. */
+   es flex-column): así queda en el mismo lugar en todas, en vez de quedar
+   más arriba o más abajo según cuánto contenido haya antes. */
 .product-card__add {
   display: flex;
   align-items: center;

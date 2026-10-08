@@ -9,8 +9,7 @@
  * el .select() de antes más el resumen de reseñas:
  *   { id, title, description, price, compare_at_price, offer_expires_at, stock,
  *     image_url,
- *     stores: { id, name, owner_id, delivery_fee, free_shipping_threshold,
- *               contact_method, whatsapp } | null,
+ *     stores: { id, name, owner_id, contact_method, whatsapp } | null,
  *     product_images: [{ url, position }],
  *     product_options: [{ id, name, position,
  *                         product_option_values: [{ id, value, is_available, position }] }],
@@ -26,7 +25,7 @@ import { createProductDetailFetcher } from './product-detail-utils.js';
 // anidados disparan en cadena las policies de products/orders/stores.
 const LEGACY_SELECT = [
   'id, title, description, price, compare_at_price, offer_expires_at, stock, image_url',
-  'stores(id, name, owner_id, delivery_fee, free_shipping_threshold, contact_method, whatsapp)',
+  'stores(id, name, owner_id, contact_method, whatsapp)',
   'product_images(url, position)',
   'product_options(id, name, position, product_option_values(id, value, is_available, position))',
 ].join(', ');

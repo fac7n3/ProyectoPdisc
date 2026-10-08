@@ -5299,3 +5299,67 @@ más adelante.
 - **Deshecho el mismo día (migración 127):** el usuario decidió quedarse con la categoría Perfumería y
   volver a poner ahí los 51 productos (Lavanda y Farmacia Central enteras, comercios con
   `category_slug='perfumeria'`). Limpieza queda para fotos de limpieza que va a subir. No se borró nada.
+
+## 2026-10-07 — Envío plano de $3.000 por comercio, sin envío gratis (migración 128)
+Rama `claude/shipping-price-calculation-81ba2a`. **Migración 128 sin aplicar a producción y rama sin mergear**
+(el usuario pidió "implementalo en la rama").
+- **Decisión de producto (usuario):** la plataforma gana con el envío, así que deja de ser configurable por
+  comercio y de regalarse por monto. Antes (migración 42): `stores.delivery_fee` (350) y
+  `stores.free_shipping_threshold` (5000), y `create_order` regalaba el envío desde ese monto. Ahora:
+  **$3.000 por comercio del carrito** (un comercio = un viaje) con `delivery`, $0 con `pickup`; el cupón
+  descuenta productos, nunca el envío. Se barajó $4.000 y se eligió $3.000.
+- **De dónde sale el número (modelo de costo, moto 110, casco urbano de Baradero, oct-2026):** nafta
+  $2.100/L (fuentes $2.045-2.141), 40 km/L reales (prueba de la Wave 110: ~50), mantenimiento $25/km
+  (supuesto), desgaste $48/km (Wave 110S $3.426.900, 50.000 km, 30 % residual), repartidor = salario mínimo
+  oct-2026 ($391.200/mes) x1,5 cargas / 200 h = $2.934/h con 85 % de utilización, 20 km/h, 8 min fijos por
+  pedido (5 retiro + 3 entrega), fijos $45.000/mes (seguro y patente, supuesto) sobre 260 pedidos/mes.
+  Fórmula: `costo = km*$125 + min*$57,5 + $173`. Costo por zona: Centro $1.349 (0,7 km al cliente),
+  barrios cercanos $1.945 (1,7), periferia $2.839 (3,2); promedio ponderado (35/45/20 %) **$1.915**, 4,3 km
+  y 21 min por pedido. Con 10 pedidos/día: 43 km, 1,08 L de nafta ($2.258) y 3,5 h de trabajo por día; 1 moto
+  alcanza (14 pedidos en un turno de 6 h). **A $3.000 la ganancia es de $1.085 por pedido de promedio, pero
+  la periferia deja solo ~$161: un sueldo 10 % mayor la deja en cero.** Equilibrio ~5 pedidos/día (repartidor
+  por turno fijo de 4 h). **Supuestos sin confirmar:** distancias por zona, mezcla de zonas, mantenimiento,
+  seguro/patente, velocidad, carga máxima oficial de la moto (no se encontró; criterio práctico: 50 L y
+  15 kg). El usuario va a averiguar seguro y costos reales: recalcular con eso.
+- **Dónde está la regla (dos lugares, a la par):** `c_delivery_fee constant integer := 3000` dentro de
+  `create_order` (`db/schema/128_envio_plano.sql`) y `DELIVERY_FEE` en `js/cart-totals.js`.
+  `js/cart-totals.test.mjs` lee la migración más nueva que declare `c_delivery_fee` y falla si no coincide
+  con el JS (probado cambiando uno solo). Para cambiar el monto: una línea en una migración nueva (copia de
+  `create_order`) y una en el JS.
+- **Qué se sacó del JS:** `DEFAULT_FREE_SHIPPING_THRESHOLD`/`DEFAULT_DELIVERY_FEE` y el parámetro
+  `shippingOf` de `computeCartTotals`; en `carrito.js` el mapa `storeShippingById` y la lógica de "te faltan
+  $X para envío gratis" (el chip del comercio ahora dice "Envío $3.000" o "Retirás en el local"); el
+  cartel "Envío gratis" de las tarjetas (`buildShippingBadge` de `cart-utils.js`, y sus usos en `home.js`,
+  `search.js` —que hacía una consulta a `stores` solo para eso— y `comercio.js`); el cartel y los textos del
+  modal de producto (ahora "Envío a domicilio: $3.000 · Retiro en el local: gratis"); las columnas
+  `delivery_fee`/`free_shipping_threshold` de los `select` de `carrito.js`, `vender.js` y
+  `product-detail-api.js`; y el CSS que quedó sin uso (`.product-card__shipping`, `.pm-gallery__badge--envio`,
+  `.cart-group__shipping--free/--missing`). El valor del envío en el resumen del carrito iba siempre en verde
+  (pensado para "Gratis"): ahora solo es verde con la clase `is-free` (retiro).
+- **Corrección a lo que se había dicho:** el panel de vendedor **nunca tuvo un formulario** para el envío por
+  comercio (`vender.js` solo lo listaba en un `select`): no había opción que quitar ahí.
+- **Qué NO se tocó, a propósito:** las columnas `stores.delivery_fee`/`free_shipping_threshold` siguen en la
+  base sin lectores (borrarlas en una migración aparte cuando no queden navegadores con el JS viejo, que las
+  pide en sus `select`); `orders.delivery_fee` sigue guardando lo cobrado (los pedidos viejos incluidos, y
+  `vender.js` muestra "Gratis" si un envío viejo quedó en 0); el RPC `get_product_detail` (118) todavía
+  devuelve esos dos campos dentro de `stores` y nadie los lee.
+- **Cómo se probó `create_order` contra la base real sin aplicar nada:** (1) `pg_get_functiondef` de
+  producción: **la función de producción tiene el mismo cuerpo que la de la migración 115, pero compactado**
+  (varias sentencias por línea; mismo largo de 6.626 vs 7.171 caracteres, por eso el md5 no coincide), así que
+  la 128 no pisa nada hecho a mano. (2) Se creó una copia **temporal** (`pg_temp.create_order_flat`, generada
+  del archivo de la 128 reemplazando solo el nombre) y un bloque `DO` que hace un pedido con envío a dos
+  comercios (subtotales $8.500 y $17.000, ambos por encima del viejo umbral) y uno con retiro, lee `orders`,
+  y **termina siempre con un `raise exception`** que deshace todo. Resultado: envío $3.000 en cada pedido
+  (totales $11.500 y $20.000), retiro $0. Después: el md5 de `create_order` en producción sigue igual, 0
+  pedidos nuevos, ninguna función temporal. **Efecto colateral inevitable:** las secuencias no vuelven atrás,
+  así que se consumieron 3 números de `order_number` (los próximos pedidos reales saltan 3).
+  Verificado además en el navegador con datos reales de producción (anon): home, buscador y comercio sin
+  cartel de envío gratis, modal con el texto nuevo, carrito en retiro ($8.500) y con envío ($11.500).
+  Sin probar logueado ni el checkout de punta a punta (no se hizo ninguna compra).
+- **Gotchas del entorno:** `npm test` falla en Windows (el script usa sintaxis de bash y lo corre `cmd`):
+  correr los `*.test.mjs` con un loop de bash. Los tests de `supabase/functions/_tests` necesitan
+  `typescript` instalado en el worktree (`npm install --no-save typescript`). Los heredocs de Git Bash
+  rompen las tildes al generar scripts: escribir los archivos con la herramienta de archivos.
+- **Para publicar (en este orden, el usuario decide):** aplicar la migración 128 y mergear a `main` en
+  seguida; en el rato entre una cosa y la otra, el carrito viejo muestra el envío de antes y se cobra el
+  nuevo. `dist/` sin reconstruir (sin la anon key en el entorno del repo; Vercel construye por su cuenta).

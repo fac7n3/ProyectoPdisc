@@ -37,7 +37,8 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 
 ## Decisiones de producto (definidas)
 - **Pagos:** ✅ Mercado Pago real (Checkout Pro, F2-07) + transferencia con comprobante + simulado (solo para testing interno). Credenciales de **prueba** cargadas como secret `MP_ACCESS_TOKEN` en Supabase Edge Functions — para lanzar de verdad falta reemplazarlas por las de **producción** (mismo nombre de secret, no requiere tocar código).
-- **Envíos:** ambos (retiro en local + envío dentro de Baradero).
+- **Envíos:** ambos (retiro en local + envío dentro de Baradero). **Envío plano de $3.000 por comercio, sin
+  envío gratis por monto** (decisión 2026-10-07: la plataforma gana con el envío; ver "Pendientes activos").
 - **Verificación de vendedor:** aprobación manual del admin **+** validar CUIT.
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
 - **Fotos del Drive para productos (regla permanente, pedido del usuario 2026-10-06):** toda foto
@@ -91,6 +92,19 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **En curso 2026-10-07 — Envío plano de $3.000 por comercio, sin envío gratis por monto.** Rama
+  `claude/shipping-price-calculation-81ba2a`: **sin mergear y la migración 128 SIN aplicar a producción**
+  (a pedido del usuario, que lo dejó implementado solo en la rama). La plataforma gana con el envío:
+  ya no es configurable por comercio ni se regala al pasar un monto. `create_order` cobra
+  `c_delivery_fee` = 3000 con envío y 0 con retiro; el carrito lo replica con `DELIVERY_FEE` en
+  `js/cart-totals.js` (el test de ese archivo falla si los dos números se separan). Se sacó el cartel
+  "Envío gratis" de tarjetas y modal y el "te faltan $X para envío gratis" del carrito. **Para publicar:**
+  aplicar la 128 y mergear a `main` en seguida (en el medio, el carrito viejo muestra el envío anterior).
+  Las columnas `stores.delivery_fee`/`free_shipping_threshold` quedan sin lectores (borrarlas en otra
+  migración más adelante). **Pendiente del usuario:** averiguar seguro, patente y sueldo real del
+  repartidor y recalcular: con los supuestos actuales los $3.000 cubren el costo en todo el casco urbano,
+  pero la periferia deja solo ~$161 por pedido. Cálculo completo y cómo se probó contra la base real sin
+  aplicar nada: skill `progreso-baradero-local`.
 - **Hecho 2026-10-07 — Productos del Drive de perfumería, en Perfumería.** El usuario primero pidió
   pasarlos a Limpieza/Supermercado (migración **126**: 32 a Limpieza, 19 a Supermercado) y el mismo
   día pidió volver atrás: la categoría Perfumería se queda y **los 51 productos** de Perfumería

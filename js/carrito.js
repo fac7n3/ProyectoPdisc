@@ -5,16 +5,9 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
 import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, formatPrice, renderActiveCoupons, isItemSelected, getSelectedItems } from './cart-utils.js';
-// F12-04: los DEFAULT_* son el fallback de antes de que validateCartFreshness
-// traiga el envío real de cada tienda, y coinciden con el default de la base
-// (42_vendor_coupons_and_per_store_shipping.sql). Viven en cart-totals.js para
-// no tener el mismo número escrito en dos lados.
-import {
-  computeCartTotals,
-  discountPctForStore,
-  DEFAULT_FREE_SHIPPING_THRESHOLD,
-  DEFAULT_DELIVERY_FEE,
-} from './cart-totals.js';
+// DELIVERY_FEE es el envío plano de la plataforma (el mismo que cobra
+// create_order, migración 128). Vive en cart-totals.js, con test.
+import { computeCartTotals, DELIVERY_FEE } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
 import { fetchStoreTransferData, buildTransferCard } from './transfer-details.js';
 import { orderLabel, formatDueDate } from './order-utils.js';
@@ -75,11 +68,9 @@ function storeKeyOf(item) {
 }
 
 
-// F12-04: productId -> storeId y storeId -> {deliveryFee, freeShippingThreshold},
-// poblados por validateCartFreshness (ya trae los productos reales del carrito,
-// se aprovecha esa misma consulta para no duplicar un fetch).
+// productId -> storeId, poblado por validateCartFreshness (ya trae los
+// productos reales del carrito, se aprovecha esa misma consulta).
 const productStoreId = new Map();
-const storeShippingById = new Map();
 
 // P0-6: storeId -> si esa tienda tiene Mercado Pago vinculado (piloto de
 // split payments). Poblado por validateCartFreshness junto al resto.
@@ -108,14 +99,12 @@ function storeIdOfItem(item) {
  * calculada igual que `create_order`: por tienda, con el descuento solo donde
  * corresponde y redondeando cada tienda por separado. Ver js/cart-totals.js.
  * Recibe SOLO los ítems tildados: un producto en pendiente no viaja a
- * create_order, así que tampoco puede empujar a esa tienda por encima de su
- * umbral de envío gratis.
+ * create_order, así que tampoco puede sumar un comercio (y su envío).
  */
 function cartTotals(selectedItems) {
   return computeCartTotals({
     items: selectedItems,
     storeIdOf: storeIdOfItem,
-    shippingOf: (storeId) => storeShippingById.get(storeId),
     deliveryMethod,
     couponPercent,
     couponStoreId,
@@ -139,33 +128,16 @@ function groupCartByStore(cart) {
 
 /**
  * Estado del envío de UN comercio, para el chip de la cabecera del grupo.
- * Se calcula sobre lo tildado nada más: la gracia es avisar que destildar algo
- * puede hacer perder el envío gratis ANTES de que el usuario lo descubra
- * mirando el total.
+ * Se calcula sobre lo tildado nada más: si el comercio queda todo en pendiente
+ * no viaja a create_order, así que no se le cobra envío.
  */
 function groupShippingState(entries) {
   const selected = entries.filter((e) => isItemSelected(e.item));
   if (selected.length === 0) return { kind: 'pending', text: 'Todo pendiente' };
 
-  // En "retiro en el local" no se cobra envío por nada, así que hablar de
-  // umbrales de envío gratis acá sería un dato falso.
   if (deliveryMethod === 'pickup') return { kind: 'pickup', text: 'Retirás en el local' };
 
-  const storeId = entries.map((e) => productStoreId.get(e.item.id)).find(Boolean);
-  const config = storeId ? storeShippingById.get(storeId) : null;
-  const threshold = config?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING_THRESHOLD;
-  const fee = config?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
-
-  // El descuento que le toca a ESTA tienda: un cupón de otro comercio no le
-  // baja el subtotal, así que tampoco puede hacerle perder el envío gratis.
-  const pct = discountPctForStore(couponPercent, couponStoreId, storeId ?? entries[0]?.item.shop);
-  const subtotal = selected.reduce((acc, e) => acc + e.item.price * e.item.qty, 0) * (1 - pct / 100);
-  if (fee === 0 || subtotal >= threshold) return { kind: 'free', text: 'Envío gratis' };
-
-  return {
-    kind: 'missing',
-    text: `Te faltan ${formatPrice(Math.ceil(threshold - subtotal))} para envío gratis`,
-  };
+  return { kind: 'delivery', text: `Envío ${formatPrice(DELIVERY_FEE)}` };
 }
 
 /** Chip de la fila de filtros. `count` = productos de ese comercio en el carrito. */
@@ -515,7 +487,10 @@ function renderCart() {
     summaryDiscountRow.style.display = 'none';
   }
 
-  if (summaryShipping) summaryShipping.textContent = shipping === 0 ? 'Gratis' : formatPrice(shipping);
+  if (summaryShipping) {
+    summaryShipping.textContent = shipping === 0 ? 'Gratis' : formatPrice(shipping);
+    summaryShipping.classList.toggle('is-free', shipping === 0);
+  }
   if (summaryTotal) summaryTotal.textContent = formatPrice(total);
 
   if (cartCount) {
@@ -1475,7 +1450,7 @@ async function validateCartFreshness() {
   const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
+      .select('id, price, stock, is_active, store_id, stores(name, mp_split_pilot, mp_collector_id)')
       .in('id', productIds),
     supabase
       .from('product_options')
@@ -1508,11 +1483,8 @@ async function validateCartFreshness() {
   });
   optionsByProduct.forEach((list, key) => optionsByProduct.set(key, sortOptionGroups(list)));
 
-  // F12-04: mismo fetch de arriba ya trae la tienda real de cada producto —
-  // se aprovecha para armar el mapa de envío por tienda (antes era una
-  // constante global igual para todo el carrito).
+  // El mismo fetch de arriba ya trae la tienda real de cada producto.
   productStoreId.clear();
-  storeShippingById.clear();
   storeMpEligibleById.clear();
   storeTransferDataById.clear();
   storeNameById.clear();
@@ -1520,10 +1492,6 @@ async function validateCartFreshness() {
     if (!p.store_id) return;
     productStoreId.set(p.id, p.store_id);
     if (p.stores) {
-      storeShippingById.set(p.store_id, {
-        deliveryFee: p.stores.delivery_fee,
-        freeShippingThreshold: p.stores.free_shipping_threshold,
-      });
       // P0-6: piloto de split payments -- MP solo se ofrece si la tienda
       // tiene split_pilot activo Y ya vinculó su cuenta (collector_id real).
       storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_split_pilot && p.stores.mp_collector_id));

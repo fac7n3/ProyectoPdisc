@@ -3,7 +3,8 @@
  * Correr con:  node js/cart-totals.test.mjs
  */
 import assert from "node:assert/strict";
-import { computeCartTotals, discountPctForStore } from "./cart-totals.js";
+import fs from "node:fs";
+import { computeCartTotals, discountPctForStore, DELIVERY_FEE } from "./cart-totals.js";
 
 const check = (name, fn) => {
   try {
@@ -79,7 +80,7 @@ check("el redondeo es por tienda, como en el RPC", () => {
   assert.equal(r.discountAmount, 2);
 });
 
-console.log("\ncomputeCartTotals — envío");
+console.log("\ncomputeCartTotals — envío plano");
 
 check("en retiro no se cobra envío por nada", () => {
   const r = totals({ items: [item("p1", 100)], deliveryMethod: "pickup" });
@@ -87,16 +88,17 @@ check("en retiro no se cobra envío por nada", () => {
   assert.equal(r.total, 100);
 });
 
-check("envío a domicilio por debajo del umbral, con los valores por defecto", () => {
-  const r = totals({ items: [item("p1", 1000)], deliveryMethod: "delivery" });
-  assert.equal(r.shipping, 350);
-  assert.equal(r.total, 1350);
-});
-
-check("por encima del umbral, envío gratis", () => {
-  const r = totals({ items: [item("p1", 6000)], deliveryMethod: "delivery" });
-  assert.equal(r.shipping, 0);
-  assert.equal(r.total, 6000);
+check("el envío a domicilio es el plano, sin importar el monto", () => {
+  assert.equal(DELIVERY_FEE, 3000);
+  const chico = totals({ items: [item("p1", 1000)], deliveryMethod: "delivery" });
+  assert.equal(chico.shipping, 3000);
+  assert.equal(chico.total, 4000);
+  // Con la regla anterior, desde $5.000 el envío era gratis. Ya no.
+  const grande = totals({ items: [item("p1", 6000)], deliveryMethod: "delivery" });
+  assert.equal(grande.shipping, 3000, "no hay envío gratis por monto");
+  assert.equal(grande.total, 9000);
+  const enorme = totals({ items: [item("p1", 250000)], deliveryMethod: "delivery" });
+  assert.equal(enorme.shipping, 3000);
 });
 
 check("el envío se cobra por tienda, no una sola vez", () => {
@@ -104,56 +106,58 @@ check("el envío se cobra por tienda, no una sola vez", () => {
     items: [item("p1", 1000, 1, "A"), item("p2", 1000, 1, "B")],
     deliveryMethod: "delivery",
   });
-  assert.equal(r.shipping, 700, "una vez por cada comercio");
-  assert.equal(r.total, 2700);
+  assert.equal(r.shipping, 6000, "una vez por cada comercio");
+  assert.equal(r.total, 8000);
 });
 
-check("cada tienda usa SU propia configuración de envío", () => {
-  const config = { A: { deliveryFee: 500, freeShippingThreshold: 20000 }, B: { deliveryFee: 0 } };
+check("varios productos de un mismo comercio pagan un solo envío", () => {
   const r = totals({
-    items: [item("p1", 1000, 1, "A"), item("p2", 1000, 1, "B")],
-    shippingOf: (id) => config[id],
+    items: [item("p1", 1000, 3, "A"), item("p2", 500, 2, "A")],
     deliveryMethod: "delivery",
   });
-  assert.equal(r.shipping, 500, "A cobra 500, B no cobra nada");
+  assert.equal(r.shipping, 3000);
+  assert.equal(r.total, 4000 + 3000);
 });
 
-check("el umbral se mira contra el precio YA con descuento", () => {
-  // 6000 con 20% queda en 4800, por debajo del umbral de 5000: se cobra envío.
-  // Es lo que hace el RPC, y por eso un cupón puede costar el envío gratis.
+check("el cupón descuenta los productos, nunca el envío", () => {
   const r = totals({
-    items: [item("p1", 6000)],
+    items: [item("p1", 10000)],
     deliveryMethod: "delivery",
     couponPercent: 20,
     couponStoreId: null,
   });
-  assert.equal(r.shipping, 350);
-  assert.equal(r.total, 4800 + 350);
+  assert.equal(r.discountAmount, 2000);
+  assert.equal(r.shipping, 3000);
+  assert.equal(r.total, 8000 + 3000);
 });
 
-check("el umbral se compara SIN redondear, igual que el RPC", () => {
-  // 5882 con 15% = 4999,7: no llega a 5000 aunque redondeado dé 5000.
+check("un cupón del 100% deja el envío a pagar", () => {
   const r = totals({
-    items: [item("p1", 5882)],
+    items: [item("p1", 4000)],
     deliveryMethod: "delivery",
-    couponPercent: 15,
+    couponPercent: 100,
     couponStoreId: null,
   });
-  assert.equal(r.shipping, 350, "no debe dar envío gratis por redondear antes de comparar");
+  assert.equal(r.total, 3000);
 });
 
-check("un cupón de otra tienda no le saca el envío gratis a la que no toca", () => {
-  // La tienda B está justo por encima del umbral. El cupón es de A, así que
-  // el subtotal de B no se toca y conserva su envío gratis. Antes el carrito
-  // le aplicaba el descuento igual y mostraba envío cobrado.
-  const r = totals({
-    items: [item("p1", 1000, 1, "A"), item("p2", 5200, 1, "B")],
-    deliveryMethod: "delivery",
-    couponPercent: 20,
-    couponStoreId: "A",
-  });
-  const b = r.byStore.find((s) => s.storeId === "B");
-  assert.equal(b.shipping, 0, "B conserva el envío gratis");
+check("la constante coincide con la de create_order (última migración que la define)", () => {
+  // Si alguien cambia el monto en un solo lado, el carrito mostraría un envío
+  // y la base cobraría otro. Se lee la migración más nueva que declara
+  // c_delivery_fee, así una migración futura que lo cambie también se cuida.
+  const dir = new URL("../db/schema/", import.meta.url);
+  const files = fs
+    .readdirSync(dir)
+    .filter((n) => /^\d+_.*\.sql$/.test(n))
+    .sort((x, y) => parseInt(x, 10) - parseInt(y, 10));
+  let valor = null;
+  let archivo = null;
+  for (const name of files) {
+    const m = fs.readFileSync(new URL(name, dir), "utf8").match(/c_delivery_fee\s+constant\s+integer\s*:=\s*(\d+)/);
+    if (m) { valor = Number(m[1]); archivo = name; }
+  }
+  assert.ok(archivo, "ninguna migración define c_delivery_fee");
+  assert.equal(valor, DELIVERY_FEE, `${archivo} cobra ${valor} y cart-totals.js cobra ${DELIVERY_FEE}`);
 });
 
 check("carrito vacío", () => {

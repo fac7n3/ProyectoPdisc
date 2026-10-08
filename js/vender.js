@@ -699,7 +699,7 @@ let pedidosTab = 'all'; // 'all' | 'to_confirm' | 'pending_payment' | 'to_prepar
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
-const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, delivery_fee, free_shipping_threshold, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
+const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, mp_collector_id, mp_split_pilot, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
 // Copy de las tarjetas de bienvenida al panel (js/panel-onboarding-utils.js).
 // Clave = mismo valor que data-section en el sidebar (pages/vender.html).

@@ -1,6 +1,6 @@
 // Interacciones de la página principal
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
@@ -234,7 +234,7 @@ const PRODUCT_SELECT = `
   offer_expires_at,
   image_url,
   stock,
-  stores ( name, free_shipping_threshold )
+  stores ( name )
 `;
 
 /** Arma el <article> de una tarjeta de producto. Compartido entre
@@ -285,9 +285,6 @@ function buildProductCard(product) {
   body.appendChild(nameH3);
 
   body.appendChild(buildPriceRow(product));
-
-  const shippingBadge = buildShippingBadge(product, product.stores);
-  if (shippingBadge) body.appendChild(shippingBadge);
 
   const addBtn = document.createElement('button');
   addBtn.className = 'product-card__add';

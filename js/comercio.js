@@ -1,5 +1,5 @@
 import { supabase } from './auth-utils.js';
-import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
+import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
@@ -54,9 +54,6 @@ function buildProductCard(product, store) {
   body.appendChild(nameH3);
 
   body.appendChild(buildPriceRow(product));
-
-  const shippingBadge = buildShippingBadge(product, store);
-  if (shippingBadge) body.appendChild(shippingBadge);
 
   const addBtn = document.createElement('button');
   addBtn.className = 'product-card__add';

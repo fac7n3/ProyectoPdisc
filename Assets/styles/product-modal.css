@@ -176,11 +176,6 @@
   color: #fff;
 }
 
-.pm-gallery__badge--envio {
-  background: var(--bl-success);
-  color: #fff;
-}
-
 /* Botón de favoritos en galería */
 .pm-gallery__fav {
   position: absolute;

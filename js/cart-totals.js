@@ -25,9 +25,13 @@
  * +infinito. Acá todos los importes son positivos, así que coinciden.
  */
 
-/** Valores por defecto del envío, iguales a los de la base (migración 42). */
-export const DEFAULT_FREE_SHIPPING_THRESHOLD = 5000;
-export const DEFAULT_DELIVERY_FEE = 350;
+/**
+ * Envío plano de la plataforma, en pesos: se cobra una vez por cada comercio
+ * del carrito (un comercio = un viaje) cuando se elige envío a domicilio, sin
+ * importar el monto. Es el `c_delivery_fee` de `create_order` (migración 128);
+ * `cart-totals.test.mjs` falla si los dos números se separan.
+ */
+export const DELIVERY_FEE = 3000;
 
 /**
  * Porcentaje de descuento que le toca a una tienda.
@@ -42,12 +46,10 @@ export function discountPctForStore(couponPercent, couponStoreId, storeId) {
 
 /**
  * @typedef {{ id: string, price: number, qty: number }} CartItem
- * @typedef {{ deliveryFee?: number, freeShippingThreshold?: number }} StoreShipping
  *
  * @param {object} opts
  * @param {CartItem[]} opts.items          solo los tildados (los que se van a cobrar)
  * @param {(item: CartItem) => string} opts.storeIdOf   agrupador: id de la tienda del ítem
- * @param {(storeId: string) => StoreShipping|undefined} [opts.shippingOf]
  * @param {'pickup'|'delivery'} [opts.deliveryMethod]
  * @param {number} [opts.couponPercent]    0-100, como lo devuelve la base (no 0-1)
  * @param {string|null} [opts.couponStoreId] null = cupón global
@@ -58,7 +60,6 @@ export function discountPctForStore(couponPercent, couponStoreId, storeId) {
 export function computeCartTotals({
   items,
   storeIdOf,
-  shippingOf = () => undefined,
   deliveryMethod = 'pickup',
   couponPercent = 0,
   couponStoreId = null,
@@ -75,13 +76,8 @@ export function computeCartTotals({
     const discountPct = discountPctForStore(couponPercent, couponStoreId, storeId);
     const discounted = subtotal * (1 - discountPct / 100);
 
-    const config = shippingOf(storeId);
-    const threshold = config?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING_THRESHOLD;
-    const fee = config?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
-
-    // El RPC compara el valor SIN redondear contra el umbral; se replica igual
-    // para no quedar del otro lado del límite por una fracción de peso.
-    const shipping = deliveryMethod === 'delivery' && discounted < threshold ? fee : 0;
+    // Ni el cupón ni el monto del pedido tocan el envío.
+    const shipping = deliveryMethod === 'delivery' ? DELIVERY_FEE : 0;
 
     byStore.push({
       storeId,
