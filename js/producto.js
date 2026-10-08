@@ -59,7 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     gallery.appendChild(img);
 
     // F5-04: miniaturas de fotos adicionales (product_images) — clic cambia la principal.
-    const extraImages = (product.product_images || []).sort((a, b) => a.position - b.position);
+    const extraImages = (product.product_images || [])
+      .filter((pi) => pi.url !== product.image_url) // la portada no se repite
+      .sort((a, b) => a.position - b.position);
     if (extraImages.length > 0) {
       const thumbsRow = document.createElement('div');
       thumbsRow.className = 'product-gallery__thumbs';
