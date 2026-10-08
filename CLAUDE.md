@@ -91,6 +91,21 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-08 — Productos de ropa con las fotos de la carpeta "Ropa" del Drive**, a pedido
+  del usuario ("lo mismo que hiciste" con panadería/perfumería). 72 fotos revisadas; 66 usadas
+  (webp en `public/img/productos/`), 6 descartadas: 4 con marca de agua de Xiaohongshu (jean mujer,
+  las dos polleras de jean, remera gatito pixelado), 1 con el logo de otra tienda (remera
+  JesusJesus, "Y2KCHAOS") y 1 sacada adentro de un local H&M (pijama rosa). **Migración 129**
+  (datos, categoría Ropa, opciones de color/talle/estampado sacadas de cada foto):
+  **Indumentaria La Moda** (seed) cambia las fotos de origen dudoso de la migración 120 (jean,
+  medias, campera, remera) por fotos del Drive (las medias pasan a llamarse "Medias Nike caña
+  alta", que es lo que muestra la foto; Zapatillas Urbanas no se tocó), suma 30 productos de
+  hombre/unisex y accesorios, y queda con `category_slug='ropa'`. **Cuenta de prueba nueva**
+  `proyectopdisc+amapola@gmail.com` con **Boutique Amapola** (32 productos de mujer); creada por
+  SQL igual que las de la 125, **la contraseña no está en el repo**. Sin alias bancario: la 129
+  apaga el trigger de la 107 solo mientras corre. Aplicada a producción en 2 partes después de
+  verificar que el deploy servía las fotos. **Sigue pendiente** la foto del collar (PetShop) y la
+  del asado (migración 120), sin licencia declarada.
 - **Hecho 2026-10-07 — Búsqueda mejorada + eventos (migración 128, aplicada), a pedido del usuario
   ("algo parecido a Mercado Libre").** Etapas 1 y 3 de un plan de 4. `search_products` tolera typos
   (`pg_trgm`), plurales, género y sinónimos (tabla `search_synonyms`), exige todas las palabras y mira
