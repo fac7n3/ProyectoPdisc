@@ -46,7 +46,9 @@ async function fetchProductData(productId) {
   const discountPct = hasDiscount ? Math.round((1 - product.price / product.compare_at_price) * 100) : 0;
 
   const store = product.stores || {};
-  const extraImages = (product.product_images || []).slice().sort((a, b) => a.position - b.position);
+  const extraImages = (product.product_images || [])
+    .filter((pi) => pi.url !== product.image_url) // la portada no se repite
+    .sort((a, b) => a.position - b.position);
   const images = [product.image_url || '/img/no-image.svg', ...extraImages.map((pi) => pi.url)];
 
   // F12-04: envío/gratis real del comercio (antes era un texto genérico de

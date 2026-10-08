@@ -4179,7 +4179,11 @@ async function hydrateProductGallery(product) {
     .order('position', { ascending: true });
 
   if (error) console.error('No se pudieron cargar las fotos del producto:', error);
-  (extra || []).forEach((row) => productImages.push({ kind: 'saved', url: row.url }));
+  // La portada no se repite: hay productos cargados por migración con la
+  // portada también como fila de product_images.
+  (extra || []).forEach((row) => {
+    if (row.url !== product.image_url) productImages.push({ kind: 'saved', url: row.url });
+  });
 
   savedImageUrlsAtLoad = productImages.map((item) => item.url);
   renderProductGallery();
