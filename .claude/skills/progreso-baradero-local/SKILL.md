@@ -5343,3 +5343,32 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
   `mp-webhook`): falta el paquete `typescript` (no hay `node_modules`). No es por este cambio.
 - **Limitación conocida:** una palabra que es prefijo de otra rama de la misma categoría trae todo
   (`perfume` -> 52 resultados porque la categoría se llama "Perfumería"; los perfumes salen primero).
+
+## 2026-10-08 — Productos de ropa con las fotos del Drive (migración 129)
+- Pedido: "lo mismo que hiciste" (migración 125) con la carpeta "Ropa" del Drive
+  (`1r5R4ujIt-lPlILKgv4JulDHG324pNNBR`, 72 archivos; sin sufijo de rubro: todo va a la categoría Ropa).
+- Descarga: igual que en la 125 (subagentes haiku de a 5 ids, una llamada por mensaje). **Cambio:**
+  un archivo grande (más de ~100 KB, incluidos PNG de 2 a 4,5 MB) no vuelve dentro del resultado:
+  la herramienta lo guarda en `tool-results/mcp-Google_Drive-download_file_content-<ms>.txt` (JSON
+  `{content, id, mimeType, title}`) y el script de extracción lo levanta de ahí igual. **Gotcha:** dos
+  descargas en el mismo milisegundo comparten el nombre y una pisa a la otra (pasó con bufandas):
+  siempre contar por id cuáles faltan y volver a bajar esas.
+- Revisión: hojas de contacto + un recorte de las esquinas de cada foto para buscar marcas de agua
+  (las de Xiaohongshu, `小红书号: ...`, están abajo a la derecha y no se ven en la miniatura).
+  Descartadas: jean mujer, pollera jean mujer, pollera jean mujer 2, remera gatito pixelado
+  (Xiaohongshu), remera JesusJesus (logo "Y2KCHAOS" de otra tienda), pijama rosa combo mujer
+  (foto dentro de un H&M, con el logo de la tienda).
+- Conversión: igual que la 125 más una regla: si la foto es alargada (lado largo / corto > 1,25) va
+  entera sobre una copia desenfocada, porque el recorte cuadrado cortaba filas de prendas
+  (42 de 66 fotos quedaron así).
+- Talles: remeras/buzos/camperas S-XL (hombre) o XS-L (mujer); jeans 38-46 (hombre) o 36-44
+  (mujer); medias 35-38/39-42/43-46; gorros, gorras y bufandas sin talle (único).
+- Indumentaria La Moda (seed, `d3c49d93-...`): `bl_update_product` de la 129 también cambia el
+  título (la foto manda): Pack x3 Medias -> Medias Nike caña alta. Jean, campera y remera conservan
+  título y precio.
+- Cuenta `proyectopdisc+amapola@gmail.com` (Boutique Amapola), misma receta que las de la 125 y la
+  misma contraseña de prueba (se pasó por chat).
+- Aplicada el 2026-10-08 en 2 partes (`129_productos_ropa_drive_lamoda`, `..._amapola`), cada una
+  con sus helpers en `pg_temp`, después de verificar que el deploy servía las fotos (200, webp).
+  Resultado: La Moda 35 productos (34 con foto del Drive + Zapatillas Urbanas), Amapola 32; 0
+  grupos de opciones sin valores; trigger de la 107 prendido.
