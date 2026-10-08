@@ -26,8 +26,17 @@
   border: 0;
 }
 
+/* Sin scroll lateral en ninguna página (celular incluido). `clip` y no solo
+   `hidden`: no crea un contenedor de scroll, así que el navbar sticky sigue
+   andando. El `hidden` es el respaldo para navegadores viejos. */
+html,
+body {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
 /* ------------------------------------------------------------------ */
-/* Saltar al contenido                                                 */
+/* Saltar al contenido                                                */
 /*
  * Primer elemento enfocable de cada página. Invisible hasta que recibe foco.
  * Sin esto, TalkBack obliga a recorrer navbar + buscador + barra de

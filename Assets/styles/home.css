@@ -65,7 +65,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scroll de la página: barra fina, fondo del mismo color que la página
+/* Sin scroll lateral en ninguna página (celular incluido); `clip` no rompe
+   el navbar sticky. Duplicado de a11y.css: contratar/farmacias/servicios
+   cargan home.css pero no a11y.css. */
+html,
+body {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* Scroll de la página: barra fina,fondo del mismo color que la página
    (se ve "integrada") y pulgar gris. `scrollbar-gutter: stable` reserva
    ese espacio siempre -- sin esto, una página sin scroll y otra con
    scroll quedan corridas unos pixeles entre sí y el contenido centrado
