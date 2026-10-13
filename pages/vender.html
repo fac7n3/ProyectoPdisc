@@ -613,6 +613,26 @@
       .rc-item__num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; background: rgba(var(--bl-vendor-accent-rgb), 0.12); color: var(--bl-vendor-accent); }
       .rc-item__text { color: var(--bl-text); font-size: 0.95rem; line-height: 1.4; }
 
+      /* Impulsar tus ventas: combos de promoción (js/boost-plans.js) */
+      .bp-back { background: none; border: none; padding: 0; margin-bottom: 0.9rem; color: var(--bl-vendor-accent); font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+      .bp-back:hover { text-decoration: underline; }
+      .bp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; align-items: stretch; }
+      .bp-card { position: relative; display: flex; flex-direction: column; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: 1.5rem; padding: 2rem 1.75rem 1.75rem; box-shadow: var(--bl-shadow-card); }
+      .bp-card--featured { border: 2px solid var(--bl-vendor-accent); }
+      .bp-card__badge { position: absolute; top: -0.8rem; left: 1.75rem; background: var(--bl-vendor-accent); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.75rem; border-radius: var(--bl-radius-pill); }
+      .bp-card__name { margin: 0; font-size: 1.35rem; font-weight: 600; color: var(--bl-text); }
+      .bp-card__tagline { margin: 0.4rem 0 0; min-height: 2.6em; color: var(--bl-text-secondary); font-size: 0.9rem; line-height: 1.3; }
+      .bp-card__price { margin: 1.5rem 0 1.25rem; display: flex; flex-direction: column; }
+      .bp-card__amount { font-size: 2.6rem; font-weight: 600; line-height: 1.1; color: var(--bl-text); }
+      .bp-card__per { font-size: 0.85rem; font-weight: 700; color: var(--bl-text); margin-top: 0.15rem; }
+      .bp-card__btn { align-self: flex-start; background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.7rem 1.4rem; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+      .bp-card__btn:hover { background: var(--bl-vendor-accent-dark); }
+      .bp-card__includes { margin: 1.75rem 0 0.4rem; font-weight: 700; font-size: 0.9rem; color: var(--bl-text); }
+      .bp-card__perks { list-style: disc; margin: 1.75rem 0 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; color: var(--bl-text-secondary); font-size: 0.92rem; line-height: 1.4; }
+      .bp-card__includes + .bp-card__perks { margin-top: 0.4rem; }
+      .bp-note { margin: 1.25rem 0 0; color: var(--bl-text-muted); font-size: 0.85rem; }
+      @media (max-width: 900px) { .bp-grid { grid-template-columns: 1fr; } .bp-card__tagline { min-height: 0; } }
+
       .pd-wrap { margin-top: 0.5rem; }
       .pd-header { margin-bottom: 1.25rem; }
       .pd-header__title { font-size: 1.4rem; font-weight: 700; color: var(--bl-text); display: flex; align-items: center; gap: 0.6rem; }
@@ -1544,6 +1564,22 @@
                   <li class="rc-item"><span class="rc-item__num" aria-hidden="true">6</span><span class="rc-item__text">Descripciones coherentes con sus productos.</span></li>
                   <li class="rc-item"><span class="rc-item__num" aria-hidden="true">7</span><span class="rc-item__text">Tratar de evitar la acumulación de muchos pedidos o consultas.</span></li>
                 </ol>
+              </div>
+            </section>
+
+            <!-- === Impulsar tus ventas ===
+                 Combos de promoción (js/boost-plans.js). Se llega desde la tarjeta
+                 "Impulsá tus ventas" del Resumen; no tiene ítem en el sidebar.
+                 Solo el dueño (como cupones y empleados). -->
+            <section class="mc-section" data-section="impulsar" hidden>
+              <div class="pd-wrap" id="boost-section">
+                <button type="button" class="bp-back" id="boost-back">&#8249; Volver al resumen</button>
+                <div class="pd-header">
+                  <div class="pd-header__title"><i class="fa-solid fa-rocket"></i> Impulsá tus ventas</div>
+                  <p class="pd-header__sub">Elegí el combo que mejor te quede y hacé que más vecinos conozcan tu comercio.</p>
+                </div>
+                <div id="boost-plans"></div>
+                <p class="bp-note">Los precios son por mes.</p>
               </div>
             </section>
 

@@ -15,6 +15,7 @@ import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
+import { renderBoostPlans } from './boost-plans.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
@@ -796,7 +797,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (greetingName) greetingName.textContent = currentUserFirstName;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
-  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section'].forEach((id) => {
+  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section', 'boost-section'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = isStoreOwner ? '' : 'none';
   });
@@ -3159,7 +3160,13 @@ function rsPromoCard() {
   card.appendChild(rsEl('div', 'rs-promo__text', 'Destacá tus publicaciones y llegá a más compradores en Baradero.'));
   const btn = rsEl('button', 'rs-promo__btn', 'Promocionar mis publicaciones');
   btn.type = 'button';
-  btn.addEventListener('click', () => showToast('Muy pronto vas a poder promocionar tus publicaciones desde acá.', 'success'));
+  btn.addEventListener('click', () => {
+    if (!isStoreOwner) {
+      showToast('Solo quien administra el comercio puede contratar un combo.', 'error');
+      return;
+    }
+    location.hash = 'impulsar';
+  });
   card.appendChild(btn);
 
   return card;
@@ -4821,6 +4828,21 @@ function buildOptionValueChip(value, group, productId) {
   return chip;
 }
 
+/**
+ * "Impulsá tus ventas": pantalla con los combos de promoción (js/boost-plans.js).
+ * Todavía no hay cobro: elegir un combo avisa que llega pronto.
+ */
+function initBoostSection() {
+  const container = document.getElementById('boost-plans');
+  if (!container) return;
+  renderBoostPlans(
+    container,
+    (plan) => showToast(`Muy pronto vas a poder contratar el ${plan.name} desde acá.`, 'success'),
+    formatPrice,
+  );
+  document.getElementById('boost-back')?.addEventListener('click', () => { location.hash = 'resumen'; });
+}
+
 function setupDashboardEvents() {
   setupStoreProfileForm();
   setupStoreLogoPicker();
@@ -4828,6 +4850,7 @@ function setupDashboardEvents() {
   setupStoreStaffForm();
   initPublicacionesControls();
   initPedidosControls();
+  initBoostSection();
 
   attachMoneyFormatting(document.getElementById('prod-price'));
   attachMoneyFormatting(document.getElementById('prod-compare-price'));

@@ -91,6 +91,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-13 — "Impulsá tus ventas" lleva a una pantalla de combos**, a pedido del usuario
+  (estructura de precio + beneficios como las tarjetas de planes de Power Apps). El botón
+  "Promocionar mis publicaciones" de la tarjeta del Resumen (antes un aviso "muy pronto") ahora abre
+  la sección `impulsar` de `pages/vender.html` (`#impulsar`, sin ítem en el sidebar, con "Volver al
+  resumen"; solo dueño, igual que cupones/empleados). Tres combos acumulativos en
+  **`js/boost-plans.js`** (`BOOST_PLANS`): **Local** (fila "Locales destacados" debajo del banner
+  del inicio), **Barrio** (+ banner chico del mosaico + productos más arriba) y **Baradero** (+
+  banner principal). **Los precios ($9.900 / $19.900 / $34.900 por mes) son de arranque, los puse yo**:
+  se cambian en `price` de ese archivo. **Todavía no hay cobro ni asignación**: "Elegir este combo"
+  solo avisa que llega pronto; falta definir cómo se paga y quién carga los espacios (hoy los
+  banners del inicio los asigna el admin, ver `home_promos`). Verificado con una maqueta con el CSS
+  real en escritorio y celular; sin probar logueado (sin red a Supabase). `dist/` sin reconstruir.
 - **Hecho 2026-10-08 — Productos de ropa con las fotos de la carpeta "Ropa" del Drive**, a pedido
   del usuario ("lo mismo que hiciste" con panadería/perfumería). 72 fotos revisadas; 66 usadas
   (webp en `public/img/productos/`), 6 descartadas: 4 con marca de agua de Xiaohongshu (jean mujer,

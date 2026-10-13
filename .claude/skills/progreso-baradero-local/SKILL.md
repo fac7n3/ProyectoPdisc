@@ -5372,3 +5372,16 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
   con sus helpers en `pg_temp`, después de verificar que el deploy servía las fotos (200, webp).
   Resultado: La Moda 35 productos (34 con foto del Drive + Zapatillas Urbanas), Amapola 32; 0
   grupos de opciones sin valores; trigger de la 107 prendido.
+
+## 2026-10-13 — "Impulsá tus ventas": pantalla de combos (panel de vendedor)
+- Botón "Promocionar mis publicaciones" (`rsPromoCard`, `js/vender.js`) -> `location.hash = 'impulsar'`;
+  un empleado recibe un aviso (solo el dueño contrata). Sección `data-section="impulsar"` en
+  `pages/vender.html` (wrapper `#boost-section`, en la lista de elementos exclusivos del dueño de
+  `loadDashboard`), CSS `.bp-*` en el `<style>` de la página, render en `js/boost-plans.js`
+  (`renderBoostPlans`), cableado en `initBoostSection()`.
+- Combos (cumulativos): Local $9.900 (fila de locales destacados), Barrio $19.900 (+ banner chico +
+  productos arriba, "El más elegido"), Baradero $34.900 (+ banner principal). Precios inventados como
+  arranque; editar `BOOST_PLANS`.
+- Sin backend: no hay tabla de suscripciones ni cobro; el botón de cada combo solo muestra un toast.
+- Gotcha: `home.css` resetea `list-style`, hay que poner `list-style: disc` explícito en listas con viñetas.
+
