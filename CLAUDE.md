@@ -91,35 +91,38 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-14 — "Impulsá tus ventas": los combos se pueden comprar (código listo, SIN
-  desplegar a producción)**, a pedido del usuario ("hacelo funcional para el pago, como te parezca").
-  El botón "Promocionar mis publicaciones" del Resumen abre `#impulsar` (`pages/vender.html`, sin ítem en
-  el sidebar, solo dueño) con tres combos acumulativos: **Local** (fila "Locales destacados"), **Barrio**
-  (+ banner chico + productos más arriba) y **Baradero** (+ banner principal). **Flujo:** "Elegir este
-  combo" -> confirmación -> Edge Function **`mp-create-boost-preference`** (JWT del dueño) -> RPC
-  `create_boost_purchase` (valida dueño de comercio aprobado + plan + que no cambie de combo con otro
-  vigente; guarda la compra `pending`) -> preferencia de Mercado Pago **con el token global de la
-  plataforma** (cobra Baradero Local, no el vendedor), `external_reference = "boost:<id>"` -> el
-  **webhook `mp-webhook`** (rama nueva `handleBoostPayment`) re-consulta el pago y llama a
-  `activate_boost_purchase` (verifica monto >= precio; si no, `needs_review`; idempotente) -> aviso
-  `boost_activated` a la campanita. Devolución/contracargo -> `flag_boost_purchase_disputed` (el combo
-  deja de valer). **Migración 131** (`db/schema/131_boost_combos.sql`, **sin aplicar**): `boost_plans`
-  (**el precio sale de acá**, la pantalla y el cobro leen la misma fila; $9.900 / $19.900 / $34.900 por
-  30 días son valores de arranque que puse yo: se cambian con un UPDATE) y `boost_purchases` (nadie
-  escribe desde el cliente; solo funciones SECURITY DEFINER; vencido = `active` con `ends_at` pasado, sin
-  cron). Un combo vigente se puede **renovar** (suma 30 días a continuación) pero no cambiar por otro
-  hasta que termine. **Qué es automático:** la fila (carrusel de comercios del inicio, `get_active_boosts`)
-  y los productos arriba en "Productos recomendados" (combos Barrio/Baradero, solo el home).
-  **Qué NO es automático:** los **banners** (chico/principal): el comercio carga la imagen en "Banner del
-  inicio" y el admin le asigna el espacio en `home_promos`, como siempre; la pantalla se lo explica.
-  **Sin hacer:** orden de productos en el buscador (`search_products`, migración 128) y una pantalla de
-  admin para ver las compras de combos. **Para publicar, en este orden:** (1) aplicar la migración 131,
-  (2) desplegar `mp-create-boost-preference` (verify_jwt: true) y `mp-webhook` (modificada: es la que
-  confirma TODOS los pagos, hay que verificar que sigue confirmando pedidos), (3) merge a `main`.
-  Hoy `MP_ACCESS_TOKEN` es de **prueba**: hasta cambiarlo por el de producción los cobros de combos
-  también son de prueba. Verificado: SQL contra la base real en una transacción deshecha (21 casos,
-  incluidos permisos de anon/authenticated/service_role), 14 + 8 tests de las Edge Functions, 11 de
-  la lógica del panel, y 18 checks en navegador real con Supabase simulado.
+- **Hecho 2026-10-14 — "Impulsá tus ventas": los combos se pueden comprar con Mercado Pago**, a pedido
+  del usuario ("hacelo funcional para el pago, como te parezca"). El botón "Promocionar mis publicaciones"
+  del Resumen abre `#impulsar` (`pages/vender.html`, sin ítem en el sidebar, solo dueño) con tres combos
+  acumulativos: **Local** (fila "Locales destacados"), **Barrio** (+ banner chico + productos más arriba) y
+  **Baradero** (+ banner principal). **Flujo:** "Elegir este combo" -> confirmación -> Edge Function
+  **`mp-create-boost-preference`** (JWT del dueño) -> RPC `create_boost_purchase` (valida dueño de comercio
+  aprobado + plan + que no cambie de combo con otro vigente; guarda la compra `pending`) -> preferencia de
+  Mercado Pago **con el token global de la plataforma** (cobra Baradero Local, no el vendedor),
+  `external_reference = "boost:<id>"` -> **`mp-webhook`** (rama `handleBoostPayment`) re-consulta el pago y
+  llama a `activate_boost_purchase` (verifica monto >= precio; si no, `needs_review`; idempotente) -> aviso
+  `boost_activated` a la campanita. Devolución/contracargo -> `flag_boost_purchase_disputed` (el combo deja
+  de valer). **Migración 131** (`db/schema/131_boost_combos.sql`, **aplicada a producción el 2026-10-14**):
+  `boost_plans` (**el precio sale de acá**; la pantalla y el cobro leen la misma fila; $9.900 / $19.900 /
+  $34.900 por 30 días son valores de arranque que puse yo: se cambian con un `UPDATE`) y `boost_purchases`
+  (nadie escribe desde el cliente, solo funciones SECURITY DEFINER; vencido = `active` con `ends_at` pasado,
+  sin cron). **Desplegadas el 2026-10-14:** `mp-create-boost-preference` v1 (`verify_jwt: true`) y
+  `mp-webhook` v7 (`verify_jwt: false`, cambio solo aditivo: 46 líneas nuevas, 0 borradas). Un combo vigente
+  se puede **renovar** (suma 30 días a continuación) pero no cambiar por otro hasta que termine.
+  **Automático:** la fila (carrusel de comercios del inicio, `get_active_boosts`) y los productos arriba en
+  "Productos recomendados" (combos Barrio/Baradero, solo el home). **NO automático:** los **banners**
+  (chico/principal): el comercio carga la imagen en "Banner del inicio" y el admin le asigna el espacio en
+  `home_promos`, como siempre; la pantalla se lo explica. **Sin hacer:** orden de productos en el buscador
+  (`search_products`, migración 128) y una pantalla de admin para ver las compras de combos.
+  **Sin probar con plata:** `MP_ACCESS_TOKEN` es de **prueba** (los cobros de combos también hasta cambiarlo
+  por el de producción) y no se hizo ni un pago de punta a punta (el sandbox no llega a Supabase ni a
+  Mercado Pago). **Conviene, con una cuenta dueña y la cuenta de prueba de MP:** comprar un combo, ver que
+  vuelve a `#impulsar` con el combo activo, y **hacer una compra común de un cliente** para confirmar que
+  `mp-webhook` v7 sigue confirmando pedidos. Verificado antes de publicar: SQL contra la base real en una
+  transacción deshecha (21 casos, incluidos permisos), 14 + 8 tests de las Edge Functions, 11 de la lógica
+  del panel y 18 checks en navegador real con Supabase simulado. **Gotcha del conector:** `apply_migration`
+  se cortó a los 60 s sin aplicar nada mientras la migración tenía `drop policy if exists` (lo trata como
+  destructivo y espera una confirmación que nadie ve); sin esas líneas aplicó al instante.
 - **Hecho 2026-10-08 — Productos de ropa con las fotos de la carpeta "Ropa" del Drive**, a pedido
   del usuario ("lo mismo que hiciste" con panadería/perfumería). 72 fotos revisadas; 66 usadas
   (webp en `public/img/productos/`), 6 descartadas: 4 con marca de agua de Xiaohongshu (jean mujer,

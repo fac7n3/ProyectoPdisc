@@ -41,25 +41,33 @@ revoke all on public.boost_plans from anon, authenticated;
 grant select on public.boost_plans to anon, authenticated;
 grant insert, update, delete on public.boost_plans to authenticated;
 
-drop policy if exists boost_plans_select on public.boost_plans;
-create policy boost_plans_select on public.boost_plans
-  for select to anon, authenticated using (true);
+do $pol$ begin
+  create policy boost_plans_select on public.boost_plans
+    for select to anon, authenticated using (true);
+exception when duplicate_object then null;
+end $pol$;
 
-drop policy if exists boost_plans_admin_insert on public.boost_plans;
-create policy boost_plans_admin_insert on public.boost_plans
-  for insert to authenticated
-  with check (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+do $pol$ begin
+  create policy boost_plans_admin_insert on public.boost_plans
+    for insert to authenticated
+    with check (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+exception when duplicate_object then null;
+end $pol$;
 
-drop policy if exists boost_plans_admin_update on public.boost_plans;
-create policy boost_plans_admin_update on public.boost_plans
-  for update to authenticated
-  using (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin')
-  with check (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+do $pol$ begin
+  create policy boost_plans_admin_update on public.boost_plans
+    for update to authenticated
+    using (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin')
+    with check (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+exception when duplicate_object then null;
+end $pol$;
 
-drop policy if exists boost_plans_admin_delete on public.boost_plans;
-create policy boost_plans_admin_delete on public.boost_plans
-  for delete to authenticated
-  using (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+do $pol$ begin
+  create policy boost_plans_admin_delete on public.boost_plans
+    for delete to authenticated
+    using (coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin');
+exception when duplicate_object then null;
+end $pol$;
 
 -- ---------------------------------------------------------------- compras
 create table if not exists public.boost_purchases (
@@ -99,16 +107,18 @@ alter table public.boost_purchases enable row level security;
 revoke all on public.boost_purchases from anon, authenticated;
 grant select on public.boost_purchases to authenticated;
 
-drop policy if exists boost_purchases_select on public.boost_purchases;
-create policy boost_purchases_select on public.boost_purchases
-  for select to authenticated
-  using (
-    coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin'
-    or exists (
-      select 1 from public.stores s
-      where s.id = boost_purchases.store_id and s.owner_id = (select auth.uid())
-    )
-  );
+do $pol$ begin
+  create policy boost_purchases_select on public.boost_purchases
+    for select to authenticated
+    using (
+      coalesce(((select auth.jwt()) -> 'app_metadata' ->> 'role'), 'cliente') = 'admin'
+      or exists (
+        select 1 from public.stores s
+        where s.id = boost_purchases.store_id and s.owner_id = (select auth.uid())
+      )
+    );
+exception when duplicate_object then null;
+end $pol$;
 
 -- ------------------------------------------------- crear la compra (cliente)
 -- La llama la Edge Function mp-create-boost-preference con el JWT del dueño.

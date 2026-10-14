@@ -5385,7 +5385,7 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
 - Sin backend: no hay tabla de suscripciones ni cobro; el botón de cada combo solo muestra un toast.
 - Gotcha: `home.css` resetea `list-style`, hay que poner `list-style: disc` explícito en listas con viñetas.
 
-## 2026-10-14 — Combos de "Impulsá tus ventas": cobro con Mercado Pago (sin desplegar)
+## 2026-10-14 — Combos de "Impulsá tus ventas": cobro con Mercado Pago (migración 131 aplicada, funciones desplegadas)
 - Piezas: migración `131_boost_combos.sql`; Edge Function `mp-create-boost-preference`; rama
   `handleBoostPayment` en `mp-webhook` (external_reference `boost:<uuid>`; el camino de pedidos no se toca);
   `js/boost-utils.js` (estado/botones, con tests), `js/boost-plans.js` (tarjetas, precio de la base),
@@ -5408,4 +5408,10 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
   no filtrar rutas con `speed-insights` porque matchea el módulo local de Vite.
 - `supabase/functions/_tests/fake-supabase.mjs` ahora acepta `rpcHandlers` (2º parámetro) para que un rpc
   devuelva datos; `deepEqual` estricto falla con objetos creados dentro del `vm` (comparar por JSON).
+- Publicación (2026-10-14): migración 131 aplicada con `apply_migration` (la primera vez se cortó a los 60 s sin
+  aplicar nada por los `drop policy if exists`: se cambiaron por `do $pol$ begin create policy ...; exception
+  when duplicate_object then null; end $pol$;`), `mp-create-boost-preference` v1 (verify_jwt true) y
+  `mp-webhook` v7 (verify_jwt false) desplegadas con `deploy_edge_function` subiendo el archivo del repo tal cual.
+  No se pudo hacer prueba de humo por red (el sandbox no llega a `*.supabase.co`). Pendiente: probar un pago real
+  de prueba y una compra común para confirmar que el webhook sigue confirmando pedidos.
 
