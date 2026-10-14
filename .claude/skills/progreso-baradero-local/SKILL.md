@@ -5385,3 +5385,27 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
 - Sin backend: no hay tabla de suscripciones ni cobro; el botón de cada combo solo muestra un toast.
 - Gotcha: `home.css` resetea `list-style`, hay que poner `list-style: disc` explícito en listas con viñetas.
 
+## 2026-10-14 — Combos de "Impulsá tus ventas": cobro con Mercado Pago (sin desplegar)
+- Piezas: migración `131_boost_combos.sql`; Edge Function `mp-create-boost-preference`; rama
+  `handleBoostPayment` en `mp-webhook` (external_reference `boost:<uuid>`; el camino de pedidos no se toca);
+  `js/boost-utils.js` (estado/botones, con tests), `js/boost-plans.js` (tarjetas, precio de la base),
+  `refreshBoost`/`chooseBoostPlan`/`handleBoostReturn` en `js/vender.js`; tipos de aviso `boost_activated` y
+  `boost_needs_review` en `js/notifications-utils.js`; orden en el inicio en `js/home.js`.
+- Decisiones: cobra la plataforma con el token global (no el del vendedor, no entra en el split de A113-274);
+  el precio vive solo en `boost_plans`; la lógica de negocio (dueño, plan, combo vigente, monto) está en SQL
+  SECURITY DEFINER y la Edge Function es fina; renovar suma tiempo a continuación, cambiar de combo se
+  rechaza hasta que termine (evita decidir reembolsos a mano); un intento nuevo cancela los `pending`
+  anteriores pero un pago tardío de un link viejo igual se activa.
+- Banners: NO automáticos (el espacio lo asigna el admin en `home_promos`).
+- Cómo se probó el SQL contra producción sin dejar nada: un `DO` que termina en `RAISE EXCEPTION` con los
+  resultados, dentro de `begin; ...` (el `execute_sql` solo devuelve el último resultado; el error vuelve
+  con el texto y deshace todo). Para simular usuarios: `set_config('request.jwt.claims', ...)` y
+  `set_config('role','authenticated',true)`.
+- Cómo se probó el panel en navegador: `.env` temporal con URL/clave falsas (gitignoreado), `vite` en dev, y
+  Playwright interceptando `https://mock.supabase.co/**` (auth, REST por tabla, functions). **Gotchas del
+  harness:** la clave de sesión es `sb-mock-auth-token`; la bienvenida del panel (`.panel-onboarding-overlay`)
+  tapa los botones y hay que sacarla; los avisos de `showToast` viven en `#toast-container` (no en `.toast`);
+  no filtrar rutas con `speed-insights` porque matchea el módulo local de Vite.
+- `supabase/functions/_tests/fake-supabase.mjs` ahora acepta `rpcHandlers` (2º parámetro) para que un rpc
+  devuelva datos; `deepEqual` estricto falla con objetos creados dentro del `vm` (comparar por JSON).
+

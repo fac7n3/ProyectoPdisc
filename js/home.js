@@ -234,6 +234,7 @@ const PRODUCT_SELECT = `
   offer_expires_at,
   image_url,
   stock,
+  store_id,
   stores ( name, free_shipping_threshold )
 `;
 
@@ -310,19 +311,49 @@ function buildProductCard(product) {
   return article;
 }
 
+/**
+ * Combos vigentes de "Impulsá tus ventas" (get_active_boosts, migración 131):
+ * { store_id, plan_id }. Si falla o no existe todavía, el inicio se ve como
+ * siempre -- un combo nunca puede romper la portada.
+ */
+async function loadActiveBoosts() {
+  try {
+    const { data, error } = await supabase.rpc('get_active_boosts');
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn('No se pudieron leer los combos vigentes:', err);
+    return [];
+  }
+}
+
+/** Planes cuyos productos salen arriba en "Productos recomendados". */
+const PLANS_WITH_TOP_PRODUCTS = ['barrio', 'baradero'];
+
 /** Obtener productos de Supabase */
 async function loadProducts() {
   const grid = document.getElementById('products-grid');
   if (!grid) return;
 
   try {
-    const { data: products, error } = await supabase
-      .from('products')
-      .select(PRODUCT_SELECT)
-      .eq('is_active', true)
-      .limit(12);
+    const boosts = await loadActiveBoosts();
+    const boostedStoreIds = boosts
+      .filter((b) => PLANS_WITH_TOP_PRODUCTS.includes(b.plan_id))
+      .map((b) => b.store_id);
 
-    if (error) throw error;
+    const [generalRes, boostedRes] = await Promise.all([
+      supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).limit(12),
+      boostedStoreIds.length
+        ? supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).in('store_id', boostedStoreIds).limit(12)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (generalRes.error) throw generalRes.error;
+    // Los de comercios con combo van primero; si esa segunda consulta falla,
+    // la portada sigue con la lista de siempre.
+    const boostedProducts = boostedRes.error ? [] : (boostedRes.data || []);
+    const seen = new Set(boostedProducts.map((p) => p.id));
+    const products = [...boostedProducts, ...(generalRes.data || []).filter((p) => !seen.has(p.id))].slice(0, 12);
 
     grid.innerHTML = ''; // Limpiar skeletons
 
@@ -667,13 +698,24 @@ async function loadStores() {
   if (!carousel) return;
 
   try {
-    const { data: stores, error } = await supabase
-      .from('stores')
-      .select('id, name, logo_url')
-      .eq('status', 'approved')
-      .limit(15);
+    const [storesRes, boosts] = await Promise.all([
+      supabase.from('stores').select('id, name, logo_url').eq('status', 'approved').limit(15),
+      loadActiveBoosts(),
+    ]);
+    if (storesRes.error) throw storesRes.error;
 
-    if (error) throw error;
+    // Los comercios con un combo vigente (cualquiera de los tres incluye la
+    // fila) van primero. Sort estable: el resto queda en el orden de siempre.
+    // Con el límite de 15, un comercio con combo que no entró en esos 15 se
+    // pide aparte para que no quede afuera de lo que pagó.
+    const boostedIds = new Set(boosts.map((b) => b.store_id));
+    let stores = storesRes.data || [];
+    const missing = [...boostedIds].filter((id) => !stores.some((s) => s.id === id));
+    if (missing.length) {
+      const extra = await supabase.from('stores').select('id, name, logo_url').eq('status', 'approved').in('id', missing);
+      if (!extra.error && extra.data) stores = [...stores, ...extra.data];
+    }
+    stores = [...stores].sort((a, b) => Number(boostedIds.has(b.id)) - Number(boostedIds.has(a.id)));
 
     carousel.innerHTML = ''; // Limpiar skeletons
 

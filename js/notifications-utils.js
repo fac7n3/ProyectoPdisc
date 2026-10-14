@@ -1,5 +1,6 @@
 import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
+import { formatBoostDate } from './boost-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { formatDueDate } from './order-utils.js';
 import { rememberNotificationIds, onNotificationsChanged, startNotificationsLive } from './notifications-live.js';
@@ -37,6 +38,8 @@ const TYPE_LABELS = {
   mp_split_needs_review: 'Tu vinculación con Mercado Pago necesita revisión',
   mp_payment_amount_mismatch: 'Un pago no cubre el total del pedido',
   mp_payment_refunded: 'Un pago fue devuelto o desconocido',
+  boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
+  boost_needs_review: 'Un pago de tu combo necesita revisión',
 };
 
 /** Estados de Mercado Pago en los que la plata ya no está (ver mp-webhook). */
@@ -90,6 +93,8 @@ const TYPE_TONE = {
   mp_split_needs_review: 'accent',
   mp_payment_amount_mismatch: 'accent',
   mp_payment_refunded: 'danger',
+  boost_activated: 'success',
+  boost_needs_review: 'accent',
   support_ticket_status_change: 'accent',
   new_review: 'info',
   support_ticket_message: 'info',
@@ -156,6 +161,11 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
         : null;
     case 'mp_payment_refunded':
       return MP_DISPUTE_LABELS[p.mp_status] || null;
+    case 'boost_activated':
+      return p.plan_name && p.ends_at ? `${p.plan_name}, hasta el ${formatBoostDate(new Date(p.ends_at))}` : (p.plan_name || null);
+    case 'boost_needs_review':
+      if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
+      return p.refunded ? 'El pago fue devuelto o desconocido' : null;
     case 'order_paid':
     case 'order_shipped':
     case 'order_delivered':
@@ -195,6 +205,10 @@ function buildNotificationLink(n) {
     case 'mp_payment_amount_mismatch':
     case 'mp_payment_refunded':
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
+    // Combos de "Impulsá tus ventas": van a esa pantalla del panel.
+    case 'boost_activated':
+    case 'boost_needs_review':
+      return { href: './vender.html#impulsar', label: 'Ver mi combo' };
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
       return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pedidos', label: 'Revisar' };

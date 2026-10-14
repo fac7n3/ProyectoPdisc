@@ -630,6 +630,14 @@
       .bp-card__includes { margin: 1.75rem 0 0.4rem; font-weight: 700; font-size: 0.9rem; color: var(--bl-text); }
       .bp-card__perks { list-style: disc; margin: 1.75rem 0 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; color: var(--bl-text-secondary); font-size: 0.92rem; line-height: 1.4; }
       .bp-card__includes + .bp-card__perks { margin-top: 0.4rem; }
+      .bp-card__btn:disabled { background: var(--bl-border); color: var(--bl-text-muted); cursor: not-allowed; }
+      .bp-card__hint { margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--bl-text-muted); }
+      .bp-status { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0 0 1.25rem; padding: 0.9rem 1.1rem; border-radius: var(--bl-radius-lg); border: 1px solid var(--bl-border); background: var(--bl-surface); font-size: 0.92rem; line-height: 1.45; color: var(--bl-text); }
+      .bp-status i { margin-top: 0.15rem; color: var(--bl-vendor-accent); }
+      .bp-status--active { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.07); }
+      .bp-status--warn { border-color: #b45309; }
+      .bp-status--warn i { color: #b45309; }
+      .bp-status a, .bp-status button.bp-link { color: var(--bl-vendor-accent); font-weight: 600; background: none; border: none; padding: 0; cursor: pointer; font-size: inherit; text-decoration: underline; }
       .bp-note { margin: 1.25rem 0 0; color: var(--bl-text-muted); font-size: 0.85rem; }
       @media (max-width: 900px) { .bp-grid { grid-template-columns: 1fr; } .bp-card__tagline { min-height: 0; } }
 
@@ -1578,8 +1586,9 @@
                   <div class="pd-header__title"><i class="fa-solid fa-rocket"></i> Impulsá tus ventas</div>
                   <p class="pd-header__sub">Elegí el combo que mejor te quede y hacé que más vecinos conozcan tu comercio.</p>
                 </div>
+                <div id="boost-status" aria-live="polite"></div>
                 <div id="boost-plans"></div>
-                <p class="bp-note">Los precios son por mes.</p>
+                <p class="bp-note">Pagás con Mercado Pago. El combo empieza cuando se acredita el pago y dura 30 días.</p>
               </div>
             </section>
 

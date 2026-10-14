@@ -1,5 +1,9 @@
 /** Supabase en memoria: lo justo para correr la lógica de mp-webhook. */
-export function makeFakeSupabase(tables) {
+/**
+ * `rpcHandlers` (opcional): { nombreDelRpc: (args) => ({ data, error }) } para los
+ * tests que necesitan que un rpc devuelva algo; sin handler devuelve { data: null }.
+ */
+export function makeFakeSupabase(tables, rpcHandlers = {}) {
   const rpcCalls = [];
 
   function builder(table) {
@@ -47,7 +51,8 @@ export function makeFakeSupabase(tables) {
     from: builder,
     rpc(name, args) {
       rpcCalls.push({ name, args });
-      const p = Promise.resolve({ data: null, error: null });
+      const handler = rpcHandlers[name];
+      const p = Promise.resolve(handler ? handler(args) : { data: null, error: null });
       return { then: (ok, err) => p.then(ok, err) };
     },
     storage: { from: () => ({ list: async () => ({ data: [], error: null }), remove: async () => ({ error: null }) }) },

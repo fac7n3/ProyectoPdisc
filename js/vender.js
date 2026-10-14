@@ -16,6 +16,7 @@ import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDis
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
 import { renderBoostPlans } from './boost-plans.js';
+import { describeBoostState, formatBoostDate, boostReturnMessage, PLANS_WITH_BANNER } from './boost-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
@@ -4829,18 +4830,166 @@ function buildOptionValueChip(value, group, productId) {
 }
 
 /**
- * "Impulsá tus ventas": pantalla con los combos de promoción (js/boost-plans.js).
- * Todavía no hay cobro: elegir un combo avisa que llega pronto.
+ * "Impulsá tus ventas": combos de promoción (js/boost-plans.js, migración 131).
+ * El precio sale de boost_plans y el cobro es con Mercado Pago a la cuenta de
+ * la plataforma (Edge Function mp-create-boost-preference); quien activa el
+ * combo es mp-webhook cuando el pago se acredita, nunca esta pantalla.
  */
-function initBoostSection() {
+let boostPlans = [];
+let boostPurchases = [];
+let boostBusy = false;
+
+async function refreshBoost() {
   const container = document.getElementById('boost-plans');
-  if (!container) return;
-  renderBoostPlans(
-    container,
-    (plan) => showToast(`Muy pronto vas a poder contratar el ${plan.name} desde acá.`, 'success'),
-    formatPrice,
+  if (!container || !isStoreOwner || !currentStoreId) return;
+
+  const [plansRes, purchasesRes] = await Promise.all([
+    supabase.from('boost_plans').select('id, name, price, duration_days').eq('is_active', true).order('sort_order'),
+    supabase.from('boost_purchases')
+      .select('id, plan_id, status, starts_at, ends_at, created_at')
+      .eq('store_id', currentStoreId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ]);
+
+  if (plansRes.error || !plansRes.data?.length) {
+    console.error('Error al cargar los combos:', plansRes.error);
+    container.replaceChildren(rsEl('p', 'bp-note', 'No pudimos cargar los combos. Probá de nuevo en un rato.'));
+    return;
+  }
+  boostPlans = plansRes.data;
+  // Si falla solo la lectura de compras no se bloquea la pantalla: se muestra
+  // como sin combo, y la base igual rechaza un cambio de combo con uno vigente.
+  if (purchasesRes.error) console.error('Error al cargar tus compras de combos:', purchasesRes.error);
+  boostPurchases = purchasesRes.data || [];
+
+  const state = describeBoostState(boostPurchases);
+  renderBoostStatus(state);
+  renderBoostPlans(container, boostPlans, state, chooseBoostPlan, formatPrice);
+}
+
+function renderBoostStatus(state) {
+  const box = document.getElementById('boost-status');
+  if (!box) return;
+  box.replaceChildren();
+
+  const add = (cls, icon, build) => {
+    const row = rsEl('div', `bp-status ${cls}`);
+    const i = document.createElement('i');
+    i.className = icon;
+    row.appendChild(i);
+    const text = rsEl('div');
+    build(text);
+    row.appendChild(text);
+    box.appendChild(row);
+  };
+  const linkTo = (label, hash) => {
+    const b = rsEl('button', 'bp-link', label);
+    b.type = 'button';
+    b.addEventListener('click', () => { location.hash = hash; });
+    return b;
+  };
+
+  if (state.active) {
+    const plan = boostPlans.find((p) => p.id === state.active.planId);
+    add('bp-status--active', 'fa-solid fa-circle-check', (t) => {
+      const strong = rsEl('strong', null, `Tenés el ${plan?.name || 'combo'} activo`);
+      t.append(strong, ` hasta el ${formatBoostDate(state.active.endsAt)} (${state.active.daysLeft === 1 ? 'queda 1 día' : `quedan ${state.active.daysLeft} días`}). `);
+      if (PLANS_WITH_BANNER.includes(state.active.planId)) {
+        t.append('Para aparecer en un banner del inicio, cargá la imagen en ');
+        t.append(linkTo('Banner del inicio', 'promo-inicio'));
+        t.append(': el equipo te asigna el lugar.');
+      }
+    });
+  } else if (state.pending) {
+    add('', 'fa-solid fa-hourglass-half', (t) => {
+      t.append('Estamos esperando que se acredite tu pago en Mercado Pago. Apenas llegue, activamos tu combo.');
+    });
+  }
+  if (state.needsReview) {
+    add('bp-status--warn', 'fa-solid fa-triangle-exclamation', (t) => {
+      t.append('Hay un pago de combo en revisión (no cubre el valor del combo o fue devuelto). ');
+      t.append(linkTo('Escribinos por Soporte', 'soporte'));
+      t.append(' y lo resolvemos.');
+    });
+  }
+}
+
+/** Mensaje de error de una Edge Function: el body del 4xx (viene en español), no el genérico del SDK. */
+async function edgeFunctionErrorMessage(error, data, fallback) {
+  if (data?.error) return data.error;
+  try {
+    const body = await error?.context?.json?.();
+    if (body?.error) return body.error;
+  } catch { /* sin body legible: se usa el mensaje de abajo */ }
+  return fallback;
+}
+
+async function chooseBoostPlan(plan) {
+  if (boostBusy) return;
+  if (!currentStoreId) return;
+  const renewing = describeBoostState(boostPurchases).active?.planId === plan.id;
+  const ok = await confirmDialog(
+    `Vas a pagar ${formatPrice(plan.price)} con Mercado Pago por el ${plan.name}. ` +
+    (renewing
+      ? `Se suman ${plan.duration_days} días a continuación de los que ya tenés.`
+      : `Empieza cuando se acredite el pago y dura ${plan.duration_days} días.`),
+    { title: renewing ? `Renovar el ${plan.name}` : `Contratar el ${plan.name}`, confirmText: 'Ir a pagar' },
   );
+  if (!ok) return;
+
+  boostBusy = true;
+  document.querySelectorAll('#boost-plans .bp-card__btn').forEach((b) => { b.disabled = true; });
+  try {
+    const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
+      body: { store_id: currentStoreId, plan_id: plan.id },
+    });
+    const url = data?.init_point || data?.sandbox_init_point;
+    if (error || !url) {
+      showToast(await edgeFunctionErrorMessage(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
+      return;
+    }
+    window.location.href = url;
+  } catch (err) {
+    console.error('Error al iniciar el pago del combo:', err);
+    showToast('No se pudo iniciar el pago. Probá de nuevo.', 'error');
+  } finally {
+    boostBusy = false;
+    // Si se está yendo a Mercado Pago, esto no se ve; si falló, vuelve a habilitar.
+    refreshBoost();
+  }
+}
+
+/** Vuelta de Mercado Pago (`?boost=...`): avisa y, si falta, espera a que el webhook active el combo. */
+async function handleBoostReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const ret = boostReturnMessage(params.get('boost'));
+  if (!ret) return;
+  params.delete('boost');
+  const qs = params.toString();
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
+  showToast(ret.message, ret.tone);
+  if (!ret.poll) return;
+
+  // El webhook puede tardar unos segundos: se mira cada 5 s, hasta 1 minuto.
+  for (let i = 0; i < 12; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await refreshBoost();
+    if (describeBoostState(boostPurchases).active) {
+      showToast('¡Listo! Tu combo ya está activo.', 'success');
+      return;
+    }
+  }
+}
+
+function initBoostSection() {
   document.getElementById('boost-back')?.addEventListener('click', () => { location.hash = 'resumen'; });
+  if (!isStoreOwner) return;
+  refreshBoost();
+  handleBoostReturn();
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#impulsar') refreshBoost();
+  });
 }
 
 function setupDashboardEvents() {

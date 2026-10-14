@@ -22,7 +22,15 @@
 
 ## Pendientes (en orden de aplicación)
 
-*(Sin pendientes en esta rama.)*
+### 131 — `db/schema/131_boost_combos.sql` (2026-10-14)
+
+Combos de "Impulsá tus ventas": tablas `boost_plans` y `boost_purchases`, y las
+funciones `create_boost_purchase`, `activate_boost_purchase`,
+`flag_boost_purchase_disputed` y `get_active_boosts`. Probada contra la base real
+en una transacción deshecha. **Va junto con el despliegue de las Edge Functions
+`mp-create-boost-preference` (nueva) y `mp-webhook` (modificada)**: aplicar la
+migración primero. Hasta entonces el botón "Elegir este combo" da error al
+pagar y el inicio se ve como siempre (get_active_boosts falla en silencio).
 
 ## ✅ Aplicadas recientemente
 

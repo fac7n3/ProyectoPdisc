@@ -200,3 +200,69 @@ console.log('--- mp-webhook ---\n');
     assert.ok(r.logs.error.some(l => l.includes('más de una tienda')), 'debe loguear el motivo');
   });
 }
+
+// ---------------------------------------------------------------- combos
+// Pagos de "Impulsá tus ventas" (migración 131): external_reference "boost:<id>".
+const BOOST = '33333333-3333-3333-3333-333333333333';
+async function boostHit(payment, rpcResult = { data: 'activated', error: null }) {
+  const tables = { orders: [pendingOrder(A, 5000)], stores: [STORE] };
+  const sb = makeFakeSupabase(tables, {
+    activate_boost_purchase: () => rpcResult,
+    flag_boost_purchase_disputed: () => ({ data: 1, error: null }),
+  });
+  const { handler, logs } = loadEdgeFunction(FN, {
+    env: ENV, createClient: () => sb,
+    fetchImpl: async () => ({ ok: true, json: async () => payment }),
+  });
+  const res = await handler(new Request('https://x/?type=payment&data.id=77'));
+  return { status: res.status, rpcs: sb.__rpcCalls, orders: tables.orders, logs };
+}
+
+console.log('\n--- mp-webhook: combos ---\n');
+{
+  const r = await boostHit({ id: 77, status: 'approved', transaction_amount: 19900, external_reference: `boost:${BOOST}` });
+  run('combo aprobado -> activate_boost_purchase con el monto cobrado', () => {
+    assert.equal(r.status, 200);
+    assert.equal(r.rpcs.map(c => c.name).join(), 'activate_boost_purchase');
+    assert.equal(JSON.stringify(r.rpcs[0].args), JSON.stringify({ p_purchase_id: BOOST, p_payment_id: '77', p_paid_amount: 19900 }));
+  });
+  run('un pago de combo no toca ningún pedido', () => {
+    assert.equal(r.orders[0].payment_status, 'pending');
+  });
+}
+{
+  const r = await boostHit({ id: 77, status: 'approved', transaction_amount: 100, external_reference: `boost:${BOOST}` });
+  run('combo pagado de menos -> se manda igual el monto real (la base decide needs_review)', () => {
+    assert.equal(r.rpcs[0].args.p_paid_amount, 100);
+  });
+}
+{
+  const r = await boostHit({ id: 77, status: 'refunded', transaction_amount: 19900, external_reference: `boost:${BOOST}` });
+  run('combo devuelto -> flag_boost_purchase_disputed', () => {
+    assert.equal(r.rpcs.map(c => c.name).join(), 'flag_boost_purchase_disputed');
+    assert.equal(JSON.stringify(r.rpcs[0].args), JSON.stringify({ p_payment_id: '77' }));
+  });
+}
+{
+  const r = await boostHit({ id: 77, status: 'rejected', transaction_amount: 19900, external_reference: `boost:${BOOST}` });
+  run('combo rechazado o pendiente -> no se hace nada', () => {
+    assert.equal(r.status, 200);
+    assert.equal(r.rpcs.length, 0);
+  });
+}
+{
+  const r = await boostHit({ id: 77, status: 'approved', transaction_amount: 19900, external_reference: 'boost:no-es-uuid' });
+  run('boost: con un id que no es uuid -> 200 sin llamar a la base (no hay reintento eterno)', () => {
+    assert.equal(r.status, 200);
+    assert.equal(r.rpcs.length, 0);
+  });
+}
+{
+  const r = await boostHit(
+    { id: 77, status: 'approved', transaction_amount: 19900, external_reference: `boost:${BOOST}` },
+    { data: null, error: { message: 'boom' } },
+  );
+  run('error de la base al activar -> 500 para que Mercado Pago reintente', () => {
+    assert.equal(r.status, 500);
+  });
+}

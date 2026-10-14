@@ -199,6 +199,41 @@ async function markNeedsReview(supabase: ReturnType<typeof createClient>, storeI
     );
 }
 
+/**
+ * Pago de un combo de "Impulsá tus ventas". Mismo criterio que con los pedidos:
+ * el webhook en sí no es de fiar, pero `payment` ya viene de re-consultar a
+ * Mercado Pago con NUESTRO token, y el monto cobrado se compara contra el
+ * precio guardado en la compra (activate_boost_purchase) antes de activarla.
+ * Cualquier error se propaga: el catch de arriba responde 500 y MP reintenta.
+ */
+async function handleBoostPayment(
+  supabase: ReturnType<typeof createClient>,
+  payment: { id: number | string; status: string; transaction_amount?: number },
+  purchaseId: string,
+) {
+  if (!UUID_RE.test(purchaseId)) {
+    console.warn("external_reference de combo sin uuid válido, se ignora:", purchaseId);
+    return;
+  }
+
+  if (payment.status === "approved") {
+    const { data, error } = await supabase.rpc("activate_boost_purchase", {
+      p_purchase_id: purchaseId,
+      p_payment_id: String(payment.id),
+      p_paid_amount: Math.round(Number(payment.transaction_amount ?? 0)),
+    });
+    if (error) throw error;
+    console.log(`Pago ${payment.id}: combo ${purchaseId} -> ${data}.`);
+  } else if (DISPUTED_STATUSES.includes(payment.status)) {
+    const { error } = await supabase.rpc("flag_boost_purchase_disputed", {
+      p_payment_id: String(payment.id),
+    });
+    if (error) throw error;
+  }
+  // "rejected"/"pending"/"in_process": no se toca, mismo motivo que con los
+  // pedidos (el comprador puede reintentar dentro del mismo checkout).
+}
+
 Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
@@ -241,6 +276,17 @@ Deno.serve(async (req: Request) => {
     }
 
     const payment = await paymentRes.json();
+
+    // Combos de "Impulsá tus ventas" (migración 131): los pagos de un combo no
+    // llevan uuids de pedidos sino "boost:<id de la compra>", y se cobran a la
+    // cuenta de la plataforma. Van por su propio camino: la lógica de pedidos de
+    // más abajo no tiene nada que hacer con ellos (y filtraría el prefijo como
+    // "uuid inválido", ignorando el pago).
+    const externalReference = String(payment.external_reference ?? "");
+    if (externalReference.startsWith("boost:")) {
+      await handleBoostPayment(supabase, payment, externalReference.slice("boost:".length));
+      return new Response("ok", { status: 200 });
+    }
 
     // external_reference lo escribe mp-create-preference como "uuid,uuid,...",
     // pero acá llega desde afuera: si trae cualquier otra cosa, el `.in("id",
