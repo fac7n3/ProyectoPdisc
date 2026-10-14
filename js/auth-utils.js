@@ -235,6 +235,35 @@ export function checkUrlErrors() {
 export async function getPanelAccess(user) {
   if (!user) return { isAdmin: false, seller: null };
 
+  const access = await computePanelAccess(user);
+  // La última respuesta queda guardada para que el botón "Vender"/"Panel" del
+  // home salga con el texto correcto desde el primer pintado (ver el script de
+  // pages/home.html). Se guarda ACÁ y no en el home porque esta función también
+  // corre al iniciar sesión (sellerPanelPage): así la pista ya está cuando la
+  // persona llega al inicio por primera vez. Una consulta que falló no se guarda
+  // (dejaría "sin panel" para una cuenta que sí lo tiene).
+  if (!access.failed) rememberPanelHint(user.id, access);
+  return { isAdmin: access.isAdmin, seller: access.seller };
+}
+
+/** Clave de la pista de "¿tiene panel?" (la lee pages/home.html). */
+const PANEL_HINT_KEY = "bl_panel_hint";
+
+/**
+ * Guarda la última respuesta de getPanelAccess para esta cuenta.
+ * `href` es el panel al que lleva el botón (null = sin panel) y `menu` es true
+ * si la cuenta tiene DOS paneles (vendedor/profesional + admin), caso en el
+ * que el botón del home abre un menú en vez de ser un link.
+ */
+function rememberPanelHint(uid, { isAdmin, seller }) {
+  const href = seller ? `./${SELLER_PANEL_PAGES[seller]}` : isAdmin ? "./admin.html" : null;
+  const hint = { uid, href };
+  if (isAdmin && seller) hint.menu = true;
+  try { localStorage.setItem(PANEL_HINT_KEY, JSON.stringify(hint)); } catch { /* sin storage */ }
+}
+
+async function computePanelAccess(user) {
+
   const role = user.app_metadata?.role;
   // El moderador entra al mismo admin.html que el admin (ver requireRole en
   // js/admin.js), así que cuenta como "tiene panel de administración".
@@ -260,7 +289,10 @@ export async function getPanelAccess(user) {
   if (storeRes.data?.length || staffRes.data?.length) seller = "vendedor";
   else if (profRes.data?.length) seller = "profesional";
 
-  return { isAdmin, seller };
+  // Si alguna consulta falló, "sin panel" puede ser mentira: se avisa para que
+  // no se guarde como pista (getPanelAccess).
+  const failed = !!(storeRes.error || staffRes.error || profRes.error);
+  return { isAdmin, seller, failed };
 }
 
 /** Dónde vive el panel de cada tipo de `seller` (ver getPanelAccess). El del

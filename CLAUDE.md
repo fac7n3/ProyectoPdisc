@@ -91,6 +91,31 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-14 — "Vender" que se veía un instante antes de "Panel" (home), segunda vuelta**,
+  reportado de nuevo por el usuario ("fijate si hay otras zonas con otras palabras que cambian
+  según el rol"). El arreglo del 2026-10-05 dejaba tres huecos, reproducidos con Playwright
+  (cuadros de pantalla con tiempos): (1) una pista vieja de "sin panel" (`bl_panel_hint`
+  con `href:null`) de una cuenta que después pasó a tener panel mostraba "Vender" y después
+  "Panel"; (2) la pista solo la escribía el home, y una consulta fallida de `getPanelAccess`
+  guardaba "sin panel" por error; (3) el script estaba **debajo** del botón, así que el
+  navegador podía pintar el "Vender" de partida antes de que corriera. Ahora: la pista la
+  guarda **`getPanelAccess`** (auth-utils.js; también corre al iniciar sesión, así que ya está
+  cuando se llega al inicio) y **no se guarda si una consulta falló**; el script de
+  `pages/home.html` también deduce el panel del rol del JWT (vendedor/repartidor) cuando no hay
+  pista; el `<head>` marca `<html data-sess>` y `home.css` oculta el botón hasta `data-ready`
+  (así no hay primer pintado con "Vender"); y para la cuenta con DOS paneles (vendedor/
+  profesional + admin) la pista lleva `menu:true` y el botón sale ya con la flechita. **Queda
+  un único caso:** si una cuenta GANA un panel y su pista decía "sin panel", se ve "Vender" esa
+  primera vez (cualquier llamada a `getPanelAccess` la corrige). **Otras zonas con el mismo
+  problema, arregladas:** (a) las tarjetas de producto de todo el sitio decían "Agregar" y
+  después "Tu producto" para el dueño del comercio: `cart-utils.js` guarda qué productos
+  resultaron ser suyos (`bl_own_products`, por cuenta, tope 400) y las pinta bien desde el
+  primer momento, la consulta confirma; (b) el menú de cuenta del celular agregaba la sección
+  "Profesional/Técnico" y movía "Cerrar sesión" después de una consulta: ahora se arma completo
+  de una vez (pista `bl_professional_hint`). **Mirado y sin tocar:** Mi perfil pinta el rol del
+  JWT y después suma etiquetas ("Dueño de...", "Profesional/Técnico · ..."): son agregados, no
+  un texto que cambia. Verificado con Playwright (base lenta simulada) sobre el build real;
+  sin probar con cuentas reales.
 - **Hecho 2026-10-14 — "Impulsá tus ventas": los combos se pueden comprar con Mercado Pago**, a pedido
   del usuario ("hacelo funcional para el pago, como te parezca"). El botón "Promocionar mis publicaciones"
   del Resumen abre `#impulsar` (`pages/vender.html`, sin ítem en el sidebar, solo dueño) con tres combos

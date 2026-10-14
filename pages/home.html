@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
+    <!-- Con sesión iniciada, el botón de la fila de accesos ("Vender" o "Panel",
+         según la cuenta) arranca oculto desde el primer pintado y se muestra ya
+         con el texto correcto (script de abajo y js/home.js). Va en el <head> a
+         propósito: un script más abajo podía correr DESPUÉS de que el navegador
+         pintara el "Vender" de partida. -->
+    <script>
+      (function () {
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            if (/^sb-.*-auth-token$/.test(localStorage.key(i))) {
+              document.documentElement.setAttribute('data-sess', '1');
+              break;
+            }
+          }
+        } catch (e) { /* sin storage: el botón queda visible como siempre */ }
+      })();
+    </script>
     <meta name="description" content="Baradero Local — Comprá productos de comercios locales de Baradero y recibilos en tu casa. Almacén, panadería, verdulería y mucho más." />
     <title>Baradero Local — Tu mercado online de Baradero</title>
     <meta property="og:type" content="website" />
@@ -104,33 +121,49 @@
     </div>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
          renderPanelAction), pero eso se sabe recién después de consultar la
-         base. Sin esto, vendedores y profesionales veían "Vender" un instante y
-         después "Panel". Con la última respuesta guardada en este navegador
-         (bl_panel_hint) el botón sale bien en el primer pintado; sin ella, y con
-         sesión iniciada, queda oculto hasta saberlo (con tope de 3 s). -->
+         base. Para que no se vea el cambio, el texto sale bien en el primer
+         pintado: (1) de la última respuesta guardada en este navegador
+         (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
+         rol que ya viaja en la sesión (vendedor / repartidor). Sin ninguna de
+         las dos, el botón queda oculto hasta saberlo (tope de 3 s) en vez de
+         mostrar "Vender". Sin sesión no se toca nada. -->
     <script>
       (function () {
+        var link = document.getElementById('home-panel-action');
+        if (!link) return;
+        function ready() { link.setAttribute('data-ready', '1'); }
         try {
-          var link = document.getElementById('home-panel-action');
-          if (!link) return;
-          var uid = null;
+          if (!document.documentElement.hasAttribute('data-sess')) { ready(); return; }
+          var uid = null, role = null;
           for (var i = 0; i < localStorage.length; i++) {
             var k = localStorage.key(i);
             if (/^sb-.*-auth-token$/.test(k)) {
               var s = JSON.parse(localStorage.getItem(k));
               uid = s && s.user && s.user.id;
+              role = s && s.user && s.user.app_metadata && s.user.app_metadata.role;
               break;
             }
           }
-          if (!uid) return; // sin sesión: es "Vender" para todo el mundo
+          if (!uid) { ready(); return; }
           var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
-          if (hint && hint.uid === uid) {
-            if (hint.href) { link.textContent = 'Panel'; link.setAttribute('href', hint.href); }
-            return;
+          var href;
+          var menu = false;
+          if (hint && hint.uid === uid) { href = hint.href; menu = !!hint.menu; }
+          else if (role === 'vendedor') href = './vender.html';
+          else if (role === 'repartidor') href = './repartidor.html';
+          else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
+          if (href) {
+            link.textContent = 'Panel';
+            link.setAttribute('href', href);
+            if (menu) { // vendedor/profesional que además es admin: lleva menú
+              link.classList.add('home-action--menu');
+              var c = document.createElement('i');
+              c.className = 'fa-solid fa-chevron-down';
+              link.appendChild(c);
+            }
           }
-          link.style.visibility = 'hidden';
-          setTimeout(function () { link.style.visibility = ''; }, 3000);
-        } catch (e) { /* sin storage: queda como está */ }
+          ready();
+        } catch (e) { ready(); /* sin storage: queda como está */ }
       })();
     </script>
 

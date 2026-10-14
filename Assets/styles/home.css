@@ -5662,3 +5662,9 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   -webkit-mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
   mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
 }
+
+/* Botón "Vender"/"Panel" del home: con sesión iniciada arranca oculto y se
+   muestra recién cuando ya tiene el texto que le corresponde a la cuenta
+   (script de pages/home.html + renderPanelAction/showVenderLink de js/home.js).
+   Así no se ve "Vender" un instante y después "Panel". */
+html[data-sess] #home-panel-action:not([data-ready]) { visibility: hidden; }
