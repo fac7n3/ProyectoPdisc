@@ -1549,9 +1549,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   pasos. De paso, `.transfer-info-box[hidden]` (carrito.css) mostraba una barra gris vacía.
   **Desde la publicación, ningún comercio cobra por MP hasta que vincule su cuenta** (hoy solo "Tienda
   Test Split P06" está vinculada; avisarles a los comercios reales que lo hagan desde Perfil de mi comercio).
-  **Falta:** en el panel de MP, confirmar que la Redirect URL sea
-  `https://proyectopdisc.vercel.app/pages/vender.html` y si la app tiene PKCE (`MP_OAUTH_PKCE`);
-  elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
+  **Configuración de la app de MP verificada (captura del usuario, 2026-10-16):** Redirect URL =
+  `https://proyectopdisc.vercel.app/pages/vender.html` (igual a `REDIRECT_URI` de las funciones), **PKCE = No**
+  (dejar `MP_OAUTH_PKCE` apagado) y permisos read + offline access + write. App "Baradero Local", AppID
+  `7108552352273197` (el MCP de Mercado Pago ya está autorizado: `application_list`/`search_documentation`
+  andan; no expone la configuración de la app).
+  **Falta:** elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
   comercio con MP y otro sin obliga a elegir transferencia/efectivo); reemplazar `MP_ACCESS_TOKEN` por
   el de producción (lo siguen usando los combos de "Impulsá tus ventas"); probar con una cuenta real
   de MP (vincular, pagar en cadena y ver que `mp-webhook` confirme cada pedido).
