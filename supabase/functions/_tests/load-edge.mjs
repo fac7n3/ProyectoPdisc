@@ -17,6 +17,7 @@ export function loadEdgeFunction(tsPath, { env = {}, createClient, fetchImpl }) 
     Deno: { env: { get: (k) => env[k] }, serve: (h) => { handler = h; } },
     createClient,
     fetch: fetchImpl,
+    crypto, btoa, TextEncoder, Uint8Array, URLSearchParams,
     Response, Request, URL, JSON, Math, Date, Number, String, Set, Map, Array, Object, Promise, RegExp, Boolean,
     console: {
       log: () => {},

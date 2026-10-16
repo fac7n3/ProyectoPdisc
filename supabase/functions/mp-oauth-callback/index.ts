@@ -12,19 +12,14 @@
 // intercambio de `code` por tokens y el guardado en la base usan un cliente
 // con SERVICE_ROLE_KEY, igual que mp-webhook.
 //
-// ⚠️ PENDIENTE ANTES DE RETOMAR LA VINCULACIÓN (A113-274): FALTA EL `state`.
-// El flujo OAuth no lleva parámetro `state`, así que nada ata el `code` que
-// llega a la persona que arrancó la vinculación. Si alguien consigue que un
-// vendedor ya logueado dispare esta función con un `code` ajeno (por ejemplo
-// mandándole un link a vender.html con ese code en la query), la tienda del
-// vendedor queda vinculada a la cuenta de Mercado Pago DEL ATACANTE -- y a
-// partir de ahí todos los cobros de esa tienda van a esa cuenta. Es el ataque
-// clásico de "account linking" de OAuth.
-// Hoy no es explotable porque NADA en el frontend llama a esta función (la
-// vinculación quedó pausada, ver A113-274 en CLAUDE.md), pero hay que
-// resolverlo ANTES de cablearla: generar un `state` aleatorio al abrir el
-// consentimiento, guardarlo del lado del servidor asociado al usuario, y acá
-// exigirlo y compararlo antes de intercambiar el `code`.
+// `state` (A113-274): sin él, nada ataba el `code` a quien arrancó la
+// vinculación -- si a un vendedor logueado se le hacía disparar esta función con
+// un `code` ajeno, su tienda quedaba cobrando en la cuenta de Mercado Pago del
+// atacante (OAuth CSRF). Ahora la vinculación arranca en `mp-oauth-start`, que
+// guarda en `mp_oauth_states` un `state` aleatorio de un solo uso atado al
+// usuario y a la tienda. Acá se exige: tiene que existir, ser de ESTE usuario y
+// no estar vencido; se consume antes de canjear el code (el code tampoco sirve
+// dos veces), y el store_id sale de esa fila, nunca del body.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -58,9 +53,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { code, store_id: storeId } = await req.json();
-    if (!code || !storeId) {
-      return jsonResponse({ error: "code y store_id son requeridos." }, 400);
+    const { code, state } = await req.json();
+    if (typeof code !== "string" || !code || typeof state !== "string" || !state) {
+      return jsonResponse({ error: "code y state son requeridos." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -73,6 +68,33 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Sesión inválida." }, 401);
     }
 
+    const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { data: stateRow } = await serviceClient
+      .from("mp_oauth_states")
+      .select("state, store_id, user_id, code_verifier, expires_at")
+      .eq("state", state)
+      .maybeSingle();
+
+    // Se consume SIEMPRE, sirva o no: un state (y un code) se usan una sola vez.
+    if (stateRow) {
+      await serviceClient.from("mp_oauth_states").delete().eq("state", state);
+    }
+
+    if (
+      !stateRow ||
+      stateRow.user_id !== userData.user.id ||
+      new Date(stateRow.expires_at as string).getTime() < Date.now()
+    ) {
+      return jsonResponse(
+        { error: "El intento de vinculación venció o no es válido. Volvé a tocar \"Conectar Mercado Pago\"." },
+        400,
+      );
+    }
+
+    const storeId = stateRow.store_id as string;
+
+    // El dueño pudo cambiar entre que arrancó y que volvió: se revalida.
     const { data: store, error: storeError } = await callerClient
       .from("stores")
       .select("id, owner_id")
@@ -92,19 +114,24 @@ Deno.serve(async (req: Request) => {
         grant_type: "authorization_code",
         code,
         redirect_uri: REDIRECT_URI,
+        ...(stateRow.code_verifier ? { code_verifier: stateRow.code_verifier } : {}),
       }),
     });
 
     const token = await tokenRes.json();
     if (!tokenRes.ok || !token.access_token) {
       console.error("Error de OAuth de Mercado Pago:", token);
-      return jsonResponse({ error: "No se pudo vincular la cuenta de Mercado Pago." }, 502);
+      // `error` de MP ("invalid_grant", "invalid_client", "invalid_request"...) no
+      // trae datos sensibles y es lo que hace falta para saber qué configuración falla.
+      const detail = typeof token?.error === "string" ? token.error : null;
+      return jsonResponse(
+        { error: "No se pudo vincular la cuenta de Mercado Pago.", ...(detail ? { detail } : {}) },
+        502,
+      );
     }
 
     const expiresAt = new Date(Date.now() + Number(token.expires_in ?? 0) * 1000).toISOString();
     const mpUserId = String(token.user_id);
-
-    const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // Una cuenta de Mercado Pago no puede quedar vinculada a dos tiendas.
     // `stores.mp_collector_id` no tiene unique, y mp-webhook resuelve el token

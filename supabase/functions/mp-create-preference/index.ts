@@ -161,15 +161,15 @@ Deno.serve(async (req: Request) => {
 
     const { data: storesData, error: storesError } = await serviceClient
       .from("stores")
-      .select("id, mp_split_pilot, mp_collector_id")
+      .select("id, mp_collector_id")
       .in("id", storeIds);
 
     if (storesError) throw storesError;
 
+    // Vinculada = habilitada: cuando el comercio conecta su cuenta desde el
+    // panel ya cobra directo, sin un flag de piloto aparte (mp_split_pilot).
     const splitStoreIds = (storesData || [])
-      .filter((s: { mp_split_pilot: boolean; mp_collector_id: string | null }) =>
-        s.mp_split_pilot && s.mp_collector_id,
-      )
+      .filter((s: { mp_collector_id: string | null }) => s.mp_collector_id)
       .map((s: { id: string }) => s.id);
 
     // Único caso realmente imposible: una tienda con split vinculado no

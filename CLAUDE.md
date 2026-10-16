@@ -1210,13 +1210,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `comercios.js`, `producto.js` (con la tabla `stock_alerts`, nunca antes
   revisada, bien resuelta), `panel-redirect-utils.js`, `storage-utils.js`.
   Detalle completo en el skill `progreso-baradero-local`.
-- **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
-  Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
-  vendedor logueado se le hace disparar la función con un `code` ajeno, su
-  comercio queda vinculado a la cuenta de MP del atacante y todos los cobros
-  van ahí. Hoy no es explotable porque **ninguna página llama a esa función**
-  (la vinculación está pausada, ver A113-274), pero hay que resolverlo
-  **antes** de cablearla. Anotado también en el encabezado del archivo.
+- **Resuelto 2026-10-16 (en código, sin desplegar) — `mp-oauth-callback` ya exige `state`.** Ver la
+  entrada "Mercado Pago por tienda" más abajo (A113-274).
 - **Resuelto 2026-09-16** — La sección "Contactar a soporte" (Mi perfil y panel
   de vendedor) se veía rota en producción: el commit `3a3e6a3` que sumó los
   adjuntos reescribió `js/support-utils.js` entero (+552 líneas: tarjeta,
@@ -1523,14 +1518,33 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   país. Lógica pura en `js/address-suggest-utils.js` (`node js/address-suggest-utils.test.mjs`).
   **Gotcha:** la política de uso de Nominatim desalienta el autocompletado (1 req/s, User-Agent
   identificable) — si algún día empieza a dar 403, hay que mover la búsqueda a otro geocoder.
-- **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — split de pagos de Mercado Pago sin andar**:
-  la vinculación OAuth de la cuenta de MP del vendedor (`mp-oauth-callback`,
-  `store_mp_credentials`, `stores.mp_collector_id`, piloto P0-6) se dejó pausada
-  porque no se pudo hacer andar. Mientras tanto, **todo pago con Mercado Pago
-  entra a la cuenta de la plataforma** (`MP_ACCESS_TOKEN` global en
-  `mp-create-preference`), no directo al vendedor. Falta diagnosticar el
-  motivo (revisar `redirect_uri`, `MP_CLIENT_ID`/`MP_CLIENT_SECRET`, permisos
-  de la app en Mercado Pago) antes del lanzamiento real.
+- **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — Mercado Pago por tienda
+  (en curso 2026-10-16; decisión del usuario: carrito multi-tienda = un pago de MP por tienda, en cadena)**.
+  **Diagnóstico:** el OAuth NO estaba roto en el servidor — P0-6 se verificó de punta a punta el 2026-07-15/17
+  (hay una fila real en `store_mp_credentials`, la de "Tienda Test Split P06"). Lo que faltaba era el
+  frontend: el botón se sacó el 2026-09-14 (commit `d6497e0`) y armaba la URL con `VITE_MP_CLIENT_ID`
+  (variable que había que cargar a mano en Vercel) y `state=store.id` (adivinable). **Hecho (en la rama,
+  sin desplegar ni aplicar):** (1) Edge Function nueva **`mp-oauth-start`**: arma la URL de MP con el
+  `client_id` del servidor y un `state` aleatorio de un solo uso (10 min) guardado en `mp_oauth_states`;
+  (2) **`mp-oauth-callback`** ahora recibe `{code, state}`, consume el `state` (de este usuario, no
+  vencido), saca el `store_id` de esa fila y devuelve el `error` de MP como `detail`; opcional
+  **PKCE** con el secret `MP_OAUTH_PKCE=true` (hace falta solo si la app de MP lo tiene activado);
+  (3) **migración 132** (`db/schema/132_mp_oauth_state.sql`): `mp_oauth_states`, RPC
+  `disconnect_store_mp` y un trigger que **cierra un hueco real**: `authenticated` podía escribir
+  `stores.mp_collector_id`/`mp_split_pilot` (un dueño podía poner el collector de otra tienda y
+  hacer que el webhook dejara de confirmar sus ventas); (4) tarjeta **"Mercado Pago"** en Perfil de mi
+  comercio (`vender.html`/`vender.js`: `setupMpSection`): interruptor "Cobrar con Mercado Pago" ->
+  "Conectar mi cuenta" (OAuth) / "Desvincular"; **vinculada = habilitada**, ya no se mira
+  `mp_split_pilot` (ni en `carrito.js` ni en `mp-create-preference`). Verificado: 14 + 9 tests de las
+  funciones, SQL contra la base real en transacción deshecha (10 casos), y el panel en navegador con
+  Supabase simulado (conectar, volver con state bueno y malo, desvincular con y sin confirmar).
+  **Falta para cerrar:** aplicar la migración 132 y desplegar `mp-oauth-start` + `mp-oauth-callback`
+  (la migración va primero); en el panel de MP, confirmar que la Redirect URL sea
+  `https://proyectopdisc.vercel.app/pages/vender.html` y si la app tiene PKCE; **el carrito**
+  (un pago de MP por tienda en cadena, y que MP solo se ofrezca si todas las tiendas lo habilitaron:
+  hoy una tienda SIN vincular sigue cobrándose con el token global de la plataforma, y una vinculada
+  no se puede mezclar con otras); reemplazar `MP_ACCESS_TOKEN` por el de producción. Sin probar con una
+  cuenta real de MP.
 - **Resuelto 2026-09-03** — mergeado `feature/home-restructura` (rediseño del home: buscador en la
   misma fila del navbar, carrusel en el hero, dos mosaicos de promos, mapa de comercios cerca y las
   grillas de Ofertas y Esenciales con paginado de a 4). Venía de ~30 commits atrás; al resolver los

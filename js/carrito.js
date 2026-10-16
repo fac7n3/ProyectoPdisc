@@ -1475,7 +1475,7 @@ async function validateCartFreshness() {
   const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
+      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_collector_id)')
       .in('id', productIds),
     supabase
       .from('product_options')
@@ -1524,9 +1524,8 @@ async function validateCartFreshness() {
         deliveryFee: p.stores.delivery_fee,
         freeShippingThreshold: p.stores.free_shipping_threshold,
       });
-      // P0-6: piloto de split payments -- MP solo se ofrece si la tienda
-      // tiene split_pilot activo Y ya vinculó su cuenta (collector_id real).
-      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_split_pilot && p.stores.mp_collector_id));
+      // Tienda con Mercado Pago vinculado desde su panel (collector_id real).
+      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_collector_id));
       storeNameById.set(p.store_id, p.stores.name || 'el comercio');
     }
   });
