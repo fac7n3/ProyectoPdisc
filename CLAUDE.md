@@ -1539,7 +1539,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   funciones, SQL contra la base real en transacción deshecha (10 casos), y el panel en navegador con
   Supabase simulado (conectar, volver con state bueno y malo, desvincular con y sin confirmar).
   **Aplicado a producción el 2026-10-16:** migración 132, `mp-oauth-start` v1 y `mp-oauth-callback` v4.
-  **Carrito en cadena (hecho en la rama, SIN desplegar ni mergear):** `mp-create-preference` ahora
+  **Carrito en cadena (PUBLICADO el 2026-10-16: merge a `main` 56e330d + `mp-create-preference` v9):** `mp-create-preference` ahora
   cobra **un solo comercio por pago** y **solo si vinculó su cuenta** (se sacó el fallback al token
   global de la plataforma: la plata quedaba acá sin forma de liquidarla al vendedor); con varios
   comercios, `carrito.js` paga el primer pedido y al volver, "Mis compras" (`perfil.js`,
@@ -1547,10 +1547,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `created_at` exacto: `pendingChainOrders` en `js/mp-chain-utils.js`, con tests). MP se ofrece en el
   carrito solo si TODOS los comercios lo habilitaron (`allStoresAcceptMp`) y avisa antes que se paga en N
   pasos. De paso, `.transfer-info-box[hidden]` (carrito.css) mostraba una barra gris vacía.
-  **ORDEN AL PUBLICAR:** desplegar `mp-create-preference` v9 (el archivo del repo) **junto con** el
-  merge a `main`: si el backend sale antes, el carrito de producción ofrece MP para comercios sin
-  vincular y recibe un 400; y desde ese momento **ningún comercio cobra por MP hasta que vincule su
-  cuenta** (hoy solo "Tienda Test Split P06" está vinculada; avisarles a los comercios reales).
+  **Desde la publicación, ningún comercio cobra por MP hasta que vincule su cuenta** (hoy solo "Tienda
+  Test Split P06" está vinculada; avisarles a los comercios reales que lo hagan desde Perfil de mi comercio).
   **Falta:** en el panel de MP, confirmar que la Redirect URL sea
   `https://proyectopdisc.vercel.app/pages/vender.html` y si la app tiene PKCE (`MP_OAUTH_PKCE`);
   elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
