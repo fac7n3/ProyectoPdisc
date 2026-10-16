@@ -1538,13 +1538,25 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `mp_split_pilot` (ni en `carrito.js` ni en `mp-create-preference`). Verificado: 14 + 9 tests de las
   funciones, SQL contra la base real en transacción deshecha (10 casos), y el panel en navegador con
   Supabase simulado (conectar, volver con state bueno y malo, desvincular con y sin confirmar).
-  **Falta para cerrar:** aplicar la migración 132 y desplegar `mp-oauth-start` + `mp-oauth-callback`
-  (la migración va primero); en el panel de MP, confirmar que la Redirect URL sea
-  `https://proyectopdisc.vercel.app/pages/vender.html` y si la app tiene PKCE; **el carrito**
-  (un pago de MP por tienda en cadena, y que MP solo se ofrezca si todas las tiendas lo habilitaron:
-  hoy una tienda SIN vincular sigue cobrándose con el token global de la plataforma, y una vinculada
-  no se puede mezclar con otras); reemplazar `MP_ACCESS_TOKEN` por el de producción. Sin probar con una
-  cuenta real de MP.
+  **Aplicado a producción el 2026-10-16:** migración 132, `mp-oauth-start` v1 y `mp-oauth-callback` v4.
+  **Carrito en cadena (hecho en la rama, SIN desplegar ni mergear):** `mp-create-preference` ahora
+  cobra **un solo comercio por pago** y **solo si vinculó su cuenta** (se sacó el fallback al token
+  global de la plataforma: la plata quedaba acá sin forma de liquidarla al vendedor); con varios
+  comercios, `carrito.js` paga el primer pedido y al volver, "Mis compras" (`perfil.js`,
+  `buildMpChainStep`) ofrece "Pagar a <comercio>" con el siguiente (los pedidos de una compra comparten
+  `created_at` exacto: `pendingChainOrders` en `js/mp-chain-utils.js`, con tests). MP se ofrece en el
+  carrito solo si TODOS los comercios lo habilitaron (`allStoresAcceptMp`) y avisa antes que se paga en N
+  pasos. De paso, `.transfer-info-box[hidden]` (carrito.css) mostraba una barra gris vacía.
+  **ORDEN AL PUBLICAR:** desplegar `mp-create-preference` v9 (el archivo del repo) **junto con** el
+  merge a `main`: si el backend sale antes, el carrito de producción ofrece MP para comercios sin
+  vincular y recibe un 400; y desde ese momento **ningún comercio cobra por MP hasta que vincule su
+  cuenta** (hoy solo "Tienda Test Split P06" está vinculada; avisarles a los comercios reales).
+  **Falta:** en el panel de MP, confirmar que la Redirect URL sea
+  `https://proyectopdisc.vercel.app/pages/vender.html` y si la app tiene PKCE (`MP_OAUTH_PKCE`);
+  elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
+  comercio con MP y otro sin obliga a elegir transferencia/efectivo); reemplazar `MP_ACCESS_TOKEN` por
+  el de producción (lo siguen usando los combos de "Impulsá tus ventas"); probar con una cuenta real
+  de MP (vincular, pagar en cadena y ver que `mp-webhook` confirme cada pedido).
 - **Resuelto 2026-09-03** — mergeado `feature/home-restructura` (rediseño del home: buscador en la
   misma fila del navbar, carrusel en el hero, dos mosaicos de promos, mapa de comercios cerca y las
   grillas de Ofertas y Esenciales con paginado de a 4). Venía de ~30 commits atrás; al resolver los

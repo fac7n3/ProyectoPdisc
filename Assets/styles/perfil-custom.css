@@ -404,6 +404,9 @@ body {
 .compra-history .ord-events { margin-top: 0.6rem; }
 .compra-cancel { margin-top: 0.25rem; }
 .compra-mp-banner { margin-bottom: 1rem; }
+/* Siguiente pago de una compra en varios comercios (Mercado Pago cobra de a uno). */
+.compra-mp-chain { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; margin-bottom: 1rem; }
+.compra-mp-chain p { margin: 0; }
 
 .compra-total {
   font-weight: 700;

@@ -20,7 +20,7 @@ function run(name, fn) {
   catch (e) { console.log(`❌ ${name}\n   ${e.message}`); process.exitCode = 1; }
 }
 
-async function call(body, { orders = [], stores = [], creds = [] } = {}) {
+async function call(body, { orders = [], stores = [], creds = CREDS } = {}) {
   const tables = {
     orders: orders.map(o => ({ ...o })), stores: stores.map(s => ({ ...s })),
     store_mp_credentials: creds.map(c => ({ ...c })),
@@ -43,7 +43,9 @@ async function call(body, { orders = [], stores = [], creds = [] } = {}) {
 const order = (id, total) => ({
   id, store_id: 's1', total_price: total, payment_method: 'mercadopago', payment_status: 'pending',
 });
-const STORE = { id: 's1', mp_collector_id: null };
+const STORE = { id: 's1', mp_collector_id: '777' };
+const FAR = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+const CREDS = [{ store_id: 's1', access_token: 'TOKEN_VENDEDOR', refresh_token: 'rt', expires_at: FAR }];
 
 console.log('--- mp-create-preference ---\n');
 
@@ -108,29 +110,42 @@ console.log('--- mp-create-preference ---\n');
   });
 }
 
-// 8. Comercio con la cuenta vinculada: se cobra con SU token y con la comisión,
-//    sin ningún flag de piloto aparte (vinculada = habilitada)
+// 8. Se cobra con el token del vendedor y con la comisión de la plataforma
 {
-  const far = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
-  const r = await call({ order_ids: [A] }, {
-    orders: [order(A, 10000)], stores: [{ id: 's1', mp_collector_id: '777' }],
-    creds: [{ store_id: 's1', access_token: 'TOKEN_VENDEDOR', refresh_token: 'rt', expires_at: far }],
-  });
-  run('tienda con MP vinculado -> preferencia con el token del vendedor y marketplace_fee', () => {
+  const r = await call({ order_ids: [A] }, { orders: [order(A, 10000)], stores: [STORE] });
+  run('el pago se arma con el token del vendedor y marketplace_fee', () => {
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.equal(r.prefAuth, 'Bearer TOKEN_VENDEDOR');
     assert.equal(r.prefBody.marketplace_fee, 0);
   });
 }
 
-// 9. Una tienda vinculada no comparte preferencia con otras (distinto access_token)
+// 9. Una preferencia = un comercio: varios comercios se cobran en cadena
 {
   const r = await call({ order_ids: [A, B] }, {
     orders: [order(A, 5000), { ...order(B, 3000), store_id: 's2' }],
-    stores: [{ id: 's1', mp_collector_id: '777' }, { id: 's2', mp_collector_id: null }],
+    stores: [STORE, { id: 's2', mp_collector_id: '888' }],
   });
-  run('vinculada + otra tienda en el mismo pago -> 400 claro', () => {
+  run('pedidos de dos comercios en el mismo pago -> 400 "de a un comercio"', () => {
     assert.equal(r.status, 400);
-    assert.match(r.body.error, /por separado/);
+    assert.match(r.body.error, /de a un comercio/);
   });
+}
+
+// 10. Comercio sin Mercado Pago vinculado: no cae al token global de la plataforma
+{
+  const r = await call({ order_ids: [A] }, {
+    orders: [order(A, 5000)], stores: [{ id: 's1', mp_collector_id: null }],
+  });
+  run('comercio sin MP vinculado -> 400 y no se llama a Mercado Pago', () => {
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /no cobra con Mercado Pago/);
+    assert.equal(r.prefBody, null);
+  });
+}
+
+// 11. Vinculado pero sin credenciales guardadas
+{
+  const r = await call({ order_ids: [A] }, { orders: [order(A, 5000)], stores: [STORE], creds: [] });
+  run('vinculado sin credenciales -> 400', () => assert.equal(r.status, 400));
 }

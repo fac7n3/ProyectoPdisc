@@ -36,6 +36,8 @@ const mercadopagoProvider = {
    * confirmación real llega después por webhook (mp-webhook, server-side)
    * cuando Mercado Pago efectivamente acredita el pago — carrito.js no debe
    * mostrar "¡pagado!", la orden queda pending hasta que llegue el webhook.
+   * Los pedidos de UN solo comercio por llamada (un access_token por pago): con
+   * varios comercios se llama una vez por pedido, en cadena (mp-chain-utils.js).
    * @returns {Promise<{success: boolean, message?: string, redirecting?: boolean}>}
    */
   async pay(orderIds) {

@@ -5451,3 +5451,21 @@ por tienda, en cadena** (MP no reparte un pago entre varios `collector_id`: una 
   `localStorage['sb-localhost-auth-token']`. Se borraron al terminar.
 - **Sin hacer:** aplicar 132 y desplegar las dos funciones; carrito en cadena; que MP solo se ofrezca si
   todas las tiendas lo habilitaron (hoy una tienda sin vincular se cobra con el token global).
+
+### Mercado Pago por tienda — carrito en cadena (2026-10-16, misma rama; sin desplegar `mp-create-preference`)
+- Decisión (usuario): con varios comercios, **un pago de MP por comercio, en cadena**. MP usa un solo
+  `access_token` por preferencia y solo hay `marketplace_fee` para un vendedor por pago.
+- `mp-create-preference`: rechaza (400) pedidos de más de un comercio y comercios sin `mp_collector_id`
+  ("no cobra con Mercado Pago"); ya no existe el `MP_ACCESS_TOKEN` global ahí (los combos usan el suyo en
+  `mp-create-boost-preference`). Tests: 11 casos en `mp-create-preference.test.mjs`.
+- `js/mp-chain-utils.js`: `pendingChainOrders(orders, paidIds)` (los pedidos de una compra comparten
+  `created_at` exacto porque `create_order` corre en una transacción; verificado en producción: grupos de 2
+  pedidos con 2 comercios y el mismo timestamp) y `allStoresAcceptMp`. Sin estado en el navegador: lo que falta
+  pagar se deduce de los pedidos pendientes. `carrito.js` paga solo `orderIds[0]`; `perfil.js` muestra
+  "Falta pagar: ..." + botón al volver (`?mp=success|pending`), con `bl_mp_retry` para no tocar el carrito de nuevo.
+- **Gotcha:** `.transfer-info-box` tenía `display:flex`, que le gana al atributo `hidden`: la caja vacía
+  se veía como una barra gris. Regla `[hidden]` agregada en `carrito.css`.
+- Verificado en navegador con Supabase simulado: carrito con 2 comercios vinculados (MP habilitado + aviso
+  de 2 pasos), con uno sin vincular (MP deshabilitado, pasa a transferencia), el checkout manda
+  `create_order` con los dos y `mp-create-preference` solo con el primero, y la vuelta de MP muestra el
+  siguiente (excluye un pendiente viejo de otra compra) y su botón paga el pedido correcto.
