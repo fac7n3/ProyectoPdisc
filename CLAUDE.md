@@ -36,7 +36,7 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **`.env` YA NO se versiona en git** (revertido 2026-07-14, a pedido del usuario — hasta esa fecha era decisión intencional). Sigue teniendo solo `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`, públicas por diseño de Supabase (protegidas por RLS, no por secreto) — pero se sacó del repo igual para reducir superficie expuesta. No rompe nada: Vercel ya tiene estas mismas variables cargadas aparte en su propio panel (Project Settings → Environment Variables, confirmado funcionando desde F11-02) y construye desde esas, no desde el `.env` commiteado; en local hace falta crear el archivo a mano (ver `docs/RUN_LOCAL.md`). El commit que lo agregó (`07bcadd`) sigue en el historial de git (no se reescribió el historial — el contenido nunca fue un secreto real, no ameritaba un rewrite destructivo con force-push). Nunca versionar acá una service role key ni tokens de Jira (esos sí quedan en `.jira.env`, gitignoreado).
 
 ## Decisiones de producto (definidas)
-- **Pagos:** ✅ Mercado Pago real (Checkout Pro, F2-07) + transferencia con comprobante + simulado (solo para testing interno). Credenciales de **prueba** cargadas como secret `MP_ACCESS_TOKEN` en Supabase Edge Functions — para lanzar de verdad falta reemplazarlas por las de **producción** (mismo nombre de secret, no requiere tocar código).
+- **Pagos:** ✅ Mercado Pago real (Checkout Pro, F2-07) + transferencia con comprobante + simulado (solo para testing interno). **Desde el 2026-10-16 `MP_ACCESS_TOKEN` es el de PRODUCCIÓN** de la app "Baradero Local" (cuenta de MP `3535220284`, confirmado por el usuario con el sufijo del token y el prefijo de una preferencia real): los cobros con el token global (los combos de "Impulsá tus ventas") mueven **plata real**; las tarjetas de prueba ya no sirven. Antes eran credenciales de prueba (usuario `3534929376`). Revisar que `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean también los de producción de esa app.
 - **Envíos:** ambos (retiro en local + envío dentro de Baradero).
 - **Verificación de vendedor:** aprobación manual del admin **+** validar CUIT.
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
@@ -114,8 +114,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (chico/principal): el comercio carga la imagen en "Banner del inicio" y el admin le asigna el espacio en
   `home_promos`, como siempre; la pantalla se lo explica. **Sin hacer:** orden de productos en el buscador
   (`search_products`, migración 128) y una pantalla de admin para ver las compras de combos.
-  **Sin probar con plata:** `MP_ACCESS_TOKEN` es de **prueba** (los cobros de combos también hasta cambiarlo
-  por el de producción) y no se hizo ni un pago de punta a punta (el sandbox no llega a Supabase ni a
+  **Sin probar con plata:** hasta el 2026-10-16 `MP_ACCESS_TOKEN` era de **prueba**; ahora es el de producción
+  (ver "Decisiones de producto") y no se hizo ni un pago de punta a punta (el sandbox no llega a Supabase ni a
   Mercado Pago). **Conviene, con una cuenta dueña y la cuenta de prueba de MP:** comprar un combo, ver que
   vuelve a `#impulsar` con el combo activo, y **hacer una compra común de un cliente** para confirmar que
   `mp-webhook` v7 sigue confirmando pedidos. Verificado antes de publicar: SQL contra la base real en una
@@ -1555,8 +1555,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `7108552352273197` (el MCP de Mercado Pago ya está autorizado: `application_list`/`search_documentation`
   andan; no expone la configuración de la app).
   **Falta:** elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
-  comercio con MP y otro sin obliga a elegir transferencia/efectivo); reemplazar `MP_ACCESS_TOKEN` por
-  el de producción (lo siguen usando los combos de "Impulsá tus ventas"); probar con una cuenta real
+  comercio con MP y otro sin obliga a elegir transferencia/efectivo); verificar que `MP_CLIENT_ID`/`MP_CLIENT_SECRET`
+  sean los de producción (`MP_ACCESS_TOKEN` ya lo es); probar con una cuenta real
   de MP (vincular, pagar en cadena y ver que `mp-webhook` confirme cada pedido).
 - **Resuelto 2026-09-03** — mergeado `feature/home-restructura` (rediseño del home: buscador en la
   misma fila del navbar, carrusel en el hero, dos mosaicos de promos, mapa de comercios cerca y las
