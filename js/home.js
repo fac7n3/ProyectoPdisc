@@ -901,10 +901,9 @@ function initPromoBanners() {
 /**
  * Pinta en cada espacio del mosaico la promo del comercio que el admin le
  * asignó (tabla home_promos, migración 108). Un espacio sin promo "viva"
- * (ver isPromoLive) no se toca: el primer mosaico sigue con su banner fijo del
- * HTML/CSS y el segundo se oculta (no tiene imágenes fijas). Si la consulta
- * falla pasa lo mismo -- es decoración, no vale la pena mostrar un error en la
- * portada.
+ * (ver isPromoLive) se oculta -- los mosaicos no tienen imágenes fijas, y si
+ * ninguno tiene promo se oculta la sección entera. Si la consulta falla pasa lo
+ * mismo -- es decoración, no vale la pena mostrar un error en la portada.
  */
 async function loadHomePromos() {
   const banners = document.querySelectorAll('[data-promo-slot]');
@@ -954,12 +953,12 @@ async function loadHomePromos() {
     banner.setAttribute('aria-label', `${promoAriaLabel(promo)}. Se abre la imagen ampliada; cerrala o tocá de nuevo para ir a la publicación.`);
   });
 
-  // El segundo mosaico no trae imágenes fijas: un espacio sin promo se
-  // oculta y la sección entera aparece solo si hay al menos una promo.
-  document.querySelectorAll('.promo-mosaic-2').forEach((mosaic) => {
+  // Los mosaicos no traen imágenes fijas: un espacio sin promo se oculta y
+  // la sección entera aparece solo si hay al menos una promo.
+  document.querySelectorAll('.promo-mosaic, .promo-mosaic-2').forEach((mosaic) => {
     const slots = mosaic.querySelectorAll('[data-promo-slot]');
     slots.forEach((slot) => { slot.hidden = !slot.classList.contains('is-store-promo'); });
-    mosaic.querySelectorAll('.promo-mosaic-2__side').forEach((side) => {
+    mosaic.querySelectorAll('.promo-mosaic__side, .promo-mosaic-2__side').forEach((side) => {
       side.hidden = ![...side.querySelectorAll('[data-promo-slot]')].some((s) => !s.hidden);
     });
     mosaic.hidden = ![...slots].some((s) => !s.hidden);

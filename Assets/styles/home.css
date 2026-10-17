@@ -1770,6 +1770,12 @@ button.coupon-chip:hover {
   gap: 1rem;
 }
 
+/* Cada espacio lo llena loadHomePromos() (home.js) con la promo de un
+   comercio: la imagen y el estilo salen de .is-store-promo (más abajo), acá
+   solo van la caja y la proporción. Sin imágenes fijas en el código. "a" es
+   el bloque grande (2fr): sin aspect-ratio propio se estira (stretch, default
+   de grid) para igualar la altura real de la columna apilada de la derecha,
+   así los dos bordes inferiores quedan alineados. */
 .promo-banner {
   position: relative;
   display: flex;
@@ -1779,47 +1785,59 @@ button.coupon-chip:hover {
   border-radius: var(--bl-radius-md);
   color: #fff;
   aspect-ratio: 900 / 507;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.promo-banner--a {
+  aspect-ratio: unset;
 }
 
 /* Mini rebote al pasar el mouse/tocar con foco -- invita a que hagan click
-   para ver la imagen ampliada (initPromoBannerLightbox en home.js). */
-.promo-banner:hover,
-.promo-banner:focus-visible {
+   para ver la imagen ampliada (initPromoBanners en home.js). */
+.promo-banner.is-store-promo:hover,
+.promo-banner.is-store-promo:focus-visible {
   transform: scale(1.035);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
-/* Foto completa (background-size: contain, sin recortar -- se ve entera con
-   su propio texto), con un degradé liviano del color de la promo solo en la
-   franja de abajo -- lo justo para que "Promoción"/el título se distingan
-   sin taparle el texto propio a la foto (que se sigue viendo arriba, clara). */
-/* Sin aspect-ratio propio: al ser 2fr contra 1fr, su ancho es siempre el
-   doble del de las tarjetas apiladas de la derecha, así que su alto "natural"
-   (mismo aspect-ratio que ellas) queda un gap más bajo que la suma de esas
-   dos tarjetas + el espacio entre ellas. Se estira (stretch, default de
-   grid) para igualar la altura real de la columna derecha, que es la que
-   manda -- así los dos bordes inferiores quedan alineados. En mobile
-   (abajo) vuelve a necesitar su propio aspect-ratio porque ahí queda solo
-   en su fila, sin la columna derecha al lado para tomarle la altura. */
-.promo-banner--a {
-  background-color: #e63946;
-  background-image: linear-gradient(180deg, rgba(230, 57, 70, 0) 0%, rgba(230, 57, 70, 0) 40%, rgba(230, 57, 70, 0.15) 55%, rgba(230, 57, 70, 0.35) 75%, rgba(230, 57, 70, 0.6) 100%), url('../images/banners/promo-aguas.webp');
-  aspect-ratio: unset;
+/* Un espacio sin promo se oculta (display:flex de arriba pisaría el atributo
+   hidden) y el resto se reacomoda para que las imágenes 16:9 de los
+   comercios no queden con franjas vacías. */
+.promo-banner[hidden],
+.promo-mosaic__side[hidden] {
+  display: none;
 }
 
-.promo-banner--b {
-  background-color: #ffb703;
-  background-image: linear-gradient(180deg, rgba(255, 183, 3, 0) 0%, rgba(255, 183, 3, 0) 40%, rgba(255, 183, 3, 0.15) 55%, rgba(255, 183, 3, 0.35) 75%, rgba(255, 183, 3, 0.6) 100%), url('../images/banners/promo-hamburguesas.webp');
+/* Un solo chico: el grande se queda en 16:9 y el chico va centrado al lado. */
+.promo-mosaic__side {
+  justify-content: center;
 }
 
-.promo-banner--c {
-  background-color: #06a77d;
-  background-image: linear-gradient(180deg, rgba(6, 167, 125, 0) 0%, rgba(6, 167, 125, 0) 40%, rgba(6, 167, 125, 0.15) 55%, rgba(6, 167, 125, 0.35) 75%, rgba(6, 167, 125, 0.6) 100%), url('../images/banners/promo-gaseosas.webp');
+.promo-banner--a:has(~ .promo-mosaic__side > [hidden]) {
+  aspect-ratio: 16 / 9;
+}
+
+/* Sin el grande: los chicos lado a lado, en una sola fila. */
+.promo-mosaic__grid:has(> .promo-banner--a[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+.promo-mosaic__grid:has(> .promo-banner--a[hidden]) .promo-mosaic__side {
+  flex-direction: row;
+}
+
+.promo-mosaic__grid:has(> .promo-banner--a[hidden]) .promo-banner {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Sin los chicos: el grande solo, centrado, a los 2/3 del ancho. */
+.promo-mosaic__grid:has(> .promo-mosaic__side[hidden]) {
+  grid-template-columns: minmax(0, 66.66%);
+  justify-content: center;
+}
+
+.promo-mosaic__grid:has(> .promo-mosaic__side[hidden]) .promo-banner--a {
+  aspect-ratio: 16 / 9;
 }
 
 /* Sombra extra encima del degradé, para que "Promoción"/"Combos"/"Oferta
@@ -1842,16 +1860,21 @@ button.coupon-chip:hover {
 }
 
 @media (max-width: 640px) {
-  /* Se apilan en una sola columna -- el aspect-ratio de cada tarjeta ya
-     resuelve el alto solo, no hace falta pisarlo acá. */
-  .promo-mosaic__grid {
+  /* Se apilan en una sola columna, el grande primero. */
+  .promo-mosaic__grid,
+  .promo-mosaic__grid:has(> .promo-banner--a[hidden]),
+  .promo-mosaic__grid:has(> .promo-mosaic__side[hidden]) {
     grid-template-columns: 1fr;
   }
 
-  /* Acá promo-banner--a vuelve a quedar sola en su fila (sin la columna de
-     la derecha al lado para estirarse a su altura), así que necesita su
-     propio aspect-ratio de nuevo -- si no, colapsa. */
-  .promo-banner--a {
+  .promo-mosaic__grid:has(> .promo-banner--a[hidden]) .promo-mosaic__side {
+    flex-direction: column;
+  }
+
+  /* Solo en su fila (sin la columna de la derecha para tomarle la altura),
+     el grande necesita su propio aspect-ratio. */
+  .promo-banner--a,
+  .promo-banner--a:has(~ .promo-mosaic__side > [hidden]) {
     aspect-ratio: 900 / 507;
   }
 }
