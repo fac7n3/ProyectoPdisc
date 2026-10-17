@@ -1791,12 +1791,12 @@ button.coupon-chip:hover {
   aspect-ratio: unset;
 }
 
-/* Mini rebote al pasar el mouse/tocar con foco -- invita a que hagan click
-   para ver la imagen ampliada (initPromoBanners en home.js). */
+/* Apenas un levantón al pasar el mouse/tocar con foco (1%): alcanza para
+   avisar que se puede apretar, sin que la imagen "salte". */
 .promo-banner.is-store-promo:hover,
 .promo-banner.is-store-promo:focus-visible {
-  transform: scale(1.035);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  transform: scale(1.01);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Un espacio sin promo se oculta (display:flex de arriba pisaría el atributo
@@ -2009,8 +2009,8 @@ button.coupon-chip:hover {
 
 .promo-banner-2.is-store-promo:hover,
 .promo-banner-2.is-store-promo:focus-visible {
-  transform: scale(1.02);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  transform: scale(1.01);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* ===========================================================
