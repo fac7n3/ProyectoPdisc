@@ -422,23 +422,18 @@
       <!-- Segundo mosaico de banners: el grid del de arriba (promo-mosaic)
            espejado -- los dos chicos apilados a la izquierda + el bloque
            grande a la derecha. El orden del HTML es el visual, así el Tab
-           recorre los banners de izquierda a derecha. Mismos espacios
-           asignables que el de arriba (data-promo-slot). -->
-      <section class="promo-mosaic-2" aria-label="Más promociones">
+           recorre los banners de izquierda a derecha. SIN imágenes en el
+           código: cada espacio (data-promo-slot) lo llena loadHomePromos() en
+           home.js con la promo que el admin le asigna a un comercio (tabla
+           home_promos). Un espacio sin promo se oculta, y la sección entera
+           queda oculta mientras no haya ninguna. -->
+      <section class="promo-mosaic-2" aria-label="Más promociones" hidden>
         <div class="promo-mosaic-2__grid">
           <div class="promo-mosaic-2__side">
-            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e">
-              <span class="promo-banner__eyebrow">Envíos</span>
-              <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
-            </div>
-            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
-              <span class="promo-banner__eyebrow">Comercios</span>
-              <span class="promo-banner__title">Sumate a Baradero Local</span>
-            </div>
+            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e"></div>
+            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f"></div>
           </div>
-          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
-            <span class="promo-banner__eyebrow">Novedades</span>
-          </div>
+          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d"></div>
         </div>
       </section>
 

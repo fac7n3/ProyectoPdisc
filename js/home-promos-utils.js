@@ -12,9 +12,9 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_a', label: 'Mosaico de arriba · grande (izquierda)', ratio: '16:9 (ej. 1600x900)' },
   { slot: 'mosaic_b', label: 'Mosaico de arriba · chico (arriba a la derecha)', ratio: '16:9 (ej. 900x507)' },
   { slot: 'mosaic_c', label: 'Mosaico de arriba · chico (abajo a la derecha)', ratio: '16:9 (ej. 900x507)' },
-  { slot: 'mosaic_d', label: 'Mosaico de abajo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
-  { slot: 'mosaic_e', label: 'Mosaico de abajo · izquierda', ratio: '4:1 (ej. 1200x300)' },
-  { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_d', label: 'Mosaico de abajo · grande (derecha)', ratio: '16:9 (ej. 1600x900)' },
+  { slot: 'mosaic_e', label: 'Mosaico de abajo · chico (arriba a la izquierda)', ratio: '16:9 (ej. 900x507)' },
+  { slot: 'mosaic_f', label: 'Mosaico de abajo · chico (abajo a la izquierda)', ratio: '16:9 (ej. 900x507)' },
 ];
 
 export function slotLabel(slot) {

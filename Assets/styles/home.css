@@ -1881,10 +1881,11 @@ button.coupon-chip:hover {
   gap: 1rem;
 }
 
-/* Mismo tratamiento que .promo-banner de arriba: foto entera (contain, sin
-   recortar) con un degradé vertical liviano del color de la promo solo
-   abajo, para que "Novedades"/"Envíos"/"Comercios" se lean sin tapar la
-   foto. */
+/* Cada espacio lo llena loadHomePromos() (home.js) con la promo de un
+   comercio: la imagen y el estilo salen de .is-store-promo (más abajo), acá
+   solo van la caja y la proporción. Sin imágenes fijas en el código. "d" es
+   el bloque grande (2fr): pierde el aspect-ratio propio para estirarse a la
+   altura real de la columna apilada de al lado. */
 .promo-banner-2 {
   position: relative;
   display: flex;
@@ -1894,65 +1895,71 @@ button.coupon-chip:hover {
   border-radius: var(--bl-radius-md);
   color: #fff;
   aspect-ratio: 900 / 507;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
-.promo-banner-2:hover,
-.promo-banner-2:focus-visible {
-  transform: scale(1.035);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-}
-
-/* Paleta distinta a la del primer mosaico (morado/azul noche/frambuesa),
-   para que no se lea como una repetición de la misma sección. "d" es el
-   bloque grande (2fr): igual que .promo-banner--a, pierde el aspect-ratio
-   propio para estirarse a la altura real de la columna apilada de al lado. */
 .promo-banner-2--d {
-  background-color: #7209b7;
-  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
   aspect-ratio: unset;
 }
 
-/* Imágenes de PRUEBA (Assets/images/banners/promo-*-test.svg) -- reemplazar
-   por fotos reales cuando haya. */
-.promo-banner-2--e {
-  background-color: #14213d;
-  background-image: linear-gradient(180deg, rgba(20, 33, 61, 0) 0%, rgba(20, 33, 61, 0) 40%, rgba(20, 33, 61, 0.15) 55%, rgba(20, 33, 61, 0.35) 75%, rgba(20, 33, 61, 0.6) 100%), url('../images/banners/promo-envios-test.svg');
+/* Un espacio sin promo se oculta (display:flex de arriba pisaría el atributo
+   hidden) y el resto se reacomoda para que las imágenes 16:9 de los
+   comercios no queden con franjas vacías. */
+.promo-banner-2[hidden],
+.promo-mosaic-2__side[hidden] {
+  display: none;
 }
 
-.promo-banner-2--f {
-  background-color: #d90368;
-  background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(217, 3, 104, 0.15) 55%, rgba(217, 3, 104, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
+/* Un solo chico: el grande se queda en 16:9 y el chico va centrado al lado. */
+.promo-mosaic-2__side {
+  justify-content: center;
 }
 
-/* El banner "Envíos" (mosaic_e) queda como imagen fija sin ir a ningún
-   lado -- no tiene role="button"/tabindex en el HTML, y acá se le saca el
-   cursor de mano y la animación de hover que sí tienen el resto de los
-   banners clickeables. Si el admin le asigna una promo real de un comercio
-   (home_promos), loadHomePromos() en home.js le agrega .is-store-promo +
-   role/tabindex y vuelve a ser clickeable -- por eso el :not() de acá. */
-.promo-banner-2--e:not(.is-store-promo) {
-  cursor: default;
+.promo-mosaic-2__side:has(> [hidden]) ~ .promo-banner-2--d {
+  aspect-ratio: 16 / 9;
 }
 
-.promo-banner-2--e:not(.is-store-promo):hover,
-.promo-banner-2--e:not(.is-store-promo):focus-visible {
-  transform: none;
-  box-shadow: none;
+/* Sin el grande: los chicos lado a lado, en una sola fila. */
+.promo-mosaic-2__grid:has(> .promo-banner-2--d[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+.promo-mosaic-2__grid:has(> .promo-banner-2--d[hidden]) .promo-mosaic-2__side {
+  flex-direction: row;
+}
+
+.promo-mosaic-2__grid:has(> .promo-banner-2--d[hidden]) .promo-banner-2 {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Sin los chicos: el grande solo, centrado, a los 2/3 del ancho. */
+.promo-mosaic-2__grid:has(> .promo-mosaic-2__side[hidden]) {
+  grid-template-columns: minmax(0, 66.66%);
+  justify-content: center;
+}
+
+.promo-mosaic-2__grid:has(> .promo-mosaic-2__side[hidden]) .promo-banner-2--d {
+  aspect-ratio: 16 / 9;
 }
 
 @media (max-width: 640px) {
-  .promo-mosaic-2__grid {
+  .promo-mosaic-2__grid,
+  .promo-mosaic-2__grid:has(> .promo-banner-2--d[hidden]),
+  .promo-mosaic-2__grid:has(> .promo-mosaic-2__side[hidden]) {
     grid-template-columns: 1fr;
   }
 
-  .promo-banner-2--d {
+  .promo-mosaic-2__grid:has(> .promo-banner-2--d[hidden]) .promo-mosaic-2__side {
+    flex-direction: column;
+  }
+
+  .promo-banner-2--d,
+  .promo-mosaic-2__side:has(> [hidden]) ~ .promo-banner-2--d {
     aspect-ratio: 900 / 507;
-    /* En celular el grande sigue yendo arriba de los chicos. */
+  }
+
+  /* En celular el grande sigue yendo arriba de los chicos. */
+  .promo-banner-2--d {
     order: -1;
   }
 }
