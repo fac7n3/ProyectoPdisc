@@ -1857,9 +1857,10 @@ button.coupon-chip:hover {
 }
 
 /* ===========================================================
-   SEGUNDO MOSAICO DE BANNERS (mismo grid que el de arriba: bloque grande a
-   la izquierda + los otros dos apilados a la derecha -- ver
-   .promo-mosaic__grid/.promo-mosaic__side, mismos valores acá abajo)
+   SEGUNDO MOSAICO DE BANNERS (el grid de arriba espejado: los dos chicos
+   apilados a la izquierda + el bloque grande a la derecha -- ver
+   .promo-mosaic__grid/.promo-mosaic__side; mismos valores, columnas
+   invertidas)
    =========================================================== */
 
 .promo-mosaic-2 {
@@ -1870,7 +1871,7 @@ button.coupon-chip:hover {
 
 .promo-mosaic-2__grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 2fr;
   gap: 1rem;
 }
 
@@ -1951,6 +1952,8 @@ button.coupon-chip:hover {
 
   .promo-banner-2--d {
     aspect-ratio: 900 / 507;
+    /* En celular el grande sigue yendo arriba de los chicos. */
+    order: -1;
   }
 }
 
