@@ -607,6 +607,10 @@
   gap: 0.5rem;
 }
 
+/* El display:flex de arriba le gana al [hidden] del navegador: sin esto la caja
+   vacía se veía como una barra gris cuando no había nada que mostrar. */
+.transfer-info-box[hidden] { display: none; }
+
 .transfer-info-box__store {
   font-weight: 700;
 }

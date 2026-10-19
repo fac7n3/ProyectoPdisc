@@ -36,7 +36,7 @@ Contexto largo: [docs/CONTEXTO-PROYECTO.md](docs/CONTEXTO-PROYECTO.md) · Plan c
 - **`.env` YA NO se versiona en git** (revertido 2026-07-14, a pedido del usuario — hasta esa fecha era decisión intencional). Sigue teniendo solo `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`, públicas por diseño de Supabase (protegidas por RLS, no por secreto) — pero se sacó del repo igual para reducir superficie expuesta. No rompe nada: Vercel ya tiene estas mismas variables cargadas aparte en su propio panel (Project Settings → Environment Variables, confirmado funcionando desde F11-02) y construye desde esas, no desde el `.env` commiteado; en local hace falta crear el archivo a mano (ver `docs/RUN_LOCAL.md`). El commit que lo agregó (`07bcadd`) sigue en el historial de git (no se reescribió el historial — el contenido nunca fue un secreto real, no ameritaba un rewrite destructivo con force-push). Nunca versionar acá una service role key ni tokens de Jira (esos sí quedan en `.jira.env`, gitignoreado).
 
 ## Decisiones de producto (definidas)
-- **Pagos:** ✅ Mercado Pago real (Checkout Pro, F2-07) + transferencia con comprobante + simulado (solo para testing interno). Credenciales de **prueba** cargadas como secret `MP_ACCESS_TOKEN` en Supabase Edge Functions — para lanzar de verdad falta reemplazarlas por las de **producción** (mismo nombre de secret, no requiere tocar código).
+- **Pagos:** ✅ Mercado Pago real (Checkout Pro, F2-07) + transferencia con comprobante + simulado (solo para testing interno). **Desde el 2026-10-16 `MP_ACCESS_TOKEN` es el de PRODUCCIÓN** de la app "Baradero Local" (cuenta de MP `3535220284`, confirmado por el usuario con el sufijo del token y el prefijo de una preferencia real): los cobros con el token global (los combos de "Impulsá tus ventas") mueven **plata real**; las tarjetas de prueba ya no sirven. Antes eran credenciales de prueba (usuario `3534929376`). Revisar que `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean también los de producción de esa app.
 - **Envíos:** ambos (retiro en local + envío dentro de Baradero).
 - **Verificación de vendedor:** aprobación manual del admin **+** validar CUIT.
 - **Precios:** **PESOS enteros** en todo el sistema (sin centavos). ✅ DB migrada a `price`/`total_price` (pesos) en F0-03 (migración 12); `price_cents` ya no existe.
@@ -139,8 +139,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (chico/principal): el comercio carga la imagen en "Banner del inicio" y el admin le asigna el espacio en
   `home_promos`, como siempre; la pantalla se lo explica. **Sin hacer:** orden de productos en el buscador
   (`search_products`, migración 128) y una pantalla de admin para ver las compras de combos.
-  **Sin probar con plata:** `MP_ACCESS_TOKEN` es de **prueba** (los cobros de combos también hasta cambiarlo
-  por el de producción) y no se hizo ni un pago de punta a punta (el sandbox no llega a Supabase ni a
+  **Sin probar con plata:** hasta el 2026-10-16 `MP_ACCESS_TOKEN` era de **prueba**; ahora es el de producción
+  (ver "Decisiones de producto") y no se hizo ni un pago de punta a punta (el sandbox no llega a Supabase ni a
   Mercado Pago). **Conviene, con una cuenta dueña y la cuenta de prueba de MP:** comprar un combo, ver que
   vuelve a `#impulsar` con el combo activo, y **hacer una compra común de un cliente** para confirmar que
   `mp-webhook` v7 sigue confirmando pedidos. Verificado antes de publicar: SQL contra la base real en una
@@ -1235,13 +1235,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `comercios.js`, `producto.js` (con la tabla `stock_alerts`, nunca antes
   revisada, bien resuelta), `panel-redirect-utils.js`, `storage-utils.js`.
   Detalle completo en el skill `progreso-baradero-local`.
-- **Pendiente (2026-09-16) — `mp-oauth-callback` no usa `state` (OAuth CSRF).**
-  Nada ata el `code` que llega a la persona que arrancó la vinculación: si a un
-  vendedor logueado se le hace disparar la función con un `code` ajeno, su
-  comercio queda vinculado a la cuenta de MP del atacante y todos los cobros
-  van ahí. Hoy no es explotable porque **ninguna página llama a esa función**
-  (la vinculación está pausada, ver A113-274), pero hay que resolverlo
-  **antes** de cablearla. Anotado también en el encabezado del archivo.
+- **Resuelto 2026-10-16 (en código, sin desplegar) — `mp-oauth-callback` ya exige `state`.** Ver la
+  entrada "Mercado Pago por tienda" más abajo (A113-274).
 - **Resuelto 2026-09-16** — La sección "Contactar a soporte" (Mi perfil y panel
   de vendedor) se veía rota en producción: el commit `3a3e6a3` que sumó los
   adjuntos reescribió `js/support-utils.js` entero (+552 líneas: tarjeta,
@@ -1548,14 +1543,46 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   país. Lógica pura en `js/address-suggest-utils.js` (`node js/address-suggest-utils.test.mjs`).
   **Gotcha:** la política de uso de Nominatim desalienta el autocompletado (1 req/s, User-Agent
   identificable) — si algún día empieza a dar 403, hay que mover la búsqueda a otro geocoder.
-- **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — split de pagos de Mercado Pago sin andar**:
-  la vinculación OAuth de la cuenta de MP del vendedor (`mp-oauth-callback`,
-  `store_mp_credentials`, `stores.mp_collector_id`, piloto P0-6) se dejó pausada
-  porque no se pudo hacer andar. Mientras tanto, **todo pago con Mercado Pago
-  entra a la cuenta de la plataforma** (`MP_ACCESS_TOKEN` global en
-  `mp-create-preference`), no directo al vendedor. Falta diagnosticar el
-  motivo (revisar `redirect_uri`, `MP_CLIENT_ID`/`MP_CLIENT_SECRET`, permisos
-  de la app en Mercado Pago) antes del lanzamiento real.
+- **[A113-274](https://baraderolocal.atlassian.net/browse/A113-274) — prioridad ALTA — Mercado Pago por tienda
+  (en curso 2026-10-16; decisión del usuario: carrito multi-tienda = un pago de MP por tienda, en cadena)**.
+  **Diagnóstico:** el OAuth NO estaba roto en el servidor — P0-6 se verificó de punta a punta el 2026-07-15/17
+  (hay una fila real en `store_mp_credentials`, la de "Tienda Test Split P06"). Lo que faltaba era el
+  frontend: el botón se sacó el 2026-09-14 (commit `d6497e0`) y armaba la URL con `VITE_MP_CLIENT_ID`
+  (variable que había que cargar a mano en Vercel) y `state=store.id` (adivinable). **Hecho (en la rama,
+  sin desplegar ni aplicar):** (1) Edge Function nueva **`mp-oauth-start`**: arma la URL de MP con el
+  `client_id` del servidor y un `state` aleatorio de un solo uso (10 min) guardado en `mp_oauth_states`;
+  (2) **`mp-oauth-callback`** ahora recibe `{code, state}`, consume el `state` (de este usuario, no
+  vencido), saca el `store_id` de esa fila y devuelve el `error` de MP como `detail`; opcional
+  **PKCE** con el secret `MP_OAUTH_PKCE=true` (hace falta solo si la app de MP lo tiene activado);
+  (3) **migración 132** (`db/schema/132_mp_oauth_state.sql`): `mp_oauth_states`, RPC
+  `disconnect_store_mp` y un trigger que **cierra un hueco real**: `authenticated` podía escribir
+  `stores.mp_collector_id`/`mp_split_pilot` (un dueño podía poner el collector de otra tienda y
+  hacer que el webhook dejara de confirmar sus ventas); (4) tarjeta **"Mercado Pago"** en Perfil de mi
+  comercio (`vender.html`/`vender.js`: `setupMpSection`): interruptor "Cobrar con Mercado Pago" ->
+  "Conectar mi cuenta" (OAuth) / "Desvincular"; **vinculada = habilitada**, ya no se mira
+  `mp_split_pilot` (ni en `carrito.js` ni en `mp-create-preference`). Verificado: 14 + 9 tests de las
+  funciones, SQL contra la base real en transacción deshecha (10 casos), y el panel en navegador con
+  Supabase simulado (conectar, volver con state bueno y malo, desvincular con y sin confirmar).
+  **Aplicado a producción el 2026-10-16:** migración 132, `mp-oauth-start` v1 y `mp-oauth-callback` v4.
+  **Carrito en cadena (PUBLICADO el 2026-10-16: merge a `main` 56e330d + `mp-create-preference` v9):** `mp-create-preference` ahora
+  cobra **un solo comercio por pago** y **solo si vinculó su cuenta** (se sacó el fallback al token
+  global de la plataforma: la plata quedaba acá sin forma de liquidarla al vendedor); con varios
+  comercios, `carrito.js` paga el primer pedido y al volver, "Mis compras" (`perfil.js`,
+  `buildMpChainStep`) ofrece "Pagar a <comercio>" con el siguiente (los pedidos de una compra comparten
+  `created_at` exacto: `pendingChainOrders` en `js/mp-chain-utils.js`, con tests). MP se ofrece en el
+  carrito solo si TODOS los comercios lo habilitaron (`allStoresAcceptMp`) y avisa antes que se paga en N
+  pasos. De paso, `.transfer-info-box[hidden]` (carrito.css) mostraba una barra gris vacía.
+  **Desde la publicación, ningún comercio cobra por MP hasta que vincule su cuenta** (hoy solo "Tienda
+  Test Split P06" está vinculada; avisarles a los comercios reales que lo hagan desde Perfil de mi comercio).
+  **Configuración de la app de MP verificada (captura del usuario, 2026-10-16):** Redirect URL =
+  `https://proyectopdisc.vercel.app/pages/vender.html` (igual a `REDIRECT_URI` de las funciones), **PKCE = No**
+  (dejar `MP_OAUTH_PKCE` apagado) y permisos read + offline access + write. App "Baradero Local", AppID
+  `7108552352273197` (el MCP de Mercado Pago ya está autorizado: `application_list`/`search_documentation`
+  andan; no expone la configuración de la app).
+  **Falta:** elegir método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo; mezclar un
+  comercio con MP y otro sin obliga a elegir transferencia/efectivo); verificar que `MP_CLIENT_ID`/`MP_CLIENT_SECRET`
+  sean los de producción (`MP_ACCESS_TOKEN` ya lo es); probar con una cuenta real
+  de MP (vincular, pagar en cadena y ver que `mp-webhook` confirme cada pedido).
 - **Resuelto 2026-09-03** — mergeado `feature/home-restructura` (rediseño del home: buscador en la
   misma fila del navbar, carrusel en el hero, dos mosaicos de promos, mapa de comercios cerca y las
   grillas de Ofertas y Esenciales con paginado de a 4). Venía de ~30 commits atrás; al resolver los

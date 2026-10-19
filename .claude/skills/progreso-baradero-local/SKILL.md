@@ -5415,3 +5415,57 @@ ventas/reseñas/stock/envío) y etapa 4 (recomendaciones: similares, comprados j
   No se pudo hacer prueba de humo por red (el sandbox no llega a `*.supabase.co`). Pendiente: probar un pago real
   de prueba y una compra común para confirmar que el webhook sigue confirmando pedidos.
 
+
+## Mercado Pago por tienda — `state` del OAuth, interruptor y desvincular (2026-10-16, rama `claude/missing-project-features-941b38`)
+Primer paso de A113-274. Decisión del usuario: cada comercio elige cobrar con Mercado Pago (se
+conecta solo con OAuth) o solo por transferencia/alias; con varias tiendas en el carrito, **un pago de MP
+por tienda, en cadena** (MP no reparte un pago entre varios `collector_id`: una preferencia = un
+`access_token`; la documentación actual de Split Payments 1:1 tampoco habla de varios vendedores).
+- **Diagnóstico:** el OAuth del servidor andaba (P0-6 verificado el 2026-07-15/17; en producción hay una
+  fila en `store_mp_credentials`, la de "Tienda Test Split P06", con `mp_user_id` 3534929376). Lo que no
+  andaba era el botón (sacado en `d6497e0`): armaba la URL con `VITE_MP_CLIENT_ID` (variable de Vite que
+  había que cargar a mano en Vercel) y `state=store.id`. Ahora el `client_id` no sale del servidor.
+- `mp-oauth-start` (nueva, verify_jwt): valida dueño, guarda `mp_oauth_states(state, store_id, user_id,
+  code_verifier, expires_at)` y devuelve la URL (`auth.mercadopago.com/authorization`, la que se usó en
+  la prueba de julio). `mp-oauth-callback`: `{code, state}`; el `state` se borra siempre al leerlo (un
+  state/code vale una vez), tiene que ser del usuario y no estar vencido; el `store_id` sale de la fila.
+  PKCE opcional con el secret `MP_OAUTH_PKCE=true`.
+- **Migración 132:** `mp_oauth_states` (RLS sin policies), `disconnect_store_mp(p_store_id)` (SECURITY
+  DEFINER, dueño) y el trigger `stores_protect_mp_columns`: `authenticated`/`anon` ya no pueden cambiar
+  `mp_collector_id` ni `mp_split_pilot` (antes tenían UPDATE: un dueño podía copiar el collector de otra
+  tienda y el webhook, al ver dos tiendas, dejaba de confirmar los pagos de la víctima). Se detecta por
+  `current_user` (el rol de la sesión), así que las funciones SECURITY DEFINER y el service role pasan.
+  `create or replace trigger` y no `drop` + `create` por el gotcha del conector (un DROP se queda
+  esperando una confirmación que nadie ve).
+- Panel: tarjeta "Mercado Pago" en Perfil de mi comercio. El interruptor no se guarda: "activo" =
+  `stores.mp_collector_id` presente. Apagarlo estando vinculado desvincula (confirmación). Vinculada =
+  habilitada: `mp_split_pilot` ya no se lee (`carrito.js`, `mp-create-preference`).
+- **Probar Edge Functions con `loadEdgeFunction`:** el sandbox ahora expone `crypto`, `btoa`,
+  `TextEncoder`, `Uint8Array`, `URLSearchParams`; el Supabase en memoria suma `insert`, `upsert`, `delete`
+  y `lt`. Tests nuevos: `supabase/functions/_tests/mp-oauth.test.mjs` (15) y 2 casos en
+  `mp-create-preference.test.mjs`. **En Windows `npm test` no corre** (el script usa `for` de bash):
+  correr los archivos con un bucle de Git Bash.
+- **Cómo se probó el panel sin Supabase:** un plugin de Vite temporal (fuera del repo) que responde la API
+  de Supabase en `/sb` del mismo origen (el CSP solo deja conectar a `'self'` y `*.supabase.co`), con
+  `VITE_SUPABASE_URL=http://localhost:5188/sb` en un `.env.local` y la sesión sembrada en
+  `localStorage['sb-localhost-auth-token']`. Se borraron al terminar.
+- **Sin hacer:** aplicar 132 y desplegar las dos funciones; carrito en cadena; que MP solo se ofrezca si
+  todas las tiendas lo habilitaron (hoy una tienda sin vincular se cobra con el token global).
+
+### Mercado Pago por tienda — carrito en cadena (2026-10-16, misma rama; sin desplegar `mp-create-preference`)
+- Decisión (usuario): con varios comercios, **un pago de MP por comercio, en cadena**. MP usa un solo
+  `access_token` por preferencia y solo hay `marketplace_fee` para un vendedor por pago.
+- `mp-create-preference`: rechaza (400) pedidos de más de un comercio y comercios sin `mp_collector_id`
+  ("no cobra con Mercado Pago"); ya no existe el `MP_ACCESS_TOKEN` global ahí (los combos usan el suyo en
+  `mp-create-boost-preference`). Tests: 11 casos en `mp-create-preference.test.mjs`.
+- `js/mp-chain-utils.js`: `pendingChainOrders(orders, paidIds)` (los pedidos de una compra comparten
+  `created_at` exacto porque `create_order` corre en una transacción; verificado en producción: grupos de 2
+  pedidos con 2 comercios y el mismo timestamp) y `allStoresAcceptMp`. Sin estado en el navegador: lo que falta
+  pagar se deduce de los pedidos pendientes. `carrito.js` paga solo `orderIds[0]`; `perfil.js` muestra
+  "Falta pagar: ..." + botón al volver (`?mp=success|pending`), con `bl_mp_retry` para no tocar el carrito de nuevo.
+- **Gotcha:** `.transfer-info-box` tenía `display:flex`, que le gana al atributo `hidden`: la caja vacía
+  se veía como una barra gris. Regla `[hidden]` agregada en `carrito.css`.
+- Verificado en navegador con Supabase simulado: carrito con 2 comercios vinculados (MP habilitado + aviso
+  de 2 pasos), con uno sin vincular (MP deshabilitado, pasa a transferencia), el checkout manda
+  `create_order` con los dos y `mp-create-preference` solo con el primero, y la vuelta de MP muestra el
+  siguiente (excluye un pendiente viejo de otra compra) y su botón paga el pedido correcto.

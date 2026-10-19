@@ -20,26 +20,32 @@ function run(name, fn) {
   catch (e) { console.log(`❌ ${name}\n   ${e.message}`); process.exitCode = 1; }
 }
 
-async function call(body, { orders = [], stores = [] } = {}) {
-  const tables = { orders: orders.map(o => ({ ...o })), stores: stores.map(s => ({ ...s })) };
+async function call(body, { orders = [], stores = [], creds = CREDS } = {}) {
+  const tables = {
+    orders: orders.map(o => ({ ...o })), stores: stores.map(s => ({ ...s })),
+    store_mp_credentials: creds.map(c => ({ ...c })),
+  };
   const sb = makeFakeSupabase(tables);
   sb.auth = { getUser: async () => ({ data: { user: { id: 'u1', email: 'a@b.c', user_metadata: {} } } }) };
-  let prefBody = null;
+  let prefBody = null, prefAuth = null;
   const { handler } = loadEdgeFunction(FN, {
     env: ENV, createClient: () => sb,
     fetchImpl: async (url, init) => {
       prefBody = JSON.parse(init.body);
+      prefAuth = init.headers.Authorization;
       return { ok: true, json: async () => ({ init_point: 'https://mp/ok', sandbox_init_point: 'https://mp/sb' }) };
     },
   });
   const res = await handler(new Request('https://x/', { method: 'POST', body: JSON.stringify(body) }));
-  return { status: res.status, body: JSON.parse(await res.text()), prefBody };
+  return { status: res.status, body: JSON.parse(await res.text()), prefBody, prefAuth };
 }
 
 const order = (id, total) => ({
   id, store_id: 's1', total_price: total, payment_method: 'mercadopago', payment_status: 'pending',
 });
-const STORE = { id: 's1', mp_split_pilot: false, mp_collector_id: null };
+const STORE = { id: 's1', mp_collector_id: '777' };
+const FAR = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+const CREDS = [{ store_id: 's1', access_token: 'TOKEN_VENDEDOR', refresh_token: 'rt', expires_at: FAR }];
 
 console.log('--- mp-create-preference ---\n');
 
@@ -102,4 +108,44 @@ console.log('--- mp-create-preference ---\n');
     assert.equal(r.status, 400);
     assert.match(r.body.error, /Demasiados/);
   });
+}
+
+// 8. Se cobra con el token del vendedor y con la comisión de la plataforma
+{
+  const r = await call({ order_ids: [A] }, { orders: [order(A, 10000)], stores: [STORE] });
+  run('el pago se arma con el token del vendedor y marketplace_fee', () => {
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.prefAuth, 'Bearer TOKEN_VENDEDOR');
+    assert.equal(r.prefBody.marketplace_fee, 0);
+  });
+}
+
+// 9. Una preferencia = un comercio: varios comercios se cobran en cadena
+{
+  const r = await call({ order_ids: [A, B] }, {
+    orders: [order(A, 5000), { ...order(B, 3000), store_id: 's2' }],
+    stores: [STORE, { id: 's2', mp_collector_id: '888' }],
+  });
+  run('pedidos de dos comercios en el mismo pago -> 400 "de a un comercio"', () => {
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /de a un comercio/);
+  });
+}
+
+// 10. Comercio sin Mercado Pago vinculado: no cae al token global de la plataforma
+{
+  const r = await call({ order_ids: [A] }, {
+    orders: [order(A, 5000)], stores: [{ id: 's1', mp_collector_id: null }],
+  });
+  run('comercio sin MP vinculado -> 400 y no se llama a Mercado Pago', () => {
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /no cobra con Mercado Pago/);
+    assert.equal(r.prefBody, null);
+  });
+}
+
+// 11. Vinculado pero sin credenciales guardadas
+{
+  const r = await call({ order_ids: [A] }, { orders: [order(A, 5000)], stores: [STORE], creds: [] });
+  run('vinculado sin credenciales -> 400', () => assert.equal(r.status, 400));
 }

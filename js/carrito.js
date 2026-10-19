@@ -16,6 +16,7 @@ import {
   DEFAULT_DELIVERY_FEE,
 } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
+import { allStoresAcceptMp } from './mp-chain-utils.js';
 import { fetchStoreTransferData, buildTransferCard } from './transfer-details.js';
 import { orderLabel, formatDueDate } from './order-utils.js';
 import { hasTransferData } from './transfer-details-utils.js';
@@ -744,6 +745,25 @@ function initPaymentMethodEvents() {
 function syncPaymentMethod() {
   paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'mercadopago';
   renderTransferInfo();
+  renderMpChainHint(mpChainStoreCount);
+}
+
+let mpChainStoreCount = 0;
+
+/**
+ * Aviso previo de que con varios comercios Mercado Pago se paga de a uno: sin
+ * esto el cliente, después del primer pago, se encuentra con un segundo sin
+ * haber sabido que venía.
+ */
+function renderMpChainHint(storeCount) {
+  mpChainStoreCount = storeCount;
+  const box = document.getElementById('mp-chain-hint');
+  if (!box) return;
+  const show = paymentMethod === 'mercadopago' && storeCount > 1;
+  box.hidden = !show;
+  box.textContent = show
+    ? `Tu compra es en ${storeCount} comercios y Mercado Pago cobra de a uno: vas a pagar en ${storeCount} pasos, uno por comercio. Al terminar cada pago te llevamos al siguiente.`
+    : '';
 }
 
 /**
@@ -947,13 +967,11 @@ function showCashStep(orders) {
 }
 
 /**
- * P0-6: el backend (mp-create-preference) arma una preferencia con el token
- * global de la plataforma para cualquier carrito -- salvo el único caso que
- * de verdad es imposible en Mercado Pago: una tienda con split vinculado
- * (piloto) compartiendo preferencia con OTRAS tiendas (cada una necesitaría
- * su propio access_token, y una preferencia usa uno solo). Con una sola
- * tienda en el carrito no importa si tiene split o no, el backend lo maneja
- * bien en cualquier caso. Se llama después de validateCartFreshness, que ya
+ * Mercado Pago se ofrece solo si TODOS los comercios del carrito vincularon su
+ * cuenta desde su panel (cobran directo, con la comisión descontada): los que
+ * no, cobran por transferencia o efectivo. Con varios comercios se paga en
+ * cadena, uno por vez (Mercado Pago usa un solo access_token por pago), y se
+ * avisa antes de empezar. Se llama después de validateCartFreshness, que ya
  * trae el dato real de cada tienda.
  */
 function updateMpAvailability() {
@@ -962,16 +980,16 @@ function updateMpAvailability() {
   if (!mercadopagoRadio) return;
 
   const storeIdsInCart = [...new Set(productStoreId.values())];
-  const hasSplitStore = storeIdsInCart.some((id) => storeMpEligibleById.get(id));
-  const eligible = storeIdsInCart.length > 0 && (storeIdsInCart.length === 1 || !hasSplitStore);
+  const eligible = allStoresAcceptMp(storeIdsInCart, storeMpEligibleById);
 
   mercadopagoRadio.disabled = !eligible;
   if (mercadopagoLabel) {
     mercadopagoLabel.title = eligible
       ? ''
-      : 'Mercado Pago no está disponible: el carrito mezcla un comercio con Mercado Pago vinculado directo y otros comercios. Pagá ese comercio por separado.';
+      : 'Mercado Pago no está disponible: alguno de los comercios del carrito no cobra con Mercado Pago. Elegí transferencia o efectivo.';
     mercadopagoLabel.style.opacity = eligible ? '' : '0.5';
   }
+  renderMpChainHint(eligible ? storeIdsInCart.length : 0);
 
   if (!eligible && mercadopagoRadio.checked) {
     const transferenciaRadio = document.getElementById('payment-transferencia');
@@ -1293,8 +1311,10 @@ function initCartEvents() {
 
       // La orden ya existe (pending); "pagarla" es un paso aparte a través
       // del provider correspondiente al método elegido.
+      // Mercado Pago cobra de a un comercio: se paga el primer pedido y, al
+      // volver, "Mis compras" ofrece el siguiente (mp-chain-utils.js).
       const provider = getPaymentProvider(paymentMethod);
-      const paymentResult = await provider.pay(orderIds);
+      const paymentResult = await provider.pay(paymentMethod === 'mercadopago' ? orderIds.slice(0, 1) : orderIds);
 
       // mercadopago ya disparó la redirección al checkout hospedado dentro de
       // pay() — el navegador está por salir de la página. A propósito NO se
@@ -1475,7 +1495,7 @@ async function validateCartFreshness() {
   const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_split_pilot, mp_collector_id)')
+      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_collector_id)')
       .in('id', productIds),
     supabase
       .from('product_options')
@@ -1524,9 +1544,8 @@ async function validateCartFreshness() {
         deliveryFee: p.stores.delivery_fee,
         freeShippingThreshold: p.stores.free_shipping_threshold,
       });
-      // P0-6: piloto de split payments -- MP solo se ofrece si la tienda
-      // tiene split_pilot activo Y ya vinculó su cuenta (collector_id real).
-      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_split_pilot && p.stores.mp_collector_id));
+      // Comercio que cobra con Mercado Pago: vinculó su cuenta desde su panel (collector_id real).
+      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_collector_id));
       storeNameById.set(p.store_id, p.stores.name || 'el comercio');
     }
   });

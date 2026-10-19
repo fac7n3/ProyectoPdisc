@@ -28,6 +28,7 @@ import {
   timelineSteps, eventLabel, formatDueDate, deliveryQrUrl,
 } from "./order-utils.js";
 import { getPaymentProvider } from "./payment-providers.js";
+import { pendingChainOrders } from "./mp-chain-utils.js";
 import qrcode from "qrcode-generator";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -2805,8 +2806,33 @@ function showMercadoPagoReturnBanner() {
     ? `¡Listo! Tu pago fue aprobado${labels ? ` (pedido ${labels})` : ''}. El comercio ya lo está preparando: te avisamos cuando esté listo.`
     : `Tu pago${labels ? ` del pedido ${labels}` : ''} está en revisión en Mercado Pago. Te avisamos apenas se acredite.`;
   comprasContainer.before(banner);
+  // Compra en varios comercios: Mercado Pago cobra de a uno, así que acá se ofrece el siguiente.
+  const pending = pendingChainOrders(comprasCache, mpReturn.orderIds);
+  if (pending.length > 0) comprasContainer.before(buildMpChainStep(pending));
   orders.forEach((o) => flashHighlight(document.getElementById(`order-${o.id}`)));
   mpReturn = null;
+}
+
+/** "Falta pagar a ...": el siguiente pago de una compra en varios comercios (ver mp-chain-utils.js). */
+function buildMpChainStep(pending) {
+  const first = pending[0];
+  const names = pending.map((o) => `${o.stores?.name || 'otro comercio'} (${formatPrice(o.total_price)})`).join(', ');
+  const box = el('div', 'ord-alert ord-alert--warn compra-mp-chain');
+  box.appendChild(el('p', '', `Tu compra era en más de un comercio y Mercado Pago cobra de a uno. Falta pagar: ${names}.`));
+  const btn = el('button', 'bl-btn bl-btn-primary compra-next__btn', `Pagar a ${first.stores?.name || 'el siguiente comercio'}`);
+  btn.type = 'button';
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    // El carrito ya se vació con el primer pago: al volver no hay que tocarlo de nuevo.
+    try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
+    const result = await getPaymentProvider('mercadopago').pay([first.id]);
+    if (!result.success) {
+      showToast(result.message || 'No se pudo iniciar el pago.', 'error');
+      btn.disabled = false;
+    }
+  });
+  box.appendChild(btn);
+  return box;
 }
 
 /**

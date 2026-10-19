@@ -1,20 +1,15 @@
-// F2-07 + P0-6 (split payments piloto): crea una preferencia de Checkout Pro
-// para una o más órdenes ya existentes (create_order, pending,
-// payment_method='mercadopago').
+// F2-07 + P0-6 + A113-274: crea una preferencia de Checkout Pro para las órdenes de
+// UN comercio (create_order, pending, payment_method='mercadopago').
 //
-// Antes de P0-6, esto cobraba TODO con la cuenta de Mercado Pago de la
-// plataforma (un solo MP_ACCESS_TOKEN global) -- ningún vendedor recibía
-// la plata directo. Ahora, si el vendedor de la tienda vinculó su cuenta
-// (store_mp_credentials + stores.mp_collector_id), la preferencia se arma
-// con EL ACCESS TOKEN DEL VENDEDOR + un `marketplace_fee` (comisión de la
-// plataforma, arranca en 0%). Simplificación a propósito del piloto: MP no
-// permite dividir un solo pago entre varios collector_id (una preferencia =
-// un solo vendedor), así que si `order_ids` mezcla una tienda con split
-// vinculado y OTRAS tiendas, se rechaza con un mensaje claro. Si ninguna
-// tienda del carrito tiene split vinculado, un carrito multi-tienda se cobra
-// entero con el token global de la plataforma en una sola preferencia (igual
-// que antes de P0-6) -- eso sí es posible, la restricción real de MP es "un
-// solo access_token por preferencia", no "una sola tienda".
+// El pago se arma con el ACCESS TOKEN DEL VENDEDOR (store_mp_credentials +
+// stores.mp_collector_id, vinculados desde su panel) y un `marketplace_fee`: la
+// plata llega directo a su cuenta y la comisión de la plataforma se descuenta sola
+// (MP_MARKETPLACE_FEE_PCT, arranca en 0%). Una preferencia usa un solo access_token,
+// así que es un comercio por pago: un carrito con varios comercios se cobra EN
+// CADENA, un pedido por vez (el cliente lo recorre desde carrito.js y perfil.js).
+// Un comercio que no vinculó su cuenta no cobra con Mercado Pago (transferencia o
+// efectivo): antes caía al token global de la plataforma y la plata no se podía
+// liquidar al vendedor.
 //
 // Seguridad: el cliente scoped al JWT del llamador decide qué órdenes puede
 // pagar (RLS `orders_select_own`, igual que antes). El access_token del
@@ -23,7 +18,6 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")!;
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://proyectopdisc.vercel.app";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -157,84 +151,72 @@ Deno.serve(async (req: Request) => {
 
     const storeIds = [...new Set(orders.map((o: { store_id: string }) => o.store_id))];
 
+    // Una preferencia = un solo access_token = un solo comercio (Mercado Pago no
+    // reparte un pago entre varios collector_id). Un carrito con varios comercios
+    // se cobra en cadena: el cliente paga un pedido por vez (ver mp-chain-utils.js).
+    if (storeIds.length > 1) {
+      return jsonResponse(
+        { error: "Mercado Pago cobra de a un comercio por vez. Pagá cada pedido por separado." },
+        400,
+      );
+    }
+    const storeId = storeIds[0] as string;
+
     const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    const { data: storesData, error: storesError } = await serviceClient
+    const { data: storeData, error: storeError } = await serviceClient
       .from("stores")
-      .select("id, mp_split_pilot, mp_collector_id")
-      .in("id", storeIds);
+      .select("id, mp_collector_id")
+      .eq("id", storeId)
+      .maybeSingle();
 
-    if (storesError) throw storesError;
+    if (storeError) throw storeError;
 
-    const splitStoreIds = (storesData || [])
-      .filter((s: { mp_split_pilot: boolean; mp_collector_id: string | null }) =>
-        s.mp_split_pilot && s.mp_collector_id,
-      )
-      .map((s: { id: string }) => s.id);
-
-    // Único caso realmente imposible: una tienda con split vinculado no
-    // puede compartir preferencia con OTRAS tiendas (distinto access_token
-    // cada una). Un carrito multi-tienda sin ninguna tienda en split sigue
-    // yendo entero por el token global, sin problema.
-    if (splitStoreIds.length > 0 && storeIds.length > 1) {
+    // Cobra con Mercado Pago solo el comercio que vinculó su cuenta desde su panel
+    // (vinculada = habilitada). Antes un comercio sin vincular se cobraba con el
+    // token global de la plataforma: la plata quedaba acá y no había cómo
+    // liquidársela al vendedor.
+    if (!storeData?.mp_collector_id) {
       return jsonResponse(
-        {
-          error:
-            "Mercado Pago no puede combinar en un solo pago una tienda con Mercado Pago vinculado directo y otras tiendas. Pagá esa tienda por separado.",
-        },
+        { error: "Este comercio no cobra con Mercado Pago. Elegí transferencia o efectivo." },
         400,
       );
     }
 
-    // Si llegamos acá con splitStoreIds no vacío, por la regla de arriba
-    // storeIds.length === 1 seguro (splitStoreIds ⊆ storeIds) -- un solo
-    // storeId y es el que tiene split.
-    const hasSplit = splitStoreIds.length === 1;
-    const storeId = (hasSplit ? splitStoreIds[0] : storeIds[0]) as string;
+    const { data: creds, error: credsError } = await serviceClient
+      .from("store_mp_credentials")
+      .select("access_token, refresh_token, expires_at")
+      .eq("store_id", storeId)
+      .single();
 
-    // Token con el que se arma la preferencia: el del vendedor (split
-    // piloteado) o, para el resto de las tiendas, el token global de la
-    // plataforma (comportamiento de antes de P0-6 -- sin esto, cualquier
-    // tienda sin split rompía el pago por completo).
-    let accessToken = MP_ACCESS_TOKEN;
-    let marketplaceFee = 0;
+    if (credsError || !creds) {
+      return jsonResponse(
+        { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
+        400,
+      );
+    }
 
-    if (hasSplit) {
-      const { data: creds, error: credsError } = await serviceClient
-        .from("store_mp_credentials")
-        .select("access_token, refresh_token, expires_at")
-        .eq("store_id", storeId)
-        .single();
-
-      if (credsError || !creds) {
+    let accessToken = creds.access_token as string;
+    const expiresAt = new Date(creds.expires_at as string).getTime();
+    if (expiresAt - Date.now() < REFRESH_MARGIN_MS) {
+      const refreshed = await refreshVendorToken(serviceClient, storeId, creds.refresh_token as string);
+      if (!refreshed) {
         return jsonResponse(
-          { error: "Este comercio todavía no tiene Mercado Pago vinculado." },
-          400,
+          {
+            error:
+              "El vendedor tiene que volver a vincular su cuenta de Mercado Pago (el acceso venció).",
+          },
+          409,
         );
       }
-
-      accessToken = creds.access_token as string;
-      const expiresAt = new Date(creds.expires_at as string).getTime();
-      if (expiresAt - Date.now() < REFRESH_MARGIN_MS) {
-        const refreshed = await refreshVendorToken(serviceClient, storeId, creds.refresh_token as string);
-        if (!refreshed) {
-          return jsonResponse(
-            {
-              error:
-                "El vendedor tiene que volver a vincular su cuenta de Mercado Pago (el acceso venció).",
-            },
-            409,
-          );
-        }
-        accessToken = refreshed;
-      }
-
-      const totalAmount = orders.reduce(
-        (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
-        0,
-      );
-      marketplaceFee = Math.round((totalAmount * MP_MARKETPLACE_FEE_PCT) / 100);
+      accessToken = refreshed;
     }
+
+    const totalAmount = orders.reduce(
+      (sum: number, o: { total_price: number }) => sum + Number(o.total_price),
+      0,
+    );
+    const marketplaceFee = Math.round((totalAmount * MP_MARKETPLACE_FEE_PCT) / 100);
 
     const items = orders.map((o: { id: string; total_price: number }) => ({
       title: `Pedido Baradero Local #${o.id.slice(0, 8)}`,
@@ -251,7 +233,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         items,
-        ...(hasSplit ? { marketplace_fee: marketplaceFee } : {}),
+        marketplace_fee: marketplaceFee,
         payer: buyerEmail
           ? { email: buyerEmail, name: buyerFirstName, surname: buyerLastName || undefined }
           : undefined,
