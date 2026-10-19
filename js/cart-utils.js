@@ -637,6 +637,58 @@ async function fetchIdsWithOptions(productIds) {
   return new Set((data || []).map((row) => row.product_id));
 }
 
+// ── Pista de "estos productos son míos" ─────────────────────
+// El botón de la tarjeta dice "Agregar" y, para el dueño del comercio, "Tu
+// producto" -- pero eso se sabe recién después de una consulta, y el dueño veía
+// "Agregar" un instante y después el cambio. Se guarda en este navegador qué
+// productos resultaron ser suyos la última vez (por cuenta) y las tarjetas
+// salen bien desde el primer pintado; la consulta de siempre confirma después.
+const OWN_PRODUCTS_KEY = 'bl_own_products';
+const OWN_PRODUCTS_MAX = 400;
+
+/** uid de la sesión guardada en el navegador, sin esperar a la red. */
+function storedSessionUid() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (/^sb-.*-auth-token$/.test(k)) {
+        return JSON.parse(localStorage.getItem(k))?.user?.id || null;
+      }
+    }
+  } catch { /* sin storage */ }
+  return null;
+}
+
+function readOwnProductHint(uid) {
+  try {
+    const hint = JSON.parse(localStorage.getItem(OWN_PRODUCTS_KEY) || 'null');
+    return hint && hint.uid === uid && Array.isArray(hint.ids) ? new Set(hint.ids) : new Set();
+  } catch { return new Set(); }
+}
+
+/** Actualiza la pista: lo consultado se reemplaza por la respuesta real, lo
+ *  que no se consultó se conserva (hasta un tope). */
+function saveOwnProductHint(uid, queriedIds, ownIds) {
+  const queried = new Set(queriedIds);
+  const kept = [...readOwnProductHint(uid)].filter((id) => !queried.has(id));
+  const ids = [...kept, ...ownIds].slice(-OWN_PRODUCTS_MAX);
+  try { localStorage.setItem(OWN_PRODUCTS_KEY, JSON.stringify({ uid, ids })); } catch { /* sin storage */ }
+}
+
+/** Pasa un botón de tarjeta a "Tu producto" (solo deja verlo). */
+function markOwnProductButton(btn) {
+  if (btn.classList.contains('product-card__add--own')) return;
+  btn.classList.add('product-card__add--own');
+  btn.disabled = false; // sin stock también se puede mirar
+  btn.style.cssText = '';
+  btn.title = '';
+  btn.replaceChildren();
+  const icon = document.createElement('i');
+  icon.className = 'fa-solid fa-store';
+  btn.appendChild(icon);
+  btn.append(' Tu producto');
+}
+
 /**
  * ¿Cuáles de estos productos son de un comercio del usuario logueado?
  *
@@ -659,7 +711,9 @@ async function fetchOwnProductIds(productIds) {
     console.error('Error al mirar qué productos son del usuario:', error);
     return new Set();
   }
-  return new Set((data || []).map((row) => row.id));
+  const own = new Set((data || []).map((row) => row.id));
+  saveOwnProductHint(uid, productIds, own);
+  return own;
 }
 
 /**
@@ -679,19 +733,22 @@ export function initCartButtons() {
   const ownIds = fetchOwnProductIds(productIds);
 
   // En tus propios productos el botón dice "Tu producto" y solo deja verlos.
+  // Primero con la pista guardada (sin esperar a la red) y después con la
+  // respuesta de la consulta.
+  const hintUid = storedSessionUid();
+  if (hintUid) {
+    const hinted = readOwnProductHint(hintUid);
+    if (hinted.size) {
+      buttons.forEach((btn) => {
+        const id = btn.dataset.productId || btn.closest('.product-card')?.id;
+        if (id && hinted.has(id)) markOwnProductButton(btn);
+      });
+    }
+  }
   ownIds.then((own) => {
     buttons.forEach((btn) => {
       const id = btn.dataset.productId || btn.closest('.product-card')?.id;
-      if (!id || !own.has(id)) return;
-      btn.classList.add('product-card__add--own');
-      btn.disabled = false; // sin stock también se puede mirar
-      btn.style.cssText = '';
-      btn.title = '';
-      btn.replaceChildren();
-      const icon = document.createElement('i');
-      icon.className = 'fa-solid fa-store';
-      btn.appendChild(icon);
-      btn.append(' Tu producto');
+      if (id && own.has(id)) markOwnProductButton(btn);
     });
   });
 

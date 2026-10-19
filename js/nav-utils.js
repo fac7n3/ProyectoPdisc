@@ -709,6 +709,21 @@ export async function initNotificationsBell() {
   sessionReady.then((s) => { if (s) initNotificationToasts(s.user.id); });
 }
 
+// Pista de "¿esta cuenta está publicada como profesional/técnico?" (por cuenta,
+// en este navegador): deja armar el menú de cuenta completo sin esperar a la red.
+const PROFESSIONAL_HINT_KEY = 'bl_professional_hint';
+
+function readProfessionalHint(uid) {
+  try {
+    const hint = JSON.parse(localStorage.getItem(PROFESSIONAL_HINT_KEY) || 'null');
+    return hint && hint.uid === uid && typeof hint.value === 'boolean' ? hint.value : null;
+  } catch { return null; }
+}
+
+function saveProfessionalHint(uid, value) {
+  try { localStorage.setItem(PROFESSIONAL_HINT_KEY, JSON.stringify({ uid, value })); } catch { /* sin storage */ }
+}
+
 /**
  * Menú desplegable de cuenta para la navbar (A113-290): antes #nav-profile
  * era un link directo a perfil.html; ahora es un botón que abre un dropdown
@@ -823,6 +838,28 @@ export async function initAccountMenu() {
     const role = user.app_metadata?.role || 'cliente';
     const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email;
 
+    // Publicarse como profesional/técnico ("Contratar") no cambia el rol de
+    // la cuenta (sigue siendo 'cliente' o el que tenga) -- por eso no entra en
+    // los `if (role === ...)` de abajo y necesita su propia consulta, igual que
+    // renderPanelLink() en js/perfil.js. Se resuelve ANTES de armar el menú:
+    // si se agregaba la sección después, el menú se veía crecer y "Cerrar
+    // sesión" bajaba de lugar. Con la respuesta de la última vez guardada en este
+    // navegador el menú sale completo de entrada; sin ella se espera la consulta.
+    let isProfessional = readProfessionalHint(user.id);
+    const professionalCheck = supabase
+      .from('professionals')
+      .select('id')
+      .eq('owner_id', user.id)
+      .limit(1)
+      .then(({ data, error }) => {
+        if (error) return isProfessional ?? false;
+        const found = !!data?.length;
+        saveProfessionalHint(user.id, found);
+        return found;
+      });
+    if (isProfessional === null) isProfessional = await professionalCheck;
+    if (panel.hidden) return; // lo cerraron mientras tanto
+
     const header = document.createElement('div');
     header.className = 'account-dropdown__name';
     const nameEl = document.createElement('span');
@@ -875,16 +912,7 @@ export async function initAccountMenu() {
       ]));
     }
 
-    // Publicarse como profesional/técnico ("Contratar") no cambia el rol de
-    // la cuenta (sigue siendo 'cliente' o el que tenga) -- por eso este caso
-    // no entra en el switch de `role` de arriba y necesita su propia consulta,
-    // igual que renderPanelLink() en js/perfil.js.
-    const { data: professionalRow } = await supabase
-      .from('professionals')
-      .select('id')
-      .eq('owner_id', user.id)
-      .maybeSingle();
-    if (professionalRow) {
+    if (isProfessional) {
       panel.appendChild(buildSection('Profesional/Técnico', [
         { href: './profesional.html', icon: 'fa-solid fa-screwdriver-wrench', label: 'Panel de profesional/técnico' },
       ]));
