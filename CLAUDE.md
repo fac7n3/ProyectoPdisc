@@ -91,6 +91,31 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-19 — Sin efectivo con envío + medio de transferencia obligatorio**, a pedido del usuario.
+  **(1) Efectivo solo con retiro:** con "Envío a domicilio" el carrito esconde "Efectivo" (y avisa por qué);
+  si estaba elegido pasa solo a Mercado Pago o transferencia (`applyCashRule` en `js/carrito.js`, que además
+  frena el checkout si algo lo deja elegido). **La base también lo rechaza:** `create_order` tira "El pago en
+  efectivo es solo para retiro en el local..." con delivery + efectivo (migración **133**, aplicada a
+  producción el 2026-10-19; parchea la función viva con `pg_get_functiondef` porque el cuerpo de producción
+  **no coincide** con el archivo 115). Pedidos viejos efectivo + envío (había 1) no se tocan.
+  **(2) Medio de transferencia obligatorio = alias O CBU/CVU** (uno alcanza; la 107 pedía solo alias): el
+  trigger de publicar productos acepta cualquiera de los dos (el hint sigue siendo `missing_transfer_alias`)
+  y el formulario del comercio **no deja dejar los dos vacíos** si ya había uno. **Aviso permanente:** banner
+  rojo en TODAS las secciones del panel de vendedor (`#transfer-missing-banner`, reusa las clases de
+  `.pub-alias-gate`) mientras falte; el empleado ve el texto sin botón. **"Notis todo el tiempo":**
+  `remind_stores_missing_transfer()` + trabajo de pg_cron `remind-stores-missing-transfer` **cada 6 horas**
+  (`0 */6 * * *`; para cambiar la frecuencia, `cron.schedule` con el mismo nombre): un aviso por DUEÑO
+  (aunque tenga varios comercios sin cargar), el anterior sin leer se marca leído y entra el nuevo, así la
+  campanita queda con uno solo y el aviso emergente vuelve a saltar. Tipo `transfer_method_missing`
+  (`js/notifications-utils.js`, link "Cargar ahora" a `vender.html#perfil-comercio`). **Hoy 18 de 20
+  comercios no tienen ninguno** (17 con productos): el primer recordatorio sale en la próxima hora 0/6/12/18
+  UTC. **Ojo:** la cuenta admin dueña de los 14 comercios de seed va a recibirlo también (un solo aviso que
+  dice "X y 13 más"). **No se bloquea al comprador** si un comercio sin datos recibe un pedido por
+  transferencia (sigue el aviso previo del carrito): se decidió no cortar ventas de comercios que ya existen.
+  Verificado: SQL contra la base real en una transacción deshecha (efectivo+envío rechazado; retiro+efectivo,
+  envío+transferencia y envío+MP andan; solo CBU deja publicar; recordatorio idempotente: 5 dueños, 5 avisos
+  sin leer tras correrlo dos veces) y Playwright con Supabase simulado (carrito y panel). Sin probar con
+  cuentas reales.
 - **Hecho 2026-10-19 — Modo oscuro de todo el sitio** (rama `claude/gallant-sagan-5qjp2e`, sin mergear a `main`),
   a pedido del usuario. Botón **sol (modo claro) / luna (modo oscuro)** arriba a la derecha, a la derecha del
   carrito (`js/theme.js`; en admin va en su barra, en login/registro flota). Se guarda en `localStorage`

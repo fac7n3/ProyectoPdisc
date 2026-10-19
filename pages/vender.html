@@ -1194,6 +1194,18 @@
       <h1 class="sr-only">Panel de mi comercio</h1>
             <div id="mc-pending-notice" style="display:none; background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border);"></div>
 
+            <!-- Aviso permanente (en todas las secciones) mientras el comercio no tenga ningún
+                 medio de transferencia (alias o CBU/CVU): es obligatorio. Además la base manda un
+                 aviso a la campanita cada 6 horas (migración 133). Lo maneja vender.js (updateAliasGate). -->
+            <div class="pub-alias-gate" id="transfer-missing-banner" role="alert" hidden>
+              <i class="fa-solid fa-triangle-exclamation pub-alias-gate__icon" aria-hidden="true"></i>
+              <div class="pub-alias-gate__body">
+                <strong class="pub-alias-gate__title">Tu comercio no tiene un medio de transferencia cargado</strong>
+                <p class="pub-alias-gate__text" id="transfer-missing-banner-text">Es obligatorio: tus clientes necesitan un alias o CBU/CVU para pagarte por transferencia, y es el pago que se acepta con envío a domicilio. Hasta que lo cargues no podés publicar productos nuevos.</p>
+              </div>
+              <button type="button" class="pub-alias-gate__btn" id="transfer-missing-banner-btn">Cargar ahora</button>
+            </div>
+
             <!-- === Resumen === -->
             <section class="mc-section" data-section="resumen">
               <div class="rs-greeting">
@@ -1672,10 +1684,10 @@
               <div class="pub-alias-gate" id="pub-alias-gate" role="status" hidden>
                 <i class="fa-solid fa-building-columns pub-alias-gate__icon" aria-hidden="true"></i>
                 <div class="pub-alias-gate__body">
-                  <strong class="pub-alias-gate__title">Cargá tu alias para publicar productos</strong>
-                  <p class="pub-alias-gate__text" id="pub-alias-gate-text">Es el dato que ven tus clientes para pagarte por transferencia. Sin alias no se pueden publicar productos nuevos; los que ya tenés siguen a la venta.</p>
+                  <strong class="pub-alias-gate__title">Cargá un medio de transferencia para publicar productos</strong>
+                  <p class="pub-alias-gate__text" id="pub-alias-gate-text">Es el dato que ven tus clientes para pagarte por transferencia: alias o CBU/CVU, con uno alcanza. Sin eso no se pueden publicar productos nuevos; los que ya tenés siguen a la venta.</p>
                 </div>
-                <button type="button" class="pub-alias-gate__btn" id="pub-alias-gate-btn">Cargar mi alias</button>
+                <button type="button" class="pub-alias-gate__btn" id="pub-alias-gate-btn">Cargar medio de transferencia</button>
               </div>
 
               <!-- Barra de filtros (búsqueda + estado + contador), todo client-side -->

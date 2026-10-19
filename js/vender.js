@@ -646,7 +646,7 @@ let currentStoreHasProfile = false; // F12-15: onboarding -- ver renderOnboardin
 // Migración 107: sin alias bancario no se pueden publicar productos nuevos
 // (la base lo rechaza con un trigger). Arranca en null = "todavía no se
 // sabe", para no mostrar el aviso por un instante a quien sí lo tiene.
-let currentStoreHasAlias = null;
+let currentStoreHasTransfer = null;
 let currentProductCount = 0;
 let currentActiveProductCount = 0; // Resumen: productos activos (para la card de pendientes)
 let currentInactiveProductCount = 0; // Resumen: productos pausados/inactivos
@@ -2365,29 +2365,36 @@ function fillStoreProfileForm(store) {
 }
 
 /**
- * Migración 107: ¿el comercio tiene alias? Consulta aparte (no en
- * STORE_SELECT_COLUMNS), mismo criterio que los datos de transferencia: si la
- * columna faltara, no se cae todo el panel. Ante un error se asume que SÍ
- * tiene -- la base igual lo valida al guardar, y bloquear a alguien por una
- * consulta fallida sería peor que dejarlo llegar a ese error.
+ * Migración 107/133: ¿el comercio tiene algún medio de transferencia (alias o
+ * CBU/CVU)? Consulta aparte (no en STORE_SELECT_COLUMNS), mismo criterio que los
+ * datos de transferencia: si la columna faltara, no se cae todo el panel. Ante un
+ * error se asume que SÍ tiene -- la base igual lo valida al guardar, y bloquear a
+ * alguien por una consulta fallida sería peor que dejarlo llegar a ese error.
  */
 async function loadStoreAliasState(storeId) {
-  const { data, error } = await supabase.from('stores').select('transfer_alias').eq('id', storeId).single();
+  const { data, error } = await supabase.from('stores').select('transfer_alias, transfer_cbu').eq('id', storeId).single();
   if (error) {
-    console.error('Error al consultar el alias del comercio:', error);
-    currentStoreHasAlias = true;
+    console.error('Error al consultar el medio de transferencia del comercio:', error);
+    currentStoreHasTransfer = true;
   } else {
-    currentStoreHasAlias = Boolean(data?.transfer_alias?.trim());
+    currentStoreHasTransfer = Boolean(data?.transfer_alias?.trim() || data?.transfer_cbu?.trim());
   }
   updateAliasGate();
   renderOnboardingChecklist(currentProductCount > 0);
 }
 
-/** Muestra u oculta el aviso "Cargá tu alias" de Publicaciones. */
+/**
+ * Muestra u oculta los dos avisos de "falta un medio de transferencia": el de
+ * Publicaciones (explica por qué no se puede publicar) y el banner de arriba,
+ * que se ve en todas las secciones mientras falte (es obligatorio).
+ */
 function updateAliasGate() {
+  const missing = currentStoreHasTransfer === false;
+
   const gate = document.getElementById('pub-alias-gate');
-  if (!gate) return;
-  gate.hidden = currentStoreHasAlias !== false;
+  if (gate) gate.hidden = !missing;
+  const banner = document.getElementById('transfer-missing-banner');
+  if (banner) banner.hidden = !missing;
 
   // El empleado no puede editar el perfil del comercio (sección solo del dueño).
   const btn = document.getElementById('pub-alias-gate-btn');
@@ -2395,6 +2402,12 @@ function updateAliasGate() {
   if (btn) btn.hidden = !isStoreOwner;
   if (text && !isStoreOwner) {
     text.textContent = 'Es el dato que ven los clientes para pagar por transferencia. Pedile al dueño del comercio que lo cargue en "Perfil de mi comercio"; mientras tanto no se pueden publicar productos nuevos.';
+  }
+  const bannerBtn = document.getElementById('transfer-missing-banner-btn');
+  const bannerText = document.getElementById('transfer-missing-banner-text');
+  if (bannerBtn) bannerBtn.hidden = !isStoreOwner;
+  if (bannerText && !isStoreOwner) {
+    bannerText.textContent = 'Es obligatorio para que los clientes puedan pagar por transferencia. Pedile al dueño del comercio que cargue un alias o CBU/CVU en "Perfil de mi comercio".';
   }
 }
 
@@ -2421,8 +2434,8 @@ function blockPublishWithoutAlias() {
   updateAliasGate();
   const gate = document.getElementById('pub-alias-gate');
   showToast(isStoreOwner
-    ? 'Primero cargá el alias de tu comercio: sin él no se pueden publicar productos.'
-    : 'El comercio todavía no cargó su alias: sin él no se pueden publicar productos.', 'error');
+    ? 'Primero cargá un medio de transferencia (alias o CBU/CVU): sin eso no se pueden publicar productos.'
+    : 'El comercio todavía no cargó un medio de transferencia: sin eso no se pueden publicar productos.', 'error');
   if (gate) {
     gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
     gate.classList.remove('is-flash');
@@ -2456,6 +2469,12 @@ function readTransferFields() {
   }
   if (cbuRaw && !isValidCbu(cbu)) {
     return { ok: false, field: 'store-transfer-cbu', message: `El CBU/CVU tiene que tener 22 números (cargaste ${cbu.length}).` };
+  }
+  // Obligatorio (migración 133): un comercio que ya tiene un medio cargado no
+  // puede quedarse sin ninguno. Si todavía no tenía, el aviso del panel y los
+  // recordatorios se encargan de que lo cargue.
+  if (currentStoreHasTransfer === true && !alias && !cbu) {
+    return { ok: false, field: 'store-transfer-alias', message: 'Tu comercio tiene que tener al menos un medio de transferencia: alias o CBU/CVU. No podés dejar los dos vacíos.' };
   }
   return {
     ok: true,
@@ -2573,7 +2592,7 @@ function setupStoreProfileForm() {
       .eq('id', currentStoreId);
     if (!transferError) {
       // Habilita (o vuelve a bloquear) "Publicar" sin recargar el panel.
-      currentStoreHasAlias = Boolean(transfer.values.transfer_alias);
+      currentStoreHasTransfer = Boolean(transfer.values.transfer_alias || transfer.values.transfer_cbu);
       updateAliasGate();
     }
     if (transferError) {
@@ -3669,7 +3688,7 @@ function renderOnboardingChecklist(hasProducts) {
 
   // F12-16: el checklist apunta a acciones exclusivas del dueño (perfil,
   // publicar producto) -- un empleado no las puede hacer, no tiene sentido mostrárselo.
-  if (!isStoreOwner || (currentStoreHasProfile && currentStoreHasAlias !== false && hasProducts)) {
+  if (!isStoreOwner || (currentStoreHasProfile && currentStoreHasTransfer !== false && hasProducts)) {
     container.style.display = 'none';
     return;
   }
@@ -3695,8 +3714,8 @@ function renderOnboardingChecklist(hasProducts) {
       onClick: () => document.getElementById('store-profile-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
     },
     {
-      done: currentStoreHasAlias !== false,
-      label: 'Cargá tu alias para cobrar por transferencia (obligatorio para publicar)',
+      done: currentStoreHasTransfer !== false,
+      label: 'Cargá tu alias o CBU/CVU para cobrar por transferencia (obligatorio)',
       onClick: goToAliasField,
     },
     {
@@ -5159,9 +5178,10 @@ function setupDashboardEvents() {
   }
 
   document.getElementById('pub-alias-gate-btn')?.addEventListener('click', goToAliasField);
+  document.getElementById('transfer-missing-banner-btn')?.addEventListener('click', goToAliasField);
 
   btnShowAdd.addEventListener('click', () => {
-    if (currentStoreHasAlias === false) {
+    if (currentStoreHasTransfer === false) {
       blockPublishWithoutAlias();
       return;
     }
@@ -5216,7 +5236,7 @@ function setupDashboardEvents() {
     const isEditing = Boolean(editingProductId);
     const submitLabel = isEditing ? 'Guardar cambios' : 'Guardar producto';
 
-    if (!isEditing && currentStoreHasAlias === false) {
+    if (!isEditing && currentStoreHasTransfer === false) {
       blockPublishWithoutAlias();
       return;
     }
@@ -5309,7 +5329,7 @@ function setupDashboardEvents() {
     // Migración 107: el trigger avisa con hint 'missing_transfer_alias' (por
     // si el alias se borró desde otra pestaña después de cargar el panel).
     if (error && error.hint === 'missing_transfer_alias') {
-      currentStoreHasAlias = false;
+      currentStoreHasTransfer = false;
       setLoading(btnSubmit, false, submitLabel);
       blockPublishWithoutAlias();
       return;
