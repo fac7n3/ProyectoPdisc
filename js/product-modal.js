@@ -131,29 +131,149 @@ function getStockInfo(stock) {
   return { text: `Disponible (${stock} unidades)`, cssClass: 'ok', fillClass: 'pm-stock__fill--high' };
 }
 
-// ── Productos relacionados (tarjetas ya renderizadas, datos reales) ──
-function getRelatedProducts(currentId, categories) {
-  const allCards = document.querySelectorAll('.product-card');
-  const related = [];
+// ── Productos relacionados: SIEMPRE de la misma categoría ──
+// Antes salían de las tarjetas que hubiera en la página (se buscaba
+// `card.dataset.category`, que ninguna grilla llena), así que nunca había
+// coincidencias y la lista se rellenaba con cualquier tarjeta: a una remera le
+// aparecían panes. Ahora se consultan a la base los productos activos de la
+// categoría del producto que se está mirando; sin ninguno, no se muestra la
+// sección (no se rellena con otros rubros). Sirve igual en las páginas que no
+// tienen grilla de tarjetas (ficha de producto, "Mis compras").
+const RELATED_MAX = 12;
 
-  allCards.forEach(card => {
-    if (card.id === currentId) return;
-    const cardCats = (card.dataset.category || '').split(' ');
-    const hasCommon = categories.some(c => c && cardCats.includes(c));
-    if (hasCommon) related.push(card);
-  });
+async function fetchRelatedProducts(productId) {
+  try {
+    const { data: current, error: currentError } = await supabase
+      .from('products')
+      .select('category_id')
+      .eq('id', productId)
+      .maybeSingle();
+    if (currentError || !current?.category_id) return [];
 
-  // La grilla envuelve en varias filas, así que conviene tener más de una fila
-  // para llenar al bajar (antes era un carrusel de 6 y quedaba corto).
-  if (related.length < 8) {
-    allCards.forEach(card => {
-      if (card.id !== currentId && !related.includes(card) && related.length < 12) {
-        related.push(card);
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock')
+      .eq('category_id', current.category_id)
+      .eq('is_active', true)
+      .gt('stock', 0)
+      .neq('id', productId)
+      .order('created_at', { ascending: false })
+      .limit(RELATED_MAX * 3);
+    if (error || !data) return [];
+
+    // Mezcladas: si no, un comercio con muchos productos nuevos se llevaría
+    // toda la fila.
+    const mixed = [...data];
+    for (let i = mixed.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [mixed[i], mixed[j]] = [mixed[j], mixed[i]];
+    }
+    return mixed.slice(0, RELATED_MAX);
+  } catch (err) {
+    console.error('No se pudieron cargar los productos relacionados:', err);
+    return [];
+  }
+}
+
+/** Tarjeta mínima (fuera del DOM) para abrir el modal de un relacionado: el
+ *  modal lee de ahí el id y la vista previa mientras llega el detalle. */
+function buildRelatedStubCard(item) {
+  const card = document.createElement('article');
+  card.className = 'product-card';
+  card.id = item.id;
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'product-card__image';
+  const img = document.createElement('img');
+  img.setAttribute('src', item.image_url || '/img/no-image.svg');
+  imgWrap.appendChild(img);
+  const name = document.createElement('div');
+  name.className = 'product-card__name';
+  name.textContent = item.title || '';
+  const price = document.createElement('div');
+  price.className = 'product-card__price';
+  price.textContent = item.price != null ? formatPrice(item.price) : '';
+  card.append(imgWrap, name, price);
+  return card;
+}
+
+/** Dibuja la sección "Productos relacionados" en el hueco del modal y le
+ *  conecta los clicks y las flechas. Sin productos no dibuja nada. */
+function renderRelatedSection(overlay, items) {
+  const slot = overlay.querySelector('.pm-related-slot');
+  if (!slot || !items.length) return;
+
+  const cardsHTML = items.map((item) => {
+    const rName = escapeHTML(item.title || '');
+    const rPrice = escapeHTML(formatPrice(item.price));
+    const rImg = encodeURI(item.image_url || '/img/no-image.svg');
+    return `
+      <div class="pm-related-card" data-related-id="${escapeHTML(item.id)}" tabindex="0" role="button" aria-label="Ver ${rName}">
+        <div class="pm-related-card__img">
+          <img src="${rImg}" alt="${rName}" loading="lazy" />
+        </div>
+        <div class="pm-related-card__body">
+          <div class="pm-related-card__name">${rName}</div>
+          <div class="pm-related-card__price">${rPrice}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  slot.innerHTML = `
+    <hr class="pm-divider" />
+    <div class="pm-related">
+      <h3 class="pm-related__title">Productos relacionados</h3>
+      <div class="pm-related__carousel">
+        <button type="button" class="pm-related__nav pm-related__nav--prev" aria-label="Ver productos relacionados anteriores">
+          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+        </button>
+        <div class="pm-related__scroll">${cardsHTML}</div>
+        <button type="button" class="pm-related__nav pm-related__nav--next" aria-label="Ver más productos relacionados">
+          <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const byId = new Map(items.map((item) => [item.id, item]));
+
+  // Click abre el modal de ese producto. openProductModal ya cierra el modal
+  // anterior por su cuenta (sin la espera fija de 450 ms que había antes).
+  slot.querySelectorAll('.pm-related-card').forEach((relCard) => {
+    const open = () => {
+      const item = byId.get(relCard.dataset.relatedId);
+      if (item) openProductModal(buildRelatedStubCard(item));
+    };
+    relCard.addEventListener('click', open);
+    relCard.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
       }
     });
-  }
+  });
 
-  return related.slice(0, 12);
+  // Flechas de navegación lateral (A113-277: en desktop no había forma de
+  // mover el carrusel sin rueda/touchpad horizontal).
+  const relatedScroll = slot.querySelector('.pm-related__scroll');
+  const prevBtn = slot.querySelector('.pm-related__nav--prev');
+  const nextBtn = slot.querySelector('.pm-related__nav--next');
+  const scrollByCards = (dir) => {
+    const card = relatedScroll.querySelector('.pm-related-card');
+    const step = card ? card.getBoundingClientRect().width + 14 : 174; // ancho + gap
+    relatedScroll.scrollBy({ left: dir * step * 2, behavior: 'smooth' });
+  };
+  const updateNavState = () => {
+    const maxScroll = relatedScroll.scrollWidth - relatedScroll.clientWidth;
+    const atStart = relatedScroll.scrollLeft <= 4;
+    const atEnd = relatedScroll.scrollLeft >= maxScroll - 4;
+    if (prevBtn) prevBtn.disabled = atStart;
+    if (nextBtn) nextBtn.disabled = maxScroll <= 4 || atEnd;
+  };
+  prevBtn?.addEventListener('click', () => scrollByCards(-1));
+  nextBtn?.addEventListener('click', () => scrollByCards(1));
+  relatedScroll.addEventListener('scroll', updateNavState, { passive: true });
+  updateNavState();
 }
 
 // ── URL de la tienda (relativa según la profundidad de la página actual) ──
@@ -284,28 +404,6 @@ function buildModalHTML(data) {
   const stockInfo = getStockInfo(data.stock);
   const stockDisabled = data.stock <= 0;
   const shopInitial = (data.shop || '?').charAt(0).toUpperCase();
-
-  const relatedCards = getRelatedProducts(data.id, data.categories || []);
-  let relatedHTML = '';
-  relatedCards.forEach(card => {
-    // rName/rPrice se leen vía textContent de otra tarjeta ya renderizada --
-    // hay que volver a escapar en el punto de uso (mismo criterio que antes).
-    const rName = escapeHTML(card.querySelector('.product-card__name')?.textContent?.trim() || '');
-    const rPrice = escapeHTML(card.querySelector('.product-card__price')?.textContent || '');
-    const rImg = encodeURI(card.querySelector('.product-card__image img')?.getAttribute('src') || '');
-    const rId = escapeHTML(card.id || '');
-    relatedHTML += `
-      <div class="pm-related-card" data-related-id="${rId}" tabindex="0" role="button" aria-label="Ver ${rName}">
-        <div class="pm-related-card__img">
-          <img src="${rImg}" alt="${rName}" loading="lazy" />
-        </div>
-        <div class="pm-related-card__body">
-          <div class="pm-related-card__name">${rName}</div>
-          <div class="pm-related-card__price">${rPrice}</div>
-        </div>
-      </div>
-    `;
-  });
 
   let badgeHTML = '';
   if (data.badgeText) {
@@ -530,24 +628,8 @@ function buildModalHTML(data) {
         </div>
       </div>
 
-      ${relatedCards.length > 0 ? `
-        <hr class="pm-divider" />
-        <!-- Related Products -->
-        <div class="pm-related">
-          <h3 class="pm-related__title">Productos relacionados</h3>
-          <div class="pm-related__carousel">
-            <button type="button" class="pm-related__nav pm-related__nav--prev" aria-label="Ver productos relacionados anteriores">
-              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-            </button>
-            <div class="pm-related__scroll">
-              ${relatedHTML}
-            </div>
-            <button type="button" class="pm-related__nav pm-related__nav--next" aria-label="Ver más productos relacionados">
-              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-      ` : ''}
+      <!-- Productos relacionados: se llena después (renderRelatedSection) -->
+      <div class="pm-related-slot"></div>
 
     </div>
   `;
@@ -584,7 +666,9 @@ function requestCloseModal() {
 
 window.addEventListener('popstate', (e) => {
   const productId = e.state?.pmProduct;
-  const targetCard = productId && document.getElementById(productId);
+  // Un producto relacionado ya no tiene por qué estar en la página: se abre
+  // igual con una tarjeta mínima (el modal pide el detalle por el id).
+  const targetCard = productId && (document.getElementById(productId) || buildRelatedStubCard({ id: productId }));
   if (targetCard) {
     openProductModal(targetCard, { skipHistoryPush: true });
   } else if (currentOverlay) {
@@ -603,7 +687,6 @@ async function openProductModal(card, { skipHistoryPush = false } = {}) {
 
   previousFocus = document.activeElement;
   const productId = card.id;
-  const categories = (card.dataset.category || '').split(' ');
   if (!skipHistoryPush) pushProductHistoryState(productId);
 
   // El overlay se crea una sola vez y persiste durante todo el ciclo de vida
@@ -636,9 +719,11 @@ async function openProductModal(card, { skipHistoryPush = false } = {}) {
   currentEscHandler = (e) => { if (e.key === 'Escape') requestCloseModal(); };
   document.addEventListener('keydown', currentEscHandler);
 
+  // Se pide a la par del detalle y no lo demora: la sección aparece cuando llega.
+  const relatedPromise = fetchRelatedProducts(productId);
+
   try {
     const data = await fetchProductData(productId);
-    data.categories = categories;
 
     // El usuario pudo haber cerrado el modal mientras esperábamos la respuesta.
     if (currentOverlay !== overlay) return;
@@ -646,6 +731,9 @@ async function openProductModal(card, { skipHistoryPush = false } = {}) {
     currentProductData = data;
     overlay.innerHTML = buildModalHTML(data);
     bindModalEvents(overlay, data);
+    relatedPromise.then((items) => {
+      if (currentOverlay === overlay) renderRelatedSection(overlay, items);
+    });
 
     const stockFill = overlay.querySelector('.pm-stock__fill');
     if (stockFill) {
@@ -963,68 +1051,29 @@ function bindModalEvents(overlay, data) {
     });
   });
 
-  // Productos relacionados — click abre el modal de ese producto
-  overlay.querySelectorAll('.pm-related-card').forEach(relCard => {
-    const handler = () => {
-      const relId = relCard.dataset.relatedId;
-      const targetCard = document.getElementById(relId);
-      // openProductModal ya cierra el modal anterior por su cuenta. Antes se
-      // esperaban 450 ms fijos (a que terminara la animación de cierre) antes
-      // de siquiera empezar a pedir el producto: medio segundo de "nada" en
-      // cada producto relacionado.
-      if (targetCard) openProductModal(targetCard);
-    };
-    relCard.addEventListener('click', handler);
-    relCard.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handler();
-      }
-    });
-  });
-
-  // Productos relacionados — flechas de navegación lateral (A113-277: en
-  // desktop no había forma de mover el carrusel sin rueda/touchpad horizontal).
-  const relatedScroll = overlay.querySelector('.pm-related__scroll');
-  if (relatedScroll) {
-    const prevBtn = overlay.querySelector('.pm-related__nav--prev');
-    const nextBtn = overlay.querySelector('.pm-related__nav--next');
-    const scrollByCards = (dir) => {
-      const card = relatedScroll.querySelector('.pm-related-card');
-      const step = card ? card.getBoundingClientRect().width + 14 : 174; // ancho + gap
-      relatedScroll.scrollBy({ left: dir * step * 2, behavior: 'smooth' });
-    };
-    const updateNavState = () => {
-      const maxScroll = relatedScroll.scrollWidth - relatedScroll.clientWidth;
-      const atStart = relatedScroll.scrollLeft <= 4;
-      const atEnd = relatedScroll.scrollLeft >= maxScroll - 4;
-      if (prevBtn) prevBtn.disabled = atStart;
-      if (nextBtn) nextBtn.disabled = maxScroll <= 4 || atEnd;
-    };
-    prevBtn?.addEventListener('click', () => scrollByCards(-1));
-    nextBtn?.addEventListener('click', () => scrollByCards(1));
-    relatedScroll.addEventListener('scroll', updateNavState, { passive: true });
-    updateNavState();
-  }
-
   // Focus trap
-  const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-  const focusableEls = modal.querySelectorAll(focusableSelector);
-  const firstFocusable = focusableEls[0];
-  const lastFocusable = focusableEls[focusableEls.length - 1];
+  // Los focusables se miran en cada Tab (no una sola vez): los productos
+  // relacionados se agregan al modal después, cuando llegan de la base.
+  const focusableSelector = 'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  const focusables = () => [...modal.querySelectorAll(focusableSelector)];
+  const firstFocusable = focusables()[0];
 
   modal.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
+    const els = focusables();
+    const first = els[0];
+    const last = els[els.length - 1];
+    if (!first || !last) return;
 
     if (e.shiftKey) {
-      if (document.activeElement === firstFocusable) {
+      if (document.activeElement === first) {
         e.preventDefault();
-        lastFocusable.focus();
+        last.focus();
       }
     } else {
-      if (document.activeElement === lastFocusable) {
+      if (document.activeElement === last) {
         e.preventDefault();
-        firstFocusable.focus();
+        first.focus();
       }
     }
   });

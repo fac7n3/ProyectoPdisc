@@ -91,6 +91,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-19 — "Productos relacionados" del modal de producto, siempre de la misma
+  categoría**, reportado por el usuario con captura (a una remera le salían panes). Causa:
+  `getRelatedProducts` (`js/product-modal.js`) buscaba coincidencias en `card.dataset.category`,
+  que **ninguna grilla llena**, así que nunca había coincidencias y la lista se rellenaba con
+  cualquier tarjeta de la página. Ahora `fetchRelatedProducts` consulta a la base: toma el
+  `category_id` del producto y trae los activos, con stock, de esa categoría (sin el mismo; mezclados,
+  hasta 12). **Sin ninguno no se muestra la sección** (no se rellena con otros rubros). Se pide a la
+  par del detalle y la sección se dibuja cuando llega (`renderRelatedSection`, hueco `.pm-related-slot`).
+  Como los relacionados ya no están necesariamente en la página, clickear uno abre el modal con una
+  tarjeta mínima (`buildRelatedStubCard`) y el botón "atrás" también reabre productos que no están en
+  la grilla; el focus trap mira los elementos enfocables en cada Tab (la sección llega después).
+  Vale en todas las páginas que abren el modal (inicio, búsqueda, comercio, favoritos, Mis compras,
+  ficha de producto). Sin migración. Verificado con Playwright (Supabase simulado: grilla con
+  panes + ropa, 7 checks); sin probar contra la base real.
 - **Hecho 2026-10-14 — "Vender" que se veía un instante antes de "Panel" (home), segunda vuelta**,
   reportado de nuevo por el usuario ("fijate si hay otras zonas con otras palabras que cambian
   según el rol"). El arreglo del 2026-10-05 dejaba tres huecos, reproducidos con Playwright
