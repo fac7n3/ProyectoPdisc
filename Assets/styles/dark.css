@@ -104,14 +104,14 @@ html.theme-switching *::after {
 :root[data-theme="dark"]::-webkit-scrollbar-thumb { background: #3a465f; }
 :root[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: #4a5878; }
 
-/* ---- Logo: se queda en su azul de marca (nunca blanco: al pintarlo blanco
-   desaparecía en la carga). El pin es azul marino sobre transparente y sobre
-   fondo oscuro casi no se lee, así que en los lugares chicos va sobre una
-   baldosa clara, igual que ya hace la pantalla de bienvenida. ---- */
+/* ---- Logo ----
+   Navbar: pin BLANCO sobre el fondo oscuro (el recorte de la casita es
+   transparente, se sigue viendo). Es lo que pidió el usuario: sin baldosa.
+   Pantalla de bienvenida (.bl-splash__logo, solo al cargar el inicio): NO se
+   pinta de blanco -- se perdía; queda el logo azul sobre su baldosa blanca.
+   Ícono de las notificaciones emergentes: azul sobre baldosa clara. ---- */
 html[data-theme="dark"] .navbar__logo-img {
-  background: var(--dk-logo-tile);
-  border-radius: 0.6rem;
-  padding: 0.2rem;
+  filter: brightness(0) invert(1);
 }
 html[data-theme="dark"] .bl-toast__app-icon {
   background: var(--dk-logo-tile);

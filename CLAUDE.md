@@ -101,8 +101,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   hay que escribirlos con tokens (`var(--bl-surface)`, `var(--bl-text)`). Ajustes manuales en
   `Assets/styles/dark.css`. Verificado con Playwright + Supabase simulado (auditoría de contraste en ~14
   páginas/paneles, 0 hallazgos nuevos); **sin probar con datos reales** ni el panel de profesional/repartidor.
-  **El logo nunca se pinta de blanco** (desaparecía en la carga): queda azul, sobre baldosa clara en navbar y
-  notificaciones. Detalle y gotchas (Vite reordena los `<link>`, azul de marca ilegible como texto): skill
+  **Logo:** en el navbar va BLANCO sin baldosa; solo la pantalla de bienvenida (carga del inicio) lo deja azul sobre
+  su cuadrito blanco (blanco se perdía ahí); el ícono de las notificaciones emergentes va azul sobre baldosa clara. Detalle y gotchas (Vite reordena los `<link>`, azul de marca ilegible como texto): skill
   `progreso-baradero-local` y `docs/brand-guidelines.md` sección 9.
 - **Hecho 2026-10-19 — "Productos recomendados" del inicio según lo que mira la persona**, a pedido
   del usuario (si mira panadería, panadería; y de **todas** las categorías que mire: ropa, verdulería...).

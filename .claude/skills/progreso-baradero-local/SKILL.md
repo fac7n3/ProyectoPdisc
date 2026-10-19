@@ -5528,3 +5528,9 @@ siempre también los íconos (`i.fa-*`, `svg`) en la auditoría de contraste, no
 íconos + texto con umbral 1,8:1 en las páginas públicas, el panel de vendedor, admin y las 7 secciones de
 Mi perfil: 0 hallazgos.
 
+### Modo oscuro — corrección: el logo del navbar vuelve a blanco (2026-10-19)
+El usuario aclaró que el logo azul era **solo para la pantalla de bienvenida** (la que se ve al recargar el
+inicio): en el navbar lo quiere **blanco y sin cuadrado de atrás**. Quedó: navbar `filter: brightness(0)
+invert(1)` sin baldosa; `.bl-splash__logo` azul sobre su baldosa blanca; `.bl-toast__app-icon` azul sobre
+baldosa clara (esto último sin pedido del usuario, se dejó porque el azul solo no se veía; sacarlo si molesta).
+
