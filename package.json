@@ -13,6 +13,7 @@
     "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done"
   },
   "devDependencies": {
+    "postcss": "^8.5.31",
     "sharp": "^0.35.3",
     "supabase": "^2.109.1",
     "typescript": "^5.9.3",

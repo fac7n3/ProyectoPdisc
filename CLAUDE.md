@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-19. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-19 — Modo oscuro de todo el sitio** (rama `claude/gallant-sagan-5qjp2e`, sin mergear a `main`),
+  a pedido del usuario. Botón **sol (modo claro) / luna (modo oscuro)** arriba a la derecha, a la derecha del
+  carrito (`js/theme.js`; en admin va en su barra, en login/registro flota). Se guarda en `localStorage`
+  (`bl_theme`); **sin elección guardada el sitio queda claro**. Cada página trae un script en el `<head>` (sin
+  destello claro) + `dark.css` + `theme.js` (lo exige `npm test`). **Regla nueva:** los colores fijos
+  (`#fff`, `rgba(...)`) en CSS o `<style>` inline se espejan solos con `node scripts/gen-dark-css.mjs`
+  (`Assets/styles/dark-auto.css` es GENERADO, no editar; el test falla si quedó viejo); los de JS en línea
+  hay que escribirlos con tokens (`var(--bl-surface)`, `var(--bl-text)`). Ajustes manuales en
+  `Assets/styles/dark.css`. Verificado con Playwright + Supabase simulado (auditoría de contraste en ~14
+  páginas/paneles, 0 hallazgos nuevos); **sin probar con datos reales** ni el panel de profesional/repartidor.
+  Detalle y gotchas (Vite reordena los `<link>`, azul de marca ilegible como texto): skill
+  `progreso-baradero-local` y `docs/brand-guidelines.md` sección 9.
 - **Hecho 2026-10-19 — "Productos recomendados" del inicio según lo que mira la persona**, a pedido
   del usuario (si mira panadería, panadería; y de **todas** las categorías que mire: ropa, verdulería...).
   Cada vez que se abre el detalle de un producto (modal o `producto.html`; `fetchProductDetail`, el

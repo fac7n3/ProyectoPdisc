@@ -13,7 +13,7 @@ function ensureReviewMenuStyles() {
   const style = document.createElement('style');
   style.textContent = `
     .bl-review-menu-btn { width: 1.75rem; height: 1.75rem; border-radius: 50%; border: none; background: none; color: var(--bl-text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .bl-review-menu-btn.is-active { background: var(--bl-border-light); color: #111827; }
+    .bl-review-menu-btn.is-active { background: var(--bl-border-light); color: var(--bl-text, #111827); }
   `;
   document.head.appendChild(style);
 }

@@ -5469,3 +5469,51 @@ por tienda, en cadena** (MP no reparte un pago entre varios `collector_id`: una 
   de 2 pasos), con uno sin vincular (MP deshabilitado, pasa a transferencia), el checkout manda
   `create_order` con los dos y `mp-create-preference` solo con el primero, y la vuelta de MP muestra el
   siguiente (excluye un pendiente viejo de otra compra) y su botón paga el pedido correcto.
+
+## 2026-10-19 — Modo oscuro de todo el sitio + botón sol/luna (rama `claude/gallant-sagan-5qjp2e`)
+A pedido del usuario ("integrá toda la página en modo oscuro, con un botón sol/luna al lado del carrito").
+- **Botón:** `js/theme.js` (+ lógica pura en `js/theme-utils.js`, con test) lo inserta **a la derecha del
+  carrito** en `.navbar__actions`; en `admin.html` va al final de `.admin-topbar`; en login / registro /
+  recuperar contraseña (sin barra) flota arriba a la derecha. **Sol = estás en modo claro, luna = estás en
+  modo oscuro** (literal del pedido). Íconos en SVG propio: el panel de admin no carga Font Awesome.
+  Se guarda en `localStorage` (`bl_theme` = `'light'|'dark'`), se sincroniza entre pestañas y cambia el
+  `<meta name="theme-color">`. **Sin elección guardada el sitio queda claro** (decisión mía: sitio en
+  producción, no cambiarle el aspecto a nadie sin que lo pida; si se quiere seguir el modo del sistema,
+  es una línea en el script del `<head>` y en `theme.js`).
+- **Sin destello claro:** cada una de las 21 páginas de `pages/` trae, justo después del `<meta charset>`, un
+  script inline que pone `<html data-theme="dark">` antes del primer pintado. Más, antes de `</head>`:
+  `dark.css` y `theme.js`. `js/dark-css.test.mjs` (corre con `npm test`) falla si una página nueva no los trae.
+- **Cómo se pinta (2 capas):** (1) `Assets/styles/dark.css` redefine los **tokens** (`--bl-*`, `--auth-*`,
+  `--bl-perfil-*`, acento del vendedor) bajo `:root[data-theme="dark"]` + ajustes sueltos (logo en blanco
+  con `filter`, inputs, esqueletos de carga, scrollbar); (2) `Assets/styles/dark-auto.css` es **GENERADO**
+  por `node scripts/gen-dark-css.mjs` (usa `postcss`, ahora devDependency): espeja con colores oscuros todo
+  lo que está escrito a mano (#hex, rgba, hsl, white/black) en los CSS y en los `<style>` de las páginas.
+  `dark.css` lo importa con `@import` en su primera línea.
+  **Si cambiás un color fijo en un CSS o en un `<style>` inline, corré el generador** (el test lo exige).
+- **Gotchas que costaron:** (a) **Vite reordena los `<link rel=stylesheet>`** al construir (la hoja del tema
+  salía primera): no se puede depender de "la última gana". Por eso las reglas espejo usan un prefijo
+  `html[data-theme="dark"]` de especificidad fija y el generador espeja **también** las declaraciones que no
+  cambian (var(--x), acentos) cuando pueden competir con una espejo (misma clase): así la cascada entre
+  espejos es la original. Los selectores solo de etiqueta (`a`, `button`) sin color cambiado NO se espejan
+  (sin esto `a{color:inherit}` espejado le ganaba a `.hero__banner-cta`). (b) el azul de marca `#284175`
+  no se lee como texto sobre fondo oscuro: el generador reemplaza `color: var(--bl-primary|primary-dark|
+  primary-deeper|auth-primary|vendor-accent...)` por `var(--dk-accent-text)` (#8aaef0), y el ámbar del modo
+  Oficios por `--dk-oficios-text`; como **fondo** el primario sube a `#3f6cc4` (blanco encima da 5:1).
+  `--bl-primary-deeper` (footer) baja a `#16233f`. (c) los estilos en línea armados por JS no los toca el
+  generador: se corrigieron a mano `background: white` en `perfil.js` (botones de dirección), `admin.js`
+  (burbuja del hilo), `reviews-utils.js` (`color:#111827`) y los verdes "hecho" del checklist de `vender.js`
+  (ahora `var(--bl-ok-bg)`/`--bl-ok-border`). Las barras de esqueleto con `style="background:#e2e8f0"` se
+  pisan con `[style*=...] !important` en `dark.css`. (d) los toasts de `auth-utils.js` (verde/rojo claro con
+  texto oscuro) y los colores de cabecera que elige cada comercio se dejaron: son pares coherentes.
+- **Verificado** con Playwright sobre el build real y Supabase simulado (`/tmp`, no versionado): auditoría
+  automática de contraste (texto vs. fondo efectivo, umbral 3:1) en inicio, buscador, comercios, contratar,
+  servicios, farmacias, términos, privacidad, login, registro, carrito, perfil (7 secciones), panel de
+  vendedor (todas las secciones) y admin (todas): **0 hallazgos nuevos** (quedan `Agregar`/`Asignar` blanco
+  sobre verde #10b981 = 2.5:1, igual que en claro, y el botón de pagar deshabilitado). Capturas del
+  inicio, modal de producto, menú de categorías, carrito, perfil, panel de vendedor y admin, en escritorio y
+  celular (375 px). **Sin probar:** datos reales (pedidos, reseñas, cupones, tablas de admin con filas),
+  el panel de profesional y el de repartidor logueados, y el mapa de "Comercios cerca tuyo" (necesita
+  geolocalización). Si aparece una pantalla con un color mal, lo más probable es un color fijo en JS: grep
+  `#[0-9a-f]{3,6}` en `js/`.
+- `dist/` no se reconstruyó (mismo criterio de siempre: Vercel construye con sus variables).
+
