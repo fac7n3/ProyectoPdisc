@@ -21,6 +21,7 @@ import { supabase } from './auth-utils.js';
 import { fetchReviewsSummary } from './reviews-utils.js';
 import { createProductDetailFetcher } from './product-detail-utils.js';
 import { logProductView } from './search-analytics.js';
+import { rememberViewedProduct } from './interests.js';
 
 // Las consultas de siempre, solo para cuando la función get_product_detail
 // (migración 118) todavía no está en la base. Ojo: son las lentas -- los joins
@@ -56,6 +57,7 @@ const fetcher = createProductDetailFetcher({
  */
 export const fetchProductDetail = (productId) => fetcher.fetch(productId).then((product) => {
   logProductView(productId);
+  rememberViewedProduct(productId); // alimenta "Productos recomendados" del inicio
   return product;
 });
 

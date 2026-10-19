@@ -91,6 +91,21 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-19 — "Productos recomendados" del inicio según lo que mira la persona**, a pedido
+  del usuario (si mira panadería, panadería; y de **todas** las categorías que mire: ropa, verdulería...).
+  Cada vez que se abre el detalle de un producto (modal o `producto.html`; `fetchProductDetail`, el
+  pedido adelantado por hover no cuenta) se anota en `localStorage` (`bl_viewed_products`, los últimos
+  40, sin repetidos; `js/interests.js`). El inicio (`loadInterestProducts` en `js/home.js`) pide la
+  categoría de esos productos, pesa cada categoría por cuánto la miró con **vida media de 14 días**
+  (lo reciente pesa más), toma hasta 5 categorías y **reparte los 12 lugares en proporción**
+  (mínimo 1 por categoría), **intercalando** categorías y sin repetir lo que ya miró
+  (`js/interests-utils.js`, 17 tests). Orden final: comercios con combo Barrio/Baradero (**con intereses
+  conocidos, solo los 3 primeros lugares**; sin historial, como antes), productos de sus intereses, y al
+  final la lista general como relleno. **Es por dispositivo/navegador** (no por cuenta, sin migración ni
+  tabla nueva) y se borra al limpiar datos del sitio; sin historial el inicio queda igual que antes.
+  La tabla `product_views` (migración 128) sigue siendo solo analítica del admin. Verificado en
+  Playwright con Supabase simulado (3 panes + 1 remera -> 8 panes / 4 ropa, ninguno ya visto, ninguna
+  categoría no mirada, historial corrupto -> lista general); sin probar con la base real.
 - **Hecho 2026-10-19 — "Productos relacionados" del modal de producto, siempre de la misma
   categoría**, reportado por el usuario con captura (a una remera le salían panes). Causa:
   `getRelatedProducts` (`js/product-modal.js`) buscaba coincidencias en `card.dataset.category`,
