@@ -51,6 +51,7 @@
      marino (links, títulos de acento). 7.6:1 sobre la tarjeta. */
   --dk-accent-text: #8aaef0;
   --dk-oficios-text: #f5b25c;
+  --dk-logo-tile: #e4e9f3; /* baldosa clara detrás del logo azul */
   /* Estados "hecho" que arma el JS con estilos en línea (checklist del panel) */
   --bl-ok-bg: #12352a;
   --bl-ok-border: #1f5c46;
@@ -103,11 +104,24 @@ html.theme-switching *::after {
 :root[data-theme="dark"]::-webkit-scrollbar-thumb { background: #3a465f; }
 :root[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: #4a5878; }
 
-/* ---- Logo: el pin es azul marino sobre transparente; en oscuro se pinta
-   blanco (el recorte de la casita es transparente, se sigue viendo). ---- */
-html[data-theme="dark"] .navbar__logo-img,
+/* ---- Logo: se queda en su azul de marca (nunca blanco: al pintarlo blanco
+   desaparecía en la carga). El pin es azul marino sobre transparente y sobre
+   fondo oscuro casi no se lee, así que en los lugares chicos va sobre una
+   baldosa clara, igual que ya hace la pantalla de bienvenida. ---- */
+html[data-theme="dark"] .navbar__logo-img {
+  background: var(--dk-logo-tile);
+  border-radius: 0.6rem;
+  padding: 0.2rem;
+}
+html[data-theme="dark"] .bl-toast__app-icon {
+  background: var(--dk-logo-tile);
+  border-radius: 5px;
+  padding: 2px;
+}
+/* Pantalla de bienvenida: baldosa blanca como en modo claro (dark-auto.css la
+   había oscurecido). */
 html[data-theme="dark"] .bl-splash__logo {
-  filter: brightness(0) invert(1);
+  background: #fff;
 }
 
 /* ---- Esqueletos de carga: las barras llevan el gris claro en el atributo

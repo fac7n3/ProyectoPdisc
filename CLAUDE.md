@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-19 — Modo oscuro de todo el sitio** (rama `claude/gallant-sagan-5qjp2e`, sin mergear a `main`),
+- **Hecho 2026-10-19 — Modo oscuro de todo el sitio** (rama `claude/gallant-sagan-5qjp2e`, mergeada a `main` el 2026-10-19),
   a pedido del usuario. Botón **sol (modo claro) / luna (modo oscuro)** arriba a la derecha, a la derecha del
   carrito (`js/theme.js`; en admin va en su barra, en login/registro flota). Se guarda en `localStorage`
   (`bl_theme`); **sin elección guardada el sitio queda claro**. Cada página trae un script en el `<head>` (sin
@@ -101,7 +101,8 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   hay que escribirlos con tokens (`var(--bl-surface)`, `var(--bl-text)`). Ajustes manuales en
   `Assets/styles/dark.css`. Verificado con Playwright + Supabase simulado (auditoría de contraste en ~14
   páginas/paneles, 0 hallazgos nuevos); **sin probar con datos reales** ni el panel de profesional/repartidor.
-  Detalle y gotchas (Vite reordena los `<link>`, azul de marca ilegible como texto): skill
+  **El logo nunca se pinta de blanco** (desaparecía en la carga): queda azul, sobre baldosa clara en navbar y
+  notificaciones. Detalle y gotchas (Vite reordena los `<link>`, azul de marca ilegible como texto): skill
   `progreso-baradero-local` y `docs/brand-guidelines.md` sección 9.
 - **Hecho 2026-10-19 — "Productos recomendados" del inicio según lo que mira la persona**, a pedido
   del usuario (si mira panadería, panadería; y de **todas** las categorías que mire: ropa, verdulería...).
