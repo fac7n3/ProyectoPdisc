@@ -1948,7 +1948,7 @@ async function renderAdminThreadMessages(threadDiv, ticketId) {
     messages.forEach((m) => {
       const isMine = m.sender_id === myId;
       const bubble = document.createElement('div');
-      bubble.style.cssText = `padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; font-size: 0.875rem; ${isMine ? 'align-self: flex-end; background: var(--bl-primary, #2563eb); color: white;' : 'align-self: flex-start; background: white;'}`;
+      bubble.style.cssText = `padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; font-size: 0.875rem; ${isMine ? 'align-self: flex-end; background: var(--bl-primary, #2563eb); color: white;' : 'align-self: flex-start; background: var(--bl-surface, white); color: var(--bl-text, inherit);'}`;
       bubble.textContent = m.message;
       const meta = document.createElement('div');
       meta.style.cssText = `font-size: 0.7rem; color: ${isMine ? 'rgba(255,255,255,0.7)' : 'var(--bl-text-muted, #94a3b8)'}; margin-top: 0.2rem;`;

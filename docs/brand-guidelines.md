@@ -323,9 +323,30 @@ Principios de la identidad en movimiento, sin repetir la especificación técnic
 
 ---
 
+## 9. Modo oscuro
+
+Disponible en todo el sitio desde el botón sol/luna del navbar (al lado del carrito). Mismo matiz que el
+ancla de marca (#284175, azul ~222°), en tres escalones de superficie. Tokens en `Assets/styles/dark.css`;
+el resto del CSS se espeja solo (`node scripts/gen-dark-css.mjs`).
+
+| Uso | Valor |
+|---|---|
+| Página | `#0e121c` |
+| Tarjeta / superficie | `#181d2a` (alterna `#1c2333`, hover `#1f2637`) |
+| Borde | `#2a3347` |
+| Texto / secundario / apagado | `#e4e9f3` / `#b3bdd0` / `#8a96ad` |
+| Primario (botones, fondo) | `#3f6cc4` — blanco encima da 5:1 |
+| Azul de lectura (links, texto de acento) | `#8aaef0` |
+| Footer | `#16233f` |
+
+El ámbar de acento (`#f59e0b`) y los colores de estado (verde, rojo) no cambian. El logo se pinta blanco
+(`filter`), el recorte de la casita es transparente. Para una pieza nueva: usar los tokens `--bl-*`, no
+colores fijos; si hace falta uno fijo, correr el generador.
+
 ## Changelog
 
 | Versión | Fecha | Cambios |
 |---|---|---|
 | v1.0 | 2026-08-03 | Identidad inicial, construida a partir del sistema visual ya en producción (`Assets/styles/*.css`, logo, video Remotion) y de un panel de marketing (skills `product-marketing`, `marketing-council`, `brand`). |
 | v1.1 | 2026-10-02 | Componente "Notificación emergente" (abajo a la derecha, estilo notificación de celular, con el logo del navbar). |
+| v1.2 | 2026-10-19 | Modo oscuro de todo el sitio (sección 9) con botón sol/luna en el navbar. |

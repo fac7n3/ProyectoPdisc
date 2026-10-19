@@ -2,6 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
@@ -970,6 +971,8 @@
       }
     </style>
     <link rel="stylesheet" href="../Assets/styles/auth.css" />
+    <link rel="stylesheet" href="../Assets/styles/dark.css" />
+    <script type="module" src="../js/theme.js"></script>
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de

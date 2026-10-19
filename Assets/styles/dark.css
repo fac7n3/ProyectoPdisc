@@ -1,0 +1,197 @@
+/* ===================================================
+   MODO OSCURO — Baradero Local
+   ===================================================
+   Se activa con <html data-theme="dark"> (js/theme.js; el atributo lo pone un
+   script chico en el <head> de cada página antes del primer pintado, así no hay
+   destello claro).
+
+   Dos capas:
+   1. Esta hoja: redefine los tokens (--bl-*, --auth-*, --bl-perfil-*...) y
+      suma los ajustes que no son un simple color (logo, botón del tema,
+      mapas, imágenes). Se carga DESPUÉS de los demás CSS.
+   2. dark-auto.css (GENERADO, `node scripts/gen-dark-css.mjs`): espejo oscuro
+      de los colores escritos a mano (#fff, rgba(...)) que no pasan por tokens.
+      Se importa acá arriba (@import: Vite lo deja inlineado en este lugar, y
+      es la única forma de garantizar el orden -- Vite reordena los <link>),
+      así lo manual de más abajo gana a igual especificidad. Las reglas de
+      dark-auto.css son `html[data-theme="dark"] <selector>`: para pisarlas
+      desde acá, mismo prefijo + un selector igual o más específico.
+
+   Paleta: mismo matiz que el ancla de marca #284175 (azul ~222°), en tres
+   escalones de superficie -- página < tarjeta < tarjeta elevada. Contraste
+   medido: texto 14:1, secundario 8:1, apagado 5.6:1 sobre la tarjeta. */
+
+@import './dark-auto.css';
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Superficies */
+  --bl-bg: #0e121c;
+  --bl-surface: #181d2a;
+  --bl-surface-hover: #1f2637;
+  --bl-surface-alt: #1c2333;
+
+  /* Texto */
+  --bl-text: #e4e9f3;
+  --bl-text-secondary: #b3bdd0;
+  --bl-text-muted: #8a96ad;
+
+  /* Bordes */
+  --bl-border: #2a3347;
+  --bl-border-light: #222a3b;
+
+  /* Marca: el azul #284175 es demasiado oscuro para un botón sobre fondo
+     oscuro; se sube de luminosidad (blanco encima sigue dando 5:1, AA). */
+  --bl-primary: #3f6cc4;
+  --bl-primary-dark: #3459a8;
+  --bl-primary-deeper: #16233f; /* fondo del footer y barras de marca */
+
+  /* Azul de lectura: lo usa dark-auto.css para el texto que en claro es azul
+     marino (links, títulos de acento). 7.6:1 sobre la tarjeta. */
+  --dk-accent-text: #8aaef0;
+  --dk-oficios-text: #f5b25c;
+  /* Estados "hecho" que arma el JS con estilos en línea (checklist del panel) */
+  --bl-ok-bg: #12352a;
+  --bl-ok-border: #1f5c46;
+
+  /* Sombras: sobre fondo oscuro necesitan más cuerpo para notarse */
+  --bl-shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --bl-shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+  --bl-shadow-lg: 0 8px 30px rgba(0,0,0,0.55);
+  --bl-shadow-card: 0 1px 3px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.3);
+
+  /* Login / registro / recuperar contraseña (auth.css) */
+  --auth-bg: #0e121c;
+  --auth-card-bg: #181d2a;
+  --auth-text: #e4e9f3;
+  --auth-text-light: #a5b0c5;
+  --auth-border: #2a3347;
+  --auth-primary: #3f6cc4;
+  --auth-primary-hover: #3459a8;
+
+  /* Mi perfil (perfil-custom.css) */
+  --bl-perfil-bg: #0e121c;
+  --bl-perfil-surface: #181d2a;
+  --bl-perfil-border: #2a3347;
+  --bl-perfil-text-main: #e4e9f3;
+  --bl-perfil-text-sec: #9aa6bd;
+  --bl-perfil-hint: #9aa6bd;
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.45), 0 1px 2px -1px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -2px rgba(0,0,0,0.4);
+
+  /* Panel de vendedor (acento definido en el <style> de vender.html) */
+  --bl-vendor-accent: #3f6cc4;
+  --bl-vendor-accent-dark: #3459a8;
+  --bl-vendor-accent-rgb: 63, 108, 196;
+}
+
+/* Cambio de tema suave solo mientras se toca el botón (js/theme.js pone la
+   clase un instante): no anima nada en la carga ni al navegar. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, fill 0.25s ease !important;
+}
+
+/* ---- Barra de scroll de la página ---- */
+:root[data-theme="dark"] {
+  scrollbar-color: #3a465f var(--bl-bg);
+}
+:root[data-theme="dark"]::-webkit-scrollbar-track { background: var(--bl-bg); }
+:root[data-theme="dark"]::-webkit-scrollbar-thumb { background: #3a465f; }
+:root[data-theme="dark"]::-webkit-scrollbar-thumb:hover { background: #4a5878; }
+
+/* ---- Logo: el pin es azul marino sobre transparente; en oscuro se pinta
+   blanco (el recorte de la casita es transparente, se sigue viendo). ---- */
+html[data-theme="dark"] .navbar__logo-img,
+html[data-theme="dark"] .bl-splash__logo {
+  filter: brightness(0) invert(1);
+}
+
+/* ---- Esqueletos de carga: las barras llevan el gris claro en el atributo
+   style (inline, en el HTML de cada página), así que hace falta !important. ---- */
+html[data-theme="dark"] [style*="background: #e2e8f0"] { background: #262f45 !important; }
+html[data-theme="dark"] [style*="background: #cbd5e1"] { background: #323d58 !important; }
+
+/* ---- Selección de texto ---- */
+html[data-theme="dark"] ::selection {
+  background: rgba(138, 174, 240, 0.35);
+  color: #fff;
+}
+
+/* ---- Inputs sin fondo propio: el navegador los pinta gris (#3b3b3b) con
+   color-scheme: dark. Con :where() (especificidad 0) solo reemplaza ese gris
+   por defecto; cualquier input con fondo propio mantiene el suyo. ---- */
+:where(html[data-theme="dark"]) :where(input, textarea, select):not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="submit"], [type="button"]) {
+  background-color: var(--bl-surface-alt);
+  color: var(--bl-text);
+}
+
+/* ---- Inputs: placeholder y autocompletado del navegador ---- */
+html[data-theme="dark"] ::placeholder {
+  color: #7d8aa3;
+  opacity: 1;
+}
+html[data-theme="dark"] input:-webkit-autofill,
+html[data-theme="dark"] input:-webkit-autofill:hover,
+html[data-theme="dark"] input:-webkit-autofill:focus,
+html[data-theme="dark"] textarea:-webkit-autofill,
+html[data-theme="dark"] select:-webkit-autofill {
+  -webkit-text-fill-color: var(--bl-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--bl-surface-alt) inset;
+  caret-color: var(--bl-text);
+}
+
+/* ===========================================================
+   BOTÓN DEL TEMA (sol = modo claro, luna = modo oscuro)
+   Vive en .navbar__actions al lado del carrito (js/theme.js);
+   en las páginas sin barra (login, registro, admin) flota arriba a
+   la derecha. Hereda el círculo de .navbar__action-circle.
+   =========================================================== */
+.theme-toggle {
+  /* Autosuficiente: login/registro no cargan home.css (.navbar__action-circle) */
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--bl-border, var(--auth-border, #e2e8f0));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  flex-shrink: 0;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover {
+  background: var(--bl-surface-alt, #f0f4f8);
+  border-color: var(--bl-primary, var(--auth-primary, #284175));
+}
+.theme-toggle svg {
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.theme-toggle:hover svg {
+  transform: rotate(18deg);
+}
+/* Sol: ámbar de marca (el ámbar puro da 2.2:1 sobre blanco; el icono es
+   decorativo, la acción la dice el aria-label, pero se oscurece un poco). */
+.theme-toggle[data-mode="light"] { color: #d97706; }
+.theme-toggle[data-mode="dark"] { color: #a9c0f2; }
+.navbar__action-circle.theme-toggle:hover { color: inherit; }
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+
+/* Variante flotante (páginas sin navbar__actions) */
+.theme-toggle--floating {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1200;
+  background: var(--bl-surface, var(--auth-card-bg, #fff));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}

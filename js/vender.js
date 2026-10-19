@@ -3709,7 +3709,7 @@ function renderOnboardingChecklist(hasProducts) {
   steps.forEach((step) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.style.cssText = `display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.9rem; border-radius: var(--bl-radius-md, 0.5rem); text-align: left; width: 100%; cursor: pointer; background: ${step.done ? '#d1fae5' : 'var(--bl-surface-alt, #f0f4f8)'}; border: 1px solid ${step.done ? '#a7f3d0' : 'var(--bl-border, #e2e8f0)'};`;
+    btn.style.cssText = `display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.9rem; border-radius: var(--bl-radius-md, 0.5rem); text-align: left; width: 100%; cursor: pointer; background: ${step.done ? 'var(--bl-ok-bg, #d1fae5)' : 'var(--bl-surface-alt, #f0f4f8)'}; border: 1px solid ${step.done ? 'var(--bl-ok-border, #a7f3d0)' : 'var(--bl-border, #e2e8f0)'};`;
     btn.addEventListener('click', step.onClick);
 
     const icon = document.createElement('i');

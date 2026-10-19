@@ -492,7 +492,7 @@ async function loadAddresses(userId) {
     if (!addr.is_default) {
       const defaultBtn = document.createElement('button');
       defaultBtn.type = 'button';
-      defaultBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: white; cursor: pointer;';
+      defaultBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: var(--bl-surface, white); color: var(--bl-text, inherit); cursor: pointer;';
       defaultBtn.textContent = 'Predeterminar';
       defaultBtn.addEventListener('click', async () => {
         await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
@@ -504,14 +504,14 @@ async function loadAddresses(userId) {
 
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
-    editBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: white; cursor: pointer;';
+    editBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: var(--bl-surface, white); color: var(--bl-text, inherit); cursor: pointer;';
     editBtn.textContent = 'Editar';
     editBtn.addEventListener('click', () => openAddressForm(addr));
     actions.appendChild(editBtn);
 
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
-    delBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid #fecaca; border-radius: 6px; background: white; color: #dc2626; cursor: pointer;';
+    delBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid #fecaca; border-radius: 6px; background: var(--bl-surface, white); color: #dc2626; cursor: pointer;';
     delBtn.textContent = 'Eliminar';
     delBtn.addEventListener('click', async () => {
       const ok = await confirmDialog('¿Eliminar esta dirección?', { confirmText: 'Eliminar', danger: true });
