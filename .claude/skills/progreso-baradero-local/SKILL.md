@@ -5517,3 +5517,14 @@ A pedido del usuario ("integrá toda la página en modo oscuro, con un botón so
   `#[0-9a-f]{3,6}` en `js/`.
 - `dist/` no se reconstruyó (mismo criterio de siempre: Vercel construye con sus variables).
 
+### Modo oscuro — el logo vuelve a su azul (2026-10-19, misma rama)
+Reportado por el usuario: con el logo pintado de blanco (`filter: brightness(0) invert(1)`) **desaparecía en la
+carga** (pantalla de bienvenida del inicio, `.bl-splash__logo`). Se sacó el filtro: el logo es siempre el
+`logoazulpng.png` original. Como el azul marino casi no se lee sobre fondo oscuro, en los lugares chicos va
+sobre una **baldosa clara** (`--dk-logo-tile` #e4e9f3): logo del navbar y ícono de la notificación emergente
+(`.bl-toast__app-icon`); la pantalla de bienvenida vuelve a su baldosa blanca (dark-auto.css la había
+oscurecido). **Regla:** en modo oscuro no pintar imágenes/íconos de marca de blanco con `filter`; revisar
+siempre también los íconos (`i.fa-*`, `svg`) en la auditoría de contraste, no solo el texto. Auditoría de
+íconos + texto con umbral 1,8:1 en las páginas públicas, el panel de vendedor, admin y las 7 secciones de
+Mi perfil: 0 hallazgos.
+
