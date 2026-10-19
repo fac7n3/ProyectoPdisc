@@ -5,6 +5,8 @@ import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNo
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
 import { isPromoLive, promoHref, promoAriaLabel } from './home-promos-utils.js';
+import { loadViewedProducts } from './interests.js';
+import { weightCategories, interleaveByInterest } from './interests-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
@@ -326,6 +328,56 @@ async function loadActiveBoosts() {
 /** Planes cuyos productos salen arriba en "Productos recomendados". */
 const PLANS_WITH_TOP_PRODUCTS = ['barrio', 'baradero'];
 
+/** Cuántos productos muestra "Productos recomendados". */
+const RECOMMENDED_COUNT = 12;
+/** Con intereses conocidos, cuántos lugares de arriba conservan los comercios con combo. */
+const BOOSTED_TOP_WITH_INTERESTS = 3;
+
+function shuffled(list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * Productos de las categorías que la persona viene mirando (guardado en este
+ * navegador, ver interests.js): se reparten los lugares entre todas, en
+ * proporción a lo que miró de cada una y dando más peso a lo reciente.
+ * Excluye lo que ya miró. Si no hay historial o algo falla, devuelve [].
+ */
+async function loadInterestProducts(limit) {
+  try {
+    const views = loadViewedProducts();
+    if (!views.length) return [];
+    const ids = views.map((v) => v.id);
+
+    const { data: viewedRows, error } = await supabase.from('products').select('id, category_id').in('id', ids);
+    if (error || !viewedRows?.length) return [];
+    const categoryByProduct = Object.fromEntries(viewedRows.filter((r) => r.category_id).map((r) => [r.id, r.category_id]));
+
+    const weighted = weightCategories(views, categoryByProduct, Date.now());
+    if (!weighted.length) return [];
+
+    const results = await Promise.all(weighted.map((w) =>
+      supabase.from('products').select(PRODUCT_SELECT)
+        .eq('is_active', true).gt('stock', 0)
+        .eq('category_id', w.categoryId)
+        .not('id', 'in', `(${ids.join(',')})`)
+        .order('created_at', { ascending: false })
+        .limit(limit * 2)
+    ));
+    const byCategory = {};
+    weighted.forEach((w, i) => { byCategory[w.categoryId] = shuffled(results[i].error ? [] : (results[i].data || [])); });
+    return interleaveByInterest(byCategory, weighted, limit);
+  } catch (err) {
+    console.warn('No se pudieron armar las recomendaciones por intereses:', err);
+    return [];
+  }
+}
+
 /** Obtener productos de Supabase */
 async function loadProducts() {
   const grid = document.getElementById('products-grid');
@@ -337,19 +389,25 @@ async function loadProducts() {
       .filter((b) => PLANS_WITH_TOP_PRODUCTS.includes(b.plan_id))
       .map((b) => b.store_id);
 
-    const [generalRes, boostedRes] = await Promise.all([
-      supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).limit(12),
+    const [generalRes, boostedRes, interestProducts] = await Promise.all([
+      supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).limit(RECOMMENDED_COUNT),
       boostedStoreIds.length
-        ? supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).in('store_id', boostedStoreIds).limit(12)
+        ? supabase.from('products').select(PRODUCT_SELECT).eq('is_active', true).in('store_id', boostedStoreIds).limit(RECOMMENDED_COUNT)
         : Promise.resolve({ data: [], error: null }),
+      loadInterestProducts(RECOMMENDED_COUNT),
     ]);
 
     if (generalRes.error) throw generalRes.error;
-    // Los de comercios con combo van primero; si esa segunda consulta falla,
-    // la portada sigue con la lista de siempre.
-    const boostedProducts = boostedRes.error ? [] : (boostedRes.data || []);
-    const seen = new Set(boostedProducts.map((p) => p.id));
-    const products = [...boostedProducts, ...(generalRes.data || []).filter((p) => !seen.has(p.id))].slice(0, 12);
+    // Orden: los de comercios con combo van primero (si la persona tiene
+    // intereses conocidos, solo los primeros lugares, para que el resto sea de
+    // lo que viene mirando), después los de sus categorías y al final la lista
+    // general. Si alguna de las consultas extra falla, la portada sigue.
+    let boostedProducts = boostedRes.error ? [] : (boostedRes.data || []);
+    if (interestProducts.length) boostedProducts = boostedProducts.slice(0, BOOSTED_TOP_WITH_INTERESTS);
+    const seen = new Set();
+    const products = [...boostedProducts, ...interestProducts, ...(generalRes.data || [])]
+      .filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+      .slice(0, RECOMMENDED_COUNT);
 
     grid.innerHTML = ''; // Limpiar skeletons
 
