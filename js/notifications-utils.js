@@ -40,6 +40,7 @@ const TYPE_LABELS = {
   mp_payment_refunded: 'Un pago fue devuelto o desconocido',
   boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
   boost_needs_review: 'Un pago de tu combo necesita revisión',
+  transfer_method_missing: 'Cargá un medio de transferencia en tu comercio: es obligatorio',
 };
 
 /** Estados de Mercado Pago en los que la plata ya no está (ver mp-webhook). */
@@ -95,6 +96,7 @@ const TYPE_TONE = {
   mp_payment_refunded: 'danger',
   boost_activated: 'success',
   boost_needs_review: 'accent',
+  transfer_method_missing: 'danger',
   support_ticket_status_change: 'accent',
   new_review: 'info',
   support_ticket_message: 'info',
@@ -163,6 +165,12 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       return MP_DISPUTE_LABELS[p.mp_status] || null;
     case 'boost_activated':
       return p.plan_name && p.ends_at ? `${p.plan_name}, hasta el ${formatBoostDate(new Date(p.ends_at))}` : (p.plan_name || null);
+    // Lo manda la base cada 6 horas mientras el comercio no tenga alias ni CBU/CVU (migración 133).
+    case 'transfer_method_missing': {
+      const name = p.store_name || 'Tu comercio';
+      const others = Number(p.store_count) > 1 ? ` y ${Number(p.store_count) - 1} más` : '';
+      return `${name}${others}: sin alias ni CBU/CVU, nadie puede pagarte por transferencia.`;
+    }
     case 'boost_needs_review':
       if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
       return p.refunded ? 'El pago fue devuelto o desconocido' : null;
@@ -209,6 +217,9 @@ function buildNotificationLink(n) {
     case 'boost_activated':
     case 'boost_needs_review':
       return { href: './vender.html#impulsar', label: 'Ver mi combo' };
+    // Recordatorio de comercio sin medio de transferencia: lo lleva al campo.
+    case 'transfer_method_missing':
+      return { href: './vender.html#perfil-comercio', label: 'Cargar ahora' };
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
       return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pedidos', label: 'Revisar' };

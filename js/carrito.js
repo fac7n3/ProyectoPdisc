@@ -598,8 +598,7 @@ function initDeliveryEvents() {
         ? 'Envío (Envío a domicilio)'
         : 'Envío (Retiro en el local)';
     }
-    const cashText = document.getElementById('payment-efectivo-text');
-    if (cashText) cashText.textContent = deliveryMethod === 'delivery' ? 'Efectivo al recibir' : 'Efectivo al retirar';
+    applyCashRule();
     renderCart();
   }
 
@@ -740,6 +739,28 @@ function initPaymentMethodEvents() {
     radio.addEventListener('change', syncPaymentMethod);
   });
   syncPaymentMethod(); // sincroniza con lo que esté marcado por default en el HTML
+}
+
+/**
+ * El efectivo es solo para retirar en el local: con envío a domicilio no se
+ * acepta pago al recibir. Esconde la opción (y avisa por qué) y, si estaba
+ * elegida, pasa a Mercado Pago o a transferencia. La base lo rechaza igual
+ * (migración 133, create_order).
+ */
+function applyCashRule() {
+  const delivery = deliveryMethod === 'delivery';
+  const label = document.getElementById('payment-efectivo-label');
+  const radio = document.getElementById('payment-efectivo');
+  const note = document.getElementById('payment-cash-note');
+  if (label) label.style.display = delivery ? 'none' : '';
+  if (radio) radio.disabled = delivery;
+  if (note) note.hidden = !delivery;
+  if (delivery && radio?.checked) {
+    const mp = document.getElementById('payment-mercadopago');
+    const fallback = mp && !mp.disabled ? mp : document.getElementById('payment-transferencia');
+    if (fallback) fallback.checked = true;
+    syncPaymentMethod();
+  }
 }
 
 function syncPaymentMethod() {
@@ -1273,6 +1294,14 @@ function initCartEvents() {
     // también lo valida, pero avisar acá evita el viaje de red al pedo).
     if (deliveryMethod === 'delivery' && !shippingAddress) {
       showCartToast('Ingresá una dirección de envío.', 'error');
+      return;
+    }
+
+    // Efectivo solo con retiro (migración 133): applyCashRule ya lo esconde, esto
+    // cubre cualquier camino que lo deje elegido igual.
+    if (deliveryMethod === 'delivery' && paymentMethod === 'efectivo') {
+      showCartToast('Con envío a domicilio no se paga en efectivo: elegí Mercado Pago o transferencia.', 'error');
+      applyCashRule();
       return;
     }
 

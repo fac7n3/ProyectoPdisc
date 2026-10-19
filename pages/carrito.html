@@ -152,11 +152,13 @@
                 <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
                 Transferencia bancaria
               </label>
-              <!-- El texto cambia con la forma de entrega (carrito.js, syncPaymentMethod). -->
-              <label class="delivery-option">
+              <!-- Efectivo solo con retiro en el local: con envío a domicilio se esconde
+                   (carrito.js, applyCashRule) y la base también lo rechaza (migración 133). -->
+              <label class="delivery-option" id="payment-efectivo-label">
                 <input type="radio" name="payment-method" id="payment-efectivo" value="efectivo" />
                 <span id="payment-efectivo-text">Efectivo al retirar</span>
               </label>
+              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí Mercado Pago o transferencia. El efectivo es solo para retirar en el local.</p>
               <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
                    carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
                    datos completos y copiables aparecen después de "Iniciar pago". -->
