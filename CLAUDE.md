@@ -104,7 +104,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   con un "latido" al llegar) **durante 4 s** (`MARK_MS` en `js/info-faq.js`) y después se desvanece solo; mientras tanto el atajo queda activo (`aria-current`) y la URL lleva el
   ancla (abrir `info.html#faq-cuenta` también marca el grupo). **Gotcha de modo oscuro:** `gen-dark-css.mjs`
   espeja los colores fijos pero **no las `@keyframes`**: el latido oscuro (`faqPulseDark`) y el tono del marcado
-  van a mano en `dark.css`. **Botón "volver arriba"** (el mismo del inicio, `.scroll-top` de `home.css`) también en esta página: aparece al bajar 400 px y sube suave (`js/info-faq.js`, sin importar `nav-utils.js` para no cargar todo el navbar).
+  van a mano en `dark.css`. **Botón "volver arriba"** (el mismo del inicio, `.scroll-top` de `home.css`) también en **Información, Términos y Privacidad**: aparece al bajar 400 px y sube suave (`js/scroll-top-btn.js`, compartido, sin importar `nav-utils.js` para no cargar todo el navbar; cada página trae el `<button id="scroll-top-btn">` antes del footer y el `<script type="module">`).
 - **Hecho 2026-10-19 — Sin efectivo con envío + medio de transferencia obligatorio**, a pedido del usuario.
   **(1) Efectivo solo con retiro:** con "Envío a domicilio" el carrito esconde "Efectivo" (y avisa por qué);
   si estaba elegido pasa solo a Mercado Pago o transferencia (`applyCashRule` en `js/carrito.js`, que además
