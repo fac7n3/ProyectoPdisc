@@ -91,6 +91,12 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — "Sumate al directorio" con un comercio activo**, a pedido del usuario. El link de
+  `contratar.html` lleva a `vender.html?tipo=servicio`; si la cuenta ya tiene comercio (rol vendedor/admin,
+  empleado, o solicitud de comercio aprobada), `checkSellerState` (`js/vender.js`) muestra solo el aviso
+  `#prof-blocked-view` ("Necesitás otra cuenta para ser profesional": crear o ingresar con otra) en vez del
+  panel o del alta. Una cuenta es comercio O profesional. Solicitud de comercio pendiente: sin cambios. Admin
+  sin comercio propio ve el mismo aviso (se lo trata como vendedor). **Sin probar logueado** (sin red a Supabase).
 - **Hecho 2026-10-20 — Cartel del corazón del comercio ya no se corta**, reportado por el usuario con captura. El
   botón de favoritos de `comercio.html` usa el cartel propio del sitio (`data-tooltip`, ver `home.css`), que sale
   centrado **debajo** del botón; como el botón está pegado al borde derecho, el cartel (~176 px) se pasaba de la

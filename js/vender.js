@@ -64,6 +64,8 @@ async function checkSellerState(user) {
   // ya tenía uno.
   const reveal = (view) => {
     if (stateLoader) stateLoader.style.display = 'none';
+    const blockedView = document.getElementById('prof-blocked-view');
+    if (blockedView) blockedView.style.display = view === 'blocked' ? 'block' : 'none';
     registerView.style.display = view === 'register' ? 'block' : 'none';
     dashboardView.style.display = view === 'dashboard' ? 'flex' : 'none';
     // El botón hamburguesa abre el sidebar de dashboard-view (mc-sidebar) --
@@ -99,7 +101,12 @@ async function checkSellerState(user) {
     isSeller = ['vendedor', 'admin'].includes(profile?.role);
   }
 
+  // "Sumate al directorio" llega con ?tipo=servicio: con un comercio activo no
+  // se ofrece el alta de profesional, solo el aviso de usar otra cuenta.
+  const quiereServicio = new URLSearchParams(window.location.search).get('tipo') === 'servicio';
+
   if (isSeller) {
+    if (quiereServicio) { reveal('blocked'); return; }
     reveal('dashboard'); // shell "Mi cuenta" (sidebar + contenido)
     await loadDashboard(user);
     return;
@@ -118,6 +125,7 @@ async function checkSellerState(user) {
   const staffRow = staffRows?.[0];
 
   if (staffRow) {
+    if (quiereServicio) { reveal('blocked'); return; }
     reveal('dashboard'); // shell "Mi cuenta"
     await loadDashboard(user, staffRow.store_id, staffRow.permissions);
     return;
@@ -131,6 +139,7 @@ async function checkSellerState(user) {
     .maybeSingle();
 
   if (req) {
+    if (quiereServicio && req.status === 'approved') { reveal('blocked'); return; }
     reveal('dashboard');
 
     // Solicitud APROBADA: es vendedor aunque profiles.role no lo refleje (desincronización
