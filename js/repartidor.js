@@ -21,6 +21,7 @@ import { orderLabel } from './order-utils.js';
 import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import './speed-insights.js';
 
+import { friendlyError } from './friendly-error.js';
 const WARNING_MS = 5 * 60 * 1000;
 const DANGER_MS = 10 * 60 * 1000;
 const REFRESH_MS = 20 * 1000;
@@ -90,7 +91,7 @@ function buildQueueCard(order) {
     takeBtn.disabled = true;
     const { error } = await supabase.rpc('claim_delivery', { p_order_id: order.id });
     if (error) {
-      showToast(error.message || 'No se pudo tomar el pedido.', 'error');
+      showToast(friendlyError(error, 'No se pudo tomar el pedido.'), 'error');
       takeBtn.disabled = false;
       loadPanel();
       return;
@@ -147,7 +148,7 @@ function buildMineCard({ delivery, order }, clientById) {
     actionBtn.disabled = true;
     const { error } = await supabase.rpc('update_delivery_status', { p_delivery_id: delivery.id, p_new_status: nextStatus, p_code: code });
     if (error) {
-      showToast(error.message || 'No se pudo actualizar el pedido.', 'error');
+      showToast(friendlyError(error, 'No se pudo actualizar el pedido.'), 'error');
       actionBtn.disabled = false;
       return;
     }

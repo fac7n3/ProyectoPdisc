@@ -9,6 +9,7 @@ import { buildPromoEditorCard } from './home-promos-editor.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { orderLabel } from './order-utils.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
+import { friendlyError } from './friendly-error.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Una recarga en vivo (initAdminLive) no muestra la fila de "Cargando...": la
@@ -308,7 +309,7 @@ async function approveProfessionalRequest(req) {
 
   if (insertError) {
     console.error('Error al publicar profesional:', insertError);
-    showToast(insertError.message || 'No se pudo publicar al profesional.', 'error');
+    showToast(friendlyError(insertError, 'No se pudo publicar al profesional.'), 'error');
     return;
   }
 
@@ -335,7 +336,7 @@ async function rejectProfessionalRequest(id) {
 
   if (error) {
     console.error('Error al rechazar solicitud de profesional:', error);
-    showToast(error.message || 'No se pudo rechazar la solicitud.', 'error');
+    showToast(friendlyError(error, 'No se pudo rechazar la solicitud.'), 'error');
     return;
   }
 
@@ -430,7 +431,7 @@ async function fetchProfessionals() {
         .update({ is_active: !pro.is_active })
         .eq('id', pro.id);
       if (updErr) {
-        showToast(updErr.message || 'No se pudo actualizar.', 'error');
+        showToast(friendlyError(updErr, 'No se pudo actualizar.'), 'error');
         return;
       }
       fetchProfessionals();
@@ -448,7 +449,7 @@ async function fetchProfessionals() {
       if (!(await confirmDialog(`¿Borrar a "${pro.full_name}" del directorio?`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: delErr } = await supabase.from('professionals').delete().eq('id', pro.id);
       if (delErr) {
-        showToast(delErr.message || 'No se pudo borrar.', 'error');
+        showToast(friendlyError(delErr, 'No se pudo borrar.'), 'error');
         return;
       }
       showToast('Profesional borrado.', 'success');
@@ -957,7 +958,7 @@ async function fetchRepartidores() {
       if (!(await confirmDialog(`¿${nextSuspended ? 'Suspender' : 'Reactivar'} a "${rep.full_name || rep.email}" como repartidor?`, { confirmText: nextSuspended ? 'Suspender' : 'Reactivar', danger: nextSuspended }))) return;
       const { error: rpcError } = await supabase.rpc('admin_set_repartidor_suspended', { p_user_id: rep.id, p_suspended: nextSuspended });
       if (rpcError) {
-        showToast(rpcError.message || 'No se pudo actualizar el repartidor.', 'error');
+        showToast(friendlyError(rpcError, 'No se pudo actualizar el repartidor.'), 'error');
         return;
       }
       showToast(`Repartidor ${nextSuspended ? 'suspendido' : 'reactivado'}.`, 'success');
@@ -976,7 +977,7 @@ async function fetchRepartidores() {
       if (!(await confirmDialog(`¿Quitarle el rol de repartidor a "${rep.full_name || rep.email}"? Vuelve a ser una cuenta común.`, { confirmText: 'Quitar', danger: true }))) return;
       const { error: rpcError } = await supabase.rpc('admin_remove_repartidor_role', { p_user_id: rep.id });
       if (rpcError) {
-        showToast(rpcError.message || 'No se pudo quitar el repartidor.', 'error');
+        showToast(friendlyError(rpcError, 'No se pudo quitar el repartidor.'), 'error');
         return;
       }
       showToast('Repartidor quitado.', 'success');
@@ -998,7 +999,7 @@ function setupRepartidorAddForm() {
 
     const { data, error } = await supabase.rpc('admin_set_repartidor_by_email', { p_email: email });
     if (error) {
-      showToast(error.message || 'No se pudo agregar el repartidor.', 'error');
+      showToast(friendlyError(error, 'No se pudo agregar el repartidor.'), 'error');
       return;
     }
     showToast(`${data?.full_name || data?.email || 'Repartidor'} agregado.`, 'success');
@@ -1067,7 +1068,7 @@ function setupProductSearch() {
           p_is_active: !product.is_active,
         });
         if (rpcError) {
-          showToast(rpcError.message || 'No se pudo actualizar el producto.', 'error');
+          showToast(friendlyError(rpcError, 'No se pudo actualizar el producto.'), 'error');
           console.error(rpcError);
           return;
         }
@@ -1179,7 +1180,7 @@ async function fetchPendingProofsAdmin() {
 async function handleProofDecisionAdmin(proofId, approve) {
   const { error } = await supabase.rpc('confirm_transfer_payment', { p_proof_id: proofId, p_approve: approve });
   if (error) {
-    showToast(error.message || 'No se pudo procesar el comprobante.', 'error');
+    showToast(friendlyError(error, 'No se pudo procesar el comprobante.'), 'error');
     return;
   }
   showToast(approve ? 'Pago confirmado.' : 'Comprobante rechazado.', 'success');
@@ -1272,7 +1273,7 @@ async function fetchPharmacies() {
         .update({ is_active: !ph.is_active })
         .eq('id', ph.id);
       if (updErr) {
-        showToast(updErr.message || 'No se pudo actualizar la farmacia.', 'error');
+        showToast(friendlyError(updErr, 'No se pudo actualizar la farmacia.'), 'error');
         return;
       }
       fetchPharmacies();
@@ -1342,7 +1343,7 @@ async function fetchShifts() {
       if (!(await confirmDialog(`¿Quitar el turno del ${tdDate.textContent}?`, { confirmText: 'Quitar', danger: true }))) return;
       const { error: delErr } = await supabase.from('pharmacy_shifts').delete().eq('id', shift.id);
       if (delErr) {
-        showToast(delErr.message || 'No se pudo quitar el turno.', 'error');
+        showToast(friendlyError(delErr, 'No se pudo quitar el turno.'), 'error');
         return;
       }
       showToast('Turno quitado.', 'success');
@@ -1377,7 +1378,7 @@ function setupPharmacyForms() {
 
     if (error) {
       console.error('Error al agregar farmacia:', error);
-      showToast(error.message || 'No se pudo agregar la farmacia.', 'error');
+      showToast(friendlyError(error, 'No se pudo agregar la farmacia.'), 'error');
       return;
     }
 
@@ -1509,7 +1510,7 @@ async function fetchEmergencyContacts() {
         .update({ is_active: !contact.is_active })
         .eq('id', contact.id);
       if (updErr) {
-        showToast(updErr.message || 'No se pudo actualizar el servicio.', 'error');
+        showToast(friendlyError(updErr, 'No se pudo actualizar el servicio.'), 'error');
         return;
       }
       fetchEmergencyContacts();
@@ -1527,7 +1528,7 @@ async function fetchEmergencyContacts() {
       if (!(await confirmDialog(`¿Borrar "${contact.name}"?`, { confirmText: 'Borrar', danger: true }))) return;
       const { error: delErr } = await supabase.from('emergency_contacts').delete().eq('id', contact.id);
       if (delErr) {
-        showToast(delErr.message || 'No se pudo borrar el servicio.', 'error');
+        showToast(friendlyError(delErr, 'No se pudo borrar el servicio.'), 'error');
         return;
       }
       showToast('Servicio borrado.', 'success');
@@ -1589,7 +1590,7 @@ function setupEmergencyContactForm() {
 
     if (error) {
       console.error('Error al agregar el servicio:', error);
-      showToast(error.message || 'No se pudo agregar el servicio.', 'error');
+      showToast(friendlyError(error, 'No se pudo agregar el servicio.'), 'error');
       return;
     }
 
@@ -2022,7 +2023,7 @@ async function toggleAdminTicketThread(tr, ticket) {
         message: msg,
       });
       if (insertError) {
-        showToast(insertError.message || 'No se pudo enviar.', 'error');
+        showToast(friendlyError(insertError, 'No se pudo enviar.'), 'error');
         sendBtn.disabled = false;
         sendBtn.textContent = 'Enviar';
         return;

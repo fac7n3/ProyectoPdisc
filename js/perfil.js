@@ -30,6 +30,7 @@ import {
 import { getPaymentProvider } from "./payment-providers.js";
 import { pendingChainOrders } from "./mp-chain-utils.js";
 import qrcode from "qrcode-generator";
+import { friendlyError } from './friendly-error.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -811,7 +812,7 @@ if (addressForm) {
       loadAddresses(currentUserId);
     } catch (err) {
       console.error('Error al guardar dirección:', err);
-      showToast(err.message || 'Error al guardar dirección.', 'error');
+      showToast(friendlyError(err, 'Error al guardar dirección.'), 'error');
     } finally {
       if (btnSaveAddress) {
         btnSaveAddress.disabled = false;
@@ -1196,7 +1197,7 @@ function buildReviewBlock(order, alreadyReviewed) {
       await loadCompras(order.client_id);
     } catch (err) {
       console.error('Error al enviar la reseña', err);
-      showToast(err.message || 'No se pudo enviar la reseña.', 'error');
+      showToast(friendlyError(err, 'No se pudo enviar la reseña.'), 'error');
       send.disabled = false;
     }
   });
@@ -1252,7 +1253,7 @@ function buildCompraNextStep(order, ctx) {
       try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
       const result = await getPaymentProvider('mercadopago').pay([order.id]);
       if (!result.success) {
-        showToast(result.message || 'No se pudo iniciar el pago.', 'error');
+        showToast(friendlyError(result, 'No se pudo iniciar el pago.'), 'error');
         pay.disabled = false;
       }
     });
@@ -1307,7 +1308,7 @@ function buildCompraCancelButton(order) {
     btn.disabled = true;
     const { error } = await supabase.rpc('cancel_order', { p_order_id: order.id, p_reason: null });
     if (error) {
-      showToast(error.message || 'No se pudo cancelar el pedido.', 'error');
+      showToast(friendlyError(error, 'No se pudo cancelar el pedido.'), 'error');
       btn.disabled = false;
       return;
     }
@@ -1768,7 +1769,7 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
       notifyBtn.disabled = true;
       const { error } = await supabase.rpc('notify_transfer_sent', { p_order_id: order.id });
       if (error) {
-        showToast(error.message || 'No se pudo avisar al comercio.', 'error');
+        showToast(friendlyError(error, 'No se pudo avisar al comercio.'), 'error');
         notifyBtn.disabled = false;
         return;
       }
@@ -1822,14 +1823,13 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
       await loadCompras(order.client_id);
     } catch (err) {
       console.error('Error al subir comprobante', err);
-      const stage = err?.stage || 'unknown';
-      const msg = err?.error?.message || err?.message || 'Error desconocido';
-      const hint = stage === 'storage'
-        ? ' (storage)'
-        : stage === 'db'
-          ? ' (base de datos)'
-          : '';
-      showToast(`No se pudo subir el comprobante${hint}: ${msg}`, 'error');
+      const motivo = friendlyError(err?.error || err, '');
+      showToast(
+        motivo
+          ? `No se pudo subir el comprobante. ${motivo}`
+          : 'No se pudo subir el comprobante. Probá de nuevo.',
+        'error',
+      );
       uploadBtn.disabled = false;
       uploadBtn.textContent = 'Subir comprobante';
     }
@@ -1881,7 +1881,7 @@ function buildRevocationSection(order) {
       await loadCompras(order.client_id);
     } catch (err) {
       console.error('Error al solicitar arrepentimiento', err);
-      showToast(err.message || 'No se pudo solicitar el arrepentimiento.', 'error');
+      showToast(friendlyError(err, 'No se pudo solicitar el arrepentimiento.'), 'error');
       btn.disabled = false;
     }
   });
@@ -2226,7 +2226,7 @@ function openRowEditor(field) {
       saveBtn.disabled = false;
       cancelBtn.disabled = false;
       saveBtn.textContent = "Guardar";
-      showError(err.message || "No se pudo guardar. Probá de nuevo.");
+      showError(friendlyError(err, "No se pudo guardar. Probá de nuevo."));
     }
   });
 
@@ -2378,7 +2378,7 @@ function setupAvatarControls() {
       showToast("Listo, cambiamos tu foto.", "success");
     } catch (err) {
       console.error("Error al subir la foto", err);
-      fail(err.message || "No pudimos subir la foto. Probá de nuevo.");
+      fail(friendlyError(err, "No pudimos subir la foto. Probá de nuevo."));
     } finally {
       pickBtn.disabled = false;
       pickBtn.textContent = "Cambiar foto";
@@ -2404,7 +2404,7 @@ function setupAvatarControls() {
       showToast("Sacamos tu foto.", "success");
     } catch (err) {
       console.error("Error al quitar la foto", err);
-      fail(err.message || "No pudimos sacar la foto. Probá de nuevo.");
+      fail(friendlyError(err, "No pudimos sacar la foto. Probá de nuevo."));
     } finally {
       removeBtn.disabled = false;
     }
@@ -2540,7 +2540,7 @@ function setupPrivacyActions(user) {
 
       // Cualquier otro error con respuesta del servidor: mostrarlo y no seguir.
       if (detail?.status && detail.status !== 404) {
-        showToast(detail.body?.error || "No pudimos completar la baja. Probá de nuevo.", "error");
+        showToast(friendlyError(detail.body, "No pudimos completar la baja. Probá de nuevo."), "error");
         return;
       }
 
@@ -2827,7 +2827,7 @@ function buildMpChainStep(pending) {
     try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
     const result = await getPaymentProvider('mercadopago').pay([first.id]);
     if (!result.success) {
-      showToast(result.message || 'No se pudo iniciar el pago.', 'error');
+      showToast(friendlyError(result, 'No se pudo iniciar el pago.'), 'error');
       btn.disabled = false;
     }
   });

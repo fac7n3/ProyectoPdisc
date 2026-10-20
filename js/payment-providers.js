@@ -7,6 +7,7 @@
 
 import { supabase } from './auth-utils.js';
 
+import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 const simuladoProvider = {
   name: 'simulado',
   /**
@@ -45,7 +46,7 @@ const mercadopagoProvider = {
       body: { order_ids: orderIds },
     });
     if (error || !data || data.error) {
-      return { success: false, message: data?.error || error?.message || 'No se pudo iniciar el pago con Mercado Pago.' };
+      return { success: false, message: await friendlyFunctionError(error, data, 'No se pudo iniciar el pago con Mercado Pago.') };
     }
     // Con el modelo actual de MP (credenciales de prueba + usuario comprador
     // de prueba, no el viejo sandbox separado) el link correcto es init_point;

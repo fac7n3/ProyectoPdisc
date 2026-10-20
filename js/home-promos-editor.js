@@ -13,6 +13,7 @@ import { removeStoredObjects } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { slotLabel, HOME_PROMO_SLOTS } from './home-promos-utils.js';
 
+import { friendlyError } from './friendly-error.js';
 const BUCKET = 'home-promos';
 const MAX_BYTES = 3 * 1024 * 1024;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -173,7 +174,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
       removeImgBtn.disabled = true;
       const { error } = await supabase.from('home_promos').update({ image_url: null }).eq('id', promo.id);
       removeImgBtn.disabled = false;
-      if (error) { fail(error.message); return; }
+      if (error) { fail(friendlyError(error, 'No se pudo guardar. Probá de nuevo.')); return; }
       await removeStoredObjects(supabase, BUCKET, [promo.image_url]);
       showToast('Sacamos la imagen.', 'success');
       onSaved?.();
@@ -259,7 +260,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
     } catch (err) {
       console.error('Error al guardar la promoción del inicio:', err);
       if (uploadedUrl) await removeStoredObjects(supabase, BUCKET, [uploadedUrl]);
-      fail(err.message);
+      fail(friendlyError(err, 'No se pudo guardar. Probá de nuevo.'));
     } finally {
       saveBtn.disabled = false;
       saveBtn.textContent = 'Guardar';

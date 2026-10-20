@@ -4,6 +4,7 @@ import { initErrorLogging } from "./error-logger.js";
 import { applyDevicePreferences } from "./settings-utils.js";
 import { completePendingLink } from "./linked-accounts.js";
 
+import { friendlyError } from './friendly-error.js';
 // Preferencias visuales elegidas en Perfil → Ajustes (hoy: "Reducir
 // animaciones"). Va acá porque este módulo lo importa cualquier página del
 // sitio: es el único punto que corre en todas sin repetir la llamada. Y va
@@ -193,14 +194,16 @@ export function checkUrlErrors() {
   if (error) {
     console.error("Auth redirect error:", error, errorDesc);
     let userMsg = "Hubo un problema de autenticación. Intentá de nuevo.";
-    if (errorDesc) {
+    if (error === "access_denied") {
+      userMsg = "Cancelaste el inicio de sesión. Si querés, probá de nuevo.";
+    } else if (errorDesc) {
       const decodedDesc = decodeURIComponent(errorDesc).replace(/\+/g, " ");
       if (decodedDesc.includes("Database error")) {
         userMsg = "Error de base de datos al guardar tu perfil. Por favor, intentá de nuevo.";
       } else {
-        // Truncar para evitar mensajes absurdamente largos inyectados via URL
-        const safeDesc = decodedDesc.length > 200 ? decodedDesc.substring(0, 200) + '…' : decodedDesc;
-        userMsg = `Error: ${safeDesc}`;
+        // La descripción viene de la URL (y suele estar en inglés): solo se muestra
+        // si ya es una frase en español; si no, queda el mensaje genérico.
+        userMsg = friendlyError(decodedDesc.slice(0, 200), userMsg);
       }
     }
     showToast(userMsg, "error");

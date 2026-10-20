@@ -23,6 +23,7 @@ import { hasTransferData } from './transfer-details-utils.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { showHint, loadHintsPreference, CART_HINTS } from './hints-utils.js';
 
+import { friendlyError } from './friendly-error.js';
 // --- Estado del Carrito ---
 /**
  * Descuento del cupón puesto, tal como lo devuelve la base: porcentaje 0-100 y
@@ -919,7 +920,7 @@ async function showTransferStep(orders) {
       const results = await Promise.all(orders.map((o) => supabase.rpc('notify_transfer_sent', { p_order_id: o.order_id })));
       const failed = results.find((r) => r.error);
       if (failed) {
-        showCartToast(failed.error.message || 'No se pudo avisar al comercio. Probá desde "Mis compras".', 'error');
+        showCartToast(friendlyError(failed.error, 'No se pudo avisar al comercio. Probá desde "Mis compras".'), 'error');
         notifyBtn.disabled = false;
         return;
       }
@@ -1330,7 +1331,7 @@ function initCartEvents() {
 
       if (error) {
         console.error('Error al crear la orden:', error);
-        showCartToast(error.message || 'No se pudo procesar tu pedido.', 'error');
+        showCartToast(friendlyError(error, 'No se pudo procesar tu pedido.'), 'error');
         return;
       }
 

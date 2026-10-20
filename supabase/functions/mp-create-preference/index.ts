@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { order_ids: rawOrderIds } = await req.json();
     if (!Array.isArray(rawOrderIds) || rawOrderIds.length === 0) {
-      return jsonResponse({ error: "order_ids requerido." }, 400);
+      return jsonResponse({ error: "Falta indicar qué pedidos querés pagar." }, 400);
     }
 
     // El body es de afuera: sin este filtro, un order_ids con números u
@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
     )];
 
     if (orderIds.length === 0) {
-      return jsonResponse({ error: "order_ids no tiene ningún identificador válido." }, 400);
+      return jsonResponse({ error: "Los pedidos a pagar no tienen un identificador válido." }, 400);
     }
     if (orderIds.length > MAX_ORDERS_PER_PREFERENCE) {
       return jsonResponse({ error: "Demasiados pedidos en un solo pago." }, 400);
@@ -260,6 +260,6 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err) {
     console.error(err);
-    return jsonResponse({ error: "Error interno." }, 500);
+    return jsonResponse({ error: "Hubo un error interno. Probá de nuevo en un rato." }, 500);
   }
 });

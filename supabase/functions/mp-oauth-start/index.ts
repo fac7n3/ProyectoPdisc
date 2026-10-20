@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { store_id: storeId } = await req.json();
     if (typeof storeId !== "string" || !UUID_RE.test(storeId)) {
-      return jsonResponse({ error: "store_id requerido." }, 400);
+      return jsonResponse({ error: "Falta indicar qué comercio querés vincular." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -117,6 +117,6 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ url: `${AUTH_URL}?${new URLSearchParams(params).toString()}` });
   } catch (err) {
     console.error(err);
-    return jsonResponse({ error: "Error interno." }, 500);
+    return jsonResponse({ error: "Hubo un error interno. Probá de nuevo en un rato." }, 500);
   }
 });

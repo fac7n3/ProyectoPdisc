@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { code, state } = await req.json();
     if (typeof code !== "string" || !code || typeof state !== "string" || !state) {
-      return jsonResponse({ error: "code y state son requeridos." }, 400);
+      return jsonResponse({ error: "Falta la autorización de Mercado Pago. Volvé a tocar \"Conectar Mercado Pago\"." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -177,6 +177,6 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, mp_collector_id: mpUserId });
   } catch (err) {
     console.error(err);
-    return jsonResponse({ error: "Error interno." }, 500);
+    return jsonResponse({ error: "Hubo un error interno. Probá de nuevo en un rato." }, 500);
   }
 });
