@@ -223,3 +223,19 @@ html[data-theme="dark"] .faq-index a[aria-current="true"] { background: #172a4d;
   0%   { background-color: #24427a; }
   100% { background-color: #172a4d; }
 }
+
+/* Avisos cortos (.toast: "Iniciá sesión para...", "Agregado al carrito"...).
+   En claro usan el color de texto como fondo y blanco encima; en oscuro ese
+   mismo token es casi blanco, así que quedaba blanco sobre gris clarito
+   (ilegible). Acá van como una tarjeta elevada: fondo más claro que la página,
+   borde sutil y texto claro (contraste ~12:1; el de éxito, verde oscuro 6:1). */
+html[data-theme="dark"] .toast {
+  background: #2a3550;
+  color: #f1f4fb;
+  border: 1px solid #40507a;
+}
+html[data-theme="dark"] .toast--success {
+  background: #0d6e50;
+  color: #ffffff;
+  border-color: #1f9370;
+}

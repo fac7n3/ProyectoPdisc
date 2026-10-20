@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — Avisos cortos (`.toast`) legibles en modo oscuro**, reportado por el usuario con captura
+  ("Iniciá sesión para guardar comercios favoritos" salía blanco sobre gris clarito). Causa: `.toast` usa
+  `background: var(--bl-text)` + `color: #fff`; en oscuro `--bl-text` es casi blanco. Arreglo en `dark.css`:
+  tarjeta elevada `#2a3550` con texto claro (11:1) y el de éxito en verde oscuro `#0d6e50` (6:1). Los avisos
+  con forma de notificación de celular (`.bl-toast`) ya usaban tokens y estaban bien. **Regla:** un fondo con
+  un token de texto + texto fijo es el patrón que se rompe en oscuro (el generador no lo ve); si aparece otro,
+  se arregla igual en `dark.css`. **Visto y sin tocar:** en claro el aviso de éxito es blanco sobre `#10b981`
+  (2,5:1, flojo).
 - **Hecho 2026-10-20 (mergeado a `main` y migración 134 APLICADA a producción) — Productos, ofertas y banners con las
   fotos NUEVAS de las carpetas "Kiosco" y "Bebidas" del Drive**, a pedido del usuario ("como si fuera un comercio real": distintos
   comercios, mezclando rubros, ofertas, banners del inicio, varias fotos por producto). **Migración 134**
