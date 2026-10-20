@@ -332,8 +332,8 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         editItem.addEventListener('click', () => {
           menuList.style.display = 'none';
           menuBtn.classList.remove('is-active');
+          formWrap.querySelector('[data-edit-review]')?.click();
           formWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          formWrap.querySelector('textarea')?.focus();
         });
         menuList.appendChild(editItem);
 
@@ -439,4 +439,34 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
   });
 
   container.appendChild(form);
+
+  // Con reseña propia el form arranca cerrado: solo un botón "Editar mi reseña"
+  // (también lo dispara "Editar reseña" del menú ⋯ vía data-edit-review).
+  if (ownReview) {
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.dataset.editReview = 'true';
+    editBtn.textContent = 'Editar mi reseña';
+    editBtn.style.cssText = 'width: fit-content; padding: 0.6rem 1.25rem; background: var(--bl-primary); color: white; border: none; border-radius: var(--bl-radius-md); font-weight: 700; cursor: pointer;';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.style.cssText = 'width: fit-content; padding: 0.6rem 1.25rem; background: none; color: var(--bl-text-muted); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); font-weight: 600; cursor: pointer;';
+    form.appendChild(cancelBtn);
+
+    const setEditing = (on) => {
+      form.style.display = on ? 'flex' : 'none';
+      editBtn.style.display = on ? 'none' : '';
+    };
+    editBtn.addEventListener('click', () => { setEditing(true); commentInput.focus(); });
+    cancelBtn.addEventListener('click', () => {
+      stars.element.querySelectorAll('input').forEach((i) => { i.checked = Number(i.value) === ownReview.rating; });
+      commentInput.value = ownReview.comment || '';
+      setEditing(false);
+    });
+
+    container.appendChild(editBtn);
+    setEditing(false);
+  }
 }
