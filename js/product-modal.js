@@ -197,7 +197,7 @@ function buildRelatedStubCard(item) {
 }
 
 /** Dibuja la sección "Productos relacionados" en el hueco del modal y le
- *  conecta los clicks y las flechas. Sin productos no dibuja nada. */
+ *  conecta los clicks. Van en grilla que baja con el scroll del modal. Sin productos no dibuja nada. */
 function renderRelatedSection(overlay, items) {
   const slot = overlay.querySelector('.pm-related-slot');
   if (!slot || !items.length) return;
@@ -223,15 +223,7 @@ function renderRelatedSection(overlay, items) {
     <hr class="pm-divider" />
     <div class="pm-related">
       <h3 class="pm-related__title">Productos relacionados</h3>
-      <div class="pm-related__carousel">
-        <button type="button" class="pm-related__nav pm-related__nav--prev" aria-label="Ver productos relacionados anteriores">
-          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-        </button>
-        <div class="pm-related__scroll">${cardsHTML}</div>
-        <button type="button" class="pm-related__nav pm-related__nav--next" aria-label="Ver más productos relacionados">
-          <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-        </button>
-      </div>
+      <div class="pm-related__scroll">${cardsHTML}</div>
     </div>
   `;
 
@@ -252,28 +244,6 @@ function renderRelatedSection(overlay, items) {
       }
     });
   });
-
-  // Flechas de navegación lateral (A113-277: en desktop no había forma de
-  // mover el carrusel sin rueda/touchpad horizontal).
-  const relatedScroll = slot.querySelector('.pm-related__scroll');
-  const prevBtn = slot.querySelector('.pm-related__nav--prev');
-  const nextBtn = slot.querySelector('.pm-related__nav--next');
-  const scrollByCards = (dir) => {
-    const card = relatedScroll.querySelector('.pm-related-card');
-    const step = card ? card.getBoundingClientRect().width + 14 : 174; // ancho + gap
-    relatedScroll.scrollBy({ left: dir * step * 2, behavior: 'smooth' });
-  };
-  const updateNavState = () => {
-    const maxScroll = relatedScroll.scrollWidth - relatedScroll.clientWidth;
-    const atStart = relatedScroll.scrollLeft <= 4;
-    const atEnd = relatedScroll.scrollLeft >= maxScroll - 4;
-    if (prevBtn) prevBtn.disabled = atStart;
-    if (nextBtn) nextBtn.disabled = maxScroll <= 4 || atEnd;
-  };
-  prevBtn?.addEventListener('click', () => scrollByCards(-1));
-  nextBtn?.addEventListener('click', () => scrollByCards(1));
-  relatedScroll.addEventListener('scroll', updateNavState, { passive: true });
-  updateNavState();
 }
 
 // ── URL de la tienda (relativa según la profundidad de la página actual) ──

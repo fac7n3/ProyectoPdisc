@@ -606,12 +606,6 @@ html[data-theme="dark"] .pm-shop-info__link {
 html[data-theme="dark"] .pm-shop-info__link:hover {
   background: rgba(111, 141, 206, 0.096);
 }
-html[data-theme="dark"] .pm-related__nav {
-  color: var(--bl-text-secondary);
-}
-html[data-theme="dark"] .pm-related__nav:hover {
-  color: var(--dk-accent-text);
-}
 html[data-theme="dark"] .pm-related-card__img {
   background: #1e2328;
 }
