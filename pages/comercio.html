@@ -258,6 +258,19 @@
       .store-header__icon-btn.is-favorite {
         color: #ef4444;
       }
+      /* Cartel propio (data-tooltip) de los botones de la esquina: estos botones
+         están pegados al borde derecho, y el cartel centrado debajo de ellos se
+         salía de la pantalla y quedaba cortado. Se ancla al borde derecho del
+         botón y crece hacia la izquierda. */
+      button.store-header__icon-btn[data-tooltip]::after {
+        left: auto;
+        right: 0;
+        transform: translateY(-4px);
+      }
+      button.store-header__icon-btn[data-tooltip]:hover::after,
+      button.store-header__icon-btn[data-tooltip]:focus-visible::after {
+        transform: translateY(0);
+      }
 
       /* Cartelito genérico (solo vendedor): color del header (lápiz arriba a
          la derecha) y el de imagen/logo (click en el círculo) son el mismo

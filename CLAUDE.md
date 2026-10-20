@@ -91,6 +91,13 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — Cartel del corazón del comercio ya no se corta**, reportado por el usuario con captura. El
+  botón de favoritos de `comercio.html` usa el cartel propio del sitio (`data-tooltip`, ver `home.css`), que sale
+  centrado **debajo** del botón; como el botón está pegado al borde derecho, el cartel (~176 px) se pasaba de la
+  pantalla y quedaba cortado. Ahora los botones de la esquina (`button.store-header__icon-btn[data-tooltip]`) lo
+  anclan al borde derecho y crece hacia la izquierda. Verificado en navegador (1100 y 390 px, claro/oscuro, con y
+  sin banner): entra entero. **Regla:** un `data-tooltip` en un botón pegado al borde derecho necesita este anclaje.
+  No hay `title` nativo en ningún corazón (los de `admin.js` sí usan `title`, panel interno, sin tocar).
 - **Hecho 2026-10-20 — Avisos cortos (`.toast`) legibles en modo oscuro**, reportado por el usuario con captura
   ("Iniciá sesión para guardar comercios favoritos" salía blanco sobre gris clarito). Causa: `.toast` usa
   `background: var(--bl-text)` + `color: #fff`; en oscuro `--bl-text` es casi blanco. Arreglo en `dark.css`:
