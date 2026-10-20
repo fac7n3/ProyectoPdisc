@@ -48,6 +48,72 @@
       line-height: 1.6;
       margin-bottom: 1rem;
     }
+    /* Preguntas frecuentes: grupos con acordeones (details/summary, sin JS). */
+    .faq-index {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0 0 1.5rem;
+      padding: 0;
+      list-style: none;
+    }
+    .faq-index a {
+      display: inline-block;
+      padding: 0.4rem 0.85rem;
+      border: 1px solid var(--bl-border);
+      border-radius: 999px;
+      color: var(--bl-primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .faq-index a:hover { background: var(--bl-surface-alt); }
+    .info-container h3.faq-group {
+      margin: 1.75rem 0 0.6rem;
+      color: var(--bl-text);
+      font-size: 1.05rem;
+      scroll-margin-top: 5rem;
+    }
+    .faq-item {
+      border: 1px solid var(--bl-border);
+      border-radius: var(--bl-radius-md);
+      margin-bottom: 0.5rem;
+    }
+    .faq-item > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.8rem 1rem;
+      color: var(--bl-text);
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+    }
+    .faq-item > summary::-webkit-details-marker { display: none; }
+    .faq-item > summary::after {
+      content: "+";
+      flex: 0 0 auto;
+      color: var(--bl-primary);
+      font-size: 1.25rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .faq-item[open] > summary::after { content: "\2212"; }
+    .faq-item[open] > summary { border-bottom: 1px solid var(--bl-border); }
+    .faq-item > summary:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; border-radius: var(--bl-radius-md); }
+    .faq-answer { padding: 0.85rem 1rem 0.35rem; }
+    .faq-answer p { margin-bottom: 0.75rem; }
+    .faq-answer ol, .faq-answer ul {
+      margin: 0 0 0.75rem;
+      padding-left: 1.25rem;
+      color: var(--bl-text-secondary);
+      line-height: 1.6;
+    }
+    .faq-answer ol { list-style: decimal; }
+    .faq-answer ul { list-style: disc; }
+    .faq-answer li { margin-bottom: 0.3rem; }
+    .faq-answer a { color: var(--bl-primary); font-weight: 600; text-decoration: underline; }
     .btn-outline {
       padding: 0.5rem 1rem;
       border: 1.5px solid var(--bl-primary);
@@ -98,12 +164,161 @@
     <p>Bienvenido al centro de ayuda e información legal de Baradero Local. Seleccioná una sección para conocer más.</p>
 
     <h2>Preguntas Frecuentes (FAQ)</h2>
-    <p><strong>¿Cómo compro en Baradero Local?</strong><br>
-    Buscá el producto que necesitás, agregalo al carrito y seguí los pasos. Cada comercio maneja sus propios envíos y retiros.</p>
-    <p><strong>¿Cómo vendo mis productos?</strong><br>
-    Podés registrar tu comercio desde la sección <a href="./vender.html">Vender</a>. Validaremos tus datos y podrás cargar tu catálogo.</p>
+    <ul class="faq-index" aria-label="Temas de preguntas frecuentes">
+      <li><a href="#faq-compras">Comprar y pagar</a></li>
+      <li><a href="#faq-envios">Envíos y retiros</a></li>
+      <li><a href="#faq-cuenta">Mi cuenta</a></li>
+      <li><a href="#faq-vender">Vender y contratar</a></li>
+      <li><a href="#faq-ayuda">Ayuda y reclamos</a></li>
+    </ul>
 
-    <h2>Devoluciones y botón de arrepentimiento</h2>
+    <h3 class="faq-group" id="faq-compras">Comprar y pagar</h3>
+      <details class="faq-item">
+        <summary>¿Cómo compro en Baradero Local?</summary>
+        <div class="faq-answer">
+          <ol>
+            <li>Buscá el producto que necesitás y, si tiene opciones (color, sabor, talle), elegí la tuya.</li>
+            <li>Agregalo al carrito. Podés sumar productos de varios comercios.</li>
+            <li>En el carrito elegí si lo <strong>retirás en el local</strong> o lo querés <strong>con envío a domicilio</strong>, y cómo vas a pagar.</li>
+            <li>Tocá <strong>Iniciar pago</strong> y seguí los pasos.</li>
+          </ol>
+          <p>Si tu carrito tiene productos de más de un comercio, la compra se divide en un pedido por comercio: cada uno prepara y entrega lo suyo.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Qué medios de pago puedo usar?</summary>
+        <div class="faq-answer">
+          <ul>
+            <li><strong>Mercado Pago</strong>: aparece cuando todos los comercios del carrito lo tienen habilitado. Si comprás en varios comercios, se paga de a uno y te llevamos al siguiente al terminar cada pago.</li>
+            <li><strong>Transferencia bancaria</strong>: te mostramos el alias, el CBU/CVU y el monto de cada comercio para que los copies.</li>
+            <li><strong>Efectivo</strong>: solo si retirás en el local y pagás al retirar. Con envío a domicilio no se acepta efectivo: se paga con Mercado Pago o transferencia.</li>
+          </ul>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo pago por transferencia?</summary>
+        <div class="faq-answer">
+          <ol>
+            <li>Elegí <strong>Transferencia bancaria</strong> y tocá <strong>Iniciar pago</strong>.</li>
+            <li>Copiá el alias o el CBU/CVU del comercio y transferí el monto exacto desde la app de tu banco o billetera. En el motivo podés poner el número de pedido.</li>
+            <li>Volvé a Baradero Local y tocá <strong>Ya transferí</strong> para avisarle al comercio. También podés subir el comprobante desde <a href="./perfil.html">Mis compras</a>.</li>
+            <li>El comercio confirma el pago y te llega un aviso.</li>
+          </ol>
+          <p>Ojo: el comercio no prepara ni despacha el pedido hasta confirmar el pago, y si no pagás dentro del plazo que figura en tu pedido, se cancela solo.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo usar un cupón de descuento?</summary>
+        <div class="faq-answer">
+          <p>Sí. En el carrito, en la sección <strong>¿Tenés un cupón de descuento?</strong>, escribí el código y se aplica solo. Algunos cupones valen únicamente en el comercio que los ofrece. Para sacarlo, tocá la X.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo cancelar un pedido?</summary>
+        <div class="faq-answer">
+          <p>Si todavía no pagaste, sí: entrá a <a href="./perfil.html">Mis compras</a>, abrí el pedido y tocá <strong>Cancelar pedido</strong>. Le avisamos al comercio y el stock vuelve a estar disponible.</p>
+          <p>Si ya pagaste, tenés el <a href="#arrepentimiento">botón de arrepentimiento</a> (10 días hábiles) o podés escribirle al comercio para coordinar la devolución.</p>
+        </div>
+      </details>
+
+    <h3 class="faq-group" id="faq-envios">Envíos y retiros</h3>
+      <details class="faq-item">
+        <summary>¿Hacen envíos a domicilio?</summary>
+        <div class="faq-answer">
+          <p>Sí, dentro de Baradero. Cada comercio define el costo de su envío y algunos tienen <strong>envío gratis</strong> a partir de cierto monto (lo ves en la tarjeta del producto y en el carrito). Podés guardar tus direcciones en Mi perfil → Direcciones para elegirlas con un toque al comprar.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo retiro mi pedido en el local?</summary>
+        <div class="faq-answer">
+          <p>Cuando el comercio lo tenga listo te avisamos. En <a href="./perfil.html">Mis compras</a> vas a ver tu <strong>código de retiro</strong> y un QR: mostráselo al comercio para recibir tu compra.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo sigo el estado de mi pedido?</summary>
+        <div class="faq-answer">
+          <p>Desde <a href="./perfil.html">Mis compras</a> ves en qué paso está cada pedido y su historial. Además te avisamos en la campanita de arriba (y con un aviso en pantalla) cuando se confirma el pago, está listo, sale en camino o se entrega.</p>
+        </div>
+      </details>
+
+    <h3 class="faq-group" id="faq-cuenta">Mi cuenta</h3>
+      <details class="faq-item">
+        <summary>¿Cómo recupero mi contraseña?</summary>
+        <div class="faq-answer">
+          <ol>
+            <li>Entrá a <a href="./login.html">Iniciar sesión</a> y tocá <strong>¿Olvidaste tu contraseña?</strong> (o andá directo a <a href="./recuperar-password.html">recuperar contraseña</a>).</li>
+            <li>Escribí el correo con el que te registraste y tocá <strong>Enviar correo de recuperación</strong>.</li>
+            <li>Abrí el mail que te llega y tocá el link.</li>
+            <li>Elegí tu nueva contraseña: al menos 8 caracteres, con una mayúscula y un número.</li>
+          </ol>
+          <p>Si no te llega el mail, esperá unos minutos y revisá la carpeta de <strong>spam o no deseados</strong>. Fijate también que el correo esté bien escrito: por seguridad te mostramos el mismo mensaje aunque el correo no esté registrado.</p>
+          <p>Si ingresás con <strong>Google</strong>, tu cuenta no tiene una contraseña de Baradero Local: entrá con el botón <strong>Iniciar sesión con Google</strong>.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>Ya inicié sesión, ¿cómo cambio mi contraseña?</summary>
+        <div class="faq-answer">
+          <p>Entrá a <a href="./perfil.html">Mi perfil</a> → <strong>Información de tu perfil</strong> → sección <strong>Seguridad</strong> y tocá <strong>Cambiar</strong>. Te mandamos un correo con el link para elegir la nueva.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo cambio mis datos personales o mi correo?</summary>
+        <div class="faq-answer">
+          <p>Tus datos (nombre, teléfono, fecha de nacimiento, foto) los editás en <a href="./perfil.html">Mi perfil</a> → <strong>Información de tu perfil</strong>. El correo es con el que entrás a tu cuenta: para cambiarlo, escribinos desde <strong>Soporte</strong>.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo guardo productos y recibo avisos?</summary>
+        <div class="faq-answer">
+          <p>Tocá el corazón de un producto para guardarlo en <strong>Favoritos</strong>: te avisamos si baja de precio. Si un producto está sin stock, tocá <strong>Avisarme cuando vuelva el stock</strong> y te llega una notificación apenas se repone.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo elimino mi cuenta?</summary>
+        <div class="faq-answer">
+          <p>Desde <a href="./perfil.html">Mi perfil</a> → <strong>Ajustes</strong> → <strong>Tus datos son tuyos</strong> → <strong>Eliminar mi cuenta</strong>. No se puede eliminar si tenés un comercio publicado o pedidos en curso: primero tenés que terminarlos. Tus pedidos ya entregados quedan en el historial del comercio, sin tus datos personales.</p>
+        </div>
+      </details>
+
+    <h3 class="faq-group" id="faq-vender">Vender y contratar</h3>
+      <details class="faq-item">
+        <summary>¿Cómo vendo mis productos?</summary>
+        <div class="faq-answer">
+          <ol>
+            <li>Registrá tu comercio desde la sección <a href="./vender.html">Vender</a> con tus datos y tu CUIT.</li>
+            <li>Validamos tu solicitud (la aprobamos a mano) y te avisamos cuando esté lista.</li>
+            <li>Completá el perfil de tu comercio, cargá al menos un <strong>alias o CBU/CVU</strong> para que te paguen por transferencia (es obligatorio para publicar) y subí tus productos.</li>
+          </ol>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Cómo cobro mis ventas?</summary>
+        <div class="faq-answer">
+          <p>Las transferencias van directo a tu cuenta (alias o CBU/CVU) y las confirmás desde tu panel cuando te llega el pago. Si vinculás tu cuenta de <strong>Mercado Pago</strong> desde "Perfil de mi comercio", también podés cobrar con tarjeta. El efectivo se cobra al retirar en el local.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo ofrecer un servicio o mi oficio?</summary>
+        <div class="faq-answer">
+          <p>Sí. Si sos profesional o técnico, en <a href="./vender.html">Vender</a> elegí <strong>Ofrecer un servicio</strong>. Cuando lo aprobamos aparecés en <a href="./contratar.html">Contratar</a>, donde los vecinos te llaman, te escriben por WhatsApp o te piden un presupuesto.</p>
+        </div>
+      </details>
+
+    <h3 class="faq-group" id="faq-ayuda">Ayuda y reclamos</h3>
+      <details class="faq-item">
+        <summary>Tuve un problema con una compra, ¿qué hago?</summary>
+        <div class="faq-answer">
+          <p>Lo primero es escribirle al comercio por WhatsApp desde su página: casi siempre se resuelve ahí. Si no tenés respuesta o no se soluciona, andá a <a href="./perfil.html">Mi perfil</a> → <strong>Soporte</strong> y mandanos tu reclamo (podés adjuntar capturas). Te respondemos por ahí mismo y te avisamos cuando cambia de estado.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>¿Puedo dejar una reseña?</summary>
+        <div class="faq-answer">
+          <p>Sí. Cuando recibís tu pedido, desde <a href="./perfil.html">Mis compras</a> podés calificar al comercio y al producto. Tu opinión ayuda a los demás vecinos.</p>
+        </div>
+      </details>
+
+    <h2 id="arrepentimiento">Devoluciones y botón de arrepentimiento</h2>
     <p>Además de la política de devolución particular de cada comercio, tenés derecho a arrepentirte de cualquier compra dentro de los 10 días hábiles posteriores, sin dar explicaciones (Ley 24.240 y Res. 424/2020). Podés ejercerlo desde <a href="./perfil.html">"Mis compras"</a>, con el botón "Solicitar arrepentimiento" en cada pedido pagado.</p>
 
     <h2>Términos y Condiciones</h2>
