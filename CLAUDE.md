@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-20 (en la rama `claude/epic-carson-e43vfc`, SIN aplicar a producción) — Productos, ofertas y banners con las
+- **Hecho 2026-10-20 (mergeado a `main` y migración 134 APLICADA a producción) — Productos, ofertas y banners con las
   fotos NUEVAS de las carpetas "Kiosco" y "Bebidas" del Drive**, a pedido del usuario ("como si fuera un comercio real": distintos
   comercios, mezclando rubros, ofertas, banners del inicio, varias fotos por producto). **Migración 134**
   (`db/schema/134_productos_kiosco_bebidas_drive.sql`): 57 productos con 68 fotos (webp 800 px en `public/img/productos/` +
@@ -101,10 +101,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   Paso**, **Super Baradero** y **Almacén Don José** (los 4 de seed; kiosco en el súper y el almacén, gaseosas en el kiosco) más dos
   **cuentas de prueba nuevas**: `proyectopdisc+cerveceria@gmail.com` (Cervecería El Barril) y `proyectopdisc+golosinas@gmail.com`
   (Golosinas Dulce Tentación), creadas por SQL como las de la 125 (**la contraseña no está en el repo**). El espacio `mosaic_a` tenía
-  una promo de prueba ("holis", Ferretería El Clavo): la migración la reemplaza. **ORDEN al publicar:** primero merge a `main` y
-  deploy de Vercel con las imágenes (200 `image/webp`), recién después crear las cuentas y aplicar la 134 (si no, productos, banners
-  y logos salen rotos). Probada en la base real con una transacción deshecha (cuenta + comercio + productos con opciones y oferta +
-  cupón + banner + triggers); falta la corrida completa. **Quedaron SIN subir 61 fotos chicas (menos de ~40 KB)**: el conector de
+  una promo de prueba ("holis", Ferretería El Clavo): la migración la reemplaza. **Publicado el 2026-10-20 en este orden:** merge a `main` -> deploy de Vercel (fotos 200 `image/webp`) -> cuentas
+  creadas -> migración 134. Verificado en la base real: 245 productos (188 + 57), 16 ofertas vigentes, 5 cupones activos,
+  6 espacios de banners asignados, 0 grupos de opciones vacíos y los dos triggers apagados por la migración de vuelta en `O`.
+  **Sin probar en el navegador contra producción** (el sandbox no llega al dominio): conviene abrir el inicio, un producto con
+  varias fotos (Rocklets, Mentitas) y el comercio de cada cuenta nueva. **Quedaron SIN subir 61 fotos chicas (menos de ~40 KB)**: el conector de
   Drive las devuelve en línea y no se pueden guardar a disco (las grandes sí se guardan). Descartadas a propósito: "surtidos felfort"
   (sello de otro sitio) y dos repetidas ("gaseosa fanta" y "agua saborizada levite" de Kiosco).
 - **Hecho 2026-10-20 — Preguntas frecuentes de `pages/info.html` ampliadas**, a pedido del usuario (con

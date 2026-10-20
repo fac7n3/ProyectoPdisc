@@ -5535,7 +5535,7 @@ invert(1)` sin baldosa; `.bl-splash__logo` azul sobre su baldosa blanca; `.bl-to
 baldosa clara (esto último sin pedido del usuario, se dejó porque el azul solo no se veía; sacarlo si molesta).
 
 ## 2026-10-20 — Productos, ofertas y banners con las fotos de "Kiosco" y "Bebidas" del Drive (migración 134)
-Rama `claude/epic-carson-e43vfc`. Pedido del usuario: subir todas las fotos nuevas del Drive, publicadas por distintos comercios
+Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mismo día. Pedido del usuario: subir todas las fotos nuevas del Drive, publicadas por distintos comercios
 (se pueden mezclar rubros), con ofertas, banners, promociones, descuentos y varias fotos del mismo producto.
 - **Qué se cargó:** carpetas "Kiosco" (75 fotos, creadas el 2026-10-19) y "Bebidas" (57, 2026-10-20). Lácteos tiene 5 fotos de
   antes (13/10), no nuevas. Se bajaron 71 (solo las que el conector guarda a disco, ver abajo), se revisaron una por una en hojas de
@@ -5568,6 +5568,10 @@ Rama `claude/epic-carson-e43vfc`. Pedido del usuario: subir todas las fotos nuev
   `profiles.role='vendedor'` con `set_config('app.role_change_authorized','true',true)` en la misma transacción). La prueba en seco
   anduvo (2 productos, 3 fotos, 2 valores de opción, cupón, `mosaic_b` y triggers de vuelta en estado `O`).
 - **No hay `delete` en la migración a propósito:** el conector de Supabase espera una confirmación en los DELETE y se corta a los 60 s.
-- **Pendiente:** publicar (merge a `main` -> deploy -> crear cuentas -> aplicar la 134 -> verificar); las 61 fotos chicas; el test
-  `npm test` falla en este entorno por falta de `postcss` (`scripts/gen-dark-css.mjs`), también en la base sin cambios.
-
+- **Publicado (2026-10-20):** merge a `main` -> deploy READY (fotos 200 `image/webp` con `web_fetch_vercel_url`: el proxy del
+  sandbox no deja `curl` a `proyectopdisc.vercel.app`) -> 2 cuentas por `execute_sql` (contraseñas al azar, pasadas al usuario por
+  chat, no están en el repo) -> `apply_migration` 134 en una sola transacción. Resultado: 245 productos (188 + 57), Almacén Don José 4,
+  Bebidas La Esquina 14, Cervecería El Barril 8 (4 ofertas), Golosinas Dulce Tentación 14, Kiosco El Paso 18, Super Baradero 13;
+  16 ofertas vigentes, 5 cupones, 6 banners, 0 grupos de opciones vacíos, triggers de vuelta en `O`.
+- **Pendiente:** las 61 fotos chicas (el usuario eligió dejarlas afuera por ahora); mirar el resultado en el navegador contra
+  producción; el test `npm test` falla en este entorno por falta de `postcss` (`scripts/gen-dark-css.mjs`), también en la base sin cambios.
