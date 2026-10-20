@@ -69,10 +69,39 @@
     }
     .faq-index a:hover { background: var(--bl-surface-alt); }
     .info-container h3.faq-group {
-      margin: 1.75rem 0 0.6rem;
+      margin: 0 0 0.6rem;
       color: var(--bl-text);
       font-size: 1.05rem;
-      scroll-margin-top: 5rem;
+    }
+    /* Scroll suave al tocar un atajo (el resto del sitio también se desliza);
+       con "reducir animaciones" a11y.css lo vuelve instantáneo. El margen deja
+       lugar a la barra de arriba, que queda fija. */
+    html { scroll-behavior: smooth; }
+    .faq-section {
+      margin-top: 1.75rem;
+      padding: 0.6rem 0.6rem 0.1rem;
+      border-radius: var(--bl-radius-md);
+      scroll-margin-top: 6.5rem;
+      transition: background-color 0.4s ease, box-shadow 0.4s ease;
+    }
+    .faq-section > .faq-group { padding-left: 0.4rem; }
+    /* Grupo al que te llevó un atajo: azul pastel suave que "late" una vez al
+       llegar y se queda hasta que elijas otro tema. */
+    .faq-section.is-marked {
+      background: #e6efff;
+      box-shadow: inset 3px 0 0 #5b8def;
+      animation: faqPulse 1.1s ease-out;
+    }
+    .faq-section.is-marked .faq-item {
+      border-color: #b9d0fa;
+    }
+    @keyframes faqPulse {
+      0%   { background-color: #cfe0ff; }
+      100% { background-color: #e6efff; }
+    }
+    .faq-index a[aria-current="true"] {
+      background: #e6efff;
+      border-color: #5b8def;
     }
     .faq-item {
       border: 1px solid var(--bl-border);
@@ -136,6 +165,7 @@
   </style>
     <link rel="stylesheet" href="../Assets/styles/dark.css" />
     <script type="module" src="../js/theme.js"></script>
+    <script type="module" src="../js/info-faq.js"></script>
   </head>
 <body class="bl-bg">
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -172,7 +202,8 @@
       <li><a href="#faq-ayuda">Ayuda y reclamos</a></li>
     </ul>
 
-    <h3 class="faq-group" id="faq-compras">Comprar y pagar</h3>
+    <section class="faq-section" id="faq-compras" aria-labelledby="faq-compras-title">
+      <h3 class="faq-group" id="faq-compras-title">Comprar y pagar</h3>
       <details class="faq-item">
         <summary>¿Cómo compro en Baradero Local?</summary>
         <div class="faq-answer">
@@ -220,8 +251,10 @@
           <p>Si ya pagaste, tenés el <a href="#arrepentimiento">botón de arrepentimiento</a> (10 días hábiles) o podés escribirle al comercio para coordinar la devolución.</p>
         </div>
       </details>
+    </section>
 
-    <h3 class="faq-group" id="faq-envios">Envíos y retiros</h3>
+    <section class="faq-section" id="faq-envios" aria-labelledby="faq-envios-title">
+      <h3 class="faq-group" id="faq-envios-title">Envíos y retiros</h3>
       <details class="faq-item">
         <summary>¿Hacen envíos a domicilio?</summary>
         <div class="faq-answer">
@@ -240,8 +273,10 @@
           <p>Desde <a href="./perfil.html">Mis compras</a> ves en qué paso está cada pedido y su historial. Además te avisamos en la campanita de arriba (y con un aviso en pantalla) cuando se confirma el pago, está listo, sale en camino o se entrega.</p>
         </div>
       </details>
+    </section>
 
-    <h3 class="faq-group" id="faq-cuenta">Mi cuenta</h3>
+    <section class="faq-section" id="faq-cuenta" aria-labelledby="faq-cuenta-title">
+      <h3 class="faq-group" id="faq-cuenta-title">Mi cuenta</h3>
       <details class="faq-item">
         <summary>¿Cómo recupero mi contraseña?</summary>
         <div class="faq-answer">
@@ -279,8 +314,10 @@
           <p>Desde <a href="./perfil.html">Mi perfil</a> → <strong>Ajustes</strong> → <strong>Tus datos son tuyos</strong> → <strong>Eliminar mi cuenta</strong>. No se puede eliminar si tenés un comercio publicado o pedidos en curso: primero tenés que terminarlos. Tus pedidos ya entregados quedan en el historial del comercio, sin tus datos personales.</p>
         </div>
       </details>
+    </section>
 
-    <h3 class="faq-group" id="faq-vender">Vender y contratar</h3>
+    <section class="faq-section" id="faq-vender" aria-labelledby="faq-vender-title">
+      <h3 class="faq-group" id="faq-vender-title">Vender y contratar</h3>
       <details class="faq-item">
         <summary>¿Cómo vendo mis productos?</summary>
         <div class="faq-answer">
@@ -303,8 +340,10 @@
           <p>Sí. Si sos profesional o técnico, en <a href="./vender.html">Vender</a> elegí <strong>Ofrecer un servicio</strong>. Cuando lo aprobamos aparecés en <a href="./contratar.html">Contratar</a>, donde los vecinos te llaman, te escriben por WhatsApp o te piden un presupuesto.</p>
         </div>
       </details>
+    </section>
 
-    <h3 class="faq-group" id="faq-ayuda">Ayuda y reclamos</h3>
+    <section class="faq-section" id="faq-ayuda" aria-labelledby="faq-ayuda-title">
+      <h3 class="faq-group" id="faq-ayuda-title">Ayuda y reclamos</h3>
       <details class="faq-item">
         <summary>Tuve un problema con una compra, ¿qué hago?</summary>
         <div class="faq-answer">
@@ -317,6 +356,7 @@
           <p>Sí. Cuando recibís tu pedido, desde <a href="./perfil.html">Mis compras</a> podés calificar al comercio y al producto. Tu opinión ayuda a los demás vecinos.</p>
         </div>
       </details>
+    </section>
 
     <h2 id="arrepentimiento">Devoluciones y botón de arrepentimiento</h2>
     <p>Además de la política de devolución particular de cada comercio, tenés derecho a arrepentirte de cualquier compra dentro de los 10 días hábiles posteriores, sin dar explicaciones (Ley 24.240 y Res. 424/2020). Podés ejercerlo desde <a href="./perfil.html">"Mis compras"</a>, con el botón "Solicitar arrepentimiento" en cada pedido pagado.</p>
