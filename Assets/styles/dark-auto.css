@@ -1354,14 +1354,36 @@ html[data-theme="dark"] .info-container p {
 html[data-theme="dark"] .faq-index a {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .faq-index a:hover {
+  background: var(--bl-surface-alt);
+}
 html[data-theme="dark"] .info-container h3.faq-group {
   color: var(--bl-text);
+}
+html[data-theme="dark"] .faq-section.is-marked {
+  background: #13213a;
+}
+html[data-theme="dark"] .faq-section.is-marked .faq-item {
+  border-color: #29457a;
+}
+html[data-theme="dark"] .faq-index a[aria-current="true"] {
+  background: #13213a;
+}
+html[data-theme="dark"] .faq-item {
+  border: 1px solid var(--bl-border);
 }
 html[data-theme="dark"] .faq-item > summary {
   color: var(--bl-text);
 }
 html[data-theme="dark"] .faq-item > summary::after {
   color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .faq-item[open] > summary {
+  border-bottom: 1px solid var(--bl-border);
+}
+html[data-theme="dark"] .faq-item > summary:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
 }
 html[data-theme="dark"] .faq-answer ol,
 html[data-theme="dark"] .faq-answer ul {

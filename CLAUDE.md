@@ -99,6 +99,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   contraseña con los requisitos de `register.js`, baja de cuenta con sus bloqueos, alias o CBU obligatorio
   para vender): **si cambia alguno de esos flujos, actualizar la respuesta**. CSS solo con tokens
   (`dark-auto.css` regenerado). Verificado en Playwright (claro, oscuro y celular, sin scroll horizontal).
+  **Atajos de tema (`js/info-faq.js`):** tocar uno desliza suave hasta el grupo (respeta "reducir animaciones",
+  que `scrollIntoView` ignora si no se chequea a mano) y lo **marca en azul pastel** (`.faq-section.is-marked`,
+  con un "latido" al llegar) hasta elegir otro tema; el atajo queda activo (`aria-current`) y la URL lleva el
+  ancla (abrir `info.html#faq-cuenta` también marca el grupo). **Gotcha de modo oscuro:** `gen-dark-css.mjs`
+  espeja los colores fijos pero **no las `@keyframes`**: el latido oscuro (`faqPulseDark`) y el tono del marcado
+  van a mano en `dark.css`.
 - **Hecho 2026-10-19 — Sin efectivo con envío + medio de transferencia obligatorio**, a pedido del usuario.
   **(1) Efectivo solo con retiro:** con "Envío a domicilio" el carrito esconde "Efectivo" (y avisa por qué);
   si estaba elegido pasa solo a Mercado Pago o transferencia (`applyCashRule` en `js/carrito.js`, que además
