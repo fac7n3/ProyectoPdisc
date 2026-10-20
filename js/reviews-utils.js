@@ -178,6 +178,23 @@ export function buildStarsText(rating) {
 // menú "⋯" abierto (se le perdería lo escrito).
 const liveReviews = new Set();
 
+// Al editar la reseña propia solo se actualiza su tarjeta (applyEdit); el eco
+// de Realtime de ese mismo UPDATE no tiene que redibujar toda la sección.
+let lastOwnEdit = { id: null, at: 0 };
+
+function summaryText(summary) {
+  return summary.count > 0
+    ? `${buildStarsText(summary.average)} ${summary.average.toFixed(1)} (${summary.count} reseña${summary.count === 1 ? '' : 's'})`
+    : 'Todavía no hay reseñas.';
+}
+
+function buildCommentP(text) {
+  const p = document.createElement('p');
+  p.style.cssText = 'margin: 0.35rem 0; color: var(--bl-text);';
+  p.textContent = text;
+  return p;
+}
+
 function watchReviewsLive(container, targetType, targetId, opts) {
   const key = `${targetType}:${targetId}`;
 
@@ -208,6 +225,7 @@ function watchReviewsLive(container, targetType, targetId, opts) {
     { table: 'reviews', event: 'DELETE' },
   ], (change) => {
     if (change.eventType !== 'DELETE' && change.new?.target_type !== targetType) return;
+    if (change.eventType === 'UPDATE' && change.new?.id === lastOwnEdit.id && Date.now() - lastOwnEdit.at < 3000) return;
     refresh();
   }, { onResync: refresh });
 
@@ -240,6 +258,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
 
   const formWrap = document.createElement('div');
   container.appendChild(formWrap);
+  let ownCard = null;
 
   const [summary, reviews, ownReview] = await Promise.all([
     fetchReviewsSummary(targetType, targetId),
@@ -247,9 +266,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
     fetchOwnReview(targetType, targetId),
   ]);
 
-  summaryEl.textContent = summary.count > 0
-    ? `${buildStarsText(summary.average)} ${summary.average.toFixed(1)} (${summary.count} reseña${summary.count === 1 ? '' : 's'})`
-    : 'Todavía no hay reseñas.';
+  summaryEl.textContent = summaryText(summary);
 
   if (reviews.length === 0) {
     // hideForm = el dueño del producto/comercio está viendo esto -- no tiene
@@ -262,6 +279,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
     }
   } else {
     reviews.forEach((review) => {
+      let commentP = null;
       const isOwn = !!(ownReview && review.id === ownReview.id);
 
       const row = document.createElement('div');
@@ -273,9 +291,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
       row.appendChild(starsLine);
 
       if (review.comment) {
-        const commentP = document.createElement('p');
-        commentP.style.cssText = 'margin: 0.35rem 0; color: var(--bl-text);';
-        commentP.textContent = review.comment;
+        commentP = buildCommentP(review.comment);
         row.appendChild(commentP);
       }
 
@@ -305,6 +321,23 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
       meta.appendChild(dateSpan);
 
       if (isOwn) {
+        // Al guardar una edición se retoca solo esta tarjeta y el resumen.
+        ownCard = {
+          async applyEdit(rating, comment) {
+            lastOwnEdit = { id: ownReview.id, at: Date.now() };
+            starsLine.textContent = buildStarsText(rating);
+            if (comment) {
+              if (commentP) commentP.textContent = comment;
+              else { commentP = buildCommentP(comment); starsLine.after(commentP); }
+            } else if (commentP) {
+              commentP.remove();
+              commentP = null;
+            }
+            const summary = await fetchReviewsSummary(targetType, targetId);
+            if (summary.count > 0) summaryEl.textContent = summaryText(summary); // 0 = la consulta falló: se deja el anterior
+          },
+        };
+
         // Reseña propia: en vez de "Reportar", un menú de tres puntos con
         // Editar (salta al form de abajo, que ya queda en modo "Editar tu
         // reseña" porque existe ownReview) y Eliminar.
@@ -392,13 +425,17 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
   // sí mismo -- lo decide quien llama (product-modal.js/producto.js) según
   // si el usuario logueado es el owner.
   if (!hideForm) {
-    buildReviewForm(formWrap, targetType, targetId, ownReview, () => renderReviewsSection(container, targetType, targetId, { hideForm }));
+    buildReviewForm(
+      formWrap, targetType, targetId, ownReview,
+      () => renderReviewsSection(container, targetType, targetId, { hideForm }),
+      ownCard && ((rating, comment) => ownCard.applyEdit(rating, comment)),
+    );
   }
 
   watchReviewsLive(container, targetType, targetId, { hideForm });
 }
 
-function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted) {
+function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted, onEdited) {
   container.textContent = '';
 
   const form = document.createElement('form');
@@ -428,11 +465,22 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
   submitBtn.textContent = ownReview ? 'Guardar cambios' : 'Publicar reseña';
   form.appendChild(submitBtn);
 
+  let closeEditor = () => {};
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await submitReview(targetType, targetId, stars.getValue(), commentInput.value.trim());
-      await onSubmitted();
+      const rating = stars.getValue();
+      const comment = commentInput.value.trim();
+      await submitReview(targetType, targetId, rating, comment);
+      if (ownReview && onEdited) {
+        ownReview.rating = rating;
+        ownReview.comment = comment || null;
+        closeEditor();
+        await onEdited(rating, comment);
+      } else {
+        await onSubmitted();
+      }
     } catch (err) {
       alert(friendlyError(err, 'No se pudo guardar la reseña. ¿Iniciaste sesión?'));
     }
@@ -459,6 +507,7 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
       form.style.display = on ? 'flex' : 'none';
       editBtn.style.display = on ? 'none' : '';
     };
+    closeEditor = () => setEditing(false);
     editBtn.addEventListener('click', () => { setEditing(true); commentInput.focus(); });
     cancelBtn.addEventListener('click', () => {
       stars.element.querySelectorAll('input').forEach((i) => { i.checked = Number(i.value) === ownReview.rating; });
