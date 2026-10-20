@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-19. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-20. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 (en la rama `claude/epic-carson-e43vfc`, SIN aplicar a producción) — Productos, ofertas y banners con las
+  fotos NUEVAS de las carpetas "Kiosco" y "Bebidas" del Drive**, a pedido del usuario ("como si fuera un comercio real": distintos
+  comercios, mezclando rubros, ofertas, banners del inicio, varias fotos por producto). **Migración 134**
+  (`db/schema/134_productos_kiosco_bebidas_drive.sql`): 57 productos con 68 fotos (webp 800 px en `public/img/productos/` +
+  `dist/img/productos/`), 16 con precio tachado + fecha de fin, 5 cupones por comercio (`ELPASO10`, `DULCE15`, `BARRIL10`,
+  `LAESQUINA5`, `SUPERBARADERO5`, vencen el 30/11/2026), los **6 espacios de banners del inicio** (`home_promos`, imágenes en
+  `public/img/promos/`) y cabecera/logo de cada comercio (`public/img/comercios/`). Comercios: **Bebidas La Esquina**, **Kiosco El
+  Paso**, **Super Baradero** y **Almacén Don José** (los 4 de seed; kiosco en el súper y el almacén, gaseosas en el kiosco) más dos
+  **cuentas de prueba nuevas**: `proyectopdisc+cerveceria@gmail.com` (Cervecería El Barril) y `proyectopdisc+golosinas@gmail.com`
+  (Golosinas Dulce Tentación), creadas por SQL como las de la 125 (**la contraseña no está en el repo**). El espacio `mosaic_a` tenía
+  una promo de prueba ("holis", Ferretería El Clavo): la migración la reemplaza. **ORDEN al publicar:** primero merge a `main` y
+  deploy de Vercel con las imágenes (200 `image/webp`), recién después crear las cuentas y aplicar la 134 (si no, productos, banners
+  y logos salen rotos). Probada en la base real con una transacción deshecha (cuenta + comercio + productos con opciones y oferta +
+  cupón + banner + triggers); falta la corrida completa. **Quedaron SIN subir 61 fotos chicas (menos de ~40 KB)**: el conector de
+  Drive las devuelve en línea y no se pueden guardar a disco (las grandes sí se guardan). Descartadas a propósito: "surtidos felfort"
+  (sello de otro sitio) y dos repetidas ("gaseosa fanta" y "agua saborizada levite" de Kiosco).
 - **Hecho 2026-10-20 — Preguntas frecuentes de `pages/info.html` ampliadas**, a pedido del usuario (con
   "¿Cómo recupero mi contraseña?"). De 2 preguntas a **18**, en 5 grupos con acordeones `<details>` sin JS
   (Comprar y pagar · Envíos y retiros · Mi cuenta · Vender y contratar · Ayuda y reclamos) y una tira de

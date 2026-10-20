@@ -5534,3 +5534,40 @@ inicio): en el navbar lo quiere **blanco y sin cuadrado de atrás**. Quedó: nav
 invert(1)` sin baldosa; `.bl-splash__logo` azul sobre su baldosa blanca; `.bl-toast__app-icon` azul sobre
 baldosa clara (esto último sin pedido del usuario, se dejó porque el azul solo no se veía; sacarlo si molesta).
 
+## 2026-10-20 — Productos, ofertas y banners con las fotos de "Kiosco" y "Bebidas" del Drive (migración 134)
+Rama `claude/epic-carson-e43vfc`. Pedido del usuario: subir todas las fotos nuevas del Drive, publicadas por distintos comercios
+(se pueden mezclar rubros), con ofertas, banners, promociones, descuentos y varias fotos del mismo producto.
+- **Qué se cargó:** carpetas "Kiosco" (75 fotos, creadas el 2026-10-19) y "Bebidas" (57, 2026-10-20). Lácteos tiene 5 fotos de
+  antes (13/10), no nuevas. Se bajaron 71 (solo las que el conector guarda a disco, ver abajo), se revisaron una por una en hojas de
+  contacto y quedaron 68 en 57 productos. Conversión: webp 800x800 calidad 80; foto casi cuadrada -> recorte centrado, el resto
+  -> foto entera sobre una copia desenfocada de sí misma (no se corta el producto). Scripts en el scratchpad de la sesión (no
+  versionados): `spec.py` (catálogo, fuente única de precios/% para SQL y banners), `convert.py`, `art.py` (banners con Pillow + Inter),
+  `gen_sql.py` (emite la migración).
+- **Gotcha del conector de Drive:** `download_file_content` devuelve el archivo en base64; si el resultado pasa el tope de
+  tokens lo guarda en un archivo (se decodifica con `jq -r .content | base64 -d`), pero **si es chico (< ~40 KB) lo devuelve en
+  línea** y no hay forma de pasarlo a disco. Eso dejó afuera 61 de las 132 fotos nuevas. Salidas: que el usuario las suba más
+  grandes, o compartir los archivos por link y bajarlos con curl (cambia permisos del Drive: pedir permiso antes). Dos fotos
+  distintas del Drive con el mismo nombre (ej. "gaseosa fanta.jpg" en Kiosco y en Bebidas): usar el `id`, no el título.
+- **Descartadas:** "surtidos felfort" (sello rojo de otro sitio arriba a la derecha) y dos repetidas.
+- **Comercios y rubros:** Bebidas La Esquina (gaseosas, aguas, vino, combo), Cervecería El Barril (cuenta nueva: cervezas, Skyy,
+  Dr. Lemon XL), Kiosco El Paso (golosinas, alfajores, chicles, Coca/Dr. Lemon), Golosinas Dulce Tentación (cuenta nueva: gomitas,
+  Rocklets, boxes, combos), Super Baradero (bebidas grandes, packs, galletitas; categoría Supermercado, que estaba vacía) y Almacén Don
+  José (Don Satur, mentitas). Las bebidas con alcohol dicen "Venta a mayores de 18 años". Los tamaños solo se nombran si se leen en la
+  foto (1,5 L de Cunnington/Levite, 473 ml de Speed, 300 g de Bubbaloo, 200 g de Don Satur negrito, 1 litro del Toro).
+- **Varias fotos por producto:** Brío (naranja, pomelo), Skyy Infusions, Bazooka, Mentitas D.R.F. (4), Mogul Extreme, Rocklets (3),
+  Don Satur (3): una sola ficha con opciones (sabor/variedad/tipo) y todas las fotos en `product_images`. La opción no cambia el precio.
+- **Ofertas:** `compare_at_price` (precio de antes, tachado) + `price` (el de ahora) + `offer_expires_at`; el inicio las muestra en
+  "Ofertas" si no vencieron. 16 productos, entre 11 % y 17 %, con fines entre el 31/10 y el 30/11.
+- **Banners del inicio:** `home_promos` tiene 6 espacios (`mosaic_a`..`f`); la imagen del comercio ya trae su texto y el home le suma
+  el nombre del comercio + el título. Imágenes en `public/img/promos/` (16:9 para a, b, c; 5:1 para d; 4:1 para e, f). **Gotcha:**
+  `home_promos_guard` solo deja cambiar `store_id` a un admin logueado (`auth.jwt()`), así que desde SQL hay que apagarlo
+  (`alter table ... disable trigger home_promos_guard`) y además, si cambia el comercio y no la imagen/producto/título en el mismo
+  UPDATE, los pone en NULL. La imagen apunta a `/img/promos/...` (del repo), no a Storage: el sandbox no llega a Supabase Storage.
+- **Cabecera y logo:** `stores.banner_url` (1600x400, tira de fotos sin texto) para los 6; `logo_url` para los 4 que no tenían.
+- **Cuentas nuevas:** se crean con la receta de siempre (`auth.users` con `extensions.crypt`, tokens en `''`, `auth.identities`,
+  `profiles.role='vendedor'` con `set_config('app.role_change_authorized','true',true)` en la misma transacción). La prueba en seco
+  anduvo (2 productos, 3 fotos, 2 valores de opción, cupón, `mosaic_b` y triggers de vuelta en estado `O`).
+- **No hay `delete` en la migración a propósito:** el conector de Supabase espera una confirmación en los DELETE y se corta a los 60 s.
+- **Pendiente:** publicar (merge a `main` -> deploy -> crear cuentas -> aplicar la 134 -> verificar); las 61 fotos chicas; el test
+  `npm test` falla en este entorno por falta de `postcss` (`scripts/gen-dark-css.mjs`), también en la base sin cambios.
+
