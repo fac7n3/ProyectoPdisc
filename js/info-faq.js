@@ -46,3 +46,15 @@ function markFromHash() {
 }
 markFromHash();
 window.addEventListener('hashchange', markFromHash);
+
+// Botón "volver arriba" (el mismo del inicio, ver initScrollTop en nav-utils.js;
+// no se importa de ahí para no cargar en esta página todo lo del navbar).
+const scrollTopBtn = document.getElementById('scroll-top-btn');
+if (scrollTopBtn) {
+  const toggle = () => scrollTopBtn.classList.toggle('scroll-top--visible', window.scrollY > 400);
+  window.addEventListener('scroll', toggle, { passive: true });
+  toggle();
+  scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+  });
+}
