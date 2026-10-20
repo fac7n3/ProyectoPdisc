@@ -2,6 +2,7 @@ import { supabase } from './auth-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 
+import { friendlyError } from './friendly-error.js';
 let starSeq = 0;
 
 // Estilos del menú de tres puntos (reseña propia): se inyectan una sola vez
@@ -347,7 +348,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
             await deleteOwnReview(targetType, targetId);
             await renderReviewsSection(container, targetType, targetId, { hideForm });
           } catch (err) {
-            alert(err.message || 'No se pudo eliminar la reseña.');
+            alert(friendlyError(err, 'No se pudo eliminar la reseña.'));
           }
         });
         menuList.appendChild(deleteItem);
@@ -374,7 +375,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
           if (reason === null) return;
           const { error } = await supabase.rpc('report_review', { p_review_id: review.id, p_reason: reason });
           if (error) {
-            alert(error.message || 'No se pudo reportar la reseña.');
+            alert(friendlyError(error, 'No se pudo reportar la reseña.'));
             return;
           }
           alert('Reseña reportada. El equipo la va a revisar.');
@@ -433,7 +434,7 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
       await submitReview(targetType, targetId, stars.getValue(), commentInput.value.trim());
       await onSubmitted();
     } catch (err) {
-      alert(err.message || 'No se pudo guardar la reseña. ¿Iniciaste sesión?');
+      alert(friendlyError(err, 'No se pudo guardar la reseña. ¿Iniciaste sesión?'));
     }
   });
 

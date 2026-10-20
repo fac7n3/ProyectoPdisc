@@ -16,6 +16,7 @@ import { formatFileSize, storedFileName } from './storage-utils.js';
 import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
+import { friendlyError } from './friendly-error.js';
 const STATUS_LABELS = {
   open: 'Abierto',
   in_progress: 'En progreso',
@@ -566,7 +567,7 @@ function buildTicketForm(container) {
       await renderSupportSection(container);
     } catch (err) {
       console.error('Error al enviar el reclamo:', err);
-      formError.textContent = err.message || 'No se pudo enviar el reclamo. Probá de nuevo.';
+      formError.textContent = friendlyError(err, 'No se pudo enviar el reclamo. Probá de nuevo.');
       formError.hidden = false;
       submitBtn.disabled = false;
       submitText.textContent = 'Enviar reclamo';
@@ -875,7 +876,7 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
       showToast('Reclamo cancelado.', 'success');
       await renderSupportSection(container);
     } catch (err) {
-      showToast(err.message || 'No se pudo cancelar.', 'error');
+      showToast(friendlyError(err, 'No se pudo cancelar.'), 'error');
     }
   });
   threadEl.appendChild(cancelBtn);

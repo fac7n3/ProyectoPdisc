@@ -63,10 +63,10 @@ Deno.serve(async (req: Request) => {
     const planId = body?.plan_id;
 
     if (typeof storeId !== "string" || !UUID_RE.test(storeId)) {
-      return jsonResponse({ error: "store_id inválido." }, 400);
+      return jsonResponse({ error: "El comercio elegido no es válido." }, 400);
     }
     if (typeof planId !== "string" || !PLAN_ID_RE.test(planId)) {
-      return jsonResponse({ error: "plan_id inválido." }, 400);
+      return jsonResponse({ error: "El combo elegido no es válido." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -143,6 +143,6 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err) {
     console.error(err);
-    return jsonResponse({ error: "Error interno." }, 500);
+    return jsonResponse({ error: "Hubo un error interno. Probá de nuevo en un rato." }, 500);
   }
 });

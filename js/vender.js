@@ -24,6 +24,7 @@ import {
   formatDueDate, toWhatsappNumber, sellerWhatsappMessage,
 } from './order-utils.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
+import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -1635,7 +1636,7 @@ async function runOrderRpc(fn, args, successMsg, btn) {
   if (error) {
     if (btn) btn.disabled = false;
     console.error(`Error en ${fn}:`, error);
-    showToast(error.message || 'No se pudo actualizar el pedido.', 'error');
+    showToast(friendlyError(error, 'No se pudo actualizar el pedido.'), 'error');
     return false;
   }
   showToast(successMsg, 'success');
@@ -2219,7 +2220,7 @@ function setupStoreLogoPicker() {
       showToast('Listo, guardamos el logo.', 'success');
     } catch (err) {
       console.error('Error al subir el logo:', err);
-      fail(err.message || 'No pudimos subir el logo. Probá de nuevo.');
+      fail(friendlyError(err, 'No pudimos subir el logo. Probá de nuevo.'));
     } finally {
       pickBtn.disabled = false;
       pickBtn.textContent = 'Elegir imagen';
@@ -2286,7 +2287,7 @@ function setupStoreLogoPicker() {
       showToast('Sacamos el logo.', 'success');
     } catch (err) {
       console.error('Error al quitar el logo:', err);
-      fail(err.message || 'No pudimos sacar el logo. Probá de nuevo.');
+      fail(friendlyError(err, 'No pudimos sacar el logo. Probá de nuevo.'));
     } finally {
       removeBtn.disabled = false;
     }
@@ -2774,7 +2775,7 @@ async function startMpConnect() {
   try {
     const { data, error } = await supabase.functions.invoke('mp-oauth-start', { body: { store_id: currentStoreId } });
     if (error || !data?.url) {
-      showToast(await edgeFunctionErrorMessage(error, data, 'No se pudo abrir Mercado Pago. Probá de nuevo en un rato.'), 'error');
+      showToast(await friendlyFunctionError(error, data, 'No se pudo abrir Mercado Pago. Probá de nuevo en un rato.'), 'error');
       return;
     }
     window.location.href = data.url;
@@ -2824,10 +2825,8 @@ async function handleMpOauthReturn() {
 
   const { data, error } = await supabase.functions.invoke('mp-oauth-callback', { body: { code, state } });
   if (error || !data?.ok) {
-    let body = data;
-    try { body = body ?? await error?.context?.json?.(); } catch { /* sin body legible */ }
-    const detail = body?.detail ? ` (${body.detail})` : '';
-    showToast(`${body?.error || 'No se pudo vincular Mercado Pago.'}${detail}`, 'error');
+    console.error('No se pudo vincular Mercado Pago:', error, data);
+    showToast(await friendlyFunctionError(error, data, 'No se pudo vincular Mercado Pago. Probá de nuevo.'), 'error');
     return;
   }
   mpLinked = true;
@@ -3168,7 +3167,7 @@ function setupStoreStaffForm() {
     const { error } = await supabase.rpc('add_store_staff', { p_store_id: currentStoreId, p_email: email });
 
     if (error) {
-      showToast(error.message || 'No se pudo agregar al empleado.', 'error');
+      showToast(friendlyError(error, 'No se pudo agregar al empleado.'), 'error');
       console.error(error);
     } else {
       showToast('Empleado agregado — ya puede entrar a este panel.', 'success');
@@ -4358,6 +4357,11 @@ function flagInvalidField(id) {
  * proyecto ya devuelven mensajes en español; los códigos genéricos de
  * Postgres se explican acá.
  */
+const PRODUCT_COLUMN_LABELS = {
+  title: 'nombre', name: 'nombre', description: 'descripción', price: 'precio',
+  stock: 'stock', category_id: 'categoría', store_id: 'comercio',
+};
+
 function describeProductSaveError(error, isEditing) {
   const action = isEditing ? 'guardar los cambios' : 'publicar el producto';
   const msg = String(error?.message || '');
@@ -4367,7 +4371,8 @@ function describeProductSaveError(error, isEditing) {
     case '42501': return `No tenés permiso para ${action} en este comercio.`;
     case '23502': {
       const col = msg.match(/column "(\w+)"/);
-      return `No se pudo ${action}: falta completar un dato obligatorio${col ? ` (${col[1]})` : ''}.`;
+      const campo = col && PRODUCT_COLUMN_LABELS[col[1]];
+      return `No se pudo ${action}: falta completar un dato obligatorio${campo ? ` (${campo})` : ''}.`;
     }
     case '23514': return `No se pudo ${action}: algún valor (precio, stock o texto) no es válido.`;
     case '23505': return `No se pudo ${action}: ya existe un producto igual.`;
@@ -4376,7 +4381,8 @@ function describeProductSaveError(error, isEditing) {
     default: break;
   }
   if (!navigator.onLine || /failed to fetch|network/i.test(msg)) return `No se pudo ${action}: revisá tu conexión a internet.`;
-  return msg ? `No se pudo ${action}: ${msg}` : `No se pudo ${action}. Probá de nuevo en un momento.`;
+  const motivo = friendlyError(error, '');
+  return motivo ? `No se pudo ${action}: ${motivo}` : `No se pudo ${action}. Probá de nuevo en un momento.`;
 }
 
 /** Suma archivos elegidos a la galería, descartando los que no sirven. */
@@ -5049,16 +5055,6 @@ function renderBoostStatus(state) {
   }
 }
 
-/** Mensaje de error de una Edge Function: el body del 4xx (viene en español), no el genérico del SDK. */
-async function edgeFunctionErrorMessage(error, data, fallback) {
-  if (data?.error) return data.error;
-  try {
-    const body = await error?.context?.json?.();
-    if (body?.error) return body.error;
-  } catch { /* sin body legible: se usa el mensaje de abajo */ }
-  return fallback;
-}
-
 async function chooseBoostPlan(plan) {
   if (boostBusy) return;
   if (!currentStoreId) return;
@@ -5080,7 +5076,7 @@ async function chooseBoostPlan(plan) {
     });
     const url = data?.init_point || data?.sandbox_init_point;
     if (error || !url) {
-      showToast(await edgeFunctionErrorMessage(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
+      showToast(await friendlyFunctionError(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
       return;
     }
     window.location.href = url;
