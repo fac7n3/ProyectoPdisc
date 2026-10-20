@@ -17,13 +17,16 @@ function reducedMotion() {
 }
 
 // Cuánto dura el color: lo justo para ubicarte, después se desvanece solo.
-const MARK_MS = 4000;
+const MARK_MS = 3000;
 let markTimer = null;
 
 function clearMark() {
   sections.forEach((s, a) => {
     s.classList.remove('is-marked');
     a.removeAttribute('aria-current');
+    // El atajo tocado conserva el foco: sin esto queda con su contorno azul
+    // después de que el resto del marcado ya se fue.
+    if (document.activeElement === a) a.blur();
   });
 }
 
@@ -55,15 +58,3 @@ function markFromHash() {
 }
 markFromHash();
 window.addEventListener('hashchange', markFromHash);
-
-// Botón "volver arriba" (el mismo del inicio, ver initScrollTop en nav-utils.js;
-// no se importa de ahí para no cargar en esta página todo lo del navbar).
-const scrollTopBtn = document.getElementById('scroll-top-btn');
-if (scrollTopBtn) {
-  const toggle = () => scrollTopBtn.classList.toggle('scroll-top--visible', window.scrollY > 400);
-  window.addEventListener('scroll', toggle, { passive: true });
-  toggle();
-  scrollTopBtn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
-  });
-}
