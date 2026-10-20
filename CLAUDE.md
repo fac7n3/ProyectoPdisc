@@ -101,7 +101,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (`dark-auto.css` regenerado). Verificado en Playwright (claro, oscuro y celular, sin scroll horizontal).
   **Atajos de tema (`js/info-faq.js`):** tocar uno desliza suave hasta el grupo (respeta "reducir animaciones",
   que `scrollIntoView` ignora si no se chequea a mano) y lo **marca en azul pastel** (`.faq-section.is-marked`,
-  con un "latido" al llegar) **durante 4 s** (`MARK_MS` en `js/info-faq.js`) y después se desvanece solo; mientras tanto el atajo queda activo (`aria-current`) y la URL lleva el
+  con un "latido" al llegar) **durante 3 s** (`MARK_MS` en `js/info-faq.js`) y después se desvanece solo **todo junto** (fondo, barra azul, recuadro de cada pregunta y el atajo, que además pierde el foco); mientras tanto el atajo queda activo (`aria-current`) y la URL lleva el
   ancla (abrir `info.html#faq-cuenta` también marca el grupo). **Gotcha de modo oscuro:** `gen-dark-css.mjs`
   espeja los colores fijos pero **no las `@keyframes`**: el latido oscuro (`faqPulseDark`) y el tono del marcado
   van a mano en `dark.css`. **Botón "volver arriba"** (el mismo del inicio, `.scroll-top` de `home.css`) también en **Información, Términos y Privacidad**: aparece al bajar 400 px y sube suave (`js/scroll-top-btn.js`, compartido, sin importar `nav-utils.js` para no cargar todo el navbar; cada página trae el `<button id="scroll-top-btn">` antes del footer y el `<script type="module">`).

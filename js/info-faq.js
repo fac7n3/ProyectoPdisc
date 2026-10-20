@@ -17,13 +17,16 @@ function reducedMotion() {
 }
 
 // Cuánto dura el color: lo justo para ubicarte, después se desvanece solo.
-const MARK_MS = 4000;
+const MARK_MS = 3000;
 let markTimer = null;
 
 function clearMark() {
   sections.forEach((s, a) => {
     s.classList.remove('is-marked');
     a.removeAttribute('aria-current');
+    // El atajo tocado conserva el foco: sin esto queda con su contorno azul
+    // después de que el resto del marcado ya se fue.
+    if (document.activeElement === a) a.blur();
   });
 }
 
