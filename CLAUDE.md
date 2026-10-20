@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — Preguntas frecuentes de `pages/info.html` ampliadas**, a pedido del usuario (con
+  "¿Cómo recupero mi contraseña?"). De 2 preguntas a **18**, en 5 grupos con acordeones `<details>` sin JS
+  (Comprar y pagar · Envíos y retiros · Mi cuenta · Vender y contratar · Ayuda y reclamos) y una tira de
+  atajos arriba. Las respuestas salen de cómo funciona el sitio hoy (medios de pago, efectivo solo con
+  retiro, transferencia + "Ya transferí", código de retiro, cancelar solo lo no pagado, recuperar/cambiar
+  contraseña con los requisitos de `register.js`, baja de cuenta con sus bloqueos, alias o CBU obligatorio
+  para vender): **si cambia alguno de esos flujos, actualizar la respuesta**. CSS solo con tokens
+  (`dark-auto.css` regenerado). Verificado en Playwright (claro, oscuro y celular, sin scroll horizontal).
 - **Hecho 2026-10-19 — Sin efectivo con envío + medio de transferencia obligatorio**, a pedido del usuario.
   **(1) Efectivo solo con retiro:** con "Envío a domicilio" el carrito esconde "Efectivo" (y avisa por qué);
   si estaba elegido pasa solo a Mercado Pago o transferencia (`applyCashRule` en `js/carrito.js`, que además

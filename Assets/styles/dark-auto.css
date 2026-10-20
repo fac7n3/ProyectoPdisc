@@ -1351,6 +1351,25 @@ html[data-theme="dark"] .info-container h2 {
 html[data-theme="dark"] .info-container p {
   color: var(--bl-text-secondary);
 }
+html[data-theme="dark"] .faq-index a {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .info-container h3.faq-group {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .faq-item > summary {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .faq-item > summary::after {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .faq-answer ol,
+html[data-theme="dark"] .faq-answer ul {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .faq-answer a {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .btn-outline {
   color: var(--dk-accent-text);
 }
