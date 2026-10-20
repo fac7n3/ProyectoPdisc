@@ -971,6 +971,7 @@
       }
     </style>
     <link rel="stylesheet" href="../Assets/styles/auth.css" />
+    <link rel="stylesheet" href="../Assets/styles/account-switcher-page.css" />
     <link rel="stylesheet" href="../Assets/styles/dark.css" />
     <script type="module" src="../js/theme.js"></script>
   </head>
@@ -1037,9 +1038,13 @@
 
         <!-- "Sumate al directorio" (contratar.html) con un comercio activo: una
              cuenta es comercio O profesional, no las dos (checkSellerState). -->
-        <div id="prof-blocked-view" class="vender-container" style="display: none; text-align: center;">
+        <div id="prof-blocked-view" class="vender-container prof-blocked" style="display: none; text-align: center;">
           <h2>Necesitás otra cuenta para ser profesional</h2>
           <p>Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.</p>
+          <button type="button" class="datos-btn datos-btn--primary prof-blocked__btn" id="prof-switch-toggle" aria-expanded="false" aria-controls="prof-switch-panel">
+            <i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Cambiar de cuenta</span>
+          </button>
+          <div class="acct-panel" id="prof-switch-panel" hidden></div>
         </div>
 
         <!-- Vista de Registro (card centrada, sin sidebar) -->

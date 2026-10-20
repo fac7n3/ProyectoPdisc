@@ -66,6 +66,15 @@ async function checkSellerState(user) {
     if (stateLoader) stateLoader.style.display = 'none';
     const blockedView = document.getElementById('prof-blocked-view');
     if (blockedView) blockedView.style.display = view === 'blocked' ? 'block' : 'none';
+    if (view === 'blocked') {
+      // Carga perezosa: solo esta pantalla necesita el selector de cuentas. Al
+      // cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta de profesional.
+      import('./account-switcher.js').then(({ initAccountSwitcher }) => initAccountSwitcher({
+        toggle: document.getElementById('prof-switch-toggle'),
+        panel: document.getElementById('prof-switch-panel'),
+        redirectTo: './vender.html?tipo=servicio',
+      })).catch((err) => console.error('No se pudo cargar el selector de cuentas:', err));
+    }
     registerView.style.display = view === 'register' ? 'block' : 'none';
     dashboardView.style.display = view === 'dashboard' ? 'flex' : 'none';
     // El botón hamburguesa abre el sidebar de dashboard-view (mc-sidebar) --

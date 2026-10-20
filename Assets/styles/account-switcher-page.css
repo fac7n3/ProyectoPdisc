@@ -1,0 +1,58 @@
+/* Selector de cuentas (js/account-switcher.js) dentro de vender.html, en el aviso
+   "Necesitás otra cuenta para ser profesional". Mi perfil trae su propio estilo en
+   perfil-custom.css (tokens --bl-perfil-*); acá se arma lo mismo con los tokens
+   generales, que ya cambian solos en modo oscuro. */
+.prof-blocked { max-width: 640px; margin-inline: auto; }
+.prof-blocked__btn { margin-top: 1rem; }
+.prof-blocked .acct-panel { margin-top: 1.25rem; text-align: left; }
+.prof-blocked .acct-panel[hidden] { display: none; }
+.prof-blocked .acct-panel__lead,
+.prof-blocked .acct-add__hint,
+.prof-blocked .acct-row__email { color: var(--bl-text-secondary); font-size: 0.875rem; }
+.prof-blocked .acct-panel__lead { margin: 0 0 0.75rem; }
+.prof-blocked .acct-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.prof-blocked .acct-row {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem;
+  background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);
+}
+.prof-blocked .acct-row__avatar {
+  flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bl-primary); color: var(--bl-text-inverse); font-weight: 700;
+}
+.prof-blocked .acct-row__text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.prof-blocked .acct-row__name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-blocked .acct-row__email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-blocked .acct-row__badge {
+  flex-shrink: 0; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.6rem;
+  border-radius: 999px; background: var(--bl-surface-alt); color: var(--bl-text); border: 1px solid var(--bl-border);
+}
+.prof-blocked .acct-row__actions { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
+.prof-blocked .acct-add { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--bl-border); }
+.prof-blocked .acct-add__title { margin: 0 0 0.25rem; font-size: 0.95rem; }
+.prof-blocked .acct-add__hint { margin: 0 0 0.75rem; }
+.prof-blocked .acct-add__form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.prof-blocked .acct-add__google { margin-top: 0.5rem; }
+
+.prof-blocked .datos-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; flex-shrink: 0;
+  min-height: 44px; padding: 0.5rem 0.875rem; border: 1px solid transparent; border-radius: var(--bl-radius-md);
+  background: none; color: var(--bl-primary); font: inherit; font-size: 0.9375rem; font-weight: 600; cursor: pointer;
+}
+.prof-blocked .datos-btn:hover { background: var(--bl-surface-hover); }
+.prof-blocked .datos-btn:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+.prof-blocked .datos-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.prof-blocked .datos-btn--quiet { color: var(--bl-text-secondary); }
+.prof-blocked .datos-btn--primary { background: var(--bl-primary); border-color: var(--bl-primary); color: var(--bl-text-inverse); }
+.prof-blocked .datos-btn--primary:hover { background: var(--bl-primary-dark); }
+.prof-blocked .datos-input {
+  min-height: 44px; padding: 0.6rem 0.75rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);
+  background: var(--bl-surface); color: var(--bl-text); font: inherit; font-size: 1rem;
+}
+.prof-blocked .datos-input:focus { outline: 2px solid var(--bl-primary); outline-offset: 1px; }
+.prof-blocked .datos-input--grow { flex: 1; min-width: 12rem; }
+
+@media (max-width: 640px) {
+  .prof-blocked .acct-row { flex-wrap: wrap; }
+  .prof-blocked .acct-row__actions { width: 100%; justify-content: flex-end; }
+}

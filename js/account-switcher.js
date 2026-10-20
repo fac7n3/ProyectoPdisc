@@ -70,6 +70,8 @@ async function signInSeparately(email, password) {
 
 let panel = null;
 let currentSession = null;
+// Adónde se va después de cambiar de cuenta (Mi perfil por defecto).
+let afterSwitchUrl = './perfil.html?tab=mis-datos';
 
 async function switchTo(entry, button) {
   button.disabled = true;
@@ -98,7 +100,7 @@ async function switchTo(entry, button) {
   resetLocalCartState();
   showToast(`Entraste con ${entry.email}`, 'success');
   // Se recarga sola, volviendo a la misma sección de Mi perfil.
-  window.location.href = './perfil.html?tab=mis-datos';
+  window.location.href = afterSwitchUrl;
 }
 
 async function addWithPassword(emailInput, passwordInput, button) {
@@ -276,11 +278,12 @@ async function render() {
 
 /**
  * Cablea la fila "Cambiar de cuenta" de Mi perfil.
- * @param {{ toggle: HTMLElement, panel: HTMLElement, current: HTMLElement }} nodos
+ * @param {{ toggle: HTMLElement, panel: HTMLElement, current?: HTMLElement, redirectTo?: string }} nodos
  */
-export async function initAccountSwitcher({ toggle, panel: panelNode, current }) {
+export async function initAccountSwitcher({ toggle, panel: panelNode, current, redirectTo }) {
   if (!toggle || !panelNode) return;
   panel = panelNode;
+  if (redirectTo) afterSwitchUrl = redirectTo;
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
