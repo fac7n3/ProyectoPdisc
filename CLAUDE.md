@@ -113,6 +113,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
+  del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
+  gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.
+- **Hecho 2026-10-21 — Pregunta "¿Cómo retiro mi pedido en el local?" de `pages/info.html` sin el QR**, a pedido del
+  usuario: ahora dice que en Mis compras se ve el **código de retiro** del pedido y que hay que mostrarle ese código al
+  comercio. Solo cambió el texto de la respuesta (no el flujo ni la pantalla de Mis compras).
 - **Hecho 2026-10-20 — Cartel del corazón del comercio ya no se corta**, reportado por el usuario con captura. El
   botón de favoritos de `comercio.html` usa el cartel propio del sitio (`data-tooltip`, ver `home.css`), que sale
   centrado **debajo** del botón; como el botón está pegado al borde derecho, el cartel (~176 px) se pasaba de la
