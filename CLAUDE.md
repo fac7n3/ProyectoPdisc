@@ -91,6 +91,10 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — "Tu cuenta" arriba de todo en Mi perfil → Información de tu perfil**, a pedido del
+  usuario: el bloque (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde") pasó al principio de
+  `#tab-mis-datos` en `pages/perfil.html`, antes del título y del aviso de perfil incompleto. Solo se movió
+  HTML (los ids no cambiaron, el JS no depende del orden). Sin reconstruir `dist/` ni probar logueado.
 - **Hecho 2026-10-20 — Solicitud de comercio rechazada: se puede reenviar**, a pedido del usuario. Antes
   `checkSellerState` (`js/vender.js`) mostraba solo "Tu solicitud ... está en estado: rejected" sin salida.
   Ahora, con la solicitud rechazada, se vuelve al alta (`#seller-rejected-notice`: "fue rechazada, podés
