@@ -18,6 +18,7 @@ import { buildPromoEditorCard } from './home-promos-editor.js';
 import { renderBoostPlans } from './boost-plans.js';
 import { describeBoostState, formatBoostDate, boostReturnMessage, PLANS_WITH_BANNER } from './boost-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
+import { cropImage } from './image-cropper.js';
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
   orderLabel, orderRef, canPrepare, awaitingTransfer, buyerSaysPaid, nextSellerAction, timelineSteps, eventLabel,
@@ -4453,6 +4454,28 @@ function moveGalleryImage(from, to) {
   renderProductGallery();
 }
 
+/**
+ * Abre el editor de encuadre y deja en la galería la foto ya recortada.
+ * Una foto guardada pasa a ser "nueva" (se sube recortada al guardar el
+ * producto y la vieja se borra del bucket por la comparación con
+ * savedImageUrlsAtLoad), así que cancelar el formulario no cambia nada.
+ */
+async function adjustGalleryImage(item) {
+  let cropped;
+  try {
+    cropped = await cropImage(item.kind === 'new' ? item.file : item.url, item.kind === 'new' ? item.file.name : 'foto');
+  } catch (err) {
+    console.error('No se pudo abrir la foto para ajustarla:', err);
+    showToast('No se pudo abrir la foto para ajustarla.', 'error');
+    return;
+  }
+  const index = productImages.indexOf(item);
+  if (!cropped || index < 0) return;
+  if (item.kind === 'new') URL.revokeObjectURL(item.previewUrl);
+  productImages[index] = { kind: 'new', file: cropped, previewUrl: URL.createObjectURL(cropped) };
+  renderProductGallery();
+}
+
 function renderProductGallery() {
   const grid = document.getElementById('prod-gallery');
   if (!grid) return;
@@ -4495,6 +4518,15 @@ function renderProductGallery() {
       renderProductGallery();
     });
     cell.appendChild(delBtn);
+
+    const adjBtn = document.createElement('button');
+    adjBtn.type = 'button';
+    adjBtn.className = 'pubform__photo-del pubform__photo-adjust';
+    adjBtn.setAttribute('aria-label', `Ajustar el encuadre de la foto ${index + 1}`);
+    adjBtn.title = 'Ajustar encuadre';
+    adjBtn.innerHTML = '<i class="fa-solid fa-crop-simple" aria-hidden="true"></i>';
+    adjBtn.addEventListener('click', () => adjustGalleryImage(item));
+    cell.appendChild(adjBtn);
 
     cell.addEventListener('dragstart', () => {
       galleryDragFrom = index;

@@ -4900,6 +4900,19 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   cursor: not-allowed;
 }
 
+/* Editor de encuadre de fotos (js/image-cropper.js). */
+.crop-card { max-width: 26rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+.crop-card .bl-confirm-title, .crop-card .bl-confirm-msg { align-self: stretch; margin: 0; }
+.crop-card .bl-confirm-actions { align-self: stretch; margin-top: 0.3rem; }
+.crop-aspects { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+.crop-aspect { border: 1px solid var(--bl-border); background: var(--bl-surface); color: var(--bl-text); border-radius: var(--bl-radius-pill); padding: 0.3rem 0.8rem; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.crop-aspect.is-active { background: var(--bl-primary); border-color: var(--bl-primary); color: #fff; }
+.crop-frame { position: relative; overflow: hidden; border-radius: var(--bl-radius-md); background: var(--bl-surface-alt); cursor: grab; touch-action: none; user-select: none; outline-offset: 2px; }
+.crop-frame.is-dragging { cursor: grabbing; }
+.crop-img { position: absolute; max-width: none; pointer-events: none; }
+.crop-zoom { display: flex; align-items: center; gap: 0.6rem; width: 100%; font-size: 0.85rem; font-weight: 600; color: var(--bl-text-secondary); }
+.crop-zoom input { flex: 1; }
+
 /* formDialog: la misma tarjeta con un motivo a elegir y/o un campo de texto. */
 .bl-confirm-card--form { max-width: 26rem; }
 .bl-confirm-fields { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
