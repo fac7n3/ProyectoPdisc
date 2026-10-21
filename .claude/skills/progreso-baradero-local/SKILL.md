@@ -5593,13 +5593,16 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
   rótulo (comercio/título), `data-promo-href`, `data-lightbox-alt` y aria-label con la que se ve. El lightbox (`initPromoBanners`) trabaja
   con `items` ({url, href, alt}): flechas, ← →, deslizar, contador, y el destino del click/cierre es el de la publicidad visible. Los
   banners fijos siguen con la imagen del CSS (`getBannerImageUrl`).
-- **"Reducir animaciones":** el ajuste del sitio (`getPref('reduceMotion')`, Mi perfil → Ajustes) o `prefers-reduced-motion` del sistema:
-  con cualquiera de los dos el carrusel no rota solo (las flechas del lightbox siguen).
+- **"Reducir animaciones":** primero el carrusel no rotaba solo con esa opción (ajuste del sitio `getPref('reduceMotion')` o
+  `prefers-reduced-motion`); **el usuario pidió que rote siempre** (es publicidad de comercios) y se sacó el chequeo y el
+  `transition: none` del CSS. Siguen frenándolo el mouse encima, la pestaña oculta y la imagen ampliada abierta.
 - **Editor:** una imagen por tarjeta como en la 108; el título muestra "Publicidad N de 3". Admin: 18 tarjetas. Vendedor: las suyas.
 - **Gotcha de modo oscuro:** el puntito activo (blanco sobre la foto) se pisa a mano en `dark.css` (el generador lo espeja a oscuro).
-  Mismo archivo: las reglas `html[data-theme="dark"] .promo-banner--c / -2--d / -2--e / -2--f` (0,2,1) le ganaban a `.is-store-promo` (0,2,0).
+  Mismo archivo: las reglas `html[data-theme="dark"] .promo-banner--c / -2--d / -2--e / -2--f` (0,2,1) le ganaban a `.is-store-promo` (0,2,0);
+  otra sesión lo arregló en `main` (f526cbf) casi igual y al mergear quedó su regla + las dos mías (`.has-slides` y el puntito).
 - **Verificación:** `npm test` (hizo falta `npm install` por `postcss`); Chromium real con Supabase simulado: 3 comercios en un espacio,
   rotación con cambio de rótulo/destino, flechas con vuelta, tocar la imagen va a la publicación de la visible, fila vieja sin `position`.
   **Sin probar con la base real.**
-- **Para publicar:** aplicar la 137 (aditiva) y recién después asignar comercios a las posiciones 2 y 3 desde "Promos del inicio";
-  mergear a `main` dispara deploy.
+- **Para publicar:** mergear a `main` dispara deploy y es seguro con o sin la 137 (el código es compatible con las dos bases).
+  Aplicar la 137 (aditiva) y recién después asignar comercios a las posiciones 2 y 3 desde "Promos del inicio". Se mergeó `main` a
+  la rama el 2026-10-21 (conflictos solo en `dark.css` y `CLAUDE.md`); la 137 sigue libre en `main` (la última es la 136).

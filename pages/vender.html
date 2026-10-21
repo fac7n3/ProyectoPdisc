@@ -810,10 +810,12 @@
       .pubform__photo { position: relative; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; background: var(--bl-surface-alt); cursor: grab; }
       .pubform__photo.is-dragging { opacity: 0.4; }
       .pubform__photo.is-over { border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 2px rgba(var(--bl-vendor-accent-rgb), 0.25); }
-      .pubform__photo img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+      .pubform__photo img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; }
       .pubform__badge { position: absolute; top: 0.35rem; left: 0.35rem; background: var(--bl-vendor-accent); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: var(--bl-radius-pill); }
       .pubform__photo-del { position: absolute; top: 0.35rem; right: 0.35rem; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; font-size: 0.8rem; line-height: 1; }
       .pubform__photo-del:hover { background: var(--bl-danger); }
+      .pubform__photo .pubform__photo-adjust { right: 2.15rem; }
+      .pubform__photo .pubform__photo-adjust:hover { background: var(--bl-vendor-accent); }
       /* Alternativa táctil/teclado al arrastrar (el drag&drop HTML5 no va en mobile) */
       .pubform__photo-cover { position: absolute; left: 0; right: 0; bottom: 0; border: none; background: rgba(0, 0, 0, 0.6); color: #fff; font: inherit; font-size: 0.72rem; font-weight: 600; padding: 0.3rem; cursor: pointer; }
       .pubform__photo-cover:hover { background: var(--bl-vendor-accent); }
@@ -1119,7 +1121,8 @@
                   <div class="prof-photo-picker">
                     <div class="prof-photo-picker__preview" id="prof-photo-preview"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
                     <div class="prof-photo-picker__field">
-                      <input type="file" id="prof-photo" accept="image/*" />
+                      <input type="file" id="prof-photo" accept="image/*" hidden />
+                      <div><button type="button" class="btn-outline" id="prof-photo-pick-btn">Elegir imagen</button></div>
                       <small style="color: var(--bl-text-muted);">Se muestra en tu tarjeta de "Contratar". Hasta 2 MB.</small>
                     </div>
                   </div>

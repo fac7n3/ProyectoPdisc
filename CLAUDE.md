@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, SIN mergear a `main` y migración 137 SIN aplicar) — Cada espacio de los
+- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, lista para mergear; migración 137 SIN aplicar, se puede mergear antes o después) — Cada espacio de los
   mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
   fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
   publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
@@ -102,18 +102,44 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   destino del click y el texto accesible siguen a la que se ve. Al tocar el banner se abre la imagen ampliada en la que se estaba
   viendo, con **flechas** (también ← → y deslizar el dedo), contador "2 / 3" y vuelta de la última a la primera; tocar la imagen o
   cerrar lleva a la publicación **de esa publicidad**. Se frenan con el mouse encima, con la pestaña oculta y con la imagen ampliada
-  abierta; con **"Reducir animaciones"** (Mi perfil → Ajustes, o la opción de accesibilidad del sistema) no cambian solas, las flechas
-  siguen andando. **Paneles:** el admin ve 18 tarjetas (6 espacios x 3, cada una "Publicidad N de 3") y el comercio las que le tocaron;
+  abierta; **rotan siempre, también con "Reducir animaciones"** (decisión del usuario: es publicidad de comercios y tiene que verse la de todos). **Paneles:** el admin ve 18 tarjetas (6 espacios x 3, cada una "Publicidad N de 3") y el comercio las que le tocaron;
   el editor (`js/home-promos-editor.js`) sigue siendo una imagen por tarjeta. **Mientras la 137 no se aplique:** el home y los paneles
   siguen andando como antes (`select('*')`, orden por `position` en el cliente); el admin solo ve los 6 espacios. Helpers puros
-  (`groupLivePromosBySlot`, `stepIndex`, `promoPosition`) en `js/home-promos-utils.js` con tests. **De paso, en modo oscuro** las reglas
-  fijas de los espacios c/d/e/f le pisaban la imagen a una promo de comercio: arreglado en `dark.css`. Verificado en Chromium real con
+  (`groupLivePromosBySlot`, `stepIndex`, `promoPosition`) en `js/home-promos-utils.js` con tests. **Modo oscuro:** la regla que evita que los espacios c/d/e/f pisen la imagen de una promo de comercio ya vino de `main` (otra sesión); acá solo se suman las capas y el puntito en `dark.css`. Verificado en Chromium real con
   Supabase simulado (3 comercios en un espacio, rotación, flechas, destino por publicidad, fila vieja sin `position`, claro y oscuro);
   **sin probar con la base real ni con imágenes reales**. `dist/` sin reconstruir.
 - **Hecho 2026-10-20 — "Tu cuenta" arriba de todo en Mi perfil → Información de tu perfil**, a pedido del
   usuario: el bloque (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde") pasó al principio de
   `#tab-mis-datos` en `pages/perfil.html`, antes del título y del aviso de perfil incompleto. Solo se movió
   HTML (los ids no cambiaron, el JS no depende del orden). Sin reconstruir `dist/` ni probar logueado.
+- **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) adaptado al modo oscuro**, reportado por el usuario con
+  captura (bloque del nombre blanco con letras casi blancas, luego letra oscura sobre fondo blanco). Los colores que
+  elige el dueño (`stores.header_bg_color`/`header_text_color`) se pensaron para claro: `renderHeaderColors`
+  (`js/comercio.js`) en modo oscuro descarta un fondo claro (o una letra oscura) y usa los colores del tema; un fondo
+  oscuro o de color se respeta. Si queda solo uno de los dos y no contrasta (< 4,5), deriva el otro
+  (`fixHeaderContrast`). Se recalcula al cambiar `data-theme` y **al insertar el header** (gotcha:
+  `getComputedStyle` no devuelve colores con el nodo suelto). Verificado en producción con facu.cells.
+- **Hecho 2026-10-21 — Ajustar el encuadre de las fotos de un producto**, a pedido del usuario. Cada foto de
+  la galería del formulario de publicar (`vender.html`) tiene un botón de recorte (`fa-crop-simple`, al lado de la
+  X) que abre `js/image-cropper.js`: se arrastra la foto, zoom con control/rueda/flechas y forma Cuadrada /
+  Horizontal / Vertical; devuelve un JPG recortado (máx. 1600 px) que reemplaza a la foto. Una foto ya guardada
+  pasa a "nueva" (se baja con `fetch`, se sube recortada al guardar y la vieja se borra del bucket por
+  `savedImageUrlsAtLoad`), así que cancelar el formulario no cambia nada. **Destructivo a propósito:** no hay
+  columna ni migración, el recorte es el archivo (lo que ya ven todas las vistas); no se puede "des-recortar"
+  una foto guardada. La cuenta vive en `js/image-crop-utils.js` (con test); la miniatura de la galería pasó
+  de `cover` a `contain` para mostrar la foto entera. Verificado en navegador con una página de prueba del
+  modal; **sin probar el formulario logueado** (sin red a Supabase).
+- **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) legible en modo oscuro**, reportado por el usuario con
+  captura (bloque del nombre en blanco con letras casi blancas). Causa: el dueño puede elegir solo el fondo
+  (`stores.header_bg_color`) o solo la letra; lo que no eligió sale del tema, y en oscuro la letra (`--bl-text`,
+  clara) caía sobre su fondo blanco elegido. `applyHeaderColors` (`js/comercio.js`) ahora, si falta uno de los dos,
+  deriva el otro cuando el contraste es < 4,5 (`fixHeaderContrast`) y lo recalcula al cambiar `data-theme`.
+  Con los dos o ninguno elegidos no toca nada. **Sin probar en navegador** (sin red a Supabase).
+- **Hecho 2026-10-21 — Orden de Mi perfil → Información de tu perfil** (`#tab-mis-datos` en `pages/perfil.html`),
+  a pedido del usuario: arriba de todo el título "Información de tu perfil" + el aviso de perfil incompleto, y
+  después "Tu cuenta" (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde"). El 2026-10-20 se había
+  puesto "Tu cuenta" primero y se revirtió. Solo se movió HTML (los ids no cambiaron, el JS no depende del
+  orden). Sin reconstruir `dist/` ni probar logueado.
 - **Hecho 2026-10-20 — Solicitud de comercio rechazada: se puede reenviar**, a pedido del usuario. Antes
   `checkSellerState` (`js/vender.js`) mostraba solo "Tu solicitud ... está en estado: rejected" sin salida.
   Ahora, con la solicitud rechazada, se vuelve al alta (`#seller-rejected-notice`: "fue rechazada, podés
@@ -131,6 +157,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
+  del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
+  gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.
+- **Hecho 2026-10-21 — Pregunta "¿Cómo retiro mi pedido en el local?" de `pages/info.html` sin el QR**, a pedido del
+  usuario: ahora dice que en Mis compras se ve el **código de retiro** del pedido y que hay que mostrarle ese código al
+  comercio. Solo cambió el texto de la respuesta (no el flujo ni la pantalla de Mis compras).
 - **Hecho 2026-10-20 — Cartel del corazón del comercio ya no se corta**, reportado por el usuario con captura. El
   botón de favoritos de `comercio.html` usa el cartel propio del sitio (`data-tooltip`, ver `home.css`), que sale
   centrado **debajo** del botón; como el botón está pegado al borde derecho, el cartel (~176 px) se pasaba de la

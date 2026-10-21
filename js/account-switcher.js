@@ -72,6 +72,9 @@ let panel = null;
 let currentSession = null;
 // Adónde se va después de cambiar de cuenta (Mi perfil por defecto).
 let afterSwitchUrl = './perfil.html?tab=mis-datos';
+// Con `redirectTo` (aviso de vender.html), al AGREGAR una cuenta se entra con ella
+// y se va a esa página; en Mi perfil solo se agrega a la lista.
+let goAfterAdd = false;
 
 async function switchTo(entry, button) {
   button.disabled = true;
@@ -137,6 +140,10 @@ async function addWithPassword(emailInput, passwordInput, button) {
     rememberAccount(data.session);
     passwordInput.value = '';
     emailInput.value = '';
+    if (goAfterAdd) {
+      await switchTo(buildAccountEntry(data.session), button);
+      return;
+    }
     showToast(`Agregaste la cuenta ${accountDisplayName(data.session.user)}.`, 'success');
   } catch (err) {
     console.error('Error al agregar la cuenta:', err);
@@ -159,7 +166,7 @@ async function addWithGoogle(button) {
   // Google, auth-utils (resolvePostLoginRedirect) suma la cuenta nueva y manda a
   // Mi perfil. Google redirige a login.html, que es el destino ya habilitado.
   rememberAccount(currentSession);
-  markLinkPending(currentSession.user.id);
+  markLinkPending(currentSession.user.id, goAfterAdd ? afterSwitchUrl : null);
   resetLocalCartState();
 
   const redirectTo = `${window.location.origin}/pages/login.html`;
@@ -283,7 +290,10 @@ async function render() {
 export async function initAccountSwitcher({ toggle, panel: panelNode, current, redirectTo }) {
   if (!toggle || !panelNode) return;
   panel = panelNode;
-  if (redirectTo) afterSwitchUrl = redirectTo;
+  if (redirectTo) {
+    afterSwitchUrl = redirectTo;
+    goAfterAdd = true;
+  }
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;

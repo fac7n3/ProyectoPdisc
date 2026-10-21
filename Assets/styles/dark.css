@@ -140,19 +140,21 @@ html[data-theme="dark"] .promo-banner-2--f {
   background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(217, 3, 104, 0.15) 55%, rgba(217, 3, 104, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
 }
 
-/* La promo de un comercio (imagen propia en --promo-img, o capas si trae más
-   de una) no puede perder contra las reglas fijas de arriba: tienen más
-   especificidad que .is-store-promo y le pisaban la imagen en c/d/e/f. */
+/* Promo de un comercio en el espacio (home_promos, .is-store-promo): la imagen
+   viene en --promo-img. Las reglas de arriba y las de dark-auto.css pisaban su
+   background-image con el banner fijo, así que en oscuro no se veía la imagen
+   del comercio. Esta tiene más especificidad y vuelve a lo de modo claro. */
 html[data-theme="dark"] .promo-banner.is-store-promo,
 html[data-theme="dark"] .promo-banner-2.is-store-promo {
-  background-color: var(--bl-primary);
+  background-color: #284175;
   background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
 }
+/* Varias publicidades en el mismo espacio (capas .promo-banner__slide): el fondo
+   queda liso y el puntito activo sigue blanco, porque va sobre la foto. */
 html[data-theme="dark"] .promo-banner.is-store-promo.has-slides,
 html[data-theme="dark"] .promo-banner-2.is-store-promo.has-slides {
   background-image: none;
 }
-/* Los puntitos van sobre la foto, no sobre una superficie: siguen blancos. */
 html[data-theme="dark"] .promo-banner__dot.is-active {
   background: #fff;
 }

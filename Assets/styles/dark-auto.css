@@ -357,6 +357,10 @@ html[data-theme="dark"] .bl-confirm-overlay {
 html[data-theme="dark"] .bl-confirm-card {
   box-shadow: 0 20px 40px rgba(112, 139, 204, 0.35);
 }
+html[data-theme="dark"] .crop-aspect.is-active {
+  background: var(--bl-primary);
+  color: #fff;
+}
 html[data-theme="dark"] .bl-confirm-choice:has(input:checked) {
   background: rgba(111, 141, 206, 0.096);
 }

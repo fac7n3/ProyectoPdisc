@@ -58,11 +58,26 @@ export function clearLinkedAccounts() {
   } catch { /* sin storage: no hay nada que borrar */ }
 }
 
-/** Antes de irse a Google: deja anotado desde qué cuenta se arrancó. */
-export function markLinkPending(fromUserId) {
+/**
+ * Antes de irse a Google: deja anotado desde qué cuenta se arrancó y, si hace
+ * falta, a qué página ir al volver (`next`, relativa a /pages/).
+ */
+export function markLinkPending(fromUserId, next = null) {
   try {
-    localStorage.setItem(PENDING_KEY, JSON.stringify({ from: fromUserId, at: Date.now() }));
+    localStorage.setItem(PENDING_KEY, JSON.stringify({ from: fromUserId, at: Date.now(), next }));
   } catch { /* si no se puede, la vinculación simplemente no se completa sola */ }
+}
+
+// Destino anotado por la vinculación que acaba de completarse (ver consumeLinkNext).
+let completedNext = null;
+// Solo páginas del propio sitio, nada que venga de afuera: ./pagina.html?clave=valor
+const SAFE_NEXT = /^\.\/[\w-]+\.html(\?[\w=&-]*)?$/;
+
+/** Destino de la vinculación recién completada (una sola vez), o null. */
+export function consumeLinkNext() {
+  const next = completedNext;
+  completedNext = null;
+  return next;
 }
 
 /**
@@ -88,6 +103,7 @@ export function completePendingLink(session) {
   // queda para cuando se abra la sesión nueva (vence sola a los 15 minutos).
   if (session.user.id === pendiente.from) return false;
   rememberAccount(session);
+  completedNext = SAFE_NEXT.test(pendiente.next || '') ? pendiente.next : null;
   try { localStorage.removeItem(PENDING_KEY); } catch { /* sin storage */ }
   return true;
 }
