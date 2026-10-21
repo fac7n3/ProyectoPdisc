@@ -91,6 +91,9 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
+  del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
+  gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.
 - **Hecho 2026-10-21 — Pregunta "¿Cómo retiro mi pedido en el local?" de `pages/info.html` sin el QR**, a pedido del
   usuario: ahora dice que en Mis compras se ve el **código de retiro** del pedido y que hay que mostrarle ese código al
   comercio. Solo cambió el texto de la respuesta (no el flujo ni la pantalla de Mis compras).
