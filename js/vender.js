@@ -640,6 +640,9 @@ function setupProfessionalPhotoPicker() {
   const preview = document.getElementById('prof-photo-preview');
   if (!input || !preview) return;
 
+  // El selector nativo queda oculto: se abre con un botón del sitio.
+  document.getElementById('prof-photo-pick-btn')?.addEventListener('click', () => input.click());
+
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     if (!file) return;
