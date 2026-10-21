@@ -759,7 +759,7 @@
    hover (translateY + box-shadow) de las tarjetas se recorte. */
 .pm-related__scroll {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(154px, 1fr));
   gap: 0.875rem;
   padding: 0.5rem 0.25rem;
 }
@@ -782,12 +782,12 @@
 
 .pm-related-card__img {
   width: 100%;
-  height: 96px;
+  height: 115px;
   background: #fafbfc;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem;
+  padding: 0.72rem;
   overflow: hidden;
 }
 
@@ -803,11 +803,11 @@
 }
 
 .pm-related-card__body {
-  padding: 0.6rem;
+  padding: 0.72rem;
 }
 
 .pm-related-card__name {
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 500;
   color: var(--bl-text);
   line-height: 1.35;
@@ -819,7 +819,7 @@
 }
 
 .pm-related-card__price {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--bl-text);
 }
@@ -945,7 +945,7 @@
   }
 
   .pm-related-card__img {
-    height: 100px;
+    height: 120px;
   }
 }
 
