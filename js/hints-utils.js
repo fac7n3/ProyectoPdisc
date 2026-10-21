@@ -136,5 +136,5 @@ export function showHint(message, type = 'default') {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => {
     toast.classList.remove('toast--visible');
-  }, 2500);
+  }, 5500);
 }
