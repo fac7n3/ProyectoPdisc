@@ -1550,7 +1550,7 @@ async function fetchHomePromos() {
   grid.textContent = 'Cargando espacios...';
 
   const [promosRes, storesRes] = await Promise.all([
-    supabase.from('home_promos').select('id, slot, store_id, product_id, image_url, title, is_active').order('slot'),
+    supabase.from('home_promos').select('*').order('slot'),
     supabase.from('stores').select('id, name').eq('status', 'approved').order('name'),
   ]);
 

@@ -1980,6 +1980,83 @@ button.coupon-chip:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
 }
 
+/* Promo con más de una imagen (hasta 3, columnas image_url/_2/_3 de
+   home_promos): mountPromoSlides() en home.js arma una capa por imagen que se
+   cambian solas con un fundido. Las capas ocupan todo el banner (misma foto
+   entera, sin recortar, sobre el azul de marca) y llevan encima la misma franja
+   oscura de abajo que el fondo de una sola imagen. El texto y los puntitos van
+   por encima. */
+.promo-banner.is-store-promo.has-slides,
+.promo-banner-2.is-store-promo.has-slides {
+  background-image: none;
+  overflow: hidden;
+}
+
+.promo-banner__slides {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.promo-banner__slides::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.promo-banner__slide {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.promo-banner__slide.is-active {
+  opacity: 1;
+}
+
+.has-slides .promo-banner__eyebrow,
+.has-slides .promo-banner__title {
+  position: relative;
+  z-index: 1;
+}
+
+/* Puntitos arriba a la derecha: avisan que hay más de una imagen. */
+.promo-banner__dots {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.promo-banner__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.promo-banner__dot.is-active {
+  background: #fff;
+  transform: scale(1.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-banner__slide {
+    transition: none;
+  }
+}
+
 /* ===========================================================
    LIGHTBOX DE BANNERS PROMOCIONALES (ver imagen ampliada al hacer click)
    Mismo criterio que product-modal.css: overlay con blur, tarjeta con
@@ -2028,6 +2105,69 @@ button.coupon-chip:hover {
   border-radius: var(--bl-radius-md);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
   cursor: pointer;
+}
+
+/* La imagen y sus flechas: el stage mide lo que la imagen, así las flechas
+   quedan sobre sus costados. Solo se muestran con más de una imagen. */
+.promo-lightbox__stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.promo-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1a1a1a;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.promo-lightbox__nav[hidden] {
+  display: none;
+}
+
+.promo-lightbox__nav:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.promo-lightbox__nav--prev {
+  left: 0.6rem;
+}
+
+.promo-lightbox__nav--next {
+  right: 0.6rem;
+}
+
+.promo-lightbox__count {
+  position: absolute;
+  bottom: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.promo-lightbox__count[hidden] {
+  display: none;
 }
 
 /* Se muestra solo cuando la imagen abierta es la de una promo con
@@ -5451,6 +5591,54 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.hp-images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hp-images > .hp-label {
+  margin: 0;
+}
+
+/* Un cuadro de carga por imagen: miniatura a la izquierda, selector y
+   "Quitar" a la derecha. */
+.hp-imgbox {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface-alt);
+}
+
+.hp-imgbox__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.hp-preview--thumb {
+  aspect-ratio: 16 / 9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.hp-preview--thumb .hp-preview__empty {
+  padding: 0.25rem;
+  font-size: 0.72rem;
+}
+
+.hp-btn--small {
+  min-height: 2rem;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.8rem;
 }
 
 .hp-preview__empty {

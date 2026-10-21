@@ -17,21 +17,36 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
 ];
 
+/** Máximo de imágenes por espacio (columnas `image_url`, `image_url_2`, `image_url_3`). */
+export const PROMO_IMAGE_COLUMNS = ['image_url', 'image_url_2', 'image_url_3'];
+
+/** Las imágenes cargadas del espacio, en orden, sin los huecos. */
+export function promoImages(promo) {
+  return PROMO_IMAGE_COLUMNS.map((col) => promo?.[col]).filter(Boolean);
+}
+
+/** Índice siguiente/anterior dando la vuelta: de la última pasa a la primera. */
+export function stepIndex(index, delta, count) {
+  if (!count) return 0;
+  return (((index + delta) % count) + count) % count;
+}
+
 export function slotLabel(slot) {
   return HOME_PROMO_SLOTS.find((s) => s.slot === slot)?.label || slot;
 }
 
 /**
  * ¿Esta fila tiene que reemplazar al banner fijo del home? Solo si está
- * activa, tiene comercio aprobado e imagen. Cualquier otra cosa (espacio
- * libre, comercio suspendido, todavía sin imagen) deja el banner de siempre.
+ * activa, tiene comercio aprobado y al menos una imagen. Cualquier otra cosa
+ * (espacio libre, comercio suspendido, todavía sin imagen) deja el banner de
+ * siempre.
  */
 export function isPromoLive(promo) {
   return Boolean(
     promo
     && promo.is_active
     && promo.store_id
-    && promo.image_url
+    && promoImages(promo).length > 0
     && promo.stores?.status === 'approved'
   );
 }

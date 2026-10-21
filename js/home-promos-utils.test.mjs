@@ -3,7 +3,7 @@
  * Correr con:  node js/home-promos-utils.test.mjs
  */
 import assert from "node:assert/strict";
-import { HOME_PROMO_SLOTS, slotLabel, isPromoLive, promoHref, promoAriaLabel } from "./home-promos-utils.js";
+import { HOME_PROMO_SLOTS, slotLabel, isPromoLive, promoHref, promoAriaLabel, promoImages, stepIndex } from "./home-promos-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -43,6 +43,9 @@ check("sin comercio asignado => banner fijo", () => assert.equal(isPromoLive({ .
 check("sin imagen todavía => banner fijo", () => assert.equal(isPromoLive({ ...base, image_url: null }), false));
 check("apagada por el admin => banner fijo", () => assert.equal(isPromoLive({ ...base, is_active: false }), false));
 check("comercio suspendido => banner fijo", () => assert.equal(isPromoLive({ ...base, stores: { name: "X", status: "suspended" } }), false));
+check("solo con la imagen 2 o 3 cargada también se muestra", () => {
+  assert.equal(isPromoLive({ ...base, image_url: null, image_url_3: "https://x/3.webp" }), true);
+});
 check("sin datos del comercio (RLS no lo devolvió) => banner fijo", () => assert.equal(isPromoLive({ ...base, stores: null }), false));
 
 console.log("promoHref");
@@ -63,3 +66,27 @@ check("sin comercio => null", () => assert.equal(promoHref({ ...base, store_id: 
 console.log("promoAriaLabel");
 check("con título", () => assert.equal(promoAriaLabel(base), "Promoción de Beruru: Combo hamburguesas"));
 check("sin título", () => assert.equal(promoAriaLabel({ ...base, title: "  " }), "Ver promoción de Beruru"));
+
+console.log("promoImages");
+check("devuelve las cargadas en orden, sin huecos", () => {
+  assert.deepEqual(promoImages({ image_url: "a", image_url_2: null, image_url_3: "c" }), ["a", "c"]);
+  assert.deepEqual(promoImages({ image_url: "a", image_url_2: "b", image_url_3: "c" }), ["a", "b", "c"]);
+});
+check("sin imágenes o sin fila => lista vacía", () => {
+  assert.deepEqual(promoImages({ image_url: "", image_url_2: null }), []);
+  assert.deepEqual(promoImages(null), []);
+});
+check("una fila vieja (sin las columnas nuevas) tiene una sola imagen", () => {
+  assert.deepEqual(promoImages({ image_url: "a" }), ["a"]);
+});
+
+console.log("stepIndex");
+check("avanza y da la vuelta", () => {
+  assert.equal(stepIndex(0, 1, 3), 1);
+  assert.equal(stepIndex(2, 1, 3), 0);
+});
+check("retrocede y da la vuelta", () => {
+  assert.equal(stepIndex(1, -1, 3), 0);
+  assert.equal(stepIndex(0, -1, 3), 2);
+});
+check("sin imágenes no explota", () => assert.equal(stepIndex(0, 1, 0), 0));

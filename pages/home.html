@@ -485,7 +485,13 @@
     <div class="promo-lightbox-overlay" id="promo-lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada">
       <div class="promo-lightbox">
         <button type="button" class="promo-lightbox__close" id="promo-lightbox-close" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
-        <img class="promo-lightbox__img" id="promo-lightbox-img" src="" alt="" />
+        <div class="promo-lightbox__stage" id="promo-lightbox-stage">
+          <img class="promo-lightbox__img" id="promo-lightbox-img" src="" alt="" />
+          <!-- Flechas y contador: solo con un banner de más de una imagen. -->
+          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--prev" id="promo-lightbox-prev" aria-label="Imagen anterior" hidden><i class="fa-solid fa-chevron-left"></i></button>
+          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--next" id="promo-lightbox-next" aria-label="Imagen siguiente" hidden><i class="fa-solid fa-chevron-right"></i></button>
+          <p class="promo-lightbox__count" id="promo-lightbox-count" aria-live="polite" hidden></p>
+        </div>
         <p class="promo-lightbox__hint" id="promo-lightbox-hint" hidden>Tocá la imagen o cerrá para ir a la publicación</p>
       </div>
     </div>

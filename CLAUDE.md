@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-20. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-21. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, SIN mergear a `main` y migración 137 SIN aplicar) — Cada banner de los
+  mosaicos del inicio admite hasta 3 imágenes**, a pedido del usuario (los 6 espacios, arriba y abajo). Las imágenes pasan solas
+  cada 4,5 s con fundido (`mountPromoSlides` en `js/home.js`; frenan con el mouse encima, con la pestaña oculta y con la imagen
+  ampliada abierta; con "Reducir animaciones" no rotan solas) y llevan unos puntitos arriba a la derecha. Al tocar el banner se abre
+  la imagen ampliada **en la imagen que se estaba viendo**, con **flechas** (también teclado ← → y deslizar el dedo), contador
+  "2 / 3" y vuelta de la última a la primera; el banner de atrás queda en la misma imagen. Tocar la imagen o cerrar sigue llevando a
+  la publicación, como antes. **Datos:** migración **137** (`db/schema/137_home_promos_hasta_3_imagenes.sql`): columnas nullable
+  `image_url_2` e `image_url_3` en `home_promos` (la primera sigue siendo `image_url`; las 3 comparten comercio, publicación de
+  destino y título) y el trigger `home_promos_guard` también limpia las dos nuevas al cambiar de comercio. **Mientras no se aplique:** el
+  home y los paneles siguen andando (usan `select('*')`) con una sola imagen; lo único que falla es guardar la imagen 2 o 3.
+  **Editor** (`js/home-promos-editor.js`, el de admin "Promos del inicio" y el de vendedor "Banner del inicio"): tres cuadros de
+  carga por espacio (miniatura + selector + "Quitar" de cada una, que borra solo esa del bucket). Los helpers puros (`promoImages`,
+  `stepIndex`) están en `js/home-promos-utils.js` con tests. **De paso, en modo oscuro** las reglas fijas de los espacios c/d/e/f le
+  pisaban la imagen a una promo de comercio (más especificidad que `.is-store-promo`): arreglado en `dark.css`. Verificado en
+  Chromium real con Supabase simulado (rotación, flechas, vuelta, sincronía, claro y oscuro, payload exacto de las cargas); **sin
+  probar con la base real ni con imágenes reales** (sin red a Supabase). `dist/` sin reconstruir.
 - **Hecho 2026-10-20 — "Tu cuenta" arriba de todo en Mi perfil → Información de tu perfil**, a pedido del
   usuario: el bloque (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde") pasó al principio de
   `#tab-mis-datos` en `pages/perfil.html`, antes del título y del aviso de perfil incompleto. Solo se movió

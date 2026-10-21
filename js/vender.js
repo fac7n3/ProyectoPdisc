@@ -2759,7 +2759,7 @@ async function renderHomePromo(storeName) {
 
   const { data, error } = await supabase
     .from('home_promos')
-    .select('id, slot, store_id, product_id, image_url, title, is_active')
+    .select('*')
     .eq('store_id', currentStoreId)
     .order('slot');
 
