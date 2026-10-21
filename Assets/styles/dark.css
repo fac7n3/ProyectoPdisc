@@ -124,6 +124,32 @@ html[data-theme="dark"] .bl-splash__logo {
   background: #fff;
 }
 
+/* ---- Banners de los mosaicos del inicio: iguales que en modo claro.
+   dark-auto.css les aclaraba el degradé de color; se pidió que la imagen no
+   cambie, así que se vuelve al degradé original de home.css. ---- */
+html[data-theme="dark"] .promo-banner--c {
+  background-image: linear-gradient(180deg, rgba(6, 167, 125, 0) 0%, rgba(6, 167, 125, 0) 40%, rgba(6, 167, 125, 0.15) 55%, rgba(6, 167, 125, 0.35) 75%, rgba(6, 167, 125, 0.6) 100%), url('../images/banners/promo-gaseosas.webp');
+}
+html[data-theme="dark"] .promo-banner-2--d {
+  background-image: linear-gradient(180deg, rgba(114, 9, 183, 0) 0%, rgba(114, 9, 183, 0) 40%, rgba(114, 9, 183, 0.15) 55%, rgba(114, 9, 183, 0.35) 75%, rgba(114, 9, 183, 0.6) 100%), url('../images/banners/promo-dulce-de-leche.webp');
+}
+html[data-theme="dark"] .promo-banner-2--e {
+  background-image: linear-gradient(180deg, rgba(20, 33, 61, 0) 0%, rgba(20, 33, 61, 0) 40%, rgba(20, 33, 61, 0.15) 55%, rgba(20, 33, 61, 0.35) 75%, rgba(20, 33, 61, 0.6) 100%), url('../images/banners/promo-envios-test.svg');
+}
+html[data-theme="dark"] .promo-banner-2--f {
+  background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(217, 3, 104, 0.15) 55%, rgba(217, 3, 104, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
+}
+
+/* Promo de un comercio en el espacio (home_promos, .is-store-promo): la imagen
+   viene en --promo-img. Las reglas de arriba y las de dark-auto.css pisaban su
+   background-image con el banner fijo, así que en oscuro no se veía la imagen
+   del comercio. Esta tiene más especificidad y vuelve a lo de modo claro. */
+html[data-theme="dark"] .promo-banner.is-store-promo,
+html[data-theme="dark"] .promo-banner-2.is-store-promo {
+  background-color: #284175;
+  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
+}
+
 /* ---- Esqueletos de carga: las barras llevan el gris claro en el atributo
    style (inline, en el HTML de cada página), así que hace falta !important. ---- */
 html[data-theme="dark"] [style*="background: #e2e8f0"] { background: #262f45 !important; }
