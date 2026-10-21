@@ -873,10 +873,10 @@ function getBannerImageUrl(banner) {
  * .promo-lightbox-overlay en home.css) -- ni el banner fijo ni el de una
  * promo real llevan a ningún lado de un solo toque.
  *  - con promo de un comercio cargada (data-promo-href, lo pone
- *    loadHomePromos) => la 2da interacción (cerrar con la X/afuera/Esc, o
- *    tocar la imagen ampliada de nuevo) recién ahí lleva a la publicación;
- *  - con foto fija sin promo => cerrar no hace nada más que cerrar, como
- *    siempre;
+ *    loadHomePromos) => la 2da interacción, tocar la imagen ampliada de
+ *    nuevo, recién ahí lleva a la publicación. Cerrar (X, afuera, Esc) solo
+ *    cierra: no lleva a ningún lado (pedido del usuario 2026-10-21);
+ *  - con foto fija sin promo => tocar la imagen o cerrar solo cierra;
  *  - espacio sin ninguna imagen (no debería pasar, toda promo viva trae
  *    imagen) => por las dudas, el click va directo a la publicación.
  * Se decide en el momento del click, así da igual si las promos terminaron de
@@ -906,19 +906,20 @@ function initPromoBanners() {
     closeBtn.focus();
   };
 
-  // "Cerrar" (X, click afuera, Esc) o tocar la imagen de nuevo: las dos
-  // formas de la 2da interacción que pide el producto. Si la imagen era la
-  // de una promo con publicación, en vez de solo cerrar, lleva ahí.
+  // Cerrar (X, click afuera, Esc): solo cierra, nunca navega.
   const closeLightbox = () => {
-    const href = pendingHref;
     overlay.classList.remove('is-open');
     img.src = '';
     pendingHref = null;
-    if (href) {
-      window.location.href = href;
-      return;
-    }
     if (lastTrigger) lastTrigger.focus();
+  };
+
+  // Tocar la imagen ampliada: con una promo con publicación asignada lleva
+  // ahí; sin promo (banner decorativo) solo cierra.
+  const followImage = () => {
+    const href = pendingHref;
+    closeLightbox();
+    if (href) window.location.href = href;
   };
 
   const activate = (banner) => {
@@ -945,8 +946,8 @@ function initPromoBanners() {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeLightbox();
   });
-  // Tocar la imagen ampliada de nuevo: la otra forma de "cerrar".
-  img?.addEventListener('click', closeLightbox);
+  // Tocar la imagen ampliada de nuevo: lleva a la publicación (si la hay).
+  img?.addEventListener('click', followImage);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeLightbox();
   });
