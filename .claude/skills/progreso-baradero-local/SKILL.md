@@ -5606,3 +5606,10 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
 - **Para publicar:** mergear a `main` dispara deploy y es seguro con o sin la 137 (el código es compatible con las dos bases).
   Aplicar la 137 (aditiva) y recién después asignar comercios a las posiciones 2 y 3 desde "Promos del inicio". Se mergeó `main` a
   la rama el 2026-10-21 (conflictos solo en `dark.css` y `CLAUDE.md`); la 137 sigue libre en `main` (la última es la 136).
+- **Aplicada a producción el 2026-10-21** (Supabase `otzhdwuaffcplrveuadc`) en 3 pasos, porque `apply_migration` con el archivo entero
+  se colgó a los 60 s sin aplicar nada (gotcha de los `drop`, ya conocido): (1) `137a_home_promos_position_columna` (columna `position`
+  + índice único `(slot, position)`), (2) `alter table ... drop constraint home_promos_slot_key` por `execute_sql` (pasó sin
+  confirmación), (3) `137b_home_promos_filas_trigger_y_bucket` (12 filas nuevas, `create or replace` del trigger y `alter policy`
+  de insert/delete del bucket en vez de `drop policy` + `create policy`). Quedó equivalente al archivo `137_...sql`. Verificado en la
+  base real: 18 filas, 6 en posición 1 con comercio e imagen, 12 libres, constraint viejo fuera, trigger con la regla de posición,
+  policies con `position`, y un UPDATE de posición sin ser admin da "Solo un administrador puede asignar el espacio...".

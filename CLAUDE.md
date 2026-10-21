@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-21 (mergeado a `main` el 2026-10-21; **migración 137 SIN aplicar a producción**: hasta que se aplique el admin ve solo los 6 espacios) — Cada espacio de los
+- **Hecho 2026-10-21 (mergeado a `main` y **migración 137 APLICADA a producción el 2026-10-21**; falta asignar comercios a las posiciones 2 y 3 desde "Promos del inicio") — Cada espacio de los
   mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
   fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
   publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
@@ -103,8 +103,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   viendo, con **flechas** (también ← → y deslizar el dedo), contador "2 / 3" y vuelta de la última a la primera; tocar la imagen o
   cerrar lleva a la publicación **de esa publicidad**. Se frenan con el mouse encima, con la pestaña oculta y con la imagen ampliada
   abierta; **rotan siempre, también con "Reducir animaciones"** (decisión del usuario: es publicidad de comercios y tiene que verse la de todos). **Paneles:** el admin ve 18 tarjetas (6 espacios x 3, cada una "Publicidad N de 3") y el comercio las que le tocaron;
-  el editor (`js/home-promos-editor.js`) sigue siendo una imagen por tarjeta. **Mientras la 137 no se aplique:** el home y los paneles
-  siguen andando como antes (`select('*')`, orden por `position` en el cliente); el admin solo ve los 6 espacios. Helpers puros
+  el editor (`js/home-promos-editor.js`) sigue siendo una imagen por tarjeta. **Aplicada en producción en 3 pasos** (el `apply_migration` del archivo entero se colgó 60 s sin aplicar nada, por los `drop`): `137a` (columna + índice único), `drop constraint home_promos_slot_key` por `execute_sql` y `137b` (12 filas, trigger y policies del bucket con `alter policy`). Verificado: 18 filas (3 por espacio), las 6 de antes en posición 1 con su comercio e imagen, las 12 nuevas libres, y un no-admin no puede cambiar la posición. El código sigue compatible sin la columna (`select('*')`, orden por `position` en el cliente). Helpers puros
   (`groupLivePromosBySlot`, `stepIndex`, `promoPosition`) en `js/home-promos-utils.js` con tests. **Modo oscuro:** la regla que evita que los espacios c/d/e/f pisen la imagen de una promo de comercio ya vino de `main` (otra sesión); acá solo se suman las capas y el puntito en `dark.css`. Verificado en Chromium real con
   Supabase simulado (3 comercios en un espacio, rotación, flechas, destino por publicidad, fila vieja sin `position`, claro y oscuro);
   **sin probar con la base real ni con imágenes reales**. `dist/` sin reconstruir.
