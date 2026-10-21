@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, lista para mergear; migración 137 SIN aplicar, se puede mergear antes o después) — Cada espacio de los
+- **Hecho 2026-10-21 (mergeado a `main` el 2026-10-21; **migración 137 SIN aplicar a producción**: hasta que se aplique el admin ve solo los 6 espacios) — Cada espacio de los
   mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
   fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
   publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
