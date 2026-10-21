@@ -20,6 +20,7 @@ import { renderBoostPlans } from './boost-plans.js';
 import { describeBoostState, formatBoostDate, boostReturnMessage, PLANS_WITH_BANNER } from './boost-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { cropImage } from './image-cropper.js';
+import { saveProductDraft, loadProductDraft, clearProductDraft } from './product-draft.js';
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_REJECT_REASONS, SELLER_CANCEL_REASONS,
   orderLabel, orderRef, canPrepare, awaitingTransfer, buyerSaysPaid, nextSellerAction, timelineSteps, eventLabel,
@@ -377,6 +378,12 @@ function renderProductCategoryOptions() {
   renderCategoryPicker('prod-category-options', {
     name: 'prod-category', type: 'radio', required: true,
   });
+  // Borrador recuperado antes de que llegaran las categorías: recién ahora
+  // existen los radios para marcar.
+  if (pendingDraftCategory && document.querySelector('input[name="prod-category"]')) {
+    setProductCategorySlug(pendingDraftCategory);
+    pendingDraftCategory = '';
+  }
 }
 
 /**
@@ -4553,6 +4560,82 @@ function renderProductGallery() {
 
     grid.appendChild(cell);
   });
+  scheduleProductDraftSave();
+}
+
+/* --- Borrador del alta de producto ---
+ *
+ * Mientras se carga un producto NUEVO, el formulario (textos, categoría, modo y
+ * fotos) se guarda solo en IndexedDB; al recargar la página se vuelve a abrir
+ * con lo que había. Se borra al publicar, cancelar o al crear el producto en
+ * modo "Variantes" (ahí ya existe en la base). Editar un producto existente no
+ * usa borrador: se vuelve a leer de la base.
+ */
+let productDraftTimer = null;
+// No se guarda hasta haber intentado restaurar: el formulario recién abierto
+// está vacío y pisaría el borrador que todavía no se leyó.
+let productDraftReady = false;
+let pendingDraftCategory = '';
+const productDraftKey = () => `product:${currentStoreId}`;
+
+/** Lo cargado hasta ahora, o null si el form está cerrado o sin nada escrito. */
+function collectProductDraft() {
+  if (document.getElementById('add-product-form-container')?.hidden) return null;
+  const val = (id) => document.getElementById(id).value;
+  const draft = {
+    name: val('prod-name'),
+    description: val('prod-desc'),
+    price: val('prod-price'),
+    stock: val('prod-stock'),
+    comparePrice: val('prod-compare-price'),
+    offerExpires: val('prod-offer-expires'),
+    category: getProductCategorySlug(),
+    mode: getProductMode(),
+    files: productImages.filter((i) => i.kind === 'new').map((i) => i.file),
+  };
+  const hasContent = draft.name.trim() || draft.description.trim() || draft.price || draft.comparePrice
+    || draft.offerExpires || draft.category || draft.files.length;
+  return hasContent ? draft : null;
+}
+
+function scheduleProductDraftSave() {
+  if (!productDraftReady || editingProductId || !currentStoreId) return;
+  clearTimeout(productDraftTimer);
+  productDraftTimer = setTimeout(() => {
+    const draft = collectProductDraft();
+    if (draft) saveProductDraft(productDraftKey(), draft);
+    else clearProductDraft(productDraftKey());
+  }, 400);
+}
+
+function discardProductDraft() {
+  clearTimeout(productDraftTimer);
+  if (currentStoreId) clearProductDraft(productDraftKey());
+}
+
+/** Vuelve a abrir el formulario con el borrador guardado, si hay. */
+async function restoreProductDraft() {
+  try {
+    const d = await loadProductDraft(productDraftKey());
+    if (!d || editingProductId) return;
+    document.getElementById('prod-name').value = d.name || '';
+    document.getElementById('prod-desc').value = d.description || '';
+    document.getElementById('prod-price').value = d.price || '';
+    document.getElementById('prod-stock').value = d.stock ?? '1';
+    document.getElementById('prod-compare-price').value = d.comparePrice || '';
+    datePickers['prod-offer-expires']?.setValue(d.offerExpires || '');
+    pendingDraftCategory = d.category || '';
+    setProductCategorySlug(pendingDraftCategory);
+    setProductMode(d.mode === 'variants' ? 'variants' : 'single');
+    (d.files || []).forEach((file) => {
+      productImages.push({ kind: 'new', file, previewUrl: URL.createObjectURL(file) });
+    });
+    renderProductGallery();
+    openProductForm();
+    if (location.hash === '#publicaciones') showToast('Recuperamos el producto que estabas cargando.', 'success');
+  } finally {
+    productDraftReady = true;
+  }
 }
 
 /** Muestra el form. Va ANTES del listado en el HTML (no lo reemplaza): los
@@ -5241,6 +5324,7 @@ function setupDashboardEvents() {
 
   function resetProductForm() {
     editingProductId = null;
+    discardProductDraft();
     addForm.reset();
     const formTitle = document.getElementById('add-product-form-title');
     if (formTitle) formTitle.textContent = 'Publicar nuevo producto';
@@ -5304,6 +5388,10 @@ function setupDashboardEvents() {
     );
     dropZone.addEventListener('drop', (e) => addFilesToGallery(e.dataTransfer?.files));
   }
+
+  // 'click' cubre el día elegido en el calendario propio, que no dispara input.
+  ['input', 'change', 'click'].forEach((evt) => addForm.addEventListener(evt, scheduleProductDraftSave));
+  restoreProductDraft();
 
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -5439,6 +5527,7 @@ function setupDashboardEvents() {
     if (!isEditing && savedProductId && getProductMode() === 'variants') {
       showToast('Producto creado. Ahora cargá sus variantes.', 'success');
       editingProductId = savedProductId;
+      discardProductDraft();
       const formTitle = document.getElementById('add-product-form-title');
       if (formTitle) formTitle.textContent = 'Editar producto';
       if (btnSubmit) btnSubmit.textContent = 'Guardar cambios';
