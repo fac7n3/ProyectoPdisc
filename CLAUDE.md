@@ -91,6 +91,16 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-21 — Ajustar el encuadre de las fotos de un producto**, a pedido del usuario. Cada foto de
+  la galería del formulario de publicar (`vender.html`) tiene un botón de recorte (`fa-crop-simple`, al lado de la
+  X) que abre `js/image-cropper.js`: se arrastra la foto, zoom con control/rueda/flechas y forma Cuadrada /
+  Horizontal / Vertical; devuelve un JPG recortado (máx. 1600 px) que reemplaza a la foto. Una foto ya guardada
+  pasa a "nueva" (se baja con `fetch`, se sube recortada al guardar y la vieja se borra del bucket por
+  `savedImageUrlsAtLoad`), así que cancelar el formulario no cambia nada. **Destructivo a propósito:** no hay
+  columna ni migración, el recorte es el archivo (lo que ya ven todas las vistas); no se puede "des-recortar"
+  una foto guardada. La cuenta vive en `js/image-crop-utils.js` (con test); la miniatura de la galería pasó
+  de `cover` a `contain` para mostrar la foto entera. Verificado en navegador con una página de prueba del
+  modal; **sin probar el formulario logueado** (sin red a Supabase).
 - **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) legible en modo oscuro**, reportado por el usuario con
   captura (bloque del nombre en blanco con letras casi blancas). Causa: el dueño puede elegir solo el fondo
   (`stores.header_bg_color`) o solo la letra; lo que no eligió sale del tema, y en oscuro la letra (`--bl-text`,
