@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-21 — El alta de producto sobrevive a recargar la página**, a pedido del usuario. Mientras se carga un
+  producto NUEVO en `vender.html`, el formulario (nombre, descripción, categoría, precios, stock, fecha de oferta, modo y
+  **fotos**) se guarda solo (a los 400 ms de cada cambio) en IndexedDB (`js/product-draft.js`, clave `product:<storeId>`;
+  localStorage no sirve porque no guarda archivos) y al volver a entrar se reabre el formulario con eso
+  (`restoreProductDraft` en `js/vender.js`). Se borra al publicar, cancelar / "Volver a publicaciones", o al crear el
+  producto en modo Variantes; editar un producto existente no usa borrador. Es **por dispositivo**. **Gotcha:** no se
+  guarda hasta haber intentado restaurar (`productDraftReady`), si no el form vacío pisaría el borrador. Verificado solo
+  el ida y vuelta de IndexedDB con un `File` en navegador; **sin probar el formulario completo** (sin red a Supabase).
 - **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) adaptado al modo oscuro**, reportado por el usuario con
   captura (bloque del nombre blanco con letras casi blancas, luego letra oscura sobre fondo blanco). Los colores que
   elige el dueño (`stores.header_bg_color`/`header_text_color`) se pensaron para claro: `renderHeaderColors`
