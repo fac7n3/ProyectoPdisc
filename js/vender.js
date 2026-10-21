@@ -15,6 +15,7 @@ import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDisplay } from './transfer-details-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
+import { promoPosition } from './home-promos-utils.js';
 import { renderBoostPlans } from './boost-plans.js';
 import { describeBoostState, formatBoostDate, boostReturnMessage, PLANS_WITH_BANNER } from './boost-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
@@ -2778,7 +2779,8 @@ async function renderHomePromo(storeName) {
     return;
   }
 
-  data.forEach((promo) => {
+  // Orden por posición en el cliente: antes de la migración 137 no existe la columna.
+  [...data].sort((a, b) => a.slot.localeCompare(b.slot) || promoPosition(a) - promoPosition(b)).forEach((promo) => {
     container.appendChild(buildPromoEditorCard({
       promo,
       mode: 'seller',

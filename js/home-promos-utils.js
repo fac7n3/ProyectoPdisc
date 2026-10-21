@@ -17,12 +17,32 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
 ];
 
-/** Máximo de imágenes por espacio (columnas `image_url`, `image_url_2`, `image_url_3`). */
-export const PROMO_IMAGE_COLUMNS = ['image_url', 'image_url_2', 'image_url_3'];
+export function slotLabel(slot) {
+  return HOME_PROMO_SLOTS.find((s) => s.slot === slot)?.label || slot;
+}
 
-/** Las imágenes cargadas del espacio, en orden, sin los huecos. */
-export function promoImages(promo) {
-  return PROMO_IMAGE_COLUMNS.map((col) => promo?.[col]).filter(Boolean);
+/** Cada espacio es un carrusel de hasta 3 publicidades (filas con `position`
+ *  1 a 3), cada una con su propio comercio, publicación, título e imagen. */
+export const PROMO_POSITIONS = [1, 2, 3];
+
+/** Posición de una fila; las filas de antes de la migración 137 no la traen. */
+export function promoPosition(promo) {
+  return promo?.position ?? 1;
+}
+
+/**
+ * De las filas de `home_promos`, las que se muestran (ver isPromoLive)
+ * agrupadas por espacio y en orden de posición: Map slot -> [promo, ...].
+ */
+export function groupLivePromosBySlot(rows) {
+  const bySlot = new Map();
+  (rows || []).filter(isPromoLive)
+    .sort((a, b) => promoPosition(a) - promoPosition(b))
+    .forEach((promo) => {
+      if (!bySlot.has(promo.slot)) bySlot.set(promo.slot, []);
+      bySlot.get(promo.slot).push(promo);
+    });
+  return bySlot;
 }
 
 /** Índice siguiente/anterior dando la vuelta: de la última pasa a la primera. */
@@ -31,22 +51,17 @@ export function stepIndex(index, delta, count) {
   return (((index + delta) % count) + count) % count;
 }
 
-export function slotLabel(slot) {
-  return HOME_PROMO_SLOTS.find((s) => s.slot === slot)?.label || slot;
-}
-
 /**
  * ¿Esta fila tiene que reemplazar al banner fijo del home? Solo si está
- * activa, tiene comercio aprobado y al menos una imagen. Cualquier otra cosa
- * (espacio libre, comercio suspendido, todavía sin imagen) deja el banner de
- * siempre.
+ * activa, tiene comercio aprobado e imagen. Cualquier otra cosa (espacio
+ * libre, comercio suspendido, todavía sin imagen) deja el banner de siempre.
  */
 export function isPromoLive(promo) {
   return Boolean(
     promo
     && promo.is_active
     && promo.store_id
-    && promoImages(promo).length > 0
+    && promo.image_url
     && promo.stores?.status === 'approved'
   );
 }

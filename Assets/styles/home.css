@@ -5561,6 +5561,12 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   color: var(--bl-text);
 }
 
+.hp-card__position {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--bl-text-secondary);
+}
+
 .hp-badge {
   flex-shrink: 0;
   font-size: 0.72rem;
@@ -5593,44 +5599,7 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   object-fit: contain;
 }
 
-.hp-images {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.hp-images > .hp-label {
-  margin: 0;
-}
-
-/* Un cuadro de carga por imagen: miniatura a la izquierda, selector y
-   "Quitar" a la derecha. */
-.hp-imgbox {
-  display: grid;
-  grid-template-columns: 7.5rem minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.6rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-md);
-  background: var(--bl-surface-alt);
-}
-
-.hp-imgbox__side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.hp-preview--thumb {
-  aspect-ratio: 16 / 9;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-.hp-preview--thumb .hp-preview__empty {
+.hp-preview__empty {
   padding: 0.25rem;
   font-size: 0.72rem;
 }

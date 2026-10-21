@@ -5576,31 +5576,30 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
 - **Pendiente:** las 61 fotos chicas (el usuario eligió dejarlas afuera por ahora); mirar el resultado en el navegador contra
   producción; el test `npm test` falla en este entorno por falta de `postcss` (`scripts/gen-dark-css.mjs`), también en la base sin cambios.
 
-## 2026-10-21 — Banners del inicio con hasta 3 imágenes (migración 137, sin aplicar; rama `claude/dreamy-hopper-mwgkhp`)
-- **Pedido:** cada banner de los dos mosaicos del home con hasta 3 imágenes que pasen solas; al tocar la imagen ampliada, flechas
-  para recorrerlas; en el panel de admin, los cuadros de carga que faltaban.
-- **Decisión de datos:** dos columnas nullable `image_url_2`/`image_url_3` en `home_promos` en vez de una tabla nueva o un array:
-  las 3 comparten comercio/publicación/título (una promo, varias imágenes), no cambia nada de lo cargado y el RLS/policies del
-  bucket `home-promos` (carpeta = espacio) sirven tal cual. El trigger `home_promos_guard` se reemplaza (misma lógica de la 108 +
-  limpieza de las dos columnas al cambiar de comercio).
-- **Compatibilidad previa a la migración:** `home.js`, `admin.js` y `vender.js` leen con `select('*')` (+ joins), así que sin las
-  columnas todo sigue con una imagen; `isPromoLive` ahora pide "al menos una imagen" (`promoImages(promo).length`), y el home ya no
-  filtra `image_url not null` en la consulta.
-- **Home (`js/home.js`):** con >1 imagen el banner se llena de capas `.promo-banner__slide` (fundido de opacidad) dentro de
-  `.promo-banner__slides`, que lleva la misma franja oscura inferior que el fondo de una sola imagen (`::after`); el texto va con
-  `z-index:1`. Con una sola imagen se mantiene el fondo `--promo-img` de siempre. Cada banner arranca desfasado (`(n % 3) * 1500` ms).
-  El lightbox (`initPromoBanners`) toma las URLs del `promoSliders` (WeakMap banner -> slider) y los banners fijos siguen con la
-  imagen del CSS (`getBannerImageUrl`). HTML nuevo en `pages/home.html`: `#promo-lightbox-stage`, `-prev`, `-next`, `-count`.
-- **Gotcha de modo oscuro:** `gen-dark-css.mjs` espejó el puntito activo (blanco sobre la foto) a un color oscuro: se pisa a mano
-  en `dark.css` (los puntitos siempre van sobre la foto, no sobre una superficie). Mismo archivo: las reglas
-  `html[data-theme="dark"] .promo-banner--c / -2--d / -2--e / -2--f` (especificidad 0,2,1) le ganaban a `.promo-banner.is-store-promo`
-  (0,2,0) y una promo de comercio en esos espacios mostraba la imagen fija en oscuro; ahora hay una regla más específica.
-- **Editor compartido (`js/home-promos-editor.js`):** se sacó la vista previa grande y el "Quitar imagen" global; ahora son 3
-  cuadros (`.hp-imgbox`) con miniatura, selector y "Quitar" por imagen (confirma, pone solo esa columna en null y borra solo ese
-  objeto del bucket). Al guardar sube lo pendiente de cada cuadro (`{slot}/{timestamp}-{n}.{ext}`) y borra del bucket las
-  reemplazadas; si algo falla, borra lo que ya había subido.
-- **Verificación:** `node js/home-promos-utils.test.mjs`; `npm test` completo (hizo falta `npm install` por `postcss`);
-  Chromium real con Supabase simulado (rotación, lightbox arrancando en la imagen visible, flechas con vuelta, ← →, sincronía con
-  el banner, claro y oscuro, y el PATCH exacto de las cargas 2 y 3). **Sin probar con la base real.**
-- **Para publicar:** aplicar la migración 137 (aditiva) y recién ahí cargar las imágenes 2 y 3; mergear a `main` dispara deploy.
-
+## 2026-10-21 — Banners del inicio: hasta 3 publicidades por espacio (migración 137, sin aplicar; rama `claude/dreamy-hopper-mwgkhp`)
+- **Pedido (y una corrección):** cada banner de los dos mosaicos pasa solo de una a otra, con flechas en la imagen ampliada. Primera
+  versión (commit anterior de la rama): 3 imágenes de UN comercio (`image_url_2/3`). **El usuario la corrigió:** las 3 pueden ser de
+  comercios distintos, y la idea es que más comercios puedan anunciarse, no solo 6. Se rehízo: la 137 original (columnas extra) se
+  reemplazó, no se había aplicado.
+- **Datos:** `home_promos.position` (1-3) + unique `(slot, position)` en vez de unique `slot` (el constraint se llama
+  `home_promos_slot_key`); 12 filas nuevas libres; las 6 existentes quedan en posición 1. Cada publicidad es una fila completa (comercio,
+  publicación, título, imagen, on/off), así que RLS y el trigger de la 108 sirven tal cual; el guard suma "el dueño no cambia la posición".
+  **Storage:** path nuevo `{slot}/{posición}/{ts}.{ext}`; las policies de insert/delete exigen espacio **y** posición
+  (`coalesce(foldername[2],'1')`, así los archivos viejos son de la posición 1), para que el dueño de la posición 2 no pise la 1.
+- **Compatibilidad previa a la migración:** `home.js`/`admin.js`/`vender.js` leen con `select('*')` y ordenan por `position` **en el
+  cliente** (un `order('position')` en la consulta fallaría sin la columna); `promoPosition()` da 1 si falta.
+- **Home (`js/home.js`):** `groupLivePromosBySlot` (agrupa las vivas por espacio, ordenadas) -> con 1 publicidad se usa el fondo
+  `--promo-img` de siempre; con >1, `mountPromoSlides` arma capas `.promo-banner__slide` (fundido) + puntitos, y `applyPromoItem` cambia
+  rótulo (comercio/título), `data-promo-href`, `data-lightbox-alt` y aria-label con la que se ve. El lightbox (`initPromoBanners`) trabaja
+  con `items` ({url, href, alt}): flechas, ← →, deslizar, contador, y el destino del click/cierre es el de la publicidad visible. Los
+  banners fijos siguen con la imagen del CSS (`getBannerImageUrl`).
+- **"Reducir animaciones":** el ajuste del sitio (`getPref('reduceMotion')`, Mi perfil → Ajustes) o `prefers-reduced-motion` del sistema:
+  con cualquiera de los dos el carrusel no rota solo (las flechas del lightbox siguen).
+- **Editor:** una imagen por tarjeta como en la 108; el título muestra "Publicidad N de 3". Admin: 18 tarjetas. Vendedor: las suyas.
+- **Gotcha de modo oscuro:** el puntito activo (blanco sobre la foto) se pisa a mano en `dark.css` (el generador lo espeja a oscuro).
+  Mismo archivo: las reglas `html[data-theme="dark"] .promo-banner--c / -2--d / -2--e / -2--f` (0,2,1) le ganaban a `.is-store-promo` (0,2,0).
+- **Verificación:** `npm test` (hizo falta `npm install` por `postcss`); Chromium real con Supabase simulado: 3 comercios en un espacio,
+  rotación con cambio de rótulo/destino, flechas con vuelta, tocar la imagen va a la publicación de la visible, fila vieja sin `position`.
+  **Sin probar con la base real.**
+- **Para publicar:** aplicar la 137 (aditiva) y recién después asignar comercios a las posiciones 2 y 3 desde "Promos del inicio";
+  mergear a `main` dispara deploy.

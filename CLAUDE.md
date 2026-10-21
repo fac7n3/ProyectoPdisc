@@ -91,22 +91,25 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, SIN mergear a `main` y migración 137 SIN aplicar) — Cada banner de los
-  mosaicos del inicio admite hasta 3 imágenes**, a pedido del usuario (los 6 espacios, arriba y abajo). Las imágenes pasan solas
-  cada 4,5 s con fundido (`mountPromoSlides` en `js/home.js`; frenan con el mouse encima, con la pestaña oculta y con la imagen
-  ampliada abierta; con "Reducir animaciones" no rotan solas) y llevan unos puntitos arriba a la derecha. Al tocar el banner se abre
-  la imagen ampliada **en la imagen que se estaba viendo**, con **flechas** (también teclado ← → y deslizar el dedo), contador
-  "2 / 3" y vuelta de la última a la primera; el banner de atrás queda en la misma imagen. Tocar la imagen o cerrar sigue llevando a
-  la publicación, como antes. **Datos:** migración **137** (`db/schema/137_home_promos_hasta_3_imagenes.sql`): columnas nullable
-  `image_url_2` e `image_url_3` en `home_promos` (la primera sigue siendo `image_url`; las 3 comparten comercio, publicación de
-  destino y título) y el trigger `home_promos_guard` también limpia las dos nuevas al cambiar de comercio. **Mientras no se aplique:** el
-  home y los paneles siguen andando (usan `select('*')`) con una sola imagen; lo único que falla es guardar la imagen 2 o 3.
-  **Editor** (`js/home-promos-editor.js`, el de admin "Promos del inicio" y el de vendedor "Banner del inicio"): tres cuadros de
-  carga por espacio (miniatura + selector + "Quitar" de cada una, que borra solo esa del bucket). Los helpers puros (`promoImages`,
-  `stepIndex`) están en `js/home-promos-utils.js` con tests. **De paso, en modo oscuro** las reglas fijas de los espacios c/d/e/f le
-  pisaban la imagen a una promo de comercio (más especificidad que `.is-store-promo`): arreglado en `dark.css`. Verificado en
-  Chromium real con Supabase simulado (rotación, flechas, vuelta, sincronía, claro y oscuro, payload exacto de las cargas); **sin
-  probar con la base real ni con imágenes reales** (sin red a Supabase). `dist/` sin reconstruir.
+- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, SIN mergear a `main` y migración 137 SIN aplicar) — Cada espacio de los
+  mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
+  fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
+  publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
+  `position` (1-3), la unicidad pasa de `slot` a `(slot, position)`, 12 filas nuevas libres (las 6 de antes quedan en la posición 1),
+  el trigger `home_promos_guard` tampoco deja que el dueño cambie la posición y las policies del bucket `home-promos` exigen espacio
+  **y** posición (path nuevo `{slot}/{posición}/{ts}.{ext}`; los viejos sin carpeta cuentan como posición 1). **Home** (`js/home.js`,
+  `mountPromoSlides`): las publicidades pasan solas cada 4,5 s con fundido y puntitos arriba a la derecha; el comercio, el título, el
+  destino del click y el texto accesible siguen a la que se ve. Al tocar el banner se abre la imagen ampliada en la que se estaba
+  viendo, con **flechas** (también ← → y deslizar el dedo), contador "2 / 3" y vuelta de la última a la primera; tocar la imagen o
+  cerrar lleva a la publicación **de esa publicidad**. Se frenan con el mouse encima, con la pestaña oculta y con la imagen ampliada
+  abierta; con **"Reducir animaciones"** (Mi perfil → Ajustes, o la opción de accesibilidad del sistema) no cambian solas, las flechas
+  siguen andando. **Paneles:** el admin ve 18 tarjetas (6 espacios x 3, cada una "Publicidad N de 3") y el comercio las que le tocaron;
+  el editor (`js/home-promos-editor.js`) sigue siendo una imagen por tarjeta. **Mientras la 137 no se aplique:** el home y los paneles
+  siguen andando como antes (`select('*')`, orden por `position` en el cliente); el admin solo ve los 6 espacios. Helpers puros
+  (`groupLivePromosBySlot`, `stepIndex`, `promoPosition`) en `js/home-promos-utils.js` con tests. **De paso, en modo oscuro** las reglas
+  fijas de los espacios c/d/e/f le pisaban la imagen a una promo de comercio: arreglado en `dark.css`. Verificado en Chromium real con
+  Supabase simulado (3 comercios en un espacio, rotación, flechas, destino por publicidad, fila vieja sin `position`, claro y oscuro);
+  **sin probar con la base real ni con imágenes reales**. `dist/` sin reconstruir.
 - **Hecho 2026-10-20 — "Tu cuenta" arriba de todo en Mi perfil → Información de tu perfil**, a pedido del
   usuario: el bloque (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde") pasó al principio de
   `#tab-mis-datos` en `pages/perfil.html`, antes del título y del aviso de perfil incompleto. Solo se movió

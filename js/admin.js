@@ -6,6 +6,7 @@ import { formatPrice } from './cart-utils.js';
 import { categoryLabel } from './professional-categories.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
+import { promoPosition } from './home-promos-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { orderLabel } from './order-utils.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
@@ -1561,7 +1562,10 @@ async function fetchHomePromos() {
   }
 
   grid.textContent = '';
-  promosRes.data.forEach((promo) => {
+  // Ordenar por posición acá y no en la consulta: antes de aplicar la
+  // migración 137 la columna no existe y el order() tiraría error.
+  const promos = [...promosRes.data].sort((a, b) => a.slot.localeCompare(b.slot) || promoPosition(a) - promoPosition(b));
+  promos.forEach((promo) => {
     grid.appendChild(buildPromoEditorCard({
       promo,
       mode: 'admin',

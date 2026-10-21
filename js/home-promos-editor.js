@@ -11,7 +11,7 @@
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
-import { slotLabel, HOME_PROMO_SLOTS, PROMO_IMAGE_COLUMNS, promoImages } from './home-promos-utils.js';
+import { slotLabel, HOME_PROMO_SLOTS, PROMO_POSITIONS, promoPosition } from './home-promos-utils.js';
 
 import { friendlyError } from './friendly-error.js';
 const BUCKET = 'home-promos';
@@ -82,7 +82,7 @@ function paintPreview(preview, url) {
     img.alt = 'Imagen de la promoción';
     preview.appendChild(img);
   } else {
-    preview.appendChild(el('span', 'hp-preview__empty', 'Sin imagen'));
+    preview.appendChild(el('span', 'hp-preview__empty', 'Sin imagen: se ve el banner de siempre'));
   }
 }
 
@@ -97,20 +97,29 @@ function paintPreview(preview, url) {
 export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '', onSaved }) {
   const isAdmin = mode === 'admin';
   const slotInfo = HOME_PROMO_SLOTS.find((s) => s.slot === promo.slot);
-  // Una carga pendiente por cuadro de imagen (hasta 3 por espacio).
-  const pendingFiles = PROMO_IMAGE_COLUMNS.map(() => null);
+  let pendingFile = null;
 
   const card = el('form', 'hp-card');
   card.noValidate = true;
 
   const head = el('div', 'hp-card__head');
-  head.appendChild(el('h3', 'hp-card__title', slotLabel(promo.slot)));
+  // Cada espacio es un carrusel de hasta 3 publicidades (una tarjeta por
+  // posición, cada una con su propio comercio).
+  const position = promoPosition(promo);
+  const titleWrap = el('div');
+  titleWrap.appendChild(el('h3', 'hp-card__title', slotLabel(promo.slot)));
+  titleWrap.appendChild(el('p', 'hp-card__position', `Publicidad ${position} de ${PROMO_POSITIONS.length}`));
+  head.appendChild(titleWrap);
   const statusText = !promo.store_id
     ? 'Libre'
-    : !promoImages(promo).length ? 'Falta la imagen' : promo.is_active ? 'Publicada' : 'Apagada';
+    : !promo.image_url ? 'Falta la imagen' : promo.is_active ? 'Publicada' : 'Apagada';
   const badge = el('span', `hp-badge hp-badge--${statusText === 'Publicada' ? 'on' : 'off'}`, statusText);
   head.appendChild(badge);
   card.appendChild(head);
+
+  const preview = el('div', 'hp-preview');
+  paintPreview(preview, promo.image_url);
+  card.appendChild(preview);
 
   const body = el('div', 'hp-card__body');
 
@@ -139,13 +148,11 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   titleInput.value = promo.title || '';
   body.appendChild(field('Título (opcional)', titleInput, 'Se muestra chico abajo del banner, junto al nombre del comercio.'));
 
-  // Hasta 3 imágenes por espacio: pasan solas en el inicio y, al tocar el
-  // banner, se recorren con flechas. Cada cuadro sube la suya.
-  const imagesWrap = el('div', 'hp-images');
-  imagesWrap.appendChild(el('p', 'hp-label', 'Imágenes (hasta 3)'));
-  PROMO_IMAGE_COLUMNS.forEach((column, i) => buildImageBox(column, i));
-  imagesWrap.appendChild(el('p', 'hp-hint', `JPG, PNG o WebP, hasta 3 MB cada una. Proporción sugerida: ${slotInfo?.ratio || '16:9'}. Se muestran enteras, sin recortar. Con más de una, pasan solas cada pocos segundos.`));
-  body.appendChild(imagesWrap);
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = ACCEPTED.join(',');
+  fileInput.className = 'hp-file';
+  body.appendChild(field('Imagen', fileInput, `JPG, PNG o WebP, hasta 3 MB. Proporción sugerida: ${slotInfo?.ratio || '16:9'}. La imagen se muestra entera, sin recortar.`));
 
   let activeInput = null;
   if (isAdmin) {
@@ -165,59 +172,23 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   const saveBtn = el('button', 'hp-btn hp-btn--primary', 'Guardar');
   saveBtn.type = 'submit';
   actions.appendChild(saveBtn);
+  if (promo.image_url) {
+    const removeImgBtn = el('button', 'hp-btn hp-btn--ghost', 'Quitar imagen');
+    removeImgBtn.type = 'button';
+    removeImgBtn.addEventListener('click', async () => {
+      if (!(await confirmDialog('¿Sacamos la imagen? El espacio vuelve a mostrar el banner de siempre.', { confirmText: 'Sacar', danger: true }))) return;
+      removeImgBtn.disabled = true;
+      const { error } = await supabase.from('home_promos').update({ image_url: null }).eq('id', promo.id);
+      removeImgBtn.disabled = false;
+      if (error) { fail(friendlyError(error, 'No se pudo guardar. Probá de nuevo.')); return; }
+      await removeStoredObjects(supabase, BUCKET, [promo.image_url]);
+      showToast('Sacamos la imagen.', 'success');
+      onSaved?.();
+    });
+    actions.appendChild(removeImgBtn);
+  }
   body.appendChild(actions);
   card.appendChild(body);
-
-  /** Un cuadro de carga: vista previa chica + selector de archivo + quitar. */
-  function buildImageBox(column, i) {
-    const box = el('div', 'hp-imgbox');
-    const preview = el('div', 'hp-preview hp-preview--thumb');
-    paintPreview(preview, promo[column]);
-
-    const side = el('div', 'hp-imgbox__side');
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = ACCEPTED.join(',');
-    fileInput.className = 'hp-file';
-    fileInput.id = `hp-f-${++idCounter}`;
-    const label = el('label', 'hp-label', `Imagen ${i + 1}`);
-    label.htmlFor = fileInput.id;
-    side.append(label, fileInput);
-
-    if (promo[column]) {
-      const removeBtn = el('button', 'hp-btn hp-btn--ghost hp-btn--small', 'Quitar');
-      removeBtn.type = 'button';
-      removeBtn.addEventListener('click', async () => {
-        if (!(await confirmDialog(`¿Sacamos la imagen ${i + 1}? Las demás se quedan.`, { confirmText: 'Sacar', danger: true }))) return;
-        removeBtn.disabled = true;
-        const { error } = await supabase.from('home_promos').update({ [column]: null }).eq('id', promo.id);
-        removeBtn.disabled = false;
-        if (error) { fail(friendlyError(error, 'No se pudo guardar. Probá de nuevo.')); return; }
-        await removeStoredObjects(supabase, BUCKET, [promo[column]]);
-        showToast(`Sacamos la imagen ${i + 1}.`, 'success');
-        onSaved?.();
-      });
-      side.appendChild(removeBtn);
-    }
-
-    fileInput.addEventListener('change', () => {
-      errorEl.hidden = true;
-      const file = fileInput.files?.[0];
-      pendingFiles[i] = null;
-      if (!file) { paintPreview(preview, promo[column]); return; }
-      if (!ACCEPTED.includes(file.type)) { fail('Tiene que ser una imagen JPG, PNG o WebP.'); fileInput.value = ''; return; }
-      if (file.size > MAX_BYTES) { fail('Esa imagen pesa más de 3 MB. Probá con una más liviana.'); fileInput.value = ''; return; }
-      pendingFiles[i] = file;
-      // Vista previa como data: URL y no con URL.createObjectURL: la CSP de
-      // las páginas (img-src) permite data: pero no blob:.
-      const reader = new FileReader();
-      reader.onload = () => { if (pendingFiles[i] === file) paintPreview(preview, reader.result); };
-      reader.readAsDataURL(file);
-    });
-
-    box.append(preview, side);
-    imagesWrap.appendChild(box);
-  }
 
   function fail(msg) {
     errorEl.textContent = msg || 'No se pudo guardar. Probá de nuevo.';
@@ -231,21 +202,47 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
     fillProductSelect(productSelect, storeSelect.value, null);
   });
 
+  fileInput.addEventListener('change', () => {
+    errorEl.hidden = true;
+    const file = fileInput.files?.[0];
+    pendingFile = null;
+    if (!file) { paintPreview(preview, promo.image_url); return; }
+    if (!ACCEPTED.includes(file.type)) { fail('Tiene que ser una imagen JPG, PNG o WebP.'); fileInput.value = ''; return; }
+    if (file.size > MAX_BYTES) { fail('Esa imagen pesa más de 3 MB. Probá con una más liviana.'); fileInput.value = ''; return; }
+    pendingFile = file;
+    // Vista previa como data: URL y no con URL.createObjectURL: la CSP de
+    // las páginas (img-src) permite data: pero no blob:.
+    const reader = new FileReader();
+    reader.onload = () => { if (pendingFile === file) paintPreview(preview, reader.result); };
+    reader.readAsDataURL(file);
+  });
+
   card.addEventListener('submit', async (e) => {
     e.preventDefault();
     errorEl.hidden = true;
 
     const newStoreId = isAdmin ? (storeSelect.value || null) : promo.store_id;
     const storeChanged = newStoreId !== promo.store_id;
-    if (pendingFiles.some(Boolean) && !newStoreId) { fail('Elegí un comercio antes de subir la imagen.'); return; }
+    if (pendingFile && !newStoreId) { fail('Elegí un comercio antes de subir la imagen.'); return; }
 
     saveBtn.disabled = true;
     saveBtn.textContent = 'Guardando…';
-    const uploadedUrls = [];
+    let uploadedUrl = null;
 
     try {
-      // Carpeta = espacio: la policy del bucket deja subir al admin o al
-      // dueño del comercio asignado a ESE espacio.
+      // La policy del bucket deja subir al admin o al dueño del comercio
+      // asignado a ESA publicidad.
+      if (pendingFile) {
+        const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[pendingFile.type];
+        // Carpeta = espacio + posición: la policy no deja que el dueño de una
+        // publicidad pise los archivos de otra del mismo espacio.
+        const path = `${promo.slot}/${position}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, pendingFile, { contentType: pendingFile.type });
+        if (upErr) throw upErr;
+        uploadedUrl = supabase.storage.from(BUCKET).getPublicUrl(path).data?.publicUrl || null;
+        if (!uploadedUrl) throw new Error('No se pudo obtener la URL de la imagen.');
+      }
+
       const update = {
         product_id: newStoreId ? (productSelect.value || null) : null,
         title: newStoreId ? (titleInput.value.trim() || null) : null,
@@ -254,41 +251,23 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
         update.store_id = newStoreId;
         update.is_active = activeInput.checked;
       }
-
-      for (let i = 0; i < PROMO_IMAGE_COLUMNS.length; i += 1) {
-        const column = PROMO_IMAGE_COLUMNS[i];
-        const file = pendingFiles[i];
-        if (file) {
-          const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
-          const path = `${promo.slot}/${Date.now()}-${i + 1}.${ext}`;
-          const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
-          if (upErr) throw upErr;
-          const url = supabase.storage.from(BUCKET).getPublicUrl(path).data?.publicUrl || null;
-          if (!url) throw new Error('No se pudo obtener la URL de la imagen.');
-          uploadedUrls.push(url);
-          update[column] = url;
-        } else if (isAdmin && storeChanged) {
-          // Otro comercio = otras imágenes: las del anterior no le corresponden.
-          update[column] = null;
-        }
-      }
+      if (uploadedUrl) update.image_url = uploadedUrl;
+      else if (isAdmin && storeChanged) update.image_url = null;
 
       const { data, error } = await supabase.from('home_promos').update(update).eq('id', promo.id).select('id');
       if (error) throw error;
       // RLS no tira error cuando no deja actualizar: devuelve cero filas.
       if (!data?.length) throw new Error('No tenés permiso para editar este espacio.');
 
-      // Las imágenes anteriores que se reemplazaron ya no las usa nadie: se
-      // borran del bucket.
-      const replaced = PROMO_IMAGE_COLUMNS
-        .filter((column) => promo[column] && column in update && update[column] !== promo[column])
-        .map((column) => promo[column]);
-      if (replaced.length) await removeStoredObjects(supabase, BUCKET, replaced);
+      // La imagen anterior ya no la usa nadie: se borra del bucket.
+      if (promo.image_url && (uploadedUrl || (isAdmin && storeChanged))) {
+        await removeStoredObjects(supabase, BUCKET, [promo.image_url]);
+      }
       showToast('Listo, guardamos la promoción.', 'success');
       onSaved?.();
     } catch (err) {
       console.error('Error al guardar la promoción del inicio:', err);
-      if (uploadedUrls.length) await removeStoredObjects(supabase, BUCKET, uploadedUrls);
+      if (uploadedUrl) await removeStoredObjects(supabase, BUCKET, [uploadedUrl]);
       fail(friendlyError(err, 'No se pudo guardar. Probá de nuevo.'));
     } finally {
       saveBtn.disabled = false;
