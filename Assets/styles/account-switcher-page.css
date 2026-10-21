@@ -3,6 +3,8 @@
    perfil-custom.css (tokens --bl-perfil-*); acá se arma lo mismo con los tokens
    generales, que ya cambian solos en modo oscuro. */
 .prof-blocked { max-width: 640px; margin-inline: auto; }
+/* Sin el filete grueso de color de arriba que trae .vender-container. */
+.vender-container.prof-blocked { border-top: 1px solid var(--bl-border); }
 .prof-blocked__btn { margin-top: 1rem; }
 .prof-blocked .acct-panel { margin-top: 1.25rem; text-align: left; }
 .prof-blocked .acct-panel[hidden] { display: none; }
@@ -45,6 +47,11 @@
 .prof-blocked .datos-btn--quiet { color: var(--bl-text-secondary); }
 .prof-blocked .datos-btn--primary { background: var(--bl-primary); border-color: var(--bl-primary); color: var(--bl-text-inverse); }
 .prof-blocked .datos-btn--primary:hover { background: var(--bl-primary-dark); }
+/* dark-auto.css pinta todo .datos-btn con el azul claro de acento (más específico que
+   las reglas de arriba): sobre el botón azul el texto se opacaba. Se fuerza el blanco. */
+.vender-container.prof-blocked .datos-btn--primary,
+.vender-container.prof-blocked .datos-btn--primary:hover { color: var(--bl-text-inverse); }
+.prof-blocked .datos-input::placeholder { color: var(--bl-text-secondary); opacity: 1; }
 .prof-blocked .datos-input {
   min-height: 44px; padding: 0.6rem 0.75rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md);
   background: var(--bl-surface); color: var(--bl-text); font: inherit; font-size: 1rem;
