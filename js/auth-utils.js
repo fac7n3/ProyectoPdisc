@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
 import { initErrorLogging } from "./error-logger.js";
 import { applyDevicePreferences } from "./settings-utils.js";
-import { completePendingLink } from "./linked-accounts.js";
+import { completePendingLink, consumeLinkNext } from "./linked-accounts.js";
 
 import { friendlyError } from './friendly-error.js';
 // Preferencias visuales elegidas en Perfil → Ajustes (hoy: "Reducir
@@ -382,7 +382,10 @@ async function resolvePostLoginRedirect(user, explicitRedirectTo) {
   // "Agregar otra cuenta con Google" (Mi perfil): al volver de Google se suma la
   // cuenta a la lista del dispositivo y se vuelve a Mi perfil, no al inicio.
   const { data: { session } } = await supabase.auth.getSession();
-  if (completePendingLink(session)) return "../pages/perfil.html?tab=mis-datos&cuenta=agregada";
+  if (completePendingLink(session)) {
+    // Si se agregó desde otra pantalla (ej. el aviso de vender.html), vuelve ahí.
+    return consumeLinkNext() || "../pages/perfil.html?tab=mis-datos&cuenta=agregada";
+  }
   if (explicitRedirectTo) return explicitRedirectTo;
   const panel = await sellerPanelPage(user);
   return panel ? `../pages/${panel}` : "../pages/home.html";
