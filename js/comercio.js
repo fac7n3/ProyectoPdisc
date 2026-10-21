@@ -103,7 +103,40 @@ function buildMetaItem({ label, value, extraEl }) {
 function applyHeaderColors(header, bg, fg) {
   if (bg) header.style.setProperty('--sh-bg', bg); else header.style.removeProperty('--sh-bg');
   if (fg) header.style.setProperty('--sh-fg', fg); else header.style.removeProperty('--sh-fg');
+  header._shChosen = { bg: !!bg, fg: !!fg };
+  fixHeaderContrast(header);
 }
+
+function luminance(cssColor) {
+  const [r, g, b] = (cssColor.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => {
+    const c = Number(v) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Si el vendedor eligió solo uno de los dos colores (fondo o letra), el otro
+ *  sale del tema (claro u oscuro) y puede quedar ilegible (letra clara sobre un
+ *  fondo blanco elegido, o al revés). En ese caso se deriva el que falta para
+ *  que contraste. Se vuelve a correr al cambiar de tema. */
+function fixHeaderContrast(header) {
+  const chosen = header._shChosen;
+  if (!chosen || chosen.bg === chosen.fg) return;
+  const missing = chosen.bg ? '--sh-fg' : '--sh-bg';
+  header.style.removeProperty(missing);
+  const cs = getComputedStyle(header);
+  const lb = luminance(cs.backgroundColor);
+  const lf = luminance(cs.color);
+  const ratio = (Math.max(lb, lf) + 0.05) / (Math.min(lb, lf) + 0.05);
+  if (ratio >= 4.5) return;
+  if (chosen.bg) header.style.setProperty('--sh-fg', lb > 0.5 ? '#1a202c' : '#f8fafc');
+  else header.style.setProperty('--sh-bg', lf > 0.5 ? '#1a202c' : '#f5f7fa');
+}
+
+new MutationObserver(() => {
+  const header = document.querySelector('.store-header');
+  if (header) fixHeaderContrast(header);
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 /** Pone (o saca) la imagen de banner de fondo del bloque del nombre: ocupa
  *  todo el ancho hasta la línea que lo separa de la barra de datos. */
