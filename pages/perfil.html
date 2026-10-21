@@ -120,7 +120,26 @@
         <!-- ======================= -->
         <div id="tab-mis-datos" class="tab-pane">
 
-          <!-- ---------- Cuenta (va arriba de todo) ---------- -->
+          <header class="datos-intro">
+            <h2 class="datos-intro__title">Información de tu perfil</h2>
+            <p class="datos-intro__lead">
+              Con estos datos el comercio sabe quién hizo el pedido y a quién entregárselo.
+              Solo los ve el comercio donde comprás.
+            </p>
+          </header>
+
+          <!-- Aviso de perfil incompleto. Lo muestra el JS solo si falta algo. -->
+          <div class="datos-nudge" id="datos-nudge" hidden>
+            <i class="fa-solid fa-circle-exclamation datos-nudge__icon" aria-hidden="true"></i>
+            <div class="datos-nudge__body">
+              <p class="datos-nudge__text" id="datos-nudge-text"></p>
+              <div class="datos-progress" role="progressbar" aria-labelledby="datos-nudge-text" aria-valuemin="0" aria-valuemax="100" id="datos-progress">
+                <span class="datos-progress__bar" id="datos-progress-bar"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------- Cuenta ---------- -->
           <section class="datos-group">
             <h3 class="datos-group__title">Tu cuenta</h3>
             <div class="datos-panel">
@@ -161,25 +180,6 @@
               </div>
             </div>
           </section>
-
-          <header class="datos-intro">
-            <h2 class="datos-intro__title">Información de tu perfil</h2>
-            <p class="datos-intro__lead">
-              Con estos datos el comercio sabe quién hizo el pedido y a quién entregárselo.
-              Solo los ve el comercio donde comprás.
-            </p>
-          </header>
-
-          <!-- Aviso de perfil incompleto. Lo muestra el JS solo si falta algo. -->
-          <div class="datos-nudge" id="datos-nudge" hidden>
-            <i class="fa-solid fa-circle-exclamation datos-nudge__icon" aria-hidden="true"></i>
-            <div class="datos-nudge__body">
-              <p class="datos-nudge__text" id="datos-nudge-text"></p>
-              <div class="datos-progress" role="progressbar" aria-labelledby="datos-nudge-text" aria-valuemin="0" aria-valuemax="100" id="datos-progress">
-                <span class="datos-progress__bar" id="datos-progress-bar"></span>
-              </div>
-            </div>
-          </div>
 
           <!-- ---------- Foto ---------- -->
           <section class="datos-group">
