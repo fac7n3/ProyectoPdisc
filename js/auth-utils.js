@@ -82,12 +82,14 @@ function initToastContainer() {
     container.id = "toast-container";
     container.style.cssText = `
       position: fixed;
-      top: 20px;
+      bottom: 20px;
       right: 20px;
-      z-index: 9999;
+      max-width: calc(100vw - 40px);
+      z-index: 11000;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      pointer-events: none;
     `;
     document.body.appendChild(container);
   }
@@ -116,7 +118,7 @@ export function showToast(message, type = "error") {
     font-size: 14px;
     font-weight: 500;
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(10px);
     transition: all 0.3s ease;
   `;
   
@@ -134,14 +136,14 @@ export function showToast(message, type = "error") {
     toast.style.transform = "translateY(0)";
   });
 
-  // Eliminar después de 4 segundos
+  // Eliminar después de 7 segundos
   setTimeout(() => {
     toast.style.opacity = "0";
-    toast.style.transform = "translateY(-10px)";
+    toast.style.transform = "translateY(10px)";
     setTimeout(() => {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 300);
-  }, 4000);
+  }, 7000);
 }
 
 // --- Utilidades de Interfaz ---

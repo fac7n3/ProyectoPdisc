@@ -894,5 +894,5 @@ function showToast(msg, type = 'default') {
   if (type === 'error') toast.classList.add('toast--error');
   toast.classList.add('toast--visible');
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove('toast--visible'), 2500);
+  toast._timer = setTimeout(() => toast.classList.remove('toast--visible'), 5500);
 }
