@@ -1038,10 +1038,9 @@ function applyPromoItem(banner, eyebrow, title, item) {
  * de un comercio distinto) que se van cambiando solas con un fundido; el
  * rótulo, el destino del click y el texto accesible siguen a la que se ve. Se
  * frena con el mouse encima, con la pestaña oculta y mientras el banner está
- * abierto ampliado; con "Reducir animaciones" (ajuste del sitio o del sistema
- * operativo) no cambia solo -- las flechas de la imagen ampliada siguen
- * andando. `startDelay` desfasa un banner de otro para que no cambien todos a
- * la vez.
+ * abierto ampliado. Rota siempre, también con "Reducir animaciones" (pedido
+ * del usuario: es publicidad de comercios y tiene que verse la de todos).
+ * `startDelay` desfasa un banner de otro para que no cambien todos a la vez.
  */
 function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
   const wrap = document.createElement('span');
@@ -1078,8 +1077,6 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
   slider.show(0);
   promoSliders.set(banner, slider);
 
-  const reduceMotion = getPref('reduceMotion') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduceMotion) return;
   banner.addEventListener('mouseenter', slider.pause);
   banner.addEventListener('mouseleave', slider.resume);
   setTimeout(() => {

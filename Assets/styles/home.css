@@ -2051,12 +2051,6 @@ button.coupon-chip:hover {
   transform: scale(1.25);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .promo-banner__slide {
-    transition: none;
-  }
-}
-
 /* ===========================================================
    LIGHTBOX DE BANNERS PROMOCIONALES (ver imagen ampliada al hacer click)
    Mismo criterio que product-modal.css: overlay con blur, tarjeta con
