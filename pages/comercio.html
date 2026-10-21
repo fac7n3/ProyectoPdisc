@@ -217,13 +217,15 @@
       .store-header__map-link {
         color: inherit;
         text-decoration: underline;
-        font-size: 0.8rem;
         opacity: 0.9;
         background: none;
         border: none;
         cursor: pointer;
         padding: 0;
         font: inherit;
+        /* Después de "font": el shorthand pisa el font-size si va antes. */
+        font-size: 1rem;
+        font-weight: 600;
       }
       /* Botón circular arriba a la derecha del header: lápiz (vendedor,
          editar color) o corazón (cliente, favorito). Transparente a

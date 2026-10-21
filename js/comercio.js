@@ -639,7 +639,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const mapLink = document.createElement('button');
     mapLink.type = 'button';
     mapLink.className = 'store-header__map-link';
-    mapLink.textContent = 'ver en mapa';
+    mapLink.textContent = 'Ver en mapa';
     mapLink.addEventListener('click', () => openMapModal(store.address));
     infoBar.appendChild(buildMetaItem({ value: store.address, extraEl: mapLink }));
   } else {
