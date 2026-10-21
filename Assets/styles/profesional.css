@@ -132,7 +132,6 @@
   flex: 0 0 260px;
   background: var(--bl-surface);
   border: 1px solid var(--bl-border);
-  border-top: 4px solid var(--bl-oficios-accent);
   border-radius: var(--bl-radius-lg);
   box-shadow: var(--bl-shadow-sm);
   padding: 0.75rem;

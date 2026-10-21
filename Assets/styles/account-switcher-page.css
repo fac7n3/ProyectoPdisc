@@ -3,8 +3,6 @@
    perfil-custom.css (tokens --bl-perfil-*); acá se arma lo mismo con los tokens
    generales, que ya cambian solos en modo oscuro. */
 .prof-blocked { max-width: 640px; margin-inline: auto; }
-/* Sin el filete grueso de color de arriba que trae .vender-container. */
-.vender-container.prof-blocked { border-top: 1px solid var(--bl-border); }
 .prof-blocked__btn { margin-top: 1rem; }
 .prof-blocked .acct-panel { margin-top: 1.25rem; text-align: left; }
 .prof-blocked .acct-panel[hidden] { display: none; }
