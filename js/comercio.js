@@ -121,7 +121,8 @@ function luminance(cssColor) {
  *  que contraste. Se vuelve a correr al cambiar de tema. */
 function fixHeaderContrast(header) {
   const chosen = header._shChosen;
-  if (!chosen || chosen.bg === chosen.fg) return;
+  // Fuera del DOM getComputedStyle no devuelve colores: se corre al insertarlo.
+  if (!chosen || chosen.bg === chosen.fg || !header.isConnected) return;
   const missing = chosen.bg ? '--sh-fg' : '--sh-bg';
   header.style.removeProperty(missing);
   const cs = getComputedStyle(header);
@@ -944,12 +945,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     mainContent.innerHTML = '';
 
     const productList = products || [];
-    mainContent.appendChild(buildStoreHeader(store, {
+    const storeHeader = buildStoreHeader(store, {
       isOwner,
       categoryName,
       storeId,
       productCount: productList.length,
-    }));
+    });
+    mainContent.appendChild(storeHeader);
+    fixHeaderContrast(storeHeader); // recién ahora hay estilos computados
 
     const section = document.createElement('section');
     section.className = 'store-products';
