@@ -101,30 +101,43 @@ function buildMetaItem({ label, value, extraEl }) {
 
 /** Aplica (o quita) el color de fondo/letra elegido por el vendedor al header. */
 function applyHeaderColors(header, bg, fg) {
+  header._shRaw = { bg, fg };
+  renderHeaderColors(header);
+}
+
+function luminance(color) {
+  const hex = /^#([da-f]{2})([da-f]{2})([da-f]{2})$/i.exec(color);
+  const [r, g, b] = (hex ? hex.slice(1).map((h) => parseInt(h, 16)) : (color.match(/[d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number)).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Los colores del vendedor se pensaron para el modo claro. En modo oscuro, un
+ *  fondo claro (o una letra oscura) se descarta y el header usa los colores del
+ *  tema; un fondo oscuro o de color se respeta. Se vuelve a correr al cambiar
+ *  de tema y al insertar el header en la página. */
+function renderHeaderColors(header) {
+  const raw = header._shRaw;
+  if (!raw) return;
+  let { bg, fg } = raw;
+  if (document.documentElement.dataset.theme === 'dark') {
+    if (bg && luminance(bg) > 0.5) bg = null;
+    if (fg && luminance(fg) <= 0.5) fg = null;
+  }
   if (bg) header.style.setProperty('--sh-bg', bg); else header.style.removeProperty('--sh-bg');
   if (fg) header.style.setProperty('--sh-fg', fg); else header.style.removeProperty('--sh-fg');
   header._shChosen = { bg: !!bg, fg: !!fg };
   fixHeaderContrast(header);
 }
 
-function luminance(cssColor) {
-  const [r, g, b] = (cssColor.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map((v) => {
-    const c = Number(v) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** Si el vendedor eligió solo uno de los dos colores (fondo o letra), el otro
- *  sale del tema (claro u oscuro) y puede quedar ilegible (letra clara sobre un
- *  fondo blanco elegido, o al revés). En ese caso se deriva el que falta para
- *  que contraste. Se vuelve a correr al cambiar de tema. */
+/** Si queda solo uno de los dos colores, el otro sale del tema y puede quedar
+ *  ilegible: en ese caso se deriva el que falta para que contraste. */
 function fixHeaderContrast(header) {
   const chosen = header._shChosen;
   // Fuera del DOM getComputedStyle no devuelve colores: se corre al insertarlo.
   if (!chosen || chosen.bg === chosen.fg || !header.isConnected) return;
-  const missing = chosen.bg ? '--sh-fg' : '--sh-bg';
-  header.style.removeProperty(missing);
   const cs = getComputedStyle(header);
   const lb = luminance(cs.backgroundColor);
   const lf = luminance(cs.color);
@@ -136,7 +149,7 @@ function fixHeaderContrast(header) {
 
 new MutationObserver(() => {
   const header = document.querySelector('.store-header');
-  if (header) fixHeaderContrast(header);
+  if (header) renderHeaderColors(header);
 }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 /** Pone (o saca) la imagen de banner de fondo del bloque del nombre: ocupa
@@ -952,7 +965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       productCount: productList.length,
     });
     mainContent.appendChild(storeHeader);
-    fixHeaderContrast(storeHeader); // recién ahora hay estilos computados
+    renderHeaderColors(storeHeader); // recién ahora hay estilos computados
 
     const section = document.createElement('section');
     section.className = 'store-products';

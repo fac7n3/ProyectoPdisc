@@ -91,12 +91,13 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) legible en modo oscuro**, reportado por el usuario con
-  captura (bloque del nombre en blanco con letras casi blancas). Causa: el dueño puede elegir solo el fondo
-  (`stores.header_bg_color`) o solo la letra; lo que no eligió sale del tema, y en oscuro la letra (`--bl-text`,
-  clara) caía sobre su fondo blanco elegido. `applyHeaderColors` (`js/comercio.js`) ahora, si falta uno de los dos,
-  deriva el otro cuando el contraste es < 4,5 (`fixHeaderContrast`) y lo recalcula al cambiar `data-theme`.
-  Con los dos o ninguno elegidos no toca nada. **Sin probar en navegador** (sin red a Supabase).
+- **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) adaptado al modo oscuro**, reportado por el usuario con
+  captura (bloque del nombre blanco con letras casi blancas, luego letra oscura sobre fondo blanco). Los colores que
+  elige el dueño (`stores.header_bg_color`/`header_text_color`) se pensaron para claro: `renderHeaderColors`
+  (`js/comercio.js`) en modo oscuro descarta un fondo claro (o una letra oscura) y usa los colores del tema; un fondo
+  oscuro o de color se respeta. Si queda solo uno de los dos y no contrasta (< 4,5), deriva el otro
+  (`fixHeaderContrast`). Se recalcula al cambiar `data-theme` y **al insertar el header** (gotcha:
+  `getComputedStyle` no devuelve colores con el nodo suelto). Verificado en producción con facu.cells.
 - **Hecho 2026-10-21 — Orden de Mi perfil → Información de tu perfil** (`#tab-mis-datos` en `pages/perfil.html`),
   a pedido del usuario: arriba de todo el título "Información de tu perfil" + el aviso de perfil incompleto, y
   después "Tu cuenta" (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde"). El 2026-10-20 se había
