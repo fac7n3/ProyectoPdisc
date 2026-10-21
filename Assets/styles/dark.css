@@ -149,6 +149,15 @@ html[data-theme="dark"] .promo-banner-2.is-store-promo {
   background-color: #284175;
   background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
 }
+/* Varias publicidades en el mismo espacio (capas .promo-banner__slide): el fondo
+   queda liso y el puntito activo sigue blanco, porque va sobre la foto. */
+html[data-theme="dark"] .promo-banner.is-store-promo.has-slides,
+html[data-theme="dark"] .promo-banner-2.is-store-promo.has-slides {
+  background-image: none;
+}
+html[data-theme="dark"] .promo-banner__dot.is-active {
+  background: #fff;
+}
 
 /* ---- Esqueletos de carga: las barras llevan el gris claro en el atributo
    style (inline, en el HTML de cada página), así que hace falta !important. ---- */

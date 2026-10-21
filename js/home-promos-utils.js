@@ -21,6 +21,36 @@ export function slotLabel(slot) {
   return HOME_PROMO_SLOTS.find((s) => s.slot === slot)?.label || slot;
 }
 
+/** Cada espacio es un carrusel de hasta 3 publicidades (filas con `position`
+ *  1 a 3), cada una con su propio comercio, publicación, título e imagen. */
+export const PROMO_POSITIONS = [1, 2, 3];
+
+/** Posición de una fila; las filas de antes de la migración 137 no la traen. */
+export function promoPosition(promo) {
+  return promo?.position ?? 1;
+}
+
+/**
+ * De las filas de `home_promos`, las que se muestran (ver isPromoLive)
+ * agrupadas por espacio y en orden de posición: Map slot -> [promo, ...].
+ */
+export function groupLivePromosBySlot(rows) {
+  const bySlot = new Map();
+  (rows || []).filter(isPromoLive)
+    .sort((a, b) => promoPosition(a) - promoPosition(b))
+    .forEach((promo) => {
+      if (!bySlot.has(promo.slot)) bySlot.set(promo.slot, []);
+      bySlot.get(promo.slot).push(promo);
+    });
+  return bySlot;
+}
+
+/** Índice siguiente/anterior dando la vuelta: de la última pasa a la primera. */
+export function stepIndex(index, delta, count) {
+  if (!count) return 0;
+  return (((index + delta) % count) + count) % count;
+}
+
 /**
  * ¿Esta fila tiene que reemplazar al banner fijo del home? Solo si está
  * activa, tiene comercio aprobado e imagen. Cualquier otra cosa (espacio

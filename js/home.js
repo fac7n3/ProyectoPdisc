@@ -4,7 +4,7 @@ import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartBu
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
-import { isPromoLive, promoHref, promoAriaLabel } from './home-promos-utils.js';
+import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex } from './home-promos-utils.js';
 import { loadViewedProducts } from './interests.js';
 import { weightCategories, interleaveByInterest } from './interests-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -887,6 +887,10 @@ function initPromoBanners() {
   const img = document.getElementById('promo-lightbox-img');
   const hint = document.getElementById('promo-lightbox-hint');
   const closeBtn = document.getElementById('promo-lightbox-close');
+  const stage = document.getElementById('promo-lightbox-stage');
+  const prevBtn = document.getElementById('promo-lightbox-prev');
+  const nextBtn = document.getElementById('promo-lightbox-next');
+  const count = document.getElementById('promo-lightbox-count');
   const banners = document.querySelectorAll('[data-promo-slot]');
   if (!banners.length) return;
 
@@ -894,14 +898,43 @@ function initPromoBanners() {
   // A dónde lleva la 2da interacción, si la imagen abierta es la de una
   // promo con publicación asignada. null en un banner decorativo.
   let pendingHref = null;
+  // Publicidades del banner abierto ({ url, href, alt }; una sola en los
+  // fijos) y cuál se está viendo. Cada una puede ser de un comercio distinto,
+  // así que el alt y el destino del click se actualizan con la imagen.
+  let items = [];
+  let index = 0;
+  let openSlider = null;
+
+  const renderImage = () => {
+    const item = items[index] || {};
+    const many = items.length > 1;
+    img.src = item.url || '';
+    img.alt = many ? `${item.alt || ''} (${index + 1} de ${items.length})` : (item.alt || '');
+    pendingHref = item.href || null;
+    if (hint) hint.hidden = !pendingHref;
+    [prevBtn, nextBtn, count].forEach((node) => { if (node) node.hidden = !many; });
+    if (count && many) count.textContent = `${index + 1} / ${items.length}`;
+  };
+
+  // Flechas: dan la vuelta (de la última a la primera). El banner de atrás
+  // queda en la misma publicidad que se estaba mirando.
+  const step = (delta) => {
+    if (items.length < 2) return;
+    index = stepIndex(index, delta, items.length);
+    renderImage();
+    openSlider?.show(index);
+  };
 
   const openLightbox = (banner) => {
     if (!overlay || !img || !closeBtn) return;
     lastTrigger = banner;
-    pendingHref = banner.dataset.promoHref || null;
-    img.src = getBannerImageUrl(banner);
-    img.alt = banner.dataset.lightboxAlt || '';
-    if (hint) hint.hidden = !pendingHref;
+    openSlider = promoSliders.get(banner) || null;
+    items = openSlider
+      ? openSlider.items
+      : [{ url: getBannerImageUrl(banner), href: banner.dataset.promoHref || null, alt: banner.dataset.lightboxAlt || '' }];
+    index = openSlider ? openSlider.index : 0;
+    openSlider?.pause();
+    renderImage();
     overlay.classList.add('is-open');
     closeBtn.focus();
   };
@@ -914,6 +947,8 @@ function initPromoBanners() {
     overlay.classList.remove('is-open');
     img.src = '';
     pendingHref = null;
+    openSlider?.resume();
+    openSlider = null;
     if (href) {
       window.location.href = href;
       return;
@@ -947,9 +982,109 @@ function initPromoBanners() {
   });
   // Tocar la imagen ampliada de nuevo: la otra forma de "cerrar".
   img?.addEventListener('click', closeLightbox);
+  prevBtn?.addEventListener('click', () => step(-1));
+  nextBtn?.addEventListener('click', () => step(1));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeLightbox();
+    if (!overlay.classList.contains('is-open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') step(-1);
+    else if (e.key === 'ArrowRight') step(1);
   });
+
+  // Deslizar el dedo sobre la imagen ampliada también pasa de imagen.
+  let touchX = null;
+  stage?.addEventListener('touchstart', (e) => { touchX = e.touches[0]?.clientX ?? null; }, { passive: true });
+  stage?.addEventListener('touchend', (e) => {
+    if (touchX == null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+    touchX = null;
+    if (Math.abs(dx) >= 40) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+
+/** Banner -> { items, index, show(i), pause(), resume() } de los que tienen
+ *  más de una publicidad (los de una sola siguen con la imagen de fondo). */
+const promoSliders = new WeakMap();
+const PROMO_ROTATE_MS = 4500;
+
+/**
+ * Datos de una publicidad para pintarla en el banner: imagen, a dónde lleva,
+ * texto accesible y el rótulo (comercio + título).
+ */
+function promoItem(promo) {
+  return {
+    url: promo.image_url,
+    href: promoHref(promo),
+    alt: promoAriaLabel(promo),
+    store: promo.stores.name,
+    title: promo.title || '',
+  };
+}
+
+/** Pone en el banner el rótulo, el destino y los textos accesibles de una publicidad. */
+function applyPromoItem(banner, eyebrow, title, item) {
+  eyebrow.textContent = item.store;
+  title.textContent = item.title;
+  title.hidden = !item.title;
+  banner.dataset.promoHref = item.href;
+  // El click abre la imagen ampliada primero, igual que un banner fijo (ver
+  // initPromoBanners): la publicación recién se abre en la 2da interacción.
+  banner.dataset.lightboxAlt = item.alt;
+  banner.setAttribute('aria-label', `${item.alt}. Se abre la imagen ampliada; cerrala o tocá de nuevo para ir a la publicación.`);
+}
+
+/**
+ * Arma dentro del banner una capa por publicidad (hasta 3, cada una puede ser
+ * de un comercio distinto) que se van cambiando solas con un fundido; el
+ * rótulo, el destino del click y el texto accesible siguen a la que se ve. Se
+ * frena con el mouse encima, con la pestaña oculta y mientras el banner está
+ * abierto ampliado. Rota siempre, también con "Reducir animaciones" (pedido
+ * del usuario: es publicidad de comercios y tiene que verse la de todos).
+ * `startDelay` desfasa un banner de otro para que no cambien todos a la vez.
+ */
+function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
+  const wrap = document.createElement('span');
+  wrap.className = 'promo-banner__slides';
+  wrap.setAttribute('aria-hidden', 'true');
+  const slides = items.map((item) => {
+    const slide = document.createElement('span');
+    slide.className = 'promo-banner__slide';
+    slide.style.backgroundImage = `url("${encodeURI(item.url)}")`;
+    wrap.appendChild(slide);
+    return slide;
+  });
+  const dots = document.createElement('span');
+  dots.className = 'promo-banner__dots';
+  dots.setAttribute('aria-hidden', 'true');
+  const dotEls = items.map(() => {
+    const dot = document.createElement('span');
+    dot.className = 'promo-banner__dot';
+    dots.appendChild(dot);
+    return dot;
+  });
+  banner.append(wrap, dots);
+  banner.classList.add('has-slides');
+
+  const slider = { items, index: 0, paused: false };
+  slider.show = (i) => {
+    slider.index = i;
+    slides.forEach((slide, n) => slide.classList.toggle('is-active', n === i));
+    dotEls.forEach((dot, n) => dot.classList.toggle('is-active', n === i));
+    applyPromoItem(banner, eyebrow, title, items[i]);
+  };
+  slider.pause = () => { slider.paused = true; };
+  slider.resume = () => { slider.paused = false; };
+  slider.show(0);
+  promoSliders.set(banner, slider);
+
+  banner.addEventListener('mouseenter', slider.pause);
+  banner.addEventListener('mouseleave', slider.resume);
+  setTimeout(() => {
+    setInterval(() => {
+      if (slider.paused || document.hidden) return;
+      slider.show(stepIndex(slider.index, 1, items.length));
+    }, PROMO_ROTATE_MS);
+  }, startDelay);
 }
 
 /**
@@ -963,9 +1098,10 @@ async function loadHomePromos() {
   const banners = document.querySelectorAll('[data-promo-slot]');
   if (!banners.length) return;
 
+  // Hasta 3 publicidades por espacio (columna `position`, migración 137).
   const { data, error } = await supabase
     .from('home_promos')
-    .select('slot, store_id, product_id, image_url, title, is_active, stores(name, status), products(is_active)')
+    .select('*, stores(name, status), products(is_active)')
     .eq('is_active', true)
     .not('store_id', 'is', null)
     .not('image_url', 'is', null);
@@ -974,11 +1110,12 @@ async function loadHomePromos() {
     return;
   }
 
-  const bySlot = new Map((data || []).filter(isPromoLive).map((p) => [p.slot, p]));
+  const bySlot = groupLivePromosBySlot(data);
 
-  banners.forEach((banner) => {
-    const promo = bySlot.get(banner.dataset.promoSlot);
-    if (!promo) return;
+  banners.forEach((banner, n) => {
+    const promos = bySlot.get(banner.dataset.promoSlot);
+    if (!promos?.length) return;
+    const items = promos.map(promoItem);
 
     // La imagen del comercio ya trae su propio texto: el rótulo fijo del
     // banner ("Combos", "Espacio para un banner"...) se reemplaza por el
@@ -986,25 +1123,20 @@ async function loadHomePromos() {
     banner.textContent = '';
     const eyebrow = document.createElement('span');
     eyebrow.className = 'promo-banner__eyebrow';
-    eyebrow.textContent = promo.stores.name;
-    banner.appendChild(eyebrow);
-    if (promo.title) {
-      const title = document.createElement('span');
-      title.className = 'promo-banner__title';
-      title.textContent = promo.title;
-      banner.appendChild(title);
-    }
+    const title = document.createElement('span');
+    title.className = 'promo-banner__title';
+    banner.append(eyebrow, title);
 
-    banner.style.setProperty('--promo-img', `url("${encodeURI(promo.image_url)}")`);
+    if (items.length > 1) {
+      // Varias publicidades: capas que pasan solas (el texto va sobre todas).
+      mountPromoSlides(banner, items, eyebrow, title, (n % 3) * 1500);
+    } else {
+      banner.style.setProperty('--promo-img', `url("${encodeURI(items[0].url)}")`);
+      applyPromoItem(banner, eyebrow, title, items[0]);
+    }
     banner.classList.add('is-store-promo');
-    banner.dataset.promoHref = promoHref(promo);
-    // El click abre la imagen ampliada primero, igual que un banner fijo
-    // (ver initPromoBanners): la publicación recién se abre en la 2da
-    // interacción, así que el lightbox-alt se mantiene en vez de borrarse.
-    banner.dataset.lightboxAlt = promoAriaLabel(promo);
     banner.setAttribute('role', 'button');
     banner.setAttribute('tabindex', '0');
-    banner.setAttribute('aria-label', `${promoAriaLabel(promo)}. Se abre la imagen ampliada; cerrala o tocá de nuevo para ir a la publicación.`);
   });
 }
 

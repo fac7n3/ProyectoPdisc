@@ -5575,3 +5575,34 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
   16 ofertas vigentes, 5 cupones, 6 banners, 0 grupos de opciones vacíos, triggers de vuelta en `O`.
 - **Pendiente:** las 61 fotos chicas (el usuario eligió dejarlas afuera por ahora); mirar el resultado en el navegador contra
   producción; el test `npm test` falla en este entorno por falta de `postcss` (`scripts/gen-dark-css.mjs`), también en la base sin cambios.
+
+## 2026-10-21 — Banners del inicio: hasta 3 publicidades por espacio (migración 137, sin aplicar; rama `claude/dreamy-hopper-mwgkhp`)
+- **Pedido (y una corrección):** cada banner de los dos mosaicos pasa solo de una a otra, con flechas en la imagen ampliada. Primera
+  versión (commit anterior de la rama): 3 imágenes de UN comercio (`image_url_2/3`). **El usuario la corrigió:** las 3 pueden ser de
+  comercios distintos, y la idea es que más comercios puedan anunciarse, no solo 6. Se rehízo: la 137 original (columnas extra) se
+  reemplazó, no se había aplicado.
+- **Datos:** `home_promos.position` (1-3) + unique `(slot, position)` en vez de unique `slot` (el constraint se llama
+  `home_promos_slot_key`); 12 filas nuevas libres; las 6 existentes quedan en posición 1. Cada publicidad es una fila completa (comercio,
+  publicación, título, imagen, on/off), así que RLS y el trigger de la 108 sirven tal cual; el guard suma "el dueño no cambia la posición".
+  **Storage:** path nuevo `{slot}/{posición}/{ts}.{ext}`; las policies de insert/delete exigen espacio **y** posición
+  (`coalesce(foldername[2],'1')`, así los archivos viejos son de la posición 1), para que el dueño de la posición 2 no pise la 1.
+- **Compatibilidad previa a la migración:** `home.js`/`admin.js`/`vender.js` leen con `select('*')` y ordenan por `position` **en el
+  cliente** (un `order('position')` en la consulta fallaría sin la columna); `promoPosition()` da 1 si falta.
+- **Home (`js/home.js`):** `groupLivePromosBySlot` (agrupa las vivas por espacio, ordenadas) -> con 1 publicidad se usa el fondo
+  `--promo-img` de siempre; con >1, `mountPromoSlides` arma capas `.promo-banner__slide` (fundido) + puntitos, y `applyPromoItem` cambia
+  rótulo (comercio/título), `data-promo-href`, `data-lightbox-alt` y aria-label con la que se ve. El lightbox (`initPromoBanners`) trabaja
+  con `items` ({url, href, alt}): flechas, ← →, deslizar, contador, y el destino del click/cierre es el de la publicidad visible. Los
+  banners fijos siguen con la imagen del CSS (`getBannerImageUrl`).
+- **"Reducir animaciones":** primero el carrusel no rotaba solo con esa opción (ajuste del sitio `getPref('reduceMotion')` o
+  `prefers-reduced-motion`); **el usuario pidió que rote siempre** (es publicidad de comercios) y se sacó el chequeo y el
+  `transition: none` del CSS. Siguen frenándolo el mouse encima, la pestaña oculta y la imagen ampliada abierta.
+- **Editor:** una imagen por tarjeta como en la 108; el título muestra "Publicidad N de 3". Admin: 18 tarjetas. Vendedor: las suyas.
+- **Gotcha de modo oscuro:** el puntito activo (blanco sobre la foto) se pisa a mano en `dark.css` (el generador lo espeja a oscuro).
+  Mismo archivo: las reglas `html[data-theme="dark"] .promo-banner--c / -2--d / -2--e / -2--f` (0,2,1) le ganaban a `.is-store-promo` (0,2,0);
+  otra sesión lo arregló en `main` (f526cbf) casi igual y al mergear quedó su regla + las dos mías (`.has-slides` y el puntito).
+- **Verificación:** `npm test` (hizo falta `npm install` por `postcss`); Chromium real con Supabase simulado: 3 comercios en un espacio,
+  rotación con cambio de rótulo/destino, flechas con vuelta, tocar la imagen va a la publicación de la visible, fila vieja sin `position`.
+  **Sin probar con la base real.**
+- **Para publicar:** mergear a `main` dispara deploy y es seguro con o sin la 137 (el código es compatible con las dos bases).
+  Aplicar la 137 (aditiva) y recién después asignar comercios a las posiciones 2 y 3 desde "Promos del inicio". Se mergeó `main` a
+  la rama el 2026-10-21 (conflictos solo en `dark.css` y `CLAUDE.md`); la 137 sigue libre en `main` (la última es la 136).

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-20. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-21. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,27 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-21 (rama `claude/dreamy-hopper-mwgkhp`, lista para mergear; migración 137 SIN aplicar, se puede mergear antes o después) — Cada espacio de los
+  mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
+  fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
+  publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
+  `position` (1-3), la unicidad pasa de `slot` a `(slot, position)`, 12 filas nuevas libres (las 6 de antes quedan en la posición 1),
+  el trigger `home_promos_guard` tampoco deja que el dueño cambie la posición y las policies del bucket `home-promos` exigen espacio
+  **y** posición (path nuevo `{slot}/{posición}/{ts}.{ext}`; los viejos sin carpeta cuentan como posición 1). **Home** (`js/home.js`,
+  `mountPromoSlides`): las publicidades pasan solas cada 4,5 s con fundido y puntitos arriba a la derecha; el comercio, el título, el
+  destino del click y el texto accesible siguen a la que se ve. Al tocar el banner se abre la imagen ampliada en la que se estaba
+  viendo, con **flechas** (también ← → y deslizar el dedo), contador "2 / 3" y vuelta de la última a la primera; tocar la imagen o
+  cerrar lleva a la publicación **de esa publicidad**. Se frenan con el mouse encima, con la pestaña oculta y con la imagen ampliada
+  abierta; **rotan siempre, también con "Reducir animaciones"** (decisión del usuario: es publicidad de comercios y tiene que verse la de todos). **Paneles:** el admin ve 18 tarjetas (6 espacios x 3, cada una "Publicidad N de 3") y el comercio las que le tocaron;
+  el editor (`js/home-promos-editor.js`) sigue siendo una imagen por tarjeta. **Mientras la 137 no se aplique:** el home y los paneles
+  siguen andando como antes (`select('*')`, orden por `position` en el cliente); el admin solo ve los 6 espacios. Helpers puros
+  (`groupLivePromosBySlot`, `stepIndex`, `promoPosition`) en `js/home-promos-utils.js` con tests. **Modo oscuro:** la regla que evita que los espacios c/d/e/f pisen la imagen de una promo de comercio ya vino de `main` (otra sesión); acá solo se suman las capas y el puntito en `dark.css`. Verificado en Chromium real con
+  Supabase simulado (3 comercios en un espacio, rotación, flechas, destino por publicidad, fila vieja sin `position`, claro y oscuro);
+  **sin probar con la base real ni con imágenes reales**. `dist/` sin reconstruir.
+- **Hecho 2026-10-20 — "Tu cuenta" arriba de todo en Mi perfil → Información de tu perfil**, a pedido del
+  usuario: el bloque (tipo de cuenta, Panel, Cambiar de cuenta, "Comprás desde") pasó al principio de
+  `#tab-mis-datos` en `pages/perfil.html`, antes del título y del aviso de perfil incompleto. Solo se movió
+  HTML (los ids no cambiaron, el JS no depende del orden). Sin reconstruir `dist/` ni probar logueado.
 - **Hecho 2026-10-21 — Perfil del comercio (`comercio.html`) adaptado al modo oscuro**, reportado por el usuario con
   captura (bloque del nombre blanco con letras casi blancas, luego letra oscura sobre fondo blanco). Los colores que
   elige el dueño (`stores.header_bg_color`/`header_text_color`) se pensaron para claro: `renderHeaderColors`

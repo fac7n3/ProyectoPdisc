@@ -11,7 +11,7 @@
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
-import { slotLabel, HOME_PROMO_SLOTS } from './home-promos-utils.js';
+import { slotLabel, HOME_PROMO_SLOTS, PROMO_POSITIONS, promoPosition } from './home-promos-utils.js';
 
 import { friendlyError } from './friendly-error.js';
 const BUCKET = 'home-promos';
@@ -103,7 +103,13 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   card.noValidate = true;
 
   const head = el('div', 'hp-card__head');
-  head.appendChild(el('h3', 'hp-card__title', slotLabel(promo.slot)));
+  // Cada espacio es un carrusel de hasta 3 publicidades (una tarjeta por
+  // posición, cada una con su propio comercio).
+  const position = promoPosition(promo);
+  const titleWrap = el('div');
+  titleWrap.appendChild(el('h3', 'hp-card__title', slotLabel(promo.slot)));
+  titleWrap.appendChild(el('p', 'hp-card__position', `Publicidad ${position} de ${PROMO_POSITIONS.length}`));
+  head.appendChild(titleWrap);
   const statusText = !promo.store_id
     ? 'Libre'
     : !promo.image_url ? 'Falta la imagen' : promo.is_active ? 'Publicada' : 'Apagada';
@@ -224,11 +230,13 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
     let uploadedUrl = null;
 
     try {
-      // Carpeta = espacio: la policy del bucket deja subir al admin o al
-      // dueño del comercio asignado a ESE espacio.
+      // La policy del bucket deja subir al admin o al dueño del comercio
+      // asignado a ESA publicidad.
       if (pendingFile) {
         const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[pendingFile.type];
-        const path = `${promo.slot}/${Date.now()}.${ext}`;
+        // Carpeta = espacio + posición: la policy no deja que el dueño de una
+        // publicidad pise los archivos de otra del mismo espacio.
+        const path = `${promo.slot}/${position}/${Date.now()}.${ext}`;
         const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, pendingFile, { contentType: pendingFile.type });
         if (upErr) throw upErr;
         uploadedUrl = supabase.storage.from(BUCKET).getPublicUrl(path).data?.publicUrl || null;
