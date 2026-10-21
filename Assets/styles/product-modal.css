@@ -34,7 +34,9 @@
   background: var(--bl-surface);
   border-radius: var(--bl-radius-xl);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  /* clip y no hidden: hidden vuelve al modal un contenedor de scroll y la
+     barra sticky de arriba deja de seguir al overlay que es el que scrollea. */
+  overflow: clip;
   transform: translateY(40px) scale(0.97);
   opacity: 0;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
@@ -55,7 +57,9 @@
   border-bottom: 1px solid var(--bl-border-light);
   background: var(--bl-surface);
   position: sticky;
-  top: 0;
+  /* el overlay tiene 2rem de padding arriba y sticky lo respeta: se compensa
+     para que la barra quede pegada al borde de la pantalla */
+  top: -2rem;
   z-index: 10;
 }
 
@@ -896,6 +900,7 @@
 
   .pm-topbar {
     padding: 0.875rem 1.25rem;
+    top: 0; /* acá scrollea el propio modal, sin padding del overlay */
   }
 
   .pm-shop-info {
