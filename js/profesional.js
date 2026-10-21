@@ -135,13 +135,14 @@ async function arrancar(user) {
     .limit(1);
 
   const solicitud = solicitudes?.[0];
-  if (solicitud && solicitud.status !== 'approved') {
+  if (solicitud?.status === 'pending') {
     mostrarEstadoSolicitud(solicitud);
     return;
   }
 
-  // Ni publicado ni con solicitud: no tiene nada que administrar todavía, va
-  // al alta con la pestaña de servicios ya elegida.
+  // Ni publicado ni con solicitud en revisión (o con una rechazada, que se
+  // reenvía desde el alta): no tiene nada que administrar todavía, va al alta
+  // con la pestaña de servicios ya elegida.
   window.location.replace('./vender.html?tipo=servicio');
 }
 
@@ -155,10 +156,6 @@ function mostrarEstadoSolicitud(solicitud, mensajeError) {
   if (mensajeError) {
     titulo.textContent = 'No pudimos abrir tu panel';
     cuerpo.textContent = mensajeError;
-  } else if (solicitud?.status === 'rejected') {
-    titulo.textContent = 'Tu solicitud no fue aprobada';
-    cuerpo.textContent =
-      'Podés escribirnos por Soporte para saber por qué y volver a intentarlo.';
   } else {
     titulo.textContent = 'Tu solicitud está en revisión';
     cuerpo.textContent =

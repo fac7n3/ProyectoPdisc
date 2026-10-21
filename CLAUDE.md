@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-20 — Solicitud de comercio rechazada: se puede reenviar**, a pedido del usuario. Antes
+  `checkSellerState` (`js/vender.js`) mostraba solo "Tu solicitud ... está en estado: rejected" sin salida.
+  Ahora, con la solicitud rechazada, se vuelve al alta (`#seller-rejected-notice`: "fue rechazada, podés
+  revisar los datos y enviarla de nuevo"). Al enviar, el cliente borra la rechazada y inserta la nueva
+  (migración **135**, `seller_requests_delete_own_rejected`, **aplicada a producción**: solo deja borrar las
+  propias con `status='rejected'`). **Lo mismo para profesionales** (`professional_requests`, migración **136**,
+  aplicada a producción; aviso `#prof-rejected-notice`; `js/profesional.js` manda al alta en vez de mostrar el
+  estado "no fue aprobada"). **Sin probar logueado** (sin red a Supabase).
 - **Hecho 2026-10-20 — "Sumate al directorio" con un comercio activo**, a pedido del usuario. El link de
   `contratar.html` lleva a `vender.html?tipo=servicio`; si la cuenta ya tiene comercio (rol vendedor/admin,
   empleado, o solicitud de comercio aprobada), `checkSellerState` (`js/vender.js`) muestra solo el aviso

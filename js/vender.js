@@ -147,7 +147,12 @@ async function checkSellerState(user) {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (req) {
+  // Rechazada: no hay pantalla de estado, la persona vuelve al alta (con un
+  // aviso) y puede enviar otra solicitud. Sigue el flujo de abajo como si no
+  // tuviera ninguna.
+  const rejectedReq = req?.status === 'rejected' ? req : null;
+
+  if (req && !rejectedReq) {
     if (quiereServicio && req.status === 'approved') { reveal('blocked'); return; }
     reveal('dashboard');
 
@@ -158,7 +163,7 @@ async function checkSellerState(user) {
       return;
     }
 
-    // Pendiente o rechazada: todavía no hay panel. Ocultamos el sidebar y todas las
+    // Pendiente: todavía no hay panel. Ocultamos el sidebar y todas las
     // secciones, y mostramos el estado.
     shopNameLabel.textContent = `${req.shop_name} (Estado: ${req.status})`;
     const sidebar = document.getElementById('mc-sidebar');
@@ -193,18 +198,30 @@ async function checkSellerState(user) {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (profReq) {
+  // Igual que con el comercio: rechazada = vuelve al alta con un aviso.
+  const rejectedProf = profReq?.status === 'rejected' ? profReq : null;
+
+  if (profReq && !rejectedProf) {
     reveal('register');
     showProfessionalStatus(profReq.status === 'pending'
       ? `Tu solicitud para publicarte como ${profReq.full_name} está pendiente de aprobación. Te avisaremos cuando esté lista.`
-      : `Tu solicitud para publicarte como ${profReq.full_name} fue rechazada. Escribinos por Soporte si tenés dudas.`);
+      : `Tu solicitud para publicarte como ${profReq.full_name} fue aprobada.`);
     watchRequestStatus('professional_requests', user.id, profReq.status);
     return;
   }
 
   reveal('register');
   const tipo = new URLSearchParams(window.location.search).get('tipo');
-  showRegisterForms(tipo === 'servicio' ? 'profesional' : 'comercio');
+  // Con una sola solicitud rechazada y sin ?tipo, se abre la pestaña de esa.
+  const soloProfRechazada = rejectedProf && !rejectedReq;
+  showRegisterForms(tipo === 'servicio' || soloProfRechazada ? 'profesional' : 'comercio');
+  [['seller-rejected-notice', rejectedReq, (r) => r.shop_name],
+   ['prof-rejected-notice', rejectedProf, (r) => r.full_name]].forEach(([id, rej, name]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = !rej;
+    if (rej) el.textContent = `Tu solicitud para "${name(rej)}" fue rechazada. Podés revisar los datos y enviarla de nuevo.`;
+  });
 }
 
 /**
@@ -489,9 +506,13 @@ function initVenderPage(user) {
       return;
     }
 
+    // Si la solicitud anterior fue rechazada se descarta antes de enviar la
+    // nueva (la RLS solo deja borrar las propias rechazadas).
+    await supabase.from('seller_requests').delete().eq('user_id', user.id).eq('status', 'rejected');
+
     const { error } = await supabase
       .from('seller_requests')
-      .insert({ 
+      .insert({
         user_id: user.id, 
         shop_name: nameInput,
         cuit: cuitInput,
@@ -566,6 +587,9 @@ function initVenderPage(user) {
       if (profSubmitBtn) setLoading(profSubmitBtn, false, "Enviar solicitud");
       return;
     }
+
+    // Descarta la solicitud rechazada anterior (la RLS solo deja borrar las propias rechazadas).
+    await supabase.from('professional_requests').delete().eq('user_id', currentUser.id).eq('status', 'rejected');
 
     const { error } = await supabase
       .from('professional_requests')
