@@ -164,6 +164,13 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-21 — Banners del inicio: cerrar la imagen ampliada ya no lleva al comercio**, reportado por el usuario
+  con captura. `initPromoBanners` (`js/home.js`) hacía navegar a la publicación al cerrar con la X, tocar afuera o Esc.
+  Ahora esas tres formas **solo cierran**; lo único que lleva a la publicación es **tocar la imagen ampliada** (el aviso
+  de abajo dice "Tocá la imagen para ir a la publicación"). Banner fijo sin promo: sin cambios. Verificado en Playwright
+  con una promo simulada (afuera, X y Esc cierran sin cambiar la URL; la imagen sí navega). De paso, al integrarlo
+  con el slider de varias publicidades (`promo-lightbox__stage`) la imagen tapaba la mitad de la X: se le dio
+  `z-index: 2` al botón de cerrar (`home.css`), si no tocar la X caía sobre la imagen.
 - **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
   del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
   gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.

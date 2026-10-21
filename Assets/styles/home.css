@@ -2192,6 +2192,9 @@ button.coupon-chip:hover {
   justify-content: center;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease;
+  /* Arriba del .promo-lightbox__stage (position: relative, viene después en el
+     DOM): sin esto la imagen tapa la mitad de la X y tocarla abría la publicación. */
+  z-index: 2;
 }
 
 .promo-lightbox__close:hover {
