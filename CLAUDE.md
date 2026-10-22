@@ -215,6 +215,13 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-22 — Página del comercio (`comercio.html`): ofertas primero y productos sin caja con scroll**, a pedido del
+  usuario. Los productos con oferta o descuento **vigente** (`compare_at_price > price` y sin vencer, mismo criterio que
+  `buildPriceRow`) van primero en la grilla y el resto sigue detrás, cada grupo en su orden (más nuevos primero):
+  `offersFirst` en `js/store-products-order.js` (con test), usado en `js/comercio.js`; vale también para las filas por
+  categoría del celular. La grilla de escritorio **ya no está en una caja con borde y scroll propio** (`.store-products-box`
+  tenía `max-height: 640px` + `overflow-y: auto`): ahora los productos siguen en el scroll de la página. Sin migración.
+  Verificado en Chromium con Supabase simulado (2 ofertas vigentes + 1 vencida: van primero las vigentes; sin scroll interno).
 - **Hecho 2026-10-22 — Tocar la imagen ampliada de un banner del inicio lleva a la PÁGINA DEL COMERCIO, no al producto**, a pedido del
   usuario. `promoHref` (`js/home-promos-utils.js`) devuelve siempre `comercio.html?id=<store_id>`; la publicación elegida
   (`home_promos.product_id`) queda solo de referencia (el selector del editor lo dice) y ya no cambia el destino. El aviso de la
