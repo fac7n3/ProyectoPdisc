@@ -28,6 +28,8 @@ import {
 } from './order-utils.js';
 import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-countries.js';
 import { friendlyError, friendlyFunctionError } from './friendly-error.js';
+import { openEvidenceViewer } from './delivery-evidence.js';
+import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -1113,6 +1115,8 @@ function initOrdersLive() {
 
   subscribeToChanges('pedidos-comercio', [
     { table: 'orders', filter: `store_id=eq.${currentStoreId}` },
+    // El repartidor toma, avisa una demora o un problema: cambia la entrega, no el pedido.
+    { table: 'deliveries' },
     // Comprobante subido o revisado: la tarjeta del pedido muestra su estado.
     // Sin filtro (la tabla no tiene store_id): la RLS deja pasar solo los de
     // este comercio.
@@ -1163,7 +1167,7 @@ const ORDER_STATUS_BADGE_VARIANT = {
   cancelled: 'cancelled',
 };
 
-const ORDER_SELECT = 'id, order_number, client_id, status, payment_status, payment_method, delivery_method, shipping_address, delivery_fee, total_price, created_at, payment_due_at, transfer_notified_at, cancel_reason, cancelled_by, revocation_requested_at, revocation_resolved_at, order_items(quantity, price, title, selected_options, products(title, image_url)), payment_proofs(id, status, receipt_url, created_at), deliveries(id, status)';
+const ORDER_SELECT = 'id, order_number, client_id, status, payment_status, payment_method, delivery_method, shipping_address, delivery_fee, total_price, courier_ready_at, created_at, payment_due_at, transfer_notified_at, cancel_reason, cancelled_by, revocation_requested_at, revocation_resolved_at, order_items(quantity, price, title, selected_options, products(title, image_url)), payment_proofs(id, status, receipt_url, created_at), deliveries(id, status)';
 
 async function renderAllOrders() {
   if (!currentStoreId) return;
@@ -1194,13 +1198,35 @@ async function renderAllOrders() {
     : { data: [] };
   ordPhoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
   ordNameByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.full_name]));
+  await loadDeliveryStates();
 
   renderPedidos();
   refreshOpenOrderDetail();
 }
 
+/** Estado de la entrega de cada pedido con envío (repartidor, confirmación, demora, problema). */
+let ordDeliveryState = new Map();
+
+/**
+ * Se pide por RPC y no con el embed `deliveries(...)`: la policy de esa tabla no
+ * deja leerla a los empleados del comercio (migración 138, get_order_delivery_states).
+ */
+async function loadDeliveryStates() {
+  ordDeliveryState = new Map();
+  const ids = ordCache
+    .filter((o) => o.delivery_method === 'delivery' && ['paid', 'shipped', 'completed'].includes(o.status))
+    .map((o) => o.id);
+  if (!ids.length) return;
+  const { data, error } = await supabase.rpc('get_order_delivery_states', { p_order_ids: ids });
+  // Sin la migración todavía aplicada la función no existe: el panel sigue andando sin estas marcas.
+  if (error) { console.warn('No se pudo cargar el estado de las entregas:', error.message); return; }
+  (data || []).forEach((d) => ordDeliveryState.set(d.order_id, d));
+}
+
 /** Con un repartidor asignado, el pedido lo avanza él, no el comercio. */
 function orderHasCourier(order) {
+  const state = ordDeliveryState.get(order.id);
+  if (state) return state.status !== 'cancelled';
   return (order.deliveries || []).some((d) => d.status !== 'cancelled');
 }
 
@@ -1407,6 +1433,8 @@ function buildOrderActionBlock(order) {
     block.appendChild(btn);
   }
 
+  appendCourierBlock(block, order);
+
   if (isStoreOwner && order.revocation_requested_at && !order.revocation_resolved_at) {
     block.appendChild(rsEl('p', 'ord-action__text', 'El comprador pidió el arrepentimiento de la compra (tiene derecho por ley). Coordiná la devolución y aceptalo: el pedido se cancela y el stock vuelve.'));
     const revBtn = rsEl('button', 'btn-outline ord-action__secondary', 'Aceptar arrepentimiento');
@@ -1416,6 +1444,85 @@ function buildOrderActionBlock(order) {
   }
 
   return block.childElementCount ? block : null;
+}
+
+/**
+ * Pedidos con envío y repartidor: "Listo para el repartidor", confirmar el
+ * retiro con los 4 dígitos del número de pedido, avisos del repartidor y, al
+ * final, las fotos de la entrega. Ver migración 138.
+ */
+function appendCourierBlock(block, order) {
+  if (order.delivery_method !== 'delivery') return;
+  const state = ordDeliveryState.get(order.id);
+  const status = state?.status;
+
+  if (order.status === 'paid' && order.payment_status === 'paid') {
+    if (!order.courier_ready_at) {
+      const readyBtn = rsEl('button', 'btn-outline ord-action__secondary', 'Listo para el repartidor');
+      readyBtn.type = 'button';
+      readyBtn.addEventListener('click', () => markReadyForCourier(order, readyBtn));
+      block.appendChild(readyBtn);
+    } else if (status !== 'assigned') {
+      block.appendChild(rsEl('p', 'ord-action__hint', 'Marcaste el pedido como listo: está esperando que un repartidor lo tome.'));
+    }
+
+    if (status === 'assigned') {
+      if (state.pickup_confirmed_at) {
+        block.appendChild(rsEl('p', 'ord-action__hint', 'Confirmaste el retiro. El repartidor está por salir en camino.'));
+      } else {
+        block.appendChild(rsEl('p', 'ord-action__text', 'Un repartidor tomó este pedido. Cuando venga a buscarlo, pedile el número de pedido y confirmá el retiro.'));
+        if (state.delay_minutes && order.courier_ready_at) {
+          block.appendChild(rsEl('p', 'ord-action__hint', `El repartidor avisó que se demora unos ${state.delay_minutes} minutos.`));
+        } else if (state.heads_up_at) {
+          block.appendChild(rsEl('p', 'ord-action__hint', 'El repartidor avisó que ya lo está retirando.'));
+        }
+        const confirmBtn = rsEl('button', 'form-btn ord-action__primary', 'Confirmar que el repartidor lo retiró');
+        confirmBtn.type = 'button';
+        confirmBtn.addEventListener('click', () => confirmCourierPickup(order, confirmBtn));
+        block.appendChild(confirmBtn);
+      }
+    }
+  }
+
+  if (order.status === 'shipped' && status === 'picked_up' && state.problem_at) {
+    block.appendChild(rsEl('p', 'ord-action__text', `El repartidor avisó un problema con la entrega: ${state.problem_note || 'sin detalle'}. Coordiná con el comprador o escribile a Soporte.`));
+  }
+
+  if (status === 'picked_up' || status === 'delivered') {
+    const photosBtn = rsEl('button', 'ord-link', 'Ver fotos de la entrega');
+    photosBtn.type = 'button';
+    photosBtn.addEventListener('click', async () => {
+      try {
+        await openEvidenceViewer(order.id, { orderLabel: orderLabel(order) });
+      } catch (err) {
+        showToast(friendlyError(err, 'No se pudieron abrir las fotos.'), 'error');
+      }
+    });
+    block.appendChild(photosBtn);
+    if (state?.feedback_condition === 'problem') {
+      block.appendChild(rsEl('p', 'ord-action__text', 'El comprador reclamó por esta entrega. Revisá las fotos y su reclamo.'));
+    }
+  }
+}
+
+async function markReadyForCourier(order, btn) {
+  const ok = await confirmDialog(`¿El pedido ${orderLabel(order)} ya está listo para que lo retire el repartidor?`, { confirmText: 'Sí, está listo' });
+  if (!ok) return;
+  await runOrderRpc('mark_ready_for_courier', { p_order_id: order.id }, 'Listo. Se lo avisamos al repartidor.', btn);
+}
+
+/** El comercio confirma que le entregó el pedido al repartidor: escribe los 4 dígitos del número de pedido. */
+async function confirmCourierPickup(order, btn) {
+  const res = await formDialog(
+    `Pedile al repartidor el número de pedido (termina en ${pickupCode(order.order_number)}) y escribilo acá. Así confirmás que se lo entregaste y puede salir en camino.`,
+    {
+      title: `Confirmar el retiro del pedido ${orderLabel(order)}`,
+      confirmText: 'Confirmar retiro',
+      input: { label: 'Número de pedido (4 dígitos)', placeholder: '0000', inputMode: 'numeric', maxLength: 4, pattern: /^\d{4}$/ },
+    },
+  );
+  if (!res) return;
+  await runOrderRpc('confirm_courier_pickup', { p_order_id: order.id, p_code: res.value }, 'Retiro confirmado. El repartidor ya puede salir en camino.', btn);
 }
 
 /** Tarjeta vertical de un pedido: N° + fecha y estado, chips, productos, comprador, qué hacer y al pie el total. */
@@ -2398,6 +2505,18 @@ function fillStoreProfileForm(store) {
   // Migración 106: alias/CBU/titular/banco en columnas propias. Si esa
   // migración faltara, el select da error y se reintenta solo con
   // transfer_info (los campos nuevos quedan vacíos, el resto anda).
+  // Migración 138: link de Google Maps del local. Fetch aparte, mismo criterio
+  // que lo de transferencia: si la columna faltara, no se cae el panel.
+  const mapsInput = document.getElementById('store-maps-url');
+  if (mapsInput) {
+    mapsInput.value = '';
+    supabase.from('stores').select('maps_url').eq('id', store.id).single()
+      .then(({ data, error }) => {
+        if (error) { console.warn('No se pudo cargar el link de Google Maps:', error.message); return; }
+        mapsInput.value = data?.maps_url || '';
+      });
+  }
+
   if (transferInfoInput) {
     const fill = (data) => {
       transferInfoInput.value = data?.transfer_info || '';
@@ -2615,6 +2734,14 @@ function setupStoreProfileForm() {
 
     const descriptionValue = document.getElementById('store-description').value.trim();
 
+    const mapsUrl = normalizeMapsUrl(document.getElementById('store-maps-url')?.value);
+    if (!mapsUrl.ok) {
+      showToast(mapsUrl.message, 'error');
+      document.getElementById('store-maps-url')?.focus();
+      setLoading(submitBtn, false, 'Guardar perfil');
+      return;
+    }
+
     const socialFields = {};
     SOCIAL_NETWORKS.forEach(({ key }) => {
       socialFields[`social_${key}`] = document.getElementById(`store-social-${key}`).value.trim() || null;
@@ -2635,6 +2762,17 @@ function setupStoreProfileForm() {
         ...socialFields,
       })
       .eq('id', currentStoreId);
+
+    // Migración 138: el link de Google Maps también va aparte, por la misma razón.
+    if (document.getElementById('store-maps-url')) {
+      const { error: mapsError } = await supabase.from('stores').update({ maps_url: mapsUrl.value }).eq('id', currentStoreId);
+      if (mapsError) {
+        console.error('Error al guardar el link de Google Maps:', mapsError);
+        showToast('No se pudo guardar el link de Google Maps. El resto del perfil sí se guardó.', 'error');
+      } else if (mapsUrl.value) {
+        document.getElementById('store-maps-url').value = mapsUrl.value;
+      }
+    }
 
     // A113-299: aparte del resto (ver por qué en fillStoreProfileForm) -- si
     // la migración 66 todavía no está aplicada, que falle esto solo y no

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-21. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-22. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,38 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-22 — Panel de repartidor realista y liviano** (rama `claude/modest-mayer-o5glf7`, subido directo a `main` a pedido del usuario;
+  migración **138** APLICADA a producción en 3 partes `138a/138b/138c`; **la 139 se aplica DESPUÉS de verificar el deploy**, ver abajo).
+  **Antes:** la cola bajaba 200 pedidos de toda la historia + `deliveries` + `profiles` y refrescaba cada 20 s. **Ahora:** una sola RPC
+  `get_courier_panel()` (mis entregas + los 20 pedidos más viejos sin repartidor, ordenados por el momento real de pago, `order_events` kind
+  `paid`); se sacó el `setInterval` (manda el Realtime; un tick local de 30 s solo repinta colores y "hace X min" sin red, y se frena con la pestaña
+  oculta). **Dos repartidores a la vez:** `claim_delivery` toma un `pg_advisory_xact_lock` por repartidor y **tope de 3 pedidos**; tomar es un
+  toque sin diálogo. **Etapas** Tomado -> En camino -> Entregado. **Retiro:** el repartidor ve el número de pedido; el comercio, en su panel,
+  toca **"Confirmar que el repartidor lo retiró"** y escribe los **4 últimos dígitos del número de pedido** (`confirm_courier_pickup`; no es
+  un secreto, confirma que es el pedido correcto; la autenticación fuerte sigue siendo el código del comprador al entregar); recién ahí el
+  repartidor saca **la foto de los productos** (bucket privado `delivery-evidence`, achicada a 1280 px en el teléfono) y pasa a En camino
+  (`courier_mark_picked_up`). El comercio también tiene **"Listo para el repartidor"** (`orders.courier_ready_at`). **Tardanza** (solo en Tomado, ámbar
+  a los 10 min, rojo a los 20): "Avisar demora" (10/20/30) avisa al **comercio solo si ya marcó el pedido listo**; "Ya lo tengo encima" avisa al
+  **comprador** y frena el reloj 10 min; "Soltar pedido" lo devuelve a la cola (no se puede con el retiro confirmado); pg_cron `release-stale-deliveries`
+  (cada 5 min) suelta lo tomado hace +30 min sin aviso ni confirmación (ya lo hizo solo con el #BL-1064 de prueba). **Cancelación:** el comprador
+  cancela un pedido de envío pagado **hasta que el repartidor retire**; ya en camino no (se le explica: lo recibe igual y puede ir al comercio con el
+  comprobante y el producto en las mismas condiciones, ej. yogur cerrado o sin mayor consumo); el comercio no cancela con el pedido en camino
+  (solo admin); un trigger en `orders` cancela la entrega y avisa al repartidor, que ve un **cartel rojo** con "Entendido" y el servidor le
+  prohíbe retirarlo o marcarlo en camino. **En camino:** "Problema con la entrega" avisa a comprador y comercio. **Al recibir:** tarjeta
+  "¿Cómo llegó tu pedido?" en Mis compras (Llegó bien / con problemas + foto de lo recibido + motivos, **48 h** de plazo) -> `delivery_feedback` +
+  reclamo en Soporte + aviso al comercio; comercio y admin ven las dos fotos con `openEvidenceViewer` (`js/delivery-evidence.js`).
+  **Mapas:** campo "Link de Google Maps de tu local" en Perfil de mi comercio (`stores.maps_url`, check de dominio Google Maps); el repartidor ve
+  "Ver en el mapa"/"Cómo llegar" del comercio (link propio o búsqueda por dirección + Baradero) y del destino. **Términos y condiciones**
+  (`terminos.html` #envios, 5.1 a 5.6) redactados por Claude, **sin revisión legal**. Mini tutorial `<details>` en el panel (abierto la primera vez).
+  **Fuera de alcance (decisión del usuario):** ganancia del repartidor por envío (va con el mapa por zonas). Verificado: SQL contra la base real
+  en transacciones deshechas (~30 casos: tope, carrera, cancelaciones por fase, confirmación, foto, demora, heads-up, soltar, auto-liberación,
+  reclamo, permisos), `npm test`, build y el panel en Chromium con Supabase simulado. **Sin probar con cuentas reales ni la cámara.**
+  **Pasos de publicación y gotchas:** el conector de Supabase se cuelga 60 s con `drop ...` y `DELETE` (los toma por destructivos y espera una confirmación
+  que nadie ve): 138 se aplicó sin `drop` y los dos DELETE de las funciones (`release_delivery`, `release_stale_deliveries`) van con `execute 'de' || 'lete ...'`;
+  `update_delivery_status` **conservó su firma** (3 parámetros) para no romper el panel viejo y el camino nuevo es `courier_mark_picked_up`. **La 139**
+  (`db/schema/139_courier_flow_cierre.sql`) cierra el camino viejo: `update_delivery_status('picked_up')` pasa a rechazar. **Si `claim_delivery` se
+  queja de "Ya tenés 3 pedidos"** es el tope, no un error. Pendiente: pantalla de admin para ver reclamos con sus fotos (hoy el admin ve el ticket
+  en Soporte y las fotos con `openEvidenceViewer`, que todavía no está conectado a ninguna pantalla de admin).
 - **Hecho 2026-10-21 (mergeado a `main` y **migración 137 APLICADA a producción el 2026-10-21**; falta asignar comercios a las posiciones 2 y 3 desde "Promos del inicio") — Cada espacio de los
   mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
   fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,

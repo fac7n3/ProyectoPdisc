@@ -31,6 +31,7 @@ import { getPaymentProvider } from "./payment-providers.js";
 import { pendingChainOrders } from "./mp-chain-utils.js";
 import qrcode from "qrcode-generator";
 import { friendlyError } from './friendly-error.js';
+import { pickPhoto, readAsDataUrl, uploadEvidence } from './delivery-evidence.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // --- Referencias al DOM ---
@@ -1266,15 +1267,28 @@ function buildCompraNextStep(order, ctx) {
     wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `¡Listo para retirar${address}!${order.payment_method === 'efectivo' ? ` Llevá ${formatPrice(order.total_price)} en efectivo.` : ''}`));
   } else if (order.status === 'shipped') {
     wrap.appendChild(el('p', 'ord-alert ord-alert--ok', `Tu pedido está en camino.${order.payment_method === 'efectivo' ? ` Tené ${formatPrice(order.total_price)} en efectivo para pagar al recibirlo.` : ''}`));
+    const delivery = ctx.deliveryByOrder?.get(order.id);
+    if (delivery?.problem_at) {
+      wrap.appendChild(el('p', 'ord-alert ord-alert--warn', `El repartidor avisó un problema con la entrega${delivery.problem_note ? `: ${delivery.problem_note}` : ''}. ${storeName} se va a comunicar con vos.`));
+    }
   } else if (canPrepare(order)) {
     const cash = order.payment_method === 'efectivo'
       ? ` Pagás ${formatPrice(order.total_price)} en efectivo al ${order.delivery_method === 'delivery' ? 'recibirlo' : 'retirarlo'}.`
       : '';
-    wrap.appendChild(el('p', 'ord-alert', `${storeName} está preparando tu pedido. Te avisamos cuando esté ${order.delivery_method === 'delivery' ? 'en camino' : 'listo para retirar'}.${cash}`));
+    const delivery = ctx.deliveryByOrder?.get(order.id);
+    const courierNote = delivery?.status === 'assigned'
+      ? (delivery.heads_up_at ? ' Un repartidor ya lo está retirando.' : ' Un repartidor ya tomó tu pedido.')
+      : '';
+    wrap.appendChild(el('p', 'ord-alert', `${storeName} está preparando tu pedido. Te avisamos cuando esté ${order.delivery_method === 'delivery' ? 'en camino' : 'listo para retirar'}.${courierNote}${cash}`));
   }
 
   const code = ctx.codeByOrder.get(order.id);
   if (code && showsPickupCode(order)) wrap.appendChild(buildPickupCodeBlock(order, code));
+
+  if (order.status === 'completed' && order.delivery_method === 'delivery') {
+    const feedback = buildDeliveryFeedbackBlock(order, ctx.deliveryByOrder?.get(order.id));
+    if (feedback) wrap.appendChild(feedback);
+  }
 
   if (order.status === 'completed') wrap.appendChild(buildReviewBlock(order, ctx.reviewedStoreIds.has(order.store_id)));
 
@@ -1297,19 +1311,178 @@ function buildCompraHistory(order, events) {
   return details;
 }
 
-/** El comprador cancela lo que todavía no pagó (7): el stock vuelve al toque. */
-function buildCompraCancelButton(order) {
-  if (order.status !== 'pending' || order.payment_status !== 'pending') return null;
+/**
+ * "¿Cómo llegó tu pedido?" (migración 138). Un toque si llegó bien; si no, motivos,
+ * una nota y UNA FOTO donde se vean todos los productos como llegaron: eso abre un
+ * reclamo en Soporte con las dos fotos (la del retiro y esta) a la vista del
+ * comercio y del admin. Se responde dentro de las 48 horas de la entrega.
+ */
+function buildDeliveryFeedbackBlock(order, delivery) {
+  if (delivery?.feedback_condition === 'ok') {
+    return el('p', 'ord-alert ord-alert--ok', '¡Gracias por contarnos! Tu pedido llegó bien.');
+  }
+  if (delivery?.feedback_condition === 'problem') {
+    return el('p', 'ord-alert ord-alert--warn', 'Recibimos tu reclamo por este pedido. Lo seguís desde "Soporte": el comercio y nuestro equipo ya pueden ver tus fotos.');
+  }
+  // Sin la entrega registrada (pedido que el comercio despachó por su cuenta) no hay a quién reclamarle desde acá.
+  if (!delivery) return null;
+
+  const wrap = el('div', 'dfb');
+  wrap.appendChild(el('h4', 'dfb__title', '¿Cómo llegó tu pedido?'));
+  const row = el('div', 'dfb__row');
+  const okBtn = el('button', 'bl-btn bl-btn-primary dfb__btn', 'Llegó bien');
+  okBtn.type = 'button';
+  const badBtn = el('button', 'bl-btn dfb__btn dfb__btn--bad', 'Llegó con problemas');
+  badBtn.type = 'button';
+  row.append(okBtn, badBtn);
+  wrap.appendChild(row);
+
+  okBtn.addEventListener('click', async () => {
+    okBtn.disabled = true;
+    badBtn.disabled = true;
+    const { error } = await supabase.rpc('submit_delivery_feedback', { p_order_id: order.id, p_condition: 'ok', p_reasons: [], p_note: null, p_photo_path: null });
+    if (error) {
+      showToast(friendlyError(error, 'No se pudo guardar tu respuesta.'), 'error');
+      okBtn.disabled = false;
+      badBtn.disabled = false;
+      return;
+    }
+    showToast('¡Gracias por contarnos!', 'success');
+    await loadCompras(order.client_id);
+  });
+
+  const form = el('div', 'dfb__form');
+  form.hidden = true;
+  form.appendChild(el('p', 'dfb__hint', 'Contanos qué pasó y sacale una foto donde se vean todos los productos como te llegaron. Tenés 48 horas desde la entrega.'));
+
+  const reasons = [
+    ['roto', 'Llegó roto o dañado'],
+    ['faltan', 'Faltan productos'],
+    ['otro_producto', 'No era lo que pedí'],
+    ['otro', 'Otro problema'],
+  ];
+  const checks = el('div', 'dfb__reasons');
+  reasons.forEach(([key, label]) => {
+    const l = el('label', 'dfb__reason');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = key;
+    l.append(input, document.createTextNode(` ${label}`));
+    checks.appendChild(l);
+  });
+  form.appendChild(checks);
+
+  const note = el('textarea', 'bl-input dfb__note');
+  note.rows = 2;
+  note.maxLength = 500;
+  note.placeholder = 'Contanos un poco más (opcional)';
+  note.setAttribute('aria-label', 'Detalle del problema');
+  form.appendChild(note);
+
+  let photoFile = null;
+  const photoRow = el('div', 'dfb__photo');
+  const photoBtn = el('button', 'ord-link', 'Sacar o elegir la foto');
+  photoBtn.type = 'button';
+  const preview = el('img', 'dfb__preview');
+  preview.alt = 'Foto de tu pedido';
+  preview.hidden = true;
+  photoBtn.addEventListener('click', async () => {
+    const file = await pickPhoto();
+    if (!file) return;
+    try {
+      preview.src = await readAsDataUrl(file);
+      preview.hidden = false;
+      photoFile = file;
+      photoBtn.textContent = 'Cambiar la foto';
+    } catch (err) {
+      showToast(friendlyError(err, 'No se pudo leer la foto.'), 'error');
+    }
+  });
+  photoRow.append(photoBtn, preview);
+  form.appendChild(photoRow);
+
+  const send = el('button', 'bl-btn bl-btn-primary dfb__btn', 'Enviar reclamo');
+  send.type = 'button';
+  send.addEventListener('click', async () => {
+    const picked = [...checks.querySelectorAll('input:checked')].map((i) => i.value);
+    if (!picked.length) { showToast('Elegí qué pasó con tu pedido.', 'error'); return; }
+    if (!photoFile) { showToast('Sumá una foto donde se vean todos los productos.', 'error'); return; }
+    send.disabled = true;
+    send.textContent = 'Enviando…';
+    try {
+      const path = await uploadEvidence(order.id, 'received', photoFile);
+      const { error } = await supabase.rpc('submit_delivery_feedback', {
+        p_order_id: order.id, p_condition: 'problem', p_reasons: picked, p_note: note.value.trim() || null, p_photo_path: path,
+      });
+      if (error) throw error;
+      showToast('Recibimos tu reclamo. Te vamos a ayudar.', 'success');
+      await loadCompras(order.client_id);
+    } catch (err) {
+      showToast(friendlyError(err, 'No se pudo enviar el reclamo.'), 'error');
+      send.disabled = false;
+      send.textContent = 'Enviar reclamo';
+    }
+  });
+  form.appendChild(send);
+  wrap.appendChild(form);
+
+  badBtn.addEventListener('click', () => {
+    form.hidden = !form.hidden;
+    badBtn.setAttribute('aria-expanded', String(!form.hidden));
+  });
+  return wrap;
+}
+
+/**
+ * Cancelar desde "Mis compras":
+ *  - sin pagar: se cancela solo (el stock vuelve al toque);
+ *  - con envío ya pagado: se puede hasta que el repartidor retire el pedido;
+ *  - con el pedido ya en camino: no se cancela, se le explica qué puede hacer.
+ * La base valida lo mismo (cancel_order, migración 138).
+ */
+function buildCompraCancelButton(order, ctx) {
+  const delivery = ctx?.deliveryByOrder?.get(order.id);
+  const isDelivery = order.delivery_method === 'delivery';
+  const unpaid = order.status === 'pending' && order.payment_status === 'pending';
+  const paidBeforePickup = isDelivery && order.status === 'paid' && order.payment_status === 'paid'
+    && (!delivery || delivery.status === 'assigned');
+  const onTheWay = isDelivery && order.status === 'shipped';
+
+  if (onTheWay) {
+    const wrap = el('div', 'compra-cancel-wrap');
+    const btn = el('button', 'ord-link ord-link--danger compra-cancel', 'Cancelar pedido');
+    btn.type = 'button';
+    btn.setAttribute('aria-expanded', 'false');
+    const info = el('p', 'ord-alert ord-alert--warn');
+    info.hidden = true;
+    info.append(
+      'Tu pedido ya salió y tenés que recibirlo igual. No se puede devolver en el momento: con el comprobante de tu compra podés acercarte al comercio con el producto en las mismas condiciones en que lo recibiste (por ejemplo, un yogur cerrado, o abierto pero sin mayor consumo). ',
+    );
+    const terms = el('a', 'ord-link', 'Ver términos');
+    terms.href = './terminos.html#envios';
+    info.appendChild(terms);
+    btn.addEventListener('click', () => {
+      info.hidden = !info.hidden;
+      btn.setAttribute('aria-expanded', String(!info.hidden));
+    });
+    wrap.append(btn, info);
+    return wrap;
+  }
+
+  if (!unpaid && !paidBeforePickup) return null;
+
   const btn = el('button', 'ord-link ord-link--danger compra-cancel', 'Cancelar pedido');
   btn.type = 'button';
   btn.addEventListener('click', async () => {
-    const ok = await confirmDialog(`¿Cancelar el pedido ${orderLabel(order)}? Le avisamos al comercio.`, { confirmText: 'Sí, cancelar', cancelText: 'Volver', danger: true });
+    const refund = paidBeforePickup ? ' Como ya lo pagaste, el comercio tiene que devolverte la plata.' : '';
+    const ok = await confirmDialog(`¿Cancelar el pedido ${orderLabel(order)}? Le avisamos al comercio.${refund}`, { confirmText: 'Sí, cancelar', cancelText: 'Volver', danger: true });
     if (!ok) return;
     btn.disabled = true;
     const { error } = await supabase.rpc('cancel_order', { p_order_id: order.id, p_reason: null });
     if (error) {
       showToast(friendlyError(error, 'No se pudo cancelar el pedido.'), 'error');
       btn.disabled = false;
+      await loadCompras(order.client_id);
       return;
     }
     showToast('Pedido cancelado.', 'success');
@@ -1420,7 +1593,7 @@ function buildCompraItem(order, ctx) {
   const history = buildCompraHistory(order, events);
   if (history) info.appendChild(history);
 
-  const cancelBtn = buildCompraCancelButton(order);
+  const cancelBtn = buildCompraCancelButton(order, ctx);
   if (cancelBtn) info.appendChild(cancelBtn);
 
   item.appendChild(info);
@@ -1894,7 +2067,7 @@ function buildRevocationSection(order) {
 let comprasCache = [];
 // Lo que necesita cada tarjeta además del pedido: datos para transferir,
 // historial (order_events), código de retiro y comercios ya calificados.
-let comprasCtx = { transferInfoByStoreId: new Map(), eventsByOrder: new Map(), codeByOrder: new Map(), reviewedStoreIds: new Set() };
+let comprasCtx = { transferInfoByStoreId: new Map(), eventsByOrder: new Map(), codeByOrder: new Map(), reviewedStoreIds: new Set(), deliveryByOrder: new Map() };
 let comprasStatusFilter = 'todas';
 
 async function loadCompras(userId) {
@@ -1919,7 +2092,13 @@ async function loadCompras(userId) {
     // lote (no una por pedido). Si alguna falla, la tarjeta sale igual sin ese dato.
     const orderIds = (orders || []).map((o) => o.id);
     const storeIds = [...new Set((orders || []).filter((o) => o.status === 'completed').map((o) => o.store_id).filter(Boolean))];
-    const [eventsRes, codesRes, reviewsRes] = await Promise.all([
+    // Estado de la entrega de los pedidos con envío (migración 138): quién lo
+    // lleva, si ya salió, y si el comprador ya contó cómo le llegó. Si la función
+    // todavía no existe, la tarjeta sale igual sin esas marcas.
+    const deliveryOrderIds = (orders || [])
+      .filter((o) => o.delivery_method === 'delivery' && ['paid', 'shipped', 'completed'].includes(o.status))
+      .map((o) => o.id);
+    const [eventsRes, codesRes, reviewsRes, deliveriesRes] = await Promise.all([
       orderIds.length
         ? supabase.from('order_events').select('order_id, kind, note, actor, created_at').in('order_id', orderIds).order('created_at', { ascending: true })
         : { data: [] },
@@ -1927,7 +2106,9 @@ async function loadCompras(userId) {
       storeIds.length
         ? supabase.from('reviews').select('target_id').eq('target_type', 'store').eq('client_id', userId).in('target_id', storeIds)
         : { data: [] },
+      deliveryOrderIds.length ? supabase.rpc('get_order_delivery_states', { p_order_ids: deliveryOrderIds }) : { data: [] },
     ]);
+    const deliveryByOrder = new Map((deliveriesRes.data || []).map((d) => [d.order_id, d]));
     const eventsByOrder = new Map();
     (eventsRes.data || []).forEach((e) => {
       if (!eventsByOrder.has(e.order_id)) eventsByOrder.set(e.order_id, []);
@@ -1951,7 +2132,7 @@ async function loadCompras(userId) {
     const transferInfoByStoreId = await fetchStoreTransferData(supabase, pendingTransferStoreIds);
 
     comprasCache = orders || [];
-    comprasCtx = { transferInfoByStoreId, eventsByOrder, codeByOrder, reviewedStoreIds };
+    comprasCtx = { transferInfoByStoreId, eventsByOrder, codeByOrder, reviewedStoreIds, deliveryByOrder };
 
     applyComprasFilter();
   } catch (err) {

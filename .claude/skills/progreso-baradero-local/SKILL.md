@@ -5613,3 +5613,25 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
   de insert/delete del bucket en vez de `drop policy` + `create policy`). Quedó equivalente al archivo `137_...sql`. Verificado en la
   base real: 18 filas, 6 en posición 1 con comercio e imagen, 12 libres, constraint viejo fuera, trigger con la regla de posición,
   policies con `position`, y un UPDATE de posición sin ser admin da "Solo un administrador puede asignar el espacio...".
+
+## 2026-10-22 — Panel de repartidor realista y liviano (migraciones 138 y 139)
+
+Resumen y pasos de publicación en `CLAUDE.md` ("Pendientes activos"). Detalle técnico que no cabe ahí:
+- **Archivos:** `db/schema/138_courier_flow.sql` (aplicada en 3 partes `138a`/`138b`/`138c`), `139_courier_flow_cierre.sql` (cierre, se aplica
+  DESPUÉS del deploy), `js/repartidor.js` (reescrito), `js/courier-utils.js` (+ test: etapas, semáforo, tope, mapas, `normalizeMapsUrl`),
+  `js/delivery-evidence.js` (cámara, achicado a 1280 px, subida, URLs firmadas, visor de las dos fotos), `js/vender.js` (`appendCourierBlock`,
+  campo Maps), `js/perfil.js` (`buildDeliveryFeedbackBlock`, `buildCompraCancelButton(order, ctx)`), `js/notifications-utils.js` (tipos
+  `delivery_*`), `pages/terminos.html` (#envios).
+- **RPCs nuevas:** `get_courier_panel`, `release_delivery`, `courier_heads_up`, `courier_notify_delay`, `courier_mark_picked_up`,
+  `report_delivery_problem`, `ack_delivery_cancelled`, `mark_ready_for_courier`, `confirm_courier_pickup`, `submit_delivery_feedback`,
+  `get_order_delivery_states` (estado de la entrega para comprador y comercio, **incluido el empleado**, que no puede leer `deliveries` por RLS),
+  `get_delivery_evidence`, `release_stale_deliveries` (cron). Todas SECURITY DEFINER con `revoke ... from public, anon`.
+- **Gotchas:** (1) el conector de Supabase se cuelga 60 s con `drop ...` y DELETE (ver CLAUDE.md); (2) la confirmación del comercio usa los 4 dígitos
+  de `right(order_number::text, 4)`, no una tabla de códigos; (3) el CSP no permite `blob:` en `img-src`: las vistas previas de fotos van con
+  `FileReader` -> data URL; (4) en el panel de repartidor `.bl-loading-block` pisaba `[hidden]` (spinner a la vista): regla en `repartidor.css`;
+  (5) el cron de auto-liberación ya soltó solo el #BL-1064 de prueba (estaba tomado hace horas sin retirar): es el comportamiento esperado;
+  (6) `update_delivery_status` conservó su firma de 3 parámetros (con 4 habría quedado ambigua con la vieja y obligaba a un `drop`).
+- **Cómo se probó:** transacciones deshechas contra la base real con `set_config('request.jwt.claims', ...)` (impersonar repartidor, comprador,
+  dueño y admin) dentro de un `DO` con sub-bloques que lanzan excepción para deshacer cada caso y devuelven los resultados en el mensaje final;
+  `storage.objects` se simula insertando filas. Panel en Chromium con Supabase simulado (`page.route` sobre `*.supabase.co`, sesión en
+  `localStorage` `sb-<ref>-auth-token`) sobre un `vite build` aparte.

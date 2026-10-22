@@ -187,6 +187,129 @@
   cursor: default;
 }
 
+/* ---- Entregas propias: etapas, avisos, menú ---- */
+
+.rp-header__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.rp-section__count {
+  margin-left: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-muted, #64748b);
+}
+
+.rp-tutorial {
+  margin-bottom: 1.75rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--bl-surface-alt);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+}
+.rp-tutorial__summary { cursor: pointer; font-weight: 700; color: var(--bl-primary); }
+.rp-tutorial__steps { margin: 0.8rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.6rem; color: #1e293b; }
+
+.rp-card--notified { border-left-color: var(--bl-primary); background: #eff6ff; }
+.rp-card--none { border-left-color: var(--bl-primary); }
+.rp-card--cancelled { border-left-color: var(--bl-danger); background: #fef2f2; }
+
+.rp-card__status--cancelled { background: var(--bl-danger); }
+
+.rp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  margin: 0.2rem 0;
+  padding: 0;
+  list-style: none;
+}
+.rp-steps__item {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.25rem;
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface-alt);
+  color: var(--bl-text-muted, #64748b);
+}
+.rp-steps__item.is-done { background: #dcfce7; color: #166534; }
+.rp-steps__item.is-current { background: var(--bl-primary); color: #fff; }
+
+.rp-place { display: flex; flex-direction: column; gap: 0.15rem; }
+.rp-place__links { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.85rem; }
+.rp-link { color: var(--bl-primary); font-weight: 600; text-decoration: underline; }
+
+.rp-chip {
+  align-self: flex-start;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--bl-radius-pill);
+}
+.rp-chip--ok { background: #dcfce7; color: #166534; }
+.rp-chip--wait { background: #fef3c7; color: #92400e; }
+
+.rp-card__hint { font-size: 0.8rem; color: var(--bl-text-muted, #64748b); }
+.rp-card__hint--info { color: var(--bl-primary); font-weight: 600; }
+
+.rp-code {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.9rem;
+  background: #eff6ff;
+  border: 1px dashed var(--bl-primary);
+  border-radius: var(--bl-radius-lg);
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+.rp-code__value { font-size: 1.8rem; letter-spacing: 0.15em; color: var(--bl-primary); }
+
+.rp-alert {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--bl-radius-lg);
+  background: #fffbeb;
+  border: 1px solid var(--bl-accent);
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+.rp-alert--danger { background: #fee2e2; border-color: var(--bl-danger); color: #7f1d1d; }
+.rp-alert__reason { font-size: 0.82rem; }
+
+.rp-btn--danger { background: var(--bl-danger); color: #fff; }
+.rp-btn--danger:hover { filter: brightness(0.92); }
+
+.rp-menu { margin-top: 0.2rem; }
+.rp-menu__summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bl-text-muted, #64748b);
+  padding: 0.35rem 0;
+}
+.rp-menu__body { display: grid; gap: 0.35rem; padding-top: 0.3rem; }
+.rp-menu__item {
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--bl-radius-lg);
+  border: 1px solid var(--bl-border);
+  background: #fff;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rp-menu__item:hover { background: var(--bl-surface-alt); }
+.rp-menu__item--danger { color: var(--bl-danger); border-color: var(--bl-danger); }
+
 @media (max-width: 640px) {
   .rp-list { grid-template-columns: 1fr; }
 }
+
+/* El bloque de carga (home.css) pisa el atributo hidden: sin esto el spinner
+   quedaba a la vista arriba del panel ya cargado. */
+.rp-main .bl-loading-block[hidden] { display: none; }

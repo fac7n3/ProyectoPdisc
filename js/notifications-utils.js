@@ -41,6 +41,14 @@ const TYPE_LABELS = {
   boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
   boost_needs_review: 'Un pago de tu combo necesita revisión',
   transfer_method_missing: 'Cargá un medio de transferencia en tu comercio: es obligatorio',
+  delivery_cancelled: 'Se canceló un pedido que tenías tomado',
+  delivery_released: 'Soltamos un pedido que tenías tomado',
+  delivery_ready: 'El comercio ya tiene listo tu pedido para retirar',
+  delivery_pickup_confirmed: 'El comercio confirmó que retiraste el pedido',
+  delivery_heads_up: 'El repartidor ya está retirando tu pedido',
+  delivery_delayed: 'El repartidor se demora en buscar un pedido',
+  delivery_problem: 'Hubo un problema con una entrega',
+  delivery_claim: 'Un comprador reclamó por una entrega',
 };
 
 /** Estados de Mercado Pago en los que la plata ya no está (ver mp-webhook). */
@@ -97,6 +105,14 @@ const TYPE_TONE = {
   boost_activated: 'success',
   boost_needs_review: 'accent',
   transfer_method_missing: 'danger',
+  delivery_cancelled: 'danger',
+  delivery_released: 'accent',
+  delivery_ready: 'success',
+  delivery_pickup_confirmed: 'success',
+  delivery_heads_up: 'success',
+  delivery_delayed: 'accent',
+  delivery_problem: 'danger',
+  delivery_claim: 'danger',
   support_ticket_status_change: 'accent',
   new_review: 'info',
   support_ticket_message: 'info',
@@ -171,6 +187,17 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       const others = Number(p.store_count) > 1 ? ` y ${Number(p.store_count) - 1} más` : '';
       return `${name}${others}: sin alias ni CBU/CVU, nadie puede pagarte por transferencia.`;
     }
+    case 'delivery_delayed':
+      return p.minutes ? `Calcula unos ${p.minutes} minutos más` : null;
+    case 'delivery_problem':
+      return p.note || null;
+    case 'delivery_cancelled':
+      return p.reason ? `Motivo: ${p.reason}` : null;
+    case 'delivery_claim': {
+      const labels = { roto: 'llegó roto', faltan: 'faltan productos', otro_producto: 'no era lo pedido', otro: 'otro problema' };
+      const reasons = Array.isArray(p.reasons) ? p.reasons.map((r) => labels[r] || r).join(', ') : '';
+      return reasons ? `Qué pasó: ${reasons}` : null;
+    }
     case 'boost_needs_review':
       if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
       return p.refunded ? 'El pago fue devuelto o desconocido' : null;
@@ -212,6 +239,24 @@ function buildNotificationLink(n) {
     case 'revocation_requested':
     case 'mp_payment_amount_mismatch':
     case 'mp_payment_refunded':
+      return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
+    // Avisos del reparto. Los del repartidor van a su panel; los del comprador, a
+    // "Mis compras"; los del comercio, a "Pedidos". delivery_problem le llega a los
+    // dos últimos y trae `for` para distinguirlos.
+    case 'delivery_cancelled':
+    case 'delivery_released':
+    case 'delivery_ready':
+    case 'delivery_pickup_confirmed':
+      return { href: './repartidor.html', label: 'Ir a mi panel' };
+    case 'delivery_heads_up':
+      return p.order_id ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' } : null;
+    case 'delivery_problem':
+      if (!p.order_id) return null;
+      return p.for === 'buyer'
+        ? { href: `./perfil.html?tab=compras&order=${encodeURIComponent(p.order_id)}`, label: 'Ver pedido' }
+        : { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' };
+    case 'delivery_delayed':
+    case 'delivery_claim':
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     // Combos de "Impulsá tus ventas": van a esa pantalla del panel.
     case 'boost_activated':
@@ -291,6 +336,16 @@ const ORDER_TITLES = {
   order_expired: (p, ref) => `Tu pedido ${ref} se canceló porque no se completó el pago`,
   order_expired_seller: (p, ref) => `El pedido ${ref} se canceló por falta de pago (el stock volvió)`,
   revocation_accepted: (p, ref) => `El comercio aceptó tu arrepentimiento del pedido ${ref}`,
+  delivery_cancelled: (p, ref) => (p.cancelled_by === 'buyer'
+    ? `El comprador canceló el pedido ${ref}: no lo retires`
+    : `Se canceló el pedido ${ref}: no lo retires`),
+  delivery_released: (p, ref) => `Soltamos el pedido ${ref} porque pasó mucho tiempo sin retirarlo`,
+  delivery_ready: (p, ref) => `El pedido ${ref} ya está listo: podés pasar a retirarlo`,
+  delivery_pickup_confirmed: (p, ref) => `El comercio confirmó el retiro del pedido ${ref}. Sacá la foto y salí en camino`,
+  delivery_heads_up: (p, ref) => `El repartidor ya está retirando tu pedido ${ref}`,
+  delivery_delayed: (p, ref) => `El repartidor se demora en buscar el pedido ${ref}`,
+  delivery_problem: (p, ref) => `Hubo un problema con la entrega del pedido ${ref}`,
+  delivery_claim: (p, ref) => `Reclamo por la entrega del pedido ${ref}`,
 };
 
 /**

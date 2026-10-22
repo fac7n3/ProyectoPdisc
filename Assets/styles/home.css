@@ -5837,3 +5837,35 @@ html.bl-reduce-motion .bl-toast.is-leaving {
    (script de pages/home.html + renderPanelAction/showVenderLink de js/home.js).
    Así no se ve "Vender" un instante y después "Panel". */
 html[data-sess] #home-panel-action:not([data-ready]) { visibility: hidden; }
+
+/* ---- Entregas con repartidor (migración 138) ---- */
+
+/* "¿Cómo llegó tu pedido?" en Mis compras */
+.dfb { display: grid; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface-alt); }
+.dfb__title { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--bl-text); }
+.dfb__row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.dfb__btn { flex: 1 1 8rem; }
+.dfb__btn--bad { background: var(--bl-surface); color: var(--bl-danger); border: 1px solid var(--bl-danger); }
+.dfb__form { display: grid; gap: 0.6rem; }
+.dfb__form[hidden] { display: none; }
+.dfb__hint { margin: 0; font-size: 0.85rem; color: #64748b; }
+.dfb__reasons { display: grid; gap: 0.3rem; }
+.dfb__reason { font-size: 0.9rem; color: var(--bl-text); cursor: pointer; }
+.dfb__note { width: 100%; resize: vertical; }
+.dfb__photo { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.dfb__preview { width: 96px; height: 96px; object-fit: cover; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); }
+.dfb__preview[hidden] { display: none; }
+.compra-cancel-wrap { display: grid; gap: 0.5rem; }
+.compra-cancel-wrap .ord-alert[hidden] { display: none; }
+
+/* Visor de las fotos de la entrega (panel de vendedor / admin) */
+.dev-evidence { position: fixed; inset: 0; z-index: 11000; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, 0.55); }
+.dev-evidence__card { width: min(720px, 100%); max-height: 100%; overflow: auto; padding: 1.25rem; border-radius: var(--bl-radius-lg); background: var(--bl-surface); color: var(--bl-text); display: grid; gap: 0.9rem; }
+.dev-evidence__title { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--bl-primary); }
+.dev-evidence__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.9rem; }
+.dev-evidence__fig { margin: 0; display: grid; gap: 0.35rem; }
+.dev-evidence__fig figcaption { font-size: 0.85rem; font-weight: 700; color: #64748b; }
+.dev-evidence__fig img { width: 100%; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); display: block; }
+.dev-evidence__empty { margin: 0; padding: 1.5rem 0.75rem; text-align: center; font-size: 0.85rem; color: #64748b; background: var(--bl-surface-alt); border-radius: var(--bl-radius-md); }
+.dev-evidence__feedback { margin: 0; font-size: 0.9rem; }
+.dev-evidence__close { justify-self: end; padding: 0.55rem 1.2rem; border-radius: var(--bl-radius-pill); border: 1px solid var(--bl-border); background: var(--bl-surface); color: var(--bl-text); font-weight: 700; cursor: pointer; }
