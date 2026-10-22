@@ -215,6 +215,15 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-22 — Imagen ampliada de un banner del inicio: la X cierra de verdad y el fondo no hace nada**, reportado
+  por el usuario con captura ("toco la X y me lleva al producto"). Causa: la X (`.promo-lightbox__close`) estaba
+  centrada en la esquina de la imagen, así que casi la mitad quedaba sobre ella y un toque corrido caía sobre la imagen
+  (que lleva a la publicación). Ahora la X está **por encima de la imagen, sin tocarla** (`top: -2.75rem`, en el aire que
+  deja el padding del overlay) y con una zona de toque más grande que el círculo. **Tocar el fondo ya no cierra ni
+  navega: no hace nada** (se sacó el listener del overlay en `initPromoBanners`); se cierra solo con la X o con Esc.
+  Tocar la imagen sigue llevando a la publicación. Verificado en Chromium con Supabase simulado (escritorio 1365 px y
+  celular 390 px: toques en el fondo, justo al lado de la X, X, Esc e imagen). Esto reemplaza lo dicho en la entrada
+  de abajo sobre "tocar afuera cierra".
 - **Hecho 2026-10-21 — Banners del inicio: cerrar la imagen ampliada ya no lleva al comercio**, reportado por el usuario
   con captura. `initPromoBanners` (`js/home.js`) hacía navegar a la publicación al cerrar con la X, tocar afuera o Esc.
   Ahora esas tres formas **solo cierran**; lo único que lleva a la publicación es **tocar la imagen ampliada** (el aviso

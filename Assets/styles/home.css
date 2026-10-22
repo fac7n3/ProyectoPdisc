@@ -2177,8 +2177,11 @@ button.coupon-chip:hover {
 
 .promo-lightbox__close {
   position: absolute;
-  top: -1rem;
-  right: -1rem;
+  /* Afuera de la imagen (en el aire de arriba que deja el padding del overlay):
+     así nunca queda parte de la X sobre la imagen y un toque que se corre un
+     poco cae en el vacío, no en la imagen que lleva a la publicación. */
+  top: -2.75rem;
+  right: 0;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -2192,20 +2195,20 @@ button.coupon-chip:hover {
   justify-content: center;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   transition: transform 0.2s ease;
-  /* Arriba del .promo-lightbox__stage (position: relative, viene después en el
-     DOM): sin esto la imagen tapa la mitad de la X y tocarla abría la publicación. */
+  /* Arriba del .promo-lightbox__stage (position: relative, viene después en el DOM). */
   z-index: 2;
+}
+
+/* Zona de toque más grande que el círculo, también hacia el vacío de arriba. */
+.promo-lightbox__close::after {
+  content: '';
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: 50%;
 }
 
 .promo-lightbox__close:hover {
   transform: scale(1.08);
-}
-
-@media (max-width: 640px) {
-  .promo-lightbox__close {
-    top: 0;
-    right: 0;
-  }
 }
 
 /* ===========================================================
