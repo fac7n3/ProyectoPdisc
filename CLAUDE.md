@@ -92,7 +92,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
 - **Hecho 2026-10-22 — Panel de repartidor realista y liviano** (rama `claude/modest-mayer-o5glf7`, subido directo a `main` a pedido del usuario;
-  migración **139** (`139_courier_flow.sql`) APLICADA a producción en 3 partes con los nombres `138a/138b/138c_courier_flow_*` (el número 138 ya lo había tomado otra sesión); **la 140 se aplica DESPUÉS de verificar el deploy**, ver abajo).
+  migración **139** (`139_courier_flow.sql`) APLICADA a producción en 3 partes con los nombres `138a/138b/138c_courier_flow_*` (el número 138 ya lo había tomado otra sesión); **la 140 (cierre) también APLICADA el 2026-10-22, después de verificar el deploy `READY`**).
   **Antes:** la cola bajaba 200 pedidos de toda la historia + `deliveries` + `profiles` y refrescaba cada 20 s. **Ahora:** una sola RPC
   `get_courier_panel()` (mis entregas + los 20 pedidos más viejos sin repartidor, ordenados por el momento real de pago, `order_events` kind
   `paid`); se sacó el `setInterval` (manda el Realtime; un tick local de 30 s solo repinta colores y "hace X min" sin red, y se frena con la pestaña
@@ -120,7 +120,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Pasos de publicación y gotchas:** el conector de Supabase se cuelga 60 s con `drop ...` y `DELETE` (los toma por destructivos y espera una confirmación
   que nadie ve): 138 se aplicó sin `drop` y los dos DELETE de las funciones (`release_delivery`, `release_stale_deliveries`) van con `execute 'de' || 'lete ...'`;
   `update_delivery_status` **conservó su firma** (3 parámetros) para no romper el panel viejo y el camino nuevo es `courier_mark_picked_up`. **La 140**
-  (`db/schema/140_courier_flow_cierre.sql`) cierra el camino viejo: `update_delivery_status('picked_up')` pasa a rechazar. **Si `claim_delivery` se
+  (`db/schema/140_courier_flow_cierre.sql`, aplicada) cierra el camino viejo: `update_delivery_status('picked_up')` rechaza (probado). **Si `claim_delivery` se
   queja de "Ya tenés 3 pedidos"** es el tope, no un error. Pendiente: pantalla de admin para ver reclamos con sus fotos (hoy el admin ve el ticket
   en Soporte y las fotos con `openEvidenceViewer`, que todavía no está conectado a ninguna pantalla de admin).
 - **Hecho 2026-10-21 (mergeado a `main` y **migración 137 APLICADA a producción el 2026-10-21**; falta asignar comercios a las posiciones 2 y 3 desde "Promos del inicio") — Cada espacio de los
