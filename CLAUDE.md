@@ -215,6 +215,13 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-22 — Cartel "BARADERO LOCAL" de Iniciar sesión se ve bien**, reportado por el usuario con captura (parecía
+  "roto"). Es el mismo cartel del footer (letras azul y blanco con borde y sombra oscuros), pensado para el azul oscuro del
+  footer: sobre el fondo claro de `login.html` el borde oscuro se veía cortado. Ahora va sobre la misma plancha azul del
+  footer (`.auth-brand-plate`, `var(--bl-primary-deeper)`, en `auth.css`) con el mismo tamaño y la misma inclinación
+  (2.5rem, skew -10deg); el párrafo de abajo queda igual. Claro, oscuro y celular verificados. **En modo oscuro** el cartel
+  (igual que el del footer) queda todo en azul claro: la regla de `dark.css` pinta las dos líneas del mismo color.
+  Solo el login tenía este cartel (registro y recuperar contraseña no lo usan).
 - **Hecho 2026-10-22 — Página del comercio (`comercio.html`): ofertas primero y productos sin caja con scroll**, a pedido del
   usuario. Los productos con oferta o descuento **vigente** (`compare_at_price > price` y sin vencer, mismo criterio que
   `buildPriceRow`) van primero en la grilla y el resto sigue detrás, cada grupo en su orden (más nuevos primero):
