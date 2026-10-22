@@ -874,8 +874,8 @@ function getBannerImageUrl(banner) {
  * promo real llevan a ningún lado de un solo toque.
  *  - con promo de un comercio cargada (data-promo-href, lo pone
  *    loadHomePromos) => la 2da interacción, tocar la imagen ampliada de
- *    nuevo, recién ahí lleva a la publicación. Cerrar (X, afuera, Esc) solo
- *    cierra: no lleva a ningún lado (pedido del usuario 2026-10-21);
+ *    nuevo, recién ahí lleva a la publicación. Cerrar (X, Esc) solo cierra: no
+ *    lleva a ningún lado, y tocar el fondo no hace nada (pedido del usuario);
  *  - con foto fija sin promo => tocar la imagen o cerrar solo cierra;
  *  - espacio sin ninguna imagen (no debería pasar, toda promo viva trae
  *    imagen) => por las dudas, el click va directo a la publicación.
@@ -939,7 +939,7 @@ function initPromoBanners() {
     closeBtn.focus();
   };
 
-  // Cerrar (X, click afuera, Esc): solo cierra, nunca navega.
+  // Cerrar (X, Esc): solo cierra, nunca navega.
   const closeLightbox = () => {
     overlay.classList.remove('is-open');
     img.src = '';
@@ -977,10 +977,8 @@ function initPromoBanners() {
 
   if (!overlay || !closeBtn) return;
   closeBtn.addEventListener('click', closeLightbox);
-  // Click en el fondo (afuera de la imagen/botón) también cierra.
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeLightbox();
-  });
+  // El fondo no hace nada (ni cierra ni lleva a la publicación): un toque
+  // corrido por error no tiene que mover nada. Se cierra con la X o con Esc.
   // Tocar la imagen ampliada de nuevo: lleva a la publicación (si la hay).
   img?.addEventListener('click', followImage);
   prevBtn?.addEventListener('click', () => step(-1));
