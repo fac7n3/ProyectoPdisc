@@ -1,10 +1,11 @@
 import { supabase } from './auth-utils.js';
-import { updateCartBadge, showToast, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
+import { updateCartBadge, showToast, localIsoDate, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, buildShippingBadge, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
+import { offersFirst } from './store-products-order.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -957,7 +958,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     mainContent.innerHTML = '';
 
-    const productList = products || [];
+    // Las ofertas y descuentos vigentes van primero; el resto sigue abajo.
+    const productList = offersFirst(products, localIsoDate());
     const storeHeader = buildStoreHeader(store, {
       isOwner,
       categoryName,

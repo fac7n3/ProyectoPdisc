@@ -46,14 +46,11 @@ check("comercio suspendido => banner fijo", () => assert.equal(isPromoLive({ ...
 check("sin datos del comercio (RLS no lo devolvió) => banner fijo", () => assert.equal(isPromoLive({ ...base, stores: null }), false));
 
 console.log("promoHref");
-check("con publicación activa lleva a la publicación", () => {
-  assert.equal(promoHref(base), `./producto.html?id=${PRODUCT}`);
+check("con publicación activa igual lleva a la página del comercio", () => {
+  assert.equal(promoHref(base), `./comercio.html?id=${STORE}`);
 });
 check("publicación pausada => página del comercio", () => {
   assert.equal(promoHref({ ...base, products: { is_active: false } }), `./comercio.html?id=${STORE}`);
-});
-check("publicación borrada (join vacío) => página del comercio", () => {
-  assert.equal(promoHref({ ...base, products: null }), `./comercio.html?id=${STORE}`);
 });
 check("sin publicación elegida => página del comercio", () => {
   assert.equal(promoHref({ ...base, product_id: null, products: null }), `./comercio.html?id=${STORE}`);
