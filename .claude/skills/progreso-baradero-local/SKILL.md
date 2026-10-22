@@ -5635,3 +5635,20 @@ Resumen y pasos de publicación en `CLAUDE.md` ("Pendientes activos"). Detalle t
   dueño y admin) dentro de un `DO` con sub-bloques que lanzan excepción para deshacer cada caso y devuelven los resultados en el mensaje final;
   `storage.objects` se simula insertando filas. Panel en Chromium con Supabase simulado (`page.route` sobre `*.supabase.co`, sesión en
   `localStorage` `sb-<ref>-auth-token`) sobre un `vite build` aparte.
+
+## 2026-10-22 — 12 banners nuevos para las posiciones 2 y 3 del inicio (migración 138, aplicada)
+- **Pedido:** "hacé más imágenes parecidas a las que ya están y después ponelas" (los 12 lugares libres que dejó la 137).
+- **Imágenes:** generador HTML+Playwright (en el scratchpad de la sesión, no versionado): fondo en degradé de 115° con dos círculos
+  translúcidos, eyebrow con el comercio, título Inter 800, píldora crema `#fdf0c8` con el precio o descuento, y 3 fotos de
+  `public/img/productos/` (o `prod-mascotas-*` en PetShop) con borde blanco y rotaciones -5/2/5°. Layout `big` (1600x900, foto central
+  vertical + dos detrás) y `wide` (fila de 3 fotos cuadradas); el título/eyebrow/píldora se achican con un `while (scrollWidth > max)`
+  para no pisar las fotos. Se convierte a webp q84 y se copia a `dist/img/promos/` (dist se versiona). **Gotcha:** primero salieron los
+  de 1200x300 con el texto encima de las fotos y el de la cervecería en 5:1 cuando el espacio `f` es 4:1 (con `contain` quedan franjas
+  de azul de marca): cada imagen tiene que respetar la proporción de su espacio (a/b/c 16:9, d 5:1, e/f 4:1, ver `HOME_PROMO_SLOTS`).
+- **Datos:** migración 138 = 12 `update` a `home_promos` por (`slot`, `position`), buscando comercio y publicación por **nombre/título**
+  (no por uuid) y con `exists` para que no toque la fila si el comercio no está; `product_id` null en d3 y e2 (van a la página del
+  comercio). Verificado antes de aplicar que cada comercio/producto existe y que los precios y % OFF de las imágenes son los de la base.
+- **Orden de publicación:** merge -> deploy READY -> imagen servida -> migración (si no, el banner apuntaría a un archivo inexistente).
+  La imagen se verificó con `mcp__vercel__web_fetch_vercel_url` (el `curl` del sandbox da 000 contra el dominio).
+- **Ofertas que vencen:** ver la advertencia en CLAUDE.md (combo Santa Julia 11/08, Skyy 11/15, Arcor 11/30).
+

@@ -124,6 +124,25 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   queja de "Ya tenés 3 pedidos"** es el tope, no un error. Pendiente: pantalla de admin para ver reclamos con sus fotos (hoy el admin ve el ticket
   en Soporte y las fotos con `openEvidenceViewer`, que todavía no está conectado a ninguna pantalla de admin).
 - **Hecho 2026-10-21 (mergeado a `main` y **migración 137 APLICADA a producción el 2026-10-21**; falta asignar comercios a las posiciones 2 y 3 desde "Promos del inicio") — Cada espacio de los
+- **Hecho 2026-10-22 (mergeado a `main` y migración 138 APLICADA a producción) — 12 banners nuevos para las posiciones 2 y 3 de los
+  6 espacios del inicio**, a pedido del usuario ("más imágenes parecidas a las que ya están, y después ponelas"). Imágenes en
+  `public/img/promos/` + `dist/img/promos/` (webp, mismas medidas que el espacio: 1600x900 en a/b/c, 1600x320 en d, 1200x300 en e/f),
+  hechas con HTML+Chromium en el mismo estilo de la 134 (degradé con círculos, texto blanco en Inter, píldora crema, 3 fotos de
+  producto con borde blanco inclinadas; el texto se achica solo hasta entrar). **Reparto** (cada una de un comercio): a2 La Espiga
+  ("Tortas desde $15.000"), a3 Perfumería Lavanda, b2 Indumentaria La Moda ("Camperas desde $40.000"), b3 Boutique Amapola,
+  c2 Panadería El Sol, c3 Farmacia Central, d2 Bebidas La Esquina (15% OFF combo Santa Julia + Speed), d3 Kiosco El Paso ("Alfajores
+  desde $800"), e2 PetShop Huellitas, e3 Dulce Tentación (14% OFF combo Arcor), f2 Cervecería El Barril (12% OFF Skyy Infusions),
+  f3 Super Baradero. **Todo número sale de la base** (el "Desde $X" es el precio más bajo real de ese rubro en el comercio; los % OFF
+  de `compare_at_price`/`price`). **Ojo:** los 3 banners con "% OFF" dependen de ofertas que **vencen** (`offer_expires_at`: combo Santa
+  Julia 2026-11-08, Skyy Infusions 2026-11-15, combo Arcor 2026-11-30); al vencer, el banner sigue diciendo el descuento hasta que se
+  cambie o se apague la publicidad (panel de admin, "Promos del inicio"). Si cambia el precio de un producto con "Desde $X", también
+  hay que rehacer la imagen. Migración **138** (`db/schema/138_banners_inicio_posiciones_2_y_3.sql`, solo datos: asigna comercio,
+  publicación de destino, título e imagen a las 12 filas de `home_promos`; apaga `home_promos_guard` mientras corre, como la 134;
+  d3 y e2 llevan a la página del comercio, sin publicación). **Se publicó en orden:** merge a `main` -> deploy de Vercel `READY` y
+  imagen servida (200, `RIFF/WEBP`, verificado con el conector de Vercel porque el sandbox no llega al dominio) -> migración aplicada
+  en un solo `apply_migration` (esta vez no se colgó: no tiene `drop`). Verificado en la base: 18 filas asignadas (3 por espacio,
+  cada una de su comercio) y los 3 triggers de `home_promos` en `O`. **Sin probar el inicio en el navegador contra producción.**
+- **Hecho 2026-10-21 (mergeado a `main` y **migración 137 APLICADA a producción el 2026-10-21**; las posiciones 2 y 3 ya tienen comercios: ver la entrada de 2026-10-22 de abajo) — Cada espacio de los
   mosaicos del inicio es un carrusel de hasta 3 PUBLICIDADES**, a pedido del usuario: para que entren más comercios que los 6 espacios
   fijos. **Cada publicidad es de un comercio distinto** (no son 3 imágenes de uno solo): fila propia de `home_promos` con su comercio,
   publicación de destino, título, imagen y on/off. Migración **137** (`db/schema/137_home_promos_hasta_3_por_espacio.sql`): columna
