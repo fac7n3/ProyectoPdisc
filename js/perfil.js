@@ -1312,7 +1312,7 @@ function buildCompraHistory(order, events) {
 }
 
 /**
- * "¿Cómo llegó tu pedido?" (migración 138). Un toque si llegó bien; si no, motivos,
+ * "¿Cómo llegó tu pedido?" (migración 139). Un toque si llegó bien; si no, motivos,
  * una nota y UNA FOTO donde se vean todos los productos como llegaron: eso abre un
  * reclamo en Soporte con las dos fotos (la del retiro y esta) a la vista del
  * comercio y del admin. Se responde dentro de las 48 horas de la entrega.
@@ -1438,7 +1438,7 @@ function buildDeliveryFeedbackBlock(order, delivery) {
  *  - sin pagar: se cancela solo (el stock vuelve al toque);
  *  - con envío ya pagado: se puede hasta que el repartidor retire el pedido;
  *  - con el pedido ya en camino: no se cancela, se le explica qué puede hacer.
- * La base valida lo mismo (cancel_order, migración 138).
+ * La base valida lo mismo (cancel_order, migración 139).
  */
 function buildCompraCancelButton(order, ctx) {
   const delivery = ctx?.deliveryByOrder?.get(order.id);
@@ -2092,7 +2092,7 @@ async function loadCompras(userId) {
     // lote (no una por pedido). Si alguna falla, la tarjeta sale igual sin ese dato.
     const orderIds = (orders || []).map((o) => o.id);
     const storeIds = [...new Set((orders || []).filter((o) => o.status === 'completed').map((o) => o.store_id).filter(Boolean))];
-    // Estado de la entrega de los pedidos con envío (migración 138): quién lo
+    // Estado de la entrega de los pedidos con envío (migración 139): quién lo
     // lleva, si ya salió, y si el comprador ya contó cómo le llegó. Si la función
     // todavía no existe, la tarjeta sale igual sin esas marcas.
     const deliveryOrderIds = (orders || [])

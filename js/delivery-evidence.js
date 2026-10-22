@@ -1,6 +1,6 @@
 /**
  * Fotos de la entrega (retiro del repartidor y recepción del comprador).
- * Viven en el bucket privado `delivery-evidence` (migración 138) con paths
+ * Viven en el bucket privado `delivery-evidence` (migración 139) con paths
  * `{order_id}/pickup-{ts}.jpg` / `{order_id}/received-{ts}.jpg`, y se ven con
  * URLs firmadas de 60 s, igual que los comprobantes de pago.
  *

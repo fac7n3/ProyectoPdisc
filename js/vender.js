@@ -1209,7 +1209,7 @@ let ordDeliveryState = new Map();
 
 /**
  * Se pide por RPC y no con el embed `deliveries(...)`: la policy de esa tabla no
- * deja leerla a los empleados del comercio (migración 138, get_order_delivery_states).
+ * deja leerla a los empleados del comercio (migración 139, get_order_delivery_states).
  */
 async function loadDeliveryStates() {
   ordDeliveryState = new Map();
@@ -1449,7 +1449,7 @@ function buildOrderActionBlock(order) {
 /**
  * Pedidos con envío y repartidor: "Listo para el repartidor", confirmar el
  * retiro con los 4 dígitos del número de pedido, avisos del repartidor y, al
- * final, las fotos de la entrega. Ver migración 138.
+ * final, las fotos de la entrega. Ver migración 139.
  */
 function appendCourierBlock(block, order) {
   if (order.delivery_method !== 'delivery') return;
@@ -2505,7 +2505,7 @@ function fillStoreProfileForm(store) {
   // Migración 106: alias/CBU/titular/banco en columnas propias. Si esa
   // migración faltara, el select da error y se reintenta solo con
   // transfer_info (los campos nuevos quedan vacíos, el resto anda).
-  // Migración 138: link de Google Maps del local. Fetch aparte, mismo criterio
+  // Migración 139: link de Google Maps del local. Fetch aparte, mismo criterio
   // que lo de transferencia: si la columna faltara, no se cae el panel.
   const mapsInput = document.getElementById('store-maps-url');
   if (mapsInput) {
@@ -2763,7 +2763,7 @@ function setupStoreProfileForm() {
       })
       .eq('id', currentStoreId);
 
-    // Migración 138: el link de Google Maps también va aparte, por la misma razón.
+    // Migración 139: el link de Google Maps también va aparte, por la misma razón.
     if (document.getElementById('store-maps-url')) {
       const { error: mapsError } = await supabase.from('stores').update({ maps_url: mapsUrl.value }).eq('id', currentStoreId);
       if (mapsError) {

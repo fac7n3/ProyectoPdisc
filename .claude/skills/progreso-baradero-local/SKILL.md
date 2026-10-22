@@ -5614,10 +5614,10 @@ Rama `claude/epic-carson-e43vfc`, mergeada a `main` y migración aplicada el mis
   base real: 18 filas, 6 en posición 1 con comercio e imagen, 12 libres, constraint viejo fuera, trigger con la regla de posición,
   policies con `position`, y un UPDATE de posición sin ser admin da "Solo un administrador puede asignar el espacio...".
 
-## 2026-10-22 — Panel de repartidor realista y liviano (migraciones 138 y 139)
+## 2026-10-22 — Panel de repartidor realista y liviano (migraciones 139 y 140)
 
 Resumen y pasos de publicación en `CLAUDE.md` ("Pendientes activos"). Detalle técnico que no cabe ahí:
-- **Archivos:** `db/schema/138_courier_flow.sql` (aplicada en 3 partes `138a`/`138b`/`138c`), `139_courier_flow_cierre.sql` (cierre, se aplica
+- **Archivos:** `db/schema/139_courier_flow.sql` (aplicada en 3 partes `138a`/`138b`/`138c`), `140_courier_flow_cierre.sql` (cierre, se aplica
   DESPUÉS del deploy), `js/repartidor.js` (reescrito), `js/courier-utils.js` (+ test: etapas, semáforo, tope, mapas, `normalizeMapsUrl`),
   `js/delivery-evidence.js` (cámara, achicado a 1280 px, subida, URLs firmadas, visor de las dos fotos), `js/vender.js` (`appendCourierBlock`,
   campo Maps), `js/perfil.js` (`buildDeliveryFeedbackBlock`, `buildCompraCancelButton(order, ctx)`), `js/notifications-utils.js` (tipos

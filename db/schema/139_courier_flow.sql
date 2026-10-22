@@ -15,10 +15,10 @@
 -- ADITIVA: el panel nuevo avanza con courier_mark_picked_up (foto + confirmación
 -- del comercio, obligatorias ahí), pero update_delivery_status mantiene su firma
 -- vieja y sigue andando para "en camino" SIN foto: así el panel viejo no se rompe
--- hasta que se publique el frontend nuevo. La 139 (después del deploy) le cierra
+-- hasta que se publique el frontend nuevo. La 140 (después del deploy) le cierra
 -- ese camino.
 --
--- Se aplicó a producción en tres partes (138a, 138b, 138c): el conector de
+-- Se aplicó a producción en tres partes (nombres 138a, 138b y 138c: el 138 del repo ya lo tenía otra migración): el conector de
 -- Supabase se cuelga con `drop ...` y con DELETE (los toma por destructivos y
 -- espera una confirmación que nadie ve). Por eso acá no hay `drop ... if exists`
 -- (todo es nuevo) y las dos funciones que borran filas de `deliveries` lo hacen
@@ -634,7 +634,7 @@ grant execute on function public.confirm_courier_pickup(uuid, text) to authentic
 -- update_delivery_status conserva su firma (uuid, text, text) para no romper el
 -- panel viejo: suma el bloqueo de pedidos cancelados y las marcas de tiempo. El
 -- panel nuevo marca "en camino" con courier_mark_picked_up (foto + confirmación
--- del comercio obligatorias). La 139 cierra el camino viejo.
+-- del comercio obligatorias). La 140 cierra el camino viejo.
 
 create or replace function public.update_delivery_status(p_delivery_id uuid, p_new_status text, p_code text default null)
 returns jsonb

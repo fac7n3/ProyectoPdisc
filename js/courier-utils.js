@@ -111,7 +111,7 @@ export function telHref(phone) {
   return digits.replace(/\D/g, '').length >= 6 ? `tel:${digits}` : null;
 }
 
-/** Mismo criterio que el CHECK stores_maps_url_check (migración 138). */
+/** Mismo criterio que el CHECK stores_maps_url_check (migración 139). */
 const GOOGLE_MAPS_URL = /^https:\/\/((www\.)?google\.([a-z]{2,3}|com?\.[a-z]{2})\/maps|maps\.google\.([a-z]{2,3}|com?\.[a-z]{2})\/|maps\.app\.goo\.gl\/|goo\.gl\/maps)/i;
 
 /**

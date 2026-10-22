@@ -1,4 +1,4 @@
--- Segunda mitad de la 138 (2026-10-22). Se aplica DESPUÉS de publicar el
+-- Segunda mitad de la 139 (2026-10-22). Se aplica DESPUÉS de publicar el
 -- frontend nuevo del panel de repartidor: con el viejo todavía en producción,
 -- rompería "Marcar en camino" (que no mandaba foto).
 --

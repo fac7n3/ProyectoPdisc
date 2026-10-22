@@ -1,7 +1,7 @@
 /**
  * Panel de repartidor (pages/repartidor.html).
  *
- * Una sola consulta (RPC `get_courier_panel`, migración 138) trae lo que se
+ * Una sola consulta (RPC `get_courier_panel`, migración 139) trae lo que se
  * dibuja: mis entregas y los 20 pedidos más viejos sin repartidor. Se refresca
  * por Realtime (con su respaldo de 30 s); un tick local solo repinta colores y
  * "hace X min" sin pedir nada, y se frena con la pestaña oculta.
