@@ -874,11 +874,11 @@ function getBannerImageUrl(banner) {
  * promo real llevan a ningún lado de un solo toque.
  *  - con promo de un comercio cargada (data-promo-href, lo pone
  *    loadHomePromos) => la 2da interacción, tocar la imagen ampliada de
- *    nuevo, recién ahí lleva a la publicación. Cerrar (X, Esc) solo cierra: no
+ *    nuevo, recién ahí lleva a la página del comercio. Cerrar (X, Esc) solo cierra: no
  *    lleva a ningún lado, y tocar el fondo no hace nada (pedido del usuario);
  *  - con foto fija sin promo => tocar la imagen o cerrar solo cierra;
  *  - espacio sin ninguna imagen (no debería pasar, toda promo viva trae
- *    imagen) => por las dudas, el click va directo a la publicación.
+ *    imagen) => por las dudas, el click va directo a la página del comercio.
  * Se decide en el momento del click, así da igual si las promos terminaron de
  * cargar antes o después de cablear los listeners.
  */
@@ -896,7 +896,7 @@ function initPromoBanners() {
 
   let lastTrigger = null;
   // A dónde lleva la 2da interacción, si la imagen abierta es la de una
-  // promo con publicación asignada. null en un banner decorativo.
+  // promo de un comercio. null en un banner decorativo.
   let pendingHref = null;
   // Publicidades del banner abierto ({ url, href, alt }; una sola en los
   // fijos) y cuál se está viendo. Cada una puede ser de un comercio distinto,
@@ -949,8 +949,8 @@ function initPromoBanners() {
     if (lastTrigger) lastTrigger.focus();
   };
 
-  // Tocar la imagen ampliada: con una promo con publicación asignada lleva
-  // ahí; sin promo (banner decorativo) solo cierra.
+  // Tocar la imagen ampliada: con una promo de un comercio lleva a la página
+  // del comercio; sin promo (banner decorativo) solo cierra.
   const followImage = () => {
     const href = pendingHref;
     closeLightbox();
@@ -977,9 +977,9 @@ function initPromoBanners() {
 
   if (!overlay || !closeBtn) return;
   closeBtn.addEventListener('click', closeLightbox);
-  // El fondo no hace nada (ni cierra ni lleva a la publicación): un toque
+  // El fondo no hace nada (ni cierra ni lleva al comercio): un toque
   // corrido por error no tiene que mover nada. Se cierra con la X o con Esc.
-  // Tocar la imagen ampliada de nuevo: lleva a la publicación (si la hay).
+  // Tocar la imagen ampliada de nuevo: lleva a la página del comercio (si la hay).
   img?.addEventListener('click', followImage);
   prevBtn?.addEventListener('click', () => step(-1));
   nextBtn?.addEventListener('click', () => step(1));
@@ -1027,9 +1027,9 @@ function applyPromoItem(banner, eyebrow, title, item) {
   title.hidden = !item.title;
   banner.dataset.promoHref = item.href;
   // El click abre la imagen ampliada primero, igual que un banner fijo (ver
-  // initPromoBanners): la publicación recién se abre en la 2da interacción.
+  // initPromoBanners): la página del comercio recién se abre en la 2da interacción.
   banner.dataset.lightboxAlt = item.alt;
-  banner.setAttribute('aria-label', `${item.alt}. Se abre la imagen ampliada; cerrala o tocá de nuevo para ir a la publicación.`);
+  banner.setAttribute('aria-label', `${item.alt}. Se abre la imagen ampliada; cerrala o tocá de nuevo la imagen para ir al comercio.`);
 }
 
 /**

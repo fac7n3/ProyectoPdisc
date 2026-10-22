@@ -67,15 +67,12 @@ export function isPromoLive(promo) {
 }
 
 /**
- * A dónde lleva el click: a la publicación elegida si sigue activa, y si no
- * (sin publicación elegida, o la pausaron / la borraron) a la página del
- * comercio -- nunca a un producto que el vecino no va a poder comprar.
+ * A dónde lleva el click: SIEMPRE a la página del comercio (pedido del usuario
+ * 2026-10-22), aunque la publicidad tenga una publicación elegida. La
+ * publicación elegida (`product_id`) queda solo como dato del espacio.
  */
 export function promoHref(promo) {
   if (!promo?.store_id) return null;
-  if (promo.product_id && promo.products?.is_active) {
-    return `./producto.html?id=${encodeURIComponent(promo.product_id)}`;
-  }
   return `./comercio.html?id=${encodeURIComponent(promo.store_id)}`;
 }
 

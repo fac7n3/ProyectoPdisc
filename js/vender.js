@@ -770,7 +770,7 @@ const VENDOR_SECTION_COPY = {
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
   recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para vender más y destacarte entre los comercios de Baradero.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
-  'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen y a qué publicación lleva.' },
+  'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen; al tocarla, el vecino va a la página de tu comercio.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
   notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de pedidos nuevos, pagos y novedades de tu comercio.' },
   soporte: { icon: 'fa-solid fa-headset', title: 'Soporte', desc: '¿Algo no anda como esperabas? Escribinos y te ayudamos.' },

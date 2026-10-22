@@ -137,7 +137,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
 
   const productSelect = document.createElement('select');
   productSelect.className = 'hp-input';
-  body.appendChild(field('Al hacer click lleva a', productSelect, 'Elegí la publicación de la promo. Si la pausás, el banner lleva a la página del comercio.'));
+  body.appendChild(field('Publicación de la promo', productSelect, 'Es solo de referencia: al hacer click, el banner lleva a la página del comercio.'));
   fillProductSelect(productSelect, promo.store_id, promo.product_id);
 
   const titleInput = document.createElement('input');

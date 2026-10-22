@@ -215,6 +215,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   El aviso trae el botón **"Cambiar de cuenta"**: reusa `js/account-switcher.js` (el de Mi perfil, ahora con
   `redirectTo`; al cambiar vuelve a `vender.html?tipo=servicio`, así la otra cuenta cae en el alta de profesional).
   Estilos propios en `Assets/styles/account-switcher-page.css` (tokens generales, scopeado a `.prof-blocked`).
+- **Hecho 2026-10-22 — Tocar la imagen ampliada de un banner del inicio lleva a la PÁGINA DEL COMERCIO, no al producto**, a pedido del
+  usuario. `promoHref` (`js/home-promos-utils.js`) devuelve siempre `comercio.html?id=<store_id>`; la publicación elegida
+  (`home_promos.product_id`) queda solo de referencia (el selector del editor lo dice) y ya no cambia el destino. El aviso de la
+  imagen dice "Tocá la imagen para ir al comercio" y se actualizaron los textos del panel de admin y de vendedor. Con varias
+  publicidades en un espacio, lleva al comercio de la que se está viendo. Test de `promoHref` actualizado.
 - **Hecho 2026-10-22 — Imagen ampliada de un banner del inicio: la X cierra de verdad y el fondo no hace nada**, reportado
   por el usuario con captura ("toco la X y me lleva al producto"). Causa: la X (`.promo-lightbox__close`) estaba
   centrada en la esquina de la imagen, así que casi la mitad quedaba sobre ella y un toque corrido caía sobre la imagen
