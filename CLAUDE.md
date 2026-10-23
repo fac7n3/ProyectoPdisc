@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-23 (mergeado a `main`; migración 141 aplicada según la nota del final de esta entrada) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Forrajería" del Drive**,
+- **Hecho 2026-10-23 (mergeado a `main` y migración 141 APLICADA a producción el 2026-10-23) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Forrajería" del Drive**,
   a pedido del usuario ("exactamente lo mismo" que con Kiosco/Bebidas). **Migración 141** (`db/schema/141_productos_forrajeria_drive.sql`):
   38 productos con 42 fotos (webp 800 px en `public/img/productos/` + `dist/`), 12 con precio tachado + fecha de fin, 3 cupones por
   comercio (`GRANERO10`, `HUELLITAS10`, `MIMOS5`, vencen el 30/11/2026), 3 banners del inicio (`public/img/promos/`) y cabecera/logo
@@ -106,6 +106,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   nuevas): el conector de Drive las devuelve en línea y no se pueden guardar a disco. **El plan de compartirlas por link NO se puede con
   este conector**: `share_file` solo comparte con un correo (no hay "cualquiera con el link" ni forma de sacar el permiso) y el sandbox no
   llega a `drive.google.com`. Salida real: que el usuario las suba más pesadas (>40 KB) o las pase por otro lado.
+  **Publicado en este orden:** merge a `main` -> deploy de Vercel con las imágenes (200 `image/webp`) -> cuentas creadas por SQL -> migración 141 (un solo `apply_migration`, sin `drop`/`delete`, no se colgó). Verificado en la base: Huellitas 23 productos (5 + 18), El Granero 13, Mimos y Paseos 7, 28 ofertas vigentes (16 + 12), 8 cupones activos, 0 grupos de opciones vacíos, `home_promos` e2/e3/d2 con sus comercios y los triggers `products_require_transfer_alias` y `home_promos_guard` de vuelta en `O`. **Sin probar el inicio ni los comercios en el navegador contra producción**; `npm test` no corre en este entorno (falta `postcss`, pasa igual en `main` limpio).
 - **Hecho 2026-10-22 — Panel de repartidor realista y liviano** (rama `claude/modest-mayer-o5glf7`, subido directo a `main` a pedido del usuario;
   migración **139** (`139_courier_flow.sql`) APLICADA a producción en 3 partes con los nombres `138a/138b/138c_courier_flow_*` (el número 138 ya lo había tomado otra sesión); **la 140 (cierre) también APLICADA el 2026-10-22, después de verificar el deploy `READY`**).
   **Antes:** la cola bajaba 200 pedidos de toda la historia + `deliveries` + `profiles` y refrescaba cada 20 s. **Ahora:** una sola RPC

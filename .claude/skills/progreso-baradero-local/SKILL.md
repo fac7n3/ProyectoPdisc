@@ -5668,3 +5668,12 @@ Misma receta que la 134 (ver la sección de arriba). Pedido: "exactamente lo mis
   Tentación -> El Granero) y d2 (Bebidas La Esquina -> Mimos y Paseos), elegidas porque esos comercios ya aparecían en otra posición. Cada
   UPDATE filtra por `slot` **y** `position` (desde la 137 `slot` ya no es único). Imágenes con `art.py` (Pillow + Inter), los % OFF salen de los datos.
 
+
+### Resultado de la publicación (2026-10-23)
+Orden: merge a `main` -> deploy de Vercel sirviendo las imágenes (200 `image/webp`) -> cuentas
+`proyectopdisc+elgranero@gmail.com` y `proyectopdisc+mimosypaseos@gmail.com` creadas por SQL (rol vendedor, `profiles.role`
+y JWT verificados) -> migración 141 aplicada en un solo `apply_migration`. Verificado en la base real: Huellitas 23
+productos, El Granero 13, Mimos y Paseos 7; 28 ofertas vigentes (16 + 12 nuevas); 8 cupones activos (`GRANERO10`,
+`HUELLITAS10`, `MIMOS5` nuevos); 0 grupos de opciones vacíos; `home_promos` mosaic_e/2 (Huellitas), mosaic_e/3 (El Granero)
+y mosaic_d/2 (Mimos y Paseos); triggers `products_require_transfer_alias` y `home_promos_guard` en `O`. Contraseñas de las
+cuentas nuevas: se entregaron al usuario por chat, no están en el repo. Sin probar en navegador contra producción.
