@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-22. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-23. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,21 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-23 (mergeado a `main`; migración 141 aplicada según la nota del final de esta entrada) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Forrajería" del Drive**,
+  a pedido del usuario ("exactamente lo mismo" que con Kiosco/Bebidas). **Migración 141** (`db/schema/141_productos_forrajeria_drive.sql`):
+  38 productos con 42 fotos (webp 800 px en `public/img/productos/` + `dist/`), 12 con precio tachado + fecha de fin, 3 cupones por
+  comercio (`GRANERO10`, `HUELLITAS10`, `MIMOS5`, vencen el 30/11/2026), 3 banners del inicio (`public/img/promos/`) y cabecera/logo
+  (`public/img/comercios/`). Comercios: **PetShop Huellitas** (seed; camas, comederos, bebederos y juguetes, 18 productos) y dos **cuentas de
+  prueba nuevas**: `proyectopdisc+elgranero@gmail.com` (**Forrajería El Granero**: alimento, arena, aves; 13 productos) y
+  `proyectopdisc+mimosypaseos@gmail.com` (**Mimos y Paseos**: arneses, ropita, rascador; 7 productos); **la contraseña no está en el repo**.
+  Todos en la categoría Forrajería. **Banners:** las 18 posiciones del inicio ya estaban ocupadas, así que se **reemplazaron** tres de comercios
+  que aparecían dos veces: e2 (PetShop Huellitas, ahora con sus productos reales), e3 (Dulce Tentación -> El Granero; sigue en d1) y d2
+  (Bebidas La Esquina -> Mimos y Paseos; sigue en a1). **Descartadas a propósito** (7): logo de otra tienda ("Paraíso de mascotas" x2,
+  "idepet", "Amigalitos", "Instituto Veterinario") y capturas de historias de Instagram con stickers y precios ajenos (Excellent gato adulto,
+  latas Dog Chow). **Quedaron SIN subir ~65 fotos chicas (menos de ~37 KB)** más 5 viejas de la carpeta (del 13/10, `*_forrajeria.jpg`, que no son
+  nuevas): el conector de Drive las devuelve en línea y no se pueden guardar a disco. **El plan de compartirlas por link NO se puede con
+  este conector**: `share_file` solo comparte con un correo (no hay "cualquiera con el link" ni forma de sacar el permiso) y el sandbox no
+  llega a `drive.google.com`. Salida real: que el usuario las suba más pesadas (>40 KB) o las pase por otro lado.
 - **Hecho 2026-10-22 — Panel de repartidor realista y liviano** (rama `claude/modest-mayer-o5glf7`, subido directo a `main` a pedido del usuario;
   migración **139** (`139_courier_flow.sql`) APLICADA a producción en 3 partes con los nombres `138a/138b/138c_courier_flow_*` (el número 138 ya lo había tomado otra sesión); **la 140 (cierre) también APLICADA el 2026-10-22, después de verificar el deploy `READY`**).
   **Antes:** la cola bajaba 200 pedidos de toda la historia + `deliveries` + `profiles` y refrescaba cada 20 s. **Ahora:** una sola RPC

@@ -5652,3 +5652,19 @@ Resumen y pasos de publicación en `CLAUDE.md` ("Pendientes activos"). Detalle t
   La imagen se verificó con `mcp__vercel__web_fetch_vercel_url` (el `curl` del sandbox da 000 contra el dominio).
 - **Ofertas que vencen:** ver la advertencia en CLAUDE.md (combo Santa Julia 11/08, Skyy 11/15, Arcor 11/30).
 
+## 2026-10-23 — Productos, ofertas y banners con las fotos de "Forrajería" del Drive (migración 141)
+Misma receta que la 134 (ver la sección de arriba). Pedido: "exactamente lo mismo" con las imágenes nuevas de Forrajería.
+- **Qué había:** 120 archivos en la carpeta (115 nuevos del 23/10 + 5 viejos del 13/10 sin tocar). Bajaron a disco los de más de ~37 KB
+  (49); los chicos vienen en línea y no se pueden guardar (corte entre 35,7 KB, que vino en línea, y 37,4 KB, que se guardó).
+  Se revisó una por una en hojas de contacto: 7 descartadas (logos de otras tiendas, capturas de Instagram), 42 usadas.
+- **Gotcha de ids:** al copiar ids del Drive a mano (`1ktt98N8jgSFe6XyP_...`) se confunden caracteres parecidos y la herramienta da
+  "Entity not found". Después de bajar, comparar por `id` contra el listado y repetir solo los que falten copiando de la salida.
+- **Compartir por link no existe en el conector** (`share_file` = persona/grupo por correo; sin revocar) y `drive.google.com` está
+  bloqueado en el sandbox: no insistir con esa vía.
+- **Comercios:** PetShop Huellitas (seed, rubro Forrajería, banner de cabecera nuevo), Forrajería El Granero y Mimos y Paseos (cuentas nuevas).
+  Categoría de todos los productos: `forrajeria` (no hay otra de mascotas). Opciones: aroma de la arena Alta Gama (lavanda, floral, limón),
+  colores de camas/bebederos/arneses, modelo del set arnés+correa (3 fotos en una ficha).
+- **Banners:** las 18 posiciones de `home_promos` ya estaban asignadas por la 138, así que se reemplazaron e2 (Huellitas), e3 (Dulce
+  Tentación -> El Granero) y d2 (Bebidas La Esquina -> Mimos y Paseos), elegidas porque esos comercios ya aparecían en otra posición. Cada
+  UPDATE filtra por `slot` **y** `position` (desde la 137 `slot` ya no es único). Imágenes con `art.py` (Pillow + Inter), los % OFF salen de los datos.
+
