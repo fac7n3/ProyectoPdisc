@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-23. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-24. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-24 (mergeado a `main` y migración 142 APLICADA a producción el 2026-10-24) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Librería" del Drive**,
+  a pedido del usuario ("lo mismo" que con Forrajería). **Migración 142** (`db/schema/142_productos_libreria_drive.sql`): 50 productos con 58 fotos
+  (webp 800 px en `public/img/productos/` + `dist/`), 7 con precio tachado + fecha de fin, 2 cupones (`CUADERNO10`, `ARCOIRIS5`, vencen el 30/11/2026),
+  2 banners del inicio (`public/img/promos/`) y cabecera/logo de los comercios nuevos (`public/img/comercios/`). Comercios: dos **cuentas de prueba nuevas**,
+  `proyectopdisc+elcuaderno@gmail.com` (**Librería El Cuaderno**, rubro Librería: carpetas, cuadernos, repuestos, mapas; 22 productos) y
+  `proyectopdisc+arcoiris@gmail.com` (**Papelería Arcoíris**, rubro Papelería: marcadores, resaltadores, lapiceras, adhesivos, tijeras; 21 productos) —
+  **la contraseña no está en el repo** — y, mezclando rubros, **Super Baradero** (cuaderno Éxito, birome y lápiz BIC: 3) y **Kiosco El Paso** (gomas y adhesivo: 4).
+  **Banners:** las 18 posiciones del inicio ya estaban ocupadas, así que se reemplazaron f2 (Cervecería El Barril, sigue en b1) por Librería El Cuaderno
+  ("14% OFF en carpetas y repuestos") y f3 (Super Baradero, sigue en e1) por Papelería Arcoíris ("Resaltadores pastel con 21% OFF"). **Descartadas a propósito** (7):
+  marca de otro negocio en la foto ("La Central Librería", "Ooh La La!", "COLOR PASTEL", "dvdistribuidora"), cartel de otra tienda detrás (Office),
+  marca ajena sobre el cuaderno (Avon) y lapiceras grabadas con un saludo municipal. **Quedaron SIN subir ~63 fotos chicas (menos de ~37 KB)** más 5 viejas
+  del 13/10 (`*_libreria.jpg`): el conector de Drive las devuelve en línea y no se pueden guardar a disco (el "kit escolar" de 37 KB también vino en línea).
+  **Publicado en este orden:** merge a `main` -> deploy de Vercel con las imágenes (200 `image/webp`) -> cuentas creadas por SQL -> migración 142 (un solo `apply_migration`).
+  Verificado en la base: 334 productos (284 + 50), Librería El Cuaderno 22, Papelería Arcoíris 21, Super Baradero 16, Kiosco El Paso 22, 35 ofertas vigentes (28 + 7),
+  10 cupones activos, 0 grupos de opciones vacíos, `home_promos` f2/f3 reasignados y los triggers `products_require_transfer_alias` y `home_promos_guard` de vuelta en `O`.
+  **Sin probar el inicio ni los comercios en el navegador contra producción.**
 - **Hecho 2026-10-23 (mergeado a `main` y migración 141 APLICADA a producción el 2026-10-23) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Forrajería" del Drive**,
   a pedido del usuario ("exactamente lo mismo" que con Kiosco/Bebidas). **Migración 141** (`db/schema/141_productos_forrajeria_drive.sql`):
   38 productos con 42 fotos (webp 800 px en `public/img/productos/` + `dist/`), 12 con precio tachado + fecha de fin, 3 cupones por

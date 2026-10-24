@@ -5677,3 +5677,15 @@ productos, El Granero 13, Mimos y Paseos 7; 28 ofertas vigentes (16 + 12 nuevas)
 `HUELLITAS10`, `MIMOS5` nuevos); 0 grupos de opciones vacíos; `home_promos` mosaic_e/2 (Huellitas), mosaic_e/3 (El Granero)
 y mosaic_d/2 (Mimos y Paseos); triggers `products_require_transfer_alias` y `home_promos_guard` en `O`. Contraseñas de las
 cuentas nuevas: se entregaron al usuario por chat, no están en el repo. Sin probar en navegador contra producción.
+
+## 2026-10-24 — Productos, ofertas y banners con las fotos de "Librería" del Drive (migración 142)
+Pedido del usuario: "lo mismo" que con Forrajería. Carpeta "Librería" del Drive (id `1XMoGffRuHwsIhGI-BVfyCxMC-gFUEboI`): 128 fotos nuevas + 5 viejas del 13/10.
+- **Bajada:** `download_file_content` guarda a disco solo lo que pesa >= ~37 KB (65 fotos); las chicas vienen en línea y no se pueden guardar (y gastan ~7K tokens cada una: no pedirlas).
+  El kit escolar BIC (37.235 bytes) y "lapices de colores bic" (36 KB) vinieron en línea y quedaron afuera.
+- **Revisión foto por foto** (hojas de contactos + zoom): descartadas 7 (marca/cartel de otro negocio, Avon, saludo municipal). Nombres, descripciones y opciones salen de lo que se ve.
+  Se leyeron etiquetas con zoom (Señorita adhesivo color 30 g, Tintoretto, Éxito N°3 480 hojas cuadriculadas vs rayadas).
+- **Catálogo (50 productos):** Librería El Cuaderno (22, rubro `libreria`), Papelería Arcoíris (21, `papeleria`), Super Baradero (3) y Kiosco El Paso (4); categoría del producto
+  `libreria`/`papeleria`. 7 ofertas con fecha, cupones `CUADERNO10`/`ARCOIRIS5`, banners en f2 y f3. Precios elegidos por Claude (valores de arranque, se cambian con un `UPDATE`).
+- **Resultado en la base (2026-10-24):** 334 productos, 35 ofertas vigentes, 10 cupones activos, 0 grupos de opciones vacíos, triggers en `O`. Orden: merge a `main` -> deploy con imágenes servidas
+  (200 `image/webp`; un primer 404 era el deploy todavía propagándose) -> cuentas por SQL -> `apply_migration` (sin `drop`/`delete`, no se colgó). Contraseñas de las cuentas nuevas: se entregaron
+  al usuario por chat. Scripts de generación en el scratchpad de la sesión (no versionados).
