@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-24. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-25. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,24 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-25 (mergeado a `main` y migración 143 APLICADA a producción el 2026-10-25) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Limpieza" del Drive**,
+  a pedido del usuario ("lo mismo" que con Forrajería/Librería). **Migración 143** (`db/schema/143_productos_limpieza_drive.sql`): 45 productos con 48 fotos
+  (webp 800 px en `public/img/productos/` + `dist/`), 8 con precio tachado + fecha de fin, 3 cupones (`LIMPIO10`, `CASITA5`, `TODOLIMPIO5`, vencen el 30/11/2026),
+  2 banners del inicio (`public/img/promos/`) y cabecera/logo de los comercios nuevos (`public/img/comercios/`). Comercios: dos **cuentas de prueba nuevas**,
+  `proyectopdisc+casalimpia@gmail.com` (**Casa Limpia Baradero**, rubro Limpieza: Cif, Magistral, desodorantes de piso, Glade; 12 productos) y
+  `proyectopdisc+lacasita@gmail.com` (**Bazar La Casita**, rubro Limpieza: aspiradoras, mopa, tachos, esponjas, paños, set de baño; 12 productos) —
+  **la contraseña no está en el repo** — y, mezclando rubros, **Todo Limpio S.A.** (seed, escobas/palas/trapos: 6, ahora con cabecera y rubro Limpieza),
+  **Perfumería Lavanda** (jabones Lux, esponjas de ducha: 6), **Farmacia Central** (algodón, hisopos, cepillos, bálsamo: 4), **Super Baradero** (Fabuloso, detergente de ropa, rollos Sussex: 3)
+  y **Almacén Don José** (rollos Elegante, jabón Seiseme: 2). **Banners:** las 18 posiciones ya estaban ocupadas; se reemplazaron d3 (Kiosco El Paso, que sigue en c1) por
+  Casa Limpia ("Cif y Magistral con hasta 15% OFF") y c3 (Farmacia Central, que sigue con sus productos y su página) por Bazar La Casita ("Esponjas Scrub Daddy con 15% OFF").
+  **Descartadas a propósito** (2): cestos de ropa (marca de agua "Decor djfj") y kit de baño negro (números de otro sitio sobre la foto). **Quedaron SIN subir ~57 fotos chicas
+  (menos de ~37 KB)** más 5 viejas del 13/10 (`*_limpieza.jpg`): el conector de Drive las devuelve en línea y no se pueden guardar a disco (mismo límite que en las carpetas anteriores).
+  El bálsamo labial de la foto dice "Vasalaine": se publicó sin nombre de marca ("Bálsamo para labios original"). Las ofertas vencen entre el 08/11 y el 30/11/2026.
+  **Publicado en este orden:** merge a `main` -> deploy de Vercel con las imágenes (200 `image/webp`) -> cuentas creadas por SQL (el perfil sale como `cliente` en la misma sentencia:
+  hay que pasarlo a `vendedor` en una segunda con `set_config('app.role_change_authorized','true',true)`) -> migración 143 (un solo `apply_migration`, sin `drop`/`delete`, no se colgó).
+  Verificado en la base: 379 productos (334 + 45), Casa Limpia 12, Bazar La Casita 12, Todo Limpio 11, Lavanda 48, Farmacia Central 13, Super Baradero 19, Almacén Don José 6,
+  43 ofertas vigentes (35 + 8), 13 cupones activos, 0 grupos de opciones vacíos, `home_promos` d3/c3 reasignados y los triggers `products_require_transfer_alias` y `home_promos_guard` de vuelta en `O`.
+  **Sin probar el inicio ni los comercios en el navegador contra producción.**
 - **Hecho 2026-10-24 (mergeado a `main` y migración 142 APLICADA a producción el 2026-10-24) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Librería" del Drive**,
   a pedido del usuario ("lo mismo" que con Forrajería). **Migración 142** (`db/schema/142_productos_libreria_drive.sql`): 50 productos con 58 fotos
   (webp 800 px en `public/img/productos/` + `dist/`), 7 con precio tachado + fecha de fin, 2 cupones (`CUADERNO10`, `ARCOIRIS5`, vencen el 30/11/2026),

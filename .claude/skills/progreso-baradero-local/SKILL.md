@@ -5689,3 +5689,16 @@ Pedido del usuario: "lo mismo" que con Forrajería. Carpeta "Librería" del Driv
 - **Resultado en la base (2026-10-24):** 334 productos, 35 ofertas vigentes, 10 cupones activos, 0 grupos de opciones vacíos, triggers en `O`. Orden: merge a `main` -> deploy con imágenes servidas
   (200 `image/webp`; un primer 404 era el deploy todavía propagándose) -> cuentas por SQL -> `apply_migration` (sin `drop`/`delete`, no se colgó). Contraseñas de las cuentas nuevas: se entregaron
   al usuario por chat. Scripts de generación en el scratchpad de la sesión (no versionados).
+
+## 2026-10-25 — Productos, ofertas y banners con las fotos de "Limpieza" del Drive (migración 143)
+
+Mismo flujo que Forrajería (141) y Librería (142), a pedido del usuario. Carpeta Drive "Limpieza" (`1csPLQ7uhONqS9keqza9oVIKJZ34vrZT6`, 107 archivos).
+- **Fotos:** el conector solo guarda a disco las de >= ~38 KB (50 de 107); las chicas vienen en línea (~7K tokens c/u) y no se pueden guardar, así que quedaron afuera (~57 + 5 viejas `*_limpieza.jpg` del 13/10).
+  Los ids de Drive se copian siempre del listado (`rows.json`), nunca a mano: los tipeados a mano fallaron varias veces. Se comparan los `id` de los JSON guardados contra el listado para saber qué falta.
+- **Descartadas:** cestos de ropa (marca de agua "Decor djfj", se vio subiendo contraste a la franja central) y kit de baño negro (números de otro sitio). El bálsamo "Vasalaine" se publicó sin marca.
+- **Catálogo:** 45 productos / 48 fotos / 8 ofertas / 3 cupones; comercios nuevos Casa Limpia Baradero (`+casalimpia`) y Bazar La Casita (`+lacasita`); suman Todo Limpio S.A., Perfumería Lavanda, Farmacia Central, Super Baradero y Almacén Don José.
+  Productos de higiene personal (Lux, algodón, hisopos, cepillos, bálsamo) van a la categoría `perfumeria`; el resto a `limpieza`.
+- **Banners:** reemplazados d3 (Kiosco El Paso, duplicado) y c3 (Farmacia Central). Titular corto (el largo pisaba las fotos).
+- **Gotcha cuentas por SQL:** `handle_new_user` crea el perfil como `cliente` dentro de la misma sentencia, un `update` en un CTE no lo ve; hace falta un segundo `update` con la bandera `app.role_change_authorized`.
+- **Publicación:** merge a `main` -> deploy READY y 200 `image/webp` -> cuentas -> `apply_migration` 143 -> verificación (379 productos, 43 ofertas vigentes, 13 cupones, triggers en `O`).
+
