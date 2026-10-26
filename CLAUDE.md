@@ -167,6 +167,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Fuera de alcance (decisión del usuario):** ganancia del repartidor por envío (va con el mapa por zonas). Verificado: SQL contra la base real
   en transacciones deshechas (~30 casos: tope, carrera, cancelaciones por fase, confirmación, foto, demora, heads-up, soltar, auto-liberación,
   reclamo, permisos), `npm test`, build y el panel en Chromium con Supabase simulado. **Sin probar con cuentas reales ni la cámara.**
+  **"Ver más" (2026-10-26):** las tarjetas del panel muestran el primer producto y un botón "Ver más (+N productos)" que despliega la lista completa (cantidad, nombre y opciones); qué pedidos están abiertos se guarda en `expandedOrders` para que el repintado no los cierre. Solo de cliente.
   **Pasos de publicación y gotchas:** el conector de Supabase se cuelga 60 s con `drop ...` y `DELETE` (los toma por destructivos y espera una confirmación
   que nadie ve): 138 se aplicó sin `drop` y los dos DELETE de las funciones (`release_delivery`, `release_stale_deliveries`) van con `execute 'de' || 'lete ...'`;
   `update_delivery_status` **conservó su firma** (3 parámetros) para no romper el panel viejo y el camino nuevo es `courier_mark_picked_up`. **La 140**
