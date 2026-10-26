@@ -2033,6 +2033,20 @@ function pdStat(icon, variant, title, value, sub) {
 
 const PEDIDOS_COUNTED_TABS = ['to_confirm', 'pending_payment', 'to_prepare', 'in_progress', 'completed', 'cancelled'];
 
+/** Búsqueda de Pedidos (N° de pedido, comprador o producto); sin texto deja pasar todo. */
+function pedidoMatchesSearch(o) {
+  const term = ordSearch.trim().toLowerCase();
+  if (!term) return true;
+  // "#BL-1066", "bl1066" o "1066" buscan el número de pedido.
+  const numberTerm = term.replace(/^#?\s*bl-?\s*/, '');
+  const numberMatch = /^\d+$/.test(numberTerm) && String(o.order_number || '').includes(numberTerm);
+  const idMatch = o.id.split('-')[0].toLowerCase().includes(term);
+  const phone = (ordPhoneByClientId.get(o.client_id) || '').toLowerCase();
+  const name = (ordNameByClientId.get(o.client_id) || '').toLowerCase();
+  const productMatch = (o.order_items || []).some((it) => (it.title || it.products?.title || '').toLowerCase().includes(term));
+  return numberMatch || idMatch || phone.includes(term) || name.includes(term) || productMatch;
+}
+
 /** Franja de stats + contadores de las pestañas. */
 function renderPedidosStats() {
   const dash = document.getElementById('pedidos-dash');
@@ -2054,9 +2068,11 @@ function renderPedidosStats() {
   dash.appendChild(pdStat('fa-circle-check', 'completed', 'Entregados', String(byTab.completed.length), formatPrice(sum(byTab.completed))));
   dash.appendChild(pdStat('fa-circle-xmark', 'cancelled', 'Cancelados', String(byTab.cancelled.length), formatPrice(sum(byTab.cancelled))));
 
+  // Las tarjetas de arriba son del negocio entero; los números de las pestañas siguen al buscador.
   PEDIDOS_COUNTED_TABS.forEach((tab) => {
     const el = document.getElementById(`pd-tab-count-${tab}`);
-    if (el) el.textContent = byTab[tab].length ? `(${byTab[tab].length})` : '';
+    const n = byTab[tab].filter(pedidoMatchesSearch).length;
+    if (el) el.textContent = n ? `(${n})` : '';
   });
 }
 
@@ -2091,19 +2107,7 @@ function renderPedidos() {
   let filtered = ordCache.filter((o) => pedidosTabMatches(o, pedidosTab));
   if (pedidosDeliveryFilter !== 'all') filtered = filtered.filter((o) => o.delivery_method === pedidosDeliveryFilter);
 
-  const term = ordSearch.trim().toLowerCase();
-  if (term) {
-    // "#BL-1066", "bl1066" o "1066" buscan el número de pedido.
-    const numberTerm = term.replace(/^#?\s*bl-?\s*/, '');
-    filtered = filtered.filter((o) => {
-      const numberMatch = /^\d+$/.test(numberTerm) && String(o.order_number || '').includes(numberTerm);
-      const idMatch = o.id.split('-')[0].toLowerCase().includes(term);
-      const phone = (ordPhoneByClientId.get(o.client_id) || '').toLowerCase();
-      const name = (ordNameByClientId.get(o.client_id) || '').toLowerCase();
-      const productMatch = (o.order_items || []).some((it) => (it.title || it.products?.title || '').toLowerCase().includes(term));
-      return numberMatch || idMatch || phone.includes(term) || name.includes(term) || productMatch;
-    });
-  }
+  filtered = filtered.filter(pedidoMatchesSearch);
 
   filtered = sortPedidos(filtered, pedidosSort);
 
