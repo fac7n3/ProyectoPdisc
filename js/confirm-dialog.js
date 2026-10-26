@@ -20,6 +20,15 @@ function closeDialog(resolve, value) {
   resolve(value);
 }
 
+/**
+ * Un <dialog> abierto con showModal() (ej. el detalle de un pedido) vive en la
+ * capa superior del navegador: ningún z-index lo pasa y todo lo que está afuera
+ * queda inerte. Por eso el cartel se monta ADENTRO de ese dialog si hay uno.
+ */
+function mountOverlay(overlay) {
+  (document.querySelector('dialog:modal') || document.body).appendChild(overlay);
+}
+
 /** Overlay + tarjeta + título + mensaje, comunes a los dos diálogos. */
 function buildShell(message, title, resolve, cancelValue) {
   if (activeDialog) closeDialog(activeDialog.resolve, activeDialog.cancelValue);
@@ -53,7 +62,9 @@ function buildShell(message, title, resolve, cancelValue) {
   });
 
   const onKeydown = (e) => {
-    if (e.key === 'Escape') closeDialog(resolve, cancelValue);
+    if (e.key !== 'Escape') return;
+    e.preventDefault(); // si hay un <dialog> detrás, que Esc cierre solo este cartel
+    closeDialog(resolve, cancelValue);
   };
   document.addEventListener('keydown', onKeydown);
 
@@ -105,7 +116,7 @@ export function confirmDialog(message, options = {}) {
       () => closeDialog(resolve, true),
     );
     card.appendChild(actions);
-    document.body.appendChild(overlay);
+    mountOverlay(overlay);
     confirmBtn.focus();
   });
 }
@@ -239,7 +250,7 @@ export function formDialog(message, options = {}) {
 
     card.appendChild(actions);
     sync();
-    document.body.appendChild(overlay);
+    mountOverlay(overlay);
     (firstField || confirmBtn).focus();
   });
 }
