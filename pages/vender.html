@@ -689,6 +689,14 @@
       .pd-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
       .pd-list[hidden] { display: none; }
       .pd-card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+      .pd-card--new { border-color: var(--bl-vendor-accent); box-shadow: 0 0 0 3px var(--bl-primary-soft, rgba(40, 65, 117, 0.15)), var(--bl-shadow-card); animation: pdCardIn 0.4s ease-out; }
+      @keyframes pdCardIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .pd-card--new { animation: none; } }
+      .pd-live { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.4rem; font-size: 0.75rem; font-weight: 600; color: var(--bl-text-muted); }
+      .pd-live__dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--bl-warning, #d97706); }
+      .pd-live[data-state="on"] .pd-live__dot { background: var(--bl-success, #059669); }
+      .pd-more { align-self: center; margin: 0.9rem auto 0; padding: 0.6rem 1.4rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-pill); background: var(--bl-surface); color: var(--bl-text); font-weight: 600; cursor: pointer; }
+      .pd-more:hover { border-color: var(--bl-vendor-accent); color: var(--bl-vendor-accent); }
       .pd-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
       .pd-card__section { border-top: 1px solid var(--bl-border-light); padding-top: 0.9rem; }
       /* margin-top: auto -- el pie queda abajo de todo aunque la tarjeta de al
@@ -1535,7 +1543,9 @@
             <section class="mc-section" data-section="pedidos" hidden>
             <div class="pd-wrap">
               <div class="pd-header">
-                <div class="pd-header__title"><i class="fa-solid fa-clipboard-list"></i> Pedidos</div>
+                <div class="pd-header__title"><i class="fa-solid fa-clipboard-list"></i> Pedidos
+                  <span class="pd-live" id="pedidos-live" data-state="off" role="status" aria-live="polite" title="Se perdió la conexión en vivo: la lista se actualiza igual cada 30 segundos y al volver."><span class="pd-live__dot" aria-hidden="true"></span><span class="pd-live__text">Reconectando…</span></span>
+                </div>
                 <p class="pd-header__sub">Gestioná tus ventas, envíos y pagos en un solo lugar.</p>
               </div>
 
@@ -1581,6 +1591,7 @@
                   </div>
 
                   <div class="pd-list" id="pedidos-list"></div>
+                  <button type="button" class="pd-more" id="pedidos-more" hidden>Mostrar más</button>
                   <div id="pedidos-empty" hidden></div>
                 </div>
 

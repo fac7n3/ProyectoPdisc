@@ -159,6 +159,30 @@
   color: var(--bl-text-muted, #64748b);
 }
 
+.rp-card__item-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rp-card__more {
+  align-self: flex-start;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--bl-primary);
+  cursor: pointer;
+}
+
+.rp-card__more:hover {
+  text-decoration: underline;
+}
+
 .rp-card__price {
   font-weight: 700;
   color: var(--bl-primary);

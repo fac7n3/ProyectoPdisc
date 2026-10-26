@@ -10,7 +10,7 @@
 
 **Cliente**
 - Catálogo con filtros por categoría, búsqueda y ofertas.
-- Carrito agrupado por comercio, con selección por casilla: lo que se destilda queda "pendiente" (sigue guardado, no se cobra), filtro por comercio y envío gratis calculado por tienda.
+- Carrito agrupado por comercio, con selección por casilla: lo que se destilda queda "pendiente" (sigue guardado, no se cobra), filtro por comercio y envío calculado por tienda.
 - Carrito sincronizado en la nube (funciona también sin sesión) y favoritos.
 - Checkout real con **Mercado Pago** (Checkout Pro), transferencia bancaria con comprobante, o pago simulado.
 - Retiro en el local o envío a domicilio dentro de Baradero (costo calculado según subtotal).

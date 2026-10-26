@@ -137,8 +137,7 @@
   white-space: nowrap;
 }
 
-/* Chip de envío del comercio: avisa que destildar algo puede costar el
-   envío gratis antes de que se vea en el total. */
+/* Chip de envío del comercio. */
 .cart-group__shipping {
   margin-left: auto;
   flex-shrink: 0;
@@ -151,18 +150,6 @@
   font-weight: 600;
   background: var(--bl-border-light);
   color: var(--bl-text-secondary);
-}
-
-.cart-group__shipping--free {
-  background: var(--bl-surface);
-  color: var(--bl-success);
-  border: 1px solid var(--bl-success);
-}
-
-.cart-group__shipping--missing {
-  background: var(--bl-surface);
-  color: var(--bl-accent-hover);
-  border: 1px solid var(--bl-accent);
 }
 
 .cart-group__shipping--pending {

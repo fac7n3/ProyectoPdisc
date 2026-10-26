@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-25. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-26. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,33 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-26 (en la rama `claude/casual-conversation-2053a7`, SIN mergear ni aplicar a producción) — Se saca el envío gratis**, a pedido del usuario
+  ("por ahora no vamos a hacer nada con eso"). **Antes:** los 28 comercios tenían `free_shipping_threshold = 5000` (el default) y `create_order` cobraba envío $0
+  cuando el subtotal con descuento de esa tienda llegaba a ese monto. **Ahora** un pedido con envío a domicilio paga siempre el `stores.delivery_fee` del comercio.
+  **Código:** `computeCartTotals` (`js/cart-totals.js`, con tests) ya no mira umbral; el chip del carrito (`groupShippingState`) dice "Envío $350" / "Retirás en el local"
+  en vez de "Envío gratis" / "Te faltan $X para envío gratis"; el resumen dice "Retiro en el local" cuando no hay envío; se sacó `buildShippingBadge` y la etiqueta verde
+  de las tarjetas (home, buscador, comercio), el distintivo "Envío gratis" y el "(gratis desde $X)" del modal de producto, y todos los `select` dejaron de pedir
+  `free_shipping_threshold`. **Migración 145** (`db/schema/145_create_order_sin_envio_gratis.sql`, APLICADA a producción el 2026-10-26 después del deploy de Vercel `READY`; verificado: la función viva ya no menciona el umbral, cobra `delivery_fee` siempre y conserva SECURITY DEFINER y permisos): `create_order` igual a la viva en producción
+  (leída con `pg_get_functiondef`) pero sin leer ni comparar el umbral. **La columna `stores.free_shipping_threshold` NO se borra** a propósito: un frontend viejo
+  en caché la sigue pidiendo en sus `select` y fallarían enteros; se puede borrar más adelante. `get_product_detail` tampoco se tocó (devuelve el campo y el cliente lo ignora).
+  **Orden de publicación (importa):** primero merge a `main` y deploy de Vercel (el carrito ya muestra el envío siempre), **después** la migración 145; al revés el carrito
+  prometería envío gratis y se cobraría el envío. Los pedidos viejos con `delivery_fee = 0` siguen mostrando "Gratis" en el detalle del pedido del vendedor (es historial real).
+  `npm test` no corre acá por el `sh` de Windows: los `js/*.test.mjs` pasan corriéndolos a mano; los de `supabase/functions/_tests` fallan por falta de `typescript` en el worktree (sin relación).
+
+- **Hecho 2026-10-26 — Pedidos del panel de vendedor: se actualiza solo y liviano** (migración **144** `get_store_orders` APLICADA a producción el 2026-10-26),
+  a pedido del usuario. El Realtime de Pedidos ya existía (y conecta en producción: `GET /realtime/v1/websocket -> 101` en los logs), pero cada cambio
+  volvía a bajar 50 pedidos con 4 consultas (el embed de `products` arrastra la cadena de RLS: +500 subplanes, ~50 ms de plan) y redibujaba todo; si
+  fallaba, la lista se vaciaba. **Ahora:** RPC `get_store_orders(p_store_id, p_order_ids, p_limit)` (SECURITY DEFINER, valida con `_can_manage_order`: dueño,
+  empleado o admin; **copia a mano la regla de `orders_select_merged`**) devuelve pedidos + productos + comprobantes + entrega + comprador en UNA consulta;
+  con `p_order_ids` trae solo los que cambiaron. `js/vender.js`: `loadOrders(ids)` (cae a las consultas de siempre si la función no existe), `patchOrderCards`
+  reusa las tarjetas que ya están y reemplaza solo las de esos ids; un **pedido nuevo aparece al instante** con lo que trae el evento (`showIncomingOrder`,
+  "Cargando productos…") resaltado 8 s (`.pd-card--new`); los eventos de `deliveries`/`payment_proofs` de pedidos que la lista no tiene se ignoran; Resumen
+  se recarga solo si está a la vista (si no, `resumenDirty`) y sin la sección abierta no se toca el DOM (`pedidosStale`); si falla la consulta la lista queda
+  como estaba. **Indicador "En vivo / Reconectando…"** junto al título (`#pedidos-live`; `subscribeToChanges` ahora acepta `onStatus`). **Mostrar más:** se
+  dibujan 20 tarjetas por vez (`PEDIDOS_PAGE`). Índice `idx_orders_store_created`. Verificado: SQL contra la base real como dueño (28/28 pedidos y 33/33
+  productos de Bebidas La Esquina, ajeno rechazado, anon sin permiso), `npm test`, y Chromium con Supabase y un websocket de Realtime **simulado** (INSERT,
+  UPDATE de entrega, evento ajeno, RPC fallando, corte de conexión, 25 pedidos). **Sin probar con cuentas reales ni dos dispositivos**: conviene hacer una compra de
+  prueba con el panel abierto y mirar que diga "En vivo". Si con "En vivo" no llega un pedido nuevo, el problema es de Realtime/RLS en Supabase, no del panel.
 - **Hecho 2026-10-25 (mergeado a `main` y migración 143 APLICADA a producción el 2026-10-25) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Limpieza" del Drive**,
   a pedido del usuario ("lo mismo" que con Forrajería/Librería). **Migración 143** (`db/schema/143_productos_limpieza_drive.sql`): 45 productos con 48 fotos
   (webp 800 px en `public/img/productos/` + `dist/`), 8 con precio tachado + fecha de fin, 3 cupones (`LIMPIO10`, `CASITA5`, `TODOLIMPIO5`, vencen el 30/11/2026),
@@ -167,6 +194,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Fuera de alcance (decisión del usuario):** ganancia del repartidor por envío (va con el mapa por zonas). Verificado: SQL contra la base real
   en transacciones deshechas (~30 casos: tope, carrera, cancelaciones por fase, confirmación, foto, demora, heads-up, soltar, auto-liberación,
   reclamo, permisos), `npm test`, build y el panel en Chromium con Supabase simulado. **Sin probar con cuentas reales ni la cámara.**
+  **"Ver más" (2026-10-26):** las tarjetas del panel muestran el primer producto y un botón "Ver más (+N productos)" que despliega la lista completa (cantidad, nombre y opciones); qué pedidos están abiertos se guarda en `expandedOrders` para que el repintado no los cierre. Solo de cliente.
   **Pasos de publicación y gotchas:** el conector de Supabase se cuelga 60 s con `drop ...` y `DELETE` (los toma por destructivos y espera una confirmación
   que nadie ve): 138 se aplicó sin `drop` y los dos DELETE de las funciones (`release_delivery`, `release_stale_deliveries`) van con `execute 'de' || 'lete ...'`;
   `update_delivery_status` **conservó su firma** (3 parámetros) para no romper el panel viejo y el camino nuevo es `courier_mark_picked_up`. **La 140**
@@ -299,8 +327,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   con el slider de varias publicidades (`promo-lightbox__stage`) la imagen tapaba la mitad de la X: se le dio
   `z-index: 2` al botón de cerrar (`home.css`), si no tocar la X caía sobre la imagen.
 - **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
-  del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
-  gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.
+  del usuario ("no hay"). Solo cambió el texto de la FAQ; el código se sacó el 2026-10-26 (ver la entrada de arriba).
 - **Hecho 2026-10-21 — Pregunta "¿Cómo retiro mi pedido en el local?" de `pages/info.html` sin el QR**, a pedido del
   usuario: ahora dice que en Mis compras se ve el **código de retiro** del pedido y que hay que mostrarle ese código al
   comercio. Solo cambió el texto de la respuesta (no el flujo ni la pantalla de Mis compras).

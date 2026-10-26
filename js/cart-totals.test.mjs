@@ -87,16 +87,16 @@ check("en retiro no se cobra envío por nada", () => {
   assert.equal(r.total, 100);
 });
 
-check("envío a domicilio por debajo del umbral, con los valores por defecto", () => {
+check("envío a domicilio, con el costo por defecto", () => {
   const r = totals({ items: [item("p1", 1000)], deliveryMethod: "delivery" });
   assert.equal(r.shipping, 350);
   assert.equal(r.total, 1350);
 });
 
-check("por encima del umbral, envío gratis", () => {
+check("el envío se cobra siempre, sin importar cuánto compre", () => {
   const r = totals({ items: [item("p1", 6000)], deliveryMethod: "delivery" });
-  assert.equal(r.shipping, 0);
-  assert.equal(r.total, 6000);
+  assert.equal(r.shipping, 350);
+  assert.equal(r.total, 6350);
 });
 
 check("el envío se cobra por tienda, no una sola vez", () => {
@@ -109,7 +109,7 @@ check("el envío se cobra por tienda, no una sola vez", () => {
 });
 
 check("cada tienda usa SU propia configuración de envío", () => {
-  const config = { A: { deliveryFee: 500, freeShippingThreshold: 20000 }, B: { deliveryFee: 0 } };
+  const config = { A: { deliveryFee: 500 }, B: { deliveryFee: 0 } };
   const r = totals({
     items: [item("p1", 1000, 1, "A"), item("p2", 1000, 1, "B")],
     shippingOf: (id) => config[id],
@@ -118,9 +118,7 @@ check("cada tienda usa SU propia configuración de envío", () => {
   assert.equal(r.shipping, 500, "A cobra 500, B no cobra nada");
 });
 
-check("el umbral se mira contra el precio YA con descuento", () => {
-  // 6000 con 20% queda en 4800, por debajo del umbral de 5000: se cobra envío.
-  // Es lo que hace el RPC, y por eso un cupón puede costar el envío gratis.
+check("el cupón descuenta los productos, no el envío", () => {
   const r = totals({
     items: [item("p1", 6000)],
     deliveryMethod: "delivery",
@@ -129,31 +127,6 @@ check("el umbral se mira contra el precio YA con descuento", () => {
   });
   assert.equal(r.shipping, 350);
   assert.equal(r.total, 4800 + 350);
-});
-
-check("el umbral se compara SIN redondear, igual que el RPC", () => {
-  // 5882 con 15% = 4999,7: no llega a 5000 aunque redondeado dé 5000.
-  const r = totals({
-    items: [item("p1", 5882)],
-    deliveryMethod: "delivery",
-    couponPercent: 15,
-    couponStoreId: null,
-  });
-  assert.equal(r.shipping, 350, "no debe dar envío gratis por redondear antes de comparar");
-});
-
-check("un cupón de otra tienda no le saca el envío gratis a la que no toca", () => {
-  // La tienda B está justo por encima del umbral. El cupón es de A, así que
-  // el subtotal de B no se toca y conserva su envío gratis. Antes el carrito
-  // le aplicaba el descuento igual y mostraba envío cobrado.
-  const r = totals({
-    items: [item("p1", 1000, 1, "A"), item("p2", 5200, 1, "B")],
-    deliveryMethod: "delivery",
-    couponPercent: 20,
-    couponStoreId: "A",
-  });
-  const b = r.byStore.find((s) => s.storeId === "B");
-  assert.equal(b.shipping, 0, "B conserva el envío gratis");
 });
 
 check("carrito vacío", () => {

@@ -25,8 +25,7 @@
  * +infinito. Acá todos los importes son positivos, así que coinciden.
  */
 
-/** Valores por defecto del envío, iguales a los de la base (migración 42). */
-export const DEFAULT_FREE_SHIPPING_THRESHOLD = 5000;
+/** Costo de envío por defecto, igual al de la base (migración 42). */
 export const DEFAULT_DELIVERY_FEE = 350;
 
 /**
@@ -42,7 +41,7 @@ export function discountPctForStore(couponPercent, couponStoreId, storeId) {
 
 /**
  * @typedef {{ id: string, price: number, qty: number }} CartItem
- * @typedef {{ deliveryFee?: number, freeShippingThreshold?: number }} StoreShipping
+ * @typedef {{ deliveryFee?: number }} StoreShipping
  *
  * @param {object} opts
  * @param {CartItem[]} opts.items          solo los tildados (los que se van a cobrar)
@@ -75,13 +74,8 @@ export function computeCartTotals({
     const discountPct = discountPctForStore(couponPercent, couponStoreId, storeId);
     const discounted = subtotal * (1 - discountPct / 100);
 
-    const config = shippingOf(storeId);
-    const threshold = config?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING_THRESHOLD;
-    const fee = config?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
-
-    // El RPC compara el valor SIN redondear contra el umbral; se replica igual
-    // para no quedar del otro lado del límite por una fracción de peso.
-    const shipping = deliveryMethod === 'delivery' && discounted < threshold ? fee : 0;
+    const fee = shippingOf(storeId)?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
+    const shipping = deliveryMethod === 'delivery' ? fee : 0;
 
     byStore.push({
       storeId,
