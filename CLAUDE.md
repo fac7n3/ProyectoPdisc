@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-25. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-26. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-26 — Pedidos del panel de vendedor: se actualiza solo y liviano** (migración **144** `get_store_orders` APLICADA a producción el 2026-10-26),
+  a pedido del usuario. El Realtime de Pedidos ya existía (y conecta en producción: `GET /realtime/v1/websocket -> 101` en los logs), pero cada cambio
+  volvía a bajar 50 pedidos con 4 consultas (el embed de `products` arrastra la cadena de RLS: +500 subplanes, ~50 ms de plan) y redibujaba todo; si
+  fallaba, la lista se vaciaba. **Ahora:** RPC `get_store_orders(p_store_id, p_order_ids, p_limit)` (SECURITY DEFINER, valida con `_can_manage_order`: dueño,
+  empleado o admin; **copia a mano la regla de `orders_select_merged`**) devuelve pedidos + productos + comprobantes + entrega + comprador en UNA consulta;
+  con `p_order_ids` trae solo los que cambiaron. `js/vender.js`: `loadOrders(ids)` (cae a las consultas de siempre si la función no existe), `patchOrderCards`
+  reusa las tarjetas que ya están y reemplaza solo las de esos ids; un **pedido nuevo aparece al instante** con lo que trae el evento (`showIncomingOrder`,
+  "Cargando productos…") resaltado 8 s (`.pd-card--new`); los eventos de `deliveries`/`payment_proofs` de pedidos que la lista no tiene se ignoran; Resumen
+  se recarga solo si está a la vista (si no, `resumenDirty`) y sin la sección abierta no se toca el DOM (`pedidosStale`); si falla la consulta la lista queda
+  como estaba. **Indicador "En vivo / Reconectando…"** junto al título (`#pedidos-live`; `subscribeToChanges` ahora acepta `onStatus`). **Mostrar más:** se
+  dibujan 20 tarjetas por vez (`PEDIDOS_PAGE`). Índice `idx_orders_store_created`. Verificado: SQL contra la base real como dueño (28/28 pedidos y 33/33
+  productos de Bebidas La Esquina, ajeno rechazado, anon sin permiso), `npm test`, y Chromium con Supabase y un websocket de Realtime **simulado** (INSERT,
+  UPDATE de entrega, evento ajeno, RPC fallando, corte de conexión, 25 pedidos). **Sin probar con cuentas reales ni dos dispositivos**: conviene hacer una compra de
+  prueba con el panel abierto y mirar que diga "En vivo". Si con "En vivo" no llega un pedido nuevo, el problema es de Realtime/RLS en Supabase, no del panel.
 - **Hecho 2026-10-25 (mergeado a `main` y migración 143 APLICADA a producción el 2026-10-25) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Limpieza" del Drive**,
   a pedido del usuario ("lo mismo" que con Forrajería/Librería). **Migración 143** (`db/schema/143_productos_limpieza_drive.sql`): 45 productos con 48 fotos
   (webp 800 px en `public/img/productos/` + `dist/`), 8 con precio tachado + fecha de fin, 3 cupones (`LIMPIO10`, `CASITA5`, `TODOLIMPIO5`, vencen el 30/11/2026),

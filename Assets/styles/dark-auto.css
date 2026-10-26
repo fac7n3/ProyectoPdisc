@@ -1805,6 +1805,12 @@ html[data-theme="dark"] .pd-tab__count {
 html[data-theme="dark"] .pd-tab.is-active .pd-tab__count {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .pd-more {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .pd-more:hover {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .pd-wa {
   background: #1b3526;
   color: #99f2c2;

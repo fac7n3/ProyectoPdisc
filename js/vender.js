@@ -754,6 +754,10 @@ let currentStoreName = '';
 let ordPhoneByClientId = new Map();
 let ordNameByClientId = new Map();
 let ordSearch = '';
+let pedidosVisible = 20; // tarjetas dibujadas; "Mostrar más" suma otras 20
+const PEDIDOS_PAGE = 20;
+let pedidosStale = false; // cambió algo con la sección cerrada: se dibuja al entrar
+const ordNewIds = new Set(); // pedidos recién llegados, resaltados unos segundos
 let pedidosTab = 'all'; // 'all' | 'to_confirm' | 'pending_payment' | 'to_prepare' | 'in_progress' | 'completed' | 'cancelled'
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
@@ -1088,18 +1092,59 @@ function initReviewsLive() {
 // solo, en todos los dispositivos donde esté abierto. La RLS de `orders` y
 // `payment_proofs` ya limita lo que llega al dueño y a sus empleados.
 
+// Pedidos que cambiaron desde la última recarga, para pedir solo esos al RPC
+// (un cambio en un pedido ya no vuelve a bajar los 50 ni redibuja todas las tarjetas).
+// Sin id = recargar la lista entera (aviso de notificación, reconexión, baja).
+const pendingOrderIds = new Set();
+let pendingFullOrders = false;
 let refreshOrdersLive = () => {};
+let resumenDirty = false;
+
+/** ¿Está a la vista esa sección del panel? */
+function sectionIsOpen(key) {
+  const section = document.querySelector(`.mc-section[data-section="${key}"]`);
+  return Boolean(section && !section.hidden);
+}
+
+function setOrdersLiveState(connected) {
+  const badge = document.getElementById('pedidos-live');
+  if (!badge) return;
+  badge.dataset.state = connected ? 'on' : 'off';
+  const text = badge.querySelector('.pd-live__text');
+  if (text) text.textContent = connected ? 'En vivo' : 'Reconectando…';
+  badge.title = connected
+    ? 'Los pedidos nuevos aparecen solos.'
+    : 'Se perdió la conexión en vivo: la lista se actualiza igual cada 30 segundos y al volver.';
+}
 
 function initOrdersLive() {
   if (!currentStoreId) return;
 
-  const pedidosList = () => document.getElementById('pedidos-list');
-  refreshOrdersLive = createRefresher(renderAllOrders, {
-    isBusy: () => isEditingWithin(pedidosList()),
-  });
+  const flushOrders = async () => {
+    const full = pendingFullOrders;
+    const ids = [...pendingOrderIds];
+    pendingOrderIds.clear();
+    pendingFullOrders = false;
+    if (full) await renderAllOrders();
+    else if (ids.length) await refreshOrdersByIds(ids);
+  };
+  const scheduleOrders = createRefresher(flushOrders);
+  refreshOrdersLive = (orderId) => {
+    if (orderId) pendingOrderIds.add(orderId); else pendingFullOrders = true;
+    scheduleOrders();
+  };
+
   // El resumen hace varias consultas: va con más margen, para que una ráfaga
-  // de cambios (pedido + pago + stock) termine en una sola recarga.
-  const refreshResumen = createRefresher(renderResumen, { delay: 1500 });
+  // de cambios (pedido + pago + stock) termine en una sola recarga. Y solo si
+  // se está mirando: si no, se marca y se recarga al entrar.
+  const runResumen = createRefresher(renderResumen, { delay: 1500 });
+  const refreshResumen = () => {
+    if (sectionIsOpen('resumen')) runResumen(); else resumenDirty = true;
+  };
+  window.addEventListener('hashchange', () => setTimeout(() => {
+    if (resumenDirty && sectionIsOpen('resumen')) { resumenDirty = false; runResumen(); }
+    if (pedidosStale && sectionIsOpen('pedidos')) { pedidosStale = false; renderPedidos(); }
+  }, 0));
   // Stock y "vendidos" de Publicaciones: solo cambian con un pedido nuevo o
   // uno cancelado (el stock vuelve). No se redibuja con un menú de "⋯" abierto.
   const refreshProducts = createRefresher(fetchProducts, {
@@ -1108,9 +1153,28 @@ function initOrdersLive() {
   });
 
   const onOrderChange = (change) => {
-    refreshOrdersLive();
+    if (change.table === 'orders') {
+      if (change.eventType === 'DELETE') {
+        refreshOrdersLive();
+        refreshResumen();
+        return;
+      }
+      const row = change.new;
+      const cached = ordCache.find((o) => o.id === row.id);
+      if (!cached && change.eventType === 'INSERT') showIncomingOrder(row);
+      refreshOrdersLive(row.id);
+      if (!cached || cached.status !== row.status || cached.payment_status !== row.payment_status) refreshResumen();
+      if (change.eventType === 'INSERT' || row.status === 'cancelled') refreshProducts();
+      return;
+    }
+    // `deliveries` y `payment_proofs` no se filtran por comercio (no tienen
+    // store_id; la RLS deja pasar solo lo del comercio, y un admin recibe también
+    // lo de otros): solo importan los de pedidos que esta lista ya tiene.
+    const orderId = change.new.order_id;
+    if (!orderId) { refreshOrdersLive(); return; } // un DELETE trae solo la clave primaria
+    if (!ordCache.some((o) => o.id === orderId)) return;
+    refreshOrdersLive(orderId);
     refreshResumen();
-    if (change.eventType === 'INSERT' || change.new?.status === 'cancelled') refreshProducts();
   };
 
   subscribeToChanges('pedidos-comercio', [
@@ -1118,10 +1182,9 @@ function initOrdersLive() {
     // El repartidor toma, avisa una demora o un problema: cambia la entrega, no el pedido.
     { table: 'deliveries' },
     // Comprobante subido o revisado: la tarjeta del pedido muestra su estado.
-    // Sin filtro (la tabla no tiene store_id): la RLS deja pasar solo los de
-    // este comercio.
     { table: 'payment_proofs' },
   ], onOrderChange, {
+    onStatus: setOrdersLiveState,
     onResync: () => {
       refreshOrdersLive();
       refreshResumen();
@@ -1167,23 +1230,77 @@ const ORDER_STATUS_BADGE_VARIANT = {
   cancelled: 'cancelled',
 };
 
+// Consulta de respaldo, para cuando la migración 144 (get_store_orders) todavía no está.
 const ORDER_SELECT = 'id, order_number, client_id, status, payment_status, payment_method, delivery_method, shipping_address, delivery_fee, total_price, courier_ready_at, created_at, payment_due_at, transfer_notified_at, cancel_reason, cancelled_by, revocation_requested_at, revocation_resolved_at, order_items(quantity, price, title, selected_options, products(title, image_url)), payment_proofs(id, status, receipt_url, created_at), deliveries(id, status)';
+const ORDERS_LIMIT = 50;
+let ordRpcMissing = false;
 
-async function renderAllOrders() {
-  if (!currentStoreId) return;
+/** Estado de la entrega de cada pedido con envío (repartidor, confirmación, demora, problema). */
+let ordDeliveryState = new Map();
 
+/** Guarda lo del comprador y la entrega que trae el RPC y devuelve el pedido como lo dibujan las tarjetas. */
+function absorbOrderRow(row) {
+  const { buyer_name: buyerName, buyer_phone: buyerPhone, delivery_state: deliveryState, ...order } = row;
+  if (order.client_id) {
+    ordNameByClientId.set(order.client_id, buyerName);
+    ordPhoneByClientId.set(order.client_id, buyerPhone);
+  }
+  if (deliveryState?.order_id) ordDeliveryState.set(order.id, deliveryState);
+  else ordDeliveryState.delete(order.id);
+  return order;
+}
+
+function byNewest(a, b) {
+  return new Date(b.created_at) - new Date(a.created_at);
+}
+
+/**
+ * Trae pedidos del comercio: todos (ids = null) o solo esos. Una consulta con el
+ * RPC; si la función no existe todavía, las de siempre. Devuelve false si falló,
+ * y entonces la lista queda como estaba (antes se vaciaba).
+ */
+async function loadOrders(ids = null) {
+  if (!currentStoreId) return false;
+
+  if (!ordRpcMissing) {
+    const { data, error } = await supabase.rpc('get_store_orders', {
+      p_store_id: currentStoreId,
+      p_order_ids: ids,
+      p_limit: ORDERS_LIMIT,
+    });
+    if (!error) {
+      const fresh = (data || []).map(absorbOrderRow);
+      if (!ids) {
+        ordCache = fresh;
+      } else {
+        const byId = new Map(fresh.map((o) => [o.id, o]));
+        const kept = ordCache.filter((o) => byId.has(o.id) || !ids.includes(o.id)).map((o) => byId.get(o.id) || o);
+        const added = fresh.filter((o) => !ordCache.some((c) => c.id === o.id));
+        ordCache = [...kept, ...added].sort(byNewest).slice(0, ORDERS_LIMIT);
+      }
+      return true;
+    }
+    if (error.code === 'PGRST202' || error.code === '42883' || /get_store_orders/.test(error.message || '')) {
+      ordRpcMissing = true;
+    } else {
+      console.error('Error al cargar pedidos:', error);
+      return false;
+    }
+  }
+  return loadOrdersLegacy();
+}
+
+async function loadOrdersLegacy() {
   const { data: orders, error } = await supabase
     .from('orders')
     .select(ORDER_SELECT)
     .eq('store_id', currentStoreId)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(ORDERS_LIMIT);
 
   if (error) {
     console.error('Error al cargar pedidos:', error);
-    ordCache = [];
-    renderPedidos();
-    return;
+    return false;
   }
 
   ordCache = orders || [];
@@ -1199,15 +1316,83 @@ async function renderAllOrders() {
   ordPhoneByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.phone]));
   ordNameByClientId = new Map((clientProfiles || []).map((p) => [p.id, p.full_name]));
   await loadDeliveryStates();
+  return true;
+}
 
+/** Recarga la lista entera y la redibuja. */
+async function renderAllOrders() {
+  if (!(await loadOrders())) {
+    showToast('No se pudo actualizar la lista de pedidos. Se muestra la última que tenías.', 'error');
+    return;
+  }
   renderPedidos();
   refreshOpenOrderDetail();
 }
 
-/** Estado de la entrega de cada pedido con envío (repartidor, confirmación, demora, problema). */
-let ordDeliveryState = new Map();
+/** Un pedido nuevo se ve al instante con lo que trae el aviso; los productos llegan con la consulta. */
+function showIncomingOrder(row) {
+  ordCache = [{ ...row, order_items: [], payment_proofs: [], deliveries: [], _stub: true }, ...ordCache]
+    .sort(byNewest).slice(0, ORDERS_LIMIT);
+  ordNewIds.add(row.id);
+  setTimeout(() => {
+    ordNewIds.delete(row.id);
+    document.querySelector(`.pd-card[data-order-id="${row.id}"]`)?.classList.remove('pd-card--new');
+  }, 8000);
+  patchOrderCards([row.id]);
+}
+
+/** Recarga solo esos pedidos y repinta solo sus tarjetas. */
+async function refreshOrdersByIds(ids) {
+  if (!(await loadOrders(ids))) return;
+  patchOrderCards(ids);
+  if (detailOrderId && ids.includes(detailOrderId)) refreshOpenOrderDetail();
+}
 
 /**
+ * Repinta lo que cambió sin redibujar la lista entera: reusa las tarjetas que ya
+ * están, reemplaza solo las de esos ids, mete las nuevas y saca las que ya no
+ * van (cambió de pestaña, se canceló). Sin la sección a la vista no se toca el
+ * DOM: se marca para dibujarla al entrar.
+ */
+function patchOrderCards(ids) {
+  if (!sectionIsOpen('pedidos')) { pedidosStale = true; return; }
+  const list = document.getElementById('pedidos-list');
+  if (!list) return;
+
+  renderPedidosStats();
+  const matching = filterPedidos();
+  // Sin tarjetas todavía (estado vacío) o sin ninguna que mostrar: el dibujo completo.
+  if (list.hidden || !list.children.length || !matching.length) { renderPedidos(); return; }
+
+  const existing = new Map([...list.querySelectorAll(':scope > .pd-card')].map((c) => [c.dataset.orderId, c]));
+  let prev = null;
+  matching.slice(0, pedidosVisible).forEach((order) => {
+    let card = existing.get(order.id);
+    existing.delete(order.id);
+    if (!card) {
+      card = buildPedidoCard(order);
+    } else if (ids.includes(order.id) && !isEditingWithin(card)) {
+      const fresh = buildPedidoCard(order);
+      card.replaceWith(fresh);
+      card = fresh;
+    }
+    const expected = prev ? prev.nextElementSibling : list.firstElementChild;
+    if (expected !== card) list.insertBefore(card, expected);
+    prev = card;
+  });
+  existing.forEach((card) => card.remove());
+  updatePedidosMoreButton(matching.length);
+}
+
+function updatePedidosMoreButton(total) {
+  const moreBtn = document.getElementById('pedidos-more');
+  if (!moreBtn) return;
+  moreBtn.hidden = total <= pedidosVisible;
+  if (!moreBtn.hidden) moreBtn.textContent = `Mostrar más (${total - pedidosVisible})`;
+}
+
+/**
+ * Estado de la entrega de cada pedido con envío (respaldo, sin la migración 144).
  * Se pide por RPC y no con el embed `deliveries(...)`: la policy de esa tabla no
  * deja leerla a los empleados del comercio (migración 139, get_order_delivery_states).
  */
@@ -1249,6 +1434,7 @@ function buildPedidoProductCell(order) {
   thumb.src = first?.products?.image_url || '/img/no-image.svg';
   thumb.alt = '';
   thumb.loading = 'lazy';
+  thumb.decoding = 'async';
   cell.appendChild(thumb);
 
   const info = document.createElement('div');
@@ -1257,7 +1443,8 @@ function buildPedidoProductCell(order) {
   // `title` (textContent) es el nombre congelado al momento de la compra
   // (order_items.title); el join a products es solo el respaldo para pedidos
   // viejos que no lo tienen.
-  const productName = first?.title || first?.products?.title || 'Producto eliminado';
+  // Recién llegado: los productos vienen un instante después del aviso.
+  const productName = first?.title || first?.products?.title || (order._stub ? 'Cargando productos…' : 'Producto eliminado');
   name.textContent = `${first?.quantity > 1 ? `${first.quantity}x ` : ''}${productName}`;
   name.title = productName;
   info.appendChild(name);
@@ -1527,7 +1714,8 @@ async function confirmCourierPickup(order, btn) {
 
 /** Tarjeta vertical de un pedido: N° + fecha y estado, chips, productos, comprador, qué hacer y al pie el total. */
 function buildPedidoCard(order) {
-  const card = rsEl('article', 'pd-card');
+  const card = rsEl('article', `pd-card${ordNewIds.has(order.id) ? ' pd-card--new' : ''}`);
+  card.dataset.orderId = order.id;
 
   const head = rsEl('div', 'pd-card__head');
   const orderInfo = document.createElement('div');
@@ -2075,19 +2263,8 @@ function renderPedidosTips() {
   });
 }
 
-/** Aplica pestaña + filtros del menú "Filtros" + búsqueda (N° de pedido, comprador o producto) sobre ordCache y renderiza las tarjetas. */
-function renderPedidos() {
-  renderPedidosStats();
-
-  const list = document.getElementById('pedidos-list');
-  if (!list) return;
-  list.textContent = '';
-
-  if (!ordCache.length) {
-    renderPedidosEmptyState('Todavía no tenés pedidos', 'Cuando alguien te compre, vas a verlo acá.');
-    return;
-  }
-
+/** Pedidos que pasan la pestaña + los filtros del menú "Filtros" + la búsqueda (N° de pedido, comprador o producto), ya ordenados. */
+function filterPedidos() {
   let filtered = ordCache.filter((o) => pedidosTabMatches(o, pedidosTab));
   if (pedidosDeliveryFilter !== 'all') filtered = filtered.filter((o) => o.delivery_method === pedidosDeliveryFilter);
 
@@ -2105,8 +2282,25 @@ function renderPedidos() {
     });
   }
 
-  filtered = sortPedidos(filtered, pedidosSort);
+  return sortPedidos(filtered, pedidosSort);
+}
 
+/** Renderiza las tarjetas (las primeras `pedidosVisible`) de lo que devuelve filterPedidos(). */
+function renderPedidos() {
+  renderPedidosStats();
+
+  const list = document.getElementById('pedidos-list');
+  if (!list) return;
+  list.textContent = '';
+  const moreBtn = document.getElementById('pedidos-more');
+  if (moreBtn) moreBtn.hidden = true;
+
+  if (!ordCache.length) {
+    renderPedidosEmptyState('Todavía no tenés pedidos', 'Cuando alguien te compre, vas a verlo acá.');
+    return;
+  }
+
+  const filtered = filterPedidos();
   if (!filtered.length) {
     renderPedidosEmptyState('No hay pedidos que coincidan', 'Probá con otra búsqueda o filtro.');
     return;
@@ -2115,7 +2309,9 @@ function renderPedidos() {
   list.hidden = false;
   const emptyBox = document.getElementById('pedidos-empty');
   if (emptyBox) emptyBox.hidden = true;
-  filtered.forEach((o) => list.appendChild(buildPedidoCard(o)));
+  filtered.slice(0, pedidosVisible).forEach((o) => list.appendChild(buildPedidoCard(o)));
+
+  updatePedidosMoreButton(filtered.length);
 }
 
 /** Navega a "Pedidos" con una pestaña puntual ya seleccionada (usado desde Resumen). */
@@ -2126,6 +2322,7 @@ function goToPedidos(tab) {
 
 function setPedidosTab(tab) {
   pedidosTab = tab;
+  pedidosVisible = PEDIDOS_PAGE;
   document.querySelectorAll('#pedidos-tabs .pd-tab').forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
   // El resaltado del sidebar lo maneja el shell por `data-section`
   // (js/vender-shell.js). Acá había una línea que lo pisaba según la pestaña:
@@ -2138,6 +2335,7 @@ function setPedidosTab(tab) {
 function initPedidosControls() {
   document.getElementById('pedidos-search')?.addEventListener('input', (e) => {
     ordSearch = e.target.value;
+    pedidosVisible = PEDIDOS_PAGE;
     renderPedidos();
   });
 
@@ -2162,10 +2360,10 @@ function initPedidosControls() {
     }
   });
   filtersMenu?.querySelectorAll('input[name="pd-sort"]').forEach((input) => {
-    input.addEventListener('change', () => { pedidosSort = input.value; renderPedidos(); });
+    input.addEventListener('change', () => { pedidosSort = input.value; pedidosVisible = PEDIDOS_PAGE; renderPedidos(); });
   });
   filtersMenu?.querySelectorAll('input[name="pd-delivery"]').forEach((input) => {
-    input.addEventListener('change', () => { pedidosDeliveryFilter = input.value; renderPedidos(); });
+    input.addEventListener('change', () => { pedidosDeliveryFilter = input.value; pedidosVisible = PEDIDOS_PAGE; renderPedidos(); });
   });
 
   // Entrar a Pedidos desde el sidebar muestra la lista completa: si quedó
@@ -2173,6 +2371,11 @@ function initPedidosControls() {
   // pedidos de los que hay parece que faltan.
   document.querySelectorAll('.mc-navitem[data-section="pedidos"]').forEach((item) => {
     item.addEventListener('click', () => setPedidosTab('all'));
+  });
+
+  document.getElementById('pedidos-more')?.addEventListener('click', () => {
+    pedidosVisible += PEDIDOS_PAGE;
+    renderPedidos();
   });
 
   renderPedidosTips();
