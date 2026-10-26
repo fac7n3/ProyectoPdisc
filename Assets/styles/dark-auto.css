@@ -1233,6 +1233,9 @@ html[data-theme="dark"] .rp-card__address,
 html[data-theme="dark"] .rp-card__buyer {
   color: #cad4e4;
 }
+html[data-theme="dark"] .rp-card__more {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .rp-card__price {
   color: var(--dk-accent-text);
 }
@@ -1796,6 +1799,12 @@ html[data-theme="dark"] .pd-tab__count {
   color: var(--bl-text-muted);
 }
 html[data-theme="dark"] .pd-tab.is-active .pd-tab__count {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .pd-more {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .pd-more:hover {
   color: var(--dk-accent-text);
 }
 html[data-theme="dark"] .pd-wa {

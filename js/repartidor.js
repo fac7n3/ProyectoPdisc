@@ -30,6 +30,7 @@ const TICK_MS = 30 * 1000;
 const TUTORIAL_KEY = 'bl_courier_tutorial_seen';
 
 const estado = { user: null, mine: [], queue: [], activeCount: 0, loaded: false };
+const expandedOrders = new Set();
 let tickTimer = null;
 let loading = false;
 let reloadAgain = false;
@@ -49,16 +50,39 @@ function link(text, href, className = 'rp-link') {
   return a;
 }
 
-/** Productos del pedido, compacto: el primero y "+N más". */
-function buildItemsSummary(items) {
+function itemText(item) {
+  const options = describeSelectedOptions(item?.selected_options);
+  return `${item.quantity}x ${item.title || 'Producto'}${options ? ` — ${options}` : ''}`;
+}
+
+/**
+ * Productos del pedido, compacto: el primero y "Ver más" para abrir la lista
+ * entera. Qué pedidos están abiertos se recuerda en `expandedOrders`, así el
+ * repintado de cada tick o de Realtime no los vuelve a cerrar.
+ */
+function buildItemsSummary(items, orderId) {
   const wrap = el('div', 'rp-card__items');
   if (!items?.length) return wrap;
-  const first = items[0];
-  const options = describeSelectedOptions(first?.selected_options);
-  wrap.appendChild(el('span', 'rp-card__item', `${first.quantity}x ${first.title || 'Producto'}${options ? ` — ${options}` : ''}`));
+  const open = items.length > 1 && expandedOrders.has(orderId);
+
+  if (open) {
+    const list = el('ul', 'rp-card__item-list');
+    items.forEach((item) => list.appendChild(el('li', 'rp-card__item', itemText(item))));
+    wrap.appendChild(list);
+  } else {
+    wrap.appendChild(el('span', 'rp-card__item', itemText(items[0])));
+  }
+
   if (items.length > 1) {
     const rest = items.length - 1;
-    wrap.appendChild(el('span', 'rp-card__item-more', `+${rest} producto${rest === 1 ? '' : 's'} más`));
+    const toggle = el('button', 'rp-card__more', open ? 'Ver menos' : `Ver más (+${rest} producto${rest === 1 ? '' : 's'})`);
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.addEventListener('click', () => {
+      if (open) expandedOrders.delete(orderId); else expandedOrders.add(orderId);
+      wrap.replaceWith(buildItemsSummary(items, orderId));
+    });
+    wrap.appendChild(toggle);
   }
   return wrap;
 }
@@ -107,7 +131,7 @@ function buildQueueCard(o) {
   card.appendChild(el('span', `rp-chip ${o.courier_ready_at ? 'rp-chip--ok' : 'rp-chip--wait'}`,
     o.courier_ready_at ? 'Listo para retirar' : 'El comercio lo está preparando'));
   card.appendChild(buildDestinationBlock(o));
-  card.appendChild(buildItemsSummary(o.items));
+  card.appendChild(buildItemsSummary(o.items, o.order_id));
   card.appendChild(el('span', 'rp-card__price', `Total del pedido: ${formatPrice(o.total_price)}`));
 
   const canTake = canTakeMore(estado.activeCount);
@@ -285,7 +309,7 @@ function buildCancelledCard(d) {
   card.appendChild(alert);
 
   card.appendChild(buildStoreBlock(d));
-  card.appendChild(buildItemsSummary(d.items));
+  card.appendChild(buildItemsSummary(d.items, d.order_id));
 
   const btn = el('button', 'rp-btn rp-btn--danger', 'Entendido');
   btn.type = 'button';
@@ -320,7 +344,7 @@ function buildMineCard(d) {
     buyer.appendChild(tel);
   }
   card.appendChild(buyer);
-  card.appendChild(buildItemsSummary(d.items));
+  card.appendChild(buildItemsSummary(d.items, d.order_id));
   card.appendChild(el('span', 'rp-card__price', `Total del pedido: ${formatPrice(d.total_price)}`));
 
   if (stage === 'assigned') {

@@ -79,12 +79,14 @@ function setupGlobals() {
  *   `store_id=in.(a,b)`. Los DELETE no se pueden filtrar (limitación de
  *   Supabase): llegan todos, con `old` = solo la clave primaria.
  * @param {(change: { table: string, eventType: string, new: object, old: object }) => void} onChange
- * @param {{ onResync?: () => void }} [opts]  Qué hacer cuando pudo haberse
- *   perdido algún cambio (reconexión, vuelta a la pestaña, sin conexión).
- *   Casi siempre es la misma función que recarga la vista.
+ * @param {{ onResync?: () => void, onStatus?: (connected: boolean) => void }} [opts]
+ *   `onResync`: qué hacer cuando pudo haberse perdido algún cambio (reconexión,
+ *   vuelta a la pestaña, sin conexión); casi siempre es la misma función que
+ *   recarga la vista. `onStatus`: se llama cada vez que el canal se conecta o se
+ *   corta (para mostrar un "En vivo" / "Reconectando…").
  * @returns {() => void} Para dejar de escuchar.
  */
-export function subscribeToChanges(name, sources, onChange, { onResync } = {}) {
+export function subscribeToChanges(name, sources, onChange, { onResync, onStatus } = {}) {
   setupGlobals();
 
   // Nombre único: supabase.channel() devuelve el canal existente si el tema
@@ -112,6 +114,13 @@ export function subscribeToChanges(name, sources, onChange, { onResync } = {}) {
   let joinedOnce = false;
   let missedSomething = false;
 
+  const setConnected = (value) => {
+    if (sub.connected === value) return;
+    sub.connected = value;
+    if (!onStatus) return;
+    try { onStatus(value); } catch (err) { console.error(`[tiempo real: ${name}]`, err); }
+  };
+
   const sub = {
     connected: false,
     resync() {
@@ -121,7 +130,7 @@ export function subscribeToChanges(name, sources, onChange, { onResync } = {}) {
     unsubscribe() {
       if (!subscriptions.has(sub)) return;
       subscriptions.delete(sub);
-      sub.connected = false;
+      setConnected(false);
       supabase.removeChannel(channel);
     },
   };
@@ -130,7 +139,7 @@ export function subscribeToChanges(name, sources, onChange, { onResync } = {}) {
   channel.subscribe((status, err) => {
     if (!subscriptions.has(sub)) return;
     if (status === 'SUBSCRIBED') {
-      sub.connected = true;
+      setConnected(true);
       const slowFirstJoin = !joinedOnce && Date.now() - startedAt > SLOW_JOIN_MS;
       if (missedSomething || slowFirstJoin) sub.resync();
       joinedOnce = true;
@@ -139,7 +148,7 @@ export function subscribeToChanges(name, sources, onChange, { onResync } = {}) {
     }
     // CHANNEL_ERROR / TIMED_OUT / CLOSED: Realtime reintenta solo. Mientras
     // tanto, lo que cambie no llega: al volver hay que ponerse al día.
-    sub.connected = false;
+    setConnected(false);
     missedSomething = true;
     if (status !== 'CLOSED') console.warn(`[tiempo real: ${name}] ${status}`, err?.message || '');
   });

@@ -103,6 +103,21 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Orden de publicación (importa):** primero merge a `main` y deploy de Vercel (el carrito ya muestra el envío siempre), **después** la migración 145; al revés el carrito
   prometería envío gratis y se cobraría el envío. Los pedidos viejos con `delivery_fee = 0` siguen mostrando "Gratis" en el detalle del pedido del vendedor (es historial real).
   `npm test` no corre acá por el `sh` de Windows: los `js/*.test.mjs` pasan corriéndolos a mano; los de `supabase/functions/_tests` fallan por falta de `typescript` en el worktree (sin relación).
+
+- **Hecho 2026-10-26 — Pedidos del panel de vendedor: se actualiza solo y liviano** (migración **144** `get_store_orders` APLICADA a producción el 2026-10-26),
+  a pedido del usuario. El Realtime de Pedidos ya existía (y conecta en producción: `GET /realtime/v1/websocket -> 101` en los logs), pero cada cambio
+  volvía a bajar 50 pedidos con 4 consultas (el embed de `products` arrastra la cadena de RLS: +500 subplanes, ~50 ms de plan) y redibujaba todo; si
+  fallaba, la lista se vaciaba. **Ahora:** RPC `get_store_orders(p_store_id, p_order_ids, p_limit)` (SECURITY DEFINER, valida con `_can_manage_order`: dueño,
+  empleado o admin; **copia a mano la regla de `orders_select_merged`**) devuelve pedidos + productos + comprobantes + entrega + comprador en UNA consulta;
+  con `p_order_ids` trae solo los que cambiaron. `js/vender.js`: `loadOrders(ids)` (cae a las consultas de siempre si la función no existe), `patchOrderCards`
+  reusa las tarjetas que ya están y reemplaza solo las de esos ids; un **pedido nuevo aparece al instante** con lo que trae el evento (`showIncomingOrder`,
+  "Cargando productos…") resaltado 8 s (`.pd-card--new`); los eventos de `deliveries`/`payment_proofs` de pedidos que la lista no tiene se ignoran; Resumen
+  se recarga solo si está a la vista (si no, `resumenDirty`) y sin la sección abierta no se toca el DOM (`pedidosStale`); si falla la consulta la lista queda
+  como estaba. **Indicador "En vivo / Reconectando…"** junto al título (`#pedidos-live`; `subscribeToChanges` ahora acepta `onStatus`). **Mostrar más:** se
+  dibujan 20 tarjetas por vez (`PEDIDOS_PAGE`). Índice `idx_orders_store_created`. Verificado: SQL contra la base real como dueño (28/28 pedidos y 33/33
+  productos de Bebidas La Esquina, ajeno rechazado, anon sin permiso), `npm test`, y Chromium con Supabase y un websocket de Realtime **simulado** (INSERT,
+  UPDATE de entrega, evento ajeno, RPC fallando, corte de conexión, 25 pedidos). **Sin probar con cuentas reales ni dos dispositivos**: conviene hacer una compra de
+  prueba con el panel abierto y mirar que diga "En vivo". Si con "En vivo" no llega un pedido nuevo, el problema es de Realtime/RLS en Supabase, no del panel.
 - **Hecho 2026-10-25 (mergeado a `main` y migración 143 APLICADA a producción el 2026-10-25) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Limpieza" del Drive**,
   a pedido del usuario ("lo mismo" que con Forrajería/Librería). **Migración 143** (`db/schema/143_productos_limpieza_drive.sql`): 45 productos con 48 fotos
   (webp 800 px en `public/img/productos/` + `dist/`), 8 con precio tachado + fecha de fin, 3 cupones (`LIMPIO10`, `CASITA5`, `TODOLIMPIO5`, vencen el 30/11/2026),
@@ -179,6 +194,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Fuera de alcance (decisión del usuario):** ganancia del repartidor por envío (va con el mapa por zonas). Verificado: SQL contra la base real
   en transacciones deshechas (~30 casos: tope, carrera, cancelaciones por fase, confirmación, foto, demora, heads-up, soltar, auto-liberación,
   reclamo, permisos), `npm test`, build y el panel en Chromium con Supabase simulado. **Sin probar con cuentas reales ni la cámara.**
+  **"Ver más" (2026-10-26):** las tarjetas del panel muestran el primer producto y un botón "Ver más (+N productos)" que despliega la lista completa (cantidad, nombre y opciones); qué pedidos están abiertos se guarda en `expandedOrders` para que el repintado no los cierre. Solo de cliente.
   **Pasos de publicación y gotchas:** el conector de Supabase se cuelga 60 s con `drop ...` y `DELETE` (los toma por destructivos y espera una confirmación
   que nadie ve): 138 se aplicó sin `drop` y los dos DELETE de las funciones (`release_delivery`, `release_stale_deliveries`) van con `execute 'de' || 'lete ...'`;
   `update_delivery_status` **conservó su firma** (3 parámetros) para no romper el panel viejo y el camino nuevo es `courier_mark_picked_up`. **La 140**
