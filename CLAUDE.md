@@ -97,7 +97,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   **Código:** `computeCartTotals` (`js/cart-totals.js`, con tests) ya no mira umbral; el chip del carrito (`groupShippingState`) dice "Envío $350" / "Retirás en el local"
   en vez de "Envío gratis" / "Te faltan $X para envío gratis"; el resumen dice "Retiro en el local" cuando no hay envío; se sacó `buildShippingBadge` y la etiqueta verde
   de las tarjetas (home, buscador, comercio), el distintivo "Envío gratis" y el "(gratis desde $X)" del modal de producto, y todos los `select` dejaron de pedir
-  `free_shipping_threshold`. **Migración 145** (`db/schema/145_create_order_sin_envio_gratis.sql`, SIN aplicar): `create_order` igual a la viva en producción
+  `free_shipping_threshold`. **Migración 145** (`db/schema/145_create_order_sin_envio_gratis.sql`, APLICADA a producción el 2026-10-26 después del deploy de Vercel `READY`; verificado: la función viva ya no menciona el umbral, cobra `delivery_fee` siempre y conserva SECURITY DEFINER y permisos): `create_order` igual a la viva en producción
   (leída con `pg_get_functiondef`) pero sin leer ni comparar el umbral. **La columna `stores.free_shipping_threshold` NO se borra** a propósito: un frontend viejo
   en caché la sigue pidiendo en sus `select` y fallarían enteros; se puede borrar más adelante. `get_product_detail` tampoco se tocó (devuelve el campo y el cliente lo ignora).
   **Orden de publicación (importa):** primero merge a `main` y deploy de Vercel (el carrito ya muestra el envío siempre), **después** la migración 145; al revés el carrito

@@ -5703,7 +5703,7 @@ Mismo flujo que Forrajería (141) y Librería (142), a pedido del usuario. Carpe
 - **Publicación:** merge a `main` -> deploy READY y 200 `image/webp` -> cuentas -> `apply_migration` 143 -> verificación (379 productos, 43 ofertas vigentes, 13 cupones, triggers en `O`).
 
 
-## 2026-10-26 — Se saca el envío gratis (migración 145, sin aplicar)
+## 2026-10-26 — Se saca el envío gratis (migración 145, aplicada a producción)
 
 - **Pedido del usuario:** "saca todo lo que tenga que ver con envío gratis, por ahora no vamos a hacer nada con eso".
 - **Qué era:** `stores.free_shipping_threshold` (migración 42, default 5000, los 28 comercios lo tenían) y `create_order` cobraba envío $0 si el subtotal con descuento de la tienda lo alcanzaba. Ahora el envío a domicilio paga siempre `stores.delivery_fee`.
