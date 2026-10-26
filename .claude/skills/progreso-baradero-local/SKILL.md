@@ -5702,3 +5702,12 @@ Mismo flujo que Forrajería (141) y Librería (142), a pedido del usuario. Carpe
 - **Gotcha cuentas por SQL:** `handle_new_user` crea el perfil como `cliente` dentro de la misma sentencia, un `update` en un CTE no lo ve; hace falta un segundo `update` con la bandera `app.role_change_authorized`.
 - **Publicación:** merge a `main` -> deploy READY y 200 `image/webp` -> cuentas -> `apply_migration` 143 -> verificación (379 productos, 43 ofertas vigentes, 13 cupones, triggers en `O`).
 
+
+## 2026-10-26 — Se saca el envío gratis (migración 145, sin aplicar)
+
+- **Pedido del usuario:** "saca todo lo que tenga que ver con envío gratis, por ahora no vamos a hacer nada con eso".
+- **Qué era:** `stores.free_shipping_threshold` (migración 42, default 5000, los 28 comercios lo tenían) y `create_order` cobraba envío $0 si el subtotal con descuento de la tienda lo alcanzaba. Ahora el envío a domicilio paga siempre `stores.delivery_fee`.
+- **Cliente:** `js/cart-totals.js` (sin umbral, tests actualizados), `groupShippingState` y el resumen de `js/carrito.js`, `buildShippingBadge` borrado de `js/cart-utils.js` y de home/search/comercio, distintivo y texto "(gratis desde $X)" de `js/product-modal.js`, CSS (`.product-card__shipping`, `--envio`, chips `--free`/`--missing`), `dark-auto.css` regenerado, y los `select` ya no piden `free_shipping_threshold`.
+- **Base:** `db/schema/145_create_order_sin_envio_gratis.sql` = `create_order` viva (leída con `pg_get_functiondef`) sin el umbral. La columna NO se borra (un frontend viejo en caché la pide en sus `select` y fallaría). `get_product_detail` sigue devolviéndola, el cliente la ignora.
+- **Orden de publicación:** merge a `main` + deploy de Vercel primero, migración 145 después (al revés el carrito promete envío gratis y se cobra el envío).
+- **Sin tocar a propósito:** el detalle del pedido del vendedor muestra "Gratis" si `delivery_fee = 0` (pedidos viejos con envío gratis real).

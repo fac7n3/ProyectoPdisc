@@ -11,8 +11,6 @@ import { getCart, saveCart, clearPurchasedFromCart, updateCartBadge, MAX_QTY, fo
 // no tener el mismo número escrito en dos lados.
 import {
   computeCartTotals,
-  discountPctForStore,
-  DEFAULT_FREE_SHIPPING_THRESHOLD,
   DEFAULT_DELIVERY_FEE,
 } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
@@ -77,7 +75,7 @@ function storeKeyOf(item) {
 }
 
 
-// F12-04: productId -> storeId y storeId -> {deliveryFee, freeShippingThreshold},
+// F12-04: productId -> storeId y storeId -> {deliveryFee},
 // poblados por validateCartFreshness (ya trae los productos reales del carrito,
 // se aprovecha esa misma consulta para no duplicar un fetch).
 const productStoreId = new Map();
@@ -110,8 +108,7 @@ function storeIdOfItem(item) {
  * calculada igual que `create_order`: por tienda, con el descuento solo donde
  * corresponde y redondeando cada tienda por separado. Ver js/cart-totals.js.
  * Recibe SOLO los ítems tildados: un producto en pendiente no viaja a
- * create_order, así que tampoco puede empujar a esa tienda por encima de su
- * umbral de envío gratis.
+ * create_order, así que no cuenta.
  */
 function cartTotals(selectedItems) {
   return computeCartTotals({
@@ -141,33 +138,17 @@ function groupCartByStore(cart) {
 
 /**
  * Estado del envío de UN comercio, para el chip de la cabecera del grupo.
- * Se calcula sobre lo tildado nada más: la gracia es avisar que destildar algo
- * puede hacer perder el envío gratis ANTES de que el usuario lo descubra
- * mirando el total.
+ * Se calcula sobre lo tildado nada más.
  */
 function groupShippingState(entries) {
   const selected = entries.filter((e) => isItemSelected(e.item));
   if (selected.length === 0) return { kind: 'pending', text: 'Todo pendiente' };
 
-  // En "retiro en el local" no se cobra envío por nada, así que hablar de
-  // umbrales de envío gratis acá sería un dato falso.
   if (deliveryMethod === 'pickup') return { kind: 'pickup', text: 'Retirás en el local' };
 
   const storeId = entries.map((e) => productStoreId.get(e.item.id)).find(Boolean);
-  const config = storeId ? storeShippingById.get(storeId) : null;
-  const threshold = config?.freeShippingThreshold ?? DEFAULT_FREE_SHIPPING_THRESHOLD;
-  const fee = config?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
-
-  // El descuento que le toca a ESTA tienda: un cupón de otro comercio no le
-  // baja el subtotal, así que tampoco puede hacerle perder el envío gratis.
-  const pct = discountPctForStore(couponPercent, couponStoreId, storeId ?? entries[0]?.item.shop);
-  const subtotal = selected.reduce((acc, e) => acc + e.item.price * e.item.qty, 0) * (1 - pct / 100);
-  if (fee === 0 || subtotal >= threshold) return { kind: 'free', text: 'Envío gratis' };
-
-  return {
-    kind: 'missing',
-    text: `Te faltan ${formatPrice(Math.ceil(threshold - subtotal))} para envío gratis`,
-  };
+  const fee = (storeId && storeShippingById.get(storeId)?.deliveryFee) ?? DEFAULT_DELIVERY_FEE;
+  return { kind: 'delivery', text: `Envío ${formatPrice(fee)}` };
 }
 
 /** Chip de la fila de filtros. `count` = productos de ese comercio en el carrito. */
@@ -517,7 +498,7 @@ function renderCart() {
     summaryDiscountRow.style.display = 'none';
   }
 
-  if (summaryShipping) summaryShipping.textContent = shipping === 0 ? 'Gratis' : formatPrice(shipping);
+  if (summaryShipping) summaryShipping.textContent = deliveryMethod === 'pickup' ? 'Retiro en el local' : formatPrice(shipping);
   if (summaryTotal) summaryTotal.textContent = formatPrice(total);
 
   if (cartCount) {
@@ -1525,7 +1506,7 @@ async function validateCartFreshness() {
   const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
     supabase
       .from('products')
-      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, free_shipping_threshold, mp_collector_id)')
+      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, mp_collector_id)')
       .in('id', productIds),
     supabase
       .from('product_options')
@@ -1570,10 +1551,7 @@ async function validateCartFreshness() {
     if (!p.store_id) return;
     productStoreId.set(p.id, p.store_id);
     if (p.stores) {
-      storeShippingById.set(p.store_id, {
-        deliveryFee: p.stores.delivery_fee,
-        freeShippingThreshold: p.stores.free_shipping_threshold,
-      });
+      storeShippingById.set(p.store_id, { deliveryFee: p.stores.delivery_fee });
       // Comercio que cobra con Mercado Pago: vinculó su cuenta desde su panel (collector_id real).
       storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_collector_id));
       storeNameById.set(p.store_id, p.stores.name || 'el comercio');

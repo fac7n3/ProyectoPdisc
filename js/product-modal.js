@@ -51,26 +51,16 @@ async function fetchProductData(productId) {
     .sort((a, b) => a.position - b.position);
   const images = [product.image_url || '/img/no-image.svg', ...extraImages.map((pi) => pi.url)];
 
-  // F12-04: envío/gratis real del comercio (antes era un texto genérico de
-  // "hacé clic para ver el costo" que no llevaba a ningún lado).
-  const freeShippingQualifies = store.free_shipping_threshold != null && product.price >= store.free_shipping_threshold;
-  let shippingText;
-  if (store.delivery_fee == null) {
-    shippingText = 'El costo de envío se calcula en el carrito, según el comercio.';
-  } else if (freeShippingQualifies || store.delivery_fee === 0) {
-    shippingText = 'Envío gratis en este comercio.';
-  } else {
-    shippingText = `Envío: ${formatPrice(store.delivery_fee)}` + (store.free_shipping_threshold ? ` (gratis desde ${formatPrice(store.free_shipping_threshold)})` : '');
-  }
+  // F12-04: costo de envío real del comercio.
+  const shippingText = store.delivery_fee == null
+    ? 'El costo de envío se calcula en el carrito, según el comercio.'
+    : `Envío: ${formatPrice(store.delivery_fee)}`;
 
   let badgeText = '';
   let badgeType = '';
   if (hasDiscount) {
     badgeText = `-${discountPct}%`;
     badgeType = 'descuento';
-  } else if (freeShippingQualifies) {
-    badgeText = 'Envío gratis';
-    badgeType = 'envio';
   }
 
   // Rating real (F7-01) -- si no hay reseñas, no se fabrica un promedio ni una

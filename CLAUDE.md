@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-25. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-26. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -91,6 +91,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-26 (en la rama `claude/casual-conversation-2053a7`, SIN mergear ni aplicar a producción) — Se saca el envío gratis**, a pedido del usuario
+  ("por ahora no vamos a hacer nada con eso"). **Antes:** los 28 comercios tenían `free_shipping_threshold = 5000` (el default) y `create_order` cobraba envío $0
+  cuando el subtotal con descuento de esa tienda llegaba a ese monto. **Ahora** un pedido con envío a domicilio paga siempre el `stores.delivery_fee` del comercio.
+  **Código:** `computeCartTotals` (`js/cart-totals.js`, con tests) ya no mira umbral; el chip del carrito (`groupShippingState`) dice "Envío $350" / "Retirás en el local"
+  en vez de "Envío gratis" / "Te faltan $X para envío gratis"; el resumen dice "Retiro en el local" cuando no hay envío; se sacó `buildShippingBadge` y la etiqueta verde
+  de las tarjetas (home, buscador, comercio), el distintivo "Envío gratis" y el "(gratis desde $X)" del modal de producto, y todos los `select` dejaron de pedir
+  `free_shipping_threshold`. **Migración 145** (`db/schema/145_create_order_sin_envio_gratis.sql`, SIN aplicar): `create_order` igual a la viva en producción
+  (leída con `pg_get_functiondef`) pero sin leer ni comparar el umbral. **La columna `stores.free_shipping_threshold` NO se borra** a propósito: un frontend viejo
+  en caché la sigue pidiendo en sus `select` y fallarían enteros; se puede borrar más adelante. `get_product_detail` tampoco se tocó (devuelve el campo y el cliente lo ignora).
+  **Orden de publicación (importa):** primero merge a `main` y deploy de Vercel (el carrito ya muestra el envío siempre), **después** la migración 145; al revés el carrito
+  prometería envío gratis y se cobraría el envío. Los pedidos viejos con `delivery_fee = 0` siguen mostrando "Gratis" en el detalle del pedido del vendedor (es historial real).
+  `npm test` no corre acá por el `sh` de Windows: los `js/*.test.mjs` pasan corriéndolos a mano; los de `supabase/functions/_tests` fallan por falta de `typescript` en el worktree (sin relación).
 - **Hecho 2026-10-25 (mergeado a `main` y migración 143 APLICADA a producción el 2026-10-25) — Productos, ofertas y banners con las fotos NUEVAS de la carpeta "Limpieza" del Drive**,
   a pedido del usuario ("lo mismo" que con Forrajería/Librería). **Migración 143** (`db/schema/143_productos_limpieza_drive.sql`): 45 productos con 48 fotos
   (webp 800 px en `public/img/productos/` + `dist/`), 8 con precio tachado + fecha de fin, 3 cupones (`LIMPIO10`, `CASITA5`, `TODOLIMPIO5`, vencen el 30/11/2026),
@@ -299,8 +311,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   con el slider de varias publicidades (`promo-lightbox__stage`) la imagen tapaba la mitad de la X: se le dio
   `z-index: 2` al botón de cerrar (`home.css`), si no tocar la X caía sobre la imagen.
 - **Hecho 2026-10-21 — Pregunta "¿Hacen envíos a domicilio?" de `pages/info.html` sin mencionar envío gratis**, a pedido
-  del usuario ("no hay"). Solo cambió el texto de la FAQ: el código del carrito/tarjetas todavía soporta el umbral de envío
-  gratis por comercio (`cart-totals.js`, `create_order`); si de verdad no se usa, no se toca nada más.
+  del usuario ("no hay"). Solo cambió el texto de la FAQ; el código se sacó el 2026-10-26 (ver la entrada de arriba).
 - **Hecho 2026-10-21 — Pregunta "¿Cómo retiro mi pedido en el local?" de `pages/info.html` sin el QR**, a pedido del
   usuario: ahora dice que en Mis compras se ve el **código de retiro** del pedido y que hay que mostrarle ese código al
   comercio. Solo cambió el texto de la respuesta (no el flujo ni la pantalla de Mis compras).

@@ -261,10 +261,6 @@ html[data-theme="dark"] .load-more-btn {
 html[data-theme="dark"] .load-more-btn:hover {
   color: #fff;
 }
-html[data-theme="dark"] .product-card__badge--envio {
-  background: #17422c;
-  color: #aff9e4;
-}
 html[data-theme="dark"] .product-card__badge--oferta {
   background: #3c1414;
   color: #ec9494;
