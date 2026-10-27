@@ -938,10 +938,19 @@
     display: none;
   }
 
+  /* Las tres pestañas se reparten el ancho (antes sumaban 446px en 312 y
+     "Sobre la tienda" quedaba cortada); un rótulo largo baja de renglón. */
   .pm-tab {
-    white-space: nowrap;
-    padding: 0.625rem 1rem;
+    flex: 1 1 0;
+    padding: 0.625rem 0.4rem;
     font-size: 0.8125rem;
+    text-align: center;
+  }
+
+  /* minmax(154px) no deja dos columnas en 312px: salía una sola tarjeta
+     gigante por fila y el modal medía 3500px. */
+  .pm-related__scroll {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pm-related-card__img {

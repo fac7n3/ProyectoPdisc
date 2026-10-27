@@ -232,6 +232,12 @@ input[type="checkbox"] {
   gap: 0.75rem;
 }
 
+/* El círculo del radio es un ::before dentro de la fila flex: sin esto, con
+   el texto largo del celular se achicaba de ancho y quedaba un óvalo. */
+.account-type-content::before {
+  flex-shrink: 0;
+}
+
 .account-type-card input[type="radio"]:checked + .account-type-content::before {
   content: '';
   display: inline-block;

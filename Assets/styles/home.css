@@ -2051,6 +2051,42 @@ button.coupon-chip:hover {
   transform: scale(1.25);
 }
 
+/* En el celular cada espacio ocupa todo el ancho y la imagen del comercio
+   (que ya trae su propio texto y precio) lo llena entera: el rótulo de abajo
+   (comercio + título) le caía encima y tapaba el precio. Acá la imagen va
+   arriba, con su propia proporción (la de cada espacio: 1600x900 en a/b/c,
+   1600x320 en d, 1200x300 en e/f), y el rótulo en una franja azul debajo.
+   El padding-top en % se mide sobre el ancho: es el alto de la imagen. */
+@media (max-width: 640px) {
+  .promo-banner.is-store-promo,
+  .promo-banner-2.is-store-promo {
+    --promo-ratio: 56.25%;
+    aspect-ratio: auto;
+    padding: calc(var(--promo-ratio) + 0.6rem) 0.9rem 0.75rem;
+    background-image: var(--promo-img);
+    background-size: 100% auto;
+    background-position: center top;
+  }
+
+  .promo-banner-2--d.is-store-promo { --promo-ratio: 20%; }
+  .promo-banner-2--e.is-store-promo,
+  .promo-banner-2--f.is-store-promo { --promo-ratio: 25%; }
+
+  .is-store-promo .promo-banner__slides {
+    bottom: auto;
+    height: 0;
+    padding-top: var(--promo-ratio);
+    border-radius: inherit;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  /* El degradé oscuro solo servía para leer el rótulo encima de la foto. */
+  .is-store-promo .promo-banner__slides::after {
+    display: none;
+  }
+}
+
 /* ===========================================================
    LIGHTBOX DE BANNERS PROMOCIONALES (ver imagen ampliada al hacer click)
    Mismo criterio que product-modal.css: overlay con blur, tarjeta con
@@ -4036,6 +4072,15 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   .hero__banner-cta {
     padding: 0.5rem 1.25rem;
     font-size: 0.8125rem;
+  }
+
+  /* Con el banner de 160px, los puntitos centrados caían sobre el botón
+     "Explorar productos": van a la derecha, sobre la foto. */
+  .hero__dots {
+    justify-content: flex-end;
+    right: 0.75rem;
+    left: auto;
+    bottom: 0.5rem;
   }
 
   .products__grid {
