@@ -78,6 +78,9 @@
         border-radius: var(--bl-radius-lg); overflow: hidden;
       }
       .fx-item + .fx-item { border-top: 1px solid var(--bl-border); }
+      /* "No hay más turnos cargados": mismo relleno que una fila de la lista
+         (sin esto el texto quedaba pegado al borde de la caja). */
+      .fx-week > .fx-muted { margin: 0; padding: 0.85rem 1rem; }
       .fx-item.is-open { background: var(--bl-surface-alt); }
       .fx-item__head {
         display: flex; align-items: center; gap: 0.9rem; width: 100%;

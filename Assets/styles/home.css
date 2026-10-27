@@ -3595,6 +3595,21 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   text-overflow: ellipsis;
 }
 
+/* En celular la tarjeta mide ~140px y una sola línea cortaba casi todos los
+   nombres a los 15 caracteres ("Jabón blanco en..."). Van 2 líneas, pero
+   reservando siempre el alto de las 2: así un nombre corto no sube el precio
+   ni el botón respecto de las tarjetas de al lado (lo que evitaba la línea única). */
+@media (max-width: 480px) {
+  .product-card__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    min-height: calc(2 * 1.35em);
+  }
+}
+
 .product-card__price-row {
   display: flex;
   align-items: baseline;

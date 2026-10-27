@@ -88,6 +88,12 @@
       background: var(--bl-primary);
       color: white;
     }
+    /* Celular: la tarjeta iba pegada a los bordes con 48px de relleno y el
+       título ocupaba tres renglones. */
+    @media (max-width: 600px) {
+      .terms-container { margin: 1rem 0.75rem 2rem; padding: 1.5rem 1.125rem; }
+      .terms-container h1 { font-size: 1.75rem; }
+    }
   </style>
     <link rel="stylesheet" href="../Assets/styles/dark.css" />
     <script type="module" src="../js/theme.js"></script>

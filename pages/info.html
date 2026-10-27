@@ -164,6 +164,15 @@
       background: var(--bl-primary);
       color: white;
     }
+    /* Celular: la tarjeta iba pegada a los bordes con el relleno de escritorio
+       y las respuestas quedaban en una columna de ~220px. */
+    @media (max-width: 600px) {
+      .info-container { margin: 1rem 0.75rem 2rem; padding: 1.5rem 1rem; }
+      .info-container h1 { font-size: 1.75rem; }
+      .faq-section { padding-left: 0.25rem; padding-right: 0.25rem; }
+      .faq-item > summary { padding: 0.75rem 0.85rem; }
+      .faq-answer { padding: 0.75rem 0.85rem 0.25rem; }
+    }
   </style>
     <link rel="stylesheet" href="../Assets/styles/dark.css" />
     <script type="module" src="../js/theme.js"></script>

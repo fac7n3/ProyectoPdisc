@@ -5770,3 +5770,9 @@ Ninguna página pública tiene scroll horizontal. Hallazgos visuales:
 - **Pendiente:** `.product-card__name` (2 líneas reservando el alto de 2 en celular), padding inline de `.catalog-content` en
   `comercios.html` (40 px por lado en vez de 24), `.terms-container`/`.info-container` sin media query, `.fx-week > .fx-muted`
   sin padding en `farmacias.html`. Mi perfil y paneles sin revisar (piden sesión).
+**Segunda tanda (2026-10-27, mismo día):** se arreglaron los cuatro pendientes de arriba. `.product-card__name` a <= 480 px
+con `-webkit-line-clamp: 2` y `min-height: calc(2 * 1.35em)` (medido: precio y botón a la misma altura en toda la fila aunque
+el nombre ocupe uno o dos renglones); `comercios.html` con `.catalog-content` en `padding: 1.5rem 0` (grilla de 280 a 312 px);
+`info.html`, `terminos.html` y `privacidad.html` con un `@media (max-width: 600px)` en su `<style>` (tarjeta a 12 px de los
+bordes, 16-18 px de relleno, título 1.75rem; respuestas de la FAQ de 223 a 247 px); `farmacias.html` con
+`.fx-week > .fx-muted { margin: 0; padding: 0.85rem 1rem }`. `dark-auto.css` sigue al día (no hay colores fijos nuevos).
