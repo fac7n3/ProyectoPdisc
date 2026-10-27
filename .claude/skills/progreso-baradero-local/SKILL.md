@@ -5755,3 +5755,18 @@ carrito, tema y Categorías a la derecha, a 360 px el de cuenta quedaba en -22..
 inline para dejar 1rem de margen (el mismo que asume su `width: min(..., 100vw - 2rem)`); si ya entra no toca nada.
 Verificado: 320/360/412 px en inicio y búsqueda (16..296 y 16..344 a 360 px), escritorio sin cambio. En escritorio la
 personita no abre menú: lleva directo a `perfil.html` (a propósito, `isMobileNav`).
+
+## 2026-10-27 — Revisión de responsive en celular (primera tanda, commit f63d608)
+Método: navegador de la app con viewport 360x780 (Galaxy S21 FE) y 320x700, contra la base real, sin sesión. En cada página
+un script busca elementos que se salen del ancho y no están dentro de un contenedor con scroll propio, más capturas.
+Ninguna página pública tiene scroll horizontal. Hallazgos visuales:
+- **Arreglado** (`home.css`): banners de comercios (`.is-store-promo`) a <= 640 px: `padding-top` en % = alto de la imagen
+  (`--promo-ratio`: 56.25% en a/b/c, 20% en d, 25% en e/f), capas `.promo-banner__slides` con ese alto y el rótulo en la franja
+  de abajo sobre `--bl-primary`. Verificado en los 6 espacios: la imagen termina antes del rótulo. Puntitos del hero a la
+  derecha a <= 480 px.
+- **Arreglado sin verificar en navegador** (`product-modal.css` <= 480 px): `.pm-tab { flex: 1 1 0 }` (sumaban 446 px en 312) y
+  `.pm-related__scroll` a 2 columnas (`minmax(154px)` no dejaba dos en 312: el modal medía 3500 px).
+- **Arreglado** (`auth.css`): `.account-type-content::before { flex-shrink: 0 }`.
+- **Pendiente:** `.product-card__name` (2 líneas reservando el alto de 2 en celular), padding inline de `.catalog-content` en
+  `comercios.html` (40 px por lado en vez de 24), `.terms-container`/`.info-container` sin media query, `.fx-week > .fx-muted`
+  sin padding en `farmacias.html`. Mi perfil y paneles sin revisar (piden sesión).

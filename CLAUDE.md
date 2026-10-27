@@ -91,6 +91,17 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho a medias 2026-10-27 (en `main`, `f63d608`) — Revisión de responsive en celular**, a pedido del usuario. Recorridas
+  a 360 y 320 px las páginas públicas (inicio, búsqueda, filtros, comercio, producto, modal, carrito, comercios, contratar,
+  farmacias, emergencias, info, legales, login, registro). **Arreglado:** banners de comercios del inicio (en celular la
+  imagen va arriba con su proporción y el rótulo en una franja azul debajo; antes tapaba el precio de la imagen), puntitos del
+  carrusel de arriba a la derecha (pisaban "Explorar productos"), modal de producto (pestañas que entran enteras, relacionados
+  de a 2; **sin verificar en el navegador**) y el círculo del tipo de cuenta del registro (`flex-shrink: 0`, era un óvalo).
+  **Encontrado y SIN arreglar:** nombre de las tarjetas cortado a ~15 caracteres en celular (`.product-card__name`, una línea a
+  propósito: pasar a 2 líneas reservando siempre el alto de 2); doble margen en `comercios.html` (padding inline de
+  `.catalog-content`); `info.html`/`terminos.html`/`privacidad.html` sin reglas para celular (tarjeta pegada a los bordes,
+  32-48 px de relleno, título de 3 renglones); "No hay más turnos cargados" pegado al borde en `farmacias.html`
+  (`.fx-week > .fx-muted` sin padding). **Sin revisar:** Mi perfil y los paneles (necesitan sesión).
 - **Hecho 2026-10-27 — Menús de la personita y de la campanita dentro de la pantalla en celular**, reportado por el usuario
   (Galaxy S21 FE: "Iniciá sesión para ver tu cuenta" salía cortado). Los dos menús se abrían con un corrimiento fijo desde su
   botón (`right: -2.5rem`, `home.css`), pensado para cuando el botón estaba cerca del borde; con el carrito, el tema y
