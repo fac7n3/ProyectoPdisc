@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-27 (rama `claude/lucid-moore-63fba1`, SIN mergear) — Menos esperas al cargar**, a pedido del usuario, tras un
+- **Hecho 2026-10-27 (mergeado a `main` en `4cfdde3`, deploy de Vercel `READY`; verificado en producción que `/assets/*` sale con `immutable`) — Menos esperas al cargar**, a pedido del usuario, tras un
   análisis de performance. **Medido en producción:** desde Argentina cada pedido a Supabase tarda ~300 ms (p50) aunque la base
   responda en ~50 ms: ~245 ms son el viaje a `us-west-2`. Lo que más pesa son los pedidos **en serie**. Cambios: (1) `vercel.json`:
   `/assets/*` (archivos con hash de Vite) con `Cache-Control: public, max-age=31536000, immutable` (antes `max-age=0`);
