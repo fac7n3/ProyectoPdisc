@@ -91,6 +91,12 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-27 — Menús de la personita y de la campanita dentro de la pantalla en celular**, reportado por el usuario
+  (Galaxy S21 FE: "Iniciá sesión para ver tu cuenta" salía cortado). Los dos menús se abrían con un corrimiento fijo desde su
+  botón (`right: -2.5rem`, `home.css`), pensado para cuando el botón estaba cerca del borde; con el carrito, el tema y
+  Categorías a la derecha quedó al medio: a 360 px el de cuenta arrancaba en -22 px y el de la campanita en -112 px.
+  Ahora `keepInsideViewport` (`js/nav-utils.js`) los corre al abrir lo justo para quedar a 1rem del borde. Verificado en
+  el navegador a 320, 360 y 412 px (inicio y búsqueda) y en escritorio (sin cambio). Sin probar en el teléfono real.
 - **Hecho 2026-10-27 (mergeado a `main` en `4cfdde3`, deploy de Vercel `READY`; verificado en producción que `/assets/*` sale con `immutable`) — Menos esperas al cargar**, a pedido del usuario, tras un
   análisis de performance. **Medido en producción:** desde Argentina cada pedido a Supabase tarda ~300 ms (p50) aunque la base
   responda en ~50 ms: ~245 ms son el viaje a `us-west-2`. Lo que más pesa son los pedidos **en serie**. Cambios: (1) `vercel.json`:

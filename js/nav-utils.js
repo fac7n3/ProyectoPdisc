@@ -587,6 +587,22 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
   });
 }
 
+/**
+ * Los menús de la campanita y de la cuenta se abren alineados a su botón. En
+ * un teléfono angosto (360px, ej. Galaxy S21 FE), con el carrito, el tema y
+ * Categorías a la derecha, el botón queda al medio y el menú se salía por la
+ * izquierda. Al abrir se corre lo justo para quedar dentro de la pantalla con
+ * 1rem de margen (el mismo que deja su `width: min(..., 100vw - 2rem)`).
+ */
+function keepInsideViewport(panel) {
+  panel.style.right = '';
+  const margin = 16;
+  const { left, right } = panel.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const shift = left < margin ? margin - left : right > vw - margin ? vw - margin - right : 0;
+  if (shift) panel.style.right = `${parseFloat(getComputedStyle(panel).right) - shift}px`;
+}
+
 // ── Campanita de notificaciones (navbar) ────────────────────
 /**
  * Botón de notificaciones para la navbar: reutiliza el centro de
@@ -654,6 +670,7 @@ export async function initNotificationsBell() {
 
   async function open() {
     panel.hidden = false;
+    keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
 
@@ -816,6 +833,7 @@ export async function initAccountMenu() {
 
   async function open() {
     panel.hidden = false;
+    keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
 

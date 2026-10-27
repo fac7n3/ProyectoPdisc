@@ -5745,3 +5745,13 @@ bajan aunque estén tapados (~450 KB) y las 18 publicidades de golpe; subset de 
 los productos; miniaturas de 400 px con `srcset`; a futuro, Supabase en `sa-east-1`.
 **Visto de paso:** en `search.html` `search_products` arranca recién después de `categories` (otra espera en serie).
 **Gotcha:** `js/dark-css.test.mjs` falla en Windows con `core.autocrlf=true` (CRLF en `dark-auto.css`), sin relación con el código.
+
+## 2026-10-27 — Menús del navbar (cuenta y campanita) dentro de la pantalla en celular
+Reporte del usuario con su Galaxy S21 FE (360 px de ancho CSS): el menú de la personita sin sesión ("Iniciá sesión para ver tu
+cuenta") salía cortado por la izquierda. `.account-dropdown` y `.notif-dropdown` (`home.css`) son `position: absolute` dentro de
+su wrap con `right: 0` y, a <= 480 px, `right: -2.5rem`: un corrimiento fijo que suponía el botón cerca del borde derecho. Con
+carrito, tema y Categorías a la derecha, a 360 px el de cuenta quedaba en -22..258 y el de la campanita en -112..216.
+**Arreglo:** `keepInsideViewport(panel)` en `js/nav-utils.js`, llamado en el `open()` de los dos menús: mide y ajusta `right`
+inline para dejar 1rem de margen (el mismo que asume su `width: min(..., 100vw - 2rem)`); si ya entra no toca nada.
+Verificado: 320/360/412 px en inicio y búsqueda (16..296 y 16..344 a 360 px), escritorio sin cambio. En escritorio la
+personita no abre menú: lleva directo a `perfil.html` (a propósito, `isMobileNav`).
