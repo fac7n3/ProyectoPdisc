@@ -91,6 +91,14 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-27 (en la rama `claude/epic-maxwell-46yvr3`, sin mergear) — Menús de la campanita y de la cuenta cortados en teléfono**, reportado por el usuario con captura
+  ("Iniciá sesión para ver tu cuenta" se salía por la izquierda). Causa: `.notif-dropdown` / `.account-dropdown` (`Assets/styles/home.css`) cuelgan de su botón con
+  `right: 0` / `right: -2.5rem` y un ancho fijo (360 / 280 px), pero en teléfono esos botones no son los del borde derecho (les siguen carrito y categorías): la campanita
+  se pasaba hasta 44 px por la izquierda con 320-414 px de ancho. Ahora, con ancho <= 560 px, los dos paneles son `position: fixed; top: 3.5rem; right: 1rem` (siguen
+  usando `width: min(..., 100vw - 2rem)`), así que siempre quedan enteros dentro de la pantalla. Más de 560 px no cambia. Verificado en Chromium (320-561 px) inyectando la
+  regla sobre el `dist/` servido, sin sesión; **sin probar el menú con la sesión iniciada** (más alto: `max-height: 80vh` sigue valiendo). `dist/` sin reconstruir.
+  **Visto y sin tocar:** en la misma captura el cartel de texto del banner de La Espiga (comercio + título, `home_promos`) se superpone con el texto que ya trae la imagen
+  del banner; es el overlay de comercio/título de cada publicidad, no el menú.
 - **Hecho 2026-10-26 (en la rama `claude/casual-conversation-2053a7`, SIN mergear ni aplicar a producción) — Se saca el envío gratis**, a pedido del usuario
   ("por ahora no vamos a hacer nada con eso"). **Antes:** los 28 comercios tenían `free_shipping_threshold = 5000` (el default) y `create_order` cobraba envío $0
   cuando el subtotal con descuento de esa tienda llegaba a ese monto. **Ahora** un pedido con envío a domicilio paga siempre el `stores.delivery_fee` del comercio.

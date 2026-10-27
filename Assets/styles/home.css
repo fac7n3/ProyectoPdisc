@@ -540,9 +540,17 @@ ul, ol {
   font-size: 0.8125rem;
 }
 
-@media (max-width: 480px) {
-  .notif-dropdown {
-    right: -2.5rem;
+/* En teléfono la campanita y la cuenta no son los íconos del borde derecho
+   (les siguen carrito y categorías), así que un panel colgado de su botón
+   con right:0 / right:-2.5rem se salía por la izquierda de la pantalla. Se
+   ancla al borde de la ventana: queda siempre entero a 1rem del costado,
+   justo debajo de la fila de íconos. Los dos paneles comparten esta regla. */
+@media (max-width: 560px) {
+  .notif-dropdown,
+  .account-dropdown {
+    position: fixed;
+    top: 3.5rem;
+    right: 1rem;
   }
 }
 
@@ -645,11 +653,6 @@ ul, ol {
 .account-dropdown__item--danger i { color: var(--bl-danger); }
 .account-dropdown__item--danger:hover { background: #fee2e2; }
 
-@media (max-width: 480px) {
-  .account-dropdown {
-    right: -2.5rem;
-  }
-}
 
 /* ── Botón "Volver" con flecha, a la izquierda del título de una sección
    (A113-311: Tienda y Usuario) -- history.back() con fallback a home.html
