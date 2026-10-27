@@ -540,19 +540,6 @@ ul, ol {
   font-size: 0.8125rem;
 }
 
-/* En teléfono la campanita y la cuenta no son los íconos del borde derecho
-   (les siguen carrito y categorías), así que un panel colgado de su botón
-   con right:0 / right:-2.5rem se salía por la izquierda de la pantalla. Se
-   ancla al borde de la ventana: queda siempre entero a 1rem del costado,
-   justo debajo de la fila de íconos. Los dos paneles comparten esta regla. */
-@media (max-width: 560px) {
-  .notif-dropdown,
-  .account-dropdown {
-    position: fixed;
-    top: 3.5rem;
-    right: 1rem;
-  }
-}
 
 /* ── Menú de cuenta (A113-290): mismo botón/dropdown que la campanita de
    notificaciones, pero con las opciones de la cuenta agrupadas en secciones
@@ -652,6 +639,22 @@ ul, ol {
 .account-dropdown__item--danger { color: var(--bl-danger); }
 .account-dropdown__item--danger i { color: var(--bl-danger); }
 .account-dropdown__item--danger:hover { background: #fee2e2; }
+
+/* En teléfono la campanita y la cuenta no son los íconos del borde derecho
+   (les siguen carrito y categorías), así que un panel colgado de su botón
+   con right:0 / right:-2.5rem se salía por la izquierda de la pantalla. Se
+   ancla al borde de la ventana: queda siempre entero a 1rem del costado,
+   justo debajo de la fila de íconos. Los dos paneles comparten esta regla.
+   Va después de la regla base de .account-dropdown: con la misma especificidad
+   gana la que está más abajo en el archivo. */
+@media (max-width: 560px) {
+  .notif-dropdown,
+  .account-dropdown {
+    position: fixed;
+    top: 3.5rem;
+    right: 1rem;
+  }
+}
 
 
 /* ── Botón "Volver" con flecha, a la izquierda del título de una sección
@@ -2027,6 +2030,38 @@ button.coupon-chip:hover {
 .has-slides .promo-banner__title {
   position: relative;
   z-index: 1;
+}
+
+/* Rótulo del comercio sobre el banner. La imagen que carga el comercio ya trae
+   su propio texto (título, precio), así que repetirlo acá lo duplicaba y se
+   pisaba con lo que la imagen dibuja (en teléfono, con el cartel del precio).
+   Queda solo el nombre del comercio, en una píldora de una línea pegada abajo
+   a la izquierda; el título de la promo sigue en el texto accesible
+   (aria-label, ver promoAriaLabel). */
+.promo-banner.is-store-promo,
+.promo-banner-2.is-store-promo {
+  padding: 0.5rem 0.625rem;
+  align-items: flex-start;
+}
+
+.promo-banner.is-store-promo .promo-banner__title,
+.promo-banner-2.is-store-promo .promo-banner__title {
+  display: none;
+}
+
+.promo-banner.is-store-promo .promo-banner__eyebrow,
+.promo-banner-2.is-store-promo .promo-banner__eyebrow {
+  max-width: 100%;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  text-shadow: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Puntitos arriba a la derecha: avisan que hay más de una imagen. */

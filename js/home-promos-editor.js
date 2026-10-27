@@ -146,7 +146,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   titleInput.maxLength = 60;
   titleInput.placeholder = 'Ej: Combo hamburguesas';
   titleInput.value = promo.title || '';
-  body.appendChild(field('Título (opcional)', titleInput, 'Se muestra chico abajo del banner, junto al nombre del comercio.'));
+  body.appendChild(field('Título (opcional)', titleInput, 'No se escribe sobre el banner (la imagen ya trae su texto): sirve como descripción para lectores de pantalla.'));
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';

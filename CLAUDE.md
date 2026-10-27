@@ -97,8 +97,14 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   se pasaba hasta 44 px por la izquierda con 320-414 px de ancho. Ahora, con ancho <= 560 px, los dos paneles son `position: fixed; top: 3.5rem; right: 1rem` (siguen
   usando `width: min(..., 100vw - 2rem)`), así que siempre quedan enteros dentro de la pantalla. Más de 560 px no cambia. Verificado en Chromium (320-561 px) inyectando la
   regla sobre el `dist/` servido, sin sesión; **sin probar el menú con la sesión iniciada** (más alto: `max-height: 80vh` sigue valiendo). `dist/` sin reconstruir.
-  **Visto y sin tocar:** en la misma captura el cartel de texto del banner de La Espiga (comercio + título, `home_promos`) se superpone con el texto que ya trae la imagen
-  del banner; es el overlay de comercio/título de cada publicidad, no el menú.
+  **Segunda vuelta (2026-10-27, mismo día):** el primer arreglo **no llegaba al menú de cuenta**: el bloque `@media` estaba antes de la regla base `.account-dropdown` (misma
+  especificidad, gana la de más abajo) y la prueba inyectaba el CSS al final, por eso no se vio. Ahora el `@media (max-width: 560px)` va **después** de las dos reglas base;
+  verificado con el CSS real servido por Vite (349, 393 y 560 px, los dos paneles `fixed` y dentro de la pantalla). **Regla:** al sumar un override responsive, ponerlo
+  debajo de la regla que pisa, y probar con el CSS real, no inyectado.
+  **Cartel del banner (home_promos):** `.is-store-promo` mostraba el nombre del comercio + el título de la promo sobre la imagen, y como la imagen ya trae su texto se
+  duplicaba y se pisaba con el cartel de precio. Ahora sobre el banner queda solo el **nombre del comercio** en una píldora de una línea abajo a la izquierda; el título
+  (`home_promos.title`) ya no se dibuja (display:none) y sigue en el `aria-label` (`promoAriaLabel`). Se cambió el texto de ayuda del campo "Título (opcional)" en
+  `js/home-promos-editor.js`. Si se quiere volver a mostrar el título, es la regla `.promo-banner__title` en `home.css`. Verificado con Supabase simulado (3 publicidades).
 - **Hecho 2026-10-26 (en la rama `claude/casual-conversation-2053a7`, SIN mergear ni aplicar a producción) — Se saca el envío gratis**, a pedido del usuario
   ("por ahora no vamos a hacer nada con eso"). **Antes:** los 28 comercios tenían `free_shipping_threshold = 5000` (el default) y `create_order` cobraba envío $0
   cuando el subtotal con descuento de esa tienda llegaba a ese monto. **Ahora** un pedido con envío a domicilio paga siempre el `stores.delivery_fee` del comercio.
