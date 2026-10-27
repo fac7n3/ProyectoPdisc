@@ -91,6 +91,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-27 (rama `claude/lucid-moore-63fba1`, SIN mergear) — Menos esperas al cargar**, a pedido del usuario, tras un
+  análisis de performance. **Medido en producción:** desde Argentina cada pedido a Supabase tarda ~300 ms (p50) aunque la base
+  responda en ~50 ms: ~245 ms son el viaje a `us-west-2`. Lo que más pesa son los pedidos **en serie**. Cambios: (1) `vercel.json`:
+  `/assets/*` (archivos con hash de Vite) con `Cache-Control: public, max-age=31536000, immutable` (antes `max-age=0`);
+  (2) `guardPage` (`js/auth-utils.js`): en páginas privadas **sin** `requireRole` (perfil, vender, profesional) muestra la página
+  con la sesión local y verifica `getUser()` en segundo plano; si el servidor la rechaza y el refresh falla, manda a login.
+  Login/registro (`redirectIfAuth`) y admin/repartidor (`requireRole`) siguen verificando antes, a propósito;
+  (3) panel de vendedor (`loadDashboard`): todas las secciones arrancan juntas con `Promise.allSettled` (antes Mercado Pago,
+  Notificaciones y Soporte iban en serie antes de Publicaciones y Pedidos); solo Resumen y Reseñas esperan a `fetchProducts`;
+  (4) búsqueda (`js/search.js`): comercios y profesionales se piden a la par de `search_products` (los caches guardan la promesa).
+  Verificado en el navegador contra la base real (búsqueda: los 3 pedidos salen juntos; guardPage con sesión revocada: muestra
+  a los 2 ms y después va a login). **Sin probar logueado** el panel de vendedor. Informe completo con las otras 11
+  oportunidades (RLS con funciones auxiliares, splash del inicio, Font Awesome, imágenes, región de Supabase): skill
+  `progreso-baradero-local`, entrada 2026-10-27.
 - **Hecho 2026-10-26 (en la rama `claude/casual-conversation-2053a7`, SIN mergear ni aplicar a producción) — Se saca el envío gratis**, a pedido del usuario
   ("por ahora no vamos a hacer nada con eso"). **Antes:** los 28 comercios tenían `free_shipping_threshold = 5000` (el default) y `create_order` cobraba envío $0
   cuando el subtotal con descuento de esa tienda llegaba a ese monto. **Ahora** un pedido con envío a domicilio paga siempre el `stores.delivery_fee` del comercio.

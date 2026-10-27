@@ -420,6 +420,18 @@ export function setupGlobalSessionListener(redirectIfNoSession = false, redirect
   });
 }
 
+/**
+ * Verifica la sesión local con el servidor. Si getUser() falla, intenta
+ * refrescar; devuelve el usuario verificado o null si la sesión ya no vale.
+ */
+async function verifyUserWithServer() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (!error) return user;
+  console.warn('Auth verification error:', error.message);
+  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+  return !refreshError && refreshData?.user ? refreshData.user : null;
+}
+
 // --- Guard de Página Mejorado ---
 /**
  * Protege una página entera. Muestra un loading screen mientras
@@ -453,23 +465,26 @@ export async function guardPage({
     //    cliente aún no terminó de leer la sesión de localStorage.
     const { data: { session: localSession } } = await supabase.auth.getSession();
 
+    // 3. Página privada sin chequeo de rol: alcanza la sesión local para
+    //    mostrar la página (los datos los protege la RLS, no la pantalla) y
+    //    se verifica con el servidor en segundo plano. getUser() es un viaje
+    //    a Supabase (~450 ms desde Baradero) que antes frenaba cada panel.
+    //    Login/registro (redirectIfAuth) y admin (requireRole) siguen
+    //    verificando antes: una sesión revocada no puede sacar a nadie del
+    //    login, y el rol tiene que ser el actual, no el guardado.
+    const fastPath = !!localSession && requireAuth && !redirectIfAuth && !requireRole;
     let user = null;
 
-    if (localSession) {
-      // 3. Hay sesión en localStorage → verificar con el servidor
-      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
-
-      if (error) {
-        console.warn('Auth verification error:', error.message);
-        // Si getUser falla pero hay sesión local, intentar refrescar
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (!refreshError && refreshData?.user) {
-          user = refreshData.user;
+    if (fastPath) {
+      user = localSession.user;
+      verifyUserWithServer().catch(() => null).then((verified) => {
+        if (!verified && !isHandlingRedirect) {
+          isHandlingRedirect = true;
+          window.location.replace(redirectTo || '../pages/login.html');
         }
-        // Si el refresh también falla, user queda null
-      } else {
-        user = verifiedUser;
-      }
+      });
+    } else if (localSession) {
+      user = await verifyUserWithServer();
     }
     // Si no hay localSession, user queda null (no hay sesión)
 

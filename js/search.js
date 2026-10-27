@@ -33,6 +33,8 @@ let searchToken = 0; // descarta respuestas viejas del RPC (cambios rápidos de 
 // vez de consultar por cada tecla: son pocos (14 al 2026-08) y así el filtro
 // puede ignorar acentos, que un `ilike` del servidor no hace.
 // ponytail: se cargan todos; si algún día son miles, pasar a un RPC con unaccent.
+// Se guarda la promesa (no el resultado) para que el pedido adelantado de
+// runSearch y el de renderStoreResults sean el mismo.
 let storesCache = null;
 
 /** "Panadería" -> "panaderia", para que "panaderia" encuentre "Panadería". */
@@ -43,19 +45,19 @@ function normalizeText(text) {
     .replace(/\p{Diacritic}/gu, '');
 }
 
-async function getStores() {
-  if (storesCache) return storesCache;
-  const { data, error } = await supabase
-    .from('stores')
-    .select('id, name, logo_url, zone, description')
-    .eq('status', 'approved')
-    .order('name');
-  if (error) {
-    console.error('No se pudieron cargar los comercios:', error);
-    storesCache = []; // no se reintenta por tecla: la sección es un extra
-    return storesCache;
-  }
-  storesCache = data || [];
+function getStores() {
+  storesCache ||= (async () => {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('id, name, logo_url, zone, description')
+      .eq('status', 'approved')
+      .order('name');
+    if (error) {
+      console.error('No se pudieron cargar los comercios:', error);
+      return []; // no se reintenta por tecla: la sección es un extra
+    }
+    return data || [];
+  })();
   return storesCache;
 }
 
@@ -102,18 +104,18 @@ async function renderStoreResults() {
 // getStores(): pocos registros, se cargan todos y se filtran en el cliente).
 let professionalsCache = null;
 
-async function getProfessionals() {
-  if (professionalsCache) return professionalsCache;
-  const { data, error } = await supabase
-    .from('professionals')
-    .select('id, full_name, specialty, description, photo_url')
-    .order('full_name');
-  if (error) {
-    console.error('No se pudieron cargar los profesionales:', error);
-    professionalsCache = [];
-    return professionalsCache;
-  }
-  professionalsCache = data || [];
+function getProfessionals() {
+  professionalsCache ||= (async () => {
+    const { data, error } = await supabase
+      .from('professionals')
+      .select('id, full_name, specialty, description, photo_url')
+      .order('full_name');
+    if (error) {
+      console.error('No se pudieron cargar los profesionales:', error);
+      return [];
+    }
+    return data || [];
+  })();
   return professionalsCache;
 }
 
@@ -266,6 +268,11 @@ async function runSearch({ append = false } = {}) {
     loadMoreBtn.textContent = 'Cargando...';
   }
 
+  // Comercios y profesionales se piden a la par de los productos (antes
+  // recién después, dos viajes más en serie). Se dibujan abajo, cuando ya se
+  // sabe que esta búsqueda sigue siendo la última.
+  if (!append && filterState.query) { getStores(); getProfessionals(); }
+
   try {
     const { data: products, error } = await supabase.rpc('search_products', {
       p_query: filterState.query || null,
@@ -289,8 +296,9 @@ async function runSearch({ append = false } = {}) {
     renderChips();
 
     // Los comercios y profesionales no se paginan: solo se recalculan en una búsqueda nueva.
-    const storeMatches = append ? 0 : await renderStoreResults();
-    const proMatches = append ? 0 : await renderProfessionalResults();
+    const [storeMatches, proMatches] = append
+      ? [0, 0]
+      : await Promise.all([renderStoreResults(), renderProfessionalResults()]);
     if (!append) scheduleSearchLog(filterState.query, totalCount + storeMatches + proMatches);
 
     if ((!products || products.length === 0) && !append) {

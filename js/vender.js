@@ -895,30 +895,28 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
   maybeShowVendorOnboarding();
 
-  if (isStoreOwner) {
-    fillStoreProfileForm(store);
-    await setupMpSection(store);
-  }
+  if (isStoreOwner) fillStoreProfileForm(store);
 
+  // Todas las secciones arrancan juntas: cada una pinta su propio contenedor.
+  // Antes Mercado Pago, Notificaciones y Soporte iban una detrás de otra antes
+  // de pedir Publicaciones y Pedidos (~7 viajes en serie, unos 3 s desde
+  // Baradero). Solo Resumen y Reseñas esperan a fetchProducts (leen
+  // currentActiveProductCount y pubProducts). Un error en una sección no
+  // frena a las demás.
   const notificacionesContainer = document.getElementById('notificaciones-container');
-  if (notificacionesContainer) await renderNotificationsSection(notificacionesContainer, user.id, { scope: 'comercio' });
-
   const supportContainer = document.getElementById('support-container');
-  if (supportContainer) await renderSupportSection(supportContainer);
-
-  // fetchProducts primero (setea currentActiveProductCount, que lee renderResumen);
-  // el resto son renders independientes → en paralelo, cada sección pinta apenas
-  // tiene sus datos en vez de esperar a los de las demás secciones.
-  await fetchProducts();
-  await Promise.all([
+  const results = await Promise.allSettled([
     renderAllOrders(),
-    renderResumen(),
-    renderResenas(),
+    fetchProducts().then(() => Promise.all([renderResumen(), renderResenas()])),
+    notificacionesContainer && renderNotificationsSection(notificacionesContainer, user.id, { scope: 'comercio' }),
+    supportContainer && renderSupportSection(supportContainer),
+    ...(isStoreOwner
+      ? [setupMpSection(store), renderMyCoupons(), renderStoreStaff(), renderHomePromo(store.name)]
+      : []),
   ]);
-
-  if (isStoreOwner) {
-    await Promise.all([renderMyCoupons(), renderStoreStaff(), renderHomePromo(store.name)]);
-  }
+  results.forEach((r) => {
+    if (r.status === 'rejected') console.error('Error al cargar una sección del panel:', r.reason);
+  });
 
   applyOrderDeepLink();
   applyDeliverDeepLink();

@@ -5718,3 +5718,30 @@ Mismo flujo que Forrajería (141) y Librería (142), a pedido del usuario. Carpe
 - **Cliente (`js/vender.js`):** `loadOrders(ids)` usa el RPC y cae a `loadOrdersLegacy` (las consultas de siempre) si la función no existe (`PGRST202`/`42883`); si falla por otra cosa **la lista queda como estaba** (antes `ordCache = []`). `refreshOrdersLive(orderId)` junta ids de una ráfaga (`pendingOrderIds`; sin id = recarga completa) y `patchOrderCards` reconcilia el DOM por `data-order-id`: reusa las tarjetas, reemplaza las de esos ids (salvo la que se está editando) y mete/saca las que cambian de pestaña. `showIncomingOrder` pinta un pedido nuevo con lo que trae el evento (`_stub`, "Cargando productos…") resaltado 8 s; los eventos de `deliveries`/`payment_proofs` solo cuentan si el pedido está en `ordCache` (los DELETE traen solo la clave primaria: recarga completa). Resumen: solo si `sectionIsOpen('resumen')`, si no `resumenDirty`; Pedidos cerrado: no se toca el DOM (`pedidosStale`, se dibuja en el `hashchange`). `PEDIDOS_PAGE = 20` + botón `#pedidos-more`.
 - **`js/realtime-utils.js`:** `subscribeToChanges(..., { onResync, onStatus })`; `onStatus(connected)` alimenta el indicador `#pedidos-live` ("En vivo" / "Reconectando…").
 - **Gotcha de la prueba:** con un websocket simulado (`context.routeWebSocket`) hay que contestar el `phx_join` con `postgres_changes` con ids y mandar cada evento con `ids:[id de esa fuente]` al topic del canal `bl-pedidos-comercio-*` (la página une varios canales: no tomar el último join). Sin probar con cuentas reales ni dos dispositivos.
+
+## 2026-10-27 — Análisis de performance + 4 arreglos sin riesgo (rama `claude/lucid-moore-63fba1`)
+
+**Mediciones (producción, conectores de Supabase y Vercel):**
+- `edge_logs` 24 h: GET a `/rest/v1/*` desde EZE (Argentina) p50 `origin_time` 295 ms con envoy (PostgREST + base) p50 50 ms;
+  desde SJC 90 ms / 10 ms. ~245 ms por pedido son la red Argentina -> `us-west-2`. Por eso importa la cantidad de pedidos EN SERIE.
+- `products` con sesión 606 ms promedio (p95 1,6 s) vs anon 248 ms: la RLS encadenada. `EXPLAIN` de un listado de 12 con sesión:
+  257 subplanes, 21 ms de planificación en caliente. `store_staff` p95 6,3 s. `/auth/v1/user` 458 ms promedio.
+- `pg_stat_statements` (desde 2026-09-24): `search_products` 40-80 ms en caliente pero media 528 ms (frío); `create_order` 934 ms media.
+- Vercel servía `/assets/*` (hash) con `cache-control: public, max-age=0, must-revalidate`.
+- `get_advisors` performance: solo INFO (4 FKs sin índice en tablas chicas, 26 índices sin uso).
+- Build: JS 100-130 KB gz por página (el chunk `speed-insights-*.js` es supabase-js, 57 KB gz). Font Awesome: CSS 104 KB +
+  solid 156 KB + brands 118 KB + regular 25 KB (se usan ~134 íconos y 7 marcas). Fotos de producto 800 px, 46 KB promedio.
+
+**Aplicado:** Cache-Control immutable para `/assets/*` (`vercel.json`); `guardPage` sin esperar `getUser()` en páginas privadas sin
+`requireRole` (verifica en segundo plano; login/admin/repartidor siguen igual); `loadDashboard` de `vender.js` con todas las
+secciones en `Promise.allSettled`; búsqueda con comercios/profesionales en paralelo a `search_products`.
+
+**Quedan propuestos (por impacto/esfuerzo):** splash del inicio (`initWelcomeSplash`, tapa >= 0,9 s en cada visita: decisión de
+producto); inicio sin esperar `get_active_boosts` antes de la consulta general (y se pide 2 veces) o RPC `get_home_feed`;
+`has_options`/dueño dentro de la consulta de las grillas (`cart-utils.js` `fetchIdsWithOptions`/`fetchOwnProductIds`); RLS de
+`products`/`orders`/`store_staff` con funciones auxiliares `SECURITY DEFINER` (arreglo de fondo); banners fijos del inicio que se
+bajan aunque estén tapados (~450 KB) y las 18 publicidades de golpe; subset de Font Awesome (o SVG para las 7 marcas); RPC
+`get_my_orders` paginada para Mis compras; carrito (`validateCartFreshness`); `getFeaturedCategories` baja `category_id` de todos
+los productos; miniaturas de 400 px con `srcset`; a futuro, Supabase en `sa-east-1`.
+**Visto de paso:** en `search.html` `search_products` arranca recién después de `categories` (otra espera en serie).
+**Gotcha:** `js/dark-css.test.mjs` falla en Windows con `core.autocrlf=true` (CRLF en `dark-auto.css`), sin relación con el código.
