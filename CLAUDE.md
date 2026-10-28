@@ -91,7 +91,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-28 (rama `claude/keen-mayer-8cdwcy`) — Ícono de la app instalada (Android/iPhone)**, reportado por el usuario
+- **Hecho 2026-10-28 (mergeado a `main` en `763309c`, deploy de Vercel `READY`) — Ícono de la app instalada (Android/iPhone)**, reportado por el usuario
   con captura (salía chico dentro de una baldosa gris). El manifest ahora trae PNG `maskable` (fondo `#284175`, logo blanco) y
   `any` (logo azul transparente) hechos del logo oficial; `apple-touch-icon.png` rehecho igual; `icon.svg` queda solo de favicon.
   Detalle en `docs/brand-guidelines.md` sección 3. **El celular no lo cambia al instante:** Chrome revisa el ícono por su cuenta
