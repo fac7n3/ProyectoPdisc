@@ -5776,3 +5776,38 @@ el nombre ocupe uno o dos renglones); `comercios.html` con `.catalog-content` en
 `info.html`, `terminos.html` y `privacidad.html` con un `@media (max-width: 600px)` en su `<style>` (tarjeta a 12 px de los
 bordes, 16-18 px de relleno, título 1.75rem; respuestas de la FAQ de 223 a 247 px); `farmacias.html` con
 `.fx-week > .fx-muted { margin: 0; padding: 0.85rem 1rem }`. `dark-auto.css` sigue al día (no hay colores fijos nuevos).
+
+## 2026-10-28 — Manual del programador (rama `claude/loving-pascal-k23s1z`)
+Pedido: analizar el "Manual de usuario Baradero local" (Google Doc `1yljZwuN7UHCiBFx8Hjg0l6Szg4fvLgU3XyfsIsH2XLU`) y, con su
+misma estructura, armar un manual con cada bloque de código del proyecto y comentarios breves para alguien que no programa.
+El usuario pasó como inspiración `go-bees.readthedocs.io` (anexo D, manual del programador): **no se pudo leer**, el dominio
+no está en la red permitida de la sesión. Se armó sin esa referencia.
+- **Estructura** (la del manual de usuario): portada, Hoja de control (integrantes copiados del original; redactor "borrador
+  generado con Claude Code" y aprobación de Kraus Keila **pendiente**), Índice, Introducción (1-4 + glosario 4.1), Guía de
+  inicio rápido (acceso, puesta en marcha 2.1-2.4, navegación 3.1-3.9), Módulos 1-22 (los 20 del manual de usuario + 21
+  Panel de administrador y 22 Piezas compartidas y seguridad, que no están en el de usuario), Resolución de problemas y FAQ
+  (tabla de errores, dudas, pruebas), Canales de soporte (mail y horario copiados del original) y Anexo A (inventario de
+  archivos y migraciones). 100 bloques de código.
+- **Generador** (`scripts/manual-programador/generar.mjs` + `contenido.mjs`): cada bloque es
+  `{ archivo, desde, hasta?, lineas?, max?, sigue?, saltear?: [{de, a, motivo}], notas?: [[patron, texto]] }`. Saca el
+  código del archivo real por texto (no por número de línea, que cambia seguido), borra los comentarios originales, mete
+  las notas `▶` arriba de la línea que coincide con el patrón, reemplaza los tramos de `saltear` por "… (se omiten líneas:
+  motivo)", corta en `max` (30 por defecto) con "… (el bloque sigue en el archivo)" y saca la sangría común. Si un anclaje
+  no aparece, tira "El código cambió: actualizá contenido.mjs". Salida: `docs/manual-programador/MANUAL-PROGRAMADOR.md`
+  (se lee en GitHub) y `manual-programador.html` (para Google Docs).
+- **Correcciones hechas al revisar el texto contra el código:** el CSP habla con Supabase y con Google (no solo Supabase);
+  el costo de envío es `stores.delivery_fee` (arranca en $350) y **hoy no hay campo en el panel para cambiarlo**, se cambia en
+  la base; se subió el `max` de varios bloques porque el corte escondía las notas importantes.
+- **Cómo se subió el Google Doc** (`1dREwKA5KXWMMCVx_SoLVKuLls3kQSn6DShphhFWONjA`): el HTML entero no entra en una llamada del
+  conector, así que se importó con `create_file` (HTML -> Documento) todo menos los módulos, con una marca `§§§`, y los
+  módulos se insertaron con `batchUpdate` en 10 tandas de ~24 KB (texto en trozos de ~1500 caracteres + estilos), verificando
+  después de cada una que el texto del doc coincidiera con lo esperado. Al final: salto de página antes de cada Título 1 y
+  hoja A4. Los scripts de esas tandas quedaron en el scratchpad de la sesión (no en el repo).
+  **Para volver a subirlo a mano** (lo más simple): regenerar, subir `docs/manual-programador/manual-programador.html` a
+  Drive, "Abrir con Documentos de Google", y poner salto de página antes de cada Título 1 y tamaño A4.
+- **Gotchas de Google Docs aprendidos:** al importar HTML, las clases de `<style>` se respetan; un `<pre>` dentro de un
+  `<td>` sale con el fondo de la celda y Courier (por eso cada bloque va en una tabla de una celda); `<code>` suelto no
+  toma estilo; el `<hr>` de salto de página no se convierte en salto; el margen de `<p>` pasa a "espacio después"; el fondo
+  de un `<pre>`/`<p>` queda como resaltado del texto, no como sombreado del párrafo. Con `batchUpdate` los índices son en
+  UTF-16, insertar en el inicio de un párrafo hace que el texto nuevo herede su estilo (hay que resetear estilo de párrafo y
+  de texto antes de aplicar los propios) y un `read_doc` grande se guarda en archivo (leerlo con python).

@@ -91,6 +91,17 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-28 (en la rama `claude/loving-pascal-k23s1z`, sin mergear) — Manual del programador**, a pedido del
+  usuario: misma estructura que el "Manual de usuario Baradero local" del equipo (Google Doc), pero mostrando en cada
+  módulo los bloques de código reales con comentarios `▶` en lenguaje simple, para alguien que no programa (más un glosario,
+  el panel de admin, las piezas compartidas, FAQ técnica y un inventario de archivos). **Google Doc:**
+  https://docs.google.com/document/d/1dREwKA5KXWMMCVx_SoLVKuLls3kQSn6DShphhFWONjA/edit (en el Drive de la cuenta del proyecto).
+  **En el repo:** `docs/manual-programador/` (Markdown + HTML), generados con `node scripts/manual-programador/generar.mjs` a
+  partir de `scripts/manual-programador/contenido.mjs` (qué archivo, desde/hasta qué línea de texto, qué nota va arriba de
+  cada línea). El código se copia del archivo real: **si cambia, el generador corta con un error** que dice qué anclaje no
+  encontró; se arregla en `contenido.mjs` y se regenera. **El Google Doc no se actualiza solo** (ver el skill para volver a
+  subirlo). La hoja de control queda como borrador: redactor y aprobación (Kraus Keila) los tiene que confirmar el equipo.
+  El manual de usuario original no se tocó.
 - **Hecho 2026-10-27 (en `main`) — Revisión de responsive en celular**, a pedido del usuario. Recorridas
   a 360 y 320 px las páginas públicas (inicio, búsqueda, filtros, comercio, producto, modal, carrito, comercios, contratar,
   farmacias, emergencias, info, legales, login, registro). **Arreglado:** banners de comercios del inicio (en celular la
