@@ -5811,3 +5811,14 @@ quedaban celeste sobre azul (2,4:1) porque la regla generada de `.datos-btn` les
 en blanco (5,06:1). Verificado en Chromium con 13 checks (computadora, Android con y sin evento, evento tardío, aceptar,
 rechazar, ya instalada, iPhone, dentro de la app; claro y oscuro; sin scroll horizontal), `npm test`, build en carpeta aparte y
 manifest instalable sin errores. **Sin probar en Mi perfil logueado ni en el teléfono real.**
+
+**Ítem "Instalar app" en el menú de la foto de perfil (mismo día, pedido del usuario):** en celular, sección "Cuenta" de
+`initAccountMenu` (`js/nav-utils.js`), justo debajo de "Ajustes". Aparece solo si el estado es `prompt` o `*-steps` (no en
+computadora, ni dentro de la app, ni si ya está instalada). Con el cartel del navegador disponible lo abre directo
+(`triggerInstall`); si no, va a `perfil.html?install=1`, donde `openInstallFromMenu` (`js/perfil.js`) limpia el parámetro y
+`focusInstallCard` desplaza hasta la card del hub y la resalta (`.install-card--pulse`). Para compartir el estado entre la card
+y el menú, `js/install-app.js` pasó a ser un módulo con estado (`getInstallState`, `triggerInstall`, `focusInstallCard`) y
+`nav-utils.js` lo importa, así el evento `beforeinstallprompt` se escucha en todas las páginas con navbar (el evento llega una
+sola vez por carga). El menú se rearma en cada apertura, por eso el ítem refleja el estado del momento. Verificado sobre el
+build real con sesión y Supabase simulados en Chromium móvil: ítem debajo de Ajustes, cartel directo, ruta a la card con la URL
+limpia, sin errores. **Sin probar en el teléfono real.**

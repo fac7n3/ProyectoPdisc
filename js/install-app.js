@@ -1,5 +1,7 @@
 /**
- * install-app.js — Tarjeta "¿Instalar la app?" de Mi perfil → Ajustes.
+ * install-app.js — "¿Instalar la app?": la card del hub de Mi perfil y el
+ * ítem del menú de la foto de perfil (nav-utils.js usa getInstallState /
+ * triggerInstall).
  *
  * Solo en celular y solo cuando el sitio está abierto en el navegador: dentro
  * de la app instalada no tiene sentido. En Android con Chrome el botón abre el
@@ -8,8 +10,9 @@
  * ofreció) se explica cómo hacerlo desde el menú. Qué se muestra en cada caso
  * lo decide install-app-utils.js.
  *
- * Se importa arriba de todo en perfil.js: Chrome dispara `beforeinstallprompt`
- * una sola vez por carga de página y hay que estar escuchando desde antes.
+ * Se importa desde nav-utils.js y perfil.js (arriba de todo): Chrome dispara
+ * `beforeinstallprompt` una sola vez por carga de página y hay que estar
+ * escuchando desde antes.
  */
 import { detectMobilePlatform, installCardState } from './install-app-utils.js';
 
@@ -17,22 +20,23 @@ const platform = detectMobilePlatform(navigator);
 
 let deferredPrompt = null;
 let installed = false;
-let render = () => {};
+const listeners = new Set();
+const notify = () => listeners.forEach((fn) => fn());
 
 window.addEventListener('beforeinstallprompt', (event) => {
   // En la computadora se deja el comportamiento del navegador tal cual.
   if (!platform) return;
   // Sin esto Chrome muestra su propio cartelito abajo de la pantalla; acá la
-  // oferta es la tarjeta de Ajustes.
+  // oferta es la card de Mi perfil y el ítem del menú de cuenta.
   event.preventDefault();
   deferredPrompt = event;
-  render();
+  notify();
 });
 
 window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
   installed = true;
-  render();
+  notify();
 });
 
 function isStandalone() {
@@ -45,13 +49,59 @@ function isStandalone() {
  * navegadores no se puede saber: se muestran los pasos igual.
  */
 async function isAlreadyInstalled() {
-  if (!('getInstalledRelatedApps' in navigator)) return false;
+  if (!platform || !('getInstalledRelatedApps' in navigator)) return false;
   try {
     const apps = await navigator.getInstalledRelatedApps();
     return apps.length > 0;
   } catch {
     return false;
   }
+}
+
+isAlreadyInstalled().then((yes) => {
+  if (!yes) return;
+  installed = true;
+  notify();
+});
+
+/** 'hidden' | 'installed' | 'prompt' | 'ios-steps' | 'android-steps' (ver install-app-utils.js). */
+export function getInstallState() {
+  return installCardState({
+    platform,
+    standalone: isStandalone(),
+    installed,
+    canPrompt: Boolean(deferredPrompt),
+  });
+}
+
+/** Abre el cartel de instalación del navegador. false si no hay uno disponible. */
+export async function triggerInstall() {
+  const promptEvent = deferredPrompt;
+  if (!promptEvent) return false;
+  // El cartel se puede abrir una sola vez por evento.
+  deferredPrompt = null;
+  try {
+    await promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    if (outcome === 'accepted') installed = true;
+  } catch (err) {
+    console.error('No se pudo abrir el cartel de instalación:', err);
+  } finally {
+    // Si dijo que no, quedan los pasos del menú por si cambia de idea.
+    notify();
+  }
+  return true;
+}
+
+/** Lleva la vista a la card del hub y la resalta un momento. */
+export function focusInstallCard() {
+  const card = document.getElementById('install-app-card');
+  if (!card || card.hidden) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.remove('install-card--pulse');
+  void card.offsetWidth;
+  card.classList.add('install-card--pulse');
+  card.addEventListener('animationend', () => card.classList.remove('install-card--pulse'), { once: true });
 }
 
 const LEAD = 'Tené Baradero Local en la pantalla de inicio de tu celular y entrá de un toque, sin abrir el navegador.';
@@ -97,7 +147,7 @@ const STEPS = {
   ],
 };
 
-/** Prepara la tarjeta. La llama initSettings() de perfil.js. */
+/** Prepara la card del hub. La llama initSettings() de perfil.js. */
 export function initInstallCard() {
   const card = document.getElementById('install-app-card');
   const title = document.getElementById('install-app-title');
@@ -106,13 +156,8 @@ export function initInstallCard() {
   const btn = document.getElementById('install-app-btn');
   if (!card || !title || !text || !steps || !btn) return;
 
-  render = () => {
-    const state = installCardState({
-      platform,
-      standalone: isStandalone(),
-      installed,
-      canPrompt: Boolean(deferredPrompt),
-    });
+  const render = () => {
+    const state = getInstallState();
     card.hidden = state === 'hidden';
     if (state === 'hidden') return;
 
@@ -125,29 +170,11 @@ export function initInstallCard() {
     if (STEPS[state]) fillSteps(steps, STEPS[state]);
   };
 
+  listeners.add(render);
   btn.addEventListener('click', async () => {
-    const promptEvent = deferredPrompt;
-    if (!promptEvent) return;
-    // El cartel del navegador se puede abrir una sola vez por evento.
-    deferredPrompt = null;
     btn.disabled = true;
-    try {
-      await promptEvent.prompt();
-      const { outcome } = await promptEvent.userChoice;
-      if (outcome === 'accepted') installed = true;
-    } catch (err) {
-      console.error('No se pudo abrir el cartel de instalación:', err);
-    } finally {
-      btn.disabled = false;
-      // Si dijo que no, quedan los pasos del menú por si cambia de idea.
-      render();
-    }
+    await triggerInstall();
+    btn.disabled = false;
   });
-
   render();
-  isAlreadyInstalled().then((yes) => {
-    if (!yes) return;
-    installed = true;
-    render();
-  });
 }

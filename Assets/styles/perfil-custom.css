@@ -1317,6 +1317,13 @@ a.compra-item-text:hover {
 
 .install-card__btn { margin-top: 0.5rem; }
 
+/* Resalte al llegar desde "Instalar app" del menú de la foto de perfil. */
+@keyframes install-card-pulse {
+  0%, 60% { box-shadow: 0 0 0 3px var(--bl-perfil-primary); }
+  100% { box-shadow: var(--shadow-sm); }
+}
+.install-card--pulse { animation: install-card-pulse 1.8s ease-out; }
+
 /* --- Privacidad: separada del resto a propósito (una acción destructiva no
        vive al lado de "editar mi teléfono"). --- */
 .datos-group--privacy {

@@ -20,6 +20,7 @@ import { clearLinkedAccounts } from './linked-accounts.js';
 import { initNotificationToasts } from './toast-utils.js';
 import { onNotificationsChanged } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
+import { getInstallState, triggerInstall } from './install-app.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -894,11 +895,27 @@ export async function initAccountMenu() {
 
     // Deep links con ?tab=... -- ya soportados por perfil.js
     // (handleNotificationDeepLink -> openSection('tab-' + tab)).
-    panel.appendChild(buildSection('Cuenta', [
+    // "Instalar app": solo celular y fuera de la app instalada (install-app.js).
+    // Con el cartel del navegador disponible lo abre directo; si no, lleva a la
+    // card del hub de Mi perfil, que explica los pasos.
+    const installState = getInstallState();
+    const accountItems = [
       { href: './perfil.html?tab=mis-datos', icon: 'fa-regular fa-id-card', label: 'Mi perfil' },
       { href: './perfil.html?tab=direcciones', icon: 'fa-solid fa-location-dot', label: 'Direcciones' },
       { href: './perfil.html?tab=ajustes', icon: 'fa-solid fa-gear', label: 'Ajustes' },
-    ]));
+    ];
+    if (installState === 'prompt' || installState.endsWith('-steps')) {
+      accountItems.push({
+        icon: 'fa-solid fa-download',
+        label: 'Instalar app',
+        onClick: () => {
+          close();
+          if (installState === 'prompt') triggerInstall();
+          else window.location.href = './perfil.html?install=1';
+        },
+      });
+    }
+    panel.appendChild(buildSection('Cuenta', accountItems));
 
     panel.appendChild(buildSection('Actividad', [
       { href: './perfil.html?tab=compras', icon: 'fa-solid fa-box-open', label: 'Mis compras' },

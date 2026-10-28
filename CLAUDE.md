@@ -93,7 +93,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
 - **Hecho 2026-10-28 (en `main`) — Card "¿Instalar la app?" en el hub de Mi perfil, justo debajo de "Ajustes"**, a pedido del
   usuario. Solo en celular y fuera de la app ya instalada. Chrome en Android: botón "Instalar" (abre el cartel del navegador);
   iPhone y el resto: los pasos a mano ("Compartir -> Agregar a inicio" / "menú ⋮ -> Instalar aplicación"); si la app ya está
-  en el celular dice "Ya tenés la app". `js/install-app.js` + `js/install-app-utils.js` (con test). De paso, los botones
+  en el celular dice "Ya tenés la app". **También hay un ítem "Instalar app" en el menú de la foto de perfil (celular), debajo de "Ajustes".** `js/install-app.js` + `js/install-app-utils.js` (con test). De paso, los botones
   primarios de Mi perfil en modo oscuro quedan con letra blanca (`dark.css`). **Sin probar en el teléfono real.**
 - **Hecho 2026-10-28 (mergeado a `main` en `763309c`, deploy de Vercel `READY`) — Ícono de la app instalada (Android/iPhone)**, reportado por el usuario
   con captura (salía chico dentro de una baldosa gris). El manifest ahora trae PNG `maskable` (fondo `#284175`, logo blanco) y

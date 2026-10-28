@@ -4,7 +4,7 @@ import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { getPref, setPref } from "./settings-utils.js";
-import { initInstallCard } from "./install-app.js";
+import { initInstallCard, focusInstallCard } from "./install-app.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { onNotificationsChanged } from "./notifications-live.js";
 import { subscribeToChanges, createRefresher, isEditingWithin } from "./realtime-utils.js";
@@ -3060,6 +3060,17 @@ function handleMercadoPagoReturn() {
   window.history.replaceState(window.history.state, '', url);
 }
 
+// "Instalar app" del menú de la foto de perfil, cuando no hay cartel del navegador
+// para abrir directo: llega acá con ?install=1 y se muestra la card del hub.
+function openInstallFromMenu() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("install")) return;
+  params.delete("install");
+  const qs = params.toString();
+  window.history.replaceState(window.history.state, "", window.location.pathname + (qs ? `?${qs}` : ""));
+  focusInstallCard();
+}
+
 // --- Inicialización con Guard ---
 guardPage({
   requireAuth: true,
@@ -3067,6 +3078,7 @@ guardPage({
     renderQuickProfile(user);
     openDeepLinkSection();
     initSettings();
+    openInstallFromMenu();
     renderFullProfile(user);
     handleMercadoPagoReturn();
   },
