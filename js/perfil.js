@@ -4,6 +4,7 @@ import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { getPref, setPref } from "./settings-utils.js";
+import { initInstallCard } from "./install-app.js";
 import { renderNotificationsSection, fetchUnreadCount } from "./notifications-utils.js";
 import { onNotificationsChanged } from "./notifications-live.js";
 import { subscribeToChanges, createRefresher, isEditingWithin } from "./realtime-utils.js";
@@ -396,6 +397,7 @@ function initSignOutAll() {
 
 /** Todo lo que vive en la pestaña "Ajustes". */
 function initSettings() {
+  initInstallCard();
   initCartHintsPref();
   initAutoRedirectPref();
   bindDevicePref("pref-notif-toasts", "notifToasts");

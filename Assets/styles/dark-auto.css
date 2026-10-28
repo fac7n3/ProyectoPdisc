@@ -969,6 +969,16 @@ html[data-theme="dark"] .datos-tag {
   background: #133827;
   color: #a5f8e0;
 }
+html[data-theme="dark"] .install-card__text,
+html[data-theme="dark"] .install-card__steps {
+  color: var(--bl-perfil-hint);
+}
+html[data-theme="dark"] .install-card__steps strong {
+  color: var(--bl-perfil-text-main);
+}
+html[data-theme="dark"] .install-card__steps i {
+  color: var(--dk-accent-text);
+}
 
 /* ===== Assets/styles/admin.css ===== */
 html[data-theme="dark"] .admin-nav__item:hover {

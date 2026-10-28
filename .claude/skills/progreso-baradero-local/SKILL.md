@@ -5791,3 +5791,23 @@ Verificado en Chromium con CDP: `Page.getAppManifest` sin errores, `getInstallab
 **Gotcha:** el teléfono no cambia el ícono al instante. Chrome revisa el manifest de la app instalada por su cuenta, al abrirla
 (puede tardar un día o más) y puede mostrar un cartel para aceptar el ícono nuevo; para verlo ya, desinstalar la app y volver a
 instalarla desde la página. Sin probar en el teléfono real.
+
+## 2026-10-28 — Tarjeta "¿Instalar la app?" en Mi perfil → Ajustes
+Pedido del usuario (tiene la app instalada desde la página en su Android): una card en Ajustes, en celular, para instalarla.
+`#install-app-card` arriba de todo en `#tab-ajustes` (`pages/perfil.html`), con el mismo ícono que queda en la pantalla de inicio
+(`icon-maskable-192.png`). **Solo celular y solo fuera de la app instalada** (`display-mode: standalone` o `navigator.standalone`
+de iOS la ocultan). Lógica pura en `js/install-app-utils.js` (`detectMobilePlatform`, `installCardState`, con test); el DOM y los
+eventos en `js/install-app.js`, que `perfil.js` importa arriba de todo porque Chrome dispara `beforeinstallprompt` **una sola vez
+por carga** y hay que estar escuchando antes de que se abra Ajustes. Estados: **Chrome en Android con el evento** -> botón
+"Instalar" que abre el cartel del propio navegador (`preventDefault()` solo en celular, para que no salga además el cartelito
+de Chrome abajo; en computadora no se toca); **sin el evento** (iPhone, otros navegadores, o Chrome todavía no lo ofreció) ->
+los pasos a mano: iPhone "Compartir -> Agregar a inicio", Android "menú ⋮ -> Instalar aplicación"; **app ya instalada pero
+abierta desde el navegador** -> "Ya tenés la app" (`navigator.getInstalledRelatedApps()` + `related_applications` en el
+manifest, y el evento `appinstalled`). Si dice que no al cartel, vuelven los pasos del menú. Sin migración.
+**Gotchas:** (1) en iPhone no existe API para instalar: solo se explica; (2) `getInstalledRelatedApps` solo existe en Chrome
+Android y **no se pudo probar con un teléfono real** (si no responde, la tarjeta muestra el botón o los pasos igual: no rompe
+nada); (3) de paso se arregló un bug viejo de modo oscuro: los `.datos-btn--primary` (Guardar, Cambiar, Agregar cuenta)
+quedaban celeste sobre azul (2,4:1) porque la regla generada de `.datos-btn` les pisaba el blanco; ahora `dark.css` los deja
+en blanco (5,06:1). Verificado en Chromium con 13 checks (computadora, Android con y sin evento, evento tardío, aceptar,
+rechazar, ya instalada, iPhone, dentro de la app; claro y oscuro; sin scroll horizontal), `npm test`, build en carpeta aparte y
+manifest instalable sin errores. **Sin probar en Mi perfil logueado ni en el teléfono real.**

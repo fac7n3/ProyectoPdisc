@@ -1282,6 +1282,65 @@ a.compra-item-text:hover {
   margin-left: -0.875rem; /* alinea el texto del botón con la ayuda de arriba */
 }
 
+/* --- Ajustes: tarjeta "¿Instalar la app?" (js/install-app.js). Solo en
+       celular y fuera de la app instalada; el JS saca el `hidden`. --- */
+.install-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.125rem 1.25rem;
+  background: var(--bl-perfil-surface);
+  border: 1px solid var(--bl-perfil-border);
+  border-radius: var(--radius-lg);
+}
+
+.install-card[hidden],
+.install-card__steps[hidden],
+.install-card__btn[hidden] { display: none; }
+
+/* El mismo ícono que queda en la pantalla de inicio, con sus esquinas. */
+.install-card__icon {
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 22%;
+}
+
+.install-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.install-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--bl-perfil-text-main);
+}
+
+.install-card__text,
+.install-card__steps {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--bl-perfil-hint);
+}
+
+.install-card__steps strong {
+  font-weight: 600;
+  color: var(--bl-perfil-text-main);
+}
+
+.install-card__steps i { color: var(--bl-perfil-primary); }
+
+.install-card__btn {
+  align-self: flex-start;
+  margin-top: 0.375rem;
+}
+
 /* --- Privacidad: separada del resto a propósito (una acción destructiva no
        vive al lado de "editar mi teléfono"). --- */
 .datos-group--privacy {

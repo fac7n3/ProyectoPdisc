@@ -274,3 +274,11 @@ html[data-theme="dark"] .toast--success {
   color: #ffffff;
   border-color: #1f9370;
 }
+
+/* Botón primario de Mi perfil (.datos-btn--primary: Guardar, Cambiar, Instalar).
+   En claro es blanco sobre el azul de marca; la regla generada de .datos-btn
+   (texto azul claro, pensado para el botón "de texto") le pisaba el blanco y
+   quedaba celeste sobre azul (2,4:1). Blanco sobre --bl-primary da ~5:1. */
+html[data-theme="dark"] .datos-btn.datos-btn--primary {
+  color: #ffffff;
+}
