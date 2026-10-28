@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-26. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -18,9 +18,8 @@
 
 ## ✅ Reglas esenciales antes de trabajar
 1. **`git pull` en `main`** siempre primero (ver aviso arriba).
-2. **Una rama nueva por tarea**, creada desde el `main` recién actualizado — nunca commitear directo en `main`:
-   `git checkout -b A113-XXX-slug-corto` (clave de Jira de la subtarea + descripción corta, ej. `A113-201-checkout-envio`).
-3. Al terminar: mergear esa rama a `main` (o PR si el cambio es grande/riesgoso). El commit que cierra la tarea debe incluir la clave `A113-XXX` (hook `post-commit`, ver "Flujo de trabajo y tracking"). **Ojo:** cada push a `main` dispara deploy automático a producción en Vercel — mergear solo cuando la tarea esté realmente terminada, no a mitad de camino.
+2. **Todos los cambios van directo a `main`** (decisión del usuario, 2026-10-28: todavía no estamos en producción real, así que no hace falta una rama por tarea ni PR). Si la sesión arranca en una rama propia, se pushea a `main` igual (`git push origin <rama>:main`) una vez que `git fetch` confirma que `main` no tiene commits nuevos; si los tiene, traerlos antes (merge, nunca `reset --hard`). **Volver a una rama por tarea + PR cuando haya usuarios reales.**
+3. El commit que cierra una tarea debe incluir la clave `A113-XXX` (hook `post-commit`, ver "Flujo de trabajo y tracking"). **Ojo:** cada push a `main` dispara deploy automático a Vercel (`proyectopdisc.vercel.app`) — pushear cuando la tarea esté terminada y probada, no a mitad de camino.
 4. Si `git pull` trae conflicto con cambios locales sin commitear: `git stash -u` antes de pull, nunca `git checkout .` ni `reset --hard` para "sacárselos de encima".
 
 ## Qué es
@@ -91,7 +90,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-28 (rama `claude/keen-mayer-8cdwcy`, sin mergear) — Tarjeta "¿Instalar la app?" en Mi perfil → Ajustes**, a pedido del
+- **Hecho 2026-10-28 (en `main`) — Tarjeta "¿Instalar la app?" en Mi perfil → Ajustes**, a pedido del
   usuario. Solo en celular y fuera de la app ya instalada. Chrome en Android: botón "Instalar" (abre el cartel del navegador);
   iPhone y el resto: los pasos a mano ("Compartir -> Agregar a inicio" / "menú ⋮ -> Instalar aplicación"); si la app ya está
   en el celular dice "Ya tenés la app". `js/install-app.js` + `js/install-app-utils.js` (con test). De paso, los botones
