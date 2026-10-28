@@ -1,0 +1,2663 @@
+<html><head><meta charset="utf-8"><title>Manual del programador — Baradero Local</title><style>
+body{font-family:Arial;font-size:11pt}
+p{margin:0 0 6pt 0}
+h1{font-family:Montserrat;font-size:15pt;font-weight:bold}
+h2{font-family:Montserrat;font-size:12pt;font-weight:bold}
+h3{font-family:Montserrat;font-size:12pt;font-weight:normal}
+h4{font-family:Montserrat;font-size:11pt;font-weight:normal;font-style:italic}
+.portada{text-align:center;font-family:Montserrat}
+.cod{font-family:'Courier New';font-size:9pt}
+.cin{font-family:'Courier New';font-size:10pt;color:#1f3460}
+.nota{color:#15803d;font-weight:bold}
+.omit{color:#6b7280;font-style:italic}
+.arch{font-size:9pt;color:#4a5568;font-weight:bold}
+td.caja{background-color:#f3f4f6;border:1px solid #d1d5db;padding:6pt}
+th{background-color:#e8edf6;border:1px solid #9aa5b8;padding:4pt;text-align:left}
+td.t{border:1px solid #9aa5b8;padding:4pt;vertical-align:top}
+</style></head><body>
+<p class="portada" style="font-size:28pt"><b>Baradero Local</b></p>
+<p class="portada" style="font-size:18pt">Manual del programador</p>
+<p class="portada" style="font-size:12pt">El código del proyecto, bloque por bloque, explicado para quien no programa</p>
+<p class="portada">versión 1.0</p>
+<p class="portada">27/10/2026</p>
+<h1>Hoja de control</h1>
+<table style="border-collapse:collapse;width:100%">
+<tr><td class="t">Nombre del proyecto</td><td class="t">Baradero Local</td></tr>
+<tr><td class="t">Entidad/ institución</td><td class="t">Baradero Local</td></tr>
+<tr><td class="t">Destinatarios</td><td class="t">Equipo de desarrollo, docentes y cualquier persona que necesite entender o mantener el código, aunque no programe</td></tr></table>
+<table style="border-collapse:collapse;width:100%">
+<tr><td class="t">Integrantes del equipo de desarrollo</td><td class="t">Algañaras Berenice / Berayra Casanova Bianca / Eichenberger Facundo / Kraus Keila</td></tr>
+<tr><td class="t">Redactor/a del manual</td><td class="t">Borrador generado con Claude Code a pedido del equipo (a revisar y completar por el equipo)</td></tr>
+<tr><td class="t">Tutor/a, jefe/a de Área o Supervisor/a que aprueba el documento</td><td class="t">Kraus Keila (pendiente de aprobación)</td></tr></table>
+<p><b>Historial de cambios / Control de versiones</b></p>
+<table style="border-collapse:collapse;width:100%"><tr><th>Versión</th><th>Fecha</th><th>Resumen de modificaciones</th><th>Autor del cambio</th></tr>
+<tr><td class="t">1.0</td><td class="t">27/10/2026</td><td class="t">Primera versión: misma estructura que el Manual de usuario, con el código de cada módulo y comentarios en lenguaje simple.</td><td class="t">Claude Code (borrador)</td></tr></table>
+<h1>Índice</h1>
+<ol><li><b>Introducción</b><ul><li>1. Propósito del manual</li><li>2. Descripción ejecutiva del sistema</li><li>3. Requerimientos técnicos</li><li>4. Glosario de convenciones visuales</li></ul></li><li><b>Guía de inicio rápido</b><ul><li>1. Acceso al código</li><li>2. Puesta en marcha en una computadora</li><li>3. Navegación general por el código</li></ul></li><li><b>Módulos operativos y flujos de trabajo</b><ul><li>1. Autenticación / inicio de sesión / registro</li><li>2. Header</li><li>3. Header Auxiliar</li><li>4. Categorías</li><li>5. Panel de perfil</li><li>6. Carrito</li><li>7. Accesos Rápidos</li><li>8. Banner principal</li><li>9. Comercios destacados</li><li>10. Banner promociones</li><li>11. Productos recomendados</li><li>12. Comercios cerca tuyo</li><li>13. Esenciales para tu casa</li><li>14. Ofertas</li><li>15. Banners inferiores</li><li>16. Footer</li><li>17. Paneles</li><li>18. Panel de comerciante</li><li>19. Panel de profesional</li><li>20. Panel del repartidor</li><li>21. Panel de administrador</li><li>22. Piezas compartidas y seguridad</li></ul></li><li><b>Resolución de problemas y FAQ</b><ul><li>1. Mensajes de error habituales</li><li>2. Dudas frecuentes</li><li>3. Pruebas automáticas</li></ul></li><li><b>Canales de soporte y contacto</b><ul><li>1. Contactos</li><li>2. Horarios de atención</li></ul></li><li><b>Anexo A. Inventario de archivos del proyecto</b><ul><li>A.1 Páginas (carpeta pages/ y raíz)</li><li>A.2 Código JavaScript (carpeta js/)</li><li>A.3 Pruebas automáticas</li><li>A.4 Estilos (carpeta Assets/styles/)</li><li>A.5 Funciones en la nube (carpeta supabase/functions/)</li><li>A.6 Herramientas (carpeta scripts/)</li><li>A.7 Cambios de la base de datos (carpeta db/schema/)</li></ul></li></ol>
+<h1>Introducción</h1>
+<h2>1. Propósito del manual</h2>
+<p>Este Manual del programador muestra cómo está hecho Baradero Local por dentro. Sigue la misma estructura que el Manual de usuario: para cada parte de la página que se ve (el header, el carrito, los paneles…) se muestra el pedazo de código que la hace funcionar, con comentarios y una explicación corta en palabras simples.</p>
+<p>Está pensado para que lo pueda leer alguien que no programa: no hace falta entender cada línea. Alcanza con leer los comentarios en verde que acompañan al código y el párrafo "En palabras simples" que sigue a cada cuadro.</p>
+<p>El código de este manual se copia automáticamente de los archivos reales del proyecto, con la herramienta <span class="cin">scripts/manual-programador/generar.mjs</span>. Si el código cambia, se vuelve a generar el manual y queda al día. Igual que en el Manual de usuario: si hay diferencias, manda la versión vigente del sistema.</p>
+<h2>2. Descripción ejecutiva del sistema</h2>
+<p>Baradero Local es una página web (no una aplicación que se instala) que funciona en cualquier navegador, en la computadora y en el celular. Por dentro se divide en piezas, cada una con una tarea:</p>
+<table style="border-collapse:collapse;width:100%"><tr><th>Pieza</th><th>Qué es</th><th>Dónde está</th></tr>
+<tr><td class="t">Páginas</td><td class="t">La estructura de cada pantalla: títulos, botones, formularios. Están escritas en HTML.</td><td class="t"><span class="cin">pages/</span></td></tr>
+<tr><td class="t">Estilos</td><td class="t">Los colores, tamaños y la ubicación de cada cosa en la pantalla, incluido el modo oscuro. Están escritos en CSS.</td><td class="t"><span class="cin">Assets/styles/</span></td></tr>
+<tr><td class="t">Comportamiento</td><td class="t">Lo que pasa al tocar un botón: buscar, agregar al carrito, pagar. Está escrito en JavaScript.</td><td class="t"><span class="cin">js/</span></td></tr>
+<tr><td class="t">Base de datos</td><td class="t">Donde se guardan usuarios, comercios, productos, pedidos y reseñas. Es una base PostgreSQL en Supabase, que además maneja el inicio de sesión, las fotos y los avisos al instante.</td><td class="t">Supabase (los cambios, en <span class="cin">db/schema/</span>)</td></tr>
+<tr><td class="t">Funciones en la nube</td><td class="t">Programas chicos que corren en el servidor para lo que el navegador no puede hacer por seguridad: cobrar con Mercado Pago, confirmar pagos, borrar una cuenta.</td><td class="t"><span class="cin">supabase/functions/</span></td></tr>
+<tr><td class="t">Pagos</td><td class="t">Mercado Pago, transferencia bancaria y efectivo al retirar en el local.</td><td class="t">Mercado Pago + <span class="cin">js/carrito.js</span></td></tr>
+<tr><td class="t">Publicación</td><td class="t">Vercel toma el código de GitHub y lo publica en internet cada vez que se actualiza la rama principal (<span class="cin">main</span>).</td><td class="t"><span class="cin">vercel.json</span></td></tr></table>
+<p>Un ejemplo del recorrido completo: cuando un vecino toca "Iniciar pago", el JavaScript del carrito le pide a la base de datos que cree el pedido. La base vuelve a calcular precios y stock (así nadie puede cambiarlos desde su computadora). Si eligió Mercado Pago, una función en la nube arma el cobro y, cuando Mercado Pago avisa que el pago se acreditó, otra función marca el pedido como pagado y al comercio le llega el aviso.</p>
+<h2>3. Requerimientos técnicos</h2>
+<table style="border-collapse:collapse;width:100%">
+<tr><td class="t">Programas para trabajar con el código</td><td class="t">Node.js 20 o más nuevo (trae npm), Git y un editor de texto (por ejemplo, Visual Studio Code).</td></tr>
+<tr><td class="t">Cuentas y servicios</td><td class="t">Supabase (proyecto <span class="cin">otzhdwuaffcplrveuadc</span>), Vercel (equipo <span class="cin">baradero-local</span>, proyecto <span class="cin">proyectopdisc</span>), GitHub (<span class="cin">fac7n3/ProyectoPdisc</span>), la aplicación de Mercado Pago y el acceso de Google para "Iniciar sesión con Google".</td></tr>
+<tr><td class="t">Navegador para probar</td><td class="t">Cualquier navegador basado en Chromium (Chrome, Edge, Brave). Resolución recomendada: 1920 x 1080; probar también en celular (360 píxeles de ancho).</td></tr>
+<tr><td class="t">Tipo de conectividad requerida</td><td class="t">Internet (WiFi o datos). Sin conexión, la página lo avisa con un cartel.</td></tr></table>
+<h2>4. Glosario de convenciones visuales</h2>
+<p>Así se ven los elementos de este manual:</p>
+<table style="border-collapse:collapse;width:100%"><tr><th>Elemento</th><th>Cómo se ve</th><th>Qué significa</th></tr>
+<tr><td class="t">Archivo</td><td class="t">"Archivo: js/login.js (líneas 37 a 83)"</td><td class="t">En qué archivo del proyecto está el código y en qué líneas, para encontrarlo.</td></tr>
+<tr><td class="t">Bloque de código</td><td class="t">Cuadro gris con letra de máquina de escribir</td><td class="t">El código tal cual está en el proyecto, sin los comentarios internos del equipo para que sea más corto.</td></tr>
+<tr><td class="t">Comentario del manual</td><td class="t">Línea verde que empieza con ▶</td><td class="t">Una explicación agregada para este manual, arriba de la línea que explica. No está en el código real.</td></tr>
+<tr><td class="t">Partes omitidas</td><td class="t">Línea gris en cursiva: "… (se omiten líneas: …)"</td><td class="t">Se sacaron líneas para que el cuadro sea corto. El archivo real las tiene.</td></tr>
+<tr><td class="t">Nombre del código</td><td class="t">Letra de máquina de escribir, <span class="cin">así</span></td><td class="t">El nombre exacto de algo dentro del código: una función, una tabla, un archivo.</td></tr>
+<tr><td class="t">En palabras simples</td><td class="t">Párrafo que sigue a cada cuadro</td><td class="t">Qué hace el bloque, sin términos técnicos.</td></tr></table>
+<h3>4.1 Glosario de términos</h3>
+<table style="border-collapse:collapse;width:100%"><tr><th>Término</th><th>Qué quiere decir</th></tr>
+<tr><td class="t">Función</td><td class="t">Un conjunto de instrucciones con nombre, que se "llama" cuando hace falta. Por ejemplo, <span class="cin">loginLocal</span> es la función que inicia sesión.</td></tr>
+<tr><td class="t">Variable / constante (<span class="cin">const</span>, <span class="cin">let</span>)</td><td class="t">Un nombre que guarda un dato mientras corre el código, como una cajita con etiqueta.</td></tr>
+<tr><td class="t"><span class="cin">async</span> / <span class="cin">await</span></td><td class="t">Marcan que algo tarda (por ejemplo, preguntarle algo a la base de datos) y que hay que esperar la respuesta antes de seguir.</td></tr>
+<tr><td class="t">Evento (<span class="cin">addEventListener</span>)</td><td class="t">Le dice a la página "cuando la persona toque este botón, hacé tal cosa".</td></tr>
+<tr><td class="t">Base de datos y tabla</td><td class="t">La base es donde se guarda todo; cada tabla es como una planilla (productos, pedidos, reseñas) con una fila por cada dato.</td></tr>
+<tr><td class="t">Consulta (<span class="cin">select</span>, <span class="cin">insert</span>, <span class="cin">update</span>, <span class="cin">delete</span>)</td><td class="t">Pedidos a la base: leer, agregar, cambiar o borrar filas.</td></tr>
+<tr><td class="t">RPC</td><td class="t">Una función guardada dentro de la base de datos que la página puede llamar por su nombre (por ejemplo, <span class="cin">create_order</span> crea un pedido).</td></tr>
+<tr><td class="t">Política de seguridad (RLS)</td><td class="t">Reglas de la base que dicen quién puede ver o cambiar cada fila. Son las que protegen los datos de verdad.</td></tr>
+<tr><td class="t">Trigger</td><td class="t">Un aviso automático: "cuando pase tal cosa en esta tabla, hacé esto otro".</td></tr>
+<tr><td class="t">Migración</td><td class="t">Un archivo con un cambio a la base de datos (una tabla nueva, una regla nueva). Se numeran y se aplican en orden.</td></tr>
+<tr><td class="t">Función en la nube (Edge Function)</td><td class="t">Un programa que corre en los servidores de Supabase, no en el navegador. Se usa cuando hay claves secretas de por medio, como las de Mercado Pago.</td></tr>
+<tr><td class="t">Sesión / JWT</td><td class="t">La "credencial" que queda guardada al iniciar sesión. Dice quién es la persona y qué rol tiene (cliente, vendedor, administrador…).</td></tr>
+<tr><td class="t">localStorage</td><td class="t">Un espacio chico del navegador donde la página guarda cosas entre visitas: el carrito, el modo oscuro, las preferencias.</td></tr>
+<tr><td class="t">Tiempo real (Realtime)</td><td class="t">Una conexión abierta con la base para que los cambios (un pedido nuevo, un aviso) aparezcan solos, sin recargar.</td></tr>
+<tr><td class="t">Webhook</td><td class="t">Un aviso que manda otro sistema cuando algo pasa. Mercado Pago manda uno cuando se acredita un pago.</td></tr>
+<tr><td class="t">Git, rama y commit</td><td class="t">Git guarda la historia del código. Un commit es un cambio guardado con su descripción; una rama es una línea de trabajo aparte hasta que se une a la principal (<span class="cin">main</span>).</td></tr>
+<tr><td class="t">Deploy (publicar)</td><td class="t">Subir una versión nueva del sitio a internet. Lo hace Vercel solo, cada vez que cambia <span class="cin">main</span>.</td></tr>
+<tr><td class="t">Prueba automática (test)</td><td class="t">Un archivo que controla solo que una función dé el resultado esperado. Se corren todas con <span class="cin">npm test</span>.</td></tr></table>
+<h1>Guía de inicio rápido</h1>
+<h2>1. Acceso al código</h2>
+<table style="border-collapse:collapse;width:100%">
+<tr><td class="t">Código fuente</td><td class="t">https://github.com/fac7n3/ProyectoPdisc (rama <span class="cin">main</span>)</td></tr>
+<tr><td class="t">Página publicada</td><td class="t">https://proyectopdisc.vercel.app/pages/home.html</td></tr>
+<tr><td class="t">Tablero de tareas</td><td class="t">Jira, proyecto A113 (baraderolocal.atlassian.net)</td></tr>
+<tr><td class="t">Base de datos</td><td class="t">Supabase, proyecto <span class="cin">otzhdwuaffcplrveuadc</span></td></tr>
+<tr><td class="t">Publicación</td><td class="t">Vercel, equipo <span class="cin">baradero-local</span>, proyecto <span class="cin">proyectopdisc</span></td></tr></table>
+<h2>2. Puesta en marcha en una computadora</h2>
+<p>Así como el usuario primero se registra e inicia sesión, quien trabaja con el código primero tiene que bajarlo y conectarlo con la base de datos.</p>
+<h3>2.1 Obtener el código e instalar lo necesario</h3>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">git clone https://github.com/fac7n3/ProyectoPdisc.git
+cd ProyectoPdisc
+npm install</pre></td></tr></table>
+<p><span class="cin">git clone</span> baja una copia del proyecto; <span class="cin">npm install</span> descarga las librerías que usa (Supabase, Vite y otras) en la carpeta <span class="cin">node_modules/</span>.</p>
+<h3>2.2 Configurar las claves (archivo .env)</h3>
+<p>Hay que crear a mano un archivo llamado <span class="cin">.env</span> en la carpeta del proyecto, con la dirección de Supabase y su clave pública. No se sube a GitHub a propósito.</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">VITE_SUPABASE_URL="https://otzhdwuaffcplrveuadc.supabase.co"
+VITE_SUPABASE_ANON_KEY="&lt;Supabase → Project Settings → API → anon public key&gt;"</pre></td></tr></table>
+<p class="arch">Archivo: js/supabase-config.js (líneas 1 a 2)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">// ▶ Lee del archivo .env la dirección de la base de datos y la clave pública</span>
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+export const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;</pre></td></tr></table>
+<p><b>En palabras simples:</b> El código nunca tiene la dirección escrita: la lee del <span class="cin">.env</span>. Esa clave es pública a propósito; lo que protege los datos son las reglas de la base (ver el módulo 22).</p>
+<h3>2.3 Correr, construir y probar</h3>
+<p class="arch">Archivo: package.json (líneas 6 a 14)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">"scripts": {
+<span class="nota">  // ▶ Atajos: se usan escribiendo npm run y el nombre (npm run dev, npm run build…)</span>
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "db:start": "supabase start",
+  "db:stop": "supabase stop",
+  "optimize-images": "node scripts/optimize-images.mjs",
+  "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done"
+},</pre></td></tr></table>
+<p><b>En palabras simples:</b> <span class="cin">npm run dev</span> abre la página en la computadora (en http://localhost:5173) y se actualiza sola al guardar un cambio; <span class="cin">npm run build</span> arma la versión final en la carpeta <span class="cin">dist/</span>; <span class="cin">npm test</span> corre todas las pruebas automáticas.</p>
+<h3>2.4 Publicar los cambios</h3>
+<p>Cada tarea se hace en una rama propia y, cuando está terminada, se une a <span class="cin">main</span>. Vercel publica solo cada vez que <span class="cin">main</span> cambia: por eso nunca se sube a <span class="cin">main</span> algo a medio hacer. El número de la tarea de Jira (A113-…) va en el mensaje del commit para que la tarea se cierre sola.</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">git checkout -b A113-XXX-descripcion-corta
+git add .
+git commit -m "Qué se cambió (A113-XXX)"
+git push -u origin A113-XXX-descripcion-corta</pre></td></tr></table>
+<h2>3. Navegación general por el código</h2>
+<p>Así está organizada la carpeta del proyecto (solo lo importante):</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">ProyectoPdisc/
+├── index.html          Entrada del sitio: manda directo al inicio
+├── pages/              Las pantallas (inicio, carrito, Mi perfil, paneles…)
+├── js/                 El comportamiento de cada pantalla
+├── Assets/
+│   ├── styles/         Los estilos: colores, tamaños, modo oscuro
+│   └── ...             Logos e imágenes de la marca
+├── public/             Fotos de productos, íconos y archivos fijos
+├── db/schema/          Los cambios de la base de datos, numerados en orden
+├── supabase/
+│   ├── functions/      Funciones en la nube (Mercado Pago, baja de cuenta)
+│   └── templates/      Emails de "confirmá tu cuenta" y "nueva contraseña"
+├── scripts/            Herramientas (Jira, modo oscuro, este manual)
+├── docs/               Documentación del proyecto
+├── video/              Videos de la marca
+├── dist/               La versión construida que se publica
+├── package.json        Lista de librerías y atajos (npm run …)
+├── vite.config.js      Cómo se construye el sitio
+└── vercel.json         Cómo se publica el sitio</pre></td></tr></table>
+<h3>3.1 pages/ — las pantallas</h3>
+<p>Cada pantalla del sitio es un archivo <span class="cin">.html</span>: <span class="cin">home.html</span> (inicio), <span class="cin">search.html</span> (búsqueda y categorías), <span class="cin">carrito.html</span>, <span class="cin">perfil.html</span> (Mi perfil), <span class="cin">vender.html</span> (alta y panel de comerciante), <span class="cin">profesional.html</span>, <span class="cin">repartidor.html</span>, <span class="cin">admin.html</span>, etc. La lista completa está en el Anexo A.</p>
+<p class="arch">Archivo: vite.config.js (líneas 26 a 28)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">// ▶ Cada página tiene que estar anotada acá para que entre en la versión publicada</span>
+input: {
+  main: resolve(__dirname, 'index.html'),
+  home: resolve(__dirname, 'pages/home.html'),
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Vite es la herramienta que "construye" el sitio: junta y achica los archivos. Si se crea una página nueva y no se agrega a esta lista, funciona en la computadora pero no aparece en internet.</p>
+<h3>3.2 js/ — el comportamiento</h3>
+<p>Hay un archivo por pantalla (por ejemplo <span class="cin">carrito.js</span> para <span class="cin">carrito.html</span>) y archivos compartidos que terminan en <span class="cin">-utils.js</span> (por ejemplo <span class="cin">cart-utils.js</span>, que usan todas las páginas que tienen el botón "Agregar"). Los que terminan en <span class="cin">.test.mjs</span> son pruebas automáticas.</p>
+<h3>3.3 Assets/styles/ — los estilos</h3>
+<p><span class="cin">home.css</span> tiene los estilos que comparten todas las páginas (el header, las tarjetas, los botones). Al principio define los colores de la marca como "tokens": nombres que el resto del CSS reutiliza, así cambiar un color se hace en un solo lugar.</p>
+<p class="arch">Archivo: Assets/styles/home.css (líneas 7 a 29)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">:root {
+<span class="nota">  /* ▶ El azul de Baradero Local; todas las páginas lo usan con el nombre --bl-primary */</span>
+  --bl-primary: #284175;
+  --bl-primary-dark: #1f3460;
+  --bl-primary-deeper: #1e3a5f;
+  --bl-accent: #f59e0b;
+  --bl-accent-hover: #d97706;
+
+  --bl-bg: #f5f7fa;
+  --bl-surface: #ffffff;
+  --bl-surface-hover: #f8fafc;
+  --bl-surface-alt: #f0f4f8;
+
+  --bl-text: #1a202c;
+  --bl-text-secondary: #4a5568;
+  --bl-text-muted: #94a3b8;
+  --bl-text-inverse: #ffffff;
+
+  --bl-border: #e2e8f0;
+  --bl-border-light: #f1f5f9;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada línea es un color con nombre. El modo oscuro (<span class="cin">dark.css</span>) vuelve a definir estos mismos nombres con colores oscuros, y toda la página cambia de golpe.</p>
+<h3>3.4 db/schema/ — la base de datos</h3>
+<p>Cada archivo <span class="cin">.sql</span> es una migración: un cambio a la base, numerado en el orden en que se aplicó (tablas, reglas de seguridad, funciones como <span class="cin">create_order</span>). Un archivo ya aplicado no se edita: si hay que corregir algo, se hace uno nuevo con el número siguiente.</p>
+<h3>3.5 supabase/functions/ — funciones en la nube</h3>
+<p>Seis funciones que corren en Supabase: cobrar con Mercado Pago (<span class="cin">mp-create-preference</span>, <span class="cin">mp-create-boost-preference</span>), recibir el aviso de pago (<span class="cin">mp-webhook</span>), vincular la cuenta de Mercado Pago de un comercio (<span class="cin">mp-oauth-start</span>, <span class="cin">mp-oauth-callback</span>) y borrar una cuenta (<span class="cin">delete-account</span>).</p>
+<h3>3.6 public/ — archivos fijos</h3>
+<p>Fotos de productos y comercios (<span class="cin">public/img/</span>), íconos, el archivo <span class="cin">sw.js</span> (permite instalar la página en el celular como una app) y <span class="cin">robots.txt</span> (indica a Google qué páginas mostrar).</p>
+<h3>3.7 dist/ — la versión construida</h3>
+<p>Es lo que arma <span class="cin">npm run build</span>. Se guarda en Git por decisión del proyecto, aunque Vercel la vuelve a construir por su cuenta al publicar.</p>
+<h3>3.8 scripts/, docs/ y video/</h3>
+<p><span class="cin">scripts/</span> tiene herramientas para el equipo (mover tareas de Jira, generar el modo oscuro, este manual). <span class="cin">docs/</span> tiene la documentación (hoja de ruta, guía de marca, cómo publicar). <span class="cin">video/</span> tiene los videos de la marca, hechos con código (Remotion).</p>
+<h3>3.9 Cómo empieza cada página</h3>
+<p class="arch">Archivo: pages/home.html (líneas 3 a 8)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+<span class="nota">  &lt;!-- ▶ Si la persona eligió modo oscuro, se activa antes de dibujar la página (así no hay un destello blanco) --&gt;</span>
+  &lt;script&gt;try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}&lt;/script&gt;
+<span class="nota">  &lt;!-- ▶ Hace que la página se adapte al ancho del celular --&gt;</span>
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+  &lt;meta name="view-transition" content="same-origin" /&gt;
+<span class="nota">  &lt;!-- ▶ Lista de lugares desde donde la página puede cargar cosas; bloquea todo lo demás (seguridad) --&gt;</span>
+  &lt;meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;"&gt;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Todas las páginas empiezan igual. La última línea es larga: dice, por ejemplo, que la página solo puede conectarse con Supabase y con Google. Si algún día se suma otro servicio, hay que agregarlo en esa línea de todas las páginas.</p>
+<h1>Módulos operativos y flujos de trabajo</h1>
+<p>Cada módulo sigue el mismo número y nombre que en el Manual de usuario. Primero se dice qué archivos lo hacen funcionar y después se muestran sus bloques de código principales.</p>
+<h2>1. Autenticación / inicio de sesión / registro</h2>
+<p>Archivos: <span class="cin">js/login.js</span>, <span class="cin">js/register.js</span>, <span class="cin">js/recuperar-password.js</span>, <span class="cin">js/nueva-contrasena.js</span> y <span class="cin">js/auth-utils.js</span>. Las cuentas las maneja Supabase Auth: guarda los usuarios y las contraseñas (cifradas), manda los emails y conecta con Google. El código del proyecto le pasa los datos y muestra los mensajes.</p>
+<h3>1.1 Conexión con la base de datos</h3>
+<p class="arch">Archivo: js/auth-utils.js (líneas 1 a 18)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "./supabase-config.js";
+import { initErrorLogging } from "./error-logger.js";
+import { applyDevicePreferences } from "./settings-utils.js";
+import { completePendingLink, consumeLinkNext } from "./linked-accounts.js";
+
+import { friendlyError } from './friendly-error.js';
+<span class="nota">// ▶ Aplica las preferencias de Ajustes, por ejemplo "Reducir animaciones"</span>
+applyDevicePreferences();
+
+<span class="nota">// ▶ Crea la conexión con la base de datos; todas las páginas usan esta misma</span>
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+<span class="nota">// ▶ Si algo falla en la página, se anota en la tabla error_logs para que el equipo lo vea</span>
+initErrorLogging(supabase);</pre></td></tr></table>
+<p><b>En palabras simples:</b> Este archivo lo cargan todas las páginas. Es el que abre la conexión con Supabase, a la que después se le piden datos con <span class="cin">supabase.from(...)</span> o <span class="cin">supabase.rpc(...)</span>.</p>
+<h3>1.2 Ingreso por primera vez (registro)</h3>
+<p class="arch">Archivo: js/register.js (líneas 120 a 201)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function registerWithEmail() {
+<span class="nota">  // ▶ Si no tildó "Acepto los términos y condiciones", no sigue</span>
+  if (!checkTermsAccepted(termsCheckbox, "terms-label")) return;
+
+  const email = registerEmailInput?.value?.trim() ?? "";
+  const password = registerPasswordInput?.value ?? "";
+  const passwordConfirm = registerPasswordConfirmInput?.value ?? "";
+  const name = registerNameInput?.value?.trim() ?? "";
+
+<span class="omit">  // … (se omiten líneas: avisos si el nombre o el correo están vacíos o mal escritos)</span>
+<span class="nota">  // ▶ La contraseña necesita 8 caracteres, una mayúscula y un número</span>
+  if (password.length &lt; 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+    showToast("La contraseña debe tener al menos 8 caracteres, una mayúscula y un número", "error");
+    registerPasswordInput?.focus();
+    return;
+  }
+<span class="omit">  // … (se omiten líneas: chequeo de que repitió bien la contraseña)</span>
+  setLoading(registerBtn, true, "Crear cuenta");
+
+  try {
+<span class="nota">    // ▶ Le pide a Supabase que cree la cuenta</span>
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
+<span class="nota">        // ▶ A qué página vuelve la persona cuando confirma su correo</span>
+        emailRedirectTo: `${window.location.origin}/pages/${paginaPostRegistro()}`,
+      }
+    });
+
+    if (error) {
+      console.error("Register error:", error);
+      showToast(mapRegisterError(error), "error");
+      setLoading(registerBtn, false, "Crear cuenta");
+      return;
+    }
+
+<span class="nota">    // ▶ Si ese correo ya tenía cuenta, avisa</span>
+    if (data?.user &amp;&amp; data.user.identities &amp;&amp; data.user.identities.length === 0) {
+      showToast("Ya existe una cuenta con ese correo. Intentá iniciar sesión.", "error");
+      setLoading(registerBtn, false, "Crear cuenta");
+      return;
+    }
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Cuando se toca "Crear cuenta", primero se revisan los datos en la misma página (para avisar rápido) y recién después se le manda todo a Supabase.</p>
+<p class="arch">Archivo: js/register.js (líneas 28 a 33)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function paginaPostRegistro() {
+  const tipo = document.querySelector('input[name="account_type"]:checked')?.value;
+<span class="nota">  // ▶ Si marcó "Vendedor", después del registro va directo al alta de comercio</span>
+  if (tipo === "vendedor") return "vender.html";
+  if (tipo === "profesional") return "vender.html?tipo=servicio";
+  return "home.html";
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Elegir "Cliente", "Vendedor" o "Profesional" en el registro solo cambia a qué pantalla se llega después. La cuenta siempre nace como cliente (ver el bloque siguiente).</p>
+<p class="arch">Archivo: db/schema/23_fix_handle_new_user_role_escalation.sql (líneas 23 a 46)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+<span class="nota">  -- ▶ Al crearse un usuario, la base le arma su perfil automáticamente</span>
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data -&gt;&gt; 'full_name', new.raw_user_meta_data -&gt;&gt; 'name', split_part(new.email, '@', 1)),
+<span class="nota">    -- ▶ Toda cuenta nueva empieza como cliente, elija lo que elija en el formulario</span>
+    'cliente'
+  )
+  on conflict (id) do update
+  set
+    email = excluded.email,
+    full_name = coalesce(excluded.full_name, public.profiles.full_name),
+    avatar_url = coalesce(excluded.avatar_url, public.profiles.avatar_url),
+    updated_at = now();
+
+  return new;
+end;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Es un trigger de la base de datos: corre solo cada vez que se crea una cuenta. Así nadie puede darse a sí mismo el rol de vendedor o administrador; ese cambio solo lo hace la aprobación de un administrador.</p>
+<h3>1.3 Inicio de sesión</h3>
+<p class="arch">Archivo: js/login.js (líneas 37 a 82)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loginLocal() {
+  const email = emailInput?.value?.trim() ?? "";
+  const password = passwordInput?.value ?? "";
+
+<span class="omit">  // … (se omiten líneas: avisos si falta el correo o la contraseña)</span>
+  setLoading(localLoginBtn, true, "Iniciar sesión");
+
+  try {
+<span class="nota">    // ▶ Le manda el correo y la contraseña a Supabase para que los verifique</span>
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      console.error("Login error:", error);
+<span class="nota">      // ▶ Traduce el error técnico a un mensaje claro (ver el bloque siguiente)</span>
+      showToast(mapLoginError(error), "error");
+      setLoading(localLoginBtn, false, "Iniciar sesión");
+      return;
+    }
+
+<span class="nota">    // ▶ Si salió bien, la página cambia sola al inicio o al panel de la persona</span>
+    showToast("¡Sesión iniciada correctamente! Redirigiendo...", "success");
+  } catch (err) {
+    console.error("Unexpected login error:", err);
+    showToast("Error inesperado. Intentá de nuevo más tarde.", "error");
+    setLoading(localLoginBtn, false, "Iniciar sesión");
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Es lo que pasa al tocar "Iniciar sesión". El código nunca ve si la contraseña es correcta: eso lo decide Supabase.</p>
+<p class="arch">Archivo: js/login.js (líneas 11 a 22)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function mapLoginError(error) {
+  const msg = (error.message || "").toLowerCase();
+  const status = error.status;
+
+<span class="nota">  // ▶ Cada "if" reconoce un error y devuelve el texto que ve la persona</span>
+  if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+    return "Correo o contraseña incorrectos.";
+  }
+  if (msg.includes("email not confirmed")) {
+    return "Tu correo aún no fue confirmado. Revisá tu bandeja de entrada.";
+  }
+  if (msg.includes("invalid email")) {
+    return "El correo electrónico no es válido.";
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Los mensajes de la tabla "Mensajes de error habituales" del Manual de usuario salen de funciones como esta.</p>
+<h3>1.4 Iniciar sesión con Google</h3>
+<p class="arch">Archivo: js/login.js (líneas 85 a 111)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loginWithGoogle() {
+  setLoading(googleLoginBtn, true, "Iniciar sesión con Google");
+
+  try {
+<span class="nota">    // ▶ Después de Google vuelve a la página de login, que decide a dónde mandar a cada uno</span>
+    const redirectTo = `${window.location.origin}/pages/login.html`;
+<span class="nota">    // ▶ Abre la ventana de Google para elegir la cuenta</span>
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+<span class="nota">      // ▶ Siempre muestra la lista de cuentas de Google, aunque ya haya una abierta</span>
+      options: { redirectTo, queryParams: { prompt: "select_account" } },
+    });
+
+    if (error) {
+      console.error("Google login error:", error);
+      showToast("No se pudo conectar con Google. Intentá de nuevo.", "error");
+      setLoading(googleLoginBtn, false, "Iniciar sesión con Google");
+    }
+  } catch (err) {
+    console.error("Unexpected Google login error:", err);
+    showToast("Error de conexión con Google. Verificá tu internet.", "error");
+    setLoading(googleLoginBtn, false, "Iniciar sesión con Google");
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Con Google no hay contraseña de Baradero Local: Google confirma quién es la persona y Supabase abre la sesión.</p>
+<h3>1.5 Proceso de recuperación de contraseña</h3>
+<p class="arch">Archivo: js/recuperar-password.js (líneas 9 a 44)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function requestPasswordReset() {
+  const email = emailInput?.value?.trim() ?? "";
+
+<span class="omit">  // … (se omiten líneas: avisos si el correo está vacío o mal escrito)</span>
+  setLoading(recoverBtn, true, "Enviar correo de recuperación");
+
+  try {
+<span class="nota">    // ▶ Supabase manda el email con el link para elegir una contraseña nueva</span>
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+<span class="nota">      // ▶ El link del email abre la página nueva-contrasena.html</span>
+      redirectTo: `${window.location.origin}/pages/nueva-contrasena.html`,
+    });
+
+    if (error) {
+      console.error("Reset password error:", error);
+      showToast("Hubo un error al intentar enviar el correo. Intentá nuevamente.", "error");
+      setLoading(recoverBtn, false, "Enviar correo de recuperación");
+      return;
+    }
+
+    recoverForm.style.display = "none";
+<span class="nota">    // ▶ Muestra el cartel de "te mandamos un correo"</span>
+    successNotice.style.display = "block";
+  } catch (err) {
+    console.error("Unexpected reset error:", err);
+    showToast("Error inesperado. Intentá de nuevo más tarde.", "error");
+    setLoading(recoverBtn, false, "Enviar correo de recuperación");
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Por seguridad, el cartel de éxito aparece aunque el correo no esté registrado: así nadie puede averiguar qué correos tienen cuenta.</p>
+<h3>1.6 Páginas que exigen haber iniciado sesión</h3>
+<p class="arch">Archivo: js/auth-utils.js (líneas 448 a 509)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export async function guardPage({
+  requireAuth = false,
+  redirectIfAuth = false,
+  redirectTo = null,
+  requireRole = null,
+  onReady = null,
+} = {}) {
+  const mainContent = document.getElementById('main-content');
+  const loadingScreen = document.getElementById('loading-screen');
+
+<span class="nota">  // ▶ Mientras se verifica, la página queda oculta y se ve la pantalla de carga</span>
+  if (mainContent) mainContent.style.visibility = 'hidden';
+  if (loadingScreen) loadingScreen.style.display = 'flex';
+
+  try {
+<span class="nota">    // ▶ Se fija si en este navegador hay una sesión abierta</span>
+    const { data: { session: localSession } } = await supabase.auth.getSession();
+
+<span class="omit">    // … (se omiten líneas: verificación de la sesión con el servidor)</span>
+<span class="nota">    // ▶ Página privada sin sesión: la manda a iniciar sesión</span>
+    if (!user &amp;&amp; requireAuth) {
+      window.location.replace(redirectTo || '../pages/login.html');
+      return null;
+    }
+
+<span class="nota">    // ▶ Ya tiene sesión y entró al login: la manda al inicio o a su panel</span>
+    if (user &amp;&amp; redirectIfAuth) {
+      window.location.replace(await resolvePostLoginRedirect(user, redirectTo));
+      return null;
+    }
+
+<span class="nota">    // ▶ Páginas solo para algunos roles, como la de administración</span>
+    if (user &amp;&amp; requireRole) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada página privada (Mi perfil, los paneles) arranca llamando a <span class="cin">guardPage</span>. Es el "portero": decide si la persona puede ver la página, si tiene que iniciar sesión o si ya está adentro y hay que llevarla a otro lado.</p>
+<h2>2. Header</h2>
+<p>Archivos: <span class="cin">js/nav-utils.js</span> (categorías, buscador, campanita y menú de la cuenta), <span class="cin">js/theme.js</span> (modo claro/oscuro) y <span class="cin">js/cart-utils.js</span> (número del carrito). El mismo código arma el header de todas las páginas.</p>
+<h3>2.1 Categorías</h3>
+<p class="arch">Archivo: js/nav-utils.js (líneas 25 a 30)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const CATEGORY_ICONS = {
+<span class="nota">  // ▶ Cada categoría tiene su dibujito (ícono); para una categoría nueva se agrega una línea acá</span>
+  almacen: 'fa-basket-shopping',
+  bebidas: 'fa-wine-bottle',
+  carniceria: 'fa-drumstick-bite',
+  ferreteria: 'fa-screwdriver-wrench',
+  forrajeria: 'fa-paw',
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p class="arch">Archivo: js/nav-utils.js (líneas 52 a 69)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function getCategories() {
+<span class="nota">  // ▶ La lista se pide una sola vez por pestaña y se reutiliza</span>
+  if (!_categoriesPromise) {
+    _categoriesPromise = supabase
+<span class="nota">      // ▶ Pide a la base la lista de categorías, ordenada por nombre</span>
+      .from('categories')
+      .select('id, name, slug')
+      .order('name')
+      .then(({ data, error }) =&gt; {
+        if (error) { _categoriesPromise = null; throw error; }
+        return data || [];
+      })
+      .catch((err) =&gt; {
+        console.error('Error al cargar categorías:', err);
+        _categoriesPromise = null;
+        return [];
+      });
+  }
+  return _categoriesPromise;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Las categorías no están escritas en el código: son filas de la tabla <span class="cin">categories</span>. Por eso sumar una categoría es agregar una fila (más su ícono en la lista de arriba).</p>
+<h3>2.2 Barra de búsqueda para encontrar productos o comercios</h3>
+<p class="arch">Archivo: js/nav-utils.js (líneas 495 a 503)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function renderSuggestions(query) {
+  const q = query.trim();
+<span class="nota">  // ▶ Con menos de 2 letras muestra las búsquedas recientes</span>
+  if (q.length &lt; 2) { renderRecent(); return; }
+
+  const token = ++lastToken;
+<span class="nota">  // ▶ Pide a la base hasta 6 productos que coincidan con lo escrito</span>
+  const { data: products, error } = await supabase.rpc('search_products', {
+    p_query: q, p_limit: 6, p_offset: 0, p_sort: 'relevancia',
+  });
+<span class="nota">  // ▶ Si la persona siguió escribiendo, descarta la respuesta vieja</span>
+  if (token !== lastToken) return;
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p class="arch">Archivo: js/nav-utils.js (líneas 556 a 560)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">input.addEventListener('input', () =&gt; {
+  clearTimeout(debounceTimer);
+  const val = input.value;
+<span class="nota">  // ▶ Espera un instante sin teclear (220 milisegundos) antes de buscar, para no consultar con cada letra</span>
+  debounceTimer = setTimeout(() =&gt; renderSuggestions(val), 220);
+});</pre></td></tr></table>
+<p><b>En palabras simples:</b> Mientras se escribe aparecen sugerencias de categorías y productos. La búsqueda de verdad la hace la base de datos (<span class="cin">search_products</span>), que entiende errores de tipeo, plurales y sinónimos.</p>
+<h3>2.3 Notificaciones</h3>
+<p class="arch">Archivo: js/nav-utils.js (líneas 657 a 663)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function refreshBadge() {
+  await sessionReady;
+  if (!session) { badge.textContent = ''; badge.dataset.count = '0'; return; }
+<span class="nota">  // ▶ Cuenta las notificaciones sin leer de la cuenta</span>
+  const count = await fetchUnreadCount(session.user.id);
+<span class="nota">  // ▶ Si hay más de 9, el círculo rojo dice "9+"</span>
+  badge.textContent = count &gt; 0 ? (count &gt; 9 ? '9+' : String(count)) : '';
+  badge.dataset.count = String(count);
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/notifications-utils.js (líneas 431 a 436)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function currentPanelScope() {
+  const page = (globalThis.location?.pathname || '').split('/').pop();
+<span class="nota">  // ▶ Dentro de un panel, solo se ven los avisos de ese panel</span>
+  if (page === 'profesional.html') return 'profesional';
+  if (page === 'vender.html') return 'comercio';
+  return undefined;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada notificación es una fila de la tabla <span class="cin">notifications</span>. Llegan al instante gracias al tiempo real (módulo 22.1) y, dentro de un panel, se filtran: en el panel de profesional no aparecen los pedidos del comercio.</p>
+<h3>2.4 Mi perfil (menús que no se salen de la pantalla)</h3>
+<p class="arch">Archivo: js/nav-utils.js (líneas 597 a 604)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function keepInsideViewport(panel) {
+  panel.style.right = '';
+  const margin = 16;
+<span class="nota">  // ▶ Mide dónde quedó el menú</span>
+  const { left, right } = panel.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const shift = left &lt; margin ? margin - left : right &gt; vw - margin ? vw - margin - right : 0;
+<span class="nota">  // ▶ Si se sale por un costado, lo corre lo justo para que entre con margen</span>
+  if (shift) panel.style.right = `${parseFloat(getComputedStyle(panel).right) - shift}px`;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> En celulares angostos, los menús de la campanita y de la cuenta se salían por el borde. Esta función los acomoda cada vez que se abren.</p>
+<h3>2.5 Mi carrito</h3>
+<p class="arch">Archivo: js/cart-utils.js (líneas 449 a 460)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function updateCartBadge() {
+  const cart = getCart();
+<span class="nota">  // ▶ Cuenta productos distintos, no unidades: 2 alfajores iguales cuentan como 1</span>
+  const total = cart.length;
+  const badge = document.getElementById('cart-badge');
+  if (badge) {
+    badge.textContent = total &gt; 0 ? total : '';
+    badge.dataset.count = total;
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Es el número que aparece sobre el ícono del carrito. Se actualiza cada vez que se agrega o se saca algo.</p>
+<h3>2.6 Logo de Baradero Local</h3>
+<p class="arch">Archivo: js/auth-utils.js (líneas 339 a 342)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function markHomeIntent(e) {
+<span class="nota">  // ▶ Solo reacciona al toque sobre el logo</span>
+  if (!e.target.closest?.(".navbar__logo")) return;
+<span class="nota">  // ▶ Anota "quiero ver el inicio", así a quien tiene panel no lo mandan de vuelta a su panel</span>
+  try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> El logo es un link al inicio. Además deja esta marca porque el inicio lleva automáticamente a su panel a los comerciantes y profesionales; tocar el logo es la forma de decir "quiero ver el inicio igual".</p>
+<h3>2.7 Modo claro/oscuro</h3>
+<p class="arch">Archivo: js/theme.js (líneas 62 a 76)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function setTheme(theme, { persist = true, animate = false } = {}) {
+  const root = document.documentElement;
+  if (animate) {
+    root.classList.add('theme-switching');
+    window.setTimeout(() =&gt; root.classList.remove('theme-switching'), 350);
+  }
+<span class="nota">  // ▶ Cambia los colores de toda la página</span>
+  applyTheme(theme);
+  if (persist) {
+    try {
+<span class="nota">      // ▶ Recuerda la elección en este navegador para la próxima visita</span>
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+    }
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> El botón del sol y la luna llama a <span class="cin">setTheme</span>. Los colores oscuros están en <span class="cin">dark.css</span> (ajustes a mano) y <span class="cin">dark-auto.css</span> (generado solo con <span class="cin">scripts/gen-dark-css.mjs</span>).</p>
+<h2>3. Header Auxiliar</h2>
+<p>En las páginas que no son el inicio, el header es más simple: logo, flecha para volver, campanita, perfil, carrito y modo claro/oscuro. Todo es el mismo código del módulo 2, salvo la flecha.</p>
+<h3>3.1 Volver atrás</h3>
+<p class="arch">Archivo: js/auth-utils.js (líneas 353 a 361)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function hasSiteHistory() {
+<span class="nota">  // ▶ Dentro de Mi perfil siempre se puede volver a la sección anterior</span>
+  if (window.history.state?.blSection) return true;
+  if (window.history.length &lt;= 1 || !document.referrer) return false;
+  try {
+<span class="nota">    // ▶ Solo vuelve atrás si la página anterior es de Baradero Local</span>
+    return new URL(document.referrer).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/auth-utils.js (líneas 363 a 374)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function handleNavBack(e) {
+  const circle = e.target.closest?.(".navbar__action-circle");
+  if (!circle || !circle.querySelector(".fa-arrow-left")) return;
+  e.preventDefault();
+  if (hasSiteHistory()) {
+<span class="nota">    // ▶ Vuelve a la página anterior</span>
+    window.history.back();
+    return;
+  }
+  try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
+<span class="nota">  // ▶ Si no hay a dónde volver (por ejemplo, entró por un link de WhatsApp), va al inicio</span>
+  window.location.href = circle.getAttribute("href") || "./home.html";
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> La flecha funciona como el botón "atrás" del navegador, pero sin sacar a la persona del sitio.</p>
+<h2>4. Categorías</h2>
+<p>Archivos: <span class="cin">js/search.js</span> (la página de resultados con sus filtros), <span class="cin">js/product-modal.js</span> (la ventana del producto), <span class="cin">js/reviews-utils.js</span> (reseñas) y <span class="cin">js/cart-utils.js</span> (favoritos y carrito).</p>
+<h3>4.1 Barra de navegación, categorías y filtros</h3>
+<p class="arch">Archivo: js/search.js (líneas 277 a 286)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const { data: products, error } = await supabase.rpc('search_products', {
+<span class="nota">  // ▶ Lo que se escribió en el buscador</span>
+  p_query: filterState.query || null,
+<span class="nota">  // ▶ La categoría elegida (o todas)</span>
+  p_category: filterState.category || 'todas',
+  p_zone: null,
+<span class="nota">  // ▶ Precio mínimo y máximo de los filtros</span>
+  p_min_price: filterState.minPrice,
+  p_max_price: filterState.maxPrice,
+<span class="nota">  // ▶ El orden: más relevantes, menor precio, mayor precio, más recientes o A-Z</span>
+  p_sort: filterState.sortBy,
+  p_limit: PAGE_SIZE,
+<span class="nota">  // ▶ De a una página por vez: "Ver más" pide la siguiente</span>
+  p_offset: filterState.page * PAGE_SIZE,
+});</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada vez que se cambia un filtro, la búsqueda se hace de nuevo sola (no hay botón "Aplicar"). Los filtros viajan a la función <span class="cin">search_products</span> de la base, que devuelve los productos ya filtrados y ordenados. Borrar la categoría (la "x") es volver a buscar con "todas".</p>
+<h3>4.2 Productos (la ventana del producto)</h3>
+<p class="arch">Archivo: js/product-modal.js (líneas 36 a 56)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function fetchProductData(productId) {
+  const [product, { data: { session } }] = await Promise.all([
+<span class="nota">    // ▶ Pide todo el producto en una sola consulta: datos, comercio, fotos, opciones y reseñas</span>
+    fetchProductDetail(productId),
+    supabase.auth.getSession(),
+  ]);
+
+  const offerExpired = isOfferExpired(product);
+<span class="nota">  // ▶ Si tiene precio anterior y la oferta no venció, calcula el porcentaje de descuento</span>
+  const hasDiscount = !!(product.compare_at_price &amp;&amp; product.compare_at_price &gt; product.price &amp;&amp; !offerExpired);
+  const discountPct = hasDiscount ? Math.round((1 - product.price / product.compare_at_price) * 100) : 0;
+
+  const store = product.stores || {};
+  const extraImages = (product.product_images || [])
+    .filter((pi) =&gt; pi.url !== product.image_url)
+    .sort((a, b) =&gt; a.position - b.position);
+  const images = [product.image_url || '/img/no-image.svg', ...extraImages.map((pi) =&gt; pi.url)];
+
+<span class="nota">  // ▶ El texto del costo de envío del comercio</span>
+  const shippingText = store.delivery_fee == null
+    ? 'El costo de envío se calcula en el carrito, según el comercio.'
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Al tocar un producto se abre una ventana encima de la página. Mientras llegan los datos, ya muestra lo que tenía la tarjeta (foto, nombre, precio) para que no haya que esperar.</p>
+<h4>4.2.1 Compartir</h4>
+<p class="arch">Archivo: js/product-modal.js (líneas 961 a 984)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const shareBtn = overlay.querySelector('#pm-share-btn');
+shareBtn?.addEventListener('click', async () =&gt; {
+  const shareData = {
+    title: data.name,
+    text: `Mirá ${data.name} en Baradero Local por ${data.priceText}`,
+    url: window.location.href
+  };
+
+  try {
+<span class="nota">    // ▶ En el celular abre el menú de compartir (WhatsApp, Instagram…)</span>
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+<span class="nota">      // ▶ En la computadora copia el link para pegarlo donde se quiera</span>
+      await navigator.clipboard.writeText(`${shareData.text} — ${shareData.url}`);
+      _showToast('¡Link copiado al portapapeles!', 'success');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        _showToast('¡Link copiado!', 'success');
+      } catch { /* silently fail */ }
+    }
+  }
+});</pre></td></tr></table>
+<h4>4.2.2 Corazón (favoritos)</h4>
+<p class="arch">Archivo: js/cart-utils.js (líneas 849 a 869)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export async function toggleFavorite(productId, isCurrentlyFavorite) {
+  const { data: { session } } = await supabase.auth.getSession();
+
+<span class="nota">  // ▶ Sin sesión, el favorito se guarda en el navegador</span>
+  if (!session) {
+    const list = getLocalWishlist();
+    if (isCurrentlyFavorite) {
+      const idx = list.indexOf(productId);
+      if (idx &gt; -1) list.splice(idx, 1);
+    } else if (!list.includes(productId)) {
+      list.push(productId);
+    }
+    saveLocalWishlist(list);
+    return;
+  }
+
+  if (isCurrentlyFavorite) {
+<span class="nota">    // ▶ Si ya era favorito, lo saca</span>
+    await supabase.from('favorites').delete().eq('user_id', session.user.id).eq('product_id', productId);
+  } else {
+<span class="nota">    // ▶ Si no, lo agrega a la tabla favorites de la cuenta</span>
+    await supabase.from('favorites').insert({ user_id: session.user.id, product_id: productId });
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Al iniciar sesión, los favoritos que se marcaron sin cuenta se suben solos a la cuenta.</p>
+<h4>4.2.3 Cantidad</h4>
+<p class="arch">Archivo: js/product-modal.js (líneas 822 a 838)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const qtyInput = overlay.querySelector('#pm-qty-value');
+const qtyMinus = overlay.querySelector('#pm-qty-minus');
+const qtyPlus = overlay.querySelector('#pm-qty-plus');
+
+function updateQtyState() {
+  const val = parseInt(qtyInput.value, 10) || 1;
+<span class="nota">  // ▶ El "menos" se apaga en 1 y el "más" al llegar al stock disponible</span>
+  qtyMinus.disabled = val &lt;= 1;
+  qtyPlus.disabled = val &gt;= data.stock;
+}
+
+qtyMinus?.addEventListener('click', () =&gt; {
+  const val = parseInt(qtyInput.value, 10) || 1;
+<span class="nota">  // ▶ Resta uno, sin bajar de 1</span>
+  if (val &gt; 1) qtyInput.value = val - 1;
+  updateQtyState();
+});
+
+qtyPlus?.addEventListener('click', () =&gt; {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<h4>4.2.4 Añadir al carrito</h4>
+<p class="arch">Archivo: js/product-modal.js (líneas 853 a 910)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">addCartBtn?.addEventListener('click', () =&gt; {
+  const qty = parseInt(qtyInput?.value, 10) || 1;
+  const priceOld = _parsePrice(data.priceOldText);
+
+  const selectedIds = [...overlay.querySelectorAll('#pm-options input[type="radio"]:checked')].map((r) =&gt; r.value);
+
+<span class="nota">  // ▶ Si el producto tiene opciones (color, talle) y falta elegir alguna, avisa y no lo agrega</span>
+  const missing = missingOptionNames(data.optionGroups, selectedIds);
+  if (missing.length &gt; 0) {
+    _showToast(`Elegí ${missing.map((m) =&gt; m.toLowerCase()).join(' y ')} antes de agregar al carrito.`, 'error');
+    overlay.querySelector('#pm-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const snapshot = buildSelectionSnapshot(data.optionGroups, selectedIds);
+  const lineKey = cartLineKey(data.id, selectedIds);
+
+  const cart = _getCart();
+<span class="nota">  // ▶ Si ya estaba en el carrito con las mismas opciones, suma la cantidad</span>
+  const existing = cart.find(item =&gt; itemLineKey(item) === lineKey);
+
+  if (existing) {
+    existing.qty += qty;
+    existing.selected = true;
+  } else {
+<span class="nota">    // ▶ Si no, agrega una línea nueva con nombre, comercio, precio, foto y cantidad</span>
+    cart.push({
+      id: data.id,
+      name: data.name,
+      shop: data.shop,
+      price: data.price,
+      priceOld: priceOld || null,
+      image: data.imgSrc,
+      qty,
+      options: selectedIds,
+      optionsLabel: snapshot,
+      selected: true
+    });
+  }
+
+<span class="nota">  // ▶ Guarda el carrito y actualiza el número del ícono</span>
+  _saveCart(cart);
+  _updateBadge();
+
+<span class="omit">  // … (se omiten líneas: animación del botón "¡Agregado!")</span>
+  const chosen = describeSelectedOptions(buildSelectionSnapshot(data.optionGroups, selectedIds));
+  _showToast(`${data.name}${chosen ? ` (${chosen})` : ''} agregado al carrito (x${qty})`, 'success');
+});</pre></td></tr></table>
+<p><b>En palabras simples:</b> La misma remera en rojo y en azul son dos líneas distintas del carrito. "Comprar ahora" hace lo mismo y además lleva directo al carrito.</p>
+<h4>4.2.5 Reseñas</h4>
+<p class="arch">Archivo: js/reviews-utils.js (líneas 135 a 151)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export async function submitReview(targetType, targetId, rating, comment) {
+  const { data: { session } } = await supabase.auth.getSession();
+<span class="nota">  // ▶ Para opinar hay que haber iniciado sesión</span>
+  if (!session) throw new Error('Debés iniciar sesión para dejar una reseña.');
+
+<span class="nota">  // ▶ Guarda la reseña; si la persona ya había opinado, la reemplaza (una por persona)</span>
+  const { error } = await supabase.from('reviews').upsert(
+    {
+      target_type: targetType,
+      target_id: targetId,
+      client_id: session.user.id,
+<span class="nota">      // ▶ La cantidad de estrellas, de 1 a 5</span>
+      rating,
+      comment: comment || null,
+    },
+    { onConflict: 'target_type,target_id,client_id' }
+  );
+
+  if (error) throw error;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Las reseñas de productos, comercios y profesionales están todas en la tabla <span class="cin">reviews</span>. Un administrador o moderador puede ocultar una reseña reportada.</p>
+<h4>4.2.6 Productos relacionados</h4>
+<p class="arch">Archivo: js/product-modal.js (líneas 134 a 161)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function fetchRelatedProducts(productId) {
+  try {
+    const { data: current, error: currentError } = await supabase
+      .from('products')
+<span class="nota">      // ▶ Primero averigua de qué categoría es el producto</span>
+      .select('category_id')
+      .eq('id', productId)
+      .maybeSingle();
+    if (currentError || !current?.category_id) return [];
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock')
+<span class="nota">      // ▶ Después busca otros productos activos y con stock de esa misma categoría</span>
+      .eq('category_id', current.category_id)
+      .eq('is_active', true)
+      .gt('stock', 0)
+      .neq('id', productId)
+      .order('created_at', { ascending: false })
+      .limit(RELATED_MAX * 3);
+    if (error || !data) return [];
+
+<span class="nota">    // ▶ Los mezcla al azar para que no salgan siempre los del mismo comercio</span>
+    const mixed = [...data];
+    for (let i = mixed.length - 1; i &gt; 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [mixed[i], mixed[j]] = [mixed[j], mixed[i]];
+    }
+    return mixed.slice(0, RELATED_MAX);
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Si no hay otros productos de la misma categoría, la sección no aparece (no se rellena con cualquier cosa).</p>
+<h2>5. Panel de perfil</h2>
+<p>Archivos: <span class="cin">pages/perfil.html</span> y <span class="cin">js/perfil.js</span>, más <span class="cin">js/profile-fields.js</span> (datos personales), <span class="cin">js/account-switcher.js</span> (cambiar de cuenta), <span class="cin">js/support-utils.js</span> (soporte) y <span class="cin">js/settings-utils.js</span> (ajustes).</p>
+<h3>5.1 Moverse entre las secciones de Mi perfil</h3>
+<p class="arch">Archivo: js/perfil.js (líneas 103 a 109)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function openSection(targetId, scrollToId) {
+  if (!document.getElementById(targetId)) return;
+  if (window.history.state?.blSection !== targetId) {
+<span class="nota">    // ▶ Anota la sección en el historial: así la flecha "volver" regresa al menú de Mi perfil</span>
+    window.history.pushState({ blSection: targetId }, '', window.location.href);
+  }
+  showSection(targetId, scrollToId);
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Mi perfil es una sola página con secciones (Información, Direcciones, Compras, Favoritos, Soporte, Ajustes). Tocar un acceso muestra esa sección y esconde las otras.</p>
+<h3>5.2 Información de tu perfil</h3>
+<p class="arch">Archivo: js/profile-fields.js (líneas 31 a 50)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export const PROFILE_FIELDS = [
+  {
+<span class="nota">    // ▶ Cada dato del perfil se describe así: qué muestra, cómo se edita y cómo se revisa</span>
+    key: "full_name",
+    container: "datos-personales",
+    label: "Nombre y apellido",
+    hint: "Es el nombre que ve el comercio cuando le entra tu pedido.",
+    display: (p) =&gt; p.full_name,
+    inputs: (p) =&gt; [{
+      el: "input", name: "full_name", type: "text", value: p.full_name || "",
+      placeholder: "Ej: María González", autocomplete: "name", maxLength: 80,
+      className: "datos-input datos-input--grow", aria: "Nombre y apellido",
+    }],
+    collect: (v) =&gt; ({ full_name: v.full_name.trim() || null }),
+<span class="nota">    // ▶ Los chequeos antes de guardar, con el mensaje que ve la persona</span>
+    validate: (v) =&gt; {
+      const n = v.full_name.trim();
+      if (!n) return "Escribí tu nombre y apellido.";
+      if (n.length &lt; 2) return "Ese nombre es muy corto.";
+      return null;
+    },
+  },</pre></td></tr></table>
+<p><b>En palabras simples:</b> Se muestra solo el primer dato (nombre y apellido); los demás (fecha de nacimiento, documento, teléfono) siguen el mismo molde. Sumar un dato nuevo es agregar otro bloque como este.</p>
+<h3>5.3 Cambiar de cuenta</h3>
+<p class="arch">Archivo: js/account-switcher.js (líneas 79 a 107)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function switchTo(entry, button) {
+  button.disabled = true;
+  const etiqueta = button.textContent;
+  button.textContent = 'Cambiando…';
+
+  const { data: { session: actual } } = await supabase.auth.getSession();
+<span class="nota">  // ▶ Guarda la sesión de la cuenta actual para poder volver a ella</span>
+  if (actual) rememberAccount(actual);
+
+<span class="nota">  // ▶ Abre la sesión de la otra cuenta guardada en este dispositivo</span>
+  const { data, error } = await supabase.auth.setSession(entry.session);
+  if (error || !data?.session) {
+    console.error('No se pudo abrir la otra cuenta:', error);
+<span class="nota">    // ▶ Si esa sesión ya no sirve, la saca de la lista</span>
+    forgetAccount(entry.id);
+    showToast('La sesión de esa cuenta se cerró. Agregala de nuevo para volver a usarla.', 'error');
+    button.disabled = false;
+    button.textContent = etiqueta;
+    await render();
+    return;
+  }
+
+  rememberAccount(data.session);
+<span class="nota">  // ▶ Cada cuenta tiene su propio carrito: no se mezclan</span>
+  resetLocalCartState();
+  showToast(`Entraste con ${entry.email}`, 'success');
+  window.location.href = afterSwitchUrl;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Para agregar una cuenta a la lista hay que iniciar sesión en ella (no se puede sumar la de otra persona). Las cuentas se guardan solo en ese dispositivo, y "Cerrar sesión" las borra todas.</p>
+<h3>5.4 Direcciones (predeterminar dirección)</h3>
+<p class="arch">Archivo: js/perfil.js (líneas 494 a 505)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">if (!addr.is_default) {
+  const defaultBtn = document.createElement('button');
+  defaultBtn.type = 'button';
+  defaultBtn.style.cssText = 'font-size: 0.8rem; padding: 0.25rem 0.6rem; border: 1px solid var(--bl-border, #e2e8f0); border-radius: 6px; background: var(--bl-surface, white); color: var(--bl-text, inherit); cursor: pointer;';
+  defaultBtn.textContent = 'Predeterminar';
+  defaultBtn.addEventListener('click', async () =&gt; {
+<span class="nota">    // ▶ Primero le saca la marca de "predeterminada" a todas las direcciones</span>
+    await supabase.from('user_addresses').update({ is_default: false }).eq('user_id', userId);
+<span class="nota">    // ▶ Después se la pone a la elegida</span>
+    await supabase.from('user_addresses').update({ is_default: true }).eq('id', addr.id);
+    loadAddresses(userId);
+  });
+  actions.appendChild(defaultBtn);
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Las direcciones son filas de la tabla <span class="cin">user_addresses</span>. La predeterminada es la que aparece elegida en el carrito.</p>
+<h3>5.5 Soporte</h3>
+<p class="arch">Archivo: js/support-utils.js (líneas 343 a 357)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export async function submitSupportTicket(subject, message, attachments = []) {
+  const { data: { session } } = await supabase.auth.getSession();
+<span class="nota">  // ▶ Hay que haber iniciado sesión para mandar un reclamo</span>
+  if (!session) throw new Error('Debés iniciar sesión para enviar un reclamo.');
+
+  const row = { user_id: session.user.id, subject, message };
+  if (attachments.length) row.attachments = attachments;
+
+<span class="nota">  // ▶ Guarda el reclamo con asunto, mensaje y capturas</span>
+  const { error } = await supabase.from('support_tickets').insert(row);
+  if (error) {
+<span class="nota">    // ▶ Si no se pudo guardar, borra las capturas que ya había subido</span>
+    await removeAttachments(attachments);
+    throw error;
+  }
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/support-utils.js (líneas 398 a 406)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function cancelTicket(ticketId) {
+  const { data, error } = await supabase
+    .from('support_tickets')
+<span class="nota">    // ▶ Cancelar un reclamo es cambiarle el estado</span>
+    .update({ status: 'cancelled' })
+    .eq('id', ticketId)
+    .select('id');
+  if (error) throw error;
+<span class="nota">  // ▶ Si la base no lo cambió, avisa en vez de decir "listo"</span>
+  if (!data?.length) throw new Error('No se pudo cancelar el reclamo. Recargá la página y probá de nuevo.');
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Los reclamos quedan en la tabla <span class="cin">support_tickets</span> y el administrador los responde desde su panel. El estado (Abierto, Pendiente, Cerrado) es una columna de esa tabla.</p>
+<h3>5.6 Ajustes</h3>
+<p class="arch">Archivo: js/settings-utils.js (líneas 48 a 57)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function setPref(name, enabled) {
+  const pref = PREFS[name];
+  if (!pref) return;
+  try {
+<span class="nota">    // ▶ La preferencia se guarda en este navegador</span>
+    localStorage.setItem(pref.key, enabled ? '1' : '0');
+  } catch {
+  }
+<span class="nota">  // ▶ Y se aplica en el momento, sin recargar</span>
+  applyDevicePreferences();
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Las preferencias ("Mostrar ayudas en el carrito", "Avisos emergentes", "Reducir animaciones") son por dispositivo: se pueden tener distintas en el celular y en la computadora.</p>
+<p class="arch">Archivo: js/perfil.js (líneas 364 a 391)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function initSignOutAll() {
+  const btn = document.getElementById("btn-signout-all");
+  if (!btn) return;
+
+  btn.addEventListener("click", async () =&gt; {
+<span class="nota">    // ▶ Primero pregunta si está segura</span>
+    const ok = await confirmDialog(
+      "Vas a cerrar la sesión en todos los dispositivos donde entraste con esta cuenta.\n\n" +
+      "No se borra nada: tus compras, tus favoritos y tus direcciones quedan igual. " +
+      "Solo vas a tener que ingresar de nuevo.",
+      { confirmText: "Sí, cerrar sesión" }
+    );
+    if (!ok) return;
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = "Cerrando…";
+
+    try {
+<span class="nota">      // ▶ Borra las otras cuentas guardadas en el dispositivo</span>
+      clearLinkedAccounts();
+<span class="nota">      // ▶ Cierra la sesión en todos los dispositivos donde se entró con esta cuenta</span>
+      const { error } = await supabase.auth.signOut({ scope: "global" });
+      if (error) throw error;
+      showToast("Listo, cerramos la sesión en todos lados.", "success");
+    } catch (err) {
+      console.error("Error al cerrar la sesión en todos los dispositivos", err);
+      showToast("No pudimos cerrar las otras sesiones. Probá de nuevo en un rato.", "error");
+      btn.disabled = false;
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Es el botón "Cerrar en todos" de Sesión y seguridad.</p>
+<h4>5.6.1 Tus datos son tuyos (eliminar mi cuenta)</h4>
+<p class="arch">Archivo: supabase/functions/delete-account/index.ts (líneas 123 a 163)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const { data: stores, error: storesError } = await admin
+  .from("stores")
+  .select("id, name")
+  .eq("owner_id", user.id);
+if (storesError) throw storesError;
+
+<span class="nota">// ▶ Si la persona es dueña de un comercio, no se borra (se llevaría el comercio entero)</span>
+if (stores &amp;&amp; stores.length &gt; 0) {
+  return jsonResponse({
+    error: "tiene_tienda",
+    message:
+      `Tenés un comercio activo (${stores.map((s) =&gt; s.name).join(", ")}). ` +
+      "Si borramos tu cuenta ahora se irían también sus productos y cupones. " +
+      "Escribinos desde Soporte y lo cerramos o lo transferimos primero.",
+  }, 409);
+}
+
+const { count: openOrders, error: ordersError } = await admin
+  .from("orders")
+  .select("id", { count: "exact", head: true })
+  .eq("client_id", user.id)
+<span class="nota">  // ▶ Tampoco si tiene pedidos en curso</span>
+  .in("status", ORDERS_IN_FLIGHT);
+if (ordersError) throw ordersError;
+
+if (openOrders &amp;&amp; openOrders &gt; 0) {
+  return jsonResponse({
+    error: "pedidos_abiertos",
+    message:
+      `Tenés ${openOrders} pedido${openOrders === 1 ? "" : "s"} en curso. ` +
+      "Esperá a recibirlo" + (openOrders === 1 ? "" : "s") +
+      " o cancelalo con el comercio, y después volvé a pedir la baja.",
+  }, 409);
+}
+
+<span class="nota">// ▶ Si pasó los dos chequeos, borra la cuenta</span>
+const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+if (deleteError) throw deleteError;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Borrar una cuenta necesita una clave secreta que no puede estar en el navegador, por eso lo hace una función en la nube. La cuenta a borrar sale siempre de la sesión de quien lo pide: nadie puede borrar la cuenta de otro. Los pedidos ya entregados quedan en el historial del comercio, sin los datos de la persona.</p>
+<h2>6. Carrito</h2>
+<p>Archivos: <span class="cin">js/carrito.js</span> (la página), <span class="cin">js/cart-utils.js</span> (guardar el carrito), <span class="cin">js/cart-totals.js</span> (la cuenta del total), <span class="cin">js/payment-providers.js</span> (los medios de pago) y, en la base, la función <span class="cin">create_order</span>.</p>
+<h3>6.1 Dónde se guarda el carrito</h3>
+<p class="arch">Archivo: js/cart-utils.js (líneas 11 a 20)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function getCart() {
+  try {
+<span class="nota">    // ▶ El carrito se guarda en el navegador, para que no se pierda al cambiar de página</span>
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    localStorage.removeItem(CART_KEY);
+    return [];
+  }
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/cart-utils.js (líneas 28 a 31)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function saveCart(cart) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+<span class="nota">  // ▶ Si hay sesión, también se copia a la nube: el carrito es el mismo en el celular y en la computadora</span>
+  pushCartToCloud(cart).catch((err) =&gt; console.error('Error al sincronizar el carrito:', err));
+}</pre></td></tr></table>
+<h3>6.2 Checkbox del comercio y del producto</h3>
+<p class="arch">Archivo: js/cart-utils.js (líneas 261 a 268)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function isItemSelected(item) {
+<span class="nota">  // ▶ Un producto entra en la compra salvo que se le haya sacado el tilde</span>
+  return item?.selected !== false;
+}
+
+export function getSelectedItems(cart) {
+<span class="nota">  // ▶ Al pagar, solo viajan los productos tildados; los demás quedan para después</span>
+  return (cart || []).filter(isItemSelected);
+}</pre></td></tr></table>
+<h3>6.3 Vaciar mi carrito</h3>
+<p class="arch">Archivo: js/cart-utils.js (líneas 246 a 249)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function clearCart() {
+  localStorage.removeItem(CART_KEY);
+<span class="nota">  // ▶ También vacía la copia de la nube</span>
+  pushCartToCloud([]).catch((err) =&gt; console.error('Error al sincronizar el carrito:', err));
+}</pre></td></tr></table>
+<h3>6.4 Resumen del pedido (la cuenta del total)</h3>
+<p class="arch">Archivo: js/cart-totals.js (líneas 57 a 98)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function computeCartTotals({
+  items,
+  storeIdOf,
+  shippingOf = () =&gt; undefined,
+  deliveryMethod = 'pickup',
+  couponPercent = 0,
+  couponStoreId = null,
+}) {
+  const subtotalByStore = new Map();
+  for (const item of items || []) {
+    const storeId = storeIdOf(item);
+<span class="nota">    // ▶ Precio por cantidad de cada producto, sumado por comercio</span>
+    const line = Number(item.price) * Number(item.qty);
+    subtotalByStore.set(storeId, (subtotalByStore.get(storeId) || 0) + line);
+  }
+
+  const byStore = [];
+  for (const [storeId, subtotal] of subtotalByStore) {
+<span class="nota">    // ▶ El cupón se aplica solo en el comercio que lo creó (o en todos, si es general)</span>
+    const discountPct = discountPctForStore(couponPercent, couponStoreId, storeId);
+    const discounted = subtotal * (1 - discountPct / 100);
+
+    const fee = shippingOf(storeId)?.deliveryFee ?? DEFAULT_DELIVERY_FEE;
+<span class="nota">    // ▶ Con envío a domicilio se suma el costo de envío de cada comercio</span>
+    const shipping = deliveryMethod === 'delivery' ? fee : 0;
+
+    byStore.push({
+      storeId,
+      subtotal,
+      discountPct,
+      discounted: Math.round(discounted),
+      shipping,
+      total: Math.round(discounted) + shipping,
+    });
+  }
+
+  const subtotal = byStore.reduce((acc, s) =&gt; acc + s.subtotal, 0);
+  const shipping = byStore.reduce((acc, s) =&gt; acc + s.shipping, 0);
+<span class="nota">  // ▶ El total es la suma de lo que se le paga a cada comercio</span>
+  const total = byStore.reduce((acc, s) =&gt; acc + s.total, 0);
+  const discountAmount = subtotal - byStore.reduce((acc, s) =&gt; acc + s.discounted, 0);
+
+  return { subtotal, discountAmount, shipping, total, byStore };
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Esta cuenta es la misma que hace la base de datos al crear el pedido, así el total que ve la persona es el que se cobra. Tiene pruebas automáticas en <span class="cin">js/cart-totals.test.mjs</span>. Los precios son siempre pesos enteros, sin centavos.</p>
+<p class="arch">Archivo: js/carrito.js (líneas 732 a 746)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function applyCashRule() {
+<span class="nota">  // ▶ ¿Eligió envío a domicilio?</span>
+  const delivery = deliveryMethod === 'delivery';
+  const label = document.getElementById('payment-efectivo-label');
+  const radio = document.getElementById('payment-efectivo');
+  const note = document.getElementById('payment-cash-note');
+<span class="nota">  // ▶ Con envío, la opción "Efectivo" se esconde</span>
+  if (label) label.style.display = delivery ? 'none' : '';
+  if (radio) radio.disabled = delivery;
+  if (note) note.hidden = !delivery;
+<span class="nota">  // ▶ Si ya tenía efectivo elegido, pasa sola a Mercado Pago o transferencia</span>
+  if (delivery &amp;&amp; radio?.checked) {
+    const mp = document.getElementById('payment-mercadopago');
+    const fallback = mp &amp;&amp; !mp.disabled ? mp : document.getElementById('payment-transferencia');
+    if (fallback) fallback.checked = true;
+    syncPaymentMethod();
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> El efectivo es solo para retirar en el local. La base de datos también lo controla, por si alguien intenta saltearse la pantalla.</p>
+<h3>6.5 Iniciar pago</h3>
+<p class="arch">Archivo: js/carrito.js (líneas 1299 a 1328)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">// ▶ Arma la lista de lo que se compra: solo el producto, la cantidad y las opciones (nunca el precio)</span>
+const payload = selectedItems.map(item =&gt; ({
+  id: item.id,
+  qty: item.qty,
+  ...(item.options?.length ? { options: item.options } : {}),
+}));
+
+<span class="nota">// ▶ Le pide a la base que cree el pedido (uno por cada comercio)</span>
+const { data, error } = await supabase.rpc('create_order', {
+  cart_payload: payload,
+  coupon_code: appliedCouponCode,
+  p_delivery_method: deliveryMethod,
+  p_payment_method: paymentMethod,
+  p_shipping_address: deliveryMethod === 'delivery' ? shippingAddress : null,
+});
+
+<span class="nota">// ▶ Si algo no está bien (sin stock, cupón vencido), muestra el motivo</span>
+if (error) {
+  console.error('Error al crear la orden:', error);
+  showCartToast(friendlyError(error, 'No se pudo procesar tu pedido.'), 'error');
+  return;
+}
+
+const orders = data?.orders || [];
+const orderIds = orders.map((o) =&gt; o.order_id);
+const total = orders.reduce((acc, o) =&gt; acc + o.total_price, 0);
+
+<span class="nota">// ▶ Según el medio de pago elegido, sigue el paso que corresponde</span>
+const provider = getPaymentProvider(paymentMethod);
+const paymentResult = await provider.pay(paymentMethod === 'mercadopago' ? orderIds.slice(0, 1) : orderIds);</pre></td></tr></table>
+<p><b>En palabras simples:</b> Con transferencia se muestran los datos del comercio para copiar; con efectivo, el código de retiro; con Mercado Pago, se pasa a la página de pago de Mercado Pago (si hay varios comercios, se paga de a uno).</p>
+<h4>6.5.1 El pedido dentro de la base de datos</h4>
+<p class="arch">Archivo: db/schema/145_create_order_sin_envio_gratis.sql (líneas 31 a 37)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">-- ▶ Hay que haber iniciado sesión</span>
+if v_client is null then raise exception 'Debés iniciar sesión para comprar.'; end if;
+if p_delivery_method not in ('pickup', 'delivery') then raise exception 'Método de envío inválido.'; end if;
+if p_payment_method not in ('simulado', 'mercadopago', 'transferencia', 'efectivo') then raise exception 'Método de pago inválido.'; end if;
+if p_payment_method = 'simulado' and coalesce((auth.jwt() -&gt; 'app_metadata' -&gt;&gt; 'role'), 'cliente') != 'admin' then raise exception 'El pago simulado es solo para pruebas internas.'; end if;
+<span class="nota">-- ▶ Con envío, la dirección es obligatoria</span>
+if p_delivery_method = 'delivery' and coalesce(trim(p_shipping_address), '') = '' then raise exception 'Ingresá una dirección de envío.'; end if;
+<span class="nota">-- ▶ Efectivo solo con retiro en el local</span>
+if p_delivery_method = 'delivery' and p_payment_method = 'efectivo' then raise exception 'El pago en efectivo es solo para retiro en el local. Con envío a domicilio elegí Mercado Pago o transferencia.'; end if;
+if cart_payload is null or jsonb_typeof(cart_payload) != 'array' or jsonb_array_length(cart_payload) = 0 then raise exception 'El carrito está vacío.'; end if;</pre></td></tr></table>
+<p class="arch">Archivo: db/schema/145_create_order_sin_envio_gratis.sql (líneas 66 a 83)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">-- ▶ Si no alcanza el stock de algún producto, se cancela toda la compra</span>
+if exists (select 1 from (select product_id, sum(qty) as total_qty from _order_cart_items group by product_id) agg
+           join public.products p on p.id = agg.product_id where p.stock &lt; agg.total_qty) then
+  raise exception 'No hay stock suficiente para uno o más productos del carrito.';
+end if;
+<span class="nota">-- ▶ Arma un pedido por cada comercio del carrito</span>
+for v_store_id in select distinct store_id from _order_cart_items loop
+  select sum(price * qty) into v_subtotal from _order_cart_items where store_id = v_store_id;
+  select delivery_fee into v_store_delivery_fee from public.stores where id = v_store_id;
+  v_store_discount_pct := case when v_coupon_discount_pct is not null and (v_coupon_store_id is null or v_coupon_store_id = v_store_id) then v_coupon_discount_pct else 0 end;
+  if p_delivery_method = 'delivery' then v_delivery_fee := v_store_delivery_fee; else v_delivery_fee := 0; end if;
+<span class="nota">  -- ▶ Total: subtotal con el descuento del cupón, más el envío</span>
+  v_total := round(v_subtotal * (1 - v_store_discount_pct / 100.0))::integer + v_delivery_fee;
+<span class="nota">  -- ▶ Guarda el pedido</span>
+  insert into public.orders (client_id, store_id, status, shipping_address, total_price, delivery_method, payment_method, payment_status, delivery_fee, payment_due_at)
+  values (v_client, v_store_id, 'pending', p_shipping_address, v_total, p_delivery_method, p_payment_method, 'pending', v_delivery_fee, v_due_at)
+  returning id, order_number into v_order_id, v_order_number;
+  insert into public.order_items (order_id, product_id, quantity, price, title, selected_options)
+  select v_order_id, product_id, qty, price, title, selected_options from _order_cart_items where store_id = v_store_id;
+<span class="nota">  -- ▶ Descuenta el stock</span>
+  update public.products p set stock = p.stock - agg.qty
+  from (select product_id, sum(qty) as qty from _order_cart_items where store_id = v_store_id group by product_id) agg
+  where p.id = agg.product_id;</pre></td></tr></table>
+<p><b>En palabras simples:</b> <span class="cin">create_order</span> es la parte más importante del sistema: vuelve a leer los precios reales de la base, controla stock, opciones y cupón, y recién ahí crea los pedidos. Si algo falla en el medio, no se guarda nada.</p>
+<h4>6.5.2 Confirmación del pago de Mercado Pago</h4>
+<p class="arch">Archivo: supabase/functions/mp-webhook/index.ts (líneas 329 a 368)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">// ▶ Suma lo que deberían haber pagado los pedidos</span>
+const expectedTotal = pendingOrders.reduce(
+  (sum: number, o: { total_price: number }) =&gt; sum + Number(o.total_price),
+  0,
+);
+<span class="nota">// ▶ Lo que Mercado Pago dice que se cobró</span>
+const paidAmount = Math.round(Number(payment.transaction_amount ?? 0));
+
+<span class="nota">// ▶ Si se cobró menos, NO se da por pagado: queda "a revisar"</span>
+if (paidAmount &lt; expectedTotal) {
+<span class="omit">  // … (se omiten líneas: marca el pedido "a revisar" y avisa al comercio)</span>
+  return new Response("ok", { status: 200 });
+}
+
+const { data: updated, error } = await supabase
+  .from("orders")
+  .update({
+<span class="nota">    // ▶ Si está todo bien, el pedido queda pagado</span>
+    payment_status: "paid",
+    status: "paid",
+    payment_id: String(payment.id),
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Cuando alguien paga, Mercado Pago avisa a esta función en la nube (un "webhook"). La función no se cree el aviso: vuelve a consultar el pago en Mercado Pago y compara el monto antes de marcar el pedido como pagado. Si después hay una devolución, el pedido vuelve a "a revisar".</p>
+<h2>7. Accesos Rápidos</h2>
+<h3>7.1 Los tres botones del inicio</h3>
+<p class="arch">Archivo: pages/home.html (líneas 119 a 123)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">&lt;div class="category-bar__inner category-bar__inner--home-actions"&gt;
+<span class="nota">  &lt;!-- ▶ Este botón dice "Vender" o "Panel" según la cuenta (ver el módulo 17) --&gt;</span>
+  &lt;a href="./vender.html" class="home-action" id="home-panel-action"&gt;Vender&lt;/a&gt;
+  &lt;a href="./contratar.html" class="home-action"&gt;Contratar&lt;/a&gt;
+  &lt;a href="./servicios.html" class="home-action"&gt;Emergencias&lt;/a&gt;
+&lt;/div&gt;</pre></td></tr></table>
+<h3>7.2 Vender (pedir el alta de un comercio)</h3>
+<p class="arch">Archivo: js/vender.js (líneas 522 a 543)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod"><span class="nota">// ▶ Si tenía una solicitud rechazada, la borra para poder mandar una nueva</span>
+await supabase.from('seller_requests').delete().eq('user_id', user.id).eq('status', 'rejected');
+
+const { error } = await supabase
+  .from('seller_requests')
+<span class="nota">  // ▶ Guarda la solicitud (nombre, CUIT, rubros, dirección, teléfono); queda "pendiente" hasta que un administrador la apruebe</span>
+  .insert({
+    user_id: user.id, 
+    shop_name: nameInput,
+    cuit: cuitInput,
+    category_slugs: categoriesInput,
+    address: addressInput,
+    phone: phoneInput
+  });
+
+if (error) {
+  console.error("Error al solicitar ser vendedor:", error);
+  showToast("Hubo un error al procesar tu solicitud.", "error");
+} else {
+  showToast("¡Solicitud enviada exitosamente! Revisaremos tus datos.", "success");
+<span class="nota">  // ▶ Vuelve a mirar el estado: la persona ve el cartel de "solicitud en revisión"</span>
+  await checkSellerState();
+}
+
+if (submitBtn) setLoading(submitBtn, false, "Registrarme");</pre></td></tr></table>
+<p><b>En palabras simples:</b> La aprobación del administrador está en el módulo 21. Una cuenta puede ser comercio o profesional, no las dos cosas.</p>
+<h3>7.3 Contratar</h3>
+<p class="arch">Archivo: js/contratar.js (líneas 492 a 519)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadProfessionals() {
+  const container = document.getElementById('ct-content');
+  container.textContent = '';
+<span class="nota">  // ▶ Mientras carga, muestra "Cargando el directorio"</span>
+  container.appendChild(buildLoadingBlock('Cargando el directorio'));
+
+  const [{ data: { session } }, { data, error }] = await Promise.all([
+    supabase.auth.getSession(),
+<span class="nota">    // ▶ Una sola consulta trae a todos los profesionales con reseñas, servicios, horarios, zonas y fotos</span>
+    supabase.rpc('get_professionals_directory'),
+  ]);
+  currentUserId = session?.user?.id || null;
+
+  if (error) {
+    console.error('Error al cargar los profesionales:', error);
+    container.appendChild(buildEmpty('No pudimos cargar el directorio. Probá de nuevo en un rato.'));
+    return;
+  }
+
+  const professionals = data || [];
+
+  if (professionals.length === 0) {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p class="arch">Archivo: js/contratar.js (líneas 99 a 108)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function registrarMetrica(professionalId, evento) {
+  supabase
+<span class="nota">    // ▶ Suma una visita, un llamado o un WhatsApp a las estadísticas del profesional</span>
+    .rpc('increment_professional_metric', {
+      p_professional_id: professionalId,
+      p_event_type: evento,
+    })
+    .then(({ error }) =&gt; {
+      if (error) console.warn('No se pudo registrar la métrica:', error.message);
+    });
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Las estadísticas del panel de profesional (módulo 19) salen de estos registros.</p>
+<h3>7.4 Emergencias</h3>
+<p class="arch">Archivo: js/servicios.js (líneas 102 a 134)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadServicios() {
+  const container = document.getElementById('sv-content');
+  container.textContent = '';
+  container.appendChild(buildLoadingBlock('Cargando los números'));
+
+  const { data, error } = await supabase
+<span class="nota">    // ▶ Los números están en la tabla emergency_contacts; el administrador los carga desde su panel</span>
+    .from('emergency_contacts')
+    .select('id, category, name, phone, notes, display_order')
+<span class="nota">    // ▶ Solo los que están activos</span>
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  container.textContent = '';
+
+  if (error) {
+    console.error('Error al cargar los servicios:', error);
+    container.appendChild(buildEmpty('No pudimos cargar los números. Probá de nuevo en un rato.'));
+    return;
+  }
+
+  const contacts = data || [];
+
+  if (contacts.length === 0) {
+    container.appendChild(buildEmpty('Todavía no cargamos números de servicios. Vas a encontrarlos acá pronto.'));
+    return;
+  }
+
+<span class="nota">  // ▶ Los agrupa en tarjetas: Emergencias y Veterinarias</span>
+  CATEGORIES.forEach((category) =&gt; {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<h2>8. Banner principal</h2>
+<p>Archivo: <span class="cin">js/home.js</span> (todo el inicio). El banner es una tira de imágenes que se desliza con el dedo en el celular; las flechas y los puntitos mueven esa misma tira.</p>
+<h3>8.1 Flechas</h3>
+<p class="arch">Archivo: js/home.js (líneas 563 a 596)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function initHeroCarousel() {
+  const track = document.getElementById('hero-track');
+  const dotsWrap = document.getElementById('hero-dots');
+  const prevBtn = document.getElementById('hero-prev');
+  const nextBtn = document.getElementById('hero-next');
+  if (!track) return;
+
+  const slides = Array.from(track.querySelectorAll('.hero__slide'));
+<span class="nota">  // ▶ Con una sola imagen no muestra flechas ni puntitos</span>
+  if (slides.length &lt;= 1) {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+    if (dotsWrap) dotsWrap.style.display = 'none';
+    return;
+  }
+
+  const currentIndex = () =&gt; Math.round(track.scrollLeft / track.clientWidth);
+
+<span class="nota">  // ▶ Ir a una imagen: después de la última vuelve a la primera</span>
+  const goTo = (index) =&gt; {
+    const target = (index + slides.length) % slides.length;
+    track.scrollTo({ left: target * track.clientWidth, behavior: 'smooth' });
+  };
+
+  const dots = slides.map((_, i) =&gt; {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'hero__dot';
+    dot.setAttribute('aria-label', `Ir a la promoción ${i + 1}`);
+<span class="nota">    // ▶ Cada puntito lleva a su imagen</span>
+    dot.addEventListener('click', () =&gt; goTo(i));
+    dotsWrap?.appendChild(dot);
+    return dot;
+  });
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<h3>8.2 Farmacias de turno</h3>
+<p class="arch">Archivo: js/farmacias.js (líneas 62 a 73)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function shiftWindow(shift) {
+  const start = combine(shift.shift_date, shift.opens_at);
+  let end = combine(shift.shift_date, shift.closes_at);
+<span class="nota">  // ▶ Si el turno "cierra antes de abrir" (de 8:00 a 8:00), cierra al día siguiente</span>
+  if (end &lt;= start) end = addDays(end, 1);
+  return { start, end };
+}
+
+function isActiveNow(shift, now = new Date()) {
+  const { start, end } = shiftWindow(shift);
+<span class="nota">  // ▶ ¿La hora actual está dentro del turno?</span>
+  return now &gt;= start &amp;&amp; now &lt; end;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Los turnos se cargan en la tabla <span class="cin">pharmacy_shifts</span> desde el panel de administrador. Como cada turno dura de 8:00 a 8:00, a las 3 de la mañana del domingo la farmacia de turno es la del sábado: por eso hace falta esta cuenta.</p>
+<h2>9. Comercios destacados</h2>
+<p class="arch">Archivo: js/home.js (líneas 747 a 772)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadStores() {
+  const carousel = document.getElementById('stores-carousel');
+  if (!carousel) return;
+
+  try {
+    const [storesRes, boosts] = await Promise.all([
+<span class="nota">      // ▶ Solo comercios aprobados</span>
+      supabase.from('stores').select('id, name, logo_url').eq('status', 'approved').limit(15),
+<span class="nota">      // ▶ Y cuáles contrataron un combo de "Impulsá tus ventas"</span>
+      loadActiveBoosts(),
+    ]);
+    if (storesRes.error) throw storesRes.error;
+
+    const boostedIds = new Set(boosts.map((b) =&gt; b.store_id));
+    let stores = storesRes.data || [];
+    const missing = [...boostedIds].filter((id) =&gt; !stores.some((s) =&gt; s.id === id));
+    if (missing.length) {
+      const extra = await supabase.from('stores').select('id, name, logo_url').eq('status', 'approved').in('id', missing);
+      if (!extra.error &amp;&amp; extra.data) stores = [...stores, ...extra.data];
+    }
+<span class="nota">    // ▶ Los que pagaron el combo van primero</span>
+    stores = [...stores].sort((a, b) =&gt; Number(boostedIds.has(b.id)) - Number(boostedIds.has(a.id)));
+
+    carousel.innerHTML = '';
+
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada logo es un link a la página del comercio (<span class="cin">comercio.html?id=…</span>). Las flechas mueven la fila de logos.</p>
+<h2>10. Banner promociones</h2>
+<p>Archivos: <span class="cin">js/home-promos-utils.js</span> (las reglas) y <span class="cin">js/home.js</span> (el dibujo). Cada espacio de banner es una fila de la tabla <span class="cin">home_promos</span>: el administrador elige qué comercio lo usa y el comercio carga la imagen.</p>
+<p class="arch">Archivo: js/home-promos-utils.js (líneas 59 a 67)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function isPromoLive(promo) {
+  return Boolean(
+    promo
+<span class="nota">    // ▶ El administrador la tiene encendida</span>
+    &amp;&amp; promo.is_active
+    &amp;&amp; promo.store_id
+<span class="nota">    // ▶ El comercio ya cargó la imagen</span>
+    &amp;&amp; promo.image_url
+<span class="nota">    // ▶ Y el comercio está aprobado</span>
+    &amp;&amp; promo.stores?.status === 'approved'
+  );
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/home-promos-utils.js (líneas 37 a 46)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function groupLivePromosBySlot(rows) {
+  const bySlot = new Map();
+<span class="nota">  // ▶ Se quedan solo las promos listas para mostrarse</span>
+  (rows || []).filter(isPromoLive)
+<span class="nota">    // ▶ Cada espacio puede tener hasta 3 publicidades, que pasan solas</span>
+    .sort((a, b) =&gt; promoPosition(a) - promoPosition(b))
+    .forEach((promo) =&gt; {
+      if (!bySlot.has(promo.slot)) bySlot.set(promo.slot, []);
+      bySlot.get(promo.slot).push(promo);
+    });
+  return bySlot;
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/home-promos-utils.js (líneas 74 a 77)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function promoHref(promo) {
+  if (!promo?.store_id) return null;
+<span class="nota">  // ▶ Tocar la imagen ampliada lleva a la página del comercio</span>
+  return `./comercio.html?id=${encodeURIComponent(promo.store_id)}`;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Si un espacio no tiene una promo lista, se muestra el banner fijo de siempre.</p>
+<h2>11. Productos recomendados</h2>
+<p class="arch">Archivo: js/interests.js (líneas 16 a 23)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function rememberViewedProduct(productId) {
+  if (!productId) return;
+  try {
+<span class="nota">    // ▶ Anota qué producto se miró y cuándo (en este navegador)</span>
+    localStorage.setItem(VIEWED_KEY, JSON.stringify(addView(loadViewedProducts(), productId, Date.now())));
+  } catch {
+  }
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/interests-utils.js (líneas 48 a 60)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function weightCategories(views, categoryByProduct, now) {
+  const weights = new Map();
+  for (const v of normalizeViews(views)) {
+    const cat = categoryByProduct[v.id];
+    if (!cat) continue;
+    const days = Math.max(0, (now - v.at) / DAY_MS);
+<span class="nota">    // ▶ Lo que se miró hace 14 días vale la mitad que lo de hoy</span>
+    weights.set(cat, (weights.get(cat) || 0) + Math.pow(0.5, days / HALF_LIFE_DAYS));
+  }
+  return [...weights.entries()]
+    .map(([categoryId, weight]) =&gt; ({ categoryId, weight }))
+    .sort((a, b) =&gt; b.weight - a.weight)
+<span class="nota">    // ▶ Se quedan las categorías más miradas (hasta 5)</span>
+    .slice(0, MAX_CATEGORIES);
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/home.js (líneas 348 a 369)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadInterestProducts(limit) {
+  try {
+    const views = loadViewedProducts();
+    if (!views.length) return [];
+    const ids = views.map((v) =&gt; v.id);
+
+    const { data: viewedRows, error } = await supabase.from('products').select('id, category_id').in('id', ids);
+    if (error || !viewedRows?.length) return [];
+    const categoryByProduct = Object.fromEntries(viewedRows.filter((r) =&gt; r.category_id).map((r) =&gt; [r.id, r.category_id]));
+
+<span class="nota">    // ▶ Calcula cuánto interesa cada categoría</span>
+    const weighted = weightCategories(views, categoryByProduct, Date.now());
+    if (!weighted.length) return [];
+
+    const results = await Promise.all(weighted.map((w) =&gt;
+      supabase.from('products').select(PRODUCT_SELECT)
+        .eq('is_active', true).gt('stock', 0)
+        .eq('category_id', w.categoryId)
+<span class="nota">        // ▶ Sin repetir lo que ya miró</span>
+        .not('id', 'in', `(${ids.join(',')})`)
+        .order('created_at', { ascending: false })
+        .limit(limit * 2)
+    ));
+    const byCategory = {};
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Si alguien mira varios productos de ropa, en el inicio le aparecen más productos de ropa. Se guarda solo en ese navegador: sin historial, el inicio muestra la lista general.</p>
+<h2>12. Comercios cerca tuyo</h2>
+<p class="arch">Archivo: js/home.js (líneas 717 a 737)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">navigator.geolocation.getCurrentPosition(
+  (position) =&gt; {
+<span class="nota">    // ▶ Guarda la ubicación para no volver a pedirla en esta visita</span>
+    saveNearbyLocation(position.coords.latitude, position.coords.longitude);
+<span class="nota">    // ▶ Muestra el mapa centrado en esa ubicación</span>
+    renderMap(position.coords.latitude, position.coords.longitude);
+  },
+  (error) =&gt; {
+    console.error('[nearby-map] geolocation error', { code: error.code, message: error.message });
+<span class="nota">    // ▶ Si la persona no dio permiso, se le explica cómo habilitarlo</span>
+    if (error.code === error.PERMISSION_DENIED) {
+      renderError('No nos diste permiso para usar tu ubicación. Podés habilitarlo desde la configuración del navegador.');
+    } else if (error.code === error.POSITION_UNAVAILABLE) {
+      renderError('No pudimos determinar tu ubicación (falla del sistema, no del sitio). Probá de nuevo en un rato.');
+    } else if (error.code === error.TIMEOUT) {
+      renderError('Tardó demasiado en responder. Probá de nuevo.');
+    } else {
+      renderError('No pudimos obtener tu ubicación. Probá de nuevo.');
+    }
+  },
+  { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+);</pre></td></tr></table>
+<p class="arch">Archivo: js/home.js (líneas 680 a 701)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const renderMap = (lat, lng) =&gt; {
+  panel.innerHTML = '';
+
+  const iframe = document.createElement('iframe');
+  iframe.className = 'nearby-map__iframe';
+<span class="nota">  // ▶ Un mapa de Google Maps metido en la página</span>
+  iframe.src = `https://www.google.com/maps?q=${lat},${lng}&amp;z=17&amp;output=embed`;
+  iframe.loading = 'lazy';
+  iframe.setAttribute('title', 'Mapa centrado en tu ubicación');
+  iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+  panel.appendChild(iframe);
+
+  const openLink = document.createElement('a');
+  openLink.className = 'nearby-map__open-link';
+<span class="nota">  // ▶ El link "Ver mi ubicación en Google Maps"</span>
+  openLink.href = `https://www.google.com/maps/search/?api=1&amp;query=${lat},${lng}`;
+  openLink.target = '_blank';
+  openLink.rel = 'noopener noreferrer';
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Al tocar "Usar mi ubicación", el navegador pide permiso. La ubicación no se manda a la base de datos: solo se usa para centrar el mapa.</p>
+<h2>13. Esenciales para tu casa</h2>
+<p class="arch">Archivo: js/home.js (líneas 532 a 557)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadEssentials() {
+  const grid = document.getElementById('essentials-grid');
+  if (!grid) return;
+
+  try {
+    const { data: products, error } = await supabase
+      .from('products')
+      .select(`${PRODUCT_SELECT}, categories!inner(slug)`)
+      .eq('is_active', true)
+<span class="nota">      // ▶ Son los productos de Almacén, Limpieza y Lácteos</span>
+      .in('categories.slug', ['almacen', 'limpieza', 'lacteos'])
+      .limit(24);
+
+    if (error) throw error;
+
+    if (!products || products.length === 0) {
+      renderEmptyState(grid, 'Aún no hay esenciales cargados.', 'fa-house');
+      return;
+    }
+
+<span class="nota">    // ▶ Se muestran de a 4, con flechitas para pasar</span>
+    essentialsPager.setItems(products);
+
+  } catch (err) {
+    console.error('Error fetching essentials:', err);
+    renderErrorState(grid, 'No se pudieron cargar los esenciales.', loadEssentials);
+  }
+}</pre></td></tr></table>
+<h2>14. Ofertas</h2>
+<p class="arch">Archivo: js/home.js (líneas 498 a 527)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadOffers() {
+  const grid = document.getElementById('offers-grid');
+  if (!grid) return;
+
+  try {
+    const nowIso = new Date().toISOString();
+    const { data: products, error } = await supabase
+      .from('products')
+      .select(PRODUCT_SELECT)
+      .eq('is_active', true)
+<span class="nota">      // ▶ Productos con "precio anterior" cargado</span>
+      .not('compare_at_price', 'is', null)
+<span class="nota">      // ▶ Y cuya oferta no venció</span>
+      .or(`offer_expires_at.is.null,offer_expires_at.gt.${nowIso}`)
+      .limit(24);
+
+    if (error) throw error;
+
+<span class="nota">    // ▶ Solo si el precio anterior es mayor al actual</span>
+    const offers = (products || []).filter((p) =&gt; p.compare_at_price &gt; p.price);
+
+    if (offers.length === 0) {
+      renderEmptyState(grid, 'No hay ofertas activas por ahora.', 'fa-tags');
+      return;
+    }
+
+    offersPager.setItems(offers);
+
+  } catch (err) {
+    console.error('Error fetching offers:', err);
+    renderErrorState(grid, 'No se pudieron cargar las ofertas.', loadOffers);
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Una oferta es un producto con "precio anterior" (tachado) más alto que el actual. Cuando pasa la fecha de vencimiento que cargó el comercio, deja de aparecer acá sola.</p>
+<h2>15. Banners inferiores</h2>
+<p class="arch">Archivo: js/home-promos-utils.js (líneas 11 a 18)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export const HOME_PROMO_SLOTS = [
+<span class="nota">  // ▶ Los tres espacios de arriba (a, b y c)</span>
+  { slot: 'mosaic_a', label: 'Mosaico de arriba · grande (izquierda)', ratio: '16:9 (ej. 1600x900)' },
+  { slot: 'mosaic_b', label: 'Mosaico de arriba · chico (arriba a la derecha)', ratio: '16:9 (ej. 900x507)' },
+  { slot: 'mosaic_c', label: 'Mosaico de arriba · chico (abajo a la derecha)', ratio: '16:9 (ej. 900x507)' },
+<span class="nota">  // ▶ Los tres de abajo (d, e y f), con las medidas recomendadas de la imagen</span>
+  { slot: 'mosaic_d', label: 'Mosaico de abajo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
+  { slot: 'mosaic_e', label: 'Mosaico de abajo · izquierda', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
+];</pre></td></tr></table>
+<p><b>En palabras simples:</b> Funcionan igual que los banners de promociones (módulo 10): cada espacio es de un comercio y tocarlo lleva a su página.</p>
+<h2>16. Footer</h2>
+<h3>16.1 Botón de subir</h3>
+<p class="arch">Archivo: js/scroll-top-btn.js (líneas 13 a 20)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">if (btn) {
+<span class="nota">  // ▶ Aparece cuando se bajó más de 400 píxeles</span>
+  const toggle = () =&gt; btn.classList.toggle('scroll-top--visible', window.scrollY &gt; 400);
+  window.addEventListener('scroll', toggle, { passive: true });
+  toggle();
+  btn.addEventListener('click', () =&gt; {
+<span class="nota">    // ▶ Al tocarlo sube hasta arriba (sin animación si se pidió "Reducir animaciones")</span>
+    window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
+  });
+}</pre></td></tr></table>
+<h3>16.2 Términos y condiciones, Comprá, Vendé, Ayuda y Redes sociales</h3>
+<p>Son links comunes (etiquetas <span class="cin">&lt;a href="…"&gt;</span> en el HTML del footer) a <span class="cin">terminos.html</span>, <span class="cin">privacidad.html</span>, <span class="cin">info.html</span>, la búsqueda por categoría y las redes. No tienen código JavaScript.</p>
+<h3>16.3 Preguntas frecuentes (FAQ)</h3>
+<p class="arch">Archivo: pages/info.html (líneas 219 a 230)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">&lt;details class="faq-item"&gt;
+<span class="nota">  &lt;!-- ▶ La pregunta; al tocarla se despliega la respuesta (el "+"), sin necesidad de JavaScript --&gt;</span>
+  &lt;summary&gt;¿Cómo compro en Baradero Local?&lt;/summary&gt;
+  &lt;div class="faq-answer"&gt;
+    &lt;ol&gt;
+      &lt;li&gt;Buscá el producto que necesitás y, si tiene opciones (color, sabor, talle), elegí la tuya.&lt;/li&gt;
+      &lt;li&gt;Agregalo al carrito. Podés sumar productos de varios comercios.&lt;/li&gt;
+      &lt;li&gt;En el carrito elegí si lo &lt;strong&gt;retirás en el local&lt;/strong&gt; o lo querés &lt;strong&gt;con envío a domicilio&lt;/strong&gt;, y cómo vas a pagar.&lt;/li&gt;
+      &lt;li&gt;Tocá &lt;strong&gt;Iniciar pago&lt;/strong&gt; y seguí los pasos.&lt;/li&gt;
+    &lt;/ol&gt;
+    &lt;p&gt;Si tu carrito tiene productos de más de un comercio, la compra se divide en un pedido por comercio: cada uno prepara y entrega lo suyo.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/details&gt;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada pregunta es un bloque <span class="cin">&lt;details&gt;</span>. Los 5 botones de arriba son links a cada grupo; <span class="cin">js/info-faq.js</span> hace que la página baje suave y marque el grupo en azul por 3 segundos.</p>
+<h2>17. Paneles</h2>
+<p>El botón "Vender" del inicio pasa a decir "Panel" para quien ya tiene uno. Saber qué panel tiene cada cuenta lo resuelve <span class="cin">getPanelAccess</span> en <span class="cin">js/auth-utils.js</span>.</p>
+<p class="arch">Archivo: js/auth-utils.js (líneas 270 a 301)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function computePanelAccess(user) {
+
+  const role = user.app_metadata?.role;
+<span class="nota">  // ▶ Administrador o moderador: tiene el panel de administración</span>
+  const isAdmin = role === "admin" || role === "moderador";
+
+<span class="nota">  // ▶ El rol viene en la sesión: vendedor y repartidor se saben al instante</span>
+  if (role === "vendedor") return { isAdmin: false, seller: "vendedor" };
+  if (role === "repartidor") return { isAdmin: false, seller: "repartidor" };
+
+<span class="nota">  // ▶ Si no, se fija si es dueño de un comercio, empleado de uno o profesional publicado</span>
+  const [storeRes, staffRes, profRes] = await Promise.all([
+    supabase.from("stores").select("id").eq("owner_id", user.id).limit(1),
+    supabase.from("store_staff").select("store_id").eq("user_id", user.id).limit(1),
+    supabase.from("professionals").select("id").eq("owner_id", user.id).limit(1),
+  ]);
+
+  let seller = null;
+<span class="nota">  // ▶ Con comercio (propio o como empleado): panel de comerciante; si no, de profesional</span>
+  if (storeRes.data?.length || staffRes.data?.length) seller = "vendedor";
+  else if (profRes.data?.length) seller = "profesional";
+
+  const failed = !!(storeRes.error || staffRes.error || profRes.error);
+  return { isAdmin, seller, failed };
+}</pre></td></tr></table>
+<p class="arch">Archivo: js/home.js (líneas 137 a 160)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function renderPanelAction({ isAdmin, seller, role }) {
+  const link = document.getElementById('home-panel-action');
+  if (!link) return;
+  link.setAttribute('data-ready', '1');
+
+  const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
+
+  if (!isAdmin || !seller) {
+<span class="nota">    // ▶ Con un solo panel, "Vender" pasa a decir "Panel" y lleva directo</span>
+    link.textContent = 'Panel';
+    link.href = isAdmin ? './admin.html' : `./${SELLER_PANEL_PAGES[seller]}`;
+    link.classList.remove('home-action--menu');
+    link.querySelector('i')?.remove();
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'home-action-menu';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'home-action home-action--menu';
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+<span class="nota">  // ▶ Con dos paneles (por ejemplo, comerciante y administrador) se arma un menú para elegir</span>
+  btn.append('Panel');
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> La respuesta se guarda en el navegador para que la próxima vez el botón aparezca con el texto correcto desde el primer momento.</p>
+<h2>18. Panel de comerciante</h2>
+<p>Archivos: <span class="cin">pages/vender.html</span> y <span class="cin">js/vender.js</span> (el archivo más grande del proyecto), con <span class="cin">js/vender-shell.js</span> (el menú lateral) y <span class="cin">js/comercio.js</span> (la página pública del comercio).</p>
+<h3>18.1 Vista previa de tu local (colores del encabezado)</h3>
+<p class="arch">Archivo: js/comercio.js (líneas 318 a 334)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">bgInput.addEventListener('change', async () =&gt; {
+<span class="nota">  // ▶ Guarda el color de fondo elegido en la ficha del comercio</span>
+  const ok = await persist({ header_bg_color: bgInput.value });
+  if (ok) showToast('Color guardado', 'success');
+});
+fgInput.addEventListener('change', async () =&gt; {
+<span class="nota">  // ▶ Guarda el color de las letras</span>
+  const ok = await persist({ header_text_color: fgInput.value });
+  if (ok) showToast('Color guardado', 'success');
+});
+resetBtn.addEventListener('click', async () =&gt; {
+<span class="nota">  // ▶ "Restaurar" vuelve a los colores de siempre</span>
+  const ok = await persist({ header_bg_color: null, header_text_color: null });
+  if (ok) {
+    applyHeaderColors(header, null, null);
+    bgInput.value = '#f5f7fa';
+    fgInput.value = '#1a202c';
+    showToast('Color por defecto restaurado', 'success');
+  }
+});</pre></td></tr></table>
+<p><b>En palabras simples:</b> El lápiz de color solo aparece para el dueño. Los colores se guardan en la tabla <span class="cin">stores</span> y los ven todos. En modo oscuro, si el color elegido no se lee bien, la página lo ajusta sola.</p>
+<h3>18.2 Perfil de mi comercio (transferencia bancaria obligatoria)</h3>
+<p class="arch">Archivo: db/schema/133_transfer_obligatoria_y_sin_efectivo_en_envio.sql (líneas 49 a 76)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">create or replace function public.require_store_transfer_alias()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_alias text;
+  v_cbu text;
+begin
+<span class="nota">  -- ▶ El administrador no tiene esta restricción</span>
+  if (select auth.jwt()) -&gt; 'app_metadata' -&gt;&gt; 'role' = 'admin' then
+    return new;
+  end if;
+
+  if tg_op = 'UPDATE' and new.store_id is not distinct from old.store_id then
+    return new;
+  end if;
+
+<span class="nota">  -- ▶ Lee el alias y el CBU/CVU del comercio</span>
+  select transfer_alias, transfer_cbu into v_alias, v_cbu from public.stores where id = new.store_id;
+
+<span class="nota">  -- ▶ Si no tiene ninguno de los dos, no deja publicar el producto y explica por qué</span>
+  if coalesce(btrim(v_alias), '') = '' and coalesce(btrim(v_cbu), '') = '' then
+    raise exception 'Para publicar productos, el comercio tiene que cargar un medio de transferencia: alias o CBU/CVU (Perfil de mi comercio → Transferencia bancaria).'
+      using errcode = 'P0001', hint = 'missing_transfer_alias';
+  end if;
+
+  return new;
+end;
+$$;</pre></td></tr></table>
+<p><b>En palabras simples:</b> Es un trigger que corre cada vez que se publica un producto. Así nadie le compra por transferencia a un comercio que no tiene dónde recibirla. Mientras falte, el panel muestra un cartel rojo y llega un recordatorio cada 6 horas.</p>
+<h3>18.3 Publicaciones (publicar un producto)</h3>
+<p class="arch">Archivo: js/vender.js (líneas 5806 a 5837)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">const productData = {
+<span class="nota">  // ▶ Junta los datos del formulario: nombre, precio, stock, oferta y descripción</span>
+  title: titleValue,
+  price: priceValue,
+  stock: parseInt(stockValue),
+  compare_at_price: comparePriceValue || null,
+  offer_expires_at: comparePriceValue &amp;&amp; offerExpiresValue ? offerExpiresValue : null,
+  category_id: null,
+  description: document.getElementById('prod-desc').value.trim(),
+};
+
+const slug = getProductCategorySlug();
+<span class="nota">// ▶ Busca el código de la categoría elegida</span>
+const { data: catData } = await supabase.from('categories').select('id').eq('slug', slug).single();
+if (catData) productData.category_id = catData.id;
+
+let error;
+let savedProductId = editingProductId;
+<span class="nota">// ▶ Si se está editando, actualiza el producto</span>
+if (isEditing) {
+  ({ error } = await supabase.from('products').update(productData).eq('id', editingProductId));
+} else {
+  productData.seller_id = user.id;
+  productData.store_id = currentStoreId;
+<span class="nota">  // ▶ Si es nuevo, lo crea a nombre del comercio</span>
+  const { data: inserted, error: insertError } = await supabase.from('products').insert([productData]).select('id').single();
+  error = insertError;
+  savedProductId = inserted?.id;
+}
+
+<span class="nota">// ▶ Si falta el alias o CBU, la base lo rechaza (ver 18.2) y el panel lo explica</span>
+if (error &amp;&amp; error.hint === 'missing_transfer_alias') {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Las fotos se suben después, a la carpeta del producto en el almacenamiento de Supabase. Las opciones (colores, talles, sabores) se guardan en las tablas <span class="cin">product_options</span> y <span class="cin">product_option_values</span>.</p>
+<h3>18.4 Ventas: pedidos en vivo</h3>
+<p class="arch">Archivo: js/vender.js (líneas 1260 a 1281)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadOrders(ids = null) {
+  if (!currentStoreId) return false;
+
+  if (!ordRpcMissing) {
+<span class="nota">    // ▶ Una sola consulta trae los pedidos con sus productos, comprobantes, entrega y comprador</span>
+    const { data, error } = await supabase.rpc('get_store_orders', {
+      p_store_id: currentStoreId,
+<span class="nota">      // ▶ Si se le pasan números de pedido, trae solo esos (los que cambiaron)</span>
+      p_order_ids: ids,
+      p_limit: ORDERS_LIMIT,
+    });
+    if (!error) {
+      const fresh = (data || []).map(absorbOrderRow);
+      if (!ids) {
+        ordCache = fresh;
+      } else {
+        const byId = new Map(fresh.map((o) =&gt; [o.id, o]));
+        const kept = ordCache.filter((o) =&gt; byId.has(o.id) || !ids.includes(o.id)).map((o) =&gt; byId.get(o.id) || o);
+        const added = fresh.filter((o) =&gt; !ordCache.some((c) =&gt; c.id === o.id));
+<span class="nota">        // ▶ Mezcla lo nuevo con lo que ya estaba en pantalla, sin redibujar todo</span>
+        ordCache = [...kept, ...added].sort(byNewest).slice(0, ORDERS_LIMIT);
+      }
+      return true;
+    }
+    if (error.code === 'PGRST202' || error.code === '42883' || /get_store_orders/.test(error.message || '')) {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Con el tiempo real (módulo 22.1), cuando entra un pedido nuevo aparece solo en la lista, resaltado, y suena un aviso. Junto al título se ve "En vivo" mientras la conexión está activa.</p>
+<p class="arch">Archivo: js/vender.js (líneas 2012 a 2024)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function advanceOrder(order, next, btn) {
+  if (next.status === 'completed') {
+    await deliverOrder(order);
+    return;
+  }
+  const question = next.status === 'ready_for_pickup'
+    ? `¿El pedido ${orderLabel(order)} ya está listo para retirar? Le avisamos al comprador.`
+    : `¿Ya salió el pedido ${orderLabel(order)}? Le avisamos al comprador que está en camino.`;
+<span class="nota">  // ▶ Pregunta antes de avisarle al comprador</span>
+  const ok = await confirmDialog(question, { confirmText: next.label });
+  if (!ok) return;
+<span class="nota">  // ▶ La base cambia el estado ("listo para retirar" o "en camino") y le manda el aviso al comprador</span>
+  await runOrderRpc('advance_order_status', { p_order_id: order.id, p_status: next.status },
+    next.status === 'ready_for_pickup' ? 'Listo. Le avisamos al comprador que puede pasar a retirarlo.' : 'Listo. Le avisamos al comprador que va en camino.', btn);
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> El estado de un pedido no se puede cambiar a mano desde la página: solo con estas funciones de la base, que controlan que el paso tenga sentido.</p>
+<h3>18.5 Mis cupones</h3>
+<p class="arch">Archivo: js/vender.js (líneas 3391 a 3424)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function setupMyCouponForm() {
+  const form = document.getElementById('my-coupon-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) =&gt; {
+    e.preventDefault();
+<span class="nota">    // ▶ El código se guarda en mayúsculas</span>
+    const code = document.getElementById('my-coupon-code').value.trim().toUpperCase();
+    const discountNum = parseInt(document.getElementById('my-coupon-discount').value, 10);
+    const expiresAt = document.getElementById('my-coupon-expires').value;
+
+<span class="nota">    // ▶ El descuento tiene que ser entre 1% y 100%</span>
+    if (!code || !Number.isInteger(discountNum) || discountNum &lt; 1 || discountNum &gt; 100) {
+      showToast('Código y descuento (1-100) son obligatorios.', 'error');
+      return;
+    }
+
+<span class="nota">    // ▶ Crea el cupón para este comercio</span>
+    const { error } = await supabase.from('coupons').insert({
+      code,
+      discount_percentage: discountNum,
+      expires_at: expiresAt || null,
+      is_active: true,
+      store_id: currentStoreId,
+    });
+
+    if (error) {
+      showToast('No se pudo crear el cupón (¿el código ya está en uso?).', 'error');
+      console.error(error);
+      return;
+    }
+
+    showToast('Cupón creado — ya se puede usar en el checkout.', 'success');
+    form.reset();
+    renderMyCoupons();
+  });
+}</pre></td></tr></table>
+<h3>18.6 Empleados</h3>
+<p class="arch">Archivo: js/vender.js (líneas 3552 a 3577)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">function setupStoreStaffForm() {
+  const form = document.getElementById('store-staff-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) =&gt; {
+    e.preventDefault();
+    const emailInput = document.getElementById('store-staff-email');
+    const email = emailInput.value.trim();
+    if (!email) return;
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    setLoading(submitBtn, true, 'Agregar');
+
+<span class="nota">    // ▶ La base busca la cuenta con ese email y la suma como empleada (solo si quien lo pide es el dueño)</span>
+    const { error } = await supabase.rpc('add_store_staff', { p_store_id: currentStoreId, p_email: email });
+
+    if (error) {
+      showToast(friendlyError(error, 'No se pudo agregar al empleado.'), 'error');
+      console.error(error);
+    } else {
+      showToast('Empleado agregado — ya puede entrar a este panel.', 'success');
+      form.reset();
+      renderStoreStaff();
+    }
+    setLoading(submitBtn, false, 'Agregar');
+  });
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> El empleado entra al mismo panel, pero solo ve las secciones que el dueño le habilite (permisos).</p>
+<h3>18.7 Impulsá tus ventas</h3>
+<p class="arch">Archivo: js/vender.js (líneas 5563 a 5588)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function chooseBoostPlan(plan) {
+  if (boostBusy) return;
+  if (!currentStoreId) return;
+  const renewing = describeBoostState(boostPurchases).active?.planId === plan.id;
+<span class="nota">  // ▶ Muestra el precio y la duración antes de pagar</span>
+  const ok = await confirmDialog(
+    `Vas a pagar ${formatPrice(plan.price)} con Mercado Pago por el ${plan.name}. ` +
+    (renewing
+      ? `Se suman ${plan.duration_days} días a continuación de los que ya tenés.`
+      : `Empieza cuando se acredite el pago y dura ${plan.duration_days} días.`),
+    { title: renewing ? `Renovar el ${plan.name}` : `Contratar el ${plan.name}`, confirmText: 'Ir a pagar' },
+  );
+  if (!ok) return;
+
+  boostBusy = true;
+  document.querySelectorAll('#boost-plans .bp-card__btn').forEach((b) =&gt; { b.disabled = true; });
+  try {
+<span class="nota">    // ▶ Una función en la nube arma el cobro en Mercado Pago</span>
+    const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
+      body: { store_id: currentStoreId, plan_id: plan.id },
+    });
+    const url = data?.init_point || data?.sandbox_init_point;
+    if (error || !url) {
+      showToast(await friendlyFunctionError(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
+      return;
+    }
+<span class="nota">    // ▶ Lleva a la página de pago de Mercado Pago</span>
+    window.location.href = url;
+  } catch (err) {
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Los precios de los combos están en la tabla <span class="cin">boost_plans</span>. Cuando Mercado Pago confirma el pago, el combo se activa solo y el comercio aparece primero en "Comercios destacados".</p>
+<h2>19. Panel de profesional</h2>
+<p>Archivos: <span class="cin">pages/profesional.html</span> y <span class="cin">js/profesional.js</span>, con un archivo por sección: <span class="cin">profesional-servicios.js</span>, <span class="cin">profesional-disponibilidad.js</span> (horarios y zonas), <span class="cin">profesional-galeria.js</span> (fotos), <span class="cin">profesional-consultas.js</span>, <span class="cin">profesional-resenas.js</span> y <span class="cin">profesional-metricas.js</span> (estadísticas).</p>
+<h3>19.1 Activar/Pausar publicación</h3>
+<p class="arch">Archivo: js/profesional.js (líneas 531 a 554)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function alternarPausa(btn) {
+  const nuevoEstado = !estado.prof.is_active;
+<span class="nota">  // ▶ Antes de pausar, avisa que deja de aparecer en Contratar</span>
+  if (!nuevoEstado &amp;&amp; !(await confirmDialog('Si pausás tu publicación dejás de aparecer en Contratar hasta que la reactives.', { confirmText: 'Sí, pausar', danger: true }))) {
+    return;
+  }
+
+  btn.disabled = true;
+  const { error } = await supabase
+    .from('professionals')
+<span class="nota">    // ▶ Cambia el estado de la publicación en la tabla professionals</span>
+    .update({ is_active: nuevoEstado })
+    .eq('id', estado.prof.id);
+  btn.disabled = false;
+
+  if (error) {
+    console.error('Error al pausar/reactivar:', error);
+    showToast('No pudimos cambiar el estado de tu publicación.');
+    return;
+  }
+
+  estado.prof.is_active = nuevoEstado;
+  renderBotonPausa();
+  renderResumen();
+  showToast(nuevoEstado ? 'Tu publicación está activa de nuevo.' : 'Tu publicación quedó pausada.', 'success');
+}</pre></td></tr></table>
+<h3>19.2 Horarios de atención</h3>
+<p class="arch">Archivo: js/professional-hours-utils.js (líneas 105 a 122)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function agruparDiasIguales(porDia) {
+  const grupos = [];
+<span class="nota">  // ▶ Recorre la semana de lunes a domingo</span>
+  for (const dia of ORDEN_SEMANA) {
+    const texto = formatearFranjas(porDia?.[dia]);
+    if (!texto) continue;
+    const ultimo = grupos[grupos.length - 1];
+    const previo = ORDEN_SEMANA[ORDEN_SEMANA.indexOf(dia) - 1];
+<span class="nota">    // ▶ Si el día tiene el mismo horario que el anterior, lo suma al grupo ("Lun a Vie")</span>
+    if (ultimo &amp;&amp; ultimo.texto === texto &amp;&amp; ultimo.dias[ultimo.dias.length - 1] === previo) {
+      ultimo.dias.push(dia);
+    } else {
+      grupos.push({ dias: [dia], etiqueta: '', texto });
+    }
+  }
+  for (const g of grupos) g.etiqueta = etiquetaDias(g.dias);
+  return grupos;
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Así la tarjeta de Contratar muestra "Lun a Vie 08:00 a 13:00" en vez de cinco líneas iguales. La base guarda una fila por día.</p>
+<h3>19.3 Consultas</h3>
+<p class="arch">Archivo: js/profesional-consultas.js (líneas 187 a 205)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function cambiarEstado(consulta, nuevoEstado, btn) {
+  btn.disabled = true;
+  const { error } = await supabase
+<span class="nota">    // ▶ Las consultas que mandan los vecinos están en la tabla professional_inquiries</span>
+    .from('professional_inquiries')
+    .update({ status: nuevoEstado })
+    .eq('id', consulta.id);
+  btn.disabled = false;
+
+  if (error) {
+    console.error('Error cambiando el estado de la consulta:', error);
+    showToast('No pudimos actualizar la consulta.');
+    return;
+  }
+
+  consulta.status = nuevoEstado;
+  renderFiltros();
+  render();
+  ctx.refrescarResumen?.();
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada consulta tiene un estado (nueva, respondida, cerrada) que el profesional cambia con los botones de la tarjeta.</p>
+<h2>20. Panel del repartidor</h2>
+<p>Archivos: <span class="cin">pages/repartidor.html</span> y <span class="cin">js/repartidor.js</span>. El repartidor ve dos listas: "Mis entregas en curso" y "Pedidos disponibles". Cada entrega pasa por tres etapas: Tomado, En camino y Entregado.</p>
+<h3>20.1 Actualizar el panel</h3>
+<p class="arch">Archivo: js/repartidor.js (líneas 445 a 464)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function loadPanel() {
+<span class="nota">  // ▶ Si ya se estaba cargando, no lo pide dos veces</span>
+  if (loading) { reloadAgain = true; return; }
+  loading = true;
+  try {
+<span class="nota">    // ▶ Una sola consulta trae "Mis entregas" y los pedidos disponibles</span>
+    const { data, error } = await supabase.rpc('get_courier_panel');
+    if (error) {
+      console.error('Error cargando el panel de repartidor:', error);
+      showToast(friendlyError(error, 'No se pudo cargar el panel.'), 'error');
+      return;
+    }
+    estado.mine = data?.mine || [];
+    estado.queue = data?.queue || [];
+    estado.activeCount = data?.active_count ?? 0;
+    estado.loaded = true;
+    renderAll();
+  } finally {
+    loading = false;
+    if (reloadAgain) { reloadAgain = false; loadPanel(); }
+  }
+}</pre></td></tr></table>
+<h3>20.2 Pedido tomado</h3>
+<p class="arch">Archivo: js/repartidor.js (líneas 147 a 162)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function takeOrder(order, card, btn) {
+  btn.disabled = true;
+<span class="nota">  // ▶ Pide tomar el pedido; la base controla que nadie más lo haya tomado</span>
+  const { error } = await supabase.rpc('claim_delivery', { p_order_id: order.order_id });
+  if (error) {
+    showToast(friendlyError(error, 'No se pudo tomar el pedido.'), 'error');
+<span class="nota">    // ▶ Si otro repartidor lo tomó antes, la tarjeta desaparece</span>
+    card.remove();
+    estado.queue = estado.queue.filter((q) =&gt; q.order_id !== order.order_id);
+    renderQueue();
+    loadPanel();
+    return;
+  }
+  showToast('Pedido tomado. Ya está en "Mis entregas en curso".', 'success');
+  loadPanel();
+}</pre></td></tr></table>
+<p class="arch">Archivo: db/schema/139_courier_flow.sql (líneas 333 a 376)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">create or replace function public.claim_delivery(p_order_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_order record;
+  v_delivery_id uuid;
+  v_active integer;
+begin
+<span class="nota">  -- ▶ Solo un repartidor puede tomar pedidos</span>
+  if coalesce((auth.jwt() -&gt; 'app_metadata' -&gt;&gt; 'role'), 'cliente') != 'repartidor' then
+    raise exception 'Solo un repartidor puede tomar un pedido.';
+  end if;
+
+<span class="nota">  -- ▶ Una cuenta suspendida no puede</span>
+  if (select is_suspended from public.profiles where id = v_uid) then
+    raise exception 'Tu cuenta de repartidor está suspendida.';
+  end if;
+
+<span class="nota">  -- ▶ Pone en fila los pedidos del mismo repartidor para que no se pase del tope</span>
+  perform pg_advisory_xact_lock(hashtextextended('courier:' || v_uid::text, 0));
+
+  select count(*) into v_active
+  from public.deliveries
+  where repartidor_id = v_uid and status in ('assigned', 'picked_up');
+
+<span class="nota">  -- ▶ Máximo 3 pedidos en curso a la vez</span>
+  if v_active &gt;= 3 then
+    raise exception 'Ya tenés 3 pedidos en curso. Entregá uno para tomar otro.';
+  end if;
+
+  select id, delivery_method, payment_status, status into v_order
+  from public.orders where id = p_order_id for update;
+
+  if not found then
+    raise exception 'El pedido no existe.';
+  end if;
+
+<span class="nota">  -- ▶ Solo pedidos con envío, ya pagados y que el comercio no despachó</span>
+  if v_order.delivery_method != 'delivery' or v_order.payment_status != 'paid' or v_order.status != 'paid' then
+    raise exception 'Este pedido no está disponible para repartir.';
+<span class="omit">-- … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Si dos repartidores tocan "Tomar" al mismo tiempo, la base deja que lo tome uno solo. El mensaje "Ya tenés 3 pedidos en curso" no es un error: es el tope.</p>
+<h3>20.3 En camino (retirar con foto)</h3>
+<p class="arch">Archivo: js/repartidor.js (líneas 196 a 211)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function markPickedUp(d, btn) {
+<span class="nota">  // ▶ Pide sacar una foto de los productos</span>
+  const file = await pickPhoto();
+  if (!file) return;
+  btn.disabled = true;
+  btn.textContent = 'Subiendo foto…';
+  try {
+<span class="nota">    // ▶ La sube a un lugar privado (la ven solo el comercio y el administrador)</span>
+    const path = await uploadEvidence(d.order_id, 'pickup', file);
+<span class="nota">    // ▶ Marca el pedido "En camino"</span>
+    const { ok } = await runRpc('courier_mark_picked_up',
+      { p_delivery_id: d.delivery_id, p_photo_path: path },
+      'No se pudo marcar el pedido en camino.');
+    if (ok) showToast('Pedido en camino. ¡Buen viaje!', 'success');
+  } catch (err) {
+    showToast(friendlyError(err, 'No se pudo subir la foto. Probá de nuevo.'), 'error');
+  }
+  loadPanel();
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Antes, el comercio confirma en su panel que el repartidor retiró el pedido, escribiendo los últimos 4 números del pedido.</p>
+<h3>20.4 Entregado al cliente (cargar código)</h3>
+<p class="arch">Archivo: js/repartidor.js (líneas 213 a 228)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function markDelivered(d, btn) {
+<span class="nota">  // ▶ Pide el código de 4 números que el comprador ve en "Mis compras"</span>
+  const res = await formDialog('Pedile al comprador el código de 4 números que tiene en "Mis compras".', {
+    title: `Entregar el pedido ${orderLabel(d)}`,
+    confirmText: 'Entregar',
+    input: { label: 'Código de retiro', placeholder: '0000', inputMode: 'numeric', maxLength: 4, pattern: /^\d{4}$/ },
+  });
+  if (!res) return;
+  btn.disabled = true;
+  const { ok } = await runRpc('update_delivery_status',
+<span class="nota">    // ▶ Si el código es correcto, el pedido queda entregado</span>
+    { p_delivery_id: d.delivery_id, p_new_status: 'delivered', p_code: res.value },
+    'No se pudo marcar el pedido como entregado.');
+  if (ok) showToast('Pedido marcado como entregado.', 'success');
+  else btn.disabled = false;
+  loadPanel();
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Sin el código del comprador no se puede marcar como entregado: es la prueba de que el pedido llegó a la persona correcta.</p>
+<h2>21. Panel de administrador</h2>
+<p>No aparece en el Manual de usuario porque lo usa solo el equipo. Archivos: <span class="cin">pages/admin.html</span> y <span class="cin">js/admin.js</span>. Desde ahí se aprueban comercios y profesionales, se moderan reseñas y productos, se cargan farmacias y números de emergencia, se dan de alta repartidores y se responden los reclamos.</p>
+<h3>21.1 Quién puede entrar</h3>
+<p class="arch">Archivo: js/admin.js (líneas 2373 a 2381)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">guardPage({
+  requireAuth: true,
+<span class="nota">  // ▶ Solo cuentas con rol administrador o moderador</span>
+  requireRole: ['admin', 'moderador'],
+  onReady: (user) =&gt; {
+    applyRoleVisibility(user?.app_metadata?.role);
+    upgradeDateInputs();
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> El rol de administrador se asigna a mano en Supabase (Authentication → Users). El moderador ve menos secciones: nada de dinero ni configuración.</p>
+<h3>21.2 Aprobar un comercio</h3>
+<p class="arch">Archivo: js/admin.js (líneas 151 a 163)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">async function approveRequest(id) {
+  try {
+<span class="nota">    // ▶ La base aprueba la solicitud: crea el comercio y le da a la cuenta el rol de vendedor</span>
+    const { error } = await supabase.rpc('approve_seller_request', { req_id: id });
+    if (error) throw error;
+    
+    showToast('Comercio aprobado exitosamente', 'success');
+    fetchRequests();
+  } catch (err) {
+    console.error('Error al aprobar:', err);
+    showToast('Error al aprobar el comercio. Verifica que corriste los scripts SQL.', 'error');
+  }
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> La función de la base vuelve a comprobar que quien aprueba sea administrador. Ocultar el botón no alcanza: la seguridad tiene que estar en la base.</p>
+<h2>22. Piezas compartidas y seguridad</h2>
+<p>No son una pantalla, pero las usan todas. Tampoco están en el Manual de usuario.</p>
+<h3>22.1 Tiempo real</h3>
+<p class="arch">Archivo: js/realtime-utils.js (líneas 89 a 110)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function subscribeToChanges(name, sources, onChange, { onResync, onStatus } = {}) {
+  setupGlobals();
+
+<span class="nota">  // ▶ Abre un "canal" con la base de datos</span>
+  const channel = supabase.channel(`bl-${name}-${++channelSeq}-${Date.now().toString(36)}`);
+
+  sources.forEach(({ table, event = '*', filter }) =&gt; {
+    const spec = { event, schema: 'public', table };
+    if (filter) spec.filter = filter;
+<span class="nota">    // ▶ Escucha los cambios de las tablas pedidas (por ejemplo, pedidos nuevos)</span>
+    channel.on('postgres_changes', spec, (payload) =&gt; {
+      try {
+<span class="nota">        // ▶ Cada cambio se le pasa a la página para que se actualice sola</span>
+        onChange({
+          table: payload.table,
+          eventType: payload.eventType,
+          new: payload.new || {},
+          old: payload.old || {},
+        });
+      } catch (err) {
+        console.error(`[tiempo real: ${name}]`, err);
+      }
+    });
+<span class="omit">// … (el bloque sigue en el archivo)</span></pre></td></tr></table>
+<p><b>En palabras simples:</b> Gracias a esto, un pedido nuevo, un aviso o una reseña aparecen sin recargar la página. Si la conexión se corta, la página vuelve a pedir los datos al reconectarse.</p>
+<h3>22.2 Mensajes de error claros</h3>
+<p class="arch">Archivo: js/friendly-error.js (líneas 75 a 88)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function friendlyError(error, fallback = DEFAULT_MESSAGE) {
+  const text = typeof error === 'string'
+    ? error
+    : String(error?.message ?? error?.error_description ?? (typeof error?.error === 'string' ? error.error : '') ?? '');
+  const code = typeof error === 'object' &amp;&amp; error ? String(error.code ?? error.status ?? '') : '';
+
+<span class="nota">  // ▶ Si el error ya es un mensaje en español escrito por el equipo, se muestra tal cual</span>
+  if (isHumanMessage(text)) return text.trim();
+<span class="nota">  // ▶ Si se cortó internet, avisa eso</span>
+  if (isFetchFailure(error, text)) return OFFLINE_MESSAGE;
+  if (code === '429' || /too many requests|rate limit/i.test(text)) {
+    return 'Demasiados intentos. Esperá unos minutos antes de intentar de nuevo.';
+  }
+  if (CODE_MESSAGES[code]) return CODE_MESSAGES[code];
+<span class="nota">  // ▶ Si no, un mensaje general ("No se pudo…")</span>
+  return fallback;
+}</pre></td></tr></table>
+<h3>22.3 Carteles de confirmación</h3>
+<p class="arch">Archivo: js/confirm-dialog.js (líneas 103 a 122)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">export function confirmDialog(message, options = {}) {
+  const {
+    title = '',
+<span class="nota">    // ▶ Textos de los botones; cada uso puede cambiarlos ("Eliminar", "Sí, pausar"…)</span>
+    confirmText = 'Aceptar',
+    cancelText = 'Cancelar',
+    danger = false,
+  } = options;
+
+<span class="nota">  // ▶ Espera a que la persona toque un botón y devuelve sí o no</span>
+  return new Promise((resolve) =&gt; {
+    const { overlay, card } = buildShell(message, title, resolve, false);
+    const { actions, confirmBtn } = buildActions(
+      { cancelText, confirmText, danger },
+      () =&gt; closeDialog(resolve, false),
+      () =&gt; closeDialog(resolve, true),
+    );
+    card.appendChild(actions);
+    mountOverlay(overlay);
+    confirmBtn.focus();
+  });
+}</pre></td></tr></table>
+<p><b>En palabras simples:</b> Es el cartel propio del sitio que aparece antes de borrar, vaciar o cancelar algo (reemplaza al cartel gris del navegador).</p>
+<h3>22.4 Reglas de seguridad de la base de datos</h3>
+<p class="arch">Archivo: db/schema/97_lock_down_request_status_on_insert.sql (líneas 28 a 30)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">create policy seller_requests_insert_own
+<span class="nota">  -- ▶ Regla para crear solicitudes de comercio, solo con sesión iniciada</span>
+  on public.seller_requests for insert to authenticated
+<span class="nota">  -- ▶ Solo se puede crear la propia, y siempre como "pendiente"</span>
+  with check (auth.uid() = user_id and status = 'pending');</pre></td></tr></table>
+<p><b>En palabras simples:</b> La clave que usa la página es pública: cualquiera podría usarla. Lo que protege los datos son estas reglas, que la base revisa en cada consulta. Por ejemplo, esta impide que alguien se mande su propia solicitud ya "aprobada".</p>
+<h3>22.5 Protecciones del sitio publicado</h3>
+<p class="arch">Archivo: vercel.json (líneas 7 a 10)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">{ "key": "X-Content-Type-Options", "value": "nosniff" },
+<span class="nota">// ▶ Impide que otra página muestre Baradero Local adentro de un recuadro (protege contra engaños)</span>
+{ "key": "X-Frame-Options", "value": "DENY" },
+{ "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+<span class="nota">// ▶ Bloquea cámara y micrófono; la ubicación queda solo para el mapa del inicio</span>
+{ "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" }</pre></td></tr></table>
+<h1>Resolución de problemas y FAQ</h1>
+<h2>1. Mensajes de error habituales</h2>
+<p>Errores que pueden aparecer al trabajar con el código (los que ve el usuario están en el Manual de usuario).</p>
+<table style="border-collapse:collapse;width:100%"><tr><th>Mensaje</th><th>Causa</th><th>Solución</th></tr>
+<tr><td class="t">"supabaseUrl is required" o la página no carga datos</td><td class="t">Falta el archivo <span class="cin">.env</span> o está mal escrito.</td><td class="t">Crear el <span class="cin">.env</span> como dice la Guía de inicio rápido, punto 2.2, y volver a correr <span class="cin">npm run dev</span>.</td></tr>
+<tr><td class="t">"new row violates row-level security policy" o "permission denied"</td><td class="t">Una regla de seguridad de la base no deja hacer eso con esa cuenta.</td><td class="t">Revisar que la cuenta tenga el rol correcto y la política de esa tabla (módulo 22.4). No se arregla desde la página.</td></tr>
+<tr><td class="t">"Refused to connect to …" en la consola del navegador</td><td class="t">La línea de seguridad (CSP) de la página no permite conectarse a ese sitio.</td><td class="t">Agregar el sitio en el <span class="cin">Content-Security-Policy</span> de todas las páginas. La prueba <span class="cin">js/csp.test.mjs</span> lo controla.</td></tr>
+<tr><td class="t">"Para publicar productos, el comercio tiene que cargar un medio de transferencia…"</td><td class="t">El comercio no tiene alias ni CBU/CVU (módulo 18.2).</td><td class="t">Cargar uno en Perfil de mi comercio → Transferencia bancaria.</td></tr>
+<tr><td class="t">"Ya tenés 3 pedidos en curso…"</td><td class="t">Es el tope del repartidor, no un error.</td><td class="t">Entregar un pedido para poder tomar otro.</td></tr>
+<tr><td class="t">"Edge Function returned a non-2xx status code"</td><td class="t">Una función en la nube respondió con un error.</td><td class="t">La página muestra el motivo con <span class="cin">friendlyFunctionError</span>; el detalle está en Supabase → Edge Functions → Logs.</td></tr>
+<tr><td class="t"><span class="cin">npm test</span> falla en Windows con un error de "for" o "sh"</td><td class="t">El atajo de pruebas usa comandos de Linux/Mac.</td><td class="t">Correr las pruebas desde Git Bash, o de a una: <span class="cin">node js/cart-totals.test.mjs</span>.</td></tr>
+<tr><td class="t">Falla la prueba <span class="cin">dark-css.test.mjs</span></td><td class="t">Se cambió un color en el CSS y no se regeneró el modo oscuro.</td><td class="t">Correr <span class="cin">node scripts/gen-dark-css.mjs</span> y volver a probar.</td></tr>
+<tr><td class="t">El cambio no aparece en la página publicada</td><td class="t">No se unió a <span class="cin">main</span>, el deploy de Vercel falló o el navegador tiene la versión vieja.</td><td class="t">Revisar el deploy en Vercel y recargar la página (Ctrl + F5).</td></tr>
+<tr><td class="t">Conflictos en archivos de <span class="cin">dist/</span> al unir ramas</td><td class="t"><span class="cin">dist/</span> se guarda en Git y sus nombres cambian en cada construcción.</td><td class="t">Quedarse con cualquiera de las dos versiones y volver a correr <span class="cin">npm run build</span>.</td></tr>
+<tr><td class="t">El generador del manual dice "no se encontró …"</td><td class="t">El código de ese bloque cambió y el texto de inicio ya no está.</td><td class="t">Actualizar ese bloque en <span class="cin">scripts/manual-programador/contenido.mjs</span> y volver a generar.</td></tr></table>
+<h2>2. Dudas frecuentes</h2>
+<h3>¿Cómo agrego una categoría nueva?</h3>
+<p>Con una migración nueva en <span class="cin">db/schema/</span> que agregue la fila a la tabla <span class="cin">categories</span> (como <span class="cin">121_categoria_supermercado.sql</span>) y su ícono en <span class="cin">CATEGORY_ICONS</span> de <span class="cin">js/nav-utils.js</span> (módulo 2.1).</p>
+<h3>¿Cómo agrego una página nueva?</h3>
+<p>Copiar el encabezado de una página parecida (con su línea de seguridad, el script del modo oscuro, <span class="cin">dark.css</span> y <span class="cin">theme.js</span>), anotarla en <span class="cin">vite.config.js</span> (Guía 3.1) y correr <span class="cin">npm test</span>, que controla que no falte nada.</p>
+<h3>¿Dónde se cambia el precio de los combos de "Impulsá tus ventas"?</h3>
+<p>En la tabla <span class="cin">boost_plans</span> de la base. La pantalla y el cobro leen la misma fila, así que alcanza con cambiar el precio ahí.</p>
+<h3>¿Dónde se cambia el costo de envío?</h3>
+<p>Cada comercio tiene el suyo en la tabla <span class="cin">stores</span> (columna <span class="cin">delivery_fee</span>, que arranca en $350). Hoy no hay un campo para cambiarlo en el panel: se cambia en la base de datos. El carrito usa el mismo $350 de respaldo (<span class="cin">DEFAULT_DELIVERY_FEE</span> en <span class="cin">js/cart-totals.js</span>) si todavía no lo leyó.</p>
+<h3>¿Cómo se hace administrador a una cuenta?</h3>
+<p>En Supabase → Authentication → Users → la cuenta → <span class="cin">raw_app_meta_data</span>, poniendo <span class="cin">{"role": "admin"}</span>. No hay forma de hacerlo desde la página, a propósito.</p>
+<h3>¿Cómo se aplica un cambio a la base de datos?</h3>
+<p>Se escribe un archivo nuevo en <span class="cin">db/schema/</span> con el número siguiente y se corre en Supabase (SQL Editor). Nunca se edita un archivo ya aplicado.</p>
+<h3>¿Los precios tienen centavos?</h3>
+<p>No. Todo el sistema trabaja con pesos enteros.</p>
+<h3>¿Cómo vuelvo a generar este manual?</h3>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">node scripts/manual-programador/generar.mjs</pre></td></tr></table>
+<p>Deja el manual actualizado en <span class="cin">docs/manual-programador/</span> (en Markdown para GitHub y en HTML para importar a Google Docs).</p>
+<h2>3. Pruebas automáticas</h2>
+<p>Las pruebas controlan solas que las funciones más delicadas den el resultado correcto (la cuenta del carrito, los horarios, los medios de pago…). Se corren todas juntas antes de publicar:</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">npm test</pre></td></tr></table>
+<p class="arch">Archivo: js/cart-totals.test.mjs (líneas 28 a 31)</p>
+<table style="border-collapse:collapse;width:100%"><tr><td class="caja"><pre class="cod">check("un cupón de vendedor va solo a su tienda", () =&gt; {
+<span class="nota">  // ▶ Un cupón del 20% del comercio A vale 20% en A…</span>
+  assert.equal(discountPctForStore(20, "A", "A"), 20);
+<span class="nota">  // ▶ …y 0% en el comercio B</span>
+  assert.equal(discountPctForStore(20, "A", "B"), 0);
+});</pre></td></tr></table>
+<p><b>En palabras simples:</b> Cada prueba dice qué debería pasar y lo comprueba. Si alguien cambia el código y rompe esa regla, la prueba avisa con "FALLA" antes de que llegue a la página publicada. La lista completa de pruebas está en el Anexo A.3.</p>
+<h1>Canales de soporte y contacto</h1>
+<h2>1. Contactos</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Para qué</th><th>Dónde</th></tr>
+<tr><td class="t">Consultas de usuarios y comercios</td><td class="t">soporte@baraderolocal.com.ar (el correo que figura en el pie de la página → Ayuda)</td></tr>
+<tr><td class="t">Reclamos dentro de la página</td><td class="t">Mi perfil → Soporte. Quedan en la tabla <span class="cin">support_tickets</span> y se responden desde el panel de administrador.</td></tr>
+<tr><td class="t">Tareas y errores del equipo de desarrollo</td><td class="t">Jira, proyecto A113 (baraderolocal.atlassian.net)</td></tr>
+<tr><td class="t">Código y cambios</td><td class="t">GitHub, repositorio <span class="cin">fac7n3/ProyectoPdisc</span></td></tr></table>
+<h2>2. Horarios de atención</h2>
+<p>Responderemos a sus consultas entre las 08:00 y 14:00 hrs, hora Argentina, en un tiempo estimado de 1 hora luego de que nos haya mandado su email.</p>
+<h1>Anexo A. Inventario de archivos del proyecto</h1>
+<p>Todos los archivos con código del proyecto y qué hace cada uno, para encontrar rápido dónde está cada cosa. Esta lista se arma sola al generar el manual. Junto con los bloques de los módulos, cubre el proyecto entero: cada archivo aparece acá aunque no tenga un bloque propio arriba.</p>
+<h2>A.1 Páginas (carpeta pages/ y raíz)</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Archivo</th><th>Qué es</th></tr>
+<tr><td class="t">index.html</td><td class="t">Entrada del sitio: manda directo al inicio.</td></tr>
+<tr><td class="t">pages/admin.html</td><td class="t">Panel de administrador y de moderación.</td></tr>
+<tr><td class="t">pages/carrito.html</td><td class="t">Mi carrito y el pago.</td></tr>
+<tr><td class="t">pages/comercio.html</td><td class="t">Página pública de un comercio (con la vista previa para el dueño).</td></tr>
+<tr><td class="t">pages/comercios.html</td><td class="t">Lista de todos los comercios.</td></tr>
+<tr><td class="t">pages/contratar.html</td><td class="t">Directorio de profesionales y técnicos ("Contratar").</td></tr>
+<tr><td class="t">pages/farmacias.html</td><td class="t">Farmacias de turno.</td></tr>
+<tr><td class="t">pages/home.html</td><td class="t">Inicio.</td></tr>
+<tr><td class="t">pages/info.html</td><td class="t">Ayuda y preguntas frecuentes.</td></tr>
+<tr><td class="t">pages/login.html</td><td class="t">Iniciar sesión.</td></tr>
+<tr><td class="t">pages/nueva-contrasena.html</td><td class="t">Elegir una contraseña nueva (link del email de recuperación).</td></tr>
+<tr><td class="t">pages/perfil.html</td><td class="t">Mi perfil: datos, direcciones, compras, favoritos, soporte y ajustes.</td></tr>
+<tr><td class="t">pages/privacidad.html</td><td class="t">Política de privacidad.</td></tr>
+<tr><td class="t">pages/producto.html</td><td class="t">Página propia de un producto (la que se abre desde un link compartido).</td></tr>
+<tr><td class="t">pages/profesional.html</td><td class="t">Panel de profesional/técnico.</td></tr>
+<tr><td class="t">pages/recuperar-password.html</td><td class="t">Pedir el email para recuperar la contraseña.</td></tr>
+<tr><td class="t">pages/register.html</td><td class="t">Registrarse.</td></tr>
+<tr><td class="t">pages/repartidor.html</td><td class="t">Panel del repartidor.</td></tr>
+<tr><td class="t">pages/search.html</td><td class="t">Búsqueda, categorías y filtros.</td></tr>
+<tr><td class="t">pages/servicios.html</td><td class="t">Números de emergencia y veterinarias.</td></tr>
+<tr><td class="t">pages/terminos.html</td><td class="t">Términos y condiciones.</td></tr>
+<tr><td class="t">pages/vender.html</td><td class="t">Alta de comercio o profesional y panel de comerciante.</td></tr></table>
+<h2>A.2 Código JavaScript (carpeta js/)</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Archivo</th><th>Qué hace</th></tr>
+<tr><td class="t">js/account-switcher.js</td><td class="t">Botón "Cambiar de cuenta" de Mi perfil.</td></tr>
+<tr><td class="t">js/address-suggest-utils.js</td><td class="t">Ayudas del autocompletado de direcciones (OpenStreetMap).</td></tr>
+<tr><td class="t">js/admin.js</td><td class="t">Todo el panel de administrador.</td></tr>
+<tr><td class="t">js/auth-utils.js</td><td class="t">Conexión con Supabase, sesión, portero de páginas (guardPage), avisos cortos y qué panel tiene cada cuenta.</td></tr>
+<tr><td class="t">js/boost-plans.js</td><td class="t">Pantalla de los combos de "Impulsá tus ventas".</td></tr>
+<tr><td class="t">js/boost-utils.js</td><td class="t">Reglas de los combos de "Impulsá tus ventas" (si está vigente, cuándo vence).</td></tr>
+<tr><td class="t">js/carrito.js</td><td class="t">La página del carrito: lista agrupada por comercio, cupón, envío, medio de pago e iniciar pago.</td></tr>
+<tr><td class="t">js/cart-totals.js</td><td class="t">La cuenta del total del carrito (igual a la de la base).</td></tr>
+<tr><td class="t">js/cart-utils.js</td><td class="t">Guardar el carrito, botones "Agregar", favoritos, precios y tarjetas.</td></tr>
+<tr><td class="t">js/comercio.js</td><td class="t">Página de un comercio: encabezado, productos, reseñas y edición para el dueño.</td></tr>
+<tr><td class="t">js/comercios.js</td><td class="t">Lista de comercios con su rubro.</td></tr>
+<tr><td class="t">js/confirm-dialog.js</td><td class="t">Carteles propios de confirmación y de formulario corto.</td></tr>
+<tr><td class="t">js/contratar.js</td><td class="t">Directorio "Contratar" y el formulario de pedir presupuesto.</td></tr>
+<tr><td class="t">js/courier-utils.js</td><td class="t">Reglas del panel de repartidor (etapas, tiempos, colores de demora).</td></tr>
+<tr><td class="t">js/datepicker.js</td><td class="t">Selector de fecha propio.</td></tr>
+<tr><td class="t">js/delivery-evidence.js</td><td class="t">Fotos de la entrega (retiro y recepción).</td></tr>
+<tr><td class="t">js/dropdown.js</td><td class="t">Desplegable propio, en lugar del del navegador.</td></tr>
+<tr><td class="t">js/error-logger.js</td><td class="t">Anota los errores de la página en la base, sin datos sensibles.</td></tr>
+<tr><td class="t">js/farmacias.js</td><td class="t">Farmacias de turno: cuál está de turno ahora y la semana.</td></tr>
+<tr><td class="t">js/friendly-error.js</td><td class="t">Convierte errores técnicos en mensajes claros.</td></tr>
+<tr><td class="t">js/hints-utils.js</td><td class="t">Ayudas cortas del carrito.</td></tr>
+<tr><td class="t">js/home-promos-editor.js</td><td class="t">Editor del banner del inicio (para el comercio y el administrador).</td></tr>
+<tr><td class="t">js/home-promos-utils.js</td><td class="t">Reglas de los banners del inicio.</td></tr>
+<tr><td class="t">js/home.js</td><td class="t">Todo el inicio: banners, comercios, recomendados, ofertas, esenciales y mapa.</td></tr>
+<tr><td class="t">js/image-crop-utils.js</td><td class="t">Cuentas del recorte de fotos.</td></tr>
+<tr><td class="t">js/image-cropper.js</td><td class="t">Ventana para recortar y encuadrar fotos.</td></tr>
+<tr><td class="t">js/info-faq.js</td><td class="t">Atajos de las preguntas frecuentes.</td></tr>
+<tr><td class="t">js/interests-utils.js</td><td class="t">Cálculo de los intereses para "Productos recomendados".</td></tr>
+<tr><td class="t">js/interests.js</td><td class="t">Recuerda qué productos se miraron (en el navegador).</td></tr>
+<tr><td class="t">js/linked-accounts-utils.js</td><td class="t">Reglas de la lista de cuentas guardadas.</td></tr>
+<tr><td class="t">js/linked-accounts.js</td><td class="t">Guarda las cuentas para "Cambiar de cuenta".</td></tr>
+<tr><td class="t">js/login.js</td><td class="t">Iniciar sesión (correo y Google).</td></tr>
+<tr><td class="t">js/mp-chain-utils.js</td><td class="t">Pago con Mercado Pago de a un comercio por vez.</td></tr>
+<tr><td class="t">js/nav-utils.js</td><td class="t">El header: categorías, buscador, campanita y menú de la cuenta.</td></tr>
+<tr><td class="t">js/notifications-live.js</td><td class="t">Notificaciones en tiempo real.</td></tr>
+<tr><td class="t">js/notifications-utils.js</td><td class="t">Centro de notificaciones: textos, filtros, marcar como leídas.</td></tr>
+<tr><td class="t">js/nueva-contrasena.js</td><td class="t">Guardar la contraseña nueva.</td></tr>
+<tr><td class="t">js/order-utils.js</td><td class="t">Pedidos: número, estados, próximo paso y línea de tiempo.</td></tr>
+<tr><td class="t">js/panel-onboarding-utils.js</td><td class="t">Cartel de bienvenida de cada panel.</td></tr>
+<tr><td class="t">js/panel-redirect-utils.js</td><td class="t">Preferencia "entrar directo a mi panel".</td></tr>
+<tr><td class="t">js/payment-providers.js</td><td class="t">Los medios de pago: qué hace cada uno al pagar.</td></tr>
+<tr><td class="t">js/perfil.js</td><td class="t">Todo Mi perfil.</td></tr>
+<tr><td class="t">js/phone-countries.js</td><td class="t">Lista de códigos de país para los teléfonos.</td></tr>
+<tr><td class="t">js/product-detail-api.js</td><td class="t">Pide a la base el detalle de un producto.</td></tr>
+<tr><td class="t">js/product-detail-utils.js</td><td class="t">Reglas del pedido del detalle (adelantarlo al pasar el mouse).</td></tr>
+<tr><td class="t">js/product-draft.js</td><td class="t">Borrador del producto que se está cargando (sobrevive a recargar).</td></tr>
+<tr><td class="t">js/product-modal.js</td><td class="t">La ventana del producto: fotos, opciones, cantidad, carrito, reseñas y relacionados.</td></tr>
+<tr><td class="t">js/product-options-utils.js</td><td class="t">Opciones de producto (color, sabor, talle).</td></tr>
+<tr><td class="t">js/producto.js</td><td class="t">La página propia de un producto.</td></tr>
+<tr><td class="t">js/profesional-consultas.js</td><td class="t">Panel de profesional: Consultas.</td></tr>
+<tr><td class="t">js/profesional-disponibilidad.js</td><td class="t">Panel de profesional: Horarios y zona.</td></tr>
+<tr><td class="t">js/profesional-galeria.js</td><td class="t">Panel de profesional: Fotos de trabajos.</td></tr>
+<tr><td class="t">js/profesional-metricas.js</td><td class="t">Panel de profesional: Estadísticas.</td></tr>
+<tr><td class="t">js/profesional-resenas.js</td><td class="t">Panel de profesional: Reseñas y respuestas.</td></tr>
+<tr><td class="t">js/profesional-servicios.js</td><td class="t">Panel de profesional: Servicios y precios.</td></tr>
+<tr><td class="t">js/profesional.js</td><td class="t">Panel de profesional: resumen, mis datos, pausa y foto.</td></tr>
+<tr><td class="t">js/professional-categories.js</td><td class="t">Categorías fijas de Contratar.</td></tr>
+<tr><td class="t">js/professional-hours-utils.js</td><td class="t">Horarios de los profesionales (agrupar días, "abierto ahora").</td></tr>
+<tr><td class="t">js/professional-service-utils.js</td><td class="t">Servicios y precios de los profesionales.</td></tr>
+<tr><td class="t">js/professional-zones.js</td><td class="t">Zonas de trabajo que puede elegir un profesional.</td></tr>
+<tr><td class="t">js/profile-fields.js</td><td class="t">Los datos de "Información de tu perfil".</td></tr>
+<tr><td class="t">js/realtime-utils.js</td><td class="t">Tiempo real: escuchar cambios de la base.</td></tr>
+<tr><td class="t">js/recuperar-password.js</td><td class="t">Pedir el email de recuperación.</td></tr>
+<tr><td class="t">js/register.js</td><td class="t">Registrarse (correo y Google).</td></tr>
+<tr><td class="t">js/repartidor.js</td><td class="t">Panel del repartidor.</td></tr>
+<tr><td class="t">js/reviews-utils.js</td><td class="t">Reseñas: estrellas, lista y formulario.</td></tr>
+<tr><td class="t">js/scroll-top-btn.js</td><td class="t">Botón de volver arriba.</td></tr>
+<tr><td class="t">js/search-analytics.js</td><td class="t">Anota búsquedas y productos vistos (para el informe del administrador).</td></tr>
+<tr><td class="t">js/search.js</td><td class="t">Página de búsqueda y filtros.</td></tr>
+<tr><td class="t">js/servicios.js</td><td class="t">Números de emergencia.</td></tr>
+<tr><td class="t">js/settings-utils.js</td><td class="t">Preferencias de Ajustes.</td></tr>
+<tr><td class="t">js/speed-insights.js</td><td class="t">Medición de velocidad de Vercel.</td></tr>
+<tr><td class="t">js/storage-utils.js</td><td class="t">Borrar fotos guardadas en Supabase.</td></tr>
+<tr><td class="t">js/store-contact-utils.js</td><td class="t">Contacto por WhatsApp y redes del comercio, con links seguros.</td></tr>
+<tr><td class="t">js/store-products-order.js</td><td class="t">Orden de los productos de un comercio (ofertas primero).</td></tr>
+<tr><td class="t">js/supabase-config.js</td><td class="t">Dirección y clave pública de Supabase (leídas del .env).</td></tr>
+<tr><td class="t">js/support-utils.js</td><td class="t">Soporte: reclamos, adjuntos y respuestas.</td></tr>
+<tr><td class="t">js/theme-utils.js</td><td class="t">Reglas del modo claro/oscuro.</td></tr>
+<tr><td class="t">js/theme.js</td><td class="t">Botón y aplicación del modo claro/oscuro.</td></tr>
+<tr><td class="t">js/toast-utils.js</td><td class="t">Avisos emergentes de notificaciones (abajo a la derecha).</td></tr>
+<tr><td class="t">js/transfer-details-utils.js</td><td class="t">Qué datos de transferencia se muestran al pagar.</td></tr>
+<tr><td class="t">js/transfer-details.js</td><td class="t">Tarjeta "Cómo transferirle a este comercio".</td></tr>
+<tr><td class="t">js/validation-utils.js</td><td class="t">Validaciones de formularios compartidas.</td></tr>
+<tr><td class="t">js/vender-shell.js</td><td class="t">Menú lateral y secciones de los paneles.</td></tr>
+<tr><td class="t">js/vender.js</td><td class="t">Alta de comercio/profesional y todo el panel de comerciante.</td></tr></table>
+<h2>A.3 Pruebas automáticas</h2>
+<p>Hay 27 archivos de prueba en <span class="cin">js/</span> y 5 en <span class="cin">supabase/functions/_tests/</span>. Cada uno se llama igual que el archivo que prueba, terminado en <span class="cin">.test.mjs</span> (por ejemplo, <span class="cin">cart-totals.test.mjs</span> prueba <span class="cin">cart-totals.js</span>). Se corren todos juntos con <span class="cin">npm test</span>.</p>
+<ul><li>js/address-suggest-utils.test.mjs</li><li>js/boost-utils.test.mjs</li><li>js/cart-totals.test.mjs</li><li>js/courier-utils.test.mjs</li><li>js/csp.test.mjs</li><li>js/dark-css.test.mjs</li><li>js/datepicker.test.mjs</li><li>js/error-logger.test.mjs</li><li>js/friendly-error.test.mjs</li><li>js/home-promos-utils.test.mjs</li><li>js/image-crop-utils.test.mjs</li><li>js/interests-utils.test.mjs</li><li>js/linked-accounts-utils.test.mjs</li><li>js/linked-accounts.test.mjs</li><li>js/mp-chain-utils.test.mjs</li><li>js/order-utils.test.mjs</li><li>js/product-detail-utils.test.mjs</li><li>js/product-options-utils.test.mjs</li><li>js/professional-hours-utils.test.mjs</li><li>js/professional-service-utils.test.mjs</li><li>js/profile-fields.test.mjs</li><li>js/settings-utils.test.mjs</li><li>js/storage-utils.test.mjs</li><li>js/store-contact-utils.test.mjs</li><li>js/store-products-order.test.mjs</li><li>js/theme-utils.test.mjs</li><li>js/transfer-details-utils.test.mjs</li><li>supabase/functions/_tests/delete-account.test.mjs</li><li>supabase/functions/_tests/mp-create-boost-preference.test.mjs</li><li>supabase/functions/_tests/mp-create-preference.test.mjs</li><li>supabase/functions/_tests/mp-oauth.test.mjs</li><li>supabase/functions/_tests/mp-webhook.test.mjs</li></ul>
+<h2>A.4 Estilos (carpeta Assets/styles/)</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Archivo</th><th>Qué define</th></tr>
+<tr><td class="t">Assets/styles/a11y.css</td><td class="t">Accesibilidad: foco visible y "Reducir animaciones".</td></tr>
+<tr><td class="t">Assets/styles/account-switcher-page.css</td><td class="t">Aviso de "necesitás otra cuenta" en el alta de profesional.</td></tr>
+<tr><td class="t">Assets/styles/admin.css</td><td class="t">Panel de administrador.</td></tr>
+<tr><td class="t">Assets/styles/auth.css</td><td class="t">Iniciar sesión, registro y contraseñas.</td></tr>
+<tr><td class="t">Assets/styles/carrito.css</td><td class="t">Carrito.</td></tr>
+<tr><td class="t">Assets/styles/dark-auto.css</td><td class="t">Modo oscuro generado solo (no se edita a mano).</td></tr>
+<tr><td class="t">Assets/styles/dark.css</td><td class="t">Ajustes a mano del modo oscuro.</td></tr>
+<tr><td class="t">Assets/styles/home.css</td><td class="t">Estilos compartidos: colores de marca, header, tarjetas, botones, inicio.</td></tr>
+<tr><td class="t">Assets/styles/perfil-custom.css</td><td class="t">Mi perfil.</td></tr>
+<tr><td class="t">Assets/styles/product-modal.css</td><td class="t">Ventana del producto.</td></tr>
+<tr><td class="t">Assets/styles/profesional.css</td><td class="t">Panel de profesional.</td></tr>
+<tr><td class="t">Assets/styles/repartidor.css</td><td class="t">Panel del repartidor.</td></tr>
+<tr><td class="t">Assets/styles/styles.css</td><td class="t">Estilos viejos, hoy sin uso (no lo carga ninguna página).</td></tr></table>
+<h2>A.5 Funciones en la nube (carpeta supabase/functions/)</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Función</th><th>Qué hace</th></tr>
+<tr><td class="t">supabase/functions/delete-account</td><td class="t">Borra la cuenta de quien lo pide (con sus chequeos).</td></tr>
+<tr><td class="t">supabase/functions/mp-create-boost-preference</td><td class="t">Arma el cobro de un combo de "Impulsá tus ventas".</td></tr>
+<tr><td class="t">supabase/functions/mp-create-preference</td><td class="t">Arma el cobro de un pedido en Mercado Pago, a nombre del comercio.</td></tr>
+<tr><td class="t">supabase/functions/mp-oauth-callback</td><td class="t">Termina de vincular la cuenta de Mercado Pago de un comercio.</td></tr>
+<tr><td class="t">supabase/functions/mp-oauth-start</td><td class="t">Empieza la vinculación de la cuenta de Mercado Pago de un comercio.</td></tr>
+<tr><td class="t">supabase/functions/mp-webhook</td><td class="t">Recibe los avisos de Mercado Pago y confirma los pagos.</td></tr></table>
+<h2>A.6 Herramientas (carpeta scripts/)</h2>
+<table style="border-collapse:collapse;width:100%"><tr><th>Archivo</th><th>Para qué sirve</th></tr>
+<tr><td class="t">scripts/gen-dark-css.mjs</td><td class="t">Genera <span class="cin">dark-auto.css</span> (el modo oscuro de los colores escritos a mano).</td></tr>
+<tr><td class="t">scripts/jira-backfill-commits.mjs</td><td class="t">Crea tareas de Jira a partir de commits viejos.</td></tr>
+<tr><td class="t">scripts/jira-commit-log.mjs</td><td class="t">Cierra en Jira las tareas nombradas en cada commit.</td></tr>
+<tr><td class="t">scripts/jira-create-subtasks-m2-m11.mjs</td><td class="t">Creó el tablero de Jira de las fases 2 a 11.</td></tr>
+<tr><td class="t">scripts/jira-create-subtasks.mjs</td><td class="t">Creó el tablero de Jira de las fases 0 y 1.</td></tr>
+<tr><td class="t">scripts/jira-move.mjs</td><td class="t">Mueve una tarea de Jira de estado (por hacer, en curso, finalizada).</td></tr>
+<tr><td class="t">scripts/optimize-images.mjs</td><td class="t">Convierte imágenes pesadas a WebP.</td></tr></table>
+<h2>A.7 Cambios de la base de datos (carpeta db/schema/)</h2>
+<p>Cada archivo es una "migración": un cambio a la base de datos, numerado en el orden en que se aplicó. Hoy hay 143. El nombre del archivo ya dice qué cambia (está en una mezcla de español e inglés técnico, se respeta tal cual).</p>
+<table style="border-collapse:collapse;width:100%"><tr><th>Nº</th><th>Qué cambia</th></tr>
+<tr><td class="t">01</td><td class="t">auth profiles</td></tr>
+<tr><td class="t">02</td><td class="t">shop and cart</td></tr>
+<tr><td class="t">03</td><td class="t">ecommerce schema</td></tr>
+<tr><td class="t">04</td><td class="t">seed mock data</td></tr>
+<tr><td class="t">05</td><td class="t">admin seller</td></tr>
+<tr><td class="t">06</td><td class="t">seed 10 stores and products</td></tr>
+<tr><td class="t">07</td><td class="t">update mock images</td></tr>
+<tr><td class="t">08</td><td class="t">coupons schema</td></tr>
+<tr><td class="t">09</td><td class="t">user carts</td></tr>
+<tr><td class="t">10</td><td class="t">fix auth triggers</td></tr>
+<tr><td class="t">11</td><td class="t">add repartidor role</td></tr>
+<tr><td class="t">12</td><td class="t">price cents to price</td></tr>
+<tr><td class="t">13</td><td class="t">target data model</td></tr>
+<tr><td class="t">14</td><td class="t">error logs</td></tr>
+<tr><td class="t">15</td><td class="t">security advisors fixes</td></tr>
+<tr><td class="t">16</td><td class="t">input validation constraints</td></tr>
+<tr><td class="t">17</td><td class="t">fase2 order payment columns</td></tr>
+<tr><td class="t">18</td><td class="t">create order rpc</td></tr>
+<tr><td class="t">19</td><td class="t">confirm simulated payment rpc</td></tr>
+<tr><td class="t">20</td><td class="t">create order delivery fee</td></tr>
+<tr><td class="t">21</td><td class="t">order items title snapshot</td></tr>
+<tr><td class="t">22</td><td class="t">transfer payment proofs</td></tr>
+<tr><td class="t">23</td><td class="t">fix handle new user role escalation</td></tr>
+<tr><td class="t">24</td><td class="t">fix role approval trigger block</td></tr>
+<tr><td class="t">25</td><td class="t">delivery requests</td></tr>
+<tr><td class="t">26</td><td class="t">deliveries and claim</td></tr>
+<tr><td class="t">27</td><td class="t">deliveries visibility fix</td></tr>
+<tr><td class="t">28</td><td class="t">delivery status flow</td></tr>
+<tr><td class="t">29</td><td class="t">favorites</td></tr>
+<tr><td class="t">30</td><td class="t">compare at price</td></tr>
+<tr><td class="t">31</td><td class="t">store profile columns</td></tr>
+<tr><td class="t">32</td><td class="t">product images</td></tr>
+<tr><td class="t">33</td><td class="t">product variants</td></tr>
+<tr><td class="t">34</td><td class="t">admin moderation</td></tr>
+<tr><td class="t">35</td><td class="t">products select admin</td></tr>
+<tr><td class="t">36</td><td class="t">reviews</td></tr>
+<tr><td class="t">37</td><td class="t">conversations messages</td></tr>
+<tr><td class="t">38</td><td class="t">notifications</td></tr>
+<tr><td class="t">39</td><td class="t">fix broken image paths</td></tr>
+<tr><td class="t">40</td><td class="t">order revocation</td></tr>
+<tr><td class="t">41</td><td class="t">notify request status</td></tr>
+<tr><td class="t">42</td><td class="t">vendor coupons and per store shipping</td></tr>
+<tr><td class="t">43</td><td class="t">client contact and addresses</td></tr>
+<tr><td class="t">44</td><td class="t">repartidor reviews</td></tr>
+<tr><td class="t">45</td><td class="t">stock alerts</td></tr>
+<tr><td class="t">46</td><td class="t">support tickets</td></tr>
+<tr><td class="t">47</td><td class="t">admin audit log</td></tr>
+<tr><td class="t">48</td><td class="t">offer expiration</td></tr>
+<tr><td class="t">49</td><td class="t">store staff</td></tr>
+<tr><td class="t">50</td><td class="t">moderador role</td></tr>
+<tr><td class="t">51</td><td class="t">search products rpc</td></tr>
+<tr><td class="t">52</td><td class="t">favorite price drop</td></tr>
+<tr><td class="t">53</td><td class="t">dont downgrade elevated role</td></tr>
+<tr><td class="t">54</td><td class="t">support ticket messages</td></tr>
+<tr><td class="t">55</td><td class="t">user addresses</td></tr>
+<tr><td class="t">56</td><td class="t">mp marketplace split</td></tr>
+<tr><td class="t">57</td><td class="t">coupon visibility scope</td></tr>
+<tr><td class="t">58</td><td class="t">store accepts contact</td></tr>
+<tr><td class="t">59</td><td class="t">favorite stores</td></tr>
+<tr><td class="t">60</td><td class="t">seller request multi category</td></tr>
+<tr><td class="t">61</td><td class="t">profile personal data</td></tr>
+<tr><td class="t">62</td><td class="t">orders nullable on delete</td></tr>
+<tr><td class="t">66</td><td class="t">cart hints preference</td></tr>
+<tr><td class="t">67</td><td class="t">pharmacies</td></tr>
+<tr><td class="t">68</td><td class="t">products select purchased</td></tr>
+<tr><td class="t">69</td><td class="t">store transfer info</td></tr>
+<tr><td class="t">70</td><td class="t">store header colors</td></tr>
+<tr><td class="t">71</td><td class="t">store category slug</td></tr>
+<tr><td class="t">72</td><td class="t">notifications delete</td></tr>
+<tr><td class="t">73</td><td class="t">support ticket attachments</td></tr>
+<tr><td class="t">74</td><td class="t">store logo</td></tr>
+<tr><td class="t">75</td><td class="t">fix approve seller request admin check</td></tr>
+<tr><td class="t">76</td><td class="t">emergency contacts</td></tr>
+<tr><td class="t">77</td><td class="t">professionals</td></tr>
+<tr><td class="t">78</td><td class="t">professionals extras</td></tr>
+<tr><td class="t">79</td><td class="t">categorias forrajeria libreria papeleria</td></tr>
+<tr><td class="t">80</td><td class="t">papeleria icono bolsa</td></tr>
+<tr><td class="t">81</td><td class="t">remove in app messaging</td></tr>
+<tr><td class="t">82</td><td class="t">store contact and social</td></tr>
+<tr><td class="t">83</td><td class="t">store staff permissions</td></tr>
+<tr><td class="t">84</td><td class="t">notify professional request status</td></tr>
+<tr><td class="t">85</td><td class="t">professional promos</td></tr>
+<tr><td class="t">86</td><td class="t">professionals update own</td></tr>
+<tr><td class="t">87</td><td class="t">professionals social</td></tr>
+<tr><td class="t">88</td><td class="t">professionals select own</td></tr>
+<tr><td class="t">89</td><td class="t">professional services</td></tr>
+<tr><td class="t">90</td><td class="t">professional inquiries</td></tr>
+<tr><td class="t">91</td><td class="t">professional metrics</td></tr>
+<tr><td class="t">92</td><td class="t">professional availability</td></tr>
+<tr><td class="t">93</td><td class="t">professional promos gallery</td></tr>
+<tr><td class="t">94</td><td class="t">reviews owner reply</td></tr>
+<tr><td class="t">95</td><td class="t">panel home preferences</td></tr>
+<tr><td class="t">96</td><td class="t">lock down direct order inserts</td></tr>
+<tr><td class="t">97</td><td class="t">lock down request status on insert</td></tr>
+<tr><td class="t">98</td><td class="t">reviews moderador only hides</td></tr>
+<tr><td class="t">99</td><td class="t">protect is suspended on profile</td></tr>
+<tr><td class="t">100</td><td class="t">products bucket folder ownership</td></tr>
+<tr><td class="t">101</td><td class="t">restrict simulated payment to admin</td></tr>
+<tr><td class="t">102</td><td class="t">product options</td></tr>
+<tr><td class="t">103</td><td class="t">add missing fk indexes</td></tr>
+<tr><td class="t">104</td><td class="t">optimize rls auth calls</td></tr>
+<tr><td class="t">105</td><td class="t">consolidate permissive policies</td></tr>
+<tr><td class="t">106</td><td class="t">store transfer structured</td></tr>
+<tr><td class="t">107</td><td class="t">require transfer alias for products</td></tr>
+<tr><td class="t">108</td><td class="t">home promos</td></tr>
+<tr><td class="t">109</td><td class="t">professional inquiries photos and date</td></tr>
+<tr><td class="t">110</td><td class="t">professionals directory rpc</td></tr>
+<tr><td class="t">111</td><td class="t">admin repartidor by email</td></tr>
+<tr><td class="t">112</td><td class="t">repartidor by email guard store owners</td></tr>
+<tr><td class="t">113</td><td class="t">store banner</td></tr>
+<tr><td class="t">114</td><td class="t">seller confirm transfer without proof</td></tr>
+<tr><td class="t">115</td><td class="t">order flow</td></tr>
+<tr><td class="t">116</td><td class="t">order flow lockdown</td></tr>
+<tr><td class="t">117</td><td class="t">realtime publication</td></tr>
+<tr><td class="t">118</td><td class="t">get product detail rpc</td></tr>
+<tr><td class="t">119</td><td class="t">new review notification comment</td></tr>
+<tr><td class="t">120</td><td class="t">fotos productos sin imagen</td></tr>
+<tr><td class="t">121</td><td class="t">categoria supermercado</td></tr>
+<tr><td class="t">122</td><td class="t">categoria zapateria</td></tr>
+<tr><td class="t">123</td><td class="t">icono zapatilla zapateria</td></tr>
+<tr><td class="t">124</td><td class="t">categoria perfumeria</td></tr>
+<tr><td class="t">124</td><td class="t">icono pata forrajeria</td></tr>
+<tr><td class="t">125</td><td class="t">productos fotos drive</td></tr>
+<tr><td class="t">126</td><td class="t">perfumeria a limpieza y supermercado</td></tr>
+<tr><td class="t">127</td><td class="t">todo a perfumeria</td></tr>
+<tr><td class="t">128</td><td class="t">search mejorada y eventos</td></tr>
+<tr><td class="t">129</td><td class="t">productos ropa drive</td></tr>
+<tr><td class="t">130</td><td class="t">quitar portada repetida</td></tr>
+<tr><td class="t">131</td><td class="t">boost combos</td></tr>
+<tr><td class="t">132</td><td class="t">mp oauth state</td></tr>
+<tr><td class="t">133</td><td class="t">transfer obligatoria y sin efectivo en envio</td></tr>
+<tr><td class="t">134</td><td class="t">productos kiosco bebidas drive</td></tr>
+<tr><td class="t">135</td><td class="t">seller requests delete own rejected</td></tr>
+<tr><td class="t">136</td><td class="t">professional requests delete own rejected</td></tr>
+<tr><td class="t">137</td><td class="t">home promos hasta 3 por espacio</td></tr>
+<tr><td class="t">138</td><td class="t">banners inicio posiciones 2 y 3</td></tr>
+<tr><td class="t">139</td><td class="t">courier flow</td></tr>
+<tr><td class="t">140</td><td class="t">courier flow cierre</td></tr>
+<tr><td class="t">141</td><td class="t">productos forrajeria drive</td></tr>
+<tr><td class="t">142</td><td class="t">productos libreria drive</td></tr>
+<tr><td class="t">143</td><td class="t">productos limpieza drive</td></tr>
+<tr><td class="t">144</td><td class="t">get store orders rpc</td></tr>
+<tr><td class="t">145</td><td class="t">create order sin envio gratis</td></tr></table>
+</body></html>
