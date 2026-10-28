@@ -345,21 +345,111 @@ body {
 .compra-item {
   border: 1px solid var(--bl-perfil-border);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   transition: border-color var(--duration-normal) ease;
 }
 
-.compra-item:hover {
+.compra-item:hover,
+.compra-item[open] {
   border-color: var(--bl-perfil-primary);
 }
 
-.compra-info {
+/* Cabecera siempre visible (el <summary>): foto, pedido, fecha, estado y total.
+   Tocarla despliega el resto, que vive en .compra-body. */
+.compra-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--radius-md);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.compra-head::-webkit-details-marker { display: none; }
+
+.compra-head:focus-visible {
+  outline: 2px solid var(--bl-perfil-primary);
+  outline-offset: 2px;
+}
+
+.compra-head__thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+}
+
+.compra-head__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--bl-perfil-border);
+  background: #f8fafc;
+}
+
+.compra-head__more {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 1.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 1rem;
+  background: var(--bl-perfil-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.compra-head__main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
+}
+
+.compra-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.compra-head__row .compra-status { margin-top: 0; }
+
+.compra-head__chevron {
+  flex-shrink: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: 0.4rem;
+  border-right: 2px solid var(--bl-perfil-text-sec);
+  border-bottom: 2px solid var(--bl-perfil-text-sec);
+  transform: rotate(45deg);
+  transition: transform var(--duration-normal) ease;
+}
+
+.compra-item[open] > .compra-head .compra-head__chevron {
+  transform: rotate(-135deg);
+  margin-top: 0.55rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compra-head__chevron { transition: none; }
+}
+
+/* Detalle del pedido: lo que antes llenaba la tarjeta entera. */
+.compra-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--bl-perfil-border);
+  min-width: 0;
 }
 
 .compra-id {
@@ -390,11 +480,9 @@ body {
 .compra-status--ready_for_pickup { background: #bfdbfe; color: #1e3a8a; }
 
 /* Flujo del pedido (js/order-utils.js): con la línea de tiempo, el código de
-   retiro y los avisos, la tarjeta crece para abajo -- la info ocupa todo el
-   ancho y el total queda arriba a la derecha. */
-.compra-item { align-items: flex-start; gap: 1rem; }
-.compra-info { flex: 1; min-width: 0; gap: 0.45rem; }
-.compra-info > .ord-timeline { margin: 0.5rem 0 0.25rem; }
+   retiro y los avisos, el detalle crece para abajo -- por eso la tarjeta viene
+   plegada y solo muestra la cabecera hasta que se toca. */
+.compra-body > .ord-timeline { margin: 0.5rem 0 0.25rem; }
 .compra-next { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.35rem; }
 .compra-next__btn { align-self: flex-start; }
 .compra-review { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.85rem; border: 1px solid var(--bl-perfil-border); border-radius: var(--radius-md); }
@@ -414,17 +502,10 @@ body {
   color: var(--bl-perfil-primary);
 }
 
-/* En un teléfono la tarjeta seguía siendo una fila fija: la info quedaba
-   apretada en media pantalla (el detalle del pedido cortado en dos líneas, el
-   selector de comprobante en ~190px) y el precio flotando al costado. */
+/* En un teléfono la cabecera y el detalle usan menos relleno. */
 @media (max-width: 600px) {
-  .compra-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .compra-total { align-self: flex-start; }
+  .compra-head { padding: 0.875rem; gap: 0.75rem; }
+  .compra-body { padding: 0.875rem; }
 }
 
 .compra-items-list {

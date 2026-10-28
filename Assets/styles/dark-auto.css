@@ -853,6 +853,9 @@ html[data-theme="dark"] .perfil-card__title {
 html[data-theme="dark"] .perfil-card__title i {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .compra-head__thumb img {
+  background: #1b232c;
+}
 html[data-theme="dark"] .compra-status--pending {
   background: #5a521e;
   color: #f5cb9c;

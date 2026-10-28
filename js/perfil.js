@@ -1494,35 +1494,65 @@ function buildCompraCancelButton(order, ctx) {
 }
 
 /**
+ * Cabecera de la tarjeta de un pedido: lo que se ve con la tarjeta cerrada
+ * (foto del primer producto, número de pedido, comercio y fecha, estado y total). Es el
+ * `<summary>` del `<details>`: tocarla despliega el resto. Sin links ni botones
+ * adentro -- un toque en cualquier parte de la cabecera abre o cierra.
+ */
+function buildCompraHead(order, statusText, storeName) {
+  const date = new Date(order.created_at).toLocaleDateString('es-AR');
+  const items = order.order_items || [];
+
+  const head = el('summary', 'compra-head');
+
+  const thumb = el('span', 'compra-head__thumb');
+  const img = document.createElement('img');
+  img.src = items[0]?.products?.image_url || '/img/no-image.svg';
+  img.alt = '';
+  img.loading = 'lazy';
+  thumb.appendChild(img);
+  if (items.length > 1) thumb.appendChild(el('span', 'compra-head__more', `+${items.length - 1}`));
+
+  const main = el('span', 'compra-head__main');
+  main.appendChild(el('span', 'compra-id', `Pedido ${orderLabel(order)}`));
+  main.appendChild(el('span', 'compra-date', `${storeName} · ${date}`));
+  const row = el('span', 'compra-head__row');
+  row.appendChild(el('span', `compra-status compra-status--${order.status}`, statusText));
+  row.appendChild(el('span', 'compra-total', formatPrice(order.total_price)));
+  main.appendChild(row);
+
+  const chevron = el('span', 'compra-head__chevron');
+  chevron.setAttribute('aria-hidden', 'true');
+
+  head.append(thumb, main, chevron);
+  return head;
+}
+
+/**
  * Construye la card de una orden con DOM API (nunca innerHTML): el nombre
  * de la tienda y el título de cada producto los define el vendedor, así que
  * se tratan como no confiables — mismo criterio que F1-01 en comercio.js/
  * producto.js.
+ *
+ * Es un `<details>` plegado: con varios pedidos la lista entera pasaba de las
+ * diez pantallas. Cerrada muestra solo la cabecera (buildCompraHead); el resto
+ * -- línea de tiempo, productos, pago, historial, cancelar -- está adentro.
  */
 function buildCompraItem(order, ctx) {
-  const date = new Date(order.created_at).toLocaleDateString('es-AR');
   const statusText = ORDER_STATUS_LABELS[order.status] || order.status;
   const storeName = order.stores?.name || 'Comercio';
   const events = ctx.eventsByOrder.get(order.id) || [];
 
-  const item = document.createElement('div');
-  item.className = 'compra-item';
+  const item = el('details', 'compra-item');
   item.id = `order-${order.id}`;
+  item.appendChild(buildCompraHead(order, statusText, storeName));
 
-  const info = document.createElement('div');
-  info.className = 'compra-info';
+  const info = el('div', 'compra-body');
 
-  const idSpan = document.createElement('span');
-  idSpan.className = 'compra-id';
-  idSpan.textContent = `Pedido ${orderLabel(order)} — ${storeName}`;
-  info.appendChild(idSpan);
-
-  const dateSpan = document.createElement('span');
-  dateSpan.className = 'compra-date';
+  // Lo que la cabecera no dice: cómo se recibe y cómo se paga.
   const methodLabel = DELIVERY_METHOD_LABELS[order.delivery_method] || 'Retiro en el local';
   const paymentLabel = PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || '';
-  dateSpan.textContent = `${date} · ${methodLabel} · ${paymentLabel}`;
-  info.appendChild(dateSpan);
+  info.appendChild(el('span', 'compra-date', [methodLabel, paymentLabel].filter(Boolean).join(' · ')));
 
   info.appendChild(buildTimeline(order, events));
 
@@ -1576,13 +1606,6 @@ function buildCompraItem(order, ctx) {
     info.appendChild(el('span', 'compra-date', `Envío a: ${order.shipping_address}`));
   }
 
-  const statusDiv = document.createElement('div');
-  const statusSpan = document.createElement('span');
-  statusSpan.className = `compra-status compra-status--${order.status}`;
-  statusSpan.textContent = statusText;
-  statusDiv.appendChild(statusSpan);
-  info.appendChild(statusDiv);
-
   const nextStep = buildCompraNextStep(order, ctx);
   if (nextStep) info.appendChild(nextStep);
 
@@ -1599,11 +1622,6 @@ function buildCompraItem(order, ctx) {
   if (cancelBtn) info.appendChild(cancelBtn);
 
   item.appendChild(info);
-
-  const totalDiv = document.createElement('div');
-  totalDiv.className = 'compra-total';
-  totalDiv.textContent = formatPrice(order.total_price);
-  item.appendChild(totalDiv);
 
   return item;
 }
@@ -1669,8 +1687,12 @@ function renderComprasStatusChips() {
 function applyComprasFilter() {
   const q = (comprasFilterInput?.value || '').trim().toLowerCase();
 
-  // "Ver historial del pedido" abierto: se vuelve a abrir después de dibujar,
-  // así un cambio de filtro o una actualización en vivo no lo cierra.
+  // Pedidos desplegados y "Ver historial del pedido" abiertos: se vuelven a abrir
+  // después de dibujar, así un cambio de filtro o una actualización en vivo
+  // (o cancelar / reseñar, que recargan la lista) no los cierra.
+  const openOrderIds = new Set(
+    Array.from(comprasContainer.querySelectorAll('.compra-item[open]')).map((item) => item.id)
+  );
   const openHistoryIds = new Set(
     Array.from(comprasContainer.querySelectorAll('.compra-item'))
       .filter((item) => item.querySelector('details.compra-history[open]'))
@@ -1701,6 +1723,7 @@ function applyComprasFilter() {
   } else {
     orders.forEach((order) => {
       const item = buildCompraItem(order, comprasCtx);
+      if (openOrderIds.has(item.id)) item.open = true;
       if (openHistoryIds.has(item.id)) item.querySelector('details.compra-history')?.setAttribute('open', '');
       comprasContainer.appendChild(item);
     });
@@ -2932,6 +2955,8 @@ async function renderFullProfile(user) {
 
 function flashHighlight(el) {
   if (!el) return;
+  // Un pedido plegado se despliega antes: si no, el aviso llevaba a una cabecera sola.
+  if (el instanceof HTMLDetailsElement) el.open = true;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   el.style.transition = 'background-color 0.3s ease, box-shadow 0.3s ease';
   el.style.boxShadow = '0 0 0 3px var(--bl-perfil-primary, var(--bl-primary))';

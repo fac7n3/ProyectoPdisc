@@ -90,6 +90,12 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-28 — Mis compras: cada pedido es una tarjeta plegable**, a pedido del usuario (la lista era muy larga en el
+  celular). Cerrada muestra foto del primer producto, "Pedido #BL-XXXX", comercio · fecha, estado y total (~100 px); al tocarla
+  se despliega todo lo demás (línea de tiempo, productos, pagar, historial, cancelar). Es un `<details>` (`buildCompraItem` /
+  `buildCompraHead` en `js/perfil.js`); lo desplegado **se conserva** al filtrar o cuando llega un cambio en vivo, y los links
+  de notificación / la vuelta de Mercado Pago **abren** el pedido (`flashHighlight`). Verificado en Chromium con Supabase
+  simulado (claro, oscuro, escritorio); **sin probar en el teléfono ni con cuentas reales.**
 - **Hecho 2026-10-28 (en `main`) — Card "¿Instalar la app?" en el hub de Mi perfil, justo debajo de "Ajustes"**, a pedido del
   usuario. Solo en celular y fuera de la app ya instalada. Chrome en Android: botón "Instalar" (abre el cartel del navegador);
   iPhone y el resto: los pasos a mano ("Compartir -> Agregar a inicio" / "menú ⋮ -> Instalar aplicación"); si la app ya está

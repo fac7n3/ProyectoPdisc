@@ -5822,3 +5822,24 @@ y el menú, `js/install-app.js` pasó a ser un módulo con estado (`getInstallSt
 sola vez por carga). El menú se rearma en cada apertura, por eso el ítem refleja el estado del momento. Verificado sobre el
 build real con sesión y Supabase simulados en Chromium móvil: ítem debajo de Ajustes, cartel directo, ruta a la card con la URL
 limpia, sin errores. **Sin probar en el teléfono real.**
+
+## 2026-10-28 — "Mis compras": cada pedido es una tarjeta plegable
+
+Pedido del usuario (captura de Mis compras en el celular): con varios pedidos la lista era interminable porque cada
+tarjeta mostraba todo (línea de tiempo, productos, aviso de pago, botón, historial, cancelar). Ahora `buildCompraItem`
+(`js/perfil.js`) arma un `<details class="compra-item">` **plegado por defecto**: la cabecera (`<summary class="compra-head">`,
+`buildCompraHead`) muestra la foto del primer producto (con "+N" si hay más), "Pedido #BL-XXXX", comercio · fecha, el chip de
+estado y el total; adentro (`.compra-body`) queda todo lo de antes (medio de entrega y de pago, línea de tiempo, productos,
+pasos siguientes, comprobante, arrepentimiento, historial y cancelar). Cada tarjeta cerrada mide ~100 px en celular.
+**Decisiones que no son obvias:** (1) es `<details>` nativo, no JS propio: anda con teclado (Enter/Espacio) y lectores de
+pantalla sin código extra; la cabecera no lleva links ni botones adentro, un toque en cualquier parte abre/cierra.
+(2) **Lo desplegado sobrevive a los redibujos**: `applyComprasFilter` guarda los ids de `.compra-item[open]` (igual que ya
+hacía con "Ver historial del pedido") y los reabre, así el Realtime, los filtros, cancelar o reseñar (que llaman a
+`loadCompras`) no cierran lo que la persona estaba mirando. (3) `flashHighlight` **despliega** el pedido antes de hacer
+scroll: los links de notificación (`?tab=compras&order=<id>`) y la vuelta de Mercado Pago llevan a la tarjeta abierta, no a
+una cabecera sola. (4) El chip de estado y el total pasaron de la parte de abajo a la cabecera; el estado ya no se repite
+adentro. CSS en `perfil-custom.css` (se sacaron `.compra-info`, la regla de columna del <= 600 px y el `.compra-total` flotando
+a la derecha); `dark-auto.css` regenerado. Sin migración. Verificado en Chromium (celular 390 px claro y oscuro, escritorio
+1280 px) con el build real y Supabase simulado: cerradas al entrar, abrir/cerrar con toque y teclado, filtro por texto y por
+estado conservan lo abierto (también el historial interno), deep link `?order=` abre solo ese pedido y lo deja a la vista, sin
+scroll horizontal con todo abierto, `npm test` en verde. **Sin probar con cuentas reales ni en el teléfono.**
