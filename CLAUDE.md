@@ -91,6 +91,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-28 (rama `claude/keen-mayer-8cdwcy`) — Ícono de la app instalada (Android/iPhone)**, reportado por el usuario
+  con captura (salía chico dentro de una baldosa gris). El manifest ahora trae PNG `maskable` (fondo `#284175`, logo blanco) y
+  `any` (logo azul transparente) hechos del logo oficial; `apple-touch-icon.png` rehecho igual; `icon.svg` queda solo de favicon.
+  Detalle en `docs/brand-guidelines.md` sección 3. **El celular no lo cambia al instante:** Chrome revisa el ícono por su cuenta
+  (puede tardar un día o más, a veces con un cartel para aceptarlo); para verlo ya, desinstalar y volver a instalar la app.
 - **Hecho 2026-10-27 (en `main`) — Revisión de responsive en celular**, a pedido del usuario. Recorridas
   a 360 y 320 px las páginas públicas (inicio, búsqueda, filtros, comercio, producto, modal, carrito, comercios, contratar,
   farmacias, emergencias, info, legales, login, registro). **Arreglado:** banners de comercios del inicio (en celular la

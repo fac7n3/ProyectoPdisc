@@ -5776,3 +5776,18 @@ el nombre ocupe uno o dos renglones); `comercios.html` con `.catalog-content` en
 `info.html`, `terminos.html` y `privacidad.html` con un `@media (max-width: 600px)` en su `<style>` (tarjeta a 12 px de los
 bordes, 16-18 px de relleno, título 1.75rem; respuestas de la FAQ de 223 a 247 px); `farmacias.html` con
 `.fx-week > .fx-muted { margin: 0; padding: 0.85rem 1rem }`. `dark-auto.css` sigue al día (no hay colores fijos nuevos).
+
+## 2026-10-28 — Ícono de la app instalada en Android
+Reporte del usuario con captura de su Galaxy S21 FE: el ícono de la app (la página instalada desde Chrome, PWA) salía chico,
+dentro de una baldosa gris que pone Samsung, y con el dibujo simplificado de `icon.svg` (el techo blanco se sale del borde del
+pin). Causa: el manifest solo tenía `icon.svg` con `purpose: "any"`; sin un ícono `maskable`, Android no puede armar un ícono
+adaptable y achica el que hay dentro de una placa. **Arreglo:** cinco PNG generados a partir de
+`Assets/images/Logos/logoazulpng.png` (su canal alfa, pintado de nuevo): `icon-maskable-192/512.png` (fondo `#284175` de borde a
+borde, logo blanco al 70% del alto; el pin entra en un círculo de diámetro igual a su alto, así que queda dentro de la zona
+segura del 80%), `icon-192/512.png` (logo azul sobre transparente, para escritorio y la pantalla de carga) y
+`apple-touch-icon.png` reemplazado (antes era un recorte del techo sin el pin) por el mismo diseño que el maskable. El manifest
+lista los 4 PNG y ya no el SVG, que queda solo como favicon. Archivos en `public/` y copiados a `dist/` (sin rebuild).
+Verificado en Chromium con CDP: `Page.getAppManifest` sin errores, `getInstallabilityErrors` vacío y los 4 íconos 200 `image/png`.
+**Gotcha:** el teléfono no cambia el ícono al instante. Chrome revisa el manifest de la app instalada por su cuenta, al abrirla
+(puede tardar un día o más) y puede mostrar un cartel para aceptar el ícono nuevo; para verlo ya, desinstalar la app y volver a
+instalarla desde la página. Sin probar en el teléfono real.
