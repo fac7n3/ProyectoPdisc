@@ -90,7 +90,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-10-28 (en `main`) — Tarjeta "¿Instalar la app?" en Mi perfil → Ajustes**, a pedido del
+- **Hecho 2026-10-28 (en `main`) — Card "¿Instalar la app?" en el hub de Mi perfil, justo debajo de "Ajustes"**, a pedido del
   usuario. Solo en celular y fuera de la app ya instalada. Chrome en Android: botón "Instalar" (abre el cartel del navegador);
   iPhone y el resto: los pasos a mano ("Compartir -> Agregar a inicio" / "menú ⋮ -> Instalar aplicación"); si la app ya está
   en el celular dice "Ya tenés la app". `js/install-app.js` + `js/install-app-utils.js` (con test). De paso, los botones

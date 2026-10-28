@@ -5792,9 +5792,9 @@ Verificado en Chromium con CDP: `Page.getAppManifest` sin errores, `getInstallab
 (puede tardar un día o más) y puede mostrar un cartel para aceptar el ícono nuevo; para verlo ya, desinstalar la app y volver a
 instalarla desde la página. Sin probar en el teléfono real.
 
-## 2026-10-28 — Tarjeta "¿Instalar la app?" en Mi perfil → Ajustes
+## 2026-10-28 — Card "¿Instalar la app?" en el hub de Mi perfil (debajo de Ajustes)
 Pedido del usuario (tiene la app instalada desde la página en su Android): una card en Ajustes, en celular, para instalarla.
-`#install-app-card` arriba de todo en `#tab-ajustes` (`pages/perfil.html`), con el mismo ícono que queda en la pantalla de inicio
+`#install-app-card` en el hub de Mi perfil, **como card propia justo debajo de "Ajustes"** (no adentro de esa sección; el usuario lo pidió así al verla en el teléfono; `pages/perfil.html`, `.account-card.install-card`), con el mismo ícono que queda en la pantalla de inicio
 (`icon-maskable-192.png`). **Solo celular y solo fuera de la app instalada** (`display-mode: standalone` o `navigator.standalone`
 de iOS la ocultan). Lógica pura en `js/install-app-utils.js` (`detectMobilePlatform`, `installCardState`, con test); el DOM y los
 eventos en `js/install-app.js`, que `perfil.js` importa arriba de todo porque Chrome dispara `beforeinstallprompt` **una sola vez

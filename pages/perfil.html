@@ -107,6 +107,16 @@
           <span class="account-card__title">Ajustes</span>
           <span class="account-card__desc">Preferencias, sesión y privacidad.</span>
         </button>
+        <!-- Instalar la app: solo celular y fuera de la app instalada (js/install-app.js saca el hidden) -->
+        <div class="account-card install-card" id="install-app-card" aria-labelledby="install-app-title" hidden>
+          <img src="/icon-maskable-192.png" alt="" class="install-card__icon" width="40" height="40" />
+          <h2 class="account-card__title" id="install-app-title">¿Instalar la app?</h2>
+          <p class="account-card__desc" id="install-app-text" aria-live="polite"></p>
+          <p class="account-card__desc install-card__steps" id="install-app-steps" hidden></p>
+          <button type="button" class="datos-btn datos-btn--primary install-card__btn" id="install-app-btn" hidden>
+            <i class="fa-solid fa-download" aria-hidden="true"></i> Instalar
+          </button>
+        </div>
       </div>
 
       <!-- Panel de la sección abierta -->
@@ -399,19 +409,6 @@
             <h2 class="perfil-card__title">
               <i class="fa-solid fa-gear"></i> Ajustes
             </h2>
-
-            <!-- ---------- Instalar la app (solo celular y fuera de la app; js/install-app.js) ---------- -->
-            <section class="install-card" id="install-app-card" aria-labelledby="install-app-title" hidden>
-              <img src="/icon-maskable-192.png" alt="" class="install-card__icon" width="56" height="56" />
-              <div class="install-card__body">
-                <h3 class="install-card__title" id="install-app-title">¿Instalar la app?</h3>
-                <p class="install-card__text" id="install-app-text" aria-live="polite"></p>
-                <p class="install-card__steps" id="install-app-steps" hidden></p>
-                <button type="button" class="datos-btn datos-btn--primary install-card__btn" id="install-app-btn" hidden>
-                  <i class="fa-solid fa-download" aria-hidden="true"></i> Instalar
-                </button>
-              </div>
-            </section>
 
             <!-- ---------- Tu panel al entrar (solo cuentas con panel propio) ---------- -->
             <section class="datos-group" id="ajustes-auto-redirect" hidden>
