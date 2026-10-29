@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-28. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-29. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -90,6 +90,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-29 (en `main` y migración 144 APLICADA a producción el 2026-10-29) — Productos, ofertas y banners con las fotos NUEVAS del RESTO de las categorías del Drive** (Supermercado, Verdulería, Lácteos, Carnicería, Tecnología y Zapatería),
+  a pedido del usuario ("lo mismo", **mezclando rubros**: lo de una categoría también en otra, y Supermercado/Almacén con de todo menos forrajería). **Migración 144** (`db/schema/144_productos_resto_categorias_drive.sql`):
+  156 productos con 198 fotos (170 fotos nuevas en webp 800 px en `public/img/productos/` + `dist/`; el resto son fotos que ya estaban y se reusan en otro comercio), 13 con precio tachado + fecha de fin (vencen entre el 08/11 y el 30/11/2026),
+  5 cupones (`VERDULERIA10`, `SANTAROSA10`, `PARRILLA5`, `PASOAPASO10`, `GAMER5`, vencen el 30/11/2026), 3 banners del inicio (`public/img/promos/`) y cabecera/logo de los comercios nuevos (`public/img/comercios/`).
+  **Cinco cuentas de prueba nuevas** (rol vendedor; **la contraseña no está en el repo**): `proyectopdisc+laquinta@gmail.com` (**Verdulería La Quinta**, 26 productos), `+santarosa` (**Lácteos Santa Rosa**, 15), `+laparrilla` (**Carnicería La Parrilla**, 15),
+  `+pasoapaso` (**Zapatería Paso a Paso**, 21, con talles) y `+gamerzone` (**GamerZone Baradero**, 9: PS5, joystick, componentes). Comercios existentes que suman: **Super Baradero** (+27: pantry, galletitas, verdura, lácteos, carnes, jabón, limpieza, alimento de perro),
+  **Almacén Don José** (+21: conservas, condimentos, dulces y también verdura, lácteos, carnes, jabón y detergente; **nunca forrajería**), **Kiosco El Paso** (+11 snacks y galletitas), **Golosinas Dulce Tentación** (Mantecol), **Panadería El Sol** (Don Satur),
+  **Carnicería El Novillo** (+3) y **TecnoCenter Baradero** (+5: notebooks, TV, auriculares, reloj). Lo del Supermercado se repartió en su rubro natural (verduras -> Verdulería, dulce de leche -> Lácteos, snacks/galletitas -> Kiosco, Don Satur -> Panadería, almacén -> Almacén, el resto -> Supermercado).
+  **Banners:** las 18 posiciones ya estaban ocupadas; se reemplazaron c2 (Panadería El Sol) por Verdulería La Quinta, f1 (Almacén Don José) por Lácteos Santa Rosa ("hasta 14% OFF") y b2 (Indumentaria La Moda) por Zapatería Paso a Paso ("hasta 17% OFF"); los comercios reemplazados siguen con sus productos y su página.
+  **Quedaron SIN subir ~162 fotos chicas (menos de ~37 KB)** (82 de Supermercado, 23 Zapatería, 22 Lácteos, 14 Carnicería, 11 Verdulería, 10 Tecnología): el conector de Drive las devuelve en línea y no se pueden guardar a disco. La foto de las peras (2 MB) viene cortada por el tope de Drive.
+  **Publicado en este orden:** merge a `main` -> deploy de Vercel con las imágenes (200 `image/webp`) -> cuentas creadas por SQL (+ `profiles.role='vendedor'` con `app.role_change_authorized`) -> migración 144 aplicada **en 3 partes** (`144a/b/c_*`, tienen helpers `pg_temp` repetidos y un alias corto `pg_temp.u(...)`; el archivo del repo es la versión completa y legible) -> verificado en la base:
+  535 productos (379 + 156), 56 ofertas vigentes (43 + 13), 18 cupones activos (13 + 5), 0 grupos de opciones vacíos, `home_promos` c2/f1/b2 reasignados y `products_require_transfer_alias`/`home_promos_guard` de vuelta en `O`. **Sin probar el inicio ni los comercios en el navegador contra producción.**
 - **Hecho 2026-10-28 — Mis compras: cada pedido es una tarjeta plegable**, a pedido del usuario (la lista era muy larga en el
   celular). Cerrada muestra foto del primer producto, "Pedido #BL-XXXX", comercio · fecha, estado y total (~100 px); al tocarla
   se despliega todo lo demás (línea de tiempo, productos, pagar, historial, cancelar). Es un `<details>` (`buildCompraItem` /
