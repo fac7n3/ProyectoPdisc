@@ -90,6 +90,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-30 — Detalle de un pedido (panel de vendedor): la página de atrás ya no se mueve**, a pedido del usuario
+  (con captura). Con el cartel `#pd-detail` abierto la rueda scrolleaba el fondo. `pages/vender.html`: `html:has(.pd-detail[open])`
+  con `overflow: hidden` + `scrollbar-gutter: stable` (para que no salte el ancho al esconderse la barra) y `overscroll-behavior: contain`
+  en la tarjeta. Solo CSS, sin JS ni migración; vale para cualquier apertura del detalle (se apaga solo al cerrar). Verificado en Chromium
+  con una maqueta (rueda sobre el fondo y sobre la tarjeta: 0 px; cerrado: vuelve a scrollear); **sin probar el panel logueado.**
 - **Hecho 2026-10-30 — "¿Sos profesional o técnico? Sumate al directorio" arriba de todo en Contratar**, a pedido del usuario
   (con captura): estaba al final de `pages/contratar.html`, después de toda la lista; ahora va justo debajo del título
   "Contratar" y **antes de "Profesionales destacados"**, los chips de categoría y el buscador, así no hay que bajar para
