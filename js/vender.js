@@ -905,6 +905,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   // frena a las demás.
   const notificacionesContainer = document.getElementById('notificaciones-container');
   const supportContainer = document.getElementById('support-container');
+  renderPedidosSkeleton();
   const results = await Promise.allSettled([
     renderAllOrders(),
     fetchProducts().then(() => Promise.all([renderResumen(), renderResenas()])),
@@ -1317,9 +1318,73 @@ async function loadOrdersLegacy() {
   return true;
 }
 
+/**
+ * Esqueleto de Pedidos mientras llega la primera carga: las 5 tarjetas de
+ * arriba y 3 pedidos con la misma forma que buildPedidoCard (número y estado,
+ * chips, producto, comprador, botón y total). La barra con brillo es la de la
+ * página del comercio (.store-skeleton__bar, ya con modo oscuro y "reducir
+ * animaciones"). renderPedidos lo reemplaza al vaciar los dos contenedores.
+ */
+function renderPedidosSkeleton() {
+  const dash = document.getElementById('pedidos-dash');
+  const list = document.getElementById('pedidos-list');
+  if (!dash || !list) return;
+  const bar = (cls) => rsEl('span', `store-skeleton__bar pd-skel__bar ${cls}`);
+  const lines = (...classes) => {
+    const box = rsEl('div', 'pd-skel__lines');
+    classes.forEach((cls) => box.appendChild(bar(cls)));
+    return box;
+  };
+  const row = (...children) => {
+    const box = rsEl('div', 'pd-skel__row');
+    children.forEach((child) => box.appendChild(child));
+    return box;
+  };
+
+  dash.textContent = '';
+  dash.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 5; i += 1) {
+    const stat = rsEl('div', 'pd-stat pd-skel');
+    stat.append(row(bar('pd-skel--icon'), bar('pd-skel--w60')), bar('pd-skel--value'), bar('pd-skel--sub'));
+    dash.appendChild(stat);
+  }
+
+  list.textContent = '';
+  list.hidden = false;
+  list.setAttribute('aria-busy', 'true');
+  list.appendChild(rsEl('p', 'sr-only', 'Cargando pedidos…'));
+  for (let i = 0; i < 3; i += 1) {
+    const card = rsEl('div', 'pd-card pd-skel');
+    card.setAttribute('aria-hidden', 'true');
+    const head = rsEl('div', 'pd-card__head');
+    head.append(lines('pd-skel--order', 'pd-skel--date'), bar('pd-skel--pill'));
+    const product = rsEl('div', 'pd-card__section');
+    product.appendChild(row(bar('pd-skel--thumb'), lines('pd-skel--w80', 'pd-skel--w40')));
+    const buyer = rsEl('div', 'pd-card__section');
+    buyer.appendChild(row(bar('pd-skel--avatar'), lines('pd-skel--w60', 'pd-skel--w40')));
+    const foot = rsEl('div', 'pd-card__foot');
+    foot.append(lines('pd-skel--label', 'pd-skel--total'), bar('pd-skel--btn'));
+    card.append(head, row(bar('pd-skel--chip'), bar('pd-skel--chip')), product, buyer, bar('pd-skel--action'), foot);
+    list.appendChild(card);
+  }
+}
+
+/** Saca las marcas de carga del esqueleto (lo que había adentro lo vacía renderPedidos). */
+function clearPedidosSkeletonState() {
+  document.getElementById('pedidos-dash')?.removeAttribute('aria-hidden');
+  document.getElementById('pedidos-list')?.removeAttribute('aria-busy');
+}
+
 /** Recarga la lista entera y la redibuja. */
 async function renderAllOrders() {
   if (!(await loadOrders())) {
+    // Si falló la primera carga, no dejar el esqueleto girando para siempre.
+    if (document.querySelector('#pedidos-list .pd-skel')) {
+      document.getElementById('pedidos-dash').textContent = '';
+      clearPedidosSkeletonState();
+      renderPedidosEmptyState('No se pudieron cargar los pedidos', 'Revisá tu conexión y recargá la página.');
+      return;
+    }
     showToast('No se pudo actualizar la lista de pedidos. Se muestra la última que tenías.', 'error');
     return;
   }
@@ -1359,8 +1424,8 @@ function patchOrderCards(ids) {
 
   renderPedidosStats();
   const matching = filterPedidos();
-  // Sin tarjetas todavía (estado vacío) o sin ninguna que mostrar: el dibujo completo.
-  if (list.hidden || !list.children.length || !matching.length) { renderPedidos(); return; }
+  // Sin tarjetas todavía (esqueleto o estado vacío) o sin ninguna que mostrar: el dibujo completo.
+  if (list.hidden || !list.children.length || list.querySelector('.pd-skel') || !matching.length) { renderPedidos(); return; }
 
   const existing = new Map([...list.querySelectorAll(':scope > .pd-card')].map((c) => [c.dataset.orderId, c]));
   let prev = null;
@@ -2289,6 +2354,7 @@ function filterPedidos() {
 
 /** Renderiza las tarjetas (las primeras `pedidosVisible`) de lo que devuelve filterPedidos(). */
 function renderPedidos() {
+  clearPedidosSkeletonState();
   renderPedidosStats();
 
   const list = document.getElementById('pedidos-list');

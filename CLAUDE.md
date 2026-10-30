@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-29. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-10-30. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -90,6 +90,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)**, a pedido del usuario: mientras carga, la sección
+  muestra 5 tarjetas de stats y 3 pedidos grises con la forma de la tarjeta real (`renderPedidosSkeleton` en `js/vender.js`,
+  barras `.store-skeleton__bar` de home.css, que ya tienen modo oscuro y "reducir animaciones"; medidas `.pd-skel*` en `vender.html`).
+  Lo reemplaza el primer `renderPedidos`; si la primera carga falla muestra "No se pudieron cargar los pedidos". Sin migración.
+  Verificado en Chromium con una maqueta (claro, oscuro, celular); **sin probar logueado.**
 - **Hecho 2026-10-30 — Detalle de un pedido (panel de vendedor): la página de atrás ya no se mueve**, a pedido del usuario
   (con captura). Con el cartel `#pd-detail` abierto la rueda scrolleaba el fondo. `pages/vender.html`: `html:has(.pd-detail[open])`
   con `overflow: hidden` + `scrollbar-gutter: stable` (para que no salte el ancho al esconderse la barra) y `overscroll-behavior: contain`

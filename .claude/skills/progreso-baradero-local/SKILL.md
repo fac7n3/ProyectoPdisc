@@ -5851,3 +5851,21 @@ Pedido del usuario: "lo mismo con el resto de las categorías, mezclando perfume
 - **Banners:** c2 -> Verdulería La Quinta, f1 -> Lácteos Santa Rosa, b2 -> Zapatería Paso a Paso (los % OFF salen de la base: 14 % y 17 %; vencen con las ofertas).
 - **Publicación:** merge a `main` (d26c2a5) -> deploy READY y 200 `image/webp` -> 5 cuentas por SQL (+ rol vendedor con `app.role_change_authorized`) -> `apply_migration` en 3 partes `144a/b/c` -> verificación (535 productos, 56 ofertas vigentes, 18 cupones, 0 grupos vacíos, triggers en `O`).
 - **Gotchas:** (1) el `execute_sql` con varias sentencias devuelve solo el resultado de la última; (2) `tgenabled` es `"char"`: castear a text para concatenar; (3) las funciones `pg_temp` son por sesión: cada parte de la migración las redefine, y una función SQL (`pg_temp.u`) se valida al crearla, así que va después de la que llama; (4) la foto de peras llegó cortada (tope de 2 MB de Drive) y se cargó con `LOAD_TRUNCATED_IMAGES`.
+
+## 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)
+Pedido del usuario: "cuando está cargando, poné un esqueleto de carga, para decirle al usuario qué es lo que se viene".
+Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que terminaba `renderAllOrders`.
+- **`renderPedidosSkeleton()`** (`js/vender.js`), llamada en `loadDashboard` justo antes del `Promise.allSettled`: 5 tarjetas
+  de stats y 3 pedidos con la misma forma que `buildPedidoCard` (número + fecha y estado, dos chips, foto + producto,
+  avatar + comprador, botón, total + "Detalle"). Reusa las clases reales (`.pd-stat`, `.pd-card`, `.pd-card__section`,
+  `.pd-card__foot`) para que mida igual y no salte al llegar los datos.
+- **Color y brillo:** la barra es `.store-skeleton__bar` (home.css, la de la página del comercio), que ya tiene su versión en
+  modo oscuro (dark-auto) y se queda quieta con "reducir animaciones". El CSS nuevo (`.pd-skel*` en el `<style>` de
+  `vender.html`) solo tiene medidas: no hubo que regenerar `dark-auto.css`.
+- **Se reemplaza solo:** `renderPedidos` vacía los dos contenedores y saca `aria-busy`/`aria-hidden`
+  (`clearPedidosSkeletonState`); `patchOrderCards` hace el dibujo completo si todavía hay esqueleto (un pedido que llega por
+  Realtime antes de la primera carga no deja tarjetas grises mezcladas). Si la **primera** carga falla, en vez de dejar el
+  esqueleto para siempre muestra "No se pudieron cargar los pedidos" (las recargas posteriores siguen con el toast de siempre).
+- **Accesibilidad:** la lista lleva `aria-busy="true"` + un `.sr-only` "Cargando pedidos…"; las tarjetas grises van con `aria-hidden`.
+- Verificado en Chromium con una maqueta (la sección real de `vender.html` con su CSS y la función copiada de `vender.js`):
+  claro, oscuro y celular 390 px, sin scroll horizontal; `npm test` en verde. **Sin probar logueado** contra la base.
