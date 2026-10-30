@@ -90,6 +90,12 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-10-30 — "¿Sos profesional o técnico? Sumate al directorio" arriba de todo en Contratar**, a pedido del usuario
+  (con captura): estaba al final de `pages/contratar.html`, después de toda la lista; ahora va justo debajo del título
+  "Contratar" y **antes de "Profesionales destacados"**, los chips de categoría y el buscador, así no hay que bajar para
+  sumarse. Mismo texto y link (`vender.html?tipo=servicio`); solo cambió el lugar y el margen (`.ct-cta`, de "arriba 2rem" a
+  "abajo 1.5rem"). Verificado en Chromium con Supabase simulado (claro, oscuro y celular 390 px): el aviso queda entre el título
+  y las categorías y se ve sin hacer scroll. Sin migración.
 - **Hecho 2026-10-29 (en `main` y migración 144 APLICADA a producción el 2026-10-29) — Productos, ofertas y banners con las fotos NUEVAS del RESTO de las categorías del Drive** (Supermercado, Verdulería, Lácteos, Carnicería, Tecnología y Zapatería),
   a pedido del usuario ("lo mismo", **mezclando rubros**: lo de una categoría también en otra, y Supermercado/Almacén con de todo menos forrajería). **Migración 144** (`db/schema/144_productos_resto_categorias_drive.sql`):
   156 productos con 198 fotos (170 fotos nuevas en webp 800 px en `public/img/productos/` + `dist/`; el resto son fotos que ya estaban y se reusan en otro comercio), 13 con precio tachado + fecha de fin (vencen entre el 08/11 y el 30/11/2026),
