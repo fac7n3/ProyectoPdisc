@@ -90,6 +90,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **En curso 2026-10-30 (maqueta en la rama `claude/zen-dijkstra-fx5r82`, SIN mergear) — Comparador "más barato / más cerca" en la búsqueda**,
+  a pedido del usuario. Si el mismo producto (mismo nombre normalizado, `js/price-compare-utils.js`) está en 2+ comercios, `search.html`
+  muestra arriba "Compará antes de comprar": fila 1 los comercios del más barato al más caro, fila 2 del más cerca al más lejos (con
+  "Usar mi ubicación"). **Los comercios no tienen coordenadas:** migración **146** (`stores.lat`/`lng`) escrita y **sin aplicar**; falta
+  la carga de la ubicación desde el panel del vendedor. Mientras tanto la fila 2 dice que no cargaron su ubicación. Detalle en el skill.
 - **Hecho 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)**, a pedido del usuario: mientras carga, la sección
   muestra 5 tarjetas de stats y 3 pedidos grises con la forma de la tarjeta real (`renderPedidosSkeleton` en `js/vender.js`,
   barras `.store-skeleton__bar` de home.css, que ya tienen modo oscuro y "reducir animaciones"; medidas `.pd-skel*` en `vender.html`).

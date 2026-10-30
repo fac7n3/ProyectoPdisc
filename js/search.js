@@ -9,6 +9,7 @@ import './speed-insights.js';
 import { logSearch, logSearchClick } from './search-analytics.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { groupSameProducts, rankByPrice, rankByDistance, formatDistance } from './price-compare-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -225,6 +226,291 @@ function scheduleSearchLog(query, results) {
   }, 1200);
 }
 
+// ── Comparador: mismo producto en varios comercios ──────────
+// Cuando la búsqueda trae un producto que también vende otro comercio (mismo
+// nombre, ver price-compare-utils.js), arriba de los resultados va una tarjeta
+// por producto con dos filas: los comercios del más barato al más caro, y del
+// más cerca al más lejos de la persona.
+const COMPARE_MAX_GROUPS = 3;
+// La misma clave que usa el mapa "Comercios cerca tuyo" del inicio: si ya la
+// compartió ahí, acá no se le vuelve a pedir.
+const NEARBY_LOCATION_KEY = 'bl_nearby_location';
+
+function loadUserLocation() {
+  try {
+    const raw = sessionStorage.getItem(NEARBY_LOCATION_KEY);
+    const loc = raw ? JSON.parse(raw) : null;
+    return loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng) ? loc : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveUserLocation(lat, lng) {
+  try {
+    sessionStorage.setItem(NEARBY_LOCATION_KEY, JSON.stringify({ lat, lng }));
+  } catch (_) { /* sin sessionStorage: vale solo para esta vista */ }
+}
+
+// Ubicación de los comercios (stores.lat/lng, migración 146). Aparte de
+// getStores() para que, si la columna todavía no existe, falle solo esto y la
+// fila "Más cerca" diga que no hay ubicaciones cargadas.
+let storeCoordsCache = null;
+function getStoreCoords() {
+  storeCoordsCache ||= (async () => {
+    const { data, error } = await supabase
+      .from('stores')
+      .select('id, lat, lng')
+      .eq('status', 'approved')
+      .not('lat', 'is', null);
+    if (error) {
+      console.warn('Sin ubicación de comercios para comparar:', error.message);
+      return new Map();
+    }
+    return new Map((data || []).map((s) => [s.id, { lat: s.lat, lng: s.lng }]));
+  })();
+  return storeCoordsCache;
+}
+
+let compareState = null; // { groups, coords } de la última búsqueda, para redibujar al dar la ubicación
+
+async function renderPriceCompare(products, token) {
+  const section = document.getElementById('price-compare');
+  const list = document.getElementById('price-compare-list');
+  if (!section || !list) return;
+  section.hidden = true;
+  list.textContent = '';
+  compareState = null;
+
+  const titles = [...new Set((products || []).map((p) => p.title).filter(Boolean))];
+  if (!filterState.query || !titles.length) return;
+
+  // Los "gemelos" de lo que salió en esta página pueden estar más abajo en la
+  // búsqueda (o no coincidir con el texto): se piden por nombre exacto.
+  // Sin embed de `stores` a propósito (la cadena de RLS lo vuelve lento):
+  // el nombre del comercio sale de getStores().
+  const [{ data: twins, error }, stores, coords] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock, store_id')
+      .in('title', titles)
+      .eq('is_active', true)
+      .gt('stock', 0)
+      .limit(300),
+    getStores(),
+    getStoreCoords(),
+  ]);
+  if (token !== searchToken) return;
+  if (error) {
+    console.warn('Comparador: no se pudieron traer los mismos productos de otros comercios', error);
+    return;
+  }
+
+  const storeById = new Map(stores.map((s) => [s.id, s]));
+  const named = (twins || [])
+    .filter((p) => storeById.has(p.store_id)) // solo comercios aprobados
+    .map((p) => ({ ...p, store_name: storeById.get(p.store_id).name }));
+
+  // Orden de los grupos = orden en que aparecieron en los resultados.
+  const order = new Map(titles.map((t, i) => [t, i]));
+  named.sort((a, b) => (order.get(a.title) ?? 1e9) - (order.get(b.title) ?? 1e9));
+
+  const groups = groupSameProducts(named).slice(0, COMPARE_MAX_GROUPS);
+  if (!groups.length) return;
+
+  compareState = { groups, coords };
+  drawPriceCompare();
+}
+
+function drawPriceCompare() {
+  const section = document.getElementById('price-compare');
+  const list = document.getElementById('price-compare-list');
+  if (!section || !list || !compareState) return;
+  const { groups, coords } = compareState;
+  const userLoc = loadUserLocation();
+  list.textContent = '';
+  groups.forEach((g) => list.appendChild(buildCompareGroup(g, userLoc, coords)));
+  section.hidden = false;
+}
+
+function buildCompareGroup(group, userLoc, coords) {
+  const byPrice = rankByPrice(group.items);
+  const cheapest = byPrice[0];
+
+  const card = document.createElement('article');
+  card.className = 'pc-group';
+
+  const head = document.createElement('header');
+  head.className = 'pc-group__head';
+  const img = document.createElement('img');
+  img.className = 'pc-group__img';
+  img.src = cheapest.image_url || '/img/no-image.svg';
+  img.alt = '';
+  img.loading = 'lazy';
+  const headText = document.createElement('div');
+  const title = document.createElement('h3');
+  title.className = 'pc-group__title';
+  title.textContent = cheapest.title;
+  const sub = document.createElement('p');
+  sub.className = 'pc-group__sub';
+  sub.textContent = `En ${group.items.length} comercios · desde ${formatPrice(cheapest.price)}`;
+  headText.append(title, sub);
+  head.append(img, headText);
+  card.appendChild(head);
+
+  // Fila 1: más barato
+  card.appendChild(buildCompareRow({
+    icon: 'fa-tag',
+    label: 'Más barato',
+    items: byPrice,
+    detail: (it) => (it === cheapest
+      ? 'El mejor precio'
+      : `+${formatPrice(it.price - cheapest.price)} que el más barato`),
+    badge: 'Más barato',
+  }));
+
+  // Fila 2: más cerca
+  if (!userLoc) {
+    card.appendChild(buildLocationPrompt());
+  } else {
+    const byDistance = rankByDistance(group.items, userLoc, coords);
+    const closest = byDistance[0];
+    if (closest.distance == null) {
+      card.appendChild(buildCompareNote('fa-location-dot', 'Más cerca',
+        'Estos comercios todavía no cargaron su ubicación.'));
+    } else {
+      card.appendChild(buildCompareRow({
+        icon: 'fa-location-dot',
+        label: 'Más cerca',
+        items: byDistance,
+        detail: (it) => (it.distance == null ? 'Sin ubicación cargada' : `a ${formatDistance(it.distance)}`),
+        badge: closest.store_id === cheapest.store_id ? 'Más cerca y más barato' : 'Más cerca',
+      }));
+    }
+  }
+  return card;
+}
+
+/** Una fila: etiqueta + comercios en orden; el primero lleva el distintivo. */
+function buildCompareRow({ icon, label, items, detail, badge }) {
+  const row = document.createElement('div');
+  row.className = 'pc-row';
+  row.appendChild(buildRowLabel(icon, label));
+
+  const ol = document.createElement('ol');
+  ol.className = 'pc-row__list';
+  ol.setAttribute('aria-label', label);
+  items.forEach((it, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `pc-offer${i === 0 ? ' pc-offer--best' : ''}`;
+    btn.setAttribute('aria-label', `${it.store_name}, ${formatPrice(it.price)}, ${detail(it)}. Ver producto`);
+
+    if (i === 0) {
+      const tag = document.createElement('span');
+      tag.className = 'pc-offer__badge';
+      tag.textContent = badge;
+      btn.appendChild(tag);
+    }
+    const store = document.createElement('span');
+    store.className = 'pc-offer__store';
+    store.textContent = it.store_name;
+    const price = document.createElement('span');
+    price.className = 'pc-offer__price';
+    price.textContent = formatPrice(it.price);
+    const det = document.createElement('span');
+    det.className = 'pc-offer__detail';
+    det.textContent = detail(it);
+    btn.append(store, price, det);
+
+    btn.addEventListener('click', () => openCompareProduct(it));
+    li.appendChild(btn);
+    ol.appendChild(li);
+  });
+  row.appendChild(ol);
+  return row;
+}
+
+function buildRowLabel(icon, label) {
+  const el = document.createElement('span');
+  el.className = 'pc-row__label';
+  const i = document.createElement('i');
+  i.className = `fa-solid ${icon}`;
+  i.setAttribute('aria-hidden', 'true');
+  el.append(i, ` ${label}`);
+  return el;
+}
+
+function buildCompareNote(icon, label, text) {
+  const row = document.createElement('div');
+  row.className = 'pc-row';
+  row.appendChild(buildRowLabel(icon, label));
+  const p = document.createElement('p');
+  p.className = 'pc-row__note';
+  p.textContent = text;
+  row.appendChild(p);
+  return row;
+}
+
+function buildLocationPrompt() {
+  const row = buildCompareNote('fa-location-dot', 'Más cerca', 'Compartí tu ubicación para ver cuál te queda más cerca.');
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pc-row__locate';
+  btn.textContent = 'Usar mi ubicación';
+  btn.addEventListener('click', () => {
+    if (!('geolocation' in navigator)) {
+      showToast('Tu navegador no permite compartir la ubicación.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Buscando…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        saveUserLocation(pos.coords.latitude, pos.coords.longitude);
+        drawPriceCompare(); // redibuja todas las tarjetas con la distancia
+      },
+      () => {
+        btn.disabled = false;
+        btn.textContent = 'Usar mi ubicación';
+        showToast('No pudimos obtener tu ubicación. Revisá el permiso del navegador.');
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  });
+  row.appendChild(btn);
+  return row;
+}
+
+/** Abre el modal del producto de ese comercio (no está necesariamente en la grilla). */
+function openCompareProduct(item) {
+  if (typeof window.openProductModal !== 'function') {
+    window.location.href = `producto.html?id=${encodeURIComponent(item.id)}`;
+    return;
+  }
+  const card = document.createElement('article');
+  card.className = 'product-card';
+  card.id = item.id;
+  card.dataset.price = item.price;
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'product-card__image';
+  const img = document.createElement('img');
+  img.setAttribute('src', item.image_url || '/img/no-image.svg');
+  imgWrap.appendChild(img);
+  const shop = document.createElement('span');
+  shop.className = 'product-card__shop';
+  shop.textContent = item.store_name;
+  const name = document.createElement('div');
+  name.className = 'product-card__name';
+  name.textContent = item.title;
+  const price = document.createElement('div');
+  price.className = 'product-card__price';
+  price.textContent = formatPrice(item.price);
+  card.append(imgWrap, shop, name, price);
+  window.openProductModal(card);
+}
+
 // ── Búsqueda principal (RPC search_products) ────────────────
 async function runSearch({ append = false } = {}) {
   if (!grid) return;
@@ -302,12 +588,15 @@ async function runSearch({ append = false } = {}) {
     if (!append) scheduleSearchLog(filterState.query, totalCount + storeMatches + proMatches);
 
     if ((!products || products.length === 0) && !append) {
+      renderPriceCompare([], token);
       renderNoResults(storeMatches, proMatches);
       updateLoadMore();
       return;
     }
 
     (products || []).forEach((p) => grid.appendChild(buildCard(p)));
+    // El comparador es un extra: no frena la grilla ni la rompe si falla.
+    if (!append) renderPriceCompare(products, token).catch((e) => console.warn('Comparador:', e));
 
     initCartButtons();
     initWishlist();
@@ -316,6 +605,8 @@ async function runSearch({ append = false } = {}) {
   } catch (err) {
     console.error('Error en la búsqueda:', err);
     if (!append) {
+      const compare = document.getElementById('price-compare');
+      if (compare) compare.hidden = true;
       renderErrorState(grid, 'No se pudieron buscar productos.', () => runSearch());
     } else if (loadMoreBtn) {
       loadMoreBtn.disabled = false;

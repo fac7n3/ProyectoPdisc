@@ -252,6 +252,12 @@ html[data-theme="dark"] .results-title {
 html[data-theme="dark"] .results-title strong {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .pc-row__label {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .pc-row__locate {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .filter-chip {
   color: var(--dk-accent-text);
 }

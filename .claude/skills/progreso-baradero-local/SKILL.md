@@ -5869,3 +5869,25 @@ Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que 
 - **Accesibilidad:** la lista lleva `aria-busy="true"` + un `.sr-only` "Cargando pedidos…"; las tarjetas grises van con `aria-hidden`.
 - Verificado en Chromium con una maqueta (la sección real de `vender.html` con su CSS y la función copiada de `vender.js`):
   claro, oscuro y celular 390 px, sin scroll horizontal; `npm test` en verde. **Sin probar logueado** contra la base.
+
+## 2026-10-30 — Comparador "más barato / más cerca" en la búsqueda (maqueta, rama `claude/zen-dijkstra-fx5r82`, SIN mergear)
+- **Pedido del usuario:** cuando se busca un producto y dos o más comercios tienen el mismo, mostrar en una primera fila cuál es
+  más barato y en una segunda cuál está más cerca según la ubicación de la persona.
+- **Qué hay:** sección `#price-compare` ("Compará antes de comprar") arriba de los resultados de `search.html`. Una tarjeta por
+  producto repetido (hasta 3, `COMPARE_MAX_GROUPS`) con dos filas de comercios: por precio (el primero con "Más barato", el resto
+  con "+$X que el más barato") y por distancia (el primero con "Más cerca", o "Más cerca y más barato" si coincide; "a 350 m",
+  "Sin ubicación cargada" al final). Tocar un comercio abre el modal de ese producto. Sin ubicación de la persona, la fila 2 tiene
+  "Usar mi ubicación" (Geolocation; se guarda en `sessionStorage` `bl_nearby_location`, la misma clave del mapa del inicio).
+- **"Mismo producto" = mismo nombre normalizado** (`normalizeProductTitle` en `js/price-compare-utils.js`, con test: sin
+  mayúsculas, acentos ni signos, "1L" = "1 l"). En producción hay 24 nombres repetidos en 2-3 comercios (leche, carnes, verduras,
+  Dove, Magistral...). Los "gemelos" se piden con `products ... .in('title', títulos de la página)` (título **exacto**: un mismo
+  producto escrito con otras mayúsculas en otro comercio no se trae), sin embed de `stores` (cadena de RLS lenta).
+- **Ubicación de los comercios:** no existía en ninguna tabla (solo `address` texto en 13 de 33, `maps_url` en 0). Migración
+  **146** (`db/schema/146_store_location.sql`, **SIN APLICAR**): `stores.lat`/`lng` + check. El front la pide aparte
+  (`getStoreCoords`) y si la columna no existe la fila dice "Estos comercios todavía no cargaron su ubicación".
+- **Verificado** en Chromium con Supabase simulado (3 comercios, 2 con coordenadas): orden por precio y distancia, botón de
+  ubicación, modal, claro/oscuro, celular 390 px sin scroll horizontal; `npm test` en verde. Sin probar contra la base real.
+- **Falta para que sirva de verdad:** (1) aplicar la 146; (2) que el comercio cargue su ubicación en "Perfil de mi comercio"
+  (geocodificar la dirección con Nominatim, como el autocompletado de Mi perfil, o "Estoy en mi local: usar mi ubicación");
+  (3) emparejar mejor los productos (RPC con nombre normalizado / `pg_trgm`, o un código de barras); (4) decidir si la
+  distancia usa también la dirección de envío guardada de la persona.
