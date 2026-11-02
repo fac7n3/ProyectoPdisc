@@ -379,6 +379,11 @@ function handleNavBack(e) {
 // home.html como siempre. Solo se aplica cuando el caller no pidió
 // explícitamente otro destino (redirectTo).
 async function resolvePostLoginRedirect(user, explicitRedirectTo) {
+  // Verificación en dos pasos (P-01): si la cuenta tiene una app de
+  // autenticación activada, se pide el código ANTES de mandarla a ningún lado.
+  // Si cancela se cierra la sesión y vuelve al login.
+  if (!(await passMfaStep())) return "../pages/login.html";
+
   // "Agregar otra cuenta con Google" (Mi perfil): al volver de Google se suma la
   // cuenta a la lista del dispositivo y se vuelve a Mi perfil, no al inicio.
   const { data: { session } } = await supabase.auth.getSession();
@@ -389,6 +394,25 @@ async function resolvePostLoginRedirect(user, explicitRedirectTo) {
   if (explicitRedirectTo) return explicitRedirectTo;
   const panel = await sellerPanelPage(user);
   return panel ? `../pages/${panel}` : "../pages/home.html";
+}
+
+// --- Verificación en dos pasos (TOTP) ---
+// mfa.js (y el generador de QR) se cargan solo si hacen falta: el chequeo del
+// nivel de la sesión es local (lee el JWT guardado), sin viaje a Supabase.
+async function needsMfaCode() {
+  try {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    return data?.nextLevel === "aal2" && data?.currentLevel !== "aal2";
+  } catch {
+    return false;
+  }
+}
+
+/** true si puede seguir (no hacía falta o puso bien el código); false si canceló. */
+async function passMfaStep() {
+  if (!(await needsMfaCode())) return true;
+  const { ensureMfaAfterLogin } = await import("./mfa.js");
+  return ensureMfaAfterLogin(supabase);
 }
 
 // --- Listener Global de Sesión ---
@@ -522,6 +546,24 @@ export async function guardPage({
       if (!allowedRoles.includes(role)) {
         window.location.replace('../pages/home.html');
         return null;
+      }
+
+      // P-01: admin/moderador entran a su panel solo con la verificación en
+      // dos pasos. Con factor y sesión de solo contraseña se pide el código;
+      // sin factor, a Mi perfil a activarla. El control real está en la base
+      // (migración 148): sin aal2 la RLS los trata como clientes.
+      if (role === 'admin' || role === 'moderador') {
+        const { ensureStaffMfa } = await import('./mfa.js');
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        const next = await ensureStaffMfa(supabase, role);
+        if (next === 'home') {
+          window.location.replace('../pages/home.html');
+          return null;
+        }
+        if (next === 'enroll') {
+          window.location.replace('../pages/perfil.html?tab=mis-datos&mfa=requerido');
+          return null;
+        }
       }
     }
 

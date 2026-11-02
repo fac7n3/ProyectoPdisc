@@ -315,9 +315,13 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+# Activado para la verificación en dos pasos (P-01, migración 148): obligatoria
+# para admin/moderador, opcional para el resto (Mi perfil -> Seguridad).
+# config.toml no se aplica solo: hay que activarlo también en el dashboard
+# (Authentication -> Multi-Factor -> TOTP: enroll + verify).
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

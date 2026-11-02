@@ -47,7 +47,11 @@ Reglas:
    `prevent_role_update_on_profile` + RPCs con bandera `app.role_change_authorized`).
 2. **Mínimo privilegio:** no se crean admins "por las dudas". La lista de admins se
    revisa cada trimestre contra `auth.users` y se anota en el registro de revisiones.
-3. **MFA obligatorio para admin y moderador** en cuanto esté implementado (P-01).
+3. **MFA (TOTP) obligatorio para admin y moderador.** La base no les da permisos de admin sin
+   una sesión `aal2` (migración 148, `public.jwt_role()`). Toda policy o función nueva lee el rol
+   con `public.jwt_role()`, **nunca** con `auth.jwt() -> 'app_metadata' ->> 'role'` (eso saltea el
+   chequeo). Quien pierde el celular con la app: otro admin le borra el factor desde el dashboard
+   de Supabase (Authentication → Users → el usuario → MFA) y vuelve a enrolar.
 4. Las cuentas de quien deja el proyecto se bajan de rol (o se borran) el mismo día.
 5. **Contraseñas:** mínimo 8 caracteres con letras y números; Google OAuth como
    alternativa. Sesión: JWT de 1 hora con refresh token rotativo.

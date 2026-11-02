@@ -90,6 +90,22 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-11-02 (migración 148 APLICADA a producción) — Verificación en dos pasos (TOTP) para admin y moderador** (P-01 del hardening),
+  a pedido del usuario. **Servidor (el control real):** `public.jwt_role()` (SECURITY DEFINER, lee `auth.mfa_factors`) reemplazó la lectura del rol
+  del JWT en las **98 policies y 25 funciones** que la hacían (la migración lo hace con un DO block y **falla si queda una lectura directa**): un
+  admin/moderador sin sesión `aal2` es, para la base, un cliente. **Modo "por cuenta"** (`security_settings.require_staff_mfa = false`, el actual):
+  se exige `aal2` solo a la cuenta que ya enroló, así nadie quedó sin panel; con `true` es obligatorio para todas. **Regla nueva:** policies y funciones
+  leen el rol con `(select public.jwt_role())` / `public.jwt_role()`, nunca `auth.jwt()->'app_metadata'->>'role'`. **Pantalla:** Mi perfil ->
+  Información de tu perfil -> Seguridad -> "Verificación en dos pasos" (QR con `qrcode-generator`, clave a mano, activar/desactivar; para cualquiera),
+  código después de iniciar sesión con contraseña o Google (`resolvePostLoginRedirect`; cancelar cierra la sesión) y `admin.html` (`guardPage` con
+  `requireRole`) pide el código o manda a `perfil.html?tab=mis-datos&mfa=requerido` a activarla. `js/mfa.js` (se carga solo cuando hace falta) +
+  `js/mfa-utils.js` (con test) + `Assets/styles/mfa.css` (lo importa el JS). Verificado: base real en transacción deshecha (19 combinaciones de rol/aal/factor/
+  modo; cliente, vendedor y anon idénticos antes y después) y Chromium con Supabase simulado (30 checks: login, cancelar, panel, alta, baja, alta
+  deshabilitada, oscuro, celular). **Pendiente del usuario:** (1) activar TOTP en el dashboard (Authentication -> Multi-Factor; `config.toml` ya lo tiene
+  pero no se aplica solo); mientras no esté, Mi perfil dice que no está habilitada y deja seguir al panel; (2) que las 3 cuentas admin enrolen;
+  (3) recién ahí `update public.security_settings set require_staff_mfa = true, updated_at = now() where id;`. **Límite:** para cliente/vendedor el código
+  se pide en la pantalla de login pero la base no lo exige (una sesión de solo contraseña sigue leyendo sus datos por la API). **Sin probar con
+  una app de autenticación real** (el sandbox no llega a Supabase).
 - **Hecho 2026-11-02 — Hardening SOC 2 + ISO/IEC 27701** (migración **146** APLICADA a producción), a pedido del usuario.
   Documento central con matriz de controles y pendientes: **`docs/seguridad/HARDENING-SOC2-ISO27701.md`** (+ políticas,
   registro de tratamientos, plan de incidentes y `SECURITY.md`). **Base:** el log de auditoría de admin copiaba la fila entera
@@ -100,7 +116,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   a 30 d y borradas a 180, notificaciones leídas 1 año). **Sitio/repo:** headers HSTS/CSP de header/COOP (test `js/security-headers.test.mjs`),
   CI con `npm test` + `npm audit`, Dependabot, vite/sharp actualizados, política de privacidad reescrita. **Regla nueva:** todo dato
   personal nuevo responde las 4 preguntas de `POLITICAS-SEGURIDAD.md` §1 y, si es telemetría, se suma a `purge_expired_personal_data()`.
-  **Pendientes del usuario (los de mayor riesgo):** P-01 **MFA para las 3 cuentas admin/moderador** (código + dashboard), P-02 **backups**
+  **Pendientes del usuario (los de mayor riesgo):** P-01 **MFA para las 3 cuentas admin/moderador** (código hecho y migración 148 aplicada, ver entrada de arriba: falta activar TOTP en el dashboard y enrolar), P-02 **backups**
   (plan Free no tiene: pasar a Pro o cargar `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE` para `backup-db.yml`, sin probar), P-04 aplicar la
   política de contraseñas del `config.toml` en el dashboard, P-05 el correo `soporte@baraderolocal.com.ar` no existe (sin dominio),
   P-06 inscripción en el Registro Nacional de Bases de Datos (AAIP), P-07 archivar DPAs de Supabase/Vercel/MP.

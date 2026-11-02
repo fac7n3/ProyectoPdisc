@@ -21,6 +21,7 @@ import { buildDatePicker } from "./datepicker.js";
 import { categoryLabel } from "./professional-categories.js";
 import { fetchStoreTransferData, buildTransferCard } from "./transfer-details.js";
 import { confirmDialog } from "./confirm-dialog.js";
+import { initMfaSettings } from "./mfa.js";
 import { initAccountSwitcher } from "./account-switcher.js";
 import { clearLinkedAccounts } from "./linked-accounts.js";
 import {
@@ -3097,11 +3098,28 @@ function openInstallFromMenu() {
 }
 
 // --- Inicialización con Guard ---
+// --- Verificación en dos pasos (Información de tu perfil -> Seguridad) ---
+// ?mfa=requerido: viene del panel de admin sin la verificación activada
+// (guardPage en auth-utils.js); se abre la sección y arranca el alta.
+function setupMfaSection(user) {
+  const params = new URLSearchParams(window.location.search);
+  const required = params.get('mfa') === 'requerido';
+  if (required) {
+    openSection('tab-mis-datos', 'datos-seguridad');
+    params.delete('mfa');
+    const qs = params.toString();
+    window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : ''));
+  }
+  initMfaSettings(supabase, { user, showToast, confirm: confirmDialog, required })
+    .catch((err) => console.warn('MFA settings error:', err?.message || err));
+}
+
 guardPage({
   requireAuth: true,
   onReady: (user) => {
     renderQuickProfile(user);
     openDeepLinkSection();
+    setupMfaSection(user);
     initSettings();
     openInstallFromMenu();
     renderFullProfile(user);

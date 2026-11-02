@@ -69,6 +69,7 @@ email/WhatsApp (F8-02/03), apps nativas.
 | H-12 | **Política de privacidad** actualizada: datos que realmente se tratan hoy, subencargados (incluidos Nominatim y Google Maps), transferencia internacional (art. 12), plazos concretos de retención y de respuesta a derechos (arts. 14 y 16), y qué pasa con los datos al dar de baja la cuenta. | `pages/privacidad.html` | P1.1, P2.1, P6.1 | 7.3.2, 7.3.3, 7.5.1, 7.5.2 | — |
 | H-13 | Políticas, registro de tratamientos, plan de incidentes y `SECURITY.md`. | `docs/seguridad/` | CC1–CC3, CC7.3–CC7.5, P1–P8 | 5.x, 7.2.8, 6.13 | — |
 | H-14 | Workflow de **backup diario cifrado** de la base (se activa cargando dos secretos; ver P-02). | `.github/workflows/backup-db.yml` | A1.2, A1.3 | 6.9.3 (27002 8.13) | **sin probar** hasta cargar los secretos |
+| H-15 | **Verificación en dos pasos (TOTP) para admin y moderador, exigida en la base** (P-01). `public.jwt_role()` reemplaza la lectura del rol del JWT en las 98 policies y 25 funciones que la hacían: un admin/moderador sin sesión `aal2` queda como cliente. Modo "por cuenta" (arranque): se exige `aal2` a la cuenta que ya enroló un factor, así nadie queda sin panel mientras se enrolan; `security_settings.require_staff_mfa = true` lo vuelve obligatorio para todas (activarlo cuando las 3 cuentas tengan factor). Pantalla: alta con QR y baja en Mi perfil → Seguridad, código después de iniciar sesión (contraseña o Google) y guard de `admin.html` (pide el código o manda a activarla). | migración 148, `js/mfa.js`, `js/mfa-utils.js` | CC6.1 | 6.6.4 (27002 5.17, 8.5) | Base real en transacción deshecha: admin aal1 con factor → sin admin (perfiles 34→1, RPC rechazada), aal2 → admin; moderador igual; estricto: admin sin factor aal1 → sin admin; cliente/vendedor/anon sin cambios. Chromium con Supabase simulado: 30 checks |
 
 ## 4. Matriz de controles
 
@@ -84,7 +85,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | CC4 Monitoreo | Advisor de Supabase, log de auditoría, `error_logs`, Speed Insights | 🟡 | falta revisión periódica registrada (P-09) |
 | CC5 Actividades de control | Cambios por commit + CI + tests; RLS como control preventivo | ✅ | `.github/workflows/ci.yml` |
 | CC6.1 Acceso lógico | RLS en 51/51 tablas; rol en JWT (`app_metadata`) que el usuario no puede tocar; trigger que impide cambiar `role`/`is_suspended`; RPCs `SECURITY DEFINER` con chequeo de rol | ✅ | migraciones 47, 75, 96–105, 146 |
-| CC6.1 Autenticación fuerte | Contraseñas 8+ (cliente); refresh token con rotación; **sin MFA para admins** | ❌ | P-01, P-04 |
+| CC6.1 Autenticación fuerte | Contraseñas 8+ (cliente); refresh token con rotación; **TOTP exigido en la base a admin/moderador que enrolaron** (H-15) | 🟡 | falta que las 3 cuentas enrolen y activar el modo estricto (P-01); P-04 |
 | CC6.2/6.3 Alta y baja de accesos | Admin y repartidor solo por admin; vendedor por aprobación manual + CUIT; empleados con permisos por sección; todo auditado | ✅ | H-03 |
 | CC6.4 Acceso físico | Delegado en Supabase (AWS) y Vercel, ambos con SOC 2 Tipo II | ✅ | reportes SOC 2 de los proveedores (pedirlos, P-07) |
 | CC6.5 Baja de activos | Baja de cuenta con borrado real (`delete-account`), incluida foto y adjuntos | ✅ | `supabase/functions/delete-account` |
@@ -141,7 +142,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | 6.2 Políticas | 🟡 | `POLITICAS-SEGURIDAD.md` |
 | 6.3 Organización (responsable de privacidad) | ❌ | P-08 |
 | 6.5 Clasificación y etiquetado de datos personales | ✅ | políticas §6 |
-| 6.6 Control de acceso | 🟡 | RLS completo; falta MFA de admins |
+| 6.6 Control de acceso | 🟡 | RLS completo; MFA de admins listo (H-15), falta enrolar las 3 cuentas (P-01) |
 | 6.7 Criptografía | ✅ | TLS + cifrado en reposo del proveedor; tokens OAuth con `state` de un uso |
 | 6.9.3 Backup | 👤 | P-02 |
 | 6.9.4 Registro de eventos (sin datos personales innecesarios) | ✅ | H-01, H-02, H-03; `error-logger.js` limpia tokens de la URL |
@@ -179,7 +180,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 
 | ID | Prioridad | Qué | Por qué | Quién |
 |---|---|---|---|---|
-| P-01 | **Alta** | **MFA (TOTP) obligatorio para las 3 cuentas admin/moderador**: pantalla de enrolamiento en Mi perfil + exigir `aal2` en las policies y RPCs de admin (`auth.jwt()->>'aal'`). | Una contraseña robada de un admin da acceso a todos los datos personales y a la moderación. Es el hallazgo más grave que queda. SOC 2 CC6.1 · ISO 27701 6.6.4. | Código (tarea aparte) + activar TOTP en el dashboard |
+| P-01 | **Alta** | **MFA de admin/moderador: el código está hecho y aplicado (H-15, 2026-11-02); falta la parte del usuario.** (1) Activar TOTP en el dashboard de Supabase (Authentication → Multi-Factor → TOTP: enroll y verify); hasta entonces Mi perfil avisa que no está habilitada y deja seguir al panel. (2) Cada una de las 3 cuentas admin entra al panel, la manda a Mi perfil y escanea el QR. (3) Con las 3 enroladas (consulta al final de `db/schema/148_admin_mfa_aal2.sql`): `update public.security_settings set require_staff_mfa = true, updated_at = now() where id;`. | Mientras una cuenta no enrola, su contraseña sola sigue dando acceso de admin. SOC 2 CC6.1 · ISO 27701 6.6.4. | Usuario (dashboard + enrolar) y luego un `update` |
 | P-02 | **Alta** | **Backups**: pasar a Supabase Pro (backups diarios 7 días, PITR opcional) **o** activar el workflow `backup-db.yml` cargando `SUPABASE_DB_URL` y `BACKUP_PASSPHRASE` en GitHub → Settings → Secrets. | Hoy, en plan Free, no hay un backup descargable: un `DELETE` accidental o un incidente es irrecuperable. SOC 2 A1.2. | Usuario (pago o secretos) |
 | P-03 | Alta | Probar una restauración (procedimiento en políticas §5) y anotar fecha y resultado. | Un backup que nunca se restauró no es un control. SOC 2 A1.3. | Equipo |
 | P-04 | Alta | En el dashboard de Supabase (Authentication): contraseña mínima 8 + letras y números; **Leaked Password Protection** (requiere Pro); activar TOTP; OTP de email a 1 hora o menos (ya está). | `config.toml` no se aplica solo. | Usuario |
@@ -201,3 +202,4 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | Fecha | Quién | Qué se revisó | Resultado |
 |---|---|---|---|
 | 2026-11-02 | Claude Code (sesión de hardening) | Todo el alcance (este documento) | 14 controles aplicados, 16 pendientes |
+| 2026-11-02 | Claude Code (sesión de MFA) | P-01: MFA de admin/moderador | H-15 aplicado (migración 148); P-01 queda en manos del usuario (dashboard + enrolar + modo estricto) |

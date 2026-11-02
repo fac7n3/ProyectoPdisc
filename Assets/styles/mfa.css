@@ -1,0 +1,241 @@
+/* ==========================================================================
+   Verificación en dos pasos (js/mfa.js)
+   Cartel del código (login, panel de admin) + alta con QR en Mi perfil.
+   Lo importa js/mfa.js, así que llega a cualquier página que lo use.
+   Casi todo va con tokens (--bl-*); los pocos colores fijos tienen su
+   versión oscura acá mismo (este archivo no pasa por gen-dark-css.mjs).
+   ========================================================================== */
+
+:root {
+  --mfa-error: #b91c1c;
+  --mfa-ok: #047857;
+  --mfa-warn-bg: #fff7ed;
+  --mfa-warn-border: #fdba74;
+  --mfa-warn-text: #7c2d12;
+}
+html[data-theme="dark"] {
+  --mfa-error: #fca5a5;
+  --mfa-ok: #6ee7b7;
+  --mfa-warn-bg: #33210f;
+  --mfa-warn-border: #8a5424;
+  --mfa-warn-text: #fde3c8;
+}
+
+html.mfa-lock { overflow: hidden; }
+
+/* --- Cartel --- */
+.mfa-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000; /* por encima de los toasts (11000) y del confirm propio (10500) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.mfa-card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 1rem;
+  background: var(--bl-surface, #fff);
+  color: var(--bl-text, #1a202c);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  font-family: inherit;
+}
+
+.mfa-card__icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bl-surface-alt, #f0f4f8);
+  color: var(--bl-primary, #284175);
+  font-size: 1.35rem;
+}
+
+.mfa-card__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--bl-text, #1a202c);
+}
+
+.mfa-card__text {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--bl-text-secondary, #4a5568);
+}
+
+.mfa-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bl-text, #1a202c);
+}
+.mfa-card .mfa-label { text-align: left; }
+
+.mfa-code {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 14rem;
+  padding: 0.7rem 0.75rem;
+  border: 1.5px solid var(--bl-border, #e2e8f0);
+  border-radius: 0.6rem;
+  background: var(--bl-surface, #fff);
+  color: var(--bl-text, #1a202c);
+  font: inherit;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+.mfa-card .mfa-code { max-width: none; }
+.mfa-code:focus {
+  outline: 2px solid var(--bl-primary, #284175);
+  outline-offset: 1px;
+  border-color: var(--bl-primary, #284175);
+}
+.mfa-code[aria-invalid="true"] { border-color: var(--mfa-error); }
+
+.mfa-error {
+  margin: 0.6rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mfa-error);
+}
+.mfa-error[hidden] { display: none; }
+
+.mfa-ok {
+  margin: 0;
+  font-weight: 600;
+  color: var(--mfa-ok);
+}
+
+.mfa-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+.mfa-card .mfa-actions { justify-content: center; }
+.mfa-actions--start { justify-content: flex-start; }
+
+.mfa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 1.1rem;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mfa-btn:focus-visible { outline: 2px solid var(--bl-primary, #284175); outline-offset: 2px; }
+.mfa-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.mfa-btn--primary {
+  background: var(--bl-primary, #284175);
+  color: var(--bl-text-inverse, #fff);
+}
+.mfa-btn--primary:hover:not(:disabled) { background: var(--bl-primary-dark, #1f3460); }
+.mfa-btn--ghost {
+  background: transparent;
+  border-color: var(--bl-border, #e2e8f0);
+  color: var(--bl-text, #1a202c);
+}
+.mfa-btn--ghost:hover:not(:disabled) { background: var(--bl-surface-hover, #f8fafc); }
+.mfa-btn--small { min-height: 2rem; padding: 0.3rem 0.8rem; font-size: 0.8125rem; }
+
+/* --- Mi perfil: aviso para admin sin factor --- */
+.mfa-required {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin: 0 0 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--mfa-warn-border);
+  border-radius: 0.75rem;
+  background: var(--mfa-warn-bg);
+  color: var(--mfa-warn-text);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.mfa-required[hidden] { display: none; }
+.mfa-required i { margin-top: 0.2rem; font-size: 1.1rem; }
+.mfa-required p { margin: 0; }
+
+.mfa-status--on { color: var(--mfa-ok); font-weight: 600; }
+
+/* --- Mi perfil: alta con QR (debajo de la fila) --- */
+.mfa-setup {
+  padding: 0 1.25rem 1.25rem;
+}
+.mfa-setup[hidden] { display: none; }
+
+.mfa-setup__loading {
+  margin: 0;
+  color: var(--bl-text-secondary, #4a5568);
+}
+
+.mfa-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: decimal;
+  display: grid;
+  gap: 1rem;
+  color: var(--bl-text, #1a202c);
+  line-height: 1.5;
+}
+.mfa-steps li::marker { font-weight: 700; color: var(--bl-primary, #284175); }
+
+.mfa-qr-wrap {
+  margin: 0.75rem 0 0.5rem;
+}
+/* El QR va oscuro sobre blanco en los dos temas: las cámaras no leen uno invertido. */
+.mfa-qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.mfa-manual { margin-top: 0.25rem; }
+.mfa-manual summary {
+  cursor: pointer;
+  color: var(--bl-primary, #284175);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+html[data-theme="dark"] .mfa-manual summary,
+html[data-theme="dark"] .mfa-steps li::marker { color: var(--bl-text, #e4e9f3); }
+.mfa-secret {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--bl-surface-alt, #f0f4f8);
+  color: var(--bl-text, #1a202c);
+  font-size: 0.9375rem;
+  letter-spacing: 0.05em;
+  word-break: break-all;
+}
+
+@media (max-width: 480px) {
+  .mfa-card { padding: 1.5rem 1.1rem 1.25rem; }
+  .mfa-actions .mfa-btn { flex: 1 1 auto; }
+}

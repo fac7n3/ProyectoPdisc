@@ -6002,3 +6002,48 @@ job programado, advisor sin el WARN de `_is_uuid`.
   RLS), fuera de rango y uno solo de los dos rechazados, los dos o ninguno aceptados. `anon`/`authenticated` leen y `authenticated`
   puede escribir las columnas nuevas (`has_column_privilege`).
 - Orden: migración 147 + 147b -> push a `main` -> deploy de Vercel.
+
+## 2026-11-02 — Verificación en dos pasos (TOTP) para admin y moderador (P-01, migración 148 aplicada)
+
+Pedido del usuario: cerrar el pendiente más grave del hardening (las 3 cuentas admin entraban solo con contraseña; `auth.mfa_factors` vacía).
+
+### Servidor: `public.jwt_role()` (migración 148)
+- Relevamiento: 98 policies (public + storage) y 25 funciones leían el rol de la sesión con alguna forma de `auth.jwt() -> 'app_metadata' ->> 'role'`
+  (deparseado: `((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text)`; en 4 policies de storage sin el subselect; en funciones
+  `(select auth.jwt()) -> ...` o `auth.jwt() -> ...`). No hay vistas ni Edge Functions con chequeo de rol admin.
+- En vez de sumar `aal = 'aal2'` en cada condición, la lectura misma pasa a `public.jwt_role()`: igual al rol del JWT, salvo admin/moderador sin
+  `aal2` -> `'cliente'`. Así no cambia ninguna comparación (`= 'admin'`, `any(array['vendedor','admin'])`, etc.). DO block con regex sobre
+  `pg_policies` (`alter policy ... using/with check`) y `pg_get_functiondef` (`create or replace`, conserva SECURITY DEFINER, search_path y grants);
+  al final cuenta lo que quedó y tira excepción si hay alguna lectura directa.
+- `security_settings` (una fila, RLS sin policies, sin grants para anon/authenticated): `require_staff_mfa`. `false` = "por cuenta": se exige aal2
+  solo si la cuenta tiene un factor verificado (no deja a nadie sin panel mientras enrolan). Razonamiento: para una cuenta SIN factor el modo
+  estricto no protege más (con la contraseña se puede enrolar un factor propio, el enrolamiento no pasa por RLS); suma defensa en profundidad si
+  a alguien le sacan el factor. Activar con el `update` del final del archivo 148 cuando las 3 cuentas tengan factor.
+- Sacar un factor verificado exige aal2 (Supabase Auth): con la contraseña sola no se desactiva.
+- **Gotchas del conector:** `execute_sql` pidió confirmación (y venció a los 2 min sin que nadie la viera) con un script que tenía `update ...` sin
+  `where` (dentro de una función de prueba) — con `where` corrió. Hasta el comentario del archivo de migración se dejó con `where id`. Sin la palabra
+  drop/delete en el texto. `apply_migration` corrió de una.
+- Prueba en transacción deshecha (DO + `raise exception` con los resultados), con `pg_temp.measure(uid, rol, aal)` que hace `set local role` y cuenta
+  products/stores/coupons/profiles/orders/support_tickets/admin_audit_log, `update` de sus productos y de emergency_contacts y la RPC
+  `admin_search_report`. Antes/después iguales para admin sin factor, vendedor, cliente y anon; admin aal1 con factor (insertado en `auth.mfa_factors`)
+  -> perfiles 34 -> 1, sin auditoría, RPC rechazada; aal2 -> todo; admin+vendedor aal1 con factor sigue editando sus productos (rama de
+  `profiles.role`); moderador aal1 con factor ve 1 reclamo (el suyo) en vez de 7; modo estricto: admin sin factor aal1 -> sin admin.
+- Advisor después: aparecen `jwt_role` ejecutable por anon/authenticated (a propósito: las policies de anon la usan y solo devuelve el rol propio) y
+  `security_settings` con RLS sin policies (a propósito).
+
+### Pantalla
+- `js/mfa-utils.js` (puro, test): `mfaGate({role,currentLevel,nextLevel})` -> ok/verify/enroll, normalizar código, errores de Auth -> texto
+  (`mfa_totp_enroll_not_enabled` = TOTP apagado en el dashboard).
+- `js/mfa.js`: `promptMfaCode` (cartel propio con SVG, no Font Awesome: admin.html no lo carga; un solo cartel aunque lo pidan dos listeners),
+  `ensureMfaAfterLogin` (cancelar -> `signOut({scope:'local'})` y vuelta al login), `ensureStaffMfa` (guard de admin), `initMfaSettings`
+  (fila de Mi perfil: limpia factores sin verificar antes de enrolar, QR GIF con `qrcode-generator` sobre `totp.uri`, clave a mano, desactivar
+  con confirmación y `refreshSession`). Recibe el cliente por parámetro para no importar auth-utils (que lo importa con `import()` dinámico:
+  el chequeo de nivel es local, el JS del QR se baja solo si hace falta).
+- `auth-utils.js`: `resolvePostLoginRedirect` llama a `passMfaStep()` primero (cubre contraseña, Google y "agregar cuenta"); `guardPage` con
+  `requireRole` y rol admin/moderador llama a `ensureStaffMfa`. Si el alta está deshabilitada en Supabase, Mi perfil ofrece "Entrar al panel por
+  ahora" (sessionStorage `bl_mfa_enroll_unavailable`, solo esa pestaña).
+- `Assets/styles/mfa.css` lo importa el JS (Vite lo saca como CSS del chunk); fuera de `gen-dark-css.mjs`, con su versión oscura a mano. El QR
+  queda blanco en oscuro a propósito.
+- Verificado con Playwright sobre un build aparte (`vite build --outDir` en el scratchpad con un `.env` de mentira, sin tocar `dist/`) y Supabase
+  simulado (sesión falsa en localStorage, `/auth/v1/factors`, `/challenge`, `/verify`): 30 checks.
+- **Sin probar:** con la app de autenticación real y Supabase real, y el modo estricto activado con usuarios reales.
