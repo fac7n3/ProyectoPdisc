@@ -23,6 +23,6 @@
     "@supabase/supabase-js": "^2.106.2",
     "@vercel/speed-insights": "^2.0.0",
     "leaflet": "1.9.4",
-    "qrcode-generator": "^1.4.4"
+    "qrcode-generator": "^2.0.4"
   }
 }
