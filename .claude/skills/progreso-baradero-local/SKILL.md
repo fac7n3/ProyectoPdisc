@@ -5924,3 +5924,27 @@ Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que 
   RLS), fuera de rango y uno solo de los dos rechazados, los dos o ninguno aceptados. `anon`/`authenticated` leen y `authenticated`
   puede escribir las columnas nuevas (`has_column_privilege`).
 - Orden: migración 147 + 147b -> push a `main` -> deploy de Vercel.
+
+### 2026-11-02 — Reconocer mejor "el mismo producto" (migraciones 148 + 149, aplicadas y publicadas)
+- **Medido antes de diseñar:** la similitud de texto (`pg_trgm`) entre productos de distintos comercios junta cosas distintas:
+  "Coca-Cola botella individual" ~ "Sprite botella individual" (0,58), "Queso crema La Paulina" ~ "Crema La Paulina balde 5000 cm³"
+  (0,60), "Alfajor Mantecol" ~ "Mantecol" (0,53). **Decisión: nada de similitud; regla exacta sobre un nombre normalizado.**
+- **`product_match_key(title)`** (148, plpgsql): minúsculas sin acentos ni signos (apóstrofo fuera: "Lay's" = "lays"); unidades a ml/g
+  ("1L", "1 litro", "1000 ml" -> `1000ml`; "0,5 kg" -> `500g`; cc/cm³ -> ml); "x 50"/"x50" -> `x50`, salvo "x 500 grs" (medida);
+  unidad suelta ("(kg)", "por kilo") -> `kg`; sin stopwords (de, la, el, y, con, por, x, un...); **envase** (sachet, botella, caja,
+  paquete, bolsa, lata, envase) se ignora **solo si hay medida** y **"pack" nunca** (la primera versión juntaba "Pack Sprite" $13.500
+  con "Sprite en lata" $1.500); plural: se saca la s final y la e detrás de n/r/l/d/z/s/i, en bucle hasta 3 veces (limon/limones,
+  verde/verdes, pan/panes, frances/franceses, aji/ajies; la raíz puede quedar rara, solo se compara); palabras ordenadas y sin repetir.
+- **30 casos** (iguales y distintos) probados contra la base en transacción deshecha: 30/30. Sobre los productos reales: 24 grupos, los
+  mismos que con nombre exacto (el catálogo cargado en lote ya tenía nombres idénticos; la mejora se nota con comercios reales).
+- **149:** `products.match_key` + índice parcial + trigger `products_set_match_key` en **cada** INSERT/UPDATE (si fuera solo al cambiar
+  el título, un dueño podría escribir una clave a mano y meterse en la comparación de otro; probado: la pisa). Relleno inicial con
+  `products_set_updated_at`, `log_admin_action_products`, `products_notify_favorite_discount` y `products_notify_stock_alerts`
+  apagados solo mientras corre (verificado: 0 `updated_at` tocados, 0 avisos, los 6 triggers de vuelta en `O`).
+  `same_product_offers(p_product_ids)` (SECURITY INVOKER, como `search_products`) pasó de calcular la clave de todos los productos en
+  cada búsqueda (~130 ms anon / ~400 ms logueado) a buscar por igualdad (~7 / ~35 ms).
+- **Navegador (`js/search.js`):** `fetchSameProducts` llama a la función y agrupa por `match_key` (`groupSameProducts` usa
+  `match_key` si viene); si la función no existe (`isMissingFunctionError`) vuelve a la consulta por nombre exacto. Verificado en Chromium
+  con Supabase simulado: con la función, "Serenísima leche clásica 1000 ml" entra en la misma comparación que "Leche La Serenísima
+  Clásica sachet 1 L"; sin la función, cae al método viejo; 0 errores.
+- **Si se cambia la regla:** `create or replace` de `product_match_key` + volver a rellenar `match_key` como en la 149.

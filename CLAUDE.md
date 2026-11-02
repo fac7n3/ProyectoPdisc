@@ -97,7 +97,12 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `js/store-location-map.js`; GPS, buscar dirección, link largo de Google Maps o tocar el mapa) -> `stores.lat`/`lng`
   (migración **147** + `147b` "los dos o ninguno"; **la 146 ya estaba tomada** en producción por `146_plazo_transferencia_24h`, cuyo
   archivo no está en ninguna rama del repo). **Hoy ningún comercio cargó su ubicación**, así que la fila "Más cerca" dice que no la
-  cargaron hasta que lo hagan: conviene avisarles. **Falta:** emparejar mejor los productos (hoy solo nombre exacto normalizado) y
+  cargaron hasta que lo hagan: conviene avisarles. **Reconocimiento del mismo producto (2026-11-02, migraciones 148 + 149 APLICADAS):**
+  la regla vive en la base, `product_match_key(title)`: mismas palabras sin importar unidades (1L = 1000 ml, 0,5 kg = 500 g), orden,
+  plurales, signos ni palabras de relleno; el envase se ignora solo si el nombre trae la medida y "pack" nunca. **A propósito sin
+  similitud de texto** (juntaba Coca con Sprite, Alfajor Mantecol con Mantecol). La clave se guarda en `products.match_key` (trigger
+  en cada alta/cambio, no se puede escribir a mano) y `same_product_offers(ids)` trae los equivalentes (~7 ms sin sesión, ~35 ms con).
+  **Si se cambia la regla:** editar `product_match_key` y volver a rellenar `match_key` (ver 149, con los triggers apagados). **Falta:**
   probar con cuentas reales y el GPS de un teléfono. Detalle en el skill.
 - **Hecho 2026-11-02 — README.md reescrito en tono profesional y sin emojis**, a pedido del usuario (es lo que se ve en la portada
   de GitHub). De paso se actualizó a lo que hay hoy: se sacó el chat interno y el pago simulado (solo testing interno), y se sumaron
