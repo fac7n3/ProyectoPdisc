@@ -99,6 +99,10 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   archivo no está en ninguna rama del repo). **Hoy ningún comercio cargó su ubicación**, así que la fila "Más cerca" dice que no la
   cargaron hasta que lo hagan: conviene avisarles. **Falta:** emparejar mejor los productos (hoy solo nombre exacto normalizado) y
   probar con cuentas reales y el GPS de un teléfono. Detalle en el skill.
+- **Hecho 2026-11-02 — README.md reescrito en tono profesional y sin emojis**, a pedido del usuario (es lo que se ve en la portada
+  de GitHub). De paso se actualizó a lo que hay hoy: se sacó el chat interno y el pago simulado (solo testing interno), y se sumaron
+  profesionales/Contratar, repartidores, farmacias/emergencias, modo oscuro, tiempo real y las Edge Functions actuales. **Si cambia algo
+  de cara al usuario o del stack, actualizar también el README.** Solo documentación; sin migración ni deploy de código.
 - **Hecho 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)**, a pedido del usuario: mientras carga, la sección
   muestra 5 tarjetas de stats y 3 pedidos grises con la forma de la tarjeta real (`renderPedidosSkeleton` en `js/vender.js`,
   barras `.store-skeleton__bar` de home.css, que ya tienen modo oscuro y "reducir animaciones"; medidas `.pd-skel*` en `vender.html`).
