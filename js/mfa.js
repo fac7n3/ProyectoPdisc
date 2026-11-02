@@ -14,7 +14,7 @@
  * auth-utils.js (que importa este archivo).
  *
  * La pantalla NO es el control: la base exige sesión aal2 a admin/moderador
- * (migración 148, public.jwt_role()). Esto solo guía a la persona.
+ * (migración 151, public.jwt_role()). Esto solo guía a la persona.
  * Estilos en Assets/styles/mfa.css (solo tokens, sirve en claro y oscuro).
  */
 import qrcode from 'qrcode-generator';

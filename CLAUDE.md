@@ -90,7 +90,7 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **Hecho 2026-11-02 (migración 148 APLICADA a producción) — Verificación en dos pasos (TOTP) para admin y moderador** (P-01 del hardening),
+- **Hecho 2026-11-02 (migración 151 APLICADA a producción, en Supabase figura como `148_admin_mfa_aal2`: la 148-150 del repo son de otra sesión del mismo día) — Verificación en dos pasos (TOTP) para admin y moderador** (P-01 del hardening),
   a pedido del usuario. **Servidor (el control real):** `public.jwt_role()` (SECURITY DEFINER, lee `auth.mfa_factors`) reemplazó la lectura del rol
   del JWT en las **98 policies y 25 funciones** que la hacían (la migración lo hace con un DO block y **falla si queda una lectura directa**): un
   admin/moderador sin sesión `aal2` es, para la base, un cliente. **Modo "por cuenta"** (`security_settings.require_staff_mfa = false`, el actual):
@@ -116,7 +116,7 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   a 30 d y borradas a 180, notificaciones leídas 1 año). **Sitio/repo:** headers HSTS/CSP de header/COOP (test `js/security-headers.test.mjs`),
   CI con `npm test` + `npm audit`, Dependabot, vite/sharp actualizados, política de privacidad reescrita. **Regla nueva:** todo dato
   personal nuevo responde las 4 preguntas de `POLITICAS-SEGURIDAD.md` §1 y, si es telemetría, se suma a `purge_expired_personal_data()`.
-  **Pendientes del usuario (los de mayor riesgo):** P-01 **MFA para las 3 cuentas admin/moderador** (código hecho y migración 148 aplicada, ver entrada de arriba: falta activar TOTP en el dashboard y enrolar), P-02 **backups**
+  **Pendientes del usuario (los de mayor riesgo):** P-01 **MFA para las 3 cuentas admin/moderador** (código hecho y migración 151 aplicada, ver entrada de arriba: falta activar TOTP en el dashboard y enrolar), P-02 **backups**
   (plan Free no tiene: pasar a Pro o cargar `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE` para `backup-db.yml`, sin probar), P-04 aplicar la
   política de contraseñas del `config.toml` en el dashboard, P-05 el correo `soporte@baraderolocal.com.ar` no existe (sin dominio),
   P-06 inscripción en el Registro Nacional de Bases de Datos (AAIP), P-07 archivar DPAs de Supabase/Vercel/MP.
@@ -127,8 +127,18 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   `js/store-location-map.js`; GPS, buscar dirección, link largo de Google Maps o tocar el mapa) -> `stores.lat`/`lng`
   (migración **147** + `147b` "los dos o ninguno"; **la 146 ya estaba tomada** en producción por `146_plazo_transferencia_24h`, cuyo
   archivo no está en ninguna rama del repo). **Hoy ningún comercio cargó su ubicación**, así que la fila "Más cerca" dice que no la
-  cargaron hasta que lo hagan: conviene avisarles. **Falta:** emparejar mejor los productos (hoy solo nombre exacto normalizado) y
+  cargaron hasta que lo hagan: conviene avisarles. **Reconocimiento del mismo producto (2026-11-02, migraciones 148 + 149 APLICADAS):**
+  la regla vive en la base, `product_match_key(title)`: mismas palabras sin importar unidades (1L = 1000 ml, 0,5 kg = 500 g), orden,
+  plurales, signos ni palabras de relleno; el envase se ignora solo si el nombre trae la medida y "pack" nunca. **A propósito sin
+  similitud de texto** (juntaba Coca con Sprite, Alfajor Mantecol con Mantecol). La clave se guarda en `products.match_key` (trigger
+  en cada alta/cambio, no se puede escribir a mano) y `same_product_offers(ids)` trae los equivalentes (~7 ms sin sesión, ~35 ms con).
+  **Si se cambia la regla:** editar `product_match_key` y volver a rellenar `match_key` (ver 149, con los triggers apagados). **Falta:**
   probar con cuentas reales y el GPS de un teléfono. Detalle en el skill.
+  **Aviso a los comercios (2026-11-02, migración 150 APLICADA, enviado):** "¿Tenés local a la calle? Marcalo en el mapa" en la campanita,
+  tipo `store_location_missing` (botón "Marcar mi local" -> `vender.html?foco=ubicacion#perfil-comercio`, baja solo hasta el mapa;
+  el texto dice que si vende sin local lo ignore). **Una sola vez por dueño** (tabla `store_location_reminders`; si la borra no
+  vuelve); pg_cron `remind-stores-missing-location` todos los días 13:17 UTC para los comercios que se aprueben después. Se mandó a
+  20 dueños (33 comercios; la cuenta admin de los 14 de prueba recibe uno solo). Solo campanita: email/WhatsApp siguen sin proveedor.
 - **Hecho 2026-11-02 — README.md reescrito en tono profesional y sin emojis**, a pedido del usuario (es lo que se ve en la portada
   de GitHub). De paso se actualizó a lo que hay hoy: se sacó el chat interno y el pago simulado (solo testing interno), y se sumaron
   profesionales/Contratar, repartidores, farmacias/emergencias, modo oscuro, tiempo real y las Edge Functions actuales. **Si cambia algo

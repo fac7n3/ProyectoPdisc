@@ -1,5 +1,8 @@
--- 148: verificación en dos pasos (TOTP) para admin y moderador -- exigir
+-- 151: verificación en dos pasos (TOTP) para admin y moderador -- exigir
 -- `aal2` en el servidor (pendiente P-01 de docs/seguridad/HARDENING-SOC2-ISO27701.md).
+--
+-- Aplicada a producción el 2026-11-02 como `148_admin_mfa_aal2` (se renombró a
+-- 151 al mergear: main ya tenía otras 148-150 de una sesión en paralelo).
 --
 -- Problema: las cuentas con app_metadata.role = 'admin' / 'moderador' entraban
 -- solo con contraseña. Una contraseña robada daba la RLS de admin, las RPCs
@@ -127,7 +130,7 @@ begin
    where schemaname in ('public', 'storage')
      and (coalesce(qual, '') || coalesce(with_check, '')) ~ 'app_metadata';
   if v_left > 0 then
-    raise exception '148: quedaron % policies leyendo app_metadata directo', v_left;
+    raise exception '151: quedaron % policies leyendo app_metadata directo', v_left;
   end if;
 end $$;
 
@@ -167,7 +170,7 @@ begin
      and p.proname <> 'jwt_role'
      and p.prosrc ~* 'auth\.jwt\(\)\s*\)?\s*->\s*''app_metadata''';
   if v_left > 0 then
-    raise exception '148: quedaron % funciones leyendo app_metadata directo', v_left;
+    raise exception '151: quedaron % funciones leyendo app_metadata directo', v_left;
   end if;
 end $$;
 

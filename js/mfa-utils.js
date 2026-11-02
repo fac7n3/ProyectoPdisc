@@ -8,7 +8,7 @@
  * Contexto: las cuentas admin/moderador tienen que entrar con un código de una
  * app de autenticación además de la contraseña (pendiente P-01 de
  * docs/seguridad/HARDENING-SOC2-ISO27701.md). El control de verdad está en la
- * base (migración 148, `public.jwt_role()`): sin sesión aal2 la base trata a
+ * base (migración 151, `public.jwt_role()`): sin sesión aal2 la base trata a
  * esa cuenta como un cliente. Esto solo decide qué pantalla mostrar.
  */
 

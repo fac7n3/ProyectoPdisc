@@ -3,9 +3,10 @@
 // barato y después el más cerca de la persona. Acá vive la cuenta, sin DOM ni
 // Supabase, para poder correr `node js/price-compare-utils.test.mjs`.
 //
-// "El mismo producto" = mismo nombre normalizado (sin mayúsculas, acentos,
-// signos ni espacios de más; "1L" y "1 l" son lo mismo). Es la primera vuelta:
-// dos comercios que escriben distinto el nombre no se juntan.
+// "El mismo producto" lo decide la base: same_product_offers (migración 148)
+// devuelve cada producto con su `match_key` (unidades, plurales, orden de
+// palabras y envase normalizados) y acá se agrupa por esa clave. Si no viene
+// (base sin la migración), se usa el nombre normalizado de abajo.
 
 /** "Leche La Serenísima  1L" -> "leche la serenisima 1 l". */
 export function normalizeProductTitle(title) {
@@ -19,7 +20,8 @@ export function normalizeProductTitle(title) {
 }
 
 /**
- * Junta los productos que se llaman igual en distintos comercios. Si un mismo
+ * Junta el mismo producto de distintos comercios: por `match_key` si viene de
+ * la base, si no por el nombre normalizado. Si un mismo
  * comercio lo tiene dos veces, queda el más barato. Devuelve solo los grupos
  * con `minStores` comercios o más, en el orden en que apareció el primero de
  * cada grupo (el de la búsqueda, que ya viene por relevancia).
@@ -28,7 +30,7 @@ export function groupSameProducts(products, { minStores = 2 } = {}) {
   const groups = new Map();
   for (const p of products || []) {
     if (!p || !p.store_id || p.price == null) continue;
-    const key = normalizeProductTitle(p.title);
+    const key = p.match_key || normalizeProductTitle(p.title);
     if (!key) continue;
     if (!groups.has(key)) groups.set(key, new Map());
     const byStore = groups.get(key);

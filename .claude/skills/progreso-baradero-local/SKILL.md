@@ -6003,11 +6003,11 @@ job programado, advisor sin el WARN de `_is_uuid`.
   puede escribir las columnas nuevas (`has_column_privilege`).
 - Orden: migración 147 + 147b -> push a `main` -> deploy de Vercel.
 
-## 2026-11-02 — Verificación en dos pasos (TOTP) para admin y moderador (P-01, migración 148 aplicada)
+## 2026-11-02 — Verificación en dos pasos (TOTP) para admin y moderador (P-01, migración 151 aplicada; en Supabase `148_admin_mfa_aal2`)
 
 Pedido del usuario: cerrar el pendiente más grave del hardening (las 3 cuentas admin entraban solo con contraseña; `auth.mfa_factors` vacía).
 
-### Servidor: `public.jwt_role()` (migración 148)
+### Servidor: `public.jwt_role()` (migración 151)
 - Relevamiento: 98 policies (public + storage) y 25 funciones leían el rol de la sesión con alguna forma de `auth.jwt() -> 'app_metadata' ->> 'role'`
   (deparseado: `((( SELECT auth.jwt() AS jwt) -> 'app_metadata'::text) ->> 'role'::text)`; en 4 policies de storage sin el subselect; en funciones
   `(select auth.jwt()) -> ...` o `auth.jwt() -> ...`). No hay vistas ni Edge Functions con chequeo de rol admin.
@@ -6047,3 +6047,42 @@ Pedido del usuario: cerrar el pendiente más grave del hardening (las 3 cuentas 
 - Verificado con Playwright sobre un build aparte (`vite build --outDir` en el scratchpad con un `.env` de mentira, sin tocar `dist/`) y Supabase
   simulado (sesión falsa en localStorage, `/auth/v1/factors`, `/challenge`, `/verify`): 30 checks.
 - **Sin probar:** con la app de autenticación real y Supabase real, y el modo estricto activado con usuarios reales.
+### 2026-11-02 — Reconocer mejor "el mismo producto" (migraciones 148 + 149, aplicadas y publicadas)
+- **Medido antes de diseñar:** la similitud de texto (`pg_trgm`) entre productos de distintos comercios junta cosas distintas:
+  "Coca-Cola botella individual" ~ "Sprite botella individual" (0,58), "Queso crema La Paulina" ~ "Crema La Paulina balde 5000 cm³"
+  (0,60), "Alfajor Mantecol" ~ "Mantecol" (0,53). **Decisión: nada de similitud; regla exacta sobre un nombre normalizado.**
+- **`product_match_key(title)`** (148, plpgsql): minúsculas sin acentos ni signos (apóstrofo fuera: "Lay's" = "lays"); unidades a ml/g
+  ("1L", "1 litro", "1000 ml" -> `1000ml`; "0,5 kg" -> `500g`; cc/cm³ -> ml); "x 50"/"x50" -> `x50`, salvo "x 500 grs" (medida);
+  unidad suelta ("(kg)", "por kilo") -> `kg`; sin stopwords (de, la, el, y, con, por, x, un...); **envase** (sachet, botella, caja,
+  paquete, bolsa, lata, envase) se ignora **solo si hay medida** y **"pack" nunca** (la primera versión juntaba "Pack Sprite" $13.500
+  con "Sprite en lata" $1.500); plural: se saca la s final y la e detrás de n/r/l/d/z/s/i, en bucle hasta 3 veces (limon/limones,
+  verde/verdes, pan/panes, frances/franceses, aji/ajies; la raíz puede quedar rara, solo se compara); palabras ordenadas y sin repetir.
+- **30 casos** (iguales y distintos) probados contra la base en transacción deshecha: 30/30. Sobre los productos reales: 24 grupos, los
+  mismos que con nombre exacto (el catálogo cargado en lote ya tenía nombres idénticos; la mejora se nota con comercios reales).
+- **149:** `products.match_key` + índice parcial + trigger `products_set_match_key` en **cada** INSERT/UPDATE (si fuera solo al cambiar
+  el título, un dueño podría escribir una clave a mano y meterse en la comparación de otro; probado: la pisa). Relleno inicial con
+  `products_set_updated_at`, `log_admin_action_products`, `products_notify_favorite_discount` y `products_notify_stock_alerts`
+  apagados solo mientras corre (verificado: 0 `updated_at` tocados, 0 avisos, los 6 triggers de vuelta en `O`).
+  `same_product_offers(p_product_ids)` (SECURITY INVOKER, como `search_products`) pasó de calcular la clave de todos los productos en
+  cada búsqueda (~130 ms anon / ~400 ms logueado) a buscar por igualdad (~7 / ~35 ms).
+- **Navegador (`js/search.js`):** `fetchSameProducts` llama a la función y agrupa por `match_key` (`groupSameProducts` usa
+  `match_key` si viene); si la función no existe (`isMissingFunctionError`) vuelve a la consulta por nombre exacto. Verificado en Chromium
+  con Supabase simulado: con la función, "Serenísima leche clásica 1000 ml" entra en la misma comparación que "Leche La Serenísima
+  Clásica sachet 1 L"; sin la función, cae al método viejo; 0 errores.
+- **Si se cambia la regla:** `create or replace` de `product_match_key` + volver a rellenar `match_key` como en la 149.
+
+### 2026-11-02 — Aviso a los comercios para que marquen su local (migración 150)
+- Pedido del usuario: "avisale a los comercios que carguen su ubicación, si es que tienen local físico". Canal: **campanita + aviso
+  emergente** (no hay email ni WhatsApp configurados, F8-02/F8-03).
+- Tipo `store_location_missing` (`js/notifications-utils.js`): título "¿Tenés local a la calle? Marcalo en el mapa", detalle
+  "<comercio> y N más: así los vecinos ven que les quedás cerca cuando buscan lo que vendés. Si vendés sin local a la calle, ignorá este
+  aviso." (en el desplegable de la campanita se corta a una línea; el título ya aclara el "si tenés local"), tono `info`, botón "Marcar
+  mi local" -> `vender.html?foco=ubicacion#perfil-comercio`. `focusLocationFromUrl` (`js/vender.js`) abre Perfil de mi comercio, baja
+  hasta `#store-location-field` y saca `foco` de la URL (recargar no vuelve a moverse).
+- **Una sola vez por dueño, a propósito** (el de alias/CBU se repite cada 6 h porque es obligatorio; tener local no lo es):
+  `remind_stores_missing_location()` (SECURITY DEFINER, sin permisos para anon/authenticated) agrupa por dueño los comercios aprobados
+  sin `lat` y anota a quién avisó en `store_location_reminders` (RLS sin policies), no en la notificación: si la borra, no le vuelve a
+  llegar. pg_cron `remind-stores-missing-location` (`17 13 * * *`, 10:17 de Argentina) para los que se aprueben más adelante.
+- Ensayado en transacción deshecha: 20 avisos, segundo envío 0. Verificado en Chromium (panel real, Supabase simulado): el aviso en la
+  campanita con su texto y su link, y el link baja hasta el mapa. **Publicado en orden:** frontend a `main` + deploy `READY` -> migración
+  150 -> envío.

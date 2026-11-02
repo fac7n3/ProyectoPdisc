@@ -41,6 +41,7 @@ const TYPE_LABELS = {
   boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
   boost_needs_review: 'Un pago de tu combo necesita revisión',
   transfer_method_missing: 'Cargá un medio de transferencia en tu comercio: es obligatorio',
+  store_location_missing: '¿Tenés local a la calle? Marcalo en el mapa',
   delivery_cancelled: 'Se canceló un pedido que tenías tomado',
   delivery_released: 'Soltamos un pedido que tenías tomado',
   delivery_ready: 'El comercio ya tiene listo tu pedido para retirar',
@@ -105,6 +106,7 @@ const TYPE_TONE = {
   boost_activated: 'success',
   boost_needs_review: 'accent',
   transfer_method_missing: 'danger',
+  store_location_missing: 'info',
   delivery_cancelled: 'danger',
   delivery_released: 'accent',
   delivery_ready: 'success',
@@ -187,6 +189,12 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       const others = Number(p.store_count) > 1 ? ` y ${Number(p.store_count) - 1} más` : '';
       return `${name}${others}: sin alias ni CBU/CVU, nadie puede pagarte por transferencia.`;
     }
+    // Lo manda la base una sola vez por dueño (migración 150).
+    case 'store_location_missing': {
+      const name = p.store_name || 'Tu comercio';
+      const others = Number(p.store_count) > 1 ? ` y ${Number(p.store_count) - 1} más` : '';
+      return `${name}${others}: así los vecinos ven que les quedás cerca cuando buscan lo que vendés. Si vendés sin local a la calle, ignorá este aviso.`;
+    }
     case 'delivery_delayed':
       return p.minutes ? `Calcula unos ${p.minutes} minutos más` : null;
     case 'delivery_problem':
@@ -265,6 +273,9 @@ function buildNotificationLink(n) {
     // Recordatorio de comercio sin medio de transferencia: lo lleva al campo.
     case 'transfer_method_missing':
       return { href: './vender.html#perfil-comercio', label: 'Cargar ahora' };
+    // Ubicación del local: abre el perfil y baja hasta el mapa (vender.js, foco=ubicacion).
+    case 'store_location_missing':
+      return { href: './vender.html?foco=ubicacion#perfil-comercio', label: 'Marcar mi local' };
     case 'mp_split_needs_review': {
       const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
       return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pedidos', label: 'Revisar' };

@@ -44,6 +44,21 @@ check("el mismo comercio dos veces cuenta una, la más barata", () => {
 check("ignora filas sin comercio o sin precio", () =>
   assert.equal(groupSameProducts([p("x", null, "Pan", 1), p("y", "S2", "Pan", null), p("z", "S3", "Pan", 2)]).length, 0));
 
+check("usa match_key de la base cuando viene (nombres distintos, mismo producto)", () => {
+  const g = groupSameProducts([
+    p("a", "S1", "Leche La Serenísima Clásica sachet 1 L", 2000, { match_key: "1000ml clasica leche serenisima" }),
+    p("b", "S2", "Serenísima leche clásica 1000 ml", 1900, { match_key: "1000ml clasica leche serenisima" }),
+    p("c", "S3", "Leche La Serenísima Clásica 500 ml", 1100, { match_key: "500ml clasica leche serenisima" }),
+  ]);
+  assert.equal(g.length, 1);
+  assert.deepEqual(g[0].items.map((i) => i.id).sort(), ["a", "b"]);
+});
+check("match_key manda sobre el nombre (mismo nombre, claves distintas no se juntan)", () =>
+  assert.equal(groupSameProducts([
+    p("a", "S1", "Sprite", 1500, { match_key: "lata sprite" }),
+    p("b", "S2", "Sprite", 13500, { match_key: "pack sprite" }),
+  ]).length, 0));
+
 console.log("rankByPrice");
 check("más barato primero, empate por nombre de comercio", () => {
   const r = rankByPrice([

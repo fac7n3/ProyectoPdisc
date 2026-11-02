@@ -896,7 +896,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
   maybeShowVendorOnboarding();
 
-  if (isStoreOwner) fillStoreProfileForm(store);
+  if (isStoreOwner) { fillStoreProfileForm(store); focusLocationFromUrl(); }
 
   // Todas las secciones arrancan juntas: cada una pinta su propio contenedor.
   // Antes Mercado Pago, Notificaciones y Soporte iban una detrás de otra antes
@@ -2741,6 +2741,30 @@ function getStoreLocationPicker() {
     mapsUrlInput: document.getElementById('store-maps-url'),
   });
   return storeLocationPicker;
+}
+
+// Link del aviso "¿Tenés local a la calle?" (store_location_missing,
+// vender.html?foco=ubicacion#perfil-comercio): abre el perfil y baja hasta el
+// mapa. Se saca el parámetro para que recargar no vuelva a moverse.
+function focusLocationFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('foco') !== 'ubicacion') return;
+  params.delete('foco');
+  const qs = params.toString();
+  window.history.replaceState(window.history.state, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  if (location.hash !== '#perfil-comercio') location.hash = 'perfil-comercio';
+  // La sección se muestra con el shell (al iniciar o en el hashchange): se
+  // reintenta un momento hasta que el mapa esté a la vista.
+  let tries = 0;
+  const tick = () => {
+    const field = document.getElementById('store-location-field');
+    if (field && field.offsetParent) {
+      field.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (++tries < 30) setTimeout(tick, 100);
+  };
+  tick();
 }
 
 function fillStoreProfileForm(store) {

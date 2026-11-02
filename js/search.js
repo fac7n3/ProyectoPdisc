@@ -10,6 +10,7 @@ import { logSearch, logSearchClick } from './search-analytics.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { groupSameProducts, rankByPrice, rankByDistance, formatDistance } from './price-compare-utils.js';
+import { isMissingFunctionError } from './product-detail-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -274,6 +275,31 @@ function getStoreCoords() {
 
 let compareState = null; // { groups, coords } de la última búsqueda, para redibujar al dar la ubicación
 
+// Los mismos productos en otros comercios. El criterio de "mismo producto"
+// vive en la base (product_match_key, migración 148: unidades, plurales,
+// orden de palabras y envase); la función devuelve cada uno con su clave
+// (`match_key`) y acá solo se agrupa por ella. Si la función todavía no
+// existe, se cae a lo de antes: mismo nombre exacto.
+async function fetchSameProducts(pageProducts) {
+  const { data, error } = await supabase.rpc('same_product_offers', {
+    p_product_ids: pageProducts.map((p) => p.id),
+  });
+  if (!error) return { rows: data || [] };
+  if (!isMissingFunctionError(error)) return { rows: [], error };
+
+  // Sin embed de `stores` a propósito (la cadena de RLS lo vuelve lento):
+  // el nombre del comercio sale de getStores().
+  const titles = [...new Set(pageProducts.map((p) => p.title))];
+  const fallback = await supabase
+    .from('products')
+    .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock, store_id')
+    .in('title', titles)
+    .eq('is_active', true)
+    .gt('stock', 0)
+    .limit(300);
+  return { rows: fallback.data || [], error: fallback.error };
+}
+
 async function renderPriceCompare(products, token) {
   const section = document.getElementById('price-compare');
   const list = document.getElementById('price-compare-list');
@@ -282,21 +308,11 @@ async function renderPriceCompare(products, token) {
   list.textContent = '';
   compareState = null;
 
-  const titles = [...new Set((products || []).map((p) => p.title).filter(Boolean))];
-  if (!filterState.query || !titles.length) return;
+  const pageProducts = (products || []).filter((p) => p.id && p.title);
+  if (!filterState.query || !pageProducts.length) return;
 
-  // Los "gemelos" de lo que salió en esta página pueden estar más abajo en la
-  // búsqueda (o no coincidir con el texto): se piden por nombre exacto.
-  // Sin embed de `stores` a propósito (la cadena de RLS lo vuelve lento):
-  // el nombre del comercio sale de getStores().
-  const [{ data: twins, error }, stores, coords] = await Promise.all([
-    supabase
-      .from('products')
-      .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock, store_id')
-      .in('title', titles)
-      .eq('is_active', true)
-      .gt('stock', 0)
-      .limit(300),
+  const [{ rows, error }, stores, coords] = await Promise.all([
+    fetchSameProducts(pageProducts),
     getStores(),
     getStoreCoords(),
   ]);
@@ -307,13 +323,15 @@ async function renderPriceCompare(products, token) {
   }
 
   const storeById = new Map(stores.map((s) => [s.id, s]));
-  const named = (twins || [])
+  const named = rows
     .filter((p) => storeById.has(p.store_id)) // solo comercios aprobados
-    .map((p) => ({ ...p, store_name: storeById.get(p.store_id).name }));
+    .map((p) => ({ ...p, store_name: p.store_name || storeById.get(p.store_id).name }));
 
-  // Orden de los grupos = orden en que aparecieron en los resultados.
-  const order = new Map(titles.map((t, i) => [t, i]));
-  named.sort((a, b) => (order.get(a.title) ?? 1e9) - (order.get(b.title) ?? 1e9));
+  // Orden de los grupos = orden en que aparecieron en los resultados: cada
+  // producto de la página vuelve con su propia clave, así que alcanza con
+  // poner primero los de la página, en su orden.
+  const pageIndex = new Map(pageProducts.map((p, i) => [p.id, i]));
+  named.sort((a, b) => (pageIndex.get(a.id) ?? 1e9) - (pageIndex.get(b.id) ?? 1e9));
 
   const groups = groupSameProducts(named).slice(0, COMPARE_MAX_GROUPS);
   if (!groups.length) return;
