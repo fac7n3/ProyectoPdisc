@@ -5948,3 +5948,57 @@ job programado, advisor sin el WARN de `_is_uuid`.
   `professional-inquiry-attachments`. **`support-attachments` no existe** (migración 73 sin aplicar).
   `avatars` es público.
 - El correo de la política (`soporte@baraderolocal.com.ar`) es de un dominio que no está comprado.
+## 2026-10-30 — Comparador "más barato / más cerca" en la búsqueda (maqueta, rama `claude/zen-dijkstra-fx5r82`, SIN mergear)
+- **Pedido del usuario:** cuando se busca un producto y dos o más comercios tienen el mismo, mostrar en una primera fila cuál es
+  más barato y en una segunda cuál está más cerca según la ubicación de la persona.
+- **Qué hay:** sección `#price-compare` ("Compará antes de comprar") arriba de los resultados de `search.html`. Una tarjeta por
+  producto repetido (hasta 3, `COMPARE_MAX_GROUPS`) con dos filas de comercios: por precio (el primero con "Más barato", el resto
+  con "+$X que el más barato") y por distancia (el primero con "Más cerca", o "Más cerca y más barato" si coincide; "a 350 m",
+  "Sin ubicación cargada" al final). Tocar un comercio abre el modal de ese producto. Sin ubicación de la persona, la fila 2 tiene
+  "Usar mi ubicación" (Geolocation; se guarda en `sessionStorage` `bl_nearby_location`, la misma clave del mapa del inicio).
+- **"Mismo producto" = mismo nombre normalizado** (`normalizeProductTitle` en `js/price-compare-utils.js`, con test: sin
+  mayúsculas, acentos ni signos, "1L" = "1 l"). En producción hay 24 nombres repetidos en 2-3 comercios (leche, carnes, verduras,
+  Dove, Magistral...). Los "gemelos" se piden con `products ... .in('title', títulos de la página)` (título **exacto**: un mismo
+  producto escrito con otras mayúsculas en otro comercio no se trae), sin embed de `stores` (cadena de RLS lenta).
+- **Ubicación de los comercios:** no existía en ninguna tabla (solo `address` texto en 13 de 33, `maps_url` en 0). Migración
+  **146** (`db/schema/146_store_location.sql`, **SIN APLICAR**): `stores.lat`/`lng` + check. El front la pide aparte
+  (`getStoreCoords`) y si la columna no existe la fila dice "Estos comercios todavía no cargaron su ubicación".
+- **Verificado** en Chromium con Supabase simulado (3 comercios, 2 con coordenadas): orden por precio y distancia, botón de
+  ubicación, modal, claro/oscuro, celular 390 px sin scroll horizontal; `npm test` en verde. Sin probar contra la base real.
+- **Falta para que sirva de verdad:** (1) aplicar la 146; (2) que el comercio cargue su ubicación en "Perfil de mi comercio"
+  (geocodificar la dirección con Nominatim, como el autocompletado de Mi perfil, o "Estoy en mi local: usar mi ubicación");
+  (3) emparejar mejor los productos (RPC con nombre normalizado / `pg_trgm`, o un código de barras); (4) decidir si la
+  distancia usa también la dirección de envío guardada de la persona.
+
+### 2026-11-02 — Paso 1: el comercio carga su ubicación (misma rama, SIN mergear)
+- **"Perfil de mi comercio" → "Contacto y ubicación"** (`pages/vender.html`, bloque `#store-location-field`): mapa de
+  OpenStreetMap con **Leaflet 1.9.4** (dependencia nueva de npm, exacta; Vite la deja en un archivo aparte de ~43 KB gz que se
+  pide recién cuando el mapa entra en pantalla, `IntersectionObserver` en `js/store-location-map.js`). Formas de marcar:
+  tocar el mapa / arrastrar el pin, "Estoy en mi local: usar mi ubicación" (GPS; si el margen es > 60 m lo avisa),
+  "Buscar mi dirección" (Nominatim con la dirección del formulario + Baradero; **OSM no tiene las alturas de Baradero**, así
+  que avisa que revise el pin), un **link largo** de Google Maps en el campo de arriba (toma `!3d..!4d..`, `?q=`, `@lat,lng`;
+  los cortos `maps.app.goo.gl` no traen coordenadas) y teclado (flechas mueven el mapa, Enter pone el pin en la cruz del
+  centro). "Quitar ubicación" guarda null. Estado debajo: sin marcar / "Pin marcado. Tocá Guardar perfil" / guardado, y avisa si
+  el punto queda a más de 30 km de Baradero (`isNearBaradero`).
+- **Guardado aparte** del resto del perfil (mismo criterio que `maps_url`): `update({lat, lng})` solo si cambió
+  (`isDirty`); si falla, toast "No se pudo guardar la ubicación en el mapa. El resto del perfil sí se guardó." **Hasta aplicar
+  la migración 146 eso es lo que pasaría en producción**: aplicar la 146 ANTES de mergear.
+- **CSP de `vender.html`:** `img-src` + `https://tile.openstreetmap.org`, `connect-src` + `https://nominatim.openstreetmap.org`.
+- Pin: `divIcon` con `fa-location-dot` (sin las imágenes de Leaflet, que con Vite no resuelven la ruta); en modo oscuro va fijo
+  en `#284175` (`dark.css`) porque el mapa es claro igual. Se sacó la banderita del prefijo del crédito (`setPrefix('Leaflet')`).
+- Lógica pura en `js/store-location-utils.js` (`parseCoordsFromMapsUrl`, `isNearBaradero`, `roundPoint`; con test).
+- **Verificado** con el panel real (`vender.html#perfil-comercio`) en Chromium con sesión de vendedor, Supabase, tiles y Nominatim
+  simulados: tocar + guardar (PATCH con lat/lng), GPS, buscar dirección, link de Maps, teclado, quitar + guardar (null),
+  ubicación ya guardada (sin PATCH si no cambia), celular 390 px y modo oscuro; 0 errores de CSP; `npm test` en verde.
+  **Sin probar** contra la base real ni el GPS de un teléfono.
+
+### 2026-11-02 — Publicado (merge a `main` + migración 147)
+- **Número de migración:** la 146 ya existía en producción (`146_plazo_transferencia_24h`, versión `20261027220721`) y su archivo
+  **no está en ninguna rama del repo** (se revisaron las 121 ramas remotas): otra sesión la aplicó sin subir el `.sql`. La nuestra
+  se renombró a `147_store_location.sql` y se aplicó como `147_store_location`.
+- **Encontrado al probar contra la base (transacción deshecha):** el check `stores_location_valid` dejaba pasar `lat` sin `lng`
+  (con `lng` NULL la condición da NULL y un CHECK con NULL pasa). Se sumó `stores_location_pair` (`(lat is null) = (lng is null)`)
+  como `147b_store_location_pair` (en el mismo archivo 147). Verificado: dueño guarda (1 fila), otra cuenta no toca nada (0 filas,
+  RLS), fuera de rango y uno solo de los dos rechazados, los dos o ninguno aceptados. `anon`/`authenticated` leen y `authenticated`
+  puede escribir las columnas nuevas (`has_column_privilege`).
+- Orden: migración 147 + 147b -> push a `main` -> deploy de Vercel.

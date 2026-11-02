@@ -144,6 +144,14 @@
             </div>
             <div class="active-filters" id="active-filters"></div>
 
+            <!-- Comparador: cuando el mismo producto está en dos o más
+                 comercios, una tarjeta con dos filas (más barato / más cerca).
+                 Lo llena search.js (renderPriceCompare). -->
+            <section class="price-compare" id="price-compare" aria-labelledby="price-compare-title" hidden>
+              <h2 class="store-results__title" id="price-compare-title">Compará antes de comprar</h2>
+              <div class="price-compare__list" id="price-compare-list"></div>
+            </section>
+
             <!-- Comercios que coinciden con la búsqueda. Van arriba de los
                  productos: si alguien escribe el nombre de un comercio, lo que
                  busca es el comercio. Lo llena search.js. -->

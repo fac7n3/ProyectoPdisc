@@ -252,6 +252,12 @@ html[data-theme="dark"] .results-title {
 html[data-theme="dark"] .results-title strong {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .pc-row__label {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .pc-row__locate {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .filter-chip {
   color: var(--dk-accent-text);
 }
@@ -1903,6 +1909,9 @@ html[data-theme="dark"] .pub-alias-gate {
 }
 html[data-theme="dark"] .pub-alias-gate__icon {
   color: #f5b687;
+}
+html[data-theme="dark"] .sl-pin i {
+  color: var(--dk-accent-text);
 }
 html[data-theme="dark"] .social-toggle__track {
   background: var(--bl-border);

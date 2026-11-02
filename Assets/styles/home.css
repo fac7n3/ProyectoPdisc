@@ -3041,6 +3041,169 @@ button.coupon-chip:hover {
   color: var(--bl-text-muted);
 }
 
+/* Comparador de la búsqueda: mismo producto en varios comercios. Una tarjeta
+   por producto con dos filas (más barato / más cerca); cada fila se desliza de
+   costado en el celular. Solo tokens, así anda igual en modo oscuro. */
+.price-compare {
+  margin-bottom: 2rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--bl-border);
+}
+
+.price-compare[hidden] { display: none; }
+
+.price-compare__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pc-group {
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  box-shadow: var(--bl-shadow-card);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.pc-group__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pc-group__img {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface-alt);
+}
+
+.pc-group__title {
+  font-size: 0.975rem;
+  font-weight: 700;
+  color: var(--bl-text);
+  margin: 0;
+}
+
+.pc-group__sub {
+  font-size: 0.825rem;
+  color: var(--bl-text-secondary);
+  margin: 0.125rem 0 0;
+}
+
+.pc-row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pc-row__label {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--bl-primary);
+}
+
+.pc-row__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.pc-row__note {
+  font-size: 0.85rem;
+  color: var(--bl-text-secondary);
+  margin: 0;
+}
+
+.pc-row__locate {
+  grid-column: 2;
+  justify-self: start;
+  border: 1px solid var(--bl-primary);
+  background: transparent;
+  color: var(--bl-primary);
+  font: inherit;
+  font-size: 0.825rem;
+  font-weight: 600;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--bl-radius-pill);
+  cursor: pointer;
+}
+
+.pc-row__locate:hover:not(:disabled) { background: var(--bl-surface-alt); }
+.pc-row__locate:disabled { opacity: 0.6; cursor: wait; }
+
+.pc-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  min-width: 9.5rem;
+  max-width: 13rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+  color: var(--bl-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pc-offer:hover { border-color: var(--bl-primary); box-shadow: var(--bl-shadow-sm); }
+.pc-offer:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+
+.pc-offer--best {
+  border: 2px solid var(--bl-primary);
+  background: var(--bl-surface-alt);
+}
+
+.pc-offer__badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--bl-text-inverse);
+  background: var(--bl-primary);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--bl-radius-pill);
+  margin-bottom: 0.25rem;
+}
+
+.pc-offer__store {
+  font-size: 0.825rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.pc-offer__price {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.pc-offer__detail {
+  font-size: 0.75rem;
+  color: var(--bl-text-secondary);
+}
+
+@media (max-width: 600px) {
+  .pc-row { grid-template-columns: minmax(0, 1fr); gap: 0.375rem; }
+  .pc-row__locate { grid-column: 1; }
+}
+
 .active-filters {
   display: flex;
   flex-wrap: wrap;
