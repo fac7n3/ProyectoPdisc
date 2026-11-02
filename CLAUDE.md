@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-10-30. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-11-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -90,6 +90,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-11-02 — Hardening SOC 2 + ISO/IEC 27701** (migración **146** APLICADA a producción), a pedido del usuario.
+  Documento central con matriz de controles y pendientes: **`docs/seguridad/HARDENING-SOC2-ISO27701.md`** (+ políticas,
+  registro de tratamientos, plan de incidentes y `SECURITY.md`). **Base:** el log de auditoría de admin copiaba la fila entera
+  (72 filas con email/teléfono/DNI/CUIT/CBU/direcciones que sobrevivían a la baja de la cuenta): ahora guarda solo lo que cambió y
+  redacta lo personal, y es **append-only** (ni `postgres` lo edita; solo la FK al borrar un admin y la purga a 2 años); auditoría de
+  empleados de comercio y de vinculación de Mercado Pago; `error_logs` sin suplantación; sin TRUNCATE/TRIGGER/REFERENCES para
+  `anon`/`authenticated`; **retención diaria** (pg_cron `purge-expired-personal-data`: errores 90 d, búsquedas/vistas seudonimizadas
+  a 30 d y borradas a 180, notificaciones leídas 1 año). **Sitio/repo:** headers HSTS/CSP de header/COOP (test `js/security-headers.test.mjs`),
+  CI con `npm test` + `npm audit`, Dependabot, vite/sharp actualizados, política de privacidad reescrita. **Regla nueva:** todo dato
+  personal nuevo responde las 4 preguntas de `POLITICAS-SEGURIDAD.md` §1 y, si es telemetría, se suma a `purge_expired_personal_data()`.
+  **Pendientes del usuario (los de mayor riesgo):** P-01 **MFA para las 3 cuentas admin/moderador** (código + dashboard), P-02 **backups**
+  (plan Free no tiene: pasar a Pro o cargar `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE` para `backup-db.yml`, sin probar), P-04 aplicar la
+  política de contraseñas del `config.toml` en el dashboard, P-05 el correo `soporte@baraderolocal.com.ar` no existe (sin dominio),
+  P-06 inscripción en el Registro Nacional de Bases de Datos (AAIP), P-07 archivar DPAs de Supabase/Vercel/MP.
 - **Hecho 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)**, a pedido del usuario: mientras carga, la sección
   muestra 5 tarjetas de stats y 3 pedidos grises con la forma de la tarjeta real (`renderPedidosSkeleton` en `js/vender.js`,
   barras `.store-skeleton__bar` de home.css, que ya tienen modo oscuro y "reducir animaciones"; medidas `.pd-skel*` en `vender.html`).

@@ -123,46 +123,61 @@
 
   <main id="contenido-principal" tabindex="-1" class="terms-container">
     <h1>Política de Privacidad</h1>
-    <div class="last-updated">Última actualización: 10 de julio de 2026</div>
+    <div class="last-updated">Última actualización: 2 de noviembre de 2026</div>
 
     <p><strong>Este documento es un borrador redactado con criterios generales de la legislación argentina y todavía no fue revisado por un abogado.</strong> No debe considerarse asesoramiento legal definitivo hasta esa revisión.</p>
 
     <h2>1. Responsable del tratamiento de datos</h2>
-    <p>Baradero Local es responsable de los datos personales que se procesan a través de esta plataforma, conforme a la Ley 25.326 de Protección de Datos Personales de la República Argentina. Ante cualquier consulta sobre tus datos, escribinos a <strong>soporte@baraderolocal.com.ar</strong>.</p>
+    <p>Baradero Local es responsable de los datos personales que se procesan a través de esta plataforma, conforme a la Ley 25.326 de Protección de Datos Personales de la República Argentina. Ante cualquier consulta sobre tus datos, escribinos desde <strong>Mi perfil → Soporte</strong> o a <strong>soporte@baraderolocal.com.ar</strong>.</p>
 
     <h2>2. Qué datos recolectamos</h2>
     <ul>
-      <li><strong>Datos de cuenta:</strong> email y, si te registrás como vendedor, nombre del comercio, CUIT, dirección y teléfono.</li>
-      <li><strong>Datos de compra:</strong> productos comprados, dirección de envío (si elegís esa opción), método de pago elegido.</li>
-      <li><strong>Datos de pago:</strong> si pagás con Mercado Pago, el número de tarjeta y datos sensibles de pago los procesa <strong>Mercado Pago directamente</strong> — nunca llegan a nuestros servidores. Si pagás por transferencia, solo recibimos el comprobante que subís vos.</li>
-      <li><strong>Datos de uso:</strong> productos favoritos, historial de compras, reseñas y mensajes que escribas dentro de la plataforma.</li>
-      <li><strong>Cookies y almacenamiento local:</strong> usamos `localStorage` del navegador para el carrito de compras (si todavía no iniciaste sesión) y para recordar tu sesión — no usamos cookies de rastreo publicitario de terceros.</li>
+      <li><strong>Datos de cuenta:</strong> email, nombre y, si los cargás, foto de perfil, teléfono, fecha de nacimiento y documento. Si iniciás sesión con Google, recibimos tu email, nombre y foto de esa cuenta.</li>
+      <li><strong>Si vendés u ofrecés un servicio:</strong> nombre del comercio o de la actividad, CUIT, dirección, teléfono o WhatsApp, redes sociales y los datos bancarios que cargues para recibir transferencias (alias, CBU/CVU, titular y banco).</li>
+      <li><strong>Datos de compra:</strong> productos comprados, dirección de envío (si elegís esa opción), método de pago, historial del pedido y, en los envíos, las fotos del pedido que sacan el repartidor al retirarlo y vos si reportás un problema.</li>
+      <li><strong>Datos de pago:</strong> si pagás con Mercado Pago, el número de tarjeta y los datos sensibles de pago los procesa <strong>Mercado Pago directamente</strong>: nunca llegan a nuestros servidores. Si pagás por transferencia, solo recibimos el comprobante que subís vos.</li>
+      <li><strong>Datos de uso:</strong> favoritos, reseñas, reclamos de soporte (con los archivos que adjuntes), consultas que les mandes a profesionales, búsquedas que hacés y productos que mirás.</li>
+      <li><strong>Datos técnicos:</strong> cuando algo falla en el sitio guardamos el error, la página (sin datos de sesión) y el navegador que usabas, para poder arreglarlo.</li>
+      <li><strong>Ubicación:</strong> solo si tocás "usar mi ubicación" en el inicio. Queda en tu navegador para mostrarte los comercios cercanos y el mapa (que se dibuja con Google Maps); no la guardamos en nuestra base.</li>
+      <li><strong>Almacenamiento local:</strong> usamos el almacenamiento del navegador (<code>localStorage</code>) para tu sesión, el carrito, tus preferencias (como el modo oscuro) y los productos que miraste, para recomendarte productos parecidos. No usamos cookies de rastreo publicitario de terceros.</li>
     </ul>
 
     <h2>3. Para qué usamos tus datos</h2>
-    <p>Usamos tus datos para: procesar tus compras y pagos, coordinar envíos, permitirte contactar a un vendedor o recibir notificaciones sobre tus pedidos, y mostrar tus reseñas públicas (sin tu nombre real, salvo que lo hayas hecho público vos mismo).</p>
+    <p>Usamos tus datos para: crear y proteger tu cuenta, procesar tus compras y pagos, coordinar envíos y retiros, permitirte contactar a un comercio o a un profesional, enviarte notificaciones sobre tus pedidos, atender tus reclamos, mostrar tus reseñas públicas, recomendarte productos según lo que miraste, mejorar el buscador y detectar errores o usos indebidos de la plataforma.</p>
 
     <h2>4. Con quién compartimos tus datos</h2>
-    <p>No vendemos tus datos a terceros. Los compartimos únicamente con los proveedores necesarios para operar la plataforma:</p>
+    <p>No vendemos tus datos a terceros. Los compartimos únicamente con:</p>
     <ul>
-      <li><strong>Supabase</strong> (alojamiento de la base de datos, autenticación y almacenamiento de archivos).</li>
+      <li><strong>Supabase</strong> (base de datos, autenticación y almacenamiento de archivos).</li>
+      <li><strong>Vercel</strong> (alojamiento del sitio web y medición anónima de velocidad de carga).</li>
       <li><strong>Mercado Pago</strong> (procesamiento de pagos).</li>
-      <li><strong>Google</strong> (si elegís iniciar sesión con tu cuenta de Google).</li>
-      <li><strong>Vercel</strong> (alojamiento del sitio web).</li>
-      <li>El comercio (vendedor) correspondiente a cada compra que hagas, para que pueda gestionar tu pedido.</li>
+      <li><strong>Google</strong> (si elegís iniciar sesión con Google, y para dibujar el mapa del inicio).</li>
+      <li><strong>OpenStreetMap / Nominatim</strong> (sugerencias de calles cuando escribís una dirección; solo se envía lo que tipeás en ese campo).</li>
+      <li>El <strong>comercio</strong> de cada compra (para gestionar tu pedido), el <strong>repartidor</strong> que lo lleva (dirección y teléfono, solo mientras la entrega es suya) y el <strong>profesional</strong> al que le pedís un presupuesto.</li>
+      <li>Autoridades, cuando una ley u orden judicial lo exija.</li>
     </ul>
 
-    <h2>5. Seguridad</h2>
-    <p>La base de datos aplica reglas de seguridad a nivel de fila (Row Level Security): cada usuario solo puede acceder a sus propios datos, salvo las excepciones necesarias del rol de administrador o del vendedor sobre los pedidos de su propio comercio. Toda la comunicación entre tu navegador y nuestros servidores viaja cifrada (HTTPS).</p>
+    <h2>5. Transferencia internacional de datos</h2>
+    <p>Supabase y Vercel guardan y procesan los datos en servidores ubicados en los Estados Unidos. Elegimos proveedores que aplican medidas de seguridad reconocidas internacionalmente (cifrado, control de acceso y auditorías independientes como SOC 2) y que ofrecen acuerdos de tratamiento de datos, teniendo en cuenta lo que pide el artículo 12 de la Ley 25.326.</p>
 
-    <h2>6. Tus derechos</h2>
-    <p>Conforme a la Ley 25.326, tenés derecho a acceder, rectificar, actualizar o solicitar la eliminación de tus datos personales. Podés hacerlo directamente desde tu perfil (para datos de cuenta) o escribiéndonos a <strong>soporte@baraderolocal.com.ar</strong>. También podés ejercer tu derecho de arrepentimiento de compra — ver la sección correspondiente en nuestros <a href="./terminos.html">Términos y Condiciones</a>.</p>
+    <h2>6. Seguridad</h2>
+    <p>La base de datos aplica reglas de seguridad a nivel de fila (Row Level Security): cada usuario solo puede acceder a sus propios datos, salvo las excepciones necesarias del administrador o del comercio sobre los pedidos de su propio local. Toda la comunicación viaja cifrada (HTTPS) y los datos se guardan cifrados en los servidores del proveedor. Las acciones del equipo de administración quedan registradas en un historial que no se puede modificar, y ese historial no guarda tus datos personales. Si ocurriera un incidente de seguridad que afecte tus datos, te lo vamos a informar.</p>
+
+    <h2>7. Tus derechos</h2>
+    <p>Conforme a la Ley 25.326, tenés derecho a acceder, rectificar, actualizar o solicitar la eliminación de tus datos personales. Podés editar tus datos y dar de baja tu cuenta desde <strong>Mi perfil</strong>, y para todo lo demás (por ejemplo, pedir una copia de tus datos) escribinos desde <strong>Mi perfil → Soporte</strong> o a <strong>soporte@baraderolocal.com.ar</strong>. Respondemos los pedidos de acceso dentro de los 10 días corridos y los de rectificación o supresión dentro de los 5 días hábiles, como fija la ley. También podés ejercer tu derecho de arrepentimiento de compra — ver la sección correspondiente en nuestros <a href="./terminos.html">Términos y Condiciones</a>.</p>
     <p>La Agencia de Acceso a la Información Pública, en su carácter de Órgano de Control de la Ley 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.</p>
 
-    <h2>7. Retención de datos</h2>
-    <p>Conservamos tus datos mientras tu cuenta esté activa. Si solicitás la baja de tu cuenta, eliminamos o anonimizamos tus datos personales, salvo la información que debamos conservar por obligaciones legales o contables (por ejemplo, registros de compras ya realizadas).</p>
+    <h2>8. Retención de datos</h2>
+    <p>Conservamos tus datos mientras tu cuenta esté activa. Algunos datos se borran solos antes:</p>
+    <ul>
+      <li>Registros de errores técnicos: 90 días.</li>
+      <li>Búsquedas y productos vistos: a los 30 días dejan de estar asociados a tu cuenta y a los 180 días se borran.</li>
+      <li>Notificaciones ya leídas: 1 año.</li>
+      <li>Historial de acciones del equipo de administración: 2 años.</li>
+    </ul>
+    <p>Si das de baja tu cuenta, eliminamos tus datos personales y archivos (foto de perfil y adjuntos de reclamos). Los pedidos ya realizados se conservan sin asociarlos a tu cuenta, porque el comercio los necesita como respaldo de la venta y por obligaciones legales o contables.</p>
 
-    <h2>8. Cambios a esta política</h2>
+    <h2>9. Cambios a esta política</h2>
     <p>Podemos actualizar esta Política de Privacidad; los cambios se publican en esta misma página con la fecha de última actualización.</p>
   </main>
 

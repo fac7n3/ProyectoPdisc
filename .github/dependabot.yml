@@ -1,0 +1,16 @@
+# Actualizaciones de seguridad y versiones (SOC 2 CC7.1 / CC8.1, ISO 27002 8.8).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      dev-tools:
+        dependency-type: development
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
