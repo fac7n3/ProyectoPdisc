@@ -5913,3 +5913,14 @@ Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que 
   simulados: tocar + guardar (PATCH con lat/lng), GPS, buscar dirección, link de Maps, teclado, quitar + guardar (null),
   ubicación ya guardada (sin PATCH si no cambia), celular 390 px y modo oscuro; 0 errores de CSP; `npm test` en verde.
   **Sin probar** contra la base real ni el GPS de un teléfono.
+
+### 2026-11-02 — Publicado (merge a `main` + migración 147)
+- **Número de migración:** la 146 ya existía en producción (`146_plazo_transferencia_24h`, versión `20261027220721`) y su archivo
+  **no está en ninguna rama del repo** (se revisaron las 121 ramas remotas): otra sesión la aplicó sin subir el `.sql`. La nuestra
+  se renombró a `147_store_location.sql` y se aplicó como `147_store_location`.
+- **Encontrado al probar contra la base (transacción deshecha):** el check `stores_location_valid` dejaba pasar `lat` sin `lng`
+  (con `lng` NULL la condición da NULL y un CHECK con NULL pasa). Se sumó `stores_location_pair` (`(lat is null) = (lng is null)`)
+  como `147b_store_location_pair` (en el mismo archivo 147). Verificado: dueño guarda (1 fila), otra cuenta no toca nada (0 filas,
+  RLS), fuera de rango y uno solo de los dos rechazados, los dos o ninguno aceptados. `anon`/`authenticated` leen y `authenticated`
+  puede escribir las columnas nuevas (`has_column_privilege`).
+- Orden: migración 147 + 147b -> push a `main` -> deploy de Vercel.

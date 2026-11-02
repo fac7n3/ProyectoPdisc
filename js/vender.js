@@ -2728,7 +2728,7 @@ function setupStoreLogoPicker() {
 }
 
 /** F5-08: precarga el form de perfil del comercio con los datos actuales. */
-// Ubicación del local en el mapa (stores.lat/lng, migración 146). Se crea una
+// Ubicación del local en el mapa (stores.lat/lng, migración 147). Se crea una
 // sola vez; la carga y el guardado van aparte del resto del perfil, como el
 // link de Google Maps: si la columna faltara, falla solo esto.
 let storeLocationPicker = null;

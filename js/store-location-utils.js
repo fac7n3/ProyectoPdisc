@@ -1,4 +1,4 @@
-// Ubicación del comercio (stores.lat/lng, migración 146). La carga el dueño
+// Ubicación del comercio (stores.lat/lng, migración 147). La carga el dueño
 // en "Perfil de mi comercio" moviendo un pin en el mapa; con eso el buscador
 // le dice al vecino qué comercio le queda más cerca. Sin DOM ni Supabase para
 // poder correr `node js/store-location-utils.test.mjs`.

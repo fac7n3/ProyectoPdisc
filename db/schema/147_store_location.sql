@@ -1,4 +1,4 @@
--- 146 — Ubicación del comercio (lat/lng) para el comparador de la búsqueda.
+-- 147 — Ubicación del comercio (lat/lng) para el comparador de la búsqueda.
 --
 -- El comparador de precios de search.html muestra, cuando el mismo producto
 -- está en varios comercios, una fila con el más barato y otra con el que le
@@ -28,5 +28,17 @@ begin
         (lat is null and lng is null)
         or (lat between -90 and 90 and lng between -180 and 180)
       );
+  end if;
+end $$;
+
+-- 147b (aplicada aparte, mismo día): el check de arriba deja pasar lat sin lng
+-- (con lng NULL la condición da NULL y un CHECK con NULL pasa). Este exige
+-- los dos o ninguno. Se sumó en vez de reemplazar el otro porque el conector
+-- de Supabase se cuelga con un `drop constraint`.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'stores_location_pair') then
+    alter table public.stores
+      add constraint stores_location_pair check ((lat is null) = (lng is null));
   end if;
 end $$;

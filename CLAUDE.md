@@ -90,12 +90,15 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
-- **En curso 2026-10-30 (maqueta en la rama `claude/zen-dijkstra-fx5r82`, SIN mergear) — Comparador "más barato / más cerca" en la búsqueda**,
+- **Hecho 2026-11-02 (en `main` y migración 147 APLICADA a producción) — Comparador "más barato / más cerca" en la búsqueda + ubicación del local**,
   a pedido del usuario. Si el mismo producto (mismo nombre normalizado, `js/price-compare-utils.js`) está en 2+ comercios, `search.html`
   muestra arriba "Compará antes de comprar": fila 1 los comercios del más barato al más caro, fila 2 del más cerca al más lejos (con
-  "Usar mi ubicación"). **Los comercios no tenían coordenadas:** migración **146** (`stores.lat`/`lng`) escrita y **sin aplicar**.
-  **Paso 1 hecho (2026-11-02, misma rama):** el dueño marca su local en un mapa con pin en "Perfil de mi comercio" (Leaflet + OpenStreetMap,
-  `js/store-location-map.js`). **Para publicar: aplicar la 146 ANTES de mergear** (si no, guardar la ubicación falla). Detalle en el skill.
+  "Usar mi ubicación"). El dueño marca su local en "Perfil de mi comercio" con un mapa con pin (Leaflet + OpenStreetMap,
+  `js/store-location-map.js`; GPS, buscar dirección, link largo de Google Maps o tocar el mapa) -> `stores.lat`/`lng`
+  (migración **147** + `147b` "los dos o ninguno"; **la 146 ya estaba tomada** en producción por `146_plazo_transferencia_24h`, cuyo
+  archivo no está en ninguna rama del repo). **Hoy ningún comercio cargó su ubicación**, así que la fila "Más cerca" dice que no la
+  cargaron hasta que lo hagan: conviene avisarles. **Falta:** emparejar mejor los productos (hoy solo nombre exacto normalizado) y
+  probar con cuentas reales y el GPS de un teléfono. Detalle en el skill.
 - **Hecho 2026-10-30 — Esqueleto de carga en Pedidos (panel de vendedor)**, a pedido del usuario: mientras carga, la sección
   muestra 5 tarjetas de stats y 3 pedidos grises con la forma de la tarjeta real (`renderPedidosSkeleton` en `js/vender.js`,
   barras `.store-skeleton__bar` de home.css, que ya tienen modo oscuro y "reducir animaciones"; medidas `.pd-skel*` en `vender.html`).

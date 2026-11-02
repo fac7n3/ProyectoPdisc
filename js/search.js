@@ -252,7 +252,7 @@ function saveUserLocation(lat, lng) {
   } catch (_) { /* sin sessionStorage: vale solo para esta vista */ }
 }
 
-// Ubicación de los comercios (stores.lat/lng, migración 146). Aparte de
+// Ubicación de los comercios (stores.lat/lng, migración 147). Aparte de
 // getStores() para que, si la columna todavía no existe, falle solo esto y la
 // fila "Más cerca" diga que no hay ubicaciones cargadas.
 let storeCoordsCache = null;
