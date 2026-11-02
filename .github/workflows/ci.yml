@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Mínimo privilegio para el token del workflow (SOC 2 CC6.1 / CC8.1).
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,5 +26,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Tests (incluye CSP y headers de seguridad)
+        run: npm test
+
       - name: Build
         run: npm run build
+
+  dependencias:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Lo que llega al navegador: una vulnerabilidad alta frena el CI.
+      - name: npm audit (producción)
+        run: npm audit --omit=dev --audit-level=high
+
+      # Herramientas de desarrollo (Vite, sharp, CLI de Supabase): se reporta,
+      # no frena. Dependabot abre el PR para actualizarlas.
+      - name: npm audit (desarrollo, informativo)
+        run: npm audit --audit-level=high
+        continue-on-error: true

@@ -1,0 +1,74 @@
+# Backup diario cifrado de la base de Supabase (SOC 2 A1.2 · ISO 27002 8.13).
+#
+# Se activa solo cuando existen los dos secretos del repo (Settings -> Secrets and
+# variables -> Actions):
+#   SUPABASE_DB_URL     cadena de conexión del pooler en modo sesión
+#                       (Supabase -> Connect -> Session pooler), con la contraseña.
+#   BACKUP_PASSPHRASE   frase larga guardada FUERA de GitHub (gestor de contraseñas).
+#                       Sin ella el backup no se puede abrir.
+# Sin esos secretos el job termina en verde con un aviso y no hace nada.
+#
+# El dump sale del runner ya cifrado (AES-256, gpg simétrico) y se guarda como
+# artefacto del workflow por 30 días. Cómo restaurarlo y cómo probarlo:
+# docs/seguridad/POLITICAS-SEGURIDAD.md §5.
+name: Backup de la base
+
+on:
+  schedule:
+    - cron: '41 7 * * *'   # 04:41 hora argentina
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-db
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Verificar secretos
+        id: cfg
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Backup desactivado: faltan SUPABASE_DB_URL y/o BACKUP_PASSPHRASE."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: pg_dump (Postgres 17)
+        if: steps.cfg.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          docker run --rm -e SUPABASE_DB_URL postgres:17 \
+            sh -c 'pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges \
+                     --schema=public --schema=auth --schema=storage' > baradero.dump
+          # Que el archivo se pueda leer (si no, falla el job y GitHub avisa por mail).
+          docker run --rm -v "$PWD:/b" postgres:17 pg_restore --list /b/baradero.dump > /dev/null
+          ls -l baradero.dump
+
+      - name: Cifrar
+        if: steps.cfg.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          name="baradero-$(date -u +%Y%m%d).dump.gpg"
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 -o "$name" baradero.dump
+          shred -u baradero.dump
+          echo "BACKUP_FILE=$name" >> "$GITHUB_ENV"
+
+      - name: Guardar artefacto
+        if: steps.cfg.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+          if-no-files-found: error

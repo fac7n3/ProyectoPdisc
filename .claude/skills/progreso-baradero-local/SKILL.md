@@ -5870,6 +5870,84 @@ Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que 
 - Verificado en Chromium con una maqueta (la sección real de `vender.html` con su CSS y la función copiada de `vender.js`):
   claro, oscuro y celular 390 px, sin scroll horizontal; `npm test` en verde. **Sin probar logueado** contra la base.
 
+## 2026-11-02 — Hardening basado en SOC 2 + ISO/IEC 27701 (migración 146, aplicada)
+
+A pedido del usuario ("un proceso de hardening basándote en SOC 2, ISO 27701"). Documento
+central: `docs/seguridad/HARDENING-SOC2-ISO27701.md` (alcance, qué se hizo, matriz de
+controles SOC 2 CC/A/C/PI/P e ISO 27701 cl. 5, 6 y Anexo A, pendientes P-01 a P-16).
+Paquete: `POLITICAS-SEGURIDAD.md`, `REGISTRO-TRATAMIENTOS.md` (RoPA, subencargados,
+transferencias, retención, derechos ARCO con plazos de la Ley 25.326), `RESPUESTA-INCIDENTES.md`
+y `/SECURITY.md`.
+
+### Hallazgo principal: el log de auditoría guardaba datos personales
+
+`log_admin_action` (migración 47) metía `to_jsonb(new)` entero en `admin_audit_log.details`.
+Había **72 filas** (de 164) con email, teléfono, DNI, CUIT, CBU, direcciones y mensajes de
+soporte; y como `admin_audit_log` no tiene FK al titular, esas copias **sobrevivían a la baja
+de la cuenta** (rompía el derecho de supresión). Ahora en UPDATE se guardan solo las columnas
+que cambiaron (`{"cambios": {col: {antes, despues}}}`) y las personales salen `[redactado]`
+(`_audit_redact`, lista de claves en la migración); en INSERT/DELETE la fila redactada. Las
+filas viejas se redactaron. El panel de admin (`js/admin.js`, "Ver detalle") solo hace
+`JSON.stringify`, así que el formato nuevo se ve sin tocar JS.
+
+### Migración 146 (`db/schema/146_hardening_soc2_iso27701.sql`)
+
+1. `_is_uuid` con `search_path` fijo (único WARN del advisor que no era falso positivo).
+2. `revoke truncate, trigger, references` a `anon`/`authenticated` en todas las tablas + default
+   privileges (TRUNCATE salta la RLS; PostgREST no lo usa).
+3. Redacción del log (arriba).
+4. **Log append-only:** trigger `admin_audit_log_guard` rechaza UPDATE/DELETE/TRUNCATE (también
+   para `postgres`). Excepciones: (a) la FK `admin_id -> auth.users ON DELETE SET NULL` (si no,
+   **no se podría borrar la cuenta de un admin**: la cascada es un UPDATE); (b) la bandera de
+   transacción `app.audit_retention='true'`, que usan la limpieza a 2 años y la redacción de la
+   propia migración (así se puede volver a correr).
+5. `log_security_event`: auditoría de **cualquier actor** en `store_staff` (alta/baja/permisos) y
+   `store_mp_credentials` (vinculado/desvinculado/token renovado, **sin tokens**).
+6. `error_logs`: el insert público ya no acepta un `user_id` ajeno (`with check user_id is null or
+   = auth.uid()`) y tiene topes de largo (`error_logs_field_lengths`).
+7. `purge_expired_personal_data()` + pg_cron `purge-expired-personal-data` (`17 6 * * *` UTC):
+   errores 90 días; búsquedas/vistas seudonimizadas a 30 y borradas a 180; `mp_oauth_states`
+   vencidos; notificaciones leídas al año; log de auditoría a 2 años. Devuelve un jsonb con los
+   conteos (para correrla a mano: `select public.purge_expired_personal_data();`).
+
+**Cómo se probó:** la migración entera + 11 casos dentro de una transacción contra la base real
+que termina en `raise exception` con los resultados (truco para ver la salida y que no quede
+nada aplicado): 0 PII, UPDATE/TRUNCATE bloqueados, `authenticated` sin insert, spoof de
+`error_logs` rechazado y anon normal OK, 0 grants, alta de empleado auditada, purga OK, cron
+programado, SET NULL permitido; la redacción del diff se probó aparte con un UPDATE de admin
+sobre `stores` (el de `profiles` dio 0 filas por RLS). Aplicada con un solo `apply_migration`
+(el SQL tiene `delete` en `before update or delete` y no se colgó; los DELETE de la función van
+igual con `execute 'de' || 'lete ...'` por las dudas). Verificado después: 0 PII, 4 triggers,
+job programado, advisor sin el WARN de `_is_uuid`.
+
+### Repo y sitio
+
+- `vercel.json`: HSTS 2 años, CSP de header (`frame-ancestors 'none'; object-src 'none';
+  base-uri 'self'; form-action 'self'; upgrade-insecure-requests` — **solo** lo que el `<meta>` no
+  puede o no rompe; el navegador intersecta las dos), COOP `same-origin-allow-popups`,
+  `X-Permitted-Cross-Domain-Policies`, Permissions-Policy ampliada (`geolocation=(self)` hace
+  falta por "Comercios cerca tuyo"). Verificado en Chromium sirviendo el build con esos headers:
+  0 violaciones en 8 páginas. Test nuevo `js/security-headers.test.mjs`.
+- CI: `npm test` + `npm audit --omit=dev --audit-level=high` (bloqueante) + audit de desarrollo
+  informativo, `permissions: contents: read`. `.github/dependabot.yml`.
+- `npm audit fix`: vite 8.0.16 -> 8.3.5 y sharp -> 0.35.5 (2 altas, solo de desarrollo). Build y
+  tests OK. `dist/` sin reconstruir (Vercel construye solo).
+- `.github/workflows/backup-db.yml`: pg_dump diario (public, auth, storage) cifrado con gpg AES-256,
+  artefacto 30 días. **Inactivo y sin probar** hasta cargar `SUPABASE_DB_URL` y `BACKUP_PASSPHRASE`.
+- `supabase/config.toml`: contraseña mínima 8 + `letters_digits` (igual que `register.js`; no se
+  pidió minúscula porque el formulario no la exige y el servidor rechazaría contraseñas que el
+  cliente acepta). **No se aplica sola:** va en el dashboard.
+- `pages/privacidad.html` reescrita con los datos reales de hoy, subencargados (Nominatim, Google
+  Maps del inicio), transferencia internacional, retención con plazos y plazos legales de respuesta.
+
+### Datos de contexto que salieron del relevamiento
+
+- Supabase en **plan Free** (`fac7n3's Org`): sin backups descargables ni Leaked Password
+  Protection. 3 cuentas admin/moderador, **0 factores MFA** en todo `auth.mfa_factors`.
+- RLS en 51/51 tablas. Buckets privados: `delivery-evidence`, `payment-proofs`,
+  `professional-inquiry-attachments`. **`support-attachments` no existe** (migración 73 sin aplicar).
+  `avatars` es público.
+- El correo de la política (`soporte@baraderolocal.com.ar`) es de un dominio que no está comprado.
 ## 2026-10-30 — Comparador "más barato / más cerca" en la búsqueda (maqueta, rama `claude/zen-dijkstra-fx5r82`, SIN mergear)
 - **Pedido del usuario:** cuando se busca un producto y dos o más comercios tienen el mismo, mostrar en una primera fila cuál es
   más barato y en una segunda cuál está más cerca según la ubicación de la persona.
