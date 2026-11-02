@@ -30,6 +30,7 @@ import { PHONE_COUNTRY_OPTIONS, DEFAULT_PHONE_DIAL, splitPhone } from './phone-c
 import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
+import { createStoreLocationPicker } from './store-location-map.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -2727,6 +2728,21 @@ function setupStoreLogoPicker() {
 }
 
 /** F5-08: precarga el form de perfil del comercio con los datos actuales. */
+// Ubicación del local en el mapa (stores.lat/lng, migración 146). Se crea una
+// sola vez; la carga y el guardado van aparte del resto del perfil, como el
+// link de Google Maps: si la columna faltara, falla solo esto.
+let storeLocationPicker = null;
+function getStoreLocationPicker() {
+  const root = document.getElementById('store-location-field');
+  if (!root) return null;
+  storeLocationPicker ||= createStoreLocationPicker({
+    root,
+    getAddress: () => document.getElementById('store-address')?.value || '',
+    mapsUrlInput: document.getElementById('store-maps-url'),
+  });
+  return storeLocationPicker;
+}
+
 function fillStoreProfileForm(store) {
   const nameInput = document.getElementById('store-name');
   const addressInput = document.getElementById('store-address');
@@ -2785,6 +2801,18 @@ function fillStoreProfileForm(store) {
       .then(({ data, error }) => {
         if (error) { console.warn('No se pudo cargar el link de Google Maps:', error.message); return; }
         mapsInput.value = data?.maps_url || '';
+      });
+  }
+
+  const locationPicker = getStoreLocationPicker();
+  if (locationPicker) {
+    locationPicker.setPoint(null, { dirty: false, pan: false });
+    supabase.from('stores').select('lat, lng').eq('id', store.id).single()
+      .then(({ data, error }) => {
+        if (error) { console.warn('No se pudo cargar la ubicación del local:', error.message); return; }
+        if (data?.lat != null && data?.lng != null) {
+          locationPicker.setPoint({ lat: data.lat, lng: data.lng }, { dirty: false });
+        }
       });
   }
 
@@ -3042,6 +3070,22 @@ function setupStoreProfileForm() {
         showToast('No se pudo guardar el link de Google Maps. El resto del perfil sí se guardó.', 'error');
       } else if (mapsUrl.value) {
         document.getElementById('store-maps-url').value = mapsUrl.value;
+      }
+    }
+
+    // Migración 146: la ubicación en el mapa también va aparte.
+    const locationPicker = getStoreLocationPicker();
+    if (locationPicker?.isDirty()) {
+      const p = locationPicker.getPoint();
+      const { error: locError } = await supabase
+        .from('stores')
+        .update({ lat: p ? p.lat : null, lng: p ? p.lng : null })
+        .eq('id', currentStoreId);
+      if (locError) {
+        console.error('Error al guardar la ubicación del local:', locError);
+        showToast('No se pudo guardar la ubicación en el mapa. El resto del perfil sí se guardó.', 'error');
+      } else {
+        locationPicker.markSaved();
       }
     }
 

@@ -5891,3 +5891,25 @@ Antes la sección quedaba en blanco (franja de stats y lista vacías) hasta que 
   (geocodificar la dirección con Nominatim, como el autocompletado de Mi perfil, o "Estoy en mi local: usar mi ubicación");
   (3) emparejar mejor los productos (RPC con nombre normalizado / `pg_trgm`, o un código de barras); (4) decidir si la
   distancia usa también la dirección de envío guardada de la persona.
+
+### 2026-11-02 — Paso 1: el comercio carga su ubicación (misma rama, SIN mergear)
+- **"Perfil de mi comercio" → "Contacto y ubicación"** (`pages/vender.html`, bloque `#store-location-field`): mapa de
+  OpenStreetMap con **Leaflet 1.9.4** (dependencia nueva de npm, exacta; Vite la deja en un archivo aparte de ~43 KB gz que se
+  pide recién cuando el mapa entra en pantalla, `IntersectionObserver` en `js/store-location-map.js`). Formas de marcar:
+  tocar el mapa / arrastrar el pin, "Estoy en mi local: usar mi ubicación" (GPS; si el margen es > 60 m lo avisa),
+  "Buscar mi dirección" (Nominatim con la dirección del formulario + Baradero; **OSM no tiene las alturas de Baradero**, así
+  que avisa que revise el pin), un **link largo** de Google Maps en el campo de arriba (toma `!3d..!4d..`, `?q=`, `@lat,lng`;
+  los cortos `maps.app.goo.gl` no traen coordenadas) y teclado (flechas mueven el mapa, Enter pone el pin en la cruz del
+  centro). "Quitar ubicación" guarda null. Estado debajo: sin marcar / "Pin marcado. Tocá Guardar perfil" / guardado, y avisa si
+  el punto queda a más de 30 km de Baradero (`isNearBaradero`).
+- **Guardado aparte** del resto del perfil (mismo criterio que `maps_url`): `update({lat, lng})` solo si cambió
+  (`isDirty`); si falla, toast "No se pudo guardar la ubicación en el mapa. El resto del perfil sí se guardó." **Hasta aplicar
+  la migración 146 eso es lo que pasaría en producción**: aplicar la 146 ANTES de mergear.
+- **CSP de `vender.html`:** `img-src` + `https://tile.openstreetmap.org`, `connect-src` + `https://nominatim.openstreetmap.org`.
+- Pin: `divIcon` con `fa-location-dot` (sin las imágenes de Leaflet, que con Vite no resuelven la ruta); en modo oscuro va fijo
+  en `#284175` (`dark.css`) porque el mapa es claro igual. Se sacó la banderita del prefijo del crédito (`setPrefix('Leaflet')`).
+- Lógica pura en `js/store-location-utils.js` (`parseCoordsFromMapsUrl`, `isNearBaradero`, `roundPoint`; con test).
+- **Verificado** con el panel real (`vender.html#perfil-comercio`) en Chromium con sesión de vendedor, Supabase, tiles y Nominatim
+  simulados: tocar + guardar (PATCH con lat/lng), GPS, buscar dirección, link de Maps, teclado, quitar + guardar (null),
+  ubicación ya guardada (sin PATCH si no cambia), celular 390 px y modo oscuro; 0 errores de CSP; `npm test` en verde.
+  **Sin probar** contra la base real ni el GPS de un teléfono.

@@ -282,3 +282,7 @@ html[data-theme="dark"] .toast--success {
 html[data-theme="dark"] .datos-btn.datos-btn--primary {
   color: #ffffff;
 }
+
+/* Pin del mapa de "Perfil de mi comercio": el mapa (OpenStreetMap) es claro
+   también en modo oscuro, así que el pin queda en el azul de marca. */
+html[data-theme="dark"] .sl-pin i { color: #284175; }

@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Vender - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -950,6 +950,21 @@
       .pf-field .pf-check { margin-top: 0.5rem; font-size: 0.85rem; font-weight: 500; }
       .pf-actions { display: flex; justify-content: flex-end; }
       .pf-actions .form-btn { width: auto; padding: 0.75rem 2rem; font-size: 1rem; }
+      /* Ubicación del local (mapa con pin, js/store-location-map.js) */
+      .sl-hint { margin-bottom: 0.75rem; }
+      .sl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+      .sl-btn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 0.9rem; font-size: 0.85rem; }
+      .sl-btn:disabled { opacity: 0.6; cursor: wait; }
+      .sl-clear { background: none; border: none; padding: 0.4rem 0.25rem; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--bl-text-secondary); text-decoration: underline; cursor: pointer; }
+      .sl-clear[hidden] { display: none; }
+      .sl-map { position: relative; height: 320px; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; background: var(--bl-surface-alt); z-index: 0; }
+      .sl-map:focus-visible { outline: 3px solid var(--bl-primary); outline-offset: 2px; }
+      /* Cruz del centro: dónde cae el pin con Enter (solo con el mapa enfocado por teclado). */
+      .sl-map:focus-visible::after { content: ""; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border: 2px solid var(--bl-primary); border-radius: 50%; pointer-events: none; z-index: 1000; }
+      .sl-pin { background: none; border: none; }
+      .sl-pin i { display: block; font-size: 38px; line-height: 40px; text-align: center; color: var(--bl-primary); filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); }
+      .sl-status { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--bl-text-secondary); }
+      .sl-status--pending { color: var(--bl-text); font-weight: 600; }
 
       /* Switch "mostrar esta red" -- reemplaza el checkbox nativo + texto
          "Mostrar" de antes por un toggle. El panel del profesional usa el
@@ -988,6 +1003,8 @@
 
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
+        .sl-map { height: 260px; }
+        .sl-btn { flex: 1 1 100%; justify-content: center; }
         .social-row { flex-wrap: wrap; }
         .social-row__label { width: 100%; }
         .pf-actions { justify-content: stretch; }
@@ -1349,6 +1366,21 @@
                       <label class="form-label" for="store-maps-url">Link de Google Maps de tu local <span class="pf-optional">(opcional)</span></label>
                       <input type="text" id="store-maps-url" class="form-input" inputmode="url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://maps.app.goo.gl/..." />
                       <small class="pf-card__hint">Abrí tu local en Google Maps, tocá "Compartir" y pegá el link. Con él el repartidor llega justo a tu puerta. Si no lo cargás, llega igual por la dirección.</small>
+                    </div>
+                    <!-- Ubicación del local (stores.lat/lng, migración 146): la usa el
+                         buscador para decirle al vecino qué comercio le queda más cerca.
+                         Lo maneja js/store-location-map.js. -->
+                    <div class="pf-field pf-field--full sl-field" id="store-location-field">
+                      <span class="form-label" id="store-loc-label">Ubicación de tu local en el mapa <span class="pf-optional">(recomendado)</span></span>
+                      <small class="pf-card__hint sl-hint">Cuando un vecino busca un producto que vendés, le mostramos qué comercio le queda más cerca. Tocá el mapa o arrastrá el pin hasta la puerta de tu local.</small>
+                      <div class="sl-actions">
+                        <button type="button" class="btn-outline sl-btn" id="store-loc-gps"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Estoy en mi local: usar mi ubicación</button>
+                        <button type="button" class="btn-outline sl-btn" id="store-loc-address"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Buscar mi dirección</button>
+                        <button type="button" class="sl-clear" id="store-loc-clear" hidden>Quitar ubicación</button>
+                      </div>
+                      <div class="sl-map" id="store-loc-map" tabindex="0" role="application" aria-labelledby="store-loc-label" aria-describedby="store-loc-keys"></div>
+                      <span class="sr-only" id="store-loc-keys">Mové el mapa con las flechas, acercá con más y menos, y apretá Enter para poner el pin en el centro.</span>
+                      <p class="sl-status" id="store-loc-status" aria-live="polite"></p>
                     </div>
                     <div class="pf-field">
                       <label class="form-label" for="store-zone">Zona / Barrio</label>

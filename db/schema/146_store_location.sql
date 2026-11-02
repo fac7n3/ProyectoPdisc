@@ -11,8 +11,10 @@
 -- ubicación cargada, el comercio aparece al final de la fila "Más cerca"
 -- como "Sin ubicación cargada".
 --
--- Falta (siguiente paso): la forma de cargarla desde "Perfil de mi comercio"
--- (ubicar la dirección en el mapa o "Estoy en mi local, usar mi ubicación").
+-- El dueño la carga en "Perfil de mi comercio" (vender.html): mapa de
+-- OpenStreetMap con un pin que se toca o arrastra, "Estoy en mi local: usar mi
+-- ubicación", "Buscar mi dirección" o un link largo de Google Maps
+-- (js/store-location-map.js). Se guarda aparte del resto del perfil.
 
 alter table public.stores
   add column if not exists lat double precision,
