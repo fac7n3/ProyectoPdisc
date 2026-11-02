@@ -118,6 +118,11 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   en cada alta/cambio, no se puede escribir a mano) y `same_product_offers(ids)` trae los equivalentes (~7 ms sin sesión, ~35 ms con).
   **Si se cambia la regla:** editar `product_match_key` y volver a rellenar `match_key` (ver 149, con los triggers apagados). **Falta:**
   probar con cuentas reales y el GPS de un teléfono. Detalle en el skill.
+  **Aviso a los comercios (2026-11-02, migración 150 APLICADA, enviado):** "¿Tenés local a la calle? Marcalo en el mapa" en la campanita,
+  tipo `store_location_missing` (botón "Marcar mi local" -> `vender.html?foco=ubicacion#perfil-comercio`, baja solo hasta el mapa;
+  el texto dice que si vende sin local lo ignore). **Una sola vez por dueño** (tabla `store_location_reminders`; si la borra no
+  vuelve); pg_cron `remind-stores-missing-location` todos los días 13:17 UTC para los comercios que se aprueben después. Se mandó a
+  20 dueños (33 comercios; la cuenta admin de los 14 de prueba recibe uno solo). Solo campanita: email/WhatsApp siguen sin proveedor.
 - **Hecho 2026-11-02 — README.md reescrito en tono profesional y sin emojis**, a pedido del usuario (es lo que se ve en la portada
   de GitHub). De paso se actualizó a lo que hay hoy: se sacó el chat interno y el pago simulado (solo testing interno), y se sumaron
   profesionales/Contratar, repartidores, farmacias/emergencias, modo oscuro, tiempo real y las Edge Functions actuales. **Si cambia algo

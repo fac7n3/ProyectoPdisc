@@ -6026,3 +6026,19 @@ job programado, advisor sin el WARN de `_is_uuid`.
   con Supabase simulado: con la función, "Serenísima leche clásica 1000 ml" entra en la misma comparación que "Leche La Serenísima
   Clásica sachet 1 L"; sin la función, cae al método viejo; 0 errores.
 - **Si se cambia la regla:** `create or replace` de `product_match_key` + volver a rellenar `match_key` como en la 149.
+
+### 2026-11-02 — Aviso a los comercios para que marquen su local (migración 150)
+- Pedido del usuario: "avisale a los comercios que carguen su ubicación, si es que tienen local físico". Canal: **campanita + aviso
+  emergente** (no hay email ni WhatsApp configurados, F8-02/F8-03).
+- Tipo `store_location_missing` (`js/notifications-utils.js`): título "¿Tenés local a la calle? Marcalo en el mapa", detalle
+  "<comercio> y N más: así los vecinos ven que les quedás cerca cuando buscan lo que vendés. Si vendés sin local a la calle, ignorá este
+  aviso." (en el desplegable de la campanita se corta a una línea; el título ya aclara el "si tenés local"), tono `info`, botón "Marcar
+  mi local" -> `vender.html?foco=ubicacion#perfil-comercio`. `focusLocationFromUrl` (`js/vender.js`) abre Perfil de mi comercio, baja
+  hasta `#store-location-field` y saca `foco` de la URL (recargar no vuelve a moverse).
+- **Una sola vez por dueño, a propósito** (el de alias/CBU se repite cada 6 h porque es obligatorio; tener local no lo es):
+  `remind_stores_missing_location()` (SECURITY DEFINER, sin permisos para anon/authenticated) agrupa por dueño los comercios aprobados
+  sin `lat` y anota a quién avisó en `store_location_reminders` (RLS sin policies), no en la notificación: si la borra, no le vuelve a
+  llegar. pg_cron `remind-stores-missing-location` (`17 13 * * *`, 10:17 de Argentina) para los que se aprueben más adelante.
+- Ensayado en transacción deshecha: 20 avisos, segundo envío 0. Verificado en Chromium (panel real, Supabase simulado): el aviso en la
+  campanita con su texto y su link, y el link baja hasta el mapa. **Publicado en orden:** frontend a `main` + deploy `READY` -> migración
+  150 -> envío.
