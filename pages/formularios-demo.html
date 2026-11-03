@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+  <!-- Página de prueba (rama main2): 5 propuestas de formularios para elegir una. No va a producción. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Formularios: propuestas — Baradero Local</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+  <link rel="stylesheet" href="../Assets/styles/a11y.css" />
+  <link rel="stylesheet" href="../Assets/styles/home.css">
+
+  <!-- Solo tokens (var(--bl-*)) y color-mix entre tokens: el modo oscuro sale
+       solo de dark.css, sin pasar por gen-dark-css. -->
+  <style>
+    @property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+    .fd-page {
+      --fd-screen: var(--bl-surface);
+      --fd-fill: var(--bl-surface-alt);
+      --fd-line: color-mix(in srgb, var(--bl-text-secondary) 70%, var(--bl-surface));
+      --fd-radius: 14px;
+      --fd-ok: color-mix(in srgb, var(--bl-success) 60%, var(--bl-text));
+      --fd-ok-bg: color-mix(in srgb, var(--bl-success) 55%, var(--bl-primary-deeper));
+      --fd-err: color-mix(in srgb, var(--bl-danger) 72%, var(--bl-text));
+      --fd-link: var(--bl-primary);
+      --fd-ring: 0 0 0 4px color-mix(in srgb, var(--bl-primary) 18%, transparent);
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 2.5rem 1rem 4rem;
+      color: var(--bl-text);
+    }
+    :root[data-theme="dark"] .fd-page {
+      --fd-screen: var(--bl-bg);
+      --fd-link: var(--dk-accent-text);
+    }
+
+    /* ---------- Encabezado de la página ---------- */
+    .fd-hero { max-width: 760px; }
+    .fd-branch {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.3rem 0.75rem; border-radius: var(--bl-radius-pill);
+      background: var(--bl-surface); border: 1px solid var(--bl-border);
+      font-size: 0.8125rem; font-weight: 600; color: var(--bl-text-secondary);
+    }
+    .fd-hero h1 { margin: 0.9rem 0 0.6rem; font-size: clamp(1.6rem, 4vw, 2.25rem); letter-spacing: -0.02em; line-height: 1.15; }
+    .fd-hero p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--bl-text-secondary); }
+
+    /* ---------- Grilla de opciones ---------- */
+    .fd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+      gap: 3.5rem 2rem;
+      margin-top: 2.5rem;
+    }
+    .fd-option { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+    .fd-option__head { display: flex; gap: 0.85rem; align-items: flex-start; }
+    /* Con varias columnas, los celulares quedan a la misma altura aunque un título ocupe más. */
+    @media (min-width: 760px) { .fd-option__head { min-height: 6.25rem; } }
+    .fd-option__num {
+      flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 50%;
+      display: grid; place-items: center;
+      background: var(--bl-primary); color: var(--bl-text-inverse); font-weight: 700;
+    }
+    .fd-option h2 { margin: 0 0 0.3rem; font-size: 1.125rem; line-height: 1.3; }
+    .fd-option__head p { margin: 0; font-size: 0.9375rem; line-height: 1.5; color: var(--bl-text-secondary); }
+    .fd-notes {
+      background: var(--bl-surface); border: 1px solid var(--bl-border);
+      border-radius: var(--bl-radius-lg); padding: 1rem 1.15rem;
+      font-size: 0.9rem; line-height: 1.55; color: var(--bl-text-secondary);
+    }
+    .fd-notes strong { color: var(--bl-text); }
+    .fd-notes ul { margin: 0.35rem 0 0.75rem; padding-left: 1.15rem; }
+    .fd-notes li + li { margin-top: 0.2rem; }
+    .fd-notes p { margin: 0.5rem 0 0; }
+
+    /* ---------- Celular ---------- */
+    .fd-phone {
+      width: 100%; max-width: 360px; margin: 0 auto;
+      padding: 8px; border-radius: 44px;
+      background: var(--bl-primary-deeper);
+      box-shadow: var(--bl-shadow-lg);
+    }
+    :root[data-theme="dark"] .fd-phone { box-shadow: 0 0 0 1px var(--bl-border), var(--bl-shadow-lg); }
+    .fd-screen {
+      position: relative; height: 680px; overflow: hidden;
+      display: flex; flex-direction: column;
+      border-radius: 36px; background: var(--fd-screen); color: var(--bl-text);
+    }
+    .fd-screen--grouped { --fd-screen: var(--bl-bg); }
+    .fd-status {
+      position: relative; display: flex; justify-content: space-between; align-items: center;
+      padding: 0.8rem 1.6rem 0.2rem; font-size: 0.8125rem; font-weight: 600;
+    }
+    .fd-status::after {
+      content: ''; position: absolute; left: 50%; top: 0.6rem; transform: translateX(-50%);
+      width: 5.5rem; height: 1.45rem; border-radius: var(--bl-radius-pill);
+      background: var(--bl-primary-deeper);
+    }
+    .fd-status__icons { display: inline-flex; gap: 0.35rem; font-size: 0.75rem; }
+    .fd-appbar {
+      display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; align-items: center;
+      min-height: 3rem; padding: 0.15rem 0.6rem 0.35rem;
+    }
+    .fd-appbar__title { text-align: center; font-weight: 600; font-size: 1rem; }
+    .fd-appbar__end { justify-self: end; padding-right: 0.5rem; font-size: 0.8125rem; color: var(--bl-text-secondary); white-space: nowrap; }
+    .fd-appbar--wide { grid-template-columns: 2.75rem 1fr auto; }
+    .fd-icon-btn {
+      width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%;
+      background: none; color: var(--bl-text); font-size: 1rem; cursor: pointer;
+    }
+    .fd-icon-btn:hover:not(:disabled) { background: var(--fd-fill); }
+    .fd-icon-btn:disabled { opacity: 0.3; cursor: default; }
+    .fd-form { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .fd-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 0.35rem 1.25rem 1.5rem; }
+    .fd-body::-webkit-scrollbar { display: none; }
+    .fd-footer { padding: 0.75rem 1.25rem 1.4rem; background: var(--fd-screen); }
+    .fd-footer__note { margin: 0; text-align: center; font-size: 0.8125rem; color: var(--bl-text-secondary); }
+
+    /* ---------- Textos de pantalla ---------- */
+    .fd-q { margin: 0.5rem 0 0.35rem; font-size: 1.375rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; outline: none; }
+    .fd-q--sm { font-size: 1.0625rem; margin-top: 1.5rem; }
+    .fd-sub { margin: 0 0 1.25rem; font-size: 0.9375rem; line-height: 1.45; color: var(--bl-text-secondary); }
+    .fd-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+    .fd-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .fd-row-doc { display: grid; grid-template-columns: 6.75rem 1fr; gap: 0.75rem; }
+    .fd-hint { margin: -0.35rem 0.25rem 0; font-size: 0.8125rem; line-height: 1.4; color: var(--bl-text-secondary); }
+
+    /* ---------- Campo relleno con etiqueta flotante (opciones 1, 2, 3 y 5) ---------- */
+    .fd-f { position: relative; }
+    .fd-f input, .fd-f select, .fd-f textarea {
+      display: block; width: 100%; min-height: 3.75rem;
+      padding: 1.55rem 1rem 0.5rem;
+      font: inherit; font-size: 1rem; line-height: 1.3; color: var(--bl-text);
+      background: var(--fd-fill); border: 1.5px solid transparent; border-radius: var(--fd-radius);
+      outline: none; appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+    }
+    .fd-f textarea { scrollbar-width: thin; min-height: 7.5rem; padding-top: 1.7rem; padding-bottom: 1.6rem; resize: none; line-height: 1.45; }
+    .fd-f select { padding-right: 2.5rem; cursor: pointer; }
+    .fd-f label {
+      position: absolute; left: 1rem; right: 1rem; top: 1.875rem; transform: translateY(-50%);
+      font-size: 1rem; color: var(--bl-text-secondary); pointer-events: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: top 0.15s ease, font-size 0.15s ease;
+    }
+    .fd-f:focus-within label,
+    .fd-f:has(:is(input, textarea):not(:placeholder-shown)) label,
+    .fd-f--select label { top: 1.05rem; font-size: 0.75rem; }
+    /* .fd-page delante: dark.css pinta todos los ::placeholder con la misma especificidad. */
+    .fd-page .fd-f :is(input, textarea)::placeholder { color: transparent; }
+    .fd-page .fd-f :is(input, textarea):focus::placeholder { color: var(--bl-text-muted); }
+    .fd-f :is(input, select, textarea):focus {
+      border-color: var(--bl-primary); background: var(--fd-screen); box-shadow: var(--fd-ring);
+    }
+    .fd-f__chev { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--bl-text-secondary); pointer-events: none; }
+    .fd-f.is-locked input { color: var(--bl-text-secondary); cursor: default; padding-right: 7rem; }
+    .fd-f.is-locked input:focus { border-color: transparent; box-shadow: none; background: var(--fd-fill); }
+    .fd-f__badge {
+      position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.25rem 0.6rem; border-radius: var(--bl-radius-pill);
+      background: color-mix(in srgb, var(--bl-success) 14%, var(--fd-screen));
+      font-size: 0.75rem; font-weight: 600; color: var(--fd-ok);
+    }
+    .fd-counter { position: absolute; right: 0.9rem; bottom: 0.55rem; font-size: 0.75rem; color: var(--bl-text-secondary); }
+
+    /* ---------- Botón principal ---------- */
+    .fd-cta {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; min-height: 3.5rem; border: 0; border-radius: var(--bl-radius-pill);
+      background: var(--bl-primary); color: var(--bl-text-inverse);
+      font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s, background-color 0.15s;
+    }
+    .fd-cta:hover:not(:disabled) { background: var(--bl-primary-dark); }
+    .fd-cta:active:not(:disabled) { transform: scale(0.98); }
+    .fd-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+    .fd-cta.is-done, .fd-cta.is-done:disabled { background: var(--fd-ok-bg); opacity: 1; }
+    .fd-textbtn {
+      width: 100%; min-height: 3rem; margin-top: 0.35rem; border: 0; background: none;
+      font: inherit; font-weight: 600; color: var(--fd-link); cursor: pointer;
+    }
+
+    /* ---------- Opción 2: paso a paso ---------- */
+    .fd-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 1.25rem 0.5rem; }
+    .fd-steps[hidden] { display: none; }
+    .fd-steps span { height: 4px; border-radius: 2px; background: var(--bl-border); transition: background-color 0.25s; }
+    .fd-steps span.is-on { background: var(--bl-primary); }
+    @keyframes fd-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fd-pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+    .fd-step { animation: fd-in 0.25s ease; }
+    .fd-step[hidden] { display: none; }
+    .fd-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; border: 0; margin: 0; padding: 0; }
+    .fd-chip { position: relative; }
+    .fd-chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+    .fd-chip span {
+      display: flex; align-items: center; gap: 0.6rem; min-height: 3rem; padding: 0.55rem 0.85rem;
+      border: 1.5px solid transparent; border-radius: 12px; background: var(--fd-fill);
+      font-size: 0.9375rem; color: var(--bl-text);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .fd-chip span i { width: 1.1rem; text-align: center; color: var(--bl-text-secondary); }
+    .fd-chip input:checked + span { border-color: var(--bl-primary); background: color-mix(in srgb, var(--bl-primary) 10%, var(--fd-screen)); font-weight: 600; }
+    .fd-chip input:checked + span i { color: var(--bl-primary); }
+    .fd-chip input:focus-visible + span { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+    .fd-chips--scroll { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
+    .fd-chips--scroll .fd-chip span { min-height: 2.5rem; white-space: nowrap; border-radius: var(--bl-radius-pill); padding: 0.45rem 0.9rem; }
+    .fd-legend { padding: 0; margin: 0 0 0.6rem; font-size: 0.8125rem; font-weight: 500; color: var(--bl-text-secondary); }
+    .fd-suggest { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem; }
+    .fd-suggest button {
+      padding: 0.4rem 0.8rem; border: 1px dashed var(--fd-line); border-radius: var(--bl-radius-pill);
+      background: none; font: inherit; font-size: 0.8125rem; color: var(--bl-text-secondary); cursor: pointer;
+    }
+    .fd-suggest button:hover { border-style: solid; color: var(--bl-text); }
+    .fd-upload {
+      display: flex; align-items: center; gap: 0.85rem; width: 100%; padding: 0.85rem 1rem;
+      border: 1.5px dashed var(--fd-line); border-radius: var(--fd-radius);
+      background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+    }
+    .fd-upload__logo {
+      flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 50%;
+      display: grid; place-items: center; background: var(--fd-fill); color: var(--bl-text-secondary);
+    }
+    .fd-upload.has-logo { border-style: solid; border-color: var(--bl-border); }
+    .fd-upload.has-logo .fd-upload__logo { background: var(--bl-primary); color: var(--bl-text-inverse); font-weight: 700; }
+    .fd-upload__text { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.875rem; color: var(--bl-text-secondary); }
+    .fd-upload__text strong { font-size: 0.9375rem; color: var(--bl-text); }
+    .fd-done { padding-top: 4rem; text-align: center; }
+    .fd-done__icon {
+      width: 4.5rem; height: 4.5rem; margin: 0 auto 1.25rem; border-radius: 50%;
+      display: grid; place-items: center; font-size: 2rem;
+      background: var(--fd-ok-bg); color: var(--bl-text-inverse); animation: fd-pop 0.35s ease;
+    }
+
+    /* ---------- Opción 3: lista + hoja desde abajo ---------- */
+    .fd-progress {
+      display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1rem; margin-top: 0.5rem;
+      background: var(--bl-surface); border: 1px solid var(--bl-border-light); border-radius: 16px;
+    }
+    .fd-ring {
+      --p: 0; flex-shrink: 0; width: 3.25rem; height: 3.25rem; border-radius: 50%;
+      display: grid; place-items: center;
+      background: conic-gradient(var(--bl-primary) calc(var(--p) * 1%), var(--bl-border) 0);
+      transition: --p 0.6s ease;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .fd-ring::before { content: ''; grid-area: 1 / 1; width: 2.55rem; height: 2.55rem; border-radius: 50%; background: var(--bl-surface); }
+    .fd-ring span { grid-area: 1 / 1; position: relative; }
+    .fd-progress.is-full .fd-ring { background: var(--fd-ok-bg); }
+    .fd-progress.is-full .fd-ring::before { display: none; }
+    .fd-progress.is-full .fd-ring span { color: var(--bl-text-inverse); font-size: 1.1rem; }
+    .fd-progress__text strong { display: block; font-size: 0.9375rem; }
+    .fd-progress__text span { font-size: 0.8125rem; color: var(--bl-text-secondary); }
+    .fd-group-title { margin: 1.4rem 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bl-text-secondary); }
+    .fd-list { overflow: hidden; background: var(--bl-surface); border: 1px solid var(--bl-border-light); border-radius: 16px; }
+    .fd-item {
+      display: flex; align-items: center; gap: 0.85rem; width: 100%; min-height: 4rem; padding: 0.8rem 1rem;
+      border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+    }
+    .fd-item + .fd-item { border-top: 1px solid var(--bl-border-light); }
+    button.fd-item:hover { background: var(--bl-surface-hover); }
+    div.fd-item { cursor: default; }
+    .fd-item__icon {
+      flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 12px;
+      display: grid; place-items: center; font-size: 0.9rem;
+      background: color-mix(in srgb, var(--bl-primary) 12%, var(--bl-surface)); color: var(--fd-link);
+    }
+    .fd-item__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+    .fd-item__label { font-size: 0.8125rem; color: var(--bl-text-secondary); }
+    .fd-item__value { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fd-item__value.is-empty { color: var(--fd-link); font-weight: 600; }
+    .fd-item__chev { color: var(--bl-text-muted); font-size: 0.8rem; }
+    .fd-sheet-backdrop {
+      position: absolute; inset: 0; opacity: 0; pointer-events: none;
+      background: color-mix(in srgb, var(--bl-primary-deeper) 50%, transparent);
+      transition: opacity 0.2s;
+    }
+    .fd-sheet {
+      position: absolute; left: 0; right: 0; bottom: 0; visibility: hidden;
+      padding: 0.5rem 1.25rem 1.4rem; border-radius: 24px 24px 0 0;
+      background: var(--bl-surface); box-shadow: var(--bl-shadow-lg);
+      --fd-screen: var(--bl-surface);
+      transform: translateY(105%);
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.28s;
+    }
+    .is-sheet-open .fd-sheet { transform: none; visibility: visible; transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .is-sheet-open .fd-sheet-backdrop { opacity: 1; pointer-events: auto; }
+    .fd-sheet__handle { width: 2.5rem; height: 4px; margin: 0.3rem auto 1rem; border-radius: 2px; background: var(--bl-border); }
+    .fd-sheet h3 { margin: 0 0 0.3rem; font-size: 1.125rem; }
+    .fd-sheet__hint { margin: 0 0 1rem; font-size: 0.875rem; line-height: 1.45; color: var(--bl-text-secondary); }
+    .fd-sheet .fd-stack { margin-bottom: 1.1rem; }
+    .fd-toast {
+      position: absolute; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.6rem 1rem; border-radius: var(--bl-radius-pill);
+      background: var(--fd-ok-bg); color: var(--bl-text-inverse); font-size: 0.875rem; font-weight: 600;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+    }
+    .fd-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ---------- Opción 4: contorno + validación en vivo ---------- */
+    .fd-o { position: relative; }
+    .fd-o input {
+      display: block; width: 100%; height: 3.5rem; padding: 0 2.75rem 0 1rem;
+      font: inherit; font-size: 1rem; color: var(--bl-text);
+      background: var(--fd-screen); border: 1.5px solid var(--fd-line); border-radius: var(--fd-radius);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .fd-o label {
+      position: absolute; left: 0.7rem; top: 1.75rem; transform: translateY(-50%);
+      max-width: calc(100% - 3.5rem); padding: 0 0.3rem;
+      background: var(--fd-screen); font-size: 1rem; color: var(--bl-text-secondary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+      transition: top 0.15s ease, font-size 0.15s ease;
+    }
+    .fd-o:focus-within label, .fd-o:has(input:not(:placeholder-shown)) label { top: 0; font-size: 0.75rem; }
+    .fd-page .fd-o input::placeholder { color: transparent; }
+    .fd-page .fd-o input:focus::placeholder { color: var(--bl-text-muted); }
+    .fd-o input:focus { border-color: var(--bl-primary); box-shadow: var(--fd-ring); }
+    .fd-o.is-invalid input { border-color: var(--fd-err); }
+    .fd-o__icon { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); display: none; }
+    .fd-o.is-valid .fd-o__icon--ok { display: block; color: var(--fd-ok); }
+    .fd-o.is-invalid .fd-o__icon--err { display: block; color: var(--fd-err); }
+    .fd-o__help, .fd-o__msg { margin: 0.4rem 0.3rem 0; font-size: 0.8125rem; line-height: 1.45; }
+    .fd-o__help { display: none; color: var(--bl-text-secondary); }
+    .fd-ofield:focus-within .fd-o__help { display: block; }
+    .fd-o__msg { display: flex; gap: 0.4rem; color: var(--fd-err); }
+    .fd-o__msg[hidden] { display: none; }
+    .fd-o__msg i { margin-top: 0.2rem; }
+    .fd-optional { font-weight: 400; color: var(--bl-text-secondary); }
+    .fd-save { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; }
+    .fd-save.is-ok { color: var(--fd-ok); }
+    .fd-save.is-err { color: var(--fd-err); }
+
+    /* ---------- Opción 5: vista previa en vivo ---------- */
+    /* La tarjeta queda fija arriba: se sigue viendo mientras escribís más abajo. */
+    .fd-preview-wrap { position: sticky; top: -0.35rem; z-index: 1; margin: 0 -1.25rem; padding: 0.35rem 1.25rem 0.85rem; background: var(--fd-screen); }
+    .fd-preview-label { margin: 0.35rem 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bl-text-secondary); }
+    .fd-preview {
+      overflow: hidden; border-radius: 16px; background: var(--bl-surface);
+      border: 1px solid var(--bl-border); box-shadow: var(--bl-shadow-sm);
+      transition: box-shadow 0.25s;
+    }
+    .fd-preview.is-updated { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bl-primary) 35%, transparent); }
+    .fd-preview__banner { height: 3.5rem; background: linear-gradient(120deg, var(--bl-primary), var(--bl-primary-deeper)); }
+    .fd-preview__inner { margin-top: -1.6rem; padding: 0 0.95rem 0.95rem; }
+    .fd-preview__logo {
+      width: 3.25rem; height: 3.25rem; border-radius: 50%; display: grid; place-items: center;
+      border: 3px solid var(--bl-surface); background: var(--bl-primary-dark); color: var(--bl-text-inverse);
+      font-weight: 700; font-size: 1rem;
+    }
+    .fd-preview__name { margin: 0.45rem 0 0.35rem; font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+    .fd-preview__cat {
+      display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem;
+      border-radius: var(--bl-radius-pill); background: var(--bl-surface-alt);
+      font-size: 0.75rem; font-weight: 600; color: var(--bl-text-secondary);
+    }
+    .fd-preview__desc {
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+      margin: 0.55rem 0 0.5rem; font-size: 0.85rem; line-height: 1.45; color: var(--bl-text-secondary); overflow-wrap: anywhere;
+    }
+    .fd-preview__desc.is-empty { font-style: italic; }
+    .fd-preview__meta { font-size: 0.8125rem; color: var(--bl-text-secondary); }
+
+    /* ---------- Principios + recomendación ---------- */
+    .fd-section-title { margin: 4.5rem 0 0.5rem; font-size: clamp(1.3rem, 3vw, 1.65rem); letter-spacing: -0.01em; }
+    .fd-section-lead { margin: 0 0 1.5rem; max-width: 62ch; color: var(--bl-text-secondary); line-height: 1.6; }
+    .fd-principles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1rem; padding: 0; margin: 0; list-style: none; }
+    .fd-principles li {
+      display: flex; gap: 0.85rem; padding: 1.1rem; background: var(--bl-surface);
+      border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg);
+    }
+    .fd-principles i { flex-shrink: 0; width: 2.25rem; height: 2.25rem; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--bl-primary) 12%, var(--bl-surface)); color: var(--fd-link); }
+    .fd-principles strong { display: block; margin-bottom: 0.2rem; font-size: 0.9375rem; }
+    .fd-principles span { font-size: 0.875rem; line-height: 1.5; color: var(--bl-text-secondary); }
+    .fd-reco {
+      margin-top: 2rem; padding: 1.25rem 1.35rem; border-radius: var(--bl-radius-lg);
+      background: color-mix(in srgb, var(--bl-primary) 8%, var(--bl-surface));
+      border: 1px solid color-mix(in srgb, var(--bl-primary) 30%, var(--bl-surface));
+      line-height: 1.6;
+    }
+    .fd-reco h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+    .fd-reco p { margin: 0.35rem 0 0; color: var(--bl-text-secondary); }
+    .fd-reco code { font-size: 0.85em; }
+
+    @media (max-width: 400px) {
+      .fd-phone { padding: 6px; border-radius: 38px; }
+      .fd-screen { height: 640px; border-radius: 32px; }
+      .fd-body, .fd-footer { padding-left: 1rem; padding-right: 1rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fd-page *, .fd-page *::before { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="../Assets/styles/dark.css" />
+  <script type="module" src="../js/theme.js"></script>
+</head>
+<body class="bl-bg">
+  <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
+  <nav class="navbar" style="position: static;">
+    <div class="navbar__top">
+      <a href="./home.html" class="navbar__logo">
+        <img src="../Assets/images/Logos/logoazulpng.png" alt="Logo Baradero Local" class="navbar__logo-img" />
+        <div class="navbar__logo-text">
+          <span class="navbar__logo-title">Baradero Local</span>
+          <span class="navbar__logo-subtitle">Baradero, más cerca que nunca</span>
+        </div>
+      </a>
+      <div class="navbar__actions">
+        <a href="./home.html" class="btn-outline">Volver al Inicio</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="contenido-principal" class="fd-page">
+    <header class="fd-hero">
+      <span class="fd-branch"><i class="fa-solid fa-code-branch" aria-hidden="true"></i> Rama de prueba · main2</span>
+      <h1>Formularios más cómodos: 5 propuestas</h1>
+      <p>Todas parten de lo que te gustó: etiqueta flotante, campos grandes y esquinas suaves. Cambia la forma de recorrerlos. Cada celular funciona: tocá, escribí y probá. Con el botón del sol o la luna las ves en modo oscuro.</p>
+    </header>
+
+    <div class="fd-grid">
+
+      <!-- ===================== OPCIÓN 1 ===================== -->
+      <article class="fd-option" id="op1" aria-labelledby="op1-title">
+        <div class="fd-option__head">
+          <span class="fd-option__num" aria-hidden="true">1</span>
+          <div>
+            <h2 id="op1-title">Todo a la vista, etiqueta adentro</h2>
+            <p>La de tu referencia. Los datos ya son campos: se tocan y se escriben, sin "Editar" ni "Completar".</p>
+          </div>
+        </div>
+        <div class="fd-phone">
+          <div class="fd-screen">
+            <div class="fd-status" aria-hidden="true"><span>9:41</span><span class="fd-status__icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-battery-three-quarters"></i></span></div>
+            <div class="fd-appbar">
+              <button type="button" class="fd-icon-btn" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <span class="fd-appbar__title">Mis datos</span>
+              <span></span>
+            </div>
+            <form class="fd-form" id="op1-form" novalidate>
+              <div class="fd-body">
+                <h3 class="fd-q">Tus datos personales</h3>
+                <p class="fd-sub">Así te reconoce el comercio cuando le entra tu pedido.</p>
+                <div class="fd-stack">
+                  <div class="fd-row2">
+                    <div class="fd-f"><input id="o1-nombre" placeholder=" " value="Facundo" autocomplete="given-name" /><label for="o1-nombre">Nombre</label></div>
+                    <div class="fd-f"><input id="o1-apellido" placeholder=" " value="Eichenberger" autocomplete="family-name" /><label for="o1-apellido">Apellido</label></div>
+                  </div>
+                  <div class="fd-f"><input id="o1-nac" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" data-mask="date" autocomplete="bday" /><label for="o1-nac">Fecha de nacimiento</label></div>
+                  <div class="fd-row-doc">
+                    <div class="fd-f fd-f--select">
+                      <select id="o1-tipo"><option>DNI</option><option>LE</option><option>LC</option><option>Pasaporte</option></select>
+                      <label for="o1-tipo">Tipo</label>
+                      <i class="fa-solid fa-chevron-down fd-f__chev" aria-hidden="true"></i>
+                    </div>
+                    <div class="fd-f"><input id="o1-doc" placeholder="12345678" inputmode="numeric" maxlength="10" aria-describedby="o1-doc-hint" /><label for="o1-doc">Número</label></div>
+                  </div>
+                  <p class="fd-hint" id="o1-doc-hint">Sirve para identificarte si aparece un problema con un pedido.</p>
+                  <div class="fd-f"><input id="o1-tel" type="tel" placeholder="3329 616554" value="3329 61-6554" inputmode="tel" autocomplete="tel" aria-describedby="o1-tel-hint" /><label for="o1-tel">Teléfono</label></div>
+                  <p class="fd-hint" id="o1-tel-hint">Para que el comercio te avise si hay una demora.</p>
+                  <div class="fd-f is-locked">
+                    <input id="o1-mail" value="shueywater@gmail.com" readonly aria-describedby="o1-mail-hint" placeholder=" " />
+                    <label for="o1-mail">Correo electrónico</label>
+                    <span class="fd-f__badge"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verificado</span>
+                  </div>
+                  <p class="fd-hint" id="o1-mail-hint">Para cambiarlo, escribinos desde Soporte.</p>
+                </div>
+              </div>
+              <div class="fd-footer">
+                <button type="submit" class="fd-cta">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="fd-notes">
+          <strong>Por qué es cómoda</strong>
+          <ul>
+            <li>Se ve y se edita en el mismo lugar: menos toques, nada se abre ni se cierra.</li>
+            <li>La etiqueta nunca desaparece: arranca adentro y sube al escribir.</li>
+            <li>Un solo botón, que se prende recién cuando cambiaste algo.</li>
+          </ul>
+          <strong>Ojo:</strong> con muchos datos se hace largo; conviene agrupar de a 4 o 5.
+          <p><strong>Dónde:</strong> estilo base de todos los campos del sitio (login, registro, carrito, Mi perfil, paneles).</p>
+        </div>
+      </article>
+
+      <!-- ===================== OPCIÓN 2 ===================== -->
+      <article class="fd-option" id="op2" aria-labelledby="op2-title">
+        <div class="fd-option__head">
+          <span class="fd-option__num" aria-hidden="true">2</span>
+          <div>
+            <h2 id="op2-title">Paso a paso, una pregunta por vez</h2>
+            <p>Los formularios largos se parten en 3 pantallas cortas, con "1 de 3" para saber cuánto falta.</p>
+          </div>
+        </div>
+        <div class="fd-phone">
+          <div class="fd-screen">
+            <div class="fd-status" aria-hidden="true"><span>9:41</span><span class="fd-status__icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-battery-three-quarters"></i></span></div>
+            <div class="fd-appbar">
+              <button type="button" class="fd-icon-btn" data-back aria-label="Paso anterior"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <span class="fd-appbar__title">Tu comercio</span>
+              <span class="fd-appbar__end" data-count aria-live="polite">1 de 3</span>
+            </div>
+            <div class="fd-steps" aria-hidden="true"><span class="is-on"></span><span></span><span></span></div>
+            <div class="fd-body">
+              <section class="fd-step" data-step>
+                <h3 class="fd-q" tabindex="-1">¿Cómo se llama tu comercio?</h3>
+                <p class="fd-sub">Es lo primero que ven los vecinos.</p>
+                <div class="fd-f"><input id="o2-name" placeholder="Ej: Panadería La Espiga" value="Facu Cells" required /><label for="o2-name">Nombre del comercio</label></div>
+                <fieldset class="fd-chips" style="margin-top: 1.5rem;">
+                  <legend class="fd-legend">¿Qué vendés? Elegí la que más se parezca.</legend>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Almacén" required /><span><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>Almacén</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Panadería" /><span><i class="fa-solid fa-bread-slice" aria-hidden="true"></i>Panadería</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Ropa" /><span><i class="fa-solid fa-shirt" aria-hidden="true"></i>Ropa</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Tecnología" checked /><span><i class="fa-solid fa-laptop" aria-hidden="true"></i>Tecnología</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Kiosco" /><span><i class="fa-solid fa-store" aria-hidden="true"></i>Kiosco</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Verdulería" /><span><i class="fa-solid fa-carrot" aria-hidden="true"></i>Verdulería</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Ferretería" /><span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>Ferretería</span></label>
+                  <label class="fd-chip"><input type="radio" name="o2-cat" value="Perfumería" /><span><i class="fa-solid fa-pump-soap" aria-hidden="true"></i>Perfumería</span></label>
+                </fieldset>
+              </section>
+              <section class="fd-step" data-step hidden>
+                <h3 class="fd-q" tabindex="-1">Contales quién sos</h3>
+                <p class="fd-sub">Dos o tres líneas alcanzan. Podés cambiarlo cuando quieras.</p>
+                <div class="fd-f">
+                  <textarea id="o2-desc" placeholder="Qué vendés y qué te hace distinto" maxlength="280"></textarea>
+                  <label for="o2-desc">Descripción</label>
+                  <span class="fd-counter" aria-hidden="true">0/280</span>
+                </div>
+                <div class="fd-suggest" aria-label="Ideas para arrancar">
+                  <button type="button" data-suggest="Reparamos celulares en el día.">+ Reparaciones en el día</button>
+                  <button type="button" data-suggest="Accesorios, fundas y cargadores.">+ Accesorios</button>
+                  <button type="button" data-suggest="Atención personalizada en el centro de Baradero.">+ Atención personalizada</button>
+                </div>
+                <h3 class="fd-q fd-q--sm">Tu logo <span class="fd-optional">(opcional)</span></h3>
+                <button type="button" class="fd-upload" data-upload>
+                  <span class="fd-upload__logo"><i class="fa-solid fa-camera" aria-hidden="true"></i></span>
+                  <span class="fd-upload__text"><strong>Subir logo</strong><span>JPG, PNG o WEBP, hasta 5 MB</span></span>
+                </button>
+              </section>
+              <section class="fd-step" data-step hidden>
+                <h3 class="fd-q" tabindex="-1">¿Dónde te encuentran?</h3>
+                <p class="fd-sub">Con esto el vecino y el repartidor llegan a tu puerta.</p>
+                <div class="fd-stack">
+                  <div class="fd-f"><input id="o2-dir" placeholder="Calle y número" value="Mitre 2958" autocomplete="street-address" required /><label for="o2-dir">Dirección</label></div>
+                  <div class="fd-f"><input id="o2-wa" type="tel" placeholder="3329 616554" inputmode="tel" /><label for="o2-wa">WhatsApp del comercio</label></div>
+                  <div class="fd-f"><input id="o2-maps" placeholder="https://maps.app.goo.gl/..." inputmode="url" spellcheck="false" /><label for="o2-maps">Link de Maps (opcional)</label></div>
+                </div>
+              </section>
+              <section class="fd-step fd-done" data-step hidden>
+                <div class="fd-done__icon" aria-hidden="true"><i class="fa-solid fa-check"></i></div>
+                <h3 class="fd-q" tabindex="-1">¡Listo! Tu comercio está al día</h3>
+                <p class="fd-sub">Los cambios ya se ven en tu página.</p>
+              </section>
+            </div>
+            <div class="fd-footer">
+              <button type="button" class="fd-cta" data-next>Continuar</button>
+            </div>
+          </div>
+        </div>
+        <div class="fd-notes">
+          <strong>Por qué es cómoda</strong>
+          <ul>
+            <li>Una cosa por vez: nunca ves una pared de campos.</li>
+            <li>"1 de 3" y la barrita dicen cuánto falta; eso baja la ansiedad.</li>
+            <li>Ideas para arrancar en la descripción: nadie queda frente a la hoja en blanco.</li>
+          </ul>
+          <strong>Ojo:</strong> para cambiar un solo dato es más lento. Es para altas, no para editar.
+          <p><strong>Dónde:</strong> alta de comercio y de profesional, publicar producto, el pago del carrito.</p>
+        </div>
+      </article>
+
+      <!-- ===================== OPCIÓN 3 ===================== -->
+      <article class="fd-option" id="op3" aria-labelledby="op3-title">
+        <div class="fd-option__head">
+          <span class="fd-option__num" aria-hidden="true">3</span>
+          <div>
+            <h2 id="op3-title">Tu lista de hoy, más amable</h2>
+            <p>Igual que Mi perfil hoy, pero cada fila se toca entera y abre una hoja desde abajo con un campo grande.</p>
+          </div>
+        </div>
+        <div class="fd-phone">
+          <div class="fd-screen fd-screen--grouped">
+            <div class="fd-status" aria-hidden="true"><span>9:41</span><span class="fd-status__icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-battery-three-quarters"></i></span></div>
+            <div class="fd-appbar">
+              <button type="button" class="fd-icon-btn" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <span class="fd-appbar__title">Mis datos</span>
+              <span></span>
+            </div>
+            <div class="fd-body" data-body>
+              <div class="fd-progress" data-progress>
+                <div class="fd-ring" data-ring><span data-ring-text>60%</span></div>
+                <div class="fd-progress__text" aria-live="polite"><strong data-progress-title>Tu perfil está al 60%</strong><span data-progress-sub>Te faltan 2 datos. Es un minuto.</span></div>
+              </div>
+              <h3 class="fd-group-title">Datos personales</h3>
+              <div class="fd-list">
+                <button type="button" class="fd-item" data-field="nombre"><span class="fd-item__icon"><i class="fa-solid fa-user" aria-hidden="true"></i></span><span class="fd-item__text"><span class="fd-item__label">Nombre y apellido</span><span class="fd-item__value"></span></span><i class="fa-solid fa-chevron-right fd-item__chev" aria-hidden="true"></i></button>
+                <button type="button" class="fd-item" data-field="nac"><span class="fd-item__icon"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i></span><span class="fd-item__text"><span class="fd-item__label">Fecha de nacimiento</span><span class="fd-item__value"></span></span><i class="fa-solid fa-chevron-right fd-item__chev" aria-hidden="true"></i></button>
+                <button type="button" class="fd-item" data-field="doc"><span class="fd-item__icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span><span class="fd-item__text"><span class="fd-item__label">Documento</span><span class="fd-item__value"></span></span><i class="fa-solid fa-chevron-right fd-item__chev" aria-hidden="true"></i></button>
+              </div>
+              <h3 class="fd-group-title">Contacto</h3>
+              <div class="fd-list">
+                <div class="fd-item"><span class="fd-item__icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span><span class="fd-item__text"><span class="fd-item__label">Correo electrónico · Verificado</span><span class="fd-item__value">shueywater@gmail.com</span></span><i class="fa-solid fa-lock fd-item__chev" aria-label="No se puede cambiar desde acá"></i></div>
+                <button type="button" class="fd-item" data-field="tel"><span class="fd-item__icon"><i class="fa-solid fa-phone" aria-hidden="true"></i></span><span class="fd-item__text"><span class="fd-item__label">Teléfono</span><span class="fd-item__value"></span></span><i class="fa-solid fa-chevron-right fd-item__chev" aria-hidden="true"></i></button>
+              </div>
+            </div>
+            <div class="fd-sheet-backdrop" data-sheet-close></div>
+            <div class="fd-sheet" role="dialog" aria-modal="true" aria-labelledby="op3-sheet-title" data-sheet>
+              <div class="fd-sheet__handle" aria-hidden="true"></div>
+              <h3 id="op3-sheet-title" data-sheet-title></h3>
+              <p class="fd-sheet__hint" data-sheet-hint></p>
+              <form data-sheet-form novalidate>
+                <div class="fd-stack" data-sheet-fields></div>
+                <button type="submit" class="fd-cta" data-sheet-save>Guardar</button>
+                <button type="button" class="fd-textbtn" data-sheet-close>Cancelar</button>
+              </form>
+            </div>
+            <div class="fd-toast" role="status" data-toast><i class="fa-solid fa-check" aria-hidden="true"></i> <span>Guardado</span></div>
+          </div>
+        </div>
+        <div class="fd-notes">
+          <strong>Por qué es cómoda</strong>
+          <ul>
+            <li>Primero ves tus datos tranquilo; editás solo lo que querés.</li>
+            <li>Toda la fila es el botón, y la hoja aparece justo donde llega el pulgar.</li>
+            <li>"Agregar" en azul en vez de "Sin completar" en gris: invita, no reta. El anillo festeja cuando llegás al 100%.</li>
+          </ul>
+          <strong>Ojo:</strong> un toque más que la 1 para editar cada dato.
+          <p><strong>Dónde:</strong> Mi perfil (Información, Direcciones, Ajustes).</p>
+        </div>
+      </article>
+
+      <!-- ===================== OPCIÓN 4 ===================== -->
+      <article class="fd-option" id="op4" aria-labelledby="op4-title">
+        <div class="fd-option__head">
+          <span class="fd-option__num" aria-hidden="true">4</span>
+          <div>
+            <h2 id="op4-title">Te avisa al momento y se guarda solo</h2>
+            <p>Campos con contorno, ayuda que aparece al tocarlos, errores que dicen cómo arreglarlo y sin botón de guardar.</p>
+          </div>
+        </div>
+        <div class="fd-phone">
+          <div class="fd-screen">
+            <div class="fd-status" aria-hidden="true"><span>9:41</span><span class="fd-status__icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-battery-three-quarters"></i></span></div>
+            <div class="fd-appbar fd-appbar--wide">
+              <button type="button" class="fd-icon-btn" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <span class="fd-appbar__title">Contacto</span>
+              <span class="fd-appbar__end"><span class="fd-save is-ok" data-save role="status"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Al día</span></span>
+            </div>
+            <form class="fd-form" novalidate>
+              <div class="fd-body">
+                <h3 class="fd-q">¿Dónde te encuentran?</h3>
+                <p class="fd-sub">Probá escribir un WhatsApp con números de menos o un link que no sea de Maps.</p>
+                <div class="fd-stack">
+                  <div class="fd-ofield">
+                    <div class="fd-o" data-rule="dir"><input id="o4-dir" placeholder="Calle y número" value="Mitre 2958" autocomplete="street-address" aria-describedby="o4-dir-msg" /><label for="o4-dir">Dirección</label><i class="fa-solid fa-circle-check fd-o__icon fd-o__icon--ok" aria-hidden="true"></i><i class="fa-solid fa-circle-exclamation fd-o__icon fd-o__icon--err" aria-hidden="true"></i></div>
+                    <p class="fd-o__msg" id="o4-dir-msg" hidden></p>
+                  </div>
+                  <div class="fd-ofield">
+                    <div class="fd-o" data-rule="wa"><input id="o4-wa" type="tel" inputmode="tel" placeholder="3329 616554" aria-describedby="o4-wa-help o4-wa-msg" /><label for="o4-wa">WhatsApp del comercio</label><i class="fa-solid fa-circle-check fd-o__icon fd-o__icon--ok" aria-hidden="true"></i><i class="fa-solid fa-circle-exclamation fd-o__icon fd-o__icon--err" aria-hidden="true"></i></div>
+                    <p class="fd-o__help" id="o4-wa-help">Con la característica, sin el 0 ni el 15.</p>
+                    <p class="fd-o__msg" id="o4-wa-msg" hidden></p>
+                  </div>
+                  <div class="fd-ofield">
+                    <div class="fd-o" data-rule="maps"><input id="o4-maps" inputmode="url" spellcheck="false" placeholder="https://maps.app.goo.gl/..." aria-describedby="o4-maps-help o4-maps-msg" /><label for="o4-maps">Link de Maps <span class="fd-optional">(opcional)</span></label><i class="fa-solid fa-circle-check fd-o__icon fd-o__icon--ok" aria-hidden="true"></i><i class="fa-solid fa-circle-exclamation fd-o__icon fd-o__icon--err" aria-hidden="true"></i></div>
+                    <p class="fd-o__help" id="o4-maps-help">Abrí tu local en Google Maps, tocá "Compartir" y pegalo acá.</p>
+                    <p class="fd-o__msg" id="o4-maps-msg" hidden></p>
+                  </div>
+                  <div class="fd-ofield">
+                    <div class="fd-o" data-rule="mail"><input id="o4-mail" type="email" inputmode="email" autocomplete="email" placeholder="hola@tucomercio.com" aria-describedby="o4-mail-msg" /><label for="o4-mail">Correo <span class="fd-optional">(opcional)</span></label><i class="fa-solid fa-circle-check fd-o__icon fd-o__icon--ok" aria-hidden="true"></i><i class="fa-solid fa-circle-exclamation fd-o__icon fd-o__icon--err" aria-hidden="true"></i></div>
+                    <p class="fd-o__msg" id="o4-mail-msg" hidden></p>
+                  </div>
+                </div>
+              </div>
+              <div class="fd-footer">
+                <p class="fd-footer__note"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> Los cambios se guardan solos.</p>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="fd-notes">
+          <strong>Por qué es cómoda</strong>
+          <ul>
+            <li>Te enterás del error ahí mismo, con el arreglo ("Faltan 2 números"), no al final.</li>
+            <li>La ayuda aparece solo en el campo que estás usando: la pantalla queda liviana.</li>
+            <li>Nada se pierde: no hay botón que olvidarse de tocar.</li>
+          </ul>
+          <strong>Ojo:</strong> el contorno es un poco más "formal" que el relleno, y guardar solo pide avisar bien si se corta internet.
+          <p><strong>Dónde:</strong> Perfil de mi comercio, datos de transferencia, panel de profesional.</p>
+        </div>
+      </article>
+
+      <!-- ===================== OPCIÓN 5 ===================== -->
+      <article class="fd-option" id="op5" aria-labelledby="op5-title">
+        <div class="fd-option__head">
+          <span class="fd-option__num" aria-hidden="true">5</span>
+          <div>
+            <h2 id="op5-title">Mirá cómo te ven mientras escribís</h2>
+            <p>Arriba, la tarjeta de tu comercio tal cual la ven los vecinos. Cambia sola con cada letra.</p>
+          </div>
+        </div>
+        <div class="fd-phone">
+          <div class="fd-screen">
+            <div class="fd-status" aria-hidden="true"><span>9:41</span><span class="fd-status__icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-battery-three-quarters"></i></span></div>
+            <div class="fd-appbar">
+              <button type="button" class="fd-icon-btn" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+              <span class="fd-appbar__title">Mi comercio</span>
+              <span></span>
+            </div>
+            <form class="fd-form" id="op5-form" novalidate>
+              <div class="fd-body">
+                <div class="fd-preview-wrap">
+                <p class="fd-preview-label">Así te ven los vecinos</p>
+                <div class="fd-preview" data-preview aria-hidden="true">
+                  <div class="fd-preview__banner"></div>
+                  <div class="fd-preview__inner">
+                    <div class="fd-preview__logo" data-p-logo>FC</div>
+                    <div class="fd-preview__name" data-p-name>Facu Cells</div>
+                    <span class="fd-preview__cat" data-p-cat><i class="fa-solid fa-laptop"></i> Tecnología</span>
+                    <p class="fd-preview__desc is-empty" data-p-desc>Contales a los vecinos qué vendés y qué te hace distinto.</p>
+                    <div class="fd-preview__meta"><i class="fa-solid fa-location-dot"></i> <span data-p-dir>Mitre 2958</span> · Baradero</div>
+                  </div>
+                </div>
+                </div>
+                <div class="fd-stack">
+                  <div class="fd-f"><input id="o5-name" placeholder="Ej: Panadería La Espiga" value="Facu Cells" /><label for="o5-name">Nombre del comercio</label></div>
+                  <fieldset class="fd-chips fd-chips--scroll">
+                    <legend class="fd-legend">Categoría</legend>
+                    <label class="fd-chip"><input type="radio" name="o5-cat" value="Tecnología" data-icon="fa-laptop" checked /><span><i class="fa-solid fa-laptop" aria-hidden="true"></i>Tecnología</span></label>
+                    <label class="fd-chip"><input type="radio" name="o5-cat" value="Kiosco" data-icon="fa-store" /><span><i class="fa-solid fa-store" aria-hidden="true"></i>Kiosco</span></label>
+                    <label class="fd-chip"><input type="radio" name="o5-cat" value="Librería" data-icon="fa-book" /><span><i class="fa-solid fa-book" aria-hidden="true"></i>Librería</span></label>
+                    <label class="fd-chip"><input type="radio" name="o5-cat" value="Ropa" data-icon="fa-shirt" /><span><i class="fa-solid fa-shirt" aria-hidden="true"></i>Ropa</span></label>
+                    <label class="fd-chip"><input type="radio" name="o5-cat" value="Almacén" data-icon="fa-basket-shopping" /><span><i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>Almacén</span></label>
+                  </fieldset>
+                  <div class="fd-f">
+                    <textarea id="o5-desc" placeholder="Qué vendés y qué te hace distinto" maxlength="280"></textarea>
+                    <label for="o5-desc">Descripción</label>
+                    <span class="fd-counter" aria-hidden="true">0/280</span>
+                  </div>
+                  <div class="fd-f"><input id="o5-dir" placeholder="Calle y número" value="Mitre 2958" autocomplete="street-address" /><label for="o5-dir">Dirección</label></div>
+                </div>
+              </div>
+              <div class="fd-footer">
+                <button type="submit" class="fd-cta">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="fd-notes">
+          <strong>Por qué es cómoda</strong>
+          <ul>
+            <li>Cada campo tiene sentido al instante: ves para qué sirve lo que escribís.</li>
+            <li>Motiva a completar descripción y logo, porque se nota el hueco.</li>
+            <li>Sin sorpresas: lo que ves es lo que se publica.</li>
+          </ul>
+          <strong>Ojo:</strong> ocupa más pantalla y solo sirve donde hay algo público para mostrar.
+          <p><strong>Dónde:</strong> Perfil de mi comercio, Mis datos del profesional, publicar producto.</p>
+        </div>
+      </article>
+    </div>
+
+    <h2 class="fd-section-title">Lo que tienen en común: cómo hacer que se sientan cómodos</h2>
+    <p class="fd-section-lead">Más que el dibujo del campo, la comodidad sale de estas siete reglas. Valen para cualquiera de las cinco opciones.</p>
+    <ul class="fd-principles">
+      <li><i class="fa-solid fa-tag" aria-hidden="true"></i><div><strong>La etiqueta nunca se va</strong><span>Arranca adentro del campo y sube al escribir. Siempre sabés qué estás completando.</span></div></li>
+      <li><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i><div><strong>Campos grandes y suaves</strong><span>56 a 60 px de alto, esquinas redondeadas y letra de 16 px: el celular no hace zoom y no hay que apuntar fino.</span></div></li>
+      <li><i class="fa-solid fa-layer-group" aria-hidden="true"></i><div><strong>Poco por vez</strong><span>De a 4 o 5 datos por grupo; en las altas largas, una pregunta por pantalla con "1 de 3".</span></div></li>
+      <li><i class="fa-solid fa-comment-dots" aria-hidden="true"></i><div><strong>Ayuda en el momento justo</strong><span>La explicación aparece al tocar el campo, y el error dice cómo arreglarlo, no solo "inválido".</span></div></li>
+      <li><i class="fa-solid fa-keyboard" aria-hidden="true"></i><div><strong>El teclado correcto</strong><span>Numérico para DNI, teléfono y fecha; el de correo para el mail; y autocompletar con lo que el celular ya sabe.</span></div></li>
+      <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i><div><strong>Un solo botón claro</strong><span>Se prende cuando hay algo para guardar y confirma con "Guardado". Nunca dos botones iguales compitiendo.</span></div></li>
+      <li><i class="fa-solid fa-heart" aria-hidden="true"></i><div><strong>Decir para qué</strong><span>"Para que el comercio te avise si hay una demora." Un dato con motivo se completa con gusto.</span></div></li>
+    </ul>
+
+    <div class="fd-reco">
+      <h3>Mi recomendación: combinarlas</h3>
+      <p>La <strong>1</strong> como estilo de todos los campos del sitio. Hoy hay cuatro estilos distintos (<code>.form-input</code> en los paneles, <code>.auth-input</code> en login y registro, <code>.bl-input</code> en Mi perfil y otros sueltos); unificarlos en uno solo ya cambia la sensación en toda la página.</p>
+      <p>Encima de esa base: la <strong>3</strong> para Mi perfil, la <strong>2</strong> para las altas largas (comercio, profesional, publicar producto) y la <strong>5</strong> en Perfil de mi comercio. La <strong>4</strong> (guardar solo) es la más trabajosa y la dejaría para después.</p>
+    </div>
+  </main>
+
+  <script type="module">
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+    // DD/MM/AAAA: las barras se ponen solas.
+    function maskDate(el) {
+      el.addEventListener('input', () => {
+        const d = el.value.replace(/\D/g, '').slice(0, 8);
+        el.value = [d.slice(0, 2), d.slice(2, 4), d.slice(4)].filter(Boolean).join('/');
+      });
+    }
+    function counter(ta) {
+      const c = ta.parentElement.querySelector('.fd-counter');
+      const up = () => { c.textContent = `${ta.value.length}/${ta.maxLength}`; };
+      ta.addEventListener('input', up);
+      up();
+    }
+    $$('[data-mask="date"]').forEach(maskDate);
+    $$('textarea[maxlength]').forEach(counter);
+
+    // Botón "Guardar cambios" que se prende solo si algo cambió (opciones 1 y 5).
+    function dirtySave(form) {
+      const btn = $('.fd-cta', form);
+      const label = btn.innerHTML;
+      const snap = () => JSON.stringify($$('input, textarea, select', form).map((e) => (e.type === 'radio' ? e.checked : e.value)));
+      let base = snap();
+      const sync = () => { if (!btn.classList.contains('is-done')) btn.disabled = snap() === base; };
+      form.addEventListener('input', sync);
+      form.addEventListener('change', sync);
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (btn.disabled) return;
+        base = snap();
+        btn.disabled = true;
+        btn.classList.add('is-done');
+        btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Guardado';
+        setTimeout(() => { btn.classList.remove('is-done'); btn.innerHTML = label; sync(); }, 1600);
+      });
+      sync();
+    }
+    dirtySave($('#op1-form'));
+    dirtySave($('#op5-form'));
+
+    // ---------- Opción 2: paso a paso ----------
+    {
+      const root = $('#op2');
+      const steps = $$('[data-step]', root);
+      const segs = $$('.fd-steps span', root);
+      const next = $('[data-next]', root);
+      const back = $('[data-back]', root);
+      const count = $('[data-count]', root);
+      const last = steps.length - 1;
+      let i = 0;
+      const ready = (step) => $$('[required]', step).every((el) =>
+        el.type === 'radio' ? $$(`[name="${el.name}"]`, step).some((r) => r.checked) : el.value.trim());
+      function render(focus) {
+        steps.forEach((s, k) => { s.hidden = k !== i; });
+        segs.forEach((s, k) => s.classList.toggle('is-on', k <= i));
+        $('.fd-steps', root).hidden = i === last;
+        count.textContent = i === last ? '' : `${i + 1} de ${last}`;
+        back.disabled = i === 0 || i === last;
+        next.textContent = i === last ? 'Volver a empezar' : i === last - 1 ? 'Guardar' : 'Continuar';
+        next.disabled = i !== last && !ready(steps[i]);
+        if (focus) $('.fd-q', steps[i]).focus();
+      }
+      root.addEventListener('input', () => render());
+      root.addEventListener('change', () => render());
+      next.addEventListener('click', () => { i = i === last ? 0 : i + 1; render(true); });
+      back.addEventListener('click', () => { if (i > 0) { i -= 1; render(true); } });
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('input') && !next.disabled) { e.preventDefault(); next.click(); }
+      });
+      $$('[data-suggest]', root).forEach((b) => b.addEventListener('click', () => {
+        const ta = $('#o2-desc');
+        ta.value = `${ta.value.trim()} ${b.dataset.suggest}`.trim().slice(0, ta.maxLength);
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        b.remove();
+      }));
+      const up = $('[data-upload]', root);
+      up.addEventListener('click', () => {
+        const on = up.classList.toggle('has-logo');
+        $('.fd-upload__logo', up).innerHTML = on ? 'FC' : '<i class="fa-solid fa-camera" aria-hidden="true"></i>';
+        $('.fd-upload__text strong', up).textContent = on ? 'Logo cargado' : 'Subir logo';
+        $('.fd-upload__text span', up).textContent = on ? 'Tocá para cambiarlo' : 'JPG, PNG o WEBP, hasta 5 MB';
+      });
+      render();
+    }
+
+    // ---------- Opción 3: lista + hoja ----------
+    {
+      const root = $('#op3');
+      const screen = $('.fd-screen', root);
+      const state = { nom: 'Facundo', ape: 'Eichenberger', nac: '', tipo: 'DNI', num: '', tel: '3329 61-6554' };
+      const FIELDS = {
+        nombre: { title: 'Nombre y apellido', hint: 'Es el nombre que ve el comercio cuando le entra tu pedido.', row: 'row2',
+          inputs: [{ key: 'nom', label: 'Nombre', ac: 'given-name' }, { key: 'ape', label: 'Apellido', ac: 'family-name' }],
+          show: (s) => `${s.nom} ${s.ape}`.trim() },
+        nac: { title: 'Fecha de nacimiento', hint: 'Escribila con números: las barras se ponen solas.',
+          inputs: [{ key: 'nac', label: 'Fecha de nacimiento', placeholder: 'DD/MM/AAAA', mode: 'numeric', mask: true, min: 10 }],
+          show: (s) => s.nac },
+        doc: { title: 'Documento', hint: 'Sirve para identificarte si aparece un problema con un pedido.', row: 'row-doc',
+          inputs: [{ key: 'tipo', label: 'Tipo', options: ['DNI', 'LE', 'LC', 'Pasaporte'] }, { key: 'num', label: 'Número', placeholder: '12345678', mode: 'numeric', min: 6 }],
+          show: (s) => (s.num ? `${s.tipo} ${s.num}` : '') },
+        tel: { title: 'Teléfono', hint: 'Para que el comercio te avise si hay una demora.',
+          inputs: [{ key: 'tel', label: 'Teléfono', type: 'tel', placeholder: '3329 616554', mode: 'tel', ac: 'tel', min: 8 }],
+          show: (s) => s.tel },
+      };
+      const sheet = $('[data-sheet]', root);
+      const form = $('[data-sheet-form]', root);
+      const fieldsBox = $('[data-sheet-fields]', root);
+      const saveBtn = $('[data-sheet-save]', root);
+      const body = $('[data-body]', root);
+      let current = null;
+      let opener = null;
+
+      function renderList() {
+        let done = 1; // el correo ya está
+        $$('[data-field]', root).forEach((row) => {
+          const val = FIELDS[row.dataset.field].show(state);
+          const el = $('.fd-item__value', row);
+          el.textContent = val || 'Agregar';
+          el.classList.toggle('is-empty', !val);
+          if (val) done += 1;
+          row.setAttribute('aria-label', `${FIELDS[row.dataset.field].title}: ${val || 'sin cargar, agregar'}`);
+        });
+        const total = 5;
+        const pct = Math.round((done / total) * 100);
+        const box = $('[data-progress]', root);
+        $('[data-ring]', root).style.setProperty('--p', pct);
+        box.classList.toggle('is-full', pct === 100);
+        $('[data-ring-text]', root).innerHTML = pct === 100 ? '<i class="fa-solid fa-check" aria-hidden="true"></i>' : `${pct}%`;
+        $('[data-progress-title]', root).textContent = pct === 100 ? '¡Perfil completo!' : `Tu perfil está al ${pct}%`;
+        const left = total - done;
+        $('[data-progress-sub]', root).textContent = pct === 100 ? 'Gracias. Los comercios ya tienen todo.' : `Te ${left === 1 ? 'falta 1 dato' : `faltan ${left} datos`}. Es un minuto.`;
+      }
+
+      function buildInput(spec) {
+        const wrap = document.createElement('div');
+        wrap.className = spec.options ? 'fd-f fd-f--select' : 'fd-f';
+        const id = `o3-${spec.key}`;
+        let el;
+        if (spec.options) {
+          el = document.createElement('select');
+          spec.options.forEach((o) => el.add(new Option(o, o, false, o === state[spec.key])));
+        } else {
+          el = document.createElement('input');
+          el.type = spec.type || 'text';
+          el.placeholder = spec.placeholder || ' ';
+          el.value = state[spec.key];
+          if (spec.mode) el.inputMode = spec.mode;
+          if (spec.ac) el.autocomplete = spec.ac;
+          if (spec.mask) { el.maxLength = 10; maskDate(el); }
+        }
+        el.id = id;
+        el.dataset.key = spec.key;
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = spec.label;
+        wrap.append(el, label);
+        if (spec.options) wrap.insertAdjacentHTML('beforeend', '<i class="fa-solid fa-chevron-down fd-f__chev" aria-hidden="true"></i>');
+        return wrap;
+      }
+
+      function syncSave() {
+        saveBtn.disabled = !current.inputs.every((spec) => {
+          if (spec.options) return true;
+          const v = $(`[data-key="${spec.key}"]`, fieldsBox).value.trim();
+          return v.length >= (spec.min || 1);
+        });
+      }
+
+      function open(key, row) {
+        current = FIELDS[key];
+        opener = row;
+        $('[data-sheet-title]', root).textContent = current.title;
+        $('[data-sheet-hint]', root).textContent = current.hint;
+        fieldsBox.replaceChildren();
+        const inputs = current.inputs.map(buildInput);
+        if (current.row) {
+          const g = document.createElement('div');
+          g.className = current.row === 'row2' ? 'fd-row2' : 'fd-row-doc';
+          g.append(...inputs);
+          fieldsBox.append(g);
+        } else {
+          fieldsBox.append(...inputs);
+        }
+        syncSave();
+        body.inert = true;
+        screen.classList.add('is-sheet-open');
+        const first = $$('input', fieldsBox).find((i) => !i.value) || $('input', fieldsBox);
+        setTimeout(() => first?.focus(), 60);
+      }
+      function close() {
+        screen.classList.remove('is-sheet-open');
+        body.inert = false;
+        opener?.focus();
+      }
+      function toast() {
+        const t = $('[data-toast]', root);
+        t.classList.add('is-on');
+        clearTimeout(t._t);
+        t._t = setTimeout(() => t.classList.remove('is-on'), 1600);
+      }
+
+      $$('[data-field]', root).forEach((row) => row.addEventListener('click', () => open(row.dataset.field, row)));
+      $$('[data-sheet-close]', root).forEach((b) => b.addEventListener('click', close));
+      sheet.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+      fieldsBox.addEventListener('input', syncSave);
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (saveBtn.disabled) return;
+        $$('[data-key]', fieldsBox).forEach((el) => { state[el.dataset.key] = el.value.trim(); });
+        renderList();
+        close();
+        toast();
+      });
+      renderList();
+    }
+
+    // ---------- Opción 4: validación en vivo + guardado automático ----------
+    {
+      const root = $('#op4');
+      const save = $('[data-save]', root);
+      const RULES = {
+        dir: (v) => (v.trim().length >= 3 ? '' : 'Escribí la calle y el número.'),
+        wa: (v) => {
+          const n = v.replace(/\D/g, '').length;
+          if (n === 10) return '';
+          return n < 10
+            ? `${10 - n === 1 ? 'Falta 1 número' : `Faltan ${10 - n} números`}: son 10 con la característica (ej. 3329 616554).`
+            : 'Sobran números: son 10, sin el 0 ni el 15.';
+        },
+        maps: (v) => (!v.trim() || /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps)/i.test(v.trim())
+          ? '' : 'Ese link no es de Google Maps. Copialo desde el botón "Compartir".'),
+        mail: (v) => (!v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Al correo le falta algo: revisá que tenga @ y un punto.'),
+      };
+      const optional = new Set(['maps', 'mail']);
+      let timer;
+      function check(box, showError) {
+        const input = $('input', box);
+        const msg = $('.fd-o__msg', box.parentElement);
+        const err = RULES[box.dataset.rule](input.value);
+        const empty = !input.value.trim();
+        const ok = !err && !(empty && optional.has(box.dataset.rule));
+        box.classList.toggle('is-valid', ok);
+        const show = Boolean(err) && (showError || box.classList.contains('is-invalid'));
+        box.classList.toggle('is-invalid', show);
+        input.setAttribute('aria-invalid', String(show));
+        msg.hidden = !show;
+        if (show) {
+          msg.innerHTML = '<i class="fa-solid fa-circle-info" aria-hidden="true"></i><span></span>';
+          $('span', msg).textContent = err;
+        }
+      }
+      function setSave(kind, text, icon) {
+        save.className = `fd-save is-${kind}`;
+        save.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i> `;
+        save.append(text);
+      }
+      $$('.fd-o', root).forEach((box) => {
+        const input = $('input', box);
+        check(box, false);
+        input.addEventListener('input', () => {
+          check(box, false);
+          clearTimeout(timer);
+          setSave('wait', 'Escribiendo…', 'fa-pen');
+          timer = setTimeout(() => {
+            const bad = $$('.fd-o', root).some((b) => RULES[b.dataset.rule]($('input', b).value));
+            if (bad) { setSave('err', 'Revisá un dato', 'fa-circle-exclamation'); return; }
+            setSave('wait', 'Guardando…', 'fa-spinner fa-spin');
+            setTimeout(() => setSave('ok', 'Guardado', 'fa-circle-check'), 650);
+          }, 800);
+        });
+        input.addEventListener('blur', () => { if (input.value.trim()) check(box, true); });
+      });
+    }
+
+    // ---------- Opción 5: vista previa ----------
+    {
+      const root = $('#op5');
+      const preview = $('[data-preview]', root);
+      const name = $('#o5-name');
+      const desc = $('#o5-desc');
+      const dir = $('#o5-dir');
+      const initials = (s) => s.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+      let flash;
+      function update() {
+        $('[data-p-name]', root).textContent = name.value.trim() || 'Nombre de tu comercio';
+        $('[data-p-logo]', root).textContent = initials(name.value) || '?';
+        const cat = $('input[name="o5-cat"]:checked', root);
+        const catEl = $('[data-p-cat]', root);
+        catEl.innerHTML = `<i class="fa-solid ${cat.dataset.icon}"></i> `;
+        catEl.append(cat.value);
+        const d = desc.value.trim();
+        const pDesc = $('[data-p-desc]', root);
+        pDesc.textContent = d || 'Contales a los vecinos qué vendés y qué te hace distinto.';
+        pDesc.classList.toggle('is-empty', !d);
+        $('[data-p-dir]', root).textContent = dir.value.trim() || 'Tu dirección';
+        preview.classList.add('is-updated');
+        clearTimeout(flash);
+        flash = setTimeout(() => preview.classList.remove('is-updated'), 350);
+      }
+      root.addEventListener('input', update);
+      root.addEventListener('change', update);
+    }
+  </script>
+</body>
+</html>

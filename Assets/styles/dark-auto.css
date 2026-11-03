@@ -1447,6 +1447,21 @@ html[data-theme="dark"] .fx-note--stale {
   color: #ec9494;
 }
 
+/* ===== pages/formularios-demo.html (<style>) ===== */
+html[data-theme="dark"] .fd-cta.is-done,
+html[data-theme="dark"] .fd-cta.is-done:disabled {
+  background: var(--fd-ok-bg);
+}
+html[data-theme="dark"] .fd-chip span {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .fd-chip span i {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .fd-chip input:checked + span i {
+  color: var(--dk-accent-text);
+}
+
 /* ===== pages/info.html (<style>) ===== */
 html[data-theme="dark"] .info-container {
   background: #181d2a;

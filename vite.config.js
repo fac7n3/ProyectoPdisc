@@ -46,6 +46,8 @@ export default defineConfig({
         profesional: resolve(__dirname, 'pages/profesional.html'),
         servicios: resolve(__dirname, 'pages/servicios.html'),
         repartidor: resolve(__dirname, 'pages/repartidor.html'),
+        // Solo en la rama de prueba main2: propuestas de formularios.
+        formulariosDemo: resolve(__dirname, 'pages/formularios-demo.html'),
       }
     }
   }
