@@ -18,9 +18,8 @@ const PIN_ZOOM = 17;
  * @param {HTMLElement} opts.root  contenedor con #store-loc-map, los botones y #store-loc-status
  * @param {() => string} opts.getAddress  dirección escrita en el formulario
  * @param {HTMLInputElement|null} opts.mapsUrlInput  link de Google Maps (si trae coordenadas, se usan)
- * @param {() => void} [opts.onChange]  avisa cada vez que se marca o saca el pin
  */
-export function createStoreLocationPicker({ root, getAddress, mapsUrlInput, onChange }) {
+export function createStoreLocationPicker({ root, getAddress, mapsUrlInput }) {
   const mapEl = root.querySelector('#store-loc-map');
   const statusEl = root.querySelector('#store-loc-status');
   const gpsBtn = root.querySelector('#store-loc-gps');
@@ -28,7 +27,7 @@ export function createStoreLocationPicker({ root, getAddress, mapsUrlInput, onCh
   const clearBtn = root.querySelector('#store-loc-clear');
 
   let point = null;   // {lat, lng} o null
-  let dirty = false;  // cambió y falta "Guardar cambios"
+  let dirty = false;  // cambió y falta "Guardar perfil"
   let note = '';      // aclaración del último paso (GPS impreciso, calle sin altura...)
   let L = null;
   let map = null;
@@ -40,7 +39,7 @@ export function createStoreLocationPicker({ root, getAddress, mapsUrlInput, onCh
     if (!point) {
       text = 'Todavía no marcaste dónde está tu local. Tocá el mapa, usá tu ubicación o buscá tu dirección.';
     } else if (dirty) {
-      text = 'Pin marcado. Tocá "Guardar cambios" para que quede.';
+      text = 'Pin marcado. Tocá "Guardar perfil" para que quede.';
     } else {
       text = 'Tu local está marcado en el mapa.';
     }
@@ -86,7 +85,6 @@ export function createStoreLocationPicker({ root, getAddress, mapsUrlInput, onCh
     note = '';
     syncMarker({ pan });
     renderStatus();
-    onChange?.();
   }
 
   async function ensureMap() {
