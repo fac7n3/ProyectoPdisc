@@ -46,8 +46,25 @@ function sitemapPlugin() {
   };
 }
 
+// og:image tiene que ser una URL absoluta: Facebook/WhatsApp ignoran una
+// relativa ("/og-image.png") y el link compartido salía sin imagen. Se completa
+// en el build con el mismo dominio que el sitemap (SITE_URL o el de producción
+// de Vercel), así no queda escrito a mano en cada página.
+function absoluteOgImagePlugin() {
+  const origin = resolveOrigin(process.env);
+  return {
+    name: 'absolute-og-image',
+    transformIndexHtml(html) {
+      return html.replace(
+        /(<meta\s+(?:property|name)="(?:og:image|twitter:image)"\s+content=")(\/[^"]*)"/g,
+        (_, start, path) => `${start}${origin}${path}"`,
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [securityHeadersPlugin(), sitemapPlugin()],
+  plugins: [securityHeadersPlugin(), sitemapPlugin(), absoluteOgImagePlugin()],
   build: {
     rollupOptions: {
       input: {
