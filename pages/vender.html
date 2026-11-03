@@ -998,183 +998,15 @@
       .social-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0.9rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface-alt); margin-bottom: 0.6rem; }
       .social-row:last-child { margin-bottom: 0; }
       .social-row__icon { flex-shrink: 0; width: 1.5rem; text-align: center; color: var(--bl-vendor-accent); font-size: 1.05rem; }
-
-      /* Perfil de mi comercio: campos grandes con la etiqueta adentro, que sube
-         al escribir (propuesta 1 de pages/formularios-demo.html). El <label> va
-         DESPUÉS del campo en el HTML para que .fl:has(...) lo mueva. */
-      #store-profile-form {
-        --pf-fill: var(--bl-surface-alt);
-        --pf-radius: 14px;
-        --pf-ring: 0 0 0 4px rgba(var(--bl-vendor-accent-rgb), 0.18);
-      }
-      #store-profile-form .pf-card { border-radius: 18px; padding: 1.5rem 1.5rem 1.6rem; }
-      #store-profile-form .pf-card__title { font-size: 1.0625rem; margin-bottom: 0.3rem; }
-      #store-profile-form .pf-card__hint { line-height: 1.5; }
-      #store-profile-form .pf-grid { gap: 0.85rem 1rem; }
-      #store-profile-form .fl { position: relative; }
-      #store-profile-form .fl .form-input {
-        min-height: 3.75rem; padding: 1.55rem 1rem 0.5rem;
-        border: 1.5px solid transparent; border-radius: var(--pf-radius);
-        background: var(--pf-fill); color: var(--bl-text); line-height: 1.3;
-        transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-      }
-      #store-profile-form .fl textarea.form-input { min-height: 6.5rem; padding-top: 1.75rem; line-height: 1.45; resize: vertical; }
-      #store-profile-form .fl > label {
-        position: absolute; left: 1rem; right: 1rem; top: 1.875rem; transform: translateY(-50%);
-        font-size: 1rem; color: var(--bl-text-secondary); pointer-events: none;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        transition: top 0.15s ease, font-size 0.15s ease;
-      }
-      #store-profile-form .fl:focus-within > label,
-      #store-profile-form .fl:has(> .form-input:not(:placeholder-shown)) > label { top: 1.05rem; font-size: 0.75rem; font-weight: 500; }
-      #store-profile-form .fl .form-input::placeholder { color: transparent; }
-      #store-profile-form .fl .form-input:focus::placeholder { color: var(--bl-text-muted); }
-      #store-profile-form .fl .form-input:focus { border-color: var(--bl-vendor-accent); background: var(--bl-surface); box-shadow: var(--pf-ring); }
-      #store-profile-form .pf-field > .pf-card__hint { margin: 0.45rem 0.25rem 0; font-size: 0.8125rem; }
-      /* Títulos de lo que no es un campo de texto (categoría, logo, mapa, contacto). */
-      #store-profile-form .pf-field > .form-label,
-      #store-profile-form .catpick > legend.form-label { margin-bottom: 0.6rem; font-size: 0.8125rem; font-weight: 500; color: var(--bl-text-secondary); }
-      #store-profile-form .catpick__opt { min-height: 3rem; border: 1.5px solid transparent; border-radius: 12px; background: var(--pf-fill); }
-      #store-profile-form .catpick__opt:has(.catpick__input:checked) { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.1); }
-      #store-profile-form .pf-radio-group { gap: 0.5rem; padding: 0; }
-      #store-profile-form .pf-radio-group .pf-check {
-        margin: 0; min-height: 3rem; padding: 0.55rem 1.1rem;
-        border: 1.5px solid transparent; border-radius: 12px; background: var(--pf-fill);
-        font-size: 0.9375rem; font-weight: 500;
-      }
-      #store-profile-form .pf-radio-group .pf-check:has(input:checked) { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.1); font-weight: 600; }
-      #store-profile-form .pf-phone { display: flex; gap: 0.5rem; }
-      #store-profile-form .pf-phone .fl { flex: 1; min-width: 0; }
-      #store-profile-form .pf-phone .bl-dropdown__trigger { min-height: 3.75rem; border: 1.5px solid transparent; border-radius: var(--pf-radius); background: var(--pf-fill); }
-      #store-profile-form .social-row { padding: 0; border: 0; background: none; gap: 0.75rem; }
-      #store-profile-form .social-row .fl { flex: 1; min-width: 0; }
-      #store-profile-form .social-row__icon {
-        width: 2.75rem; height: 2.75rem; border-radius: 12px; display: grid; place-items: center;
-        background: rgba(var(--bl-vendor-accent-rgb), 0.1);
-      }
-      #store-profile-form .store-logo-picker .btn-outline,
-      #store-profile-form .sl-btn { border-radius: var(--bl-radius-pill); }
-      #store-profile-form .sl-map { border-radius: var(--pf-radius); }
-      /* Un solo botón: apagado al final del formulario mientras no hay nada
-         nuevo; con cambios (.is-dirty, vender.js syncProfileSave) se prende y
-         queda flotando abajo de la pantalla para que no haya que buscarlo. */
-      #store-profile-form .pf-actions { padding: 0.5rem 0 1rem; }
-      #store-profile-form.is-dirty .pf-actions {
-        position: sticky; bottom: 0; z-index: 5;
-        pointer-events: none; /* la franja es transparente: que no tape clics */
-      }
-      #store-profile-form .pf-actions .form-btn { pointer-events: auto; box-shadow: var(--bl-shadow-lg); }
-      #store-profile-form .pf-actions .form-btn:disabled { box-shadow: none; }
-      #store-profile-form .pf-actions .form-btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-        width: auto; min-height: 3.25rem; padding: 0 2.25rem;
-        border-radius: var(--bl-radius-pill); font-size: 1rem; font-weight: 600;
-        transition: background-color 0.15s, opacity 0.15s, transform 0.1s;
-      }
-      #store-profile-form .pf-actions .form-btn:active:not(:disabled) { transform: scale(0.98); }
-      #store-profile-form .pf-actions .form-btn:disabled { opacity: 0.45; cursor: not-allowed; background: var(--bl-vendor-accent); }
-      #store-profile-form .pf-actions .form-btn.is-done,
-      #store-profile-form .pf-actions .form-btn.is-done:disabled { opacity: 1; background: color-mix(in srgb, var(--bl-success) 55%, var(--bl-primary-deeper)); }
-      @media (max-width: 640px) {
-        #store-profile-form .pf-card { padding: 1.15rem; }
-        #store-profile-form .social-row { flex-wrap: nowrap; }
-        #store-profile-form .pf-actions .form-btn { width: 100%; }
-      }
-
-      /* ---- Una sección por vez (js/store-profile-ui.js) ---- */
-      /* Cada tarjeta lleva data-tab; el formulario, la sección abierta. */
-      #store-profile-form[data-tab="datos"] .pf-card:not([data-tab="datos"]),
-      #store-profile-form[data-tab="contacto"] .pf-card:not([data-tab="contacto"]),
-      #store-profile-form[data-tab="redes"] .pf-card:not([data-tab="redes"]),
-      #store-profile-form[data-tab="cobros"] .pf-card:not([data-tab="cobros"]) { display: none; }
-      .pf-tabs, .pf-menu, .pf-back { display: none; }
-
-      /* Categoría: un campo que se abre al tocarlo */
-      #store-profile-form .catfield { position: relative; }
-      #store-profile-form .catfield__trigger {
-        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-        width: 100%; text-align: left; cursor: pointer; font-family: inherit;
-      }
-      #store-profile-form .catfield__value { display: inline-flex; align-items: center; gap: 0.55rem; min-width: 0; font-size: 1rem; color: var(--bl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      #store-profile-form .catfield__value.is-empty { color: var(--bl-text-secondary); }
-      #store-profile-form .catfield__icon { color: var(--bl-vendor-accent); }
-      #store-profile-form .catfield__chev { flex-shrink: 0; font-size: 0.8rem; color: var(--bl-text-secondary); transition: transform 0.15s; }
-      #store-profile-form .catfield.is-open .catfield__chev { transform: rotate(180deg); }
-      /* La etiqueta de un botón nunca está "vacía": siempre arriba, chica. */
-      #store-profile-form .catfield > label { top: 1.05rem; font-size: 0.75rem; font-weight: 500; }
-      #store-profile-form .catfield.is-open .catfield__trigger { border-color: var(--bl-vendor-accent); background: var(--bl-surface); box-shadow: var(--pf-ring); }
-      #store-profile-form .catfield__panel {
-        position: absolute; z-index: 20; top: calc(100% + 0.4rem); left: 0; right: 0; margin: 0;
-        max-height: min(22rem, 55vh); overflow-y: auto; padding: 0.6rem;
-        background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: 16px; box-shadow: var(--bl-shadow-lg);
-      }
-      #store-profile-form .catfield__panel[hidden] { display: none; }
-      #store-profile-form .catfield__panel .catpick__grid { margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr)); }
-
-      @media (min-width: 960px) {
-        /* Pestañas arriba: una tarjeta por vez en vez de un scroll larguísimo */
-        .pf-wrap { max-width: 920px; }
-        .pf-tabs {
-          display: inline-flex; gap: 0.25rem; margin: 0 0 1.25rem; padding: 0.3rem;
-          background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); max-width: 100%; overflow-x: auto;
-        }
-        .pf-tab {
-          display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.15rem; border: 0; border-radius: var(--bl-radius-pill);
-          background: none; font: inherit; font-size: 0.9375rem; font-weight: 500; color: var(--bl-text-secondary); cursor: pointer; white-space: nowrap;
-          transition: background-color 0.15s, color 0.15s;
-        }
-        .pf-tab:hover { color: var(--bl-text); }
-        .pf-tab.is-active { background: var(--bl-surface); color: var(--bl-vendor-accent); font-weight: 600; box-shadow: var(--bl-shadow-sm); }
-        .pf-tab:focus-visible { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
-        /* Datos cortos de a dos: la tarjeta deja de ser una columna angosta y larga */
-        #store-profile-form .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.25rem; }
-        #store-profile-form .social-row { margin: 0; }
-        #store-profile-form .pf-card { padding: 1.75rem 2rem 2rem; }
-        #store-profile-form .catfield__panel { left: auto; width: min(34rem, calc(100vw - 4rem)); }
-        #store-profile-form .sl-map { height: 280px; }
-        #store-profile-form .pf-actions { justify-content: flex-end; }
-      }
-
-      @media (max-width: 959px) {
-        #store-profile-form .social-grid { display: block; }
-        #store-profile-form .social-row { margin-bottom: 0.75rem; }
-        /* Pantalla 1: lista de secciones, cada una con su resumen */
-        #store-profile-section[data-view="menu"] .pf-menu {
-          display: block; overflow: hidden; margin-bottom: 1rem;
-          background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: 18px; box-shadow: var(--bl-shadow-card);
-        }
-        #store-profile-section[data-view="menu"] #store-profile-form .pf-card { display: none; }
-        #store-profile-section[data-view="menu"] #store-profile-form:not(.is-dirty) .pf-actions { display: none; }
-        .pf-menu__item {
-          display: flex; align-items: center; gap: 0.85rem; width: 100%; min-height: 4.5rem; padding: 0.85rem 1rem;
-          border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
-        }
-        .pf-menu__item + .pf-menu__item { border-top: 1px solid var(--bl-border-light); }
-        .pf-menu__item:active { background: var(--bl-surface-hover); }
-        .pf-menu__icon {
-          flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 12px; display: grid; place-items: center;
-          background: rgba(var(--bl-vendor-accent-rgb), 0.1); color: var(--bl-vendor-accent);
-        }
-        .pf-menu__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
-        .pf-menu__title { font-size: 1rem; font-weight: 600; color: var(--bl-text); }
-        .pf-menu__sub { font-size: 0.8125rem; color: var(--bl-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pf-menu__sub.is-warn { color: #b45309; font-weight: 500; }
-        .pf-menu__chev { flex-shrink: 0; font-size: 0.8rem; color: var(--bl-text-muted); }
-        /* Pantalla 2: una sección, con "Volver" */
-        #store-profile-section[data-view="section"] .pf-title { display: none; }
-        #store-profile-section[data-view="section"] .pf-back {
-          display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; margin: 0 0 0.75rem -0.25rem; padding: 0 0.75rem 0 0.25rem;
-          border: 0; background: none; font: inherit; font-size: 1rem; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer;
-        }
-        #store-profile-section[data-view="section"] .pf-menu { display: none; }
-        #store-profile-form .pf-card { padding: 1.25rem 1.1rem 1.35rem; }
-        #store-profile-form .pf-card__title { font-size: 1.125rem; }
-      }
+      .social-row__label { flex-shrink: 0; width: 6rem; font-weight: 600; font-size: 0.85rem; color: var(--bl-text); }
+      .social-row__input { flex: 1; min-width: 0; }
 
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
         .sl-map { height: 260px; }
         .sl-btn { flex: 1 1 100%; justify-content: center; }
+        .social-row { flex-wrap: wrap; }
+        .social-row__label { width: 100%; }
         .pf-actions { justify-content: stretch; }
         .pf-actions .form-btn { width: 100%; }
         .pubform__card { padding: 1.1rem; }
@@ -1463,68 +1295,27 @@
             <!-- === Perfil de mi comercio === -->
             <section class="mc-section" data-section="perfil-comercio" hidden>
             <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->
-            <div id="store-profile-section" class="pf-wrap" data-view="menu">
+            <div id="store-profile-section" class="pf-wrap">
               <h2 class="pf-title">Perfil de mi comercio</h2>
-              <!-- Solo en pantallas anchas (>= 960 px): una tarjeta por vez. En celular
-                   se ve todo seguido y estos botones no se muestran. js/store-profile-ui.js -->
-              <nav class="pf-tabs" id="store-profile-tabs" aria-label="Secciones del perfil">
-                <button type="button" class="pf-tab is-active" data-pf-tab="datos" aria-pressed="true"><i class="fa-solid fa-store" aria-hidden="true"></i> Mi comercio</button>
-                <button type="button" class="pf-tab" data-pf-tab="contacto" aria-pressed="false"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Contacto y mapa</button>
-                <button type="button" class="pf-tab" data-pf-tab="redes" aria-pressed="false"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Redes</button>
-                <button type="button" class="pf-tab" data-pf-tab="cobros" aria-pressed="false"><i class="fa-solid fa-credit-card" aria-hidden="true"></i> Cobros</button>
-              </nav>
-              <!-- Celular: lista de secciones (con un resumen de cada una) y, al tocar una,
-                   solo esa sección con "Volver". En PC esta lista no se muestra. -->
-              <nav class="pf-menu" id="store-profile-menu" aria-label="Secciones del perfil">
-                <button type="button" class="pf-menu__item" data-pf-tab="datos">
-                  <span class="pf-menu__icon"><i class="fa-solid fa-store" aria-hidden="true"></i></span>
-                  <span class="pf-menu__text"><span class="pf-menu__title">Mi comercio</span><span class="pf-menu__sub" data-pf-summary="datos"></span></span>
-                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="pf-menu__item" data-pf-tab="contacto">
-                  <span class="pf-menu__icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
-                  <span class="pf-menu__text"><span class="pf-menu__title">Contacto y mapa</span><span class="pf-menu__sub" data-pf-summary="contacto"></span></span>
-                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="pf-menu__item" data-pf-tab="redes">
-                  <span class="pf-menu__icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></span>
-                  <span class="pf-menu__text"><span class="pf-menu__title">Redes sociales</span><span class="pf-menu__sub" data-pf-summary="redes"></span></span>
-                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="pf-menu__item" data-pf-tab="cobros">
-                  <span class="pf-menu__icon"><i class="fa-solid fa-credit-card" aria-hidden="true"></i></span>
-                  <span class="pf-menu__text"><span class="pf-menu__title">Cobros</span><span class="pf-menu__sub" data-pf-summary="cobros"></span></span>
-                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
-                </button>
-              </nav>
-              <button type="button" class="pf-back" id="store-profile-back"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Perfil de mi comercio</button>
-              <form id="store-profile-form" data-tab="datos">
+              <form id="store-profile-form">
                 <!-- Datos del comercio -->
-                <div class="pf-card" data-tab="datos">
+                <div class="pf-card">
                   <h3 class="pf-card__title">Datos del comercio</h3>
                   <p class="pf-card__hint">Cómo se presenta tu tienda a los clientes.</p>
                   <div class="pf-grid">
-                    <div class="pf-field fl">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-name">Nombre del comercio</label>
                       <input type="text" id="store-name" class="form-input" placeholder="Ej: Panadería La Espiga" required />
-                      <label for="store-name">Nombre del comercio</label>
                     </div>
-                    <!-- Categoría: un campo que muestra la elegida; la grilla de rubros se
-                         abre debajo solo al tocarlo (js/store-profile-ui.js). Los radios
-                         siguen siendo los mismos (name="store-category"). -->
-                    <div class="pf-field fl catfield" id="store-category-field">
-                      <button type="button" class="form-input catfield__trigger" id="store-category-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="store-category-panel">
-                        <span class="catfield__value is-empty" id="store-category-value">Elegí una categoría</span>
-                        <i class="fa-solid fa-chevron-down catfield__chev" aria-hidden="true"></i>
-                      </button>
-                      <label for="store-category-trigger">Categoría</label>
-                      <fieldset class="catpick catfield__panel" id="store-category-panel" hidden>
-                        <legend class="sr-only">Categoría de tu comercio</legend>
+                    <div class="pf-field pf-field--full">
+                      <fieldset class="catpick">
+                        <legend class="form-label">Categoría</legend>
                         <div class="catpick__grid" id="store-category-options"></div>
                       </fieldset>
                     </div>
-                    <div class="pf-field pf-field--full fl">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-description">Descripción</label>
                       <textarea id="store-description" class="form-input" rows="3" placeholder="Contales a tus clientes sobre tu comercio"></textarea>
-                      <label for="store-description">Descripción</label>
                     </div>
                     <div class="pf-field pf-field--full">
                       <label class="form-label" for="store-logo-file">Logo</label>
@@ -1563,56 +1354,20 @@
                 </div>
 
                 <!-- Contacto y ubicación -->
-                <div class="pf-card" data-tab="contacto">
+                <div class="pf-card">
                   <h3 class="pf-card__title">Contacto y ubicación</h3>
                   <p class="pf-card__hint">Dónde te encuentran y cómo comunicarse con vos.</p>
                   <div class="pf-grid">
-                    <div class="pf-field fl">
-                      <input type="text" id="store-address" class="form-input" placeholder="Calle y número" autocomplete="street-address" />
-                      <label for="store-address">Dirección</label>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-address">Dirección</label>
+                      <input type="text" id="store-address" class="form-input" />
                     </div>
-                    <div class="pf-field fl">
-                      <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
-                      <label for="store-zone">Zona / Barrio</label>
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-maps-url">Link de Google Maps de tu local <span class="pf-optional">(opcional)</span></label>
+                      <input type="text" id="store-maps-url" class="form-input" inputmode="url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://maps.app.goo.gl/..." />
+                      <small class="pf-card__hint">Abrí tu local en Google Maps, tocá "Compartir" y pegá el link. Con él el repartidor llega justo a tu puerta. Si no lo cargás, llega igual por la dirección.</small>
                     </div>
-                    <div class="pf-field fl">
-                      <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
-                      <label for="store-hours">Horarios de atención</label>
-                    </div>
-                    <!-- El vendedor decide si lo contactan por WhatsApp o no desde el
-                         botón "Contactar al vendedor" (producto.js/comercio.js) --
-                         stores.contact_method. Un solo número (stores.whatsapp): ya no
-                         hay un teléfono aparte para "llamar", que quedaba duplicado con
-                         este campo. -->
-                    <div class="pf-field pf-field--full" role="radiogroup" aria-labelledby="store-contact-label">
-                      <span class="form-label" id="store-contact-label">¿Cómo querés que te contacten los clientes?</span>
-                      <div class="pf-radio-group">
-                        <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="whatsapp" checked />
-                          WhatsApp
-                        </label>
-                        <label class="pf-check">
-                          <input type="radio" name="store-contact-method" value="none" />
-                          Ninguno
-                        </label>
-                      </div>
-                    </div>
-                    <div class="pf-field pf-field--full" id="store-whatsapp-field">
-                      <div class="pf-phone">
-                        <div id="store-whatsapp-dial-slot"></div>
-                        <div class="fl">
-                          <input type="tel" id="store-whatsapp" class="form-input" inputmode="tel" autocomplete="tel-national" placeholder="Ej: 3329123456" aria-describedby="store-whatsapp-hint" />
-                          <label for="store-whatsapp">WhatsApp</label>
-                        </div>
-                      </div>
-                      <p class="pf-card__hint" id="store-whatsapp-hint">Los clientes te van a escribir a este número por WhatsApp.</p>
-                    </div>
-                                      <div class="pf-field pf-field--full fl">
-                      <input type="text" id="store-maps-url" class="form-input" inputmode="url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://maps.app.goo.gl/..." aria-describedby="store-maps-url-hint" />
-                      <label for="store-maps-url">Link de Google Maps <span class="pf-optional">(opcional)</span></label>
-                      <small class="pf-card__hint" id="store-maps-url-hint">Abrí tu local en Google Maps, tocá "Compartir" y pegá el link. Con él el repartidor llega justo a tu puerta. Si no lo cargás, llega igual por la dirección.</small>
-                    </div>
-                                        <!-- Ubicación del local (stores.lat/lng, migración 146): la usa el
+                    <!-- Ubicación del local (stores.lat/lng, migración 146): la usa el
                          buscador para decirle al vecino qué comercio le queda más cerca.
                          Lo maneja js/store-location-map.js. -->
                     <div class="pf-field pf-field--full sl-field" id="store-location-field">
@@ -1627,21 +1382,52 @@
                       <span class="sr-only" id="store-loc-keys">Mové el mapa con las flechas, acercá con más y menos, y apretá Enter para poner el pin en el centro.</span>
                       <p class="sl-status" id="store-loc-status" aria-live="polite"></p>
                     </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-zone">Zona / Barrio</label>
+                      <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
                     </div>
+                    <div class="pf-field">
+                      <label class="form-label" for="store-hours">Horarios de atención</label>
+                      <input type="text" id="store-hours" class="form-input" placeholder="Ej: Lunes a viernes 9 a 18hs" />
+                    </div>
+                    <!-- El vendedor decide si lo contactan por WhatsApp o no desde el
+                         botón "Contactar al vendedor" (producto.js/comercio.js) --
+                         stores.contact_method. Un solo número (stores.whatsapp): ya no
+                         hay un teléfono aparte para "llamar", que quedaba duplicado con
+                         este campo. -->
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label">¿Cómo querés que te contacten los clientes?</label>
+                      <div class="pf-radio-group">
+                        <label class="pf-check">
+                          <input type="radio" name="store-contact-method" value="whatsapp" checked />
+                          WhatsApp
+                        </label>
+                        <label class="pf-check">
+                          <input type="radio" name="store-contact-method" value="none" />
+                          Ninguno
+                        </label>
+                      </div>
+                    </div>
+                    <div class="pf-field pf-field--full" id="store-whatsapp-field">
+                      <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
+                      <div style="display: flex; gap: 0.5rem;">
+                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
+                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      </div>
+                      <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Redes sociales: link + switch "mostrar" por red -- se muestran como
                      íconos en la página del comercio (comercio.js, buildStoreHeader). -->
-                <div class="pf-card" data-tab="redes">
+                <div class="pf-card">
                   <h3 class="pf-card__title">Redes sociales</h3>
                   <p class="pf-card__hint">Se muestran como íconos en la página de tu comercio. Dejá el link vacío para no mostrar esa red.</p>
-                  <div class="social-grid">
                   <div class="social-row">
                     <i class="fa-brands fa-instagram social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-instagram" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://instagram.com/tu-comercio" />
-                      <label for="store-social-instagram">Instagram</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-instagram">Instagram</label>
+                    <input type="text" id="store-social-instagram" class="form-input social-row__input" placeholder="https://instagram.com/tu-comercio" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-instagram-show" checked aria-label="Mostrar Instagram" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
@@ -1649,10 +1435,8 @@
                   </div>
                   <div class="social-row">
                     <i class="fa-brands fa-facebook social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-facebook" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://facebook.com/tu-comercio" />
-                      <label for="store-social-facebook">Facebook</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-facebook">Facebook</label>
+                    <input type="text" id="store-social-facebook" class="form-input social-row__input" placeholder="https://facebook.com/tu-comercio" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-facebook-show" checked aria-label="Mostrar Facebook" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
@@ -1660,10 +1444,8 @@
                   </div>
                   <div class="social-row">
                     <i class="fa-brands fa-tiktok social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-tiktok" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://tiktok.com/@tu-comercio" />
-                      <label for="store-social-tiktok">TikTok</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-tiktok">TikTok</label>
+                    <input type="text" id="store-social-tiktok" class="form-input social-row__input" placeholder="https://tiktok.com/@tu-comercio" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-tiktok-show" checked aria-label="Mostrar TikTok" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
@@ -1671,10 +1453,8 @@
                   </div>
                   <div class="social-row">
                     <i class="fa-brands fa-x-twitter social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-x" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://x.com/tu-comercio" />
-                      <label for="store-social-x">X (Twitter)</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-x">X (Twitter)</label>
+                    <input type="text" id="store-social-x" class="form-input social-row__input" placeholder="https://x.com/tu-comercio" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-x-show" checked aria-label="Mostrar X (Twitter)" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
@@ -1682,10 +1462,8 @@
                   </div>
                   <div class="social-row">
                     <i class="fa-brands fa-youtube social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-youtube" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtube.com/@tu-comercio" />
-                      <label for="store-social-youtube">YouTube</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-youtube">YouTube</label>
+                    <input type="text" id="store-social-youtube" class="form-input social-row__input" placeholder="https://youtube.com/@tu-comercio" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-youtube-show" checked aria-label="Mostrar YouTube" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
@@ -1693,23 +1471,20 @@
                   </div>
                   <div class="social-row">
                     <i class="fa-solid fa-globe social-row__icon" aria-hidden="true"></i>
-                    <div class="fl">
-                      <input type="text" id="store-social-website" class="form-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://tu-comercio.com" />
-                      <label for="store-social-website">Sitio web</label>
-                    </div>
+                    <label class="social-row__label" for="store-social-website">Sitio web</label>
+                    <input type="text" id="store-social-website" class="form-input social-row__input" placeholder="https://tu-comercio.com" />
                     <label class="social-toggle">
                       <input type="checkbox" id="store-social-website-show" checked aria-label="Mostrar sitio web" />
                       <span class="social-toggle__track" aria-hidden="true"></span>
                     </label>
                   </div>
                 </div>
-                </div>
 
                 <!-- Cobrar con Mercado Pago (A113-274): el interruptor es la decisión del
                      comercio. Activarlo muestra "Conectar" (OAuth automático); apagarlo
                      estando conectado desvincula. Sin Mercado Pago se cobra solo por
                      transferencia (el bloque de abajo). -->
-                <div class="pf-card" id="mp-connect-section" data-tab="cobros">
+                <div class="pf-card" id="mp-connect-section">
                   <h3 class="pf-card__title">Mercado Pago</h3>
                   <p class="pf-card__hint">Si lo activás, tus clientes pueden pagarte con Mercado Pago (tarjeta, dinero en cuenta, cuotas). La plata llega <strong>directo a tu cuenta</strong> de Mercado Pago y Baradero Local descuenta su comisión automáticamente. Si no lo activás, cobrás solo por transferencia con los datos de abajo.</p>
                   <div class="mp-row">
@@ -1731,35 +1506,35 @@
                 <!-- A113-299: sin esto el cliente elegía "Transferencia bancaria" en el
                      carrito y no tenía forma de saber a dónde mandar la plata -- el pedido
                      quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
-                <div class="pf-card" data-tab="cobros">
+                <div class="pf-card">
                   <h3 class="pf-card__title">Transferencia bancaria</h3>
                   <p class="pf-card__hint">Cuando un cliente paga por transferencia, ve estos datos con un botón "Copiar" en cada uno, junto con el monto y el número de pedido. <strong>El alias es obligatorio para publicar productos.</strong></p>
                   <div class="pf-grid">
-                    <div class="pf-field fl">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-alias">Alias <span class="pf-required" aria-hidden="true">*</span><span class="sr-only">(obligatorio para publicar productos)</span></label>
                       <input id="store-transfer-alias" class="form-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Ej: MIVENTA.BARADERO" />
-                      <label for="store-transfer-alias">Alias <span class="pf-required" aria-hidden="true">*</span><span class="sr-only">(obligatorio para publicar productos)</span></label>
                     </div>
-                    <div class="pf-field fl">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-cbu">CBU o CVU</label>
                       <input id="store-transfer-cbu" class="form-input" type="text" inputmode="numeric" maxlength="30" autocomplete="off" placeholder="22 números" />
-                      <label for="store-transfer-cbu">CBU o CVU</label>
                     </div>
-                    <div class="pf-field fl">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-holder">Titular de la cuenta</label>
                       <input id="store-transfer-holder" class="form-input" type="text" maxlength="80" placeholder="Como figura en el banco" />
-                      <label for="store-transfer-holder">Titular de la cuenta</label>
                     </div>
-                    <div class="pf-field fl">
+                    <div class="pf-field">
+                      <label class="form-label" for="store-transfer-bank">Banco o billetera</label>
                       <input id="store-transfer-bank" class="form-input" type="text" maxlength="60" placeholder="Ej: Banco Nación, Mercado Pago" />
-                      <label for="store-transfer-bank">Banco o billetera</label>
                     </div>
-                    <div class="pf-field pf-field--full fl">
+                    <div class="pf-field pf-field--full">
+                      <label class="form-label" for="store-transfer-info">Otros datos (opcional)</label>
                       <textarea id="store-transfer-info" class="form-input" rows="2" placeholder="Ej: Mandá el comprobante por WhatsApp y te confirmo en el día."></textarea>
-                      <label for="store-transfer-info">Otros datos (opcional)</label>
                     </div>
                   </div>
                 </div>
 
                 <div class="pf-actions">
-                  <button type="submit" class="form-btn" disabled>Guardar cambios</button>
+                  <button type="submit" class="form-btn">Guardar perfil</button>
                 </div>
               </form>
             </div>

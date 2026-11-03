@@ -31,7 +31,6 @@ import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
 import { createStoreLocationPicker } from './store-location-map.js';
-import { initStoreProfileUi, syncStoreCategoryTrigger, revealProfileField, refreshProfileSummaries } from './store-profile-ui.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -451,7 +450,6 @@ function renderStoreCategoryOptions() {
   // había un rubro pendiente de marcar (ver setStoreCategorySlug), se aplica
   // recién ahora que existen los radios para marcarlo.
   if (pendingStoreCategorySlug) setStoreCategorySlug(pendingStoreCategorySlug);
-  syncStoreCategoryTrigger();
 }
 
 /** Marca el rubro del comercio (se usa al precargar el perfil). */
@@ -460,7 +458,6 @@ function setStoreCategorySlug(slug) {
   document.querySelectorAll('input[name="store-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
-  syncStoreCategoryTrigger();
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
@@ -2742,7 +2739,6 @@ function getStoreLocationPicker() {
     root,
     getAddress: () => document.getElementById('store-address')?.value || '',
     mapsUrlInput: document.getElementById('store-maps-url'),
-    onChange: () => syncProfileSave(),
   });
   return storeLocationPicker;
 }
@@ -2760,7 +2756,6 @@ function focusLocationFromUrl() {
   // La sección se muestra con el shell (al iniciar o en el hashchange): se
   // reintenta un momento hasta que el mapa esté a la vista.
   let tries = 0;
-  revealProfileField('store-location-field'); // en PC/celular: abre la sección que tiene el mapa
   const tick = () => {
     const field = document.getElementById('store-location-field');
     if (field && field.offsetParent) {
@@ -2830,7 +2825,6 @@ function fillStoreProfileForm(store) {
       .then(({ data, error }) => {
         if (error) { console.warn('No se pudo cargar el link de Google Maps:', error.message); return; }
         mapsInput.value = data?.maps_url || '';
-        markProfileClean([mapsInput]);
       });
   }
 
@@ -2855,7 +2849,6 @@ function fillStoreProfileForm(store) {
         const value = data?.[col] || '';
         input.value = col === 'transfer_cbu' && value ? formatCbuForDisplay(value) : value;
       });
-      markProfileClean([transferInfoInput, ...TRANSFER_FIELD_IDS.map(([, id]) => document.getElementById(id))]);
     };
     supabase.from('stores').select('transfer_info, transfer_alias, transfer_cbu, transfer_holder, transfer_bank').eq('id', store.id).single()
       .then(async ({ data, error }) => {
@@ -2866,8 +2859,6 @@ function fillStoreProfileForm(store) {
         fill(legacy.data);
       });
   }
-
-  markProfileClean();
 }
 
 /**
@@ -2920,7 +2911,7 @@ function updateAliasGate() {
 /** Lleva al campo Alias del perfil del comercio. */
 function goToAliasField() {
   const focusAlias = () => {
-    const input = revealProfileField('store-transfer-alias');
+    const input = document.getElementById('store-transfer-alias');
     if (!input) return;
     input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     input.focus({ preventScroll: true });
@@ -3008,47 +2999,6 @@ function toggleStoreWhatsappField(contactMethod) {
 // componente y misma lista que el teléfono de "Mi perfil"/direcciones).
 let storeWhatsappDial = null;
 
-// "Guardar cambios" se prende solo si algo cambió respecto de lo guardado.
-// Cada campo recuerda su valor de base al llenarse (los que llegan en una
-// consulta aparte la marcan al llegar). Quedan afuera el logo y Mercado Pago:
-// se guardan solos, sin este botón.
-const SAVE_PROFILE_LABEL = 'Guardar cambios';
-const profileBase = new WeakMap();
-let profileDialBase = null;
-let profileCategoryBase = '';
-
-const profileFieldValue = (el) => (el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value);
-
-function profileControls() {
-  const form = document.getElementById('store-profile-form');
-  if (!form) return [];
-  return [...form.querySelectorAll('input:not([type="file"]):not([name="store-category"]), textarea')]
-    .filter((el) => !el.closest('#mp-connect-section'));
-}
-
-/** Toma los valores actuales como "lo guardado" (todos, o solo `els`). */
-function markProfileClean(els = null) {
-  (els || profileControls()).forEach((el) => { if (el) profileBase.set(el, profileFieldValue(el)); });
-  if (!els) {
-    profileDialBase = storeWhatsappDial ? storeWhatsappDial.getValue() : null;
-    profileCategoryBase = getStoreCategorySlug() || pendingStoreCategorySlug || '';
-  }
-  syncProfileSave();
-}
-
-function syncProfileSave() {
-  const btn = document.querySelector('#store-profile-form button[type="submit"]');
-  // Guardando (setLoading le pone el spinner) o mostrando "Guardado": no tocar.
-  if (!btn || btn.classList.contains('is-done') || btn.querySelector('.fa-spinner')) return;
-  const dirty = profileControls().some((el) => profileBase.has(el) && profileFieldValue(el) !== profileBase.get(el))
-    || (storeWhatsappDial && profileDialBase !== null && storeWhatsappDial.getValue() !== profileDialBase)
-    || (getStoreCategorySlug() || pendingStoreCategorySlug || '') !== profileCategoryBase
-    || Boolean(getStoreLocationPicker()?.isDirty());
-  btn.disabled = !dirty;
-  btn.form?.classList.toggle('is-dirty', dirty);
-  refreshProfileSummaries(); // también corre al llegar lo que se carga aparte (Maps, transferencia)
-}
-
 function setupStoreProfileForm() {
   const form = document.getElementById('store-profile-form');
   if (!form) return;
@@ -3057,7 +3007,6 @@ function setupStoreProfileForm() {
   if (dialSlot && !storeWhatsappDial) {
     storeWhatsappDial = buildDropdown({
       options: PHONE_COUNTRY_OPTIONS, value: DEFAULT_PHONE_DIAL, ariaLabel: 'Característica de país',
-      onSelect: () => syncProfileSave(),
     });
     dialSlot.appendChild(storeWhatsappDial.element);
   }
@@ -3066,34 +3015,30 @@ function setupStoreProfileForm() {
     radio.addEventListener('change', () => toggleStoreWhatsappField(radio.value));
   });
 
-  form.addEventListener('input', syncProfileSave);
-  form.addEventListener('change', syncProfileSave);
-  initStoreProfileUi(form);
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = form.querySelector('button[type="submit"]');
-    setLoading(submitBtn, true, SAVE_PROFILE_LABEL);
+    setLoading(submitBtn, true, 'Guardar perfil');
 
     const nameValue = document.getElementById('store-name').value.trim();
     if (!isValidShopName(nameValue)) {
       showToast('Ingresá un nombre de comercio válido (entre 3 y 100 caracteres).', 'error');
-      setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
+      setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
 
     const transfer = readTransferFields();
     if (!transfer.ok) {
       showToast(transfer.message, 'error');
-      revealProfileField(transfer.field)?.focus();
-      setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
+      document.getElementById(transfer.field)?.focus();
+      setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
 
     const categorySlugValue = getStoreCategorySlug();
     if (!categorySlugValue) {
       showToast('Elegí una categoría para tu comercio.', 'error');
-      setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
+      setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
 
@@ -3105,7 +3050,7 @@ function setupStoreProfileForm() {
 
     if (contactMethodValue === 'whatsapp' && !isValidPhone(whatsappValue)) {
       showToast('Ingresá un número de WhatsApp válido para que los clientes te contacten por ahí.', 'error');
-      setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
+      setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
     const whatsappDialValue = storeWhatsappDial ? storeWhatsappDial.getValue() : DEFAULT_PHONE_DIAL;
@@ -3115,8 +3060,8 @@ function setupStoreProfileForm() {
     const mapsUrl = normalizeMapsUrl(document.getElementById('store-maps-url')?.value);
     if (!mapsUrl.ok) {
       showToast(mapsUrl.message, 'error');
-      revealProfileField('store-maps-url')?.focus();
-      setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
+      document.getElementById('store-maps-url')?.focus();
+      setLoading(submitBtn, false, 'Guardar perfil');
       return;
     }
 
@@ -3141,14 +3086,10 @@ function setupStoreProfileForm() {
       })
       .eq('id', currentStoreId);
 
-    // Lo que no se pudo guardar sigue contando como cambio pendiente.
-    const stillDirty = [];
-
     // Migración 139: el link de Google Maps también va aparte, por la misma razón.
     if (document.getElementById('store-maps-url')) {
       const { error: mapsError } = await supabase.from('stores').update({ maps_url: mapsUrl.value }).eq('id', currentStoreId);
       if (mapsError) {
-        stillDirty.push(document.getElementById('store-maps-url'));
         console.error('Error al guardar el link de Google Maps:', mapsError);
         showToast('No se pudo guardar el link de Google Maps. El resto del perfil sí se guardó.', 'error');
       } else if (mapsUrl.value) {
@@ -3187,7 +3128,6 @@ function setupStoreProfileForm() {
       updateAliasGate();
     }
     if (transferError) {
-      TRANSFER_FIELD_IDS.forEach(([, id]) => stillDirty.push(document.getElementById(id)));
       console.error('Error al guardar los datos de transferencia (se reintenta solo con transfer_info):', transferError);
       ({ error: transferError } = await supabase
         .from('stores')
@@ -3212,26 +3152,7 @@ function setupStoreProfileForm() {
         try { localStorage.setItem(`bl_vender_shopname_${currentUserId}`, nameValue); } catch { /* ignore */ }
       }
     }
-    setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
-    if (error) return;
-
-    const keep = stillDirty.map((el) => [el, profileBase.get(el)]);
-    const allSaved = !keep.length && !getStoreLocationPicker()?.isDirty();
-    // Todo guardado: el botón lo confirma un momento donde está (sigue
-    // flotando) y recién después se apaga y vuelve al final del formulario.
-    if (allSaved) {
-      submitBtn.classList.add('is-done');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Guardado';
-    }
-    markProfileClean();
-    keep.forEach(([el, base]) => profileBase.set(el, base));
-    if (!allSaved) { syncProfileSave(); return; }
-    setTimeout(() => {
-      submitBtn.classList.remove('is-done');
-      submitBtn.textContent = SAVE_PROFILE_LABEL;
-      syncProfileSave();
-    }, 1600);
+    setLoading(submitBtn, false, 'Guardar perfil');
   });
 }
 
