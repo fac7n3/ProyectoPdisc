@@ -6240,6 +6240,13 @@ Sigue de la tanda 1 (entrada de arriba), a pedido del usuario ("sigue").
   esperando una confirmación que nadie veía (el conector trata el bloque como sensible); el
   segundo, con el usuario atento, corrió. **Pendiente:** el tope de cupones es por IP: varios
   vecinos detrás de la misma IP (un local, un colegio) comparten los 30 intentos.
+  **Verificado en producción (por el gateway real):** (a) la IP se lee y se guarda hasheada
+  (`ip:<hash>`); (b) **no se puede falsificar**: 3 pedidos con `cf-connecting-ip`,
+  `x-forwarded-for` y `x-real-ip` inventados no dejaron ningún contador con esas IPs (el gateway
+  pisa los headers del cliente); (c) **no se pudo disparar el tope de punta a punta desde el
+  sandbox** porque sale por un grupo de IPs que rota (160.79.106.x, una distinta por pedido): el
+  corte de 30 / 31 solo está probado con headers simulados dentro de la base. Para verlo de
+  verdad: 31 cupones seguidos desde un navegador de casa.
 - **Font Awesome recortado** (`npm run subset-icons`, `scripts/subset-fontawesome.mjs` +
   `scripts/fa-usage.mjs`, test `js/fontawesome-subset.test.mjs`). De ~400 KB (CSS 101 + solid
   153 + brands 115 + regular 25) a **~41 KB** (CSS 20 + solid 15,6 + regular 3 + brands 1,4):
