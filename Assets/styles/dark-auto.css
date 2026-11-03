@@ -1913,7 +1913,61 @@ html[data-theme="dark"] .mp-status--ok {
 html[data-theme="dark"] .social-row__icon {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] #store-profile-form .fl .form-input {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] #store-profile-form .fl > label {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] #store-profile-form .fl .form-input::placeholder {
+  color: transparent;
+}
+html[data-theme="dark"] #store-profile-form .fl .form-input:focus::placeholder {
+  color: var(--bl-text-muted);
+}
+html[data-theme="dark"] #store-profile-form .pf-field > .form-label,
+html[data-theme="dark"] #store-profile-form .catpick > legend.form-label {
+  color: var(--bl-text-secondary);
+}
 html[data-theme="dark"] #store-profile-form .pf-actions .form-btn.is-done,
 html[data-theme="dark"] #store-profile-form .pf-actions .form-btn.is-done:disabled {
   background: color-mix(in srgb, var(--bl-success) 55%, var(--bl-primary-deeper));
+}
+html[data-theme="dark"] #store-profile-form .catfield__value {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] #store-profile-form .catfield__value.is-empty {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] #store-profile-form .catfield__icon {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] #store-profile-form .catfield__chev {
+  color: var(--bl-text-secondary);
+}
+@media (min-width: 960px) {
+html[data-theme="dark"] .pf-tab {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .pf-tab:hover {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .pf-tab.is-active {
+  background: var(--bl-surface);
+  color: var(--dk-accent-text);
+}
+}
+@media (max-width: 959px) {
+html[data-theme="dark"] .pf-menu__icon {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .pf-menu__sub {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .pf-menu__sub.is-warn {
+  color: #f5b687;
+}
+html[data-theme="dark"] #store-profile-section[data-view="section"] .pf-back {
+  color: var(--dk-accent-text);
+}
 }

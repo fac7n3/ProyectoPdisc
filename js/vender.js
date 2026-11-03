@@ -31,6 +31,7 @@ import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
 import { createStoreLocationPicker } from './store-location-map.js';
+import { initStoreProfileUi, syncStoreCategoryTrigger, revealProfileField, refreshProfileSummaries } from './store-profile-ui.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -450,6 +451,7 @@ function renderStoreCategoryOptions() {
   // había un rubro pendiente de marcar (ver setStoreCategorySlug), se aplica
   // recién ahora que existen los radios para marcarlo.
   if (pendingStoreCategorySlug) setStoreCategorySlug(pendingStoreCategorySlug);
+  syncStoreCategoryTrigger();
 }
 
 /** Marca el rubro del comercio (se usa al precargar el perfil). */
@@ -458,6 +460,7 @@ function setStoreCategorySlug(slug) {
   document.querySelectorAll('input[name="store-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+  syncStoreCategoryTrigger();
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
@@ -2757,6 +2760,7 @@ function focusLocationFromUrl() {
   // La sección se muestra con el shell (al iniciar o en el hashchange): se
   // reintenta un momento hasta que el mapa esté a la vista.
   let tries = 0;
+  revealProfileField('store-location-field'); // en PC/celular: abre la sección que tiene el mapa
   const tick = () => {
     const field = document.getElementById('store-location-field');
     if (field && field.offsetParent) {
@@ -2916,7 +2920,7 @@ function updateAliasGate() {
 /** Lleva al campo Alias del perfil del comercio. */
 function goToAliasField() {
   const focusAlias = () => {
-    const input = document.getElementById('store-transfer-alias');
+    const input = revealProfileField('store-transfer-alias');
     if (!input) return;
     input.scrollIntoView({ behavior: 'smooth', block: 'center' });
     input.focus({ preventScroll: true });
@@ -3042,6 +3046,7 @@ function syncProfileSave() {
     || Boolean(getStoreLocationPicker()?.isDirty());
   btn.disabled = !dirty;
   btn.form?.classList.toggle('is-dirty', dirty);
+  refreshProfileSummaries(); // también corre al llegar lo que se carga aparte (Maps, transferencia)
 }
 
 function setupStoreProfileForm() {
@@ -3063,6 +3068,7 @@ function setupStoreProfileForm() {
 
   form.addEventListener('input', syncProfileSave);
   form.addEventListener('change', syncProfileSave);
+  initStoreProfileUi(form);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -3079,7 +3085,7 @@ function setupStoreProfileForm() {
     const transfer = readTransferFields();
     if (!transfer.ok) {
       showToast(transfer.message, 'error');
-      document.getElementById(transfer.field)?.focus();
+      revealProfileField(transfer.field)?.focus();
       setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
       return;
     }
@@ -3109,7 +3115,7 @@ function setupStoreProfileForm() {
     const mapsUrl = normalizeMapsUrl(document.getElementById('store-maps-url')?.value);
     if (!mapsUrl.ok) {
       showToast(mapsUrl.message, 'error');
-      document.getElementById('store-maps-url')?.focus();
+      revealProfileField('store-maps-url')?.focus();
       setLoading(submitBtn, false, SAVE_PROFILE_LABEL);
       return;
     }

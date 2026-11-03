@@ -1081,6 +1081,96 @@
         #store-profile-form .pf-actions .form-btn { width: 100%; }
       }
 
+      /* ---- Una sección por vez (js/store-profile-ui.js) ---- */
+      /* Cada tarjeta lleva data-tab; el formulario, la sección abierta. */
+      #store-profile-form[data-tab="datos"] .pf-card:not([data-tab="datos"]),
+      #store-profile-form[data-tab="contacto"] .pf-card:not([data-tab="contacto"]),
+      #store-profile-form[data-tab="redes"] .pf-card:not([data-tab="redes"]),
+      #store-profile-form[data-tab="cobros"] .pf-card:not([data-tab="cobros"]) { display: none; }
+      .pf-tabs, .pf-menu, .pf-back { display: none; }
+
+      /* Categoría: un campo que se abre al tocarlo */
+      #store-profile-form .catfield { position: relative; }
+      #store-profile-form .catfield__trigger {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+        width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+      }
+      #store-profile-form .catfield__value { display: inline-flex; align-items: center; gap: 0.55rem; min-width: 0; font-size: 1rem; color: var(--bl-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #store-profile-form .catfield__value.is-empty { color: var(--bl-text-secondary); }
+      #store-profile-form .catfield__icon { color: var(--bl-vendor-accent); }
+      #store-profile-form .catfield__chev { flex-shrink: 0; font-size: 0.8rem; color: var(--bl-text-secondary); transition: transform 0.15s; }
+      #store-profile-form .catfield.is-open .catfield__chev { transform: rotate(180deg); }
+      /* La etiqueta de un botón nunca está "vacía": siempre arriba, chica. */
+      #store-profile-form .catfield > label { top: 1.05rem; font-size: 0.75rem; font-weight: 500; }
+      #store-profile-form .catfield.is-open .catfield__trigger { border-color: var(--bl-vendor-accent); background: var(--bl-surface); box-shadow: var(--pf-ring); }
+      #store-profile-form .catfield__panel {
+        position: absolute; z-index: 20; top: calc(100% + 0.4rem); left: 0; right: 0; margin: 0;
+        max-height: min(22rem, 55vh); overflow-y: auto; padding: 0.6rem;
+        background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: 16px; box-shadow: var(--bl-shadow-lg);
+      }
+      #store-profile-form .catfield__panel[hidden] { display: none; }
+      #store-profile-form .catfield__panel .catpick__grid { margin-top: 0; grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr)); }
+
+      @media (min-width: 960px) {
+        /* Pestañas arriba: una tarjeta por vez en vez de un scroll larguísimo */
+        .pf-wrap { max-width: 920px; }
+        .pf-tabs {
+          display: inline-flex; gap: 0.25rem; margin: 0 0 1.25rem; padding: 0.3rem;
+          background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); max-width: 100%; overflow-x: auto;
+        }
+        .pf-tab {
+          display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.15rem; border: 0; border-radius: var(--bl-radius-pill);
+          background: none; font: inherit; font-size: 0.9375rem; font-weight: 500; color: var(--bl-text-secondary); cursor: pointer; white-space: nowrap;
+          transition: background-color 0.15s, color 0.15s;
+        }
+        .pf-tab:hover { color: var(--bl-text); }
+        .pf-tab.is-active { background: var(--bl-surface); color: var(--bl-vendor-accent); font-weight: 600; box-shadow: var(--bl-shadow-sm); }
+        .pf-tab:focus-visible { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
+        /* Datos cortos de a dos: la tarjeta deja de ser una columna angosta y larga */
+        #store-profile-form .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.25rem; }
+        #store-profile-form .social-row { margin: 0; }
+        #store-profile-form .pf-card { padding: 1.75rem 2rem 2rem; }
+        #store-profile-form .catfield__panel { left: auto; width: min(34rem, calc(100vw - 4rem)); }
+        #store-profile-form .sl-map { height: 280px; }
+        #store-profile-form .pf-actions { justify-content: flex-end; }
+      }
+
+      @media (max-width: 959px) {
+        #store-profile-form .social-grid { display: block; }
+        #store-profile-form .social-row { margin-bottom: 0.75rem; }
+        /* Pantalla 1: lista de secciones, cada una con su resumen */
+        #store-profile-section[data-view="menu"] .pf-menu {
+          display: block; overflow: hidden; margin-bottom: 1rem;
+          background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: 18px; box-shadow: var(--bl-shadow-card);
+        }
+        #store-profile-section[data-view="menu"] #store-profile-form .pf-card { display: none; }
+        #store-profile-section[data-view="menu"] #store-profile-form:not(.is-dirty) .pf-actions { display: none; }
+        .pf-menu__item {
+          display: flex; align-items: center; gap: 0.85rem; width: 100%; min-height: 4.5rem; padding: 0.85rem 1rem;
+          border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+        }
+        .pf-menu__item + .pf-menu__item { border-top: 1px solid var(--bl-border-light); }
+        .pf-menu__item:active { background: var(--bl-surface-hover); }
+        .pf-menu__icon {
+          flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 12px; display: grid; place-items: center;
+          background: rgba(var(--bl-vendor-accent-rgb), 0.1); color: var(--bl-vendor-accent);
+        }
+        .pf-menu__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+        .pf-menu__title { font-size: 1rem; font-weight: 600; color: var(--bl-text); }
+        .pf-menu__sub { font-size: 0.8125rem; color: var(--bl-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pf-menu__sub.is-warn { color: #b45309; font-weight: 500; }
+        .pf-menu__chev { flex-shrink: 0; font-size: 0.8rem; color: var(--bl-text-muted); }
+        /* Pantalla 2: una sección, con "Volver" */
+        #store-profile-section[data-view="section"] .pf-title { display: none; }
+        #store-profile-section[data-view="section"] .pf-back {
+          display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; margin: 0 0 0.75rem -0.25rem; padding: 0 0.75rem 0 0.25rem;
+          border: 0; background: none; font: inherit; font-size: 1rem; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer;
+        }
+        #store-profile-section[data-view="section"] .pf-menu { display: none; }
+        #store-profile-form .pf-card { padding: 1.25rem 1.1rem 1.35rem; }
+        #store-profile-form .pf-card__title { font-size: 1.125rem; }
+      }
+
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
         .sl-map { height: 260px; }
@@ -1373,21 +1463,62 @@
             <!-- === Perfil de mi comercio === -->
             <section class="mc-section" data-section="perfil-comercio" hidden>
             <!-- Perfil del comercio (F5-08) -- oculto para empleados (F12-16), solo el dueño lo edita -->
-            <div id="store-profile-section" class="pf-wrap">
+            <div id="store-profile-section" class="pf-wrap" data-view="menu">
               <h2 class="pf-title">Perfil de mi comercio</h2>
-              <form id="store-profile-form">
+              <!-- Solo en pantallas anchas (>= 960 px): una tarjeta por vez. En celular
+                   se ve todo seguido y estos botones no se muestran. js/store-profile-ui.js -->
+              <nav class="pf-tabs" id="store-profile-tabs" aria-label="Secciones del perfil">
+                <button type="button" class="pf-tab is-active" data-pf-tab="datos" aria-pressed="true"><i class="fa-solid fa-store" aria-hidden="true"></i> Mi comercio</button>
+                <button type="button" class="pf-tab" data-pf-tab="contacto" aria-pressed="false"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Contacto y mapa</button>
+                <button type="button" class="pf-tab" data-pf-tab="redes" aria-pressed="false"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Redes</button>
+                <button type="button" class="pf-tab" data-pf-tab="cobros" aria-pressed="false"><i class="fa-solid fa-wallet" aria-hidden="true"></i> Cobros</button>
+              </nav>
+              <!-- Celular: lista de secciones (con un resumen de cada una) y, al tocar una,
+                   solo esa sección con "Volver". En PC esta lista no se muestra. -->
+              <nav class="pf-menu" id="store-profile-menu" aria-label="Secciones del perfil">
+                <button type="button" class="pf-menu__item" data-pf-tab="datos">
+                  <span class="pf-menu__icon"><i class="fa-solid fa-store" aria-hidden="true"></i></span>
+                  <span class="pf-menu__text"><span class="pf-menu__title">Mi comercio</span><span class="pf-menu__sub" data-pf-summary="datos"></span></span>
+                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="pf-menu__item" data-pf-tab="contacto">
+                  <span class="pf-menu__icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
+                  <span class="pf-menu__text"><span class="pf-menu__title">Contacto y mapa</span><span class="pf-menu__sub" data-pf-summary="contacto"></span></span>
+                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="pf-menu__item" data-pf-tab="redes">
+                  <span class="pf-menu__icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></span>
+                  <span class="pf-menu__text"><span class="pf-menu__title">Redes sociales</span><span class="pf-menu__sub" data-pf-summary="redes"></span></span>
+                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="pf-menu__item" data-pf-tab="cobros">
+                  <span class="pf-menu__icon"><i class="fa-solid fa-wallet" aria-hidden="true"></i></span>
+                  <span class="pf-menu__text"><span class="pf-menu__title">Cobros</span><span class="pf-menu__sub" data-pf-summary="cobros"></span></span>
+                  <i class="fa-solid fa-chevron-right pf-menu__chev" aria-hidden="true"></i>
+                </button>
+              </nav>
+              <button type="button" class="pf-back" id="store-profile-back"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Perfil de mi comercio</button>
+              <form id="store-profile-form" data-tab="datos">
                 <!-- Datos del comercio -->
-                <div class="pf-card">
+                <div class="pf-card" data-tab="datos">
                   <h3 class="pf-card__title">Datos del comercio</h3>
                   <p class="pf-card__hint">Cómo se presenta tu tienda a los clientes.</p>
                   <div class="pf-grid">
-                    <div class="pf-field pf-field--full fl">
+                    <div class="pf-field fl">
                       <input type="text" id="store-name" class="form-input" placeholder="Ej: Panadería La Espiga" required />
                       <label for="store-name">Nombre del comercio</label>
                     </div>
-                    <div class="pf-field pf-field--full">
-                      <fieldset class="catpick">
-                        <legend class="form-label">Categoría</legend>
+                    <!-- Categoría: un campo que muestra la elegida; la grilla de rubros se
+                         abre debajo solo al tocarlo (js/store-profile-ui.js). Los radios
+                         siguen siendo los mismos (name="store-category"). -->
+                    <div class="pf-field fl catfield" id="store-category-field">
+                      <button type="button" class="form-input catfield__trigger" id="store-category-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="store-category-panel">
+                        <span class="catfield__value is-empty" id="store-category-value">Elegí una categoría</span>
+                        <i class="fa-solid fa-chevron-down catfield__chev" aria-hidden="true"></i>
+                      </button>
+                      <label for="store-category-trigger">Categoría</label>
+                      <fieldset class="catpick catfield__panel" id="store-category-panel" hidden>
+                        <legend class="sr-only">Categoría de tu comercio</legend>
                         <div class="catpick__grid" id="store-category-options"></div>
                       </fieldset>
                     </div>
@@ -1432,33 +1563,13 @@
                 </div>
 
                 <!-- Contacto y ubicación -->
-                <div class="pf-card">
+                <div class="pf-card" data-tab="contacto">
                   <h3 class="pf-card__title">Contacto y ubicación</h3>
                   <p class="pf-card__hint">Dónde te encuentran y cómo comunicarse con vos.</p>
                   <div class="pf-grid">
-                    <div class="pf-field pf-field--full fl">
+                    <div class="pf-field fl">
                       <input type="text" id="store-address" class="form-input" placeholder="Calle y número" autocomplete="street-address" />
                       <label for="store-address">Dirección</label>
-                    </div>
-                    <div class="pf-field pf-field--full fl">
-                      <input type="text" id="store-maps-url" class="form-input" inputmode="url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://maps.app.goo.gl/..." aria-describedby="store-maps-url-hint" />
-                      <label for="store-maps-url">Link de Google Maps <span class="pf-optional">(opcional)</span></label>
-                      <small class="pf-card__hint" id="store-maps-url-hint">Abrí tu local en Google Maps, tocá "Compartir" y pegá el link. Con él el repartidor llega justo a tu puerta. Si no lo cargás, llega igual por la dirección.</small>
-                    </div>
-                    <!-- Ubicación del local (stores.lat/lng, migración 146): la usa el
-                         buscador para decirle al vecino qué comercio le queda más cerca.
-                         Lo maneja js/store-location-map.js. -->
-                    <div class="pf-field pf-field--full sl-field" id="store-location-field">
-                      <span class="form-label" id="store-loc-label">Ubicación de tu local en el mapa <span class="pf-optional">(recomendado)</span></span>
-                      <small class="pf-card__hint sl-hint">Cuando un vecino busca un producto que vendés, le mostramos qué comercio le queda más cerca. Tocá el mapa o arrastrá el pin hasta la puerta de tu local.</small>
-                      <div class="sl-actions">
-                        <button type="button" class="btn-outline sl-btn" id="store-loc-gps"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Estoy en mi local: usar mi ubicación</button>
-                        <button type="button" class="btn-outline sl-btn" id="store-loc-address"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Buscar mi dirección</button>
-                        <button type="button" class="sl-clear" id="store-loc-clear" hidden>Quitar ubicación</button>
-                      </div>
-                      <div class="sl-map" id="store-loc-map" tabindex="0" role="application" aria-labelledby="store-loc-label" aria-describedby="store-loc-keys"></div>
-                      <span class="sr-only" id="store-loc-keys">Mové el mapa con las flechas, acercá con más y menos, y apretá Enter para poner el pin en el centro.</span>
-                      <p class="sl-status" id="store-loc-status" aria-live="polite"></p>
                     </div>
                     <div class="pf-field fl">
                       <input type="text" id="store-zone" class="form-input" placeholder="Ej: Centro" />
@@ -1496,14 +1607,35 @@
                       </div>
                       <p class="pf-card__hint" id="store-whatsapp-hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
-                  </div>
+                                      <div class="pf-field pf-field--full fl">
+                      <input type="text" id="store-maps-url" class="form-input" inputmode="url" maxlength="500" autocomplete="off" spellcheck="false" placeholder="https://maps.app.goo.gl/..." aria-describedby="store-maps-url-hint" />
+                      <label for="store-maps-url">Link de Google Maps <span class="pf-optional">(opcional)</span></label>
+                      <small class="pf-card__hint" id="store-maps-url-hint">Abrí tu local en Google Maps, tocá "Compartir" y pegá el link. Con él el repartidor llega justo a tu puerta. Si no lo cargás, llega igual por la dirección.</small>
+                    </div>
+                                        <!-- Ubicación del local (stores.lat/lng, migración 146): la usa el
+                         buscador para decirle al vecino qué comercio le queda más cerca.
+                         Lo maneja js/store-location-map.js. -->
+                    <div class="pf-field pf-field--full sl-field" id="store-location-field">
+                      <span class="form-label" id="store-loc-label">Ubicación de tu local en el mapa <span class="pf-optional">(recomendado)</span></span>
+                      <small class="pf-card__hint sl-hint">Cuando un vecino busca un producto que vendés, le mostramos qué comercio le queda más cerca. Tocá el mapa o arrastrá el pin hasta la puerta de tu local.</small>
+                      <div class="sl-actions">
+                        <button type="button" class="btn-outline sl-btn" id="store-loc-gps"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i> Estoy en mi local: usar mi ubicación</button>
+                        <button type="button" class="btn-outline sl-btn" id="store-loc-address"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i> Buscar mi dirección</button>
+                        <button type="button" class="sl-clear" id="store-loc-clear" hidden>Quitar ubicación</button>
+                      </div>
+                      <div class="sl-map" id="store-loc-map" tabindex="0" role="application" aria-labelledby="store-loc-label" aria-describedby="store-loc-keys"></div>
+                      <span class="sr-only" id="store-loc-keys">Mové el mapa con las flechas, acercá con más y menos, y apretá Enter para poner el pin en el centro.</span>
+                      <p class="sl-status" id="store-loc-status" aria-live="polite"></p>
+                    </div>
+                    </div>
                 </div>
 
                 <!-- Redes sociales: link + switch "mostrar" por red -- se muestran como
                      íconos en la página del comercio (comercio.js, buildStoreHeader). -->
-                <div class="pf-card">
+                <div class="pf-card" data-tab="redes">
                   <h3 class="pf-card__title">Redes sociales</h3>
                   <p class="pf-card__hint">Se muestran como íconos en la página de tu comercio. Dejá el link vacío para no mostrar esa red.</p>
+                  <div class="social-grid">
                   <div class="social-row">
                     <i class="fa-brands fa-instagram social-row__icon" aria-hidden="true"></i>
                     <div class="fl">
@@ -1571,12 +1703,13 @@
                     </label>
                   </div>
                 </div>
+                </div>
 
                 <!-- Cobrar con Mercado Pago (A113-274): el interruptor es la decisión del
                      comercio. Activarlo muestra "Conectar" (OAuth automático); apagarlo
                      estando conectado desvincula. Sin Mercado Pago se cobra solo por
                      transferencia (el bloque de abajo). -->
-                <div class="pf-card" id="mp-connect-section">
+                <div class="pf-card" id="mp-connect-section" data-tab="cobros">
                   <h3 class="pf-card__title">Mercado Pago</h3>
                   <p class="pf-card__hint">Si lo activás, tus clientes pueden pagarte con Mercado Pago (tarjeta, dinero en cuenta, cuotas). La plata llega <strong>directo a tu cuenta</strong> de Mercado Pago y Baradero Local descuenta su comisión automáticamente. Si no lo activás, cobrás solo por transferencia con los datos de abajo.</p>
                   <div class="mp-row">
@@ -1598,7 +1731,7 @@
                 <!-- A113-299: sin esto el cliente elegía "Transferencia bancaria" en el
                      carrito y no tenía forma de saber a dónde mandar la plata -- el pedido
                      quedaba pending para siempre porque nadie llegaba a subir un comprobante. -->
-                <div class="pf-card">
+                <div class="pf-card" data-tab="cobros">
                   <h3 class="pf-card__title">Transferencia bancaria</h3>
                   <p class="pf-card__hint">Cuando un cliente paga por transferencia, ve estos datos con un botón "Copiar" en cada uno, junto con el monto y el número de pedido. <strong>El alias es obligatorio para publicar productos.</strong></p>
                   <div class="pf-grid">
