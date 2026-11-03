@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <!-- Con sesión iniciada, el botón de la fila de accesos ("Vender" o "Panel",
          según la cuenta) arranca oculto desde el primer pintado y se muestra ya
          con el texto correcto (script de abajo y js/home.js). Va en el <head> a
@@ -34,9 +34,6 @@
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
@@ -115,13 +112,13 @@
     <!-- ====== FILA DE ACCESOS DEL HOME ======
          Reemplaza a la tira de categorías (que en el home vive en el mega-menú
          del navbar). -->
-    <div class="category-bar">
+    <nav class="category-bar" aria-label="Accesos">
       <div class="category-bar__inner category-bar__inner--home-actions">
         <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
         <a href="./contratar.html" class="home-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
-    </div>
+    </nav>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
          renderPanelAction), pero eso se sabe recién después de consultar la
          base. Para que no se vea el cambio, el texto sale bien en el primer
@@ -181,7 +178,7 @@
           <div class="hero__track" id="hero-track" aria-roledescription="carrusel" aria-label="Promociones destacadas">
 
             <article class="hero__slide" aria-roledescription="diapositiva" aria-label="1 de 3">
-              <img src="../Assets/images/banners/hero_banner.webp" alt="Productos frescos de Baradero" loading="eager" />
+              <img src="../Assets/images/banners/hero_banner.webp" alt="Productos frescos de Baradero" loading="eager" fetchpriority="high" />
               <div class="hero__banner-overlay">
                 <h1 class="hero__banner-title">Comprá local,<br />recibí en casa</h1>
                 <p class="hero__banner-subtitle">Productos frescos de los comercios de Baradero directo a tu puerta.</p>
@@ -192,7 +189,7 @@
             </article>
 
             <article class="hero__slide" aria-roledescription="diapositiva" aria-label="2 de 3">
-              <img src="../Assets/images/banners/hero_banner_2.webp" alt="Panificados de las panaderías de Baradero" loading="lazy" />
+              <img src="../Assets/images/banners/hero_banner_2.webp" alt="Panificados de las panaderías de Baradero" loading="lazy" decoding="async" />
               <div class="hero__banner-overlay">
                 <h2 class="hero__banner-title">Pan recién hecho,<br />a la vuelta de tu casa</h2>
                 <p class="hero__banner-subtitle">Las panaderías del pueblo, ahora también a domicilio.</p>
@@ -203,7 +200,7 @@
             </article>
 
             <article class="hero__slide" aria-roledescription="diapositiva" aria-label="3 de 3">
-              <img src="../Assets/images/banners/hero_banner_3.webp" alt="Productos de limpieza de los comercios de Baradero" loading="lazy" />
+              <img src="../Assets/images/banners/hero_banner_3.webp" alt="Productos de limpieza de los comercios de Baradero" loading="lazy" decoding="async" />
               <div class="hero__banner-overlay">
                 <h2 class="hero__banner-title">Todo para tu casa,<br />sin salir de ella</h2>
                 <p class="hero__banner-subtitle">Artículos de limpieza de los comercios de Baradero, a un par de clics.</p>
@@ -263,16 +260,16 @@
            su imagen ampliada. -->
       <section class="promo-mosaic" aria-label="Promociones">
         <div class="promo-mosaic__grid">
-          <div class="promo-banner promo-banner--a" data-promo-slot="mosaic_a" role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano">
+          <div class="promo-banner promo-banner--a" data-promo-slot="mosaic_a" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano">
             <span class="promo-banner__eyebrow">Promoción</span>
             <span class="promo-banner__title">Bebidas para el verano</span>
           </div>
           <div class="promo-mosaic__side">
-            <div class="promo-banner promo-banner--b" data-promo-slot="mosaic_b" role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas">
+            <div class="promo-banner promo-banner--b" data-promo-slot="mosaic_b" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas">
               <span class="promo-banner__eyebrow">Combos</span>
               <span class="promo-banner__title">Combo hamburguesas</span>
             </div>
-            <div class="promo-banner promo-banner--c" data-promo-slot="mosaic_c" role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas">
+            <div class="promo-banner promo-banner--c" data-promo-slot="mosaic_c" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas">
               <span class="promo-banner__eyebrow">Oferta del día</span>
               <span class="promo-banner__title">2x1 en gaseosas</span>
             </div>
@@ -462,15 +459,15 @@
            asignables que el de arriba (data-promo-slot). -->
       <section class="promo-mosaic-2" aria-label="Más promociones">
         <div class="promo-mosaic-2__grid">
-          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
+          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
             <span class="promo-banner__eyebrow">Novedades</span>
           </div>
           <div class="promo-mosaic-2__side">
-            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e">
+            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" data-bg-defer>
               <span class="promo-banner__eyebrow">Envíos</span>
               <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
             </div>
-            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
+            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
               <span class="promo-banner__eyebrow">Comercios</span>
               <span class="promo-banner__title">Sumate a Baradero Local</span>
             </div>
@@ -508,7 +505,7 @@
         </div>
         <div>
           <div class="footer__col-title">Comprá</div>
-          <nav class="footer__links">
+          <nav class="footer__links" aria-label="Comprá">
             <a href="./search.html?cat=ofertas" class="footer__link">Ofertas del día</a>
             <a href="./search.html?cat=supermercado" class="footer__link">Supermercado</a>
             <a href="./search.html" class="footer__link">Categorías</a>
@@ -517,18 +514,18 @@
         </div>
         <div>
           <div class="footer__col-title">Vendé</div>
-          <nav class="footer__links">
+          <nav class="footer__links" aria-label="Vendé">
             <a href="./vender.html" class="footer__link">Registrar comercio</a>
-            <a href="./info.html" class="footer__link">Cómo vender</a>
-            <a href="./info.html" class="footer__link">Costos y comisiones</a>
+            <a href="./info.html#faq-vender" class="footer__link">Cómo vender</a>
+            <a href="./info.html#faq-vender" class="footer__link">Costos y comisiones</a>
           </nav>
         </div>
         <div>
           <div class="footer__col-title">Ayuda</div>
-          <nav class="footer__links">
-            <a href="./info.html" class="footer__link">Contacto</a>
-            <a href="./info.html" class="footer__link">Preguntas frecuentes</a>
-            <a href="./info.html" class="footer__link">Devoluciones</a>
+          <nav class="footer__links" aria-label="Ayuda">
+            <a href="./info.html#faq-ayuda" class="footer__link">Contacto</a>
+            <a href="./info.html#faq-compras" class="footer__link">Preguntas frecuentes</a>
+            <a href="./info.html#arrepentimiento" class="footer__link">Devoluciones</a>
             <a href="./terminos.html" class="footer__link">Términos</a>
           </nav>
         </div>

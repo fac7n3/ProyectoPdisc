@@ -74,3 +74,33 @@ check("Permissions-Policy: cámara y micrófono apagados, ubicación solo propia
 check("Cross-Origin-Opener-Policy presente", () => {
   assert.match(get("Cross-Origin-Opener-Policy"), /^same-origin/);
 });
+
+const cacheFor = (source) => {
+  const rule = (cfg.headers || []).find((h) => h.source === source);
+  return rule?.headers?.find((h) => h.key.toLowerCase() === "cache-control")?.value || "";
+};
+
+check("los archivos con hash de Vite (/assets) se cachean un año como inmutables", () => {
+  assert.match(cacheFor("/assets/(.*)"), /max-age=31536000/);
+  assert.match(cacheFor("/assets/(.*)"), /immutable/);
+});
+
+// /vendor (Font Awesome) e /img (fotos de productos, banners) NO llevan hash en el
+// nombre: si se reemplaza un archivo con el mismo nombre tiene que verse en días,
+// no en un año. Nunca `immutable` acá.
+check("/vendor e /img con caché acotada (sin immutable)", () => {
+  for (const src of ["/vendor/(.*)", "/img/(.*)"]) {
+    const v = cacheFor(src);
+    assert.ok(v, `falta Cache-Control para ${src}`);
+    assert.doesNotMatch(v, /immutable/, `${src} no lleva hash en el nombre: no puede ser immutable`);
+    const maxAge = Number((v.match(/max-age=(\d+)/) || [])[1]);
+    assert.ok(maxAge > 0 && maxAge <= 7 * 24 * 3600, `${src}: max-age entre 1 s y 7 días (es ${maxAge})`);
+  }
+});
+
+check("la raíz redirige del lado del servidor al inicio (sin meta refresh)", () => {
+  const r = (cfg.redirects || []).find((x) => x.source === "/");
+  assert.ok(r, 'falta el redirect de "/" en vercel.json');
+  assert.equal(r.destination, "/pages/home.html");
+  assert.equal(r.permanent, false, "temporal: si algún día el inicio pasa a /, un 308 quedaría guardado en los navegadores");
+});

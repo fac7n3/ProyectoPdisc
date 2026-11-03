@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Vender - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -587,7 +587,7 @@
       /* Reseñas del comercio (tiempo real) */
       .rv-summary { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1rem 1.25rem; margin-bottom: 1rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card); }
       .rv-summary__score { font-size: 2rem; font-weight: 800; color: var(--bl-text); line-height: 1; }
-      .rv-summary__stars { color: #f59e0b; font-size: 1.05rem; letter-spacing: 0.08em; }
+      .rv-summary__stars { color: var(--bl-star); font-size: 1.05rem; letter-spacing: 0.08em; }
       .rv-summary__count { color: var(--bl-text-secondary); font-size: 0.9rem; }
       .rv-filters { margin-bottom: 1rem; }
       .rv-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -595,7 +595,7 @@
       .rv-card--new { animation: rv-new 6s ease-out; }
       @keyframes rv-new { 0% { box-shadow: 0 0 0 3px var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.1); } 100% { box-shadow: var(--bl-shadow-sm); background: var(--bl-surface); } }
       .rv-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
-      .rv-card__stars { color: #f59e0b; font-weight: 700; letter-spacing: 0.08em; }
+      .rv-card__stars { color: var(--bl-star); font-weight: 700; letter-spacing: 0.08em; }
       .rv-card__new { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.5rem; border-radius: var(--bl-radius-pill); background: var(--bl-vendor-accent); color: #fff; font-size: 0.68rem; font-weight: 700; letter-spacing: 0; vertical-align: middle; }
       .rv-card__date { color: var(--bl-text-muted); font-size: 0.8rem; }
       .rv-card__comment { margin: 0 0 0.6rem; color: var(--bl-text); overflow-wrap: anywhere; white-space: pre-wrap; }

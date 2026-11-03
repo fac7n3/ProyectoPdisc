@@ -6086,3 +6086,116 @@ Pedido del usuario: cerrar el pendiente más grave del hardening (las 3 cuentas 
 - Ensayado en transacción deshecha: 20 avisos, segundo envío 0. Verificado en Chromium (panel real, Supabase simulado): el aviso en la
   campanita con su texto y su link, y el link baja hasta el mapa. **Publicado en orden:** frontend a `main` + deploy `READY` -> migración
   150 -> envío.
+
+## 2026-11-03 — Mejoras de la auditoría general, tanda 1 (migración 152 aplicada)
+
+A pedido del usuario: primero se auditó todo el sitio (código, base de producción en
+solo lectura, advisors de Supabase y las 15 páginas públicas en Chromium con axe a
+360 y 1280 px) y se armó una lista de 29 mejoras; después pidió "empezá a
+implementarlas" (los comercios sin alias/CBU son de prueba, no hacía falta tocarlos).
+
+### Hecho
+
+- **Logger de errores** (`js/error-logger.js`): `isDevHost()` (con test) corta el
+  registro desde localhost, 127.x, ::1 y redes privadas. **El 100% de `error_logs`
+  de los últimos 30 días (213 de 213) venía de `localhost:4173`**: el script de
+  Speed Insights (`/_vercel/speed-insights/script.js`) no existe fuera de Vercel,
+  `vite preview` devuelve el HTML y el navegador tira "Unexpected token '<'".
+  `js/speed-insights.js` ahora solo inyecta fuera de esos hosts.
+- **Inter servida desde el sitio** (`Assets/fonts/*.woff2`, variable 100-900, paquete
+  `@fontsource-variable/inter` 5.2.5, OFL en `Assets/fonts/Inter-OFL.txt`;
+  `Assets/styles/fonts.css`, importado por `home.css` y `auth.css`). Se sacaron el
+  `@import` de Google Fonts (bloqueaba el CSS y tiraba un error de CSP en consola),
+  los `<link>`/preconnect de las 22 páginas y `fonts.googleapis.com`/`fonts.gstatic.com`
+  del CSP. Google ya no recibe la IP de cada visitante. Vite le pone hash, así que
+  sale con caché inmutable.
+- **Font Awesome NO se recortó**: el panel de admin deja escribir cualquier clase
+  de FA como ícono de categoría (`pages/admin.html`, "Ícono (clase Font Awesome)"),
+  así que un recorte rompería los íconos elegidos después. Si se retoma: primero
+  cambiar ese campo por un selector de íconos de una lista cerrada.
+- **Caché HTTP** (`vercel.json`, con test en `js/security-headers.test.mjs`):
+  `/vendor/*` 7 días y `/img/*` 1 día, los dos con `stale-while-revalidate` y **sin
+  `immutable`** (no llevan hash en el nombre). `/` redirige del lado del servidor
+  (307) a `/pages/home.html` (antes: bajar `index.html` + meta refresh). `index.html`
+  tenía el azul viejo como `theme-color`.
+- **Accesibilidad (axe, WCAG A/AA): de "contraste insuficiente en las 15 páginas"
+  a 0 problemas en las 15, en claro y oscuro, con datos reales.**
+  - `--bl-text-muted` pasó de `#94a3b8` (2,56:1) a `#5f6b7d` (>= 4,89:1 sobre todas las
+    superficies claras). Se usa en más de 100 lugares.
+  - Tokens nuevos para TEXTO: `--bl-success-text` (#047857 / oscuro #34d399),
+    `--bl-danger-text` (#b91c1c / #f87171) y `--bl-star` (#b45309 / #fbbf24) para
+    las estrellas de reseñas (7 lugares; `#f59e0b` daba 2,14:1 y llevan la nota
+    escrita al lado). `--bl-success`/`--bl-danger` quedan para fondos e íconos.
+  - Títulos del footer (0.65 de opacidad), aviso "sin conexión" (#dc2626), botones
+    de llamada de Emergencias (#dc2626) y Veterinarias (#0f766e), descripciones
+    de tipo de cuenta del registro, link "Volver al inicio" de login/registro,
+    "Pocas unidades" del modal de producto.
+  - Contratar: los chips de categoría eran `role="tablist"` sin pestañas adentro
+    (crítico en axe); ahora `role="group"` + `aria-pressed`.
+  - Footers con `aria-label` por columna; la fila Vender/Contratar/Emergencias del
+    inicio es un `<nav>`; los filtros de la búsqueda son `<section>` (un `<aside>`
+    dentro de `<main>`). De paso, los links del footer "Cómo vender",
+    "Contacto", "Devoluciones", etc. llevan a su sección de `info.html` y no al
+    principio de la página.
+  - Comercio: si no carga, el `<h1>` se borraba junto con el contenido
+    (`renderErrorState` vacía `#main-content`); ahora se vuelve a poner.
+  - Reseñas: "Reportar" usaba `prompt()` y `alert()` (en el navegador interno de
+    Instagram/Facebook el `prompt` puede no salir); ahora es `formDialog` con
+    motivos para elegir + "Otro motivo", y los errores son avisos cortos.
+    (El `confirm` de MFA NO era el nativo: recibe uno propio por parámetro.)
+- **SEO**: `js/seo-utils.js` (puro, 14 tests) + `js/seo.js` (DOM, lo importa
+  `theme.js` porque es el único módulo que cargan TODAS las páginas).
+  - Canónica en cada página pública, armada con el dominio de la página (sirve el
+    día del dominio propio): producto/comercio conservan solo `id`, búsqueda `cat`
+    y `q`; las privadas no llevan.
+  - JSON-LD: `WebSite` con buscador + `Organization` en el inicio, `Product`
+    (precio en ARS, stock, fecha de fin de la oferta, estrellas) en producto,
+    `Store` (dirección en Baradero, geo si cargó el mapa; **sin teléfono ni datos de
+    cobro**) en comercio. `serializeJsonLd` escapa `<`.
+  - `sitemap.xml` generado en cada build (plugin `sitemapPlugin` de `vite.config.js`
+    + `scripts/sitemap.mjs`, tests en `js/sitemap.test.mjs`): páginas fijas + cada
+    comercio aprobado + cada producto activo, leídos con la clave pública. Si la
+    base no responde, sale solo con las fijas y el build sigue. El dominio sale de
+    `SITE_URL` o de `VERCEL_PROJECT_PRODUCTION_URL` (con dominio propio es ese).
+    El build también agrega la línea `Sitemap:` a `robots.txt` (se sacó
+    `mensajes.html`, que ya no existe, y se sumaron recuperar/nueva contraseña).
+- **Inicio**: la foto principal con `fetchpriority="high"`. Los 6 espacios de
+  banners ya no bajan su foto fija (~100 KB cada una) mientras se consulta
+  `home_promos`: `data-bg-defer` en `home.html` + regla en `home.css`; `home.js`
+  (`loadHomePromos`/`paintHomePromos`) lo libera en los espacios sin publicidad,
+  si la consulta falla o a los 3 s. Hoy los 6 tienen publicidad de comercio, así que
+  ninguna de esas fotos se baja.
+- **Service worker v2** (`public/sw.js`, tests en `js/sw.test.mjs` que lo corren en
+  una caja de arena con caches/fetch simulados; 4 de 8 fallaban con la versión
+  anterior): tope de 250 entradas (antes crecía para siempre con cada build), solo
+  guarda respuestas OK (antes también un 404 o un 500), `/img/` y `/vendor/` con
+  revalidación en segundo plano, y no toca pedidos con `Range`. Al pasar a v2 se
+  borra la caché acumulada de v1.
+- **Migración 152** (`db/schema/152_indices_fk_nuevas_tablas.sql`, aplicada): los 4
+  índices de FK que marcaba el advisor (`deliveries.pickup_confirmed_by`,
+  `delivery_feedback.buyer_id`, `mp_oauth_states.store_id/user_id`). El advisor ya
+  no marca ninguna FK sin índice.
+
+### Gotchas
+
+- **Desde esta sesión SÍ se llega a Supabase** (el build leyó los 33 comercios y 527
+  productos). Para probar páginas contra producción sin ensuciarla, bloquear en
+  Playwright todo lo que no sea GET o una RPC de lectura (`log_product_view`,
+  `log_search_event`, `increment_professional_metric`, `report_review` escriben).
+- `pkill -f "vite preview"` mata también la propia shell (su línea de comando
+  contiene el texto): cortar el servidor por puerto (`lsof -t -i:4173`).
+- Colores fijos de texto en JS en línea: usar los tokens nuevos con respaldo
+  (`var(--bl-star, #b45309)`), `gen-dark-css.mjs` no ve los estilos en línea.
+
+### Quedó para una próxima tanda (de la lista de la auditoría)
+
+Vista previa por producto/comercio al compartir por WhatsApp (necesita una función o
+middleware de Vercel que ponga las etiquetas og: del lado del servidor), fotos de
+producto en 2 tamaños con `srcset`, CSS por página (home.css + dark-auto.css cargan
+en todas), límite de llamadas a las RPC anónimas (`validate_coupon_code`, `log_*`,
+`increment_professional_metric`), sacar restos sin uso (`confirm_simulated_payment`,
+`update_delivery_status`/`release_delivery`, `product_variants`,
+`free_shipping_threshold`, `styles.css`), partir `vender.js`/`perfil.js`/`admin.js`,
+CSP en un solo lugar, prueba de punta a punta de una compra, notificaciones web push,
+mover la base a São Paulo, decidir si `dist/` se sigue versionando y achicar
+`CLAUDE.md`. Del usuario: "Leaked password protection" en el dashboard.

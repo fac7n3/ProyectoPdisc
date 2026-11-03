@@ -6,6 +6,8 @@ import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { offersFirst } from './store-products-order.js';
+import { setJsonLd, applyCanonical } from './seo.js';
+import { buildStoreJsonLd } from './seo-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -915,8 +917,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const footer = document.querySelector('footer.footer');
   const showFooter = () => { if (footer) footer.hidden = false; };
 
+  // El <h1> (sr-only) vive adentro de #main-content: renderErrorState vacía el
+  // contenedor, así que se lo vuelve a poner para que la página no quede sin título.
+  const keepPageH1 = (text) => {
+    const h1 = Object.assign(document.createElement('h1'), { id: 'page-h1', className: 'sr-only', textContent: text });
+    mainContent.prepend(h1);
+  };
+
   if (!storeId) {
-    mainContent.innerHTML = '<div style="text-align: center; padding: 4rem; color: #ef4444;">No se especificó un comercio.</div>';
+    renderErrorState(mainContent, 'No se especificó un comercio.');
+    keepPageH1('Comercio no encontrado');
     showFooter();
     return;
   }
@@ -951,6 +961,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // que producto.js: solo owner_id, un empleado ve la tienda como cliente).
     const isOwner = !!(session?.user?.id && store.owner_id && session.user.id === store.owner_id);
     const categoryName = categories.find((c) => c.slug === store.category_slug)?.name;
+    setJsonLd('store', buildStoreJsonLd(store, {
+      origin: window.location.origin,
+      url: applyCanonical() || window.location.href,
+      categoryName,
+    }));
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     mainContent.innerHTML = '';
@@ -1038,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (err) {
     console.error('Error fetching store:', err);
     renderErrorState(mainContent, 'No se pudo cargar la información del comercio.', () => window.location.reload());
+    keepPageH1('No se pudo cargar el comercio');
   } finally {
     showFooter();
   }

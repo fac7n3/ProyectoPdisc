@@ -2,30 +2,31 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <meta name="description" content="Tu carrito de compras en Baradero Local — Revisá tus productos antes de confirmar tu pedido." />
     <title>Mi Carrito - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/carrito-nUizHi7X.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CpnR9onH.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-iEvU9gaB.js">
+    <script type="module" crossorigin src="/assets/carrito-B-pCgtr6.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-sfS7V7TP.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-SYwmVVYG.js">
-    <link rel="modulepreload" crossorigin href="/assets/payment-providers-BkEqRJHR.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DqxUH78P.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DVbvRg2u.js">
-    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-ZdgqupE0.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BGgsJLUr.css">
+    <link rel="modulepreload" crossorigin href="/assets/mp-chain-utils-Dznigg8P.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-0oyv2Qbd.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BcCh9uRa.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-XYovlgO0.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -157,15 +158,19 @@
                 <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
                 Transferencia bancaria
               </label>
-              <!-- El texto cambia con la forma de entrega (carrito.js, syncPaymentMethod). -->
-              <label class="delivery-option">
+              <!-- Efectivo solo con retiro en el local: con envío a domicilio se esconde
+                   (carrito.js, applyCashRule) y la base también lo rechaza (migración 133). -->
+              <label class="delivery-option" id="payment-efectivo-label">
                 <input type="radio" name="payment-method" id="payment-efectivo" value="efectivo" />
                 <span id="payment-efectivo-text">Efectivo al retirar</span>
               </label>
+              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí Mercado Pago o transferencia. El efectivo es solo para retirar en el local.</p>
               <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
                    carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
                    datos completos y copiables aparecen después de "Iniciar pago". -->
               <div id="transfer-info-box" class="transfer-info-box" hidden></div>
+              <!-- Varios comercios + Mercado Pago: se paga de a uno (carrito.js, renderMpChainHint). -->
+              <p id="mp-chain-hint" class="transfer-info-box" role="note" hidden></p>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
-import { supabase } from './auth-utils.js';
-import { confirmDialog } from './confirm-dialog.js';
+import { supabase, showToast } from './auth-utils.js';
+import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 
 import { friendlyError } from './friendly-error.js';
@@ -286,7 +286,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
       row.style.cssText = 'padding: 0.75rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); position: relative;';
 
       const starsLine = document.createElement('div');
-      starsLine.style.cssText = 'color: #f59e0b; font-weight: 700;';
+      starsLine.style.cssText = 'color: var(--bl-star, #b45309); font-weight: 700;';
       starsLine.textContent = buildStarsText(review.rating);
       row.appendChild(starsLine);
 
@@ -381,7 +381,7 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
             await deleteOwnReview(targetType, targetId);
             await renderReviewsSection(container, targetType, targetId, { hideForm });
           } catch (err) {
-            alert(friendlyError(err, 'No se pudo eliminar la reseña.'));
+            showToast(friendlyError(err, 'No se pudo eliminar la reseña.'), 'error');
           }
         });
         menuList.appendChild(deleteItem);
@@ -404,14 +404,20 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         reportBtn.style.cssText = 'background: none; border: none; color: var(--bl-text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
         reportBtn.textContent = 'Reportar';
         reportBtn.addEventListener('click', async () => {
-          const reason = prompt('¿Por qué querés reportar esta reseña?');
+          // Cartel propio en vez de prompt()/alert(): el nativo desentona y en el
+          // navegador interno de Instagram/Facebook puede no aparecer nunca.
+          const reason = await formDialog('Contanos qué tiene de malo. El equipo la va a revisar.', {
+            title: 'Reportar reseña',
+            confirmText: 'Reportar',
+            choices: ['Es ofensiva o tiene insultos', 'Es falsa o no es de un cliente', 'Es publicidad o spam', 'Tiene datos personales'],
+          });
           if (reason === null) return;
           const { error } = await supabase.rpc('report_review', { p_review_id: review.id, p_reason: reason });
           if (error) {
-            alert(friendlyError(error, 'No se pudo reportar la reseña.'));
+            showToast(friendlyError(error, 'No se pudo reportar la reseña.'), 'error');
             return;
           }
-          alert('Reseña reportada. El equipo la va a revisar.');
+          showToast('Reseña reportada. El equipo la va a revisar.', 'success');
         });
         meta.appendChild(reportBtn);
       }
@@ -482,7 +488,7 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
         await onSubmitted();
       }
     } catch (err) {
-      alert(friendlyError(err, 'No se pudo guardar la reseña. ¿Iniciaste sesión?'));
+      showToast(friendlyError(err, 'No se pudo guardar la reseña. ¿Iniciaste sesión?'), 'error');
     }
   });
 

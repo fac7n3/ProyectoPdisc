@@ -47,7 +47,7 @@ function getOfflineBanner() {
       left: 0;
       right: 0;
       z-index: 9998;
-      background: #ef4444;
+      background: #dc2626; /* #ef4444 daba 3,76:1 con letra blanca; este da 4,83:1 */
       color: #fff;
       text-align: center;
       font-size: 0.875rem;

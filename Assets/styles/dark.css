@@ -36,6 +36,9 @@
   --bl-text: #e4e9f3;
   --bl-text-secondary: #b3bdd0;
   --bl-text-muted: #8a96ad;
+  --bl-success-text: #34d399;
+  --bl-danger-text: #f87171;
+  --bl-star: #fbbf24;
 
   /* Bordes */
   --bl-border: #2a3347;

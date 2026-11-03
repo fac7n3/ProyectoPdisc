@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <meta name="description" content="Servicios y números de emergencia de Baradero: policía, hospital, ambulancia, veterinarias de turno y más." />
     <title>Servicios - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -18,8 +18,8 @@
          repetir cada regla de color -- .sv-card--emergencias/.sv-card--veterinarias
          solo pisan estas dos variables. */
       .sv-card { --sv-accent: var(--bl-primary); --sv-accent-soft: rgba(40, 65, 117, 0.1); }
-      .sv-card--emergencias { --sv-accent: var(--bl-danger); --sv-accent-soft: rgba(239, 68, 68, 0.1); }
-      .sv-card--veterinarias { --sv-accent: #0d9488; --sv-accent-soft: rgba(13, 148, 136, 0.1); }
+      .sv-card--emergencias { --sv-accent: #dc2626; --sv-accent-soft: rgba(239, 68, 68, 0.1); } /* #ef4444 con letra blanca daba 3,76:1 */
+      .sv-card--veterinarias { --sv-accent: #0f766e; --sv-accent-soft: rgba(13, 148, 136, 0.1); } /* #0d9488 daba 3,74:1 */
 
       .sv-page { max-width: 800px; margin: 0 auto 3rem; padding: 0 1rem; }
 

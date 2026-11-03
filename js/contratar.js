@@ -39,15 +39,20 @@ function buildCategoryChips() {
   const container = document.getElementById('ct-categories');
   container.textContent = '';
 
+  // Son filtros (botones que se prenden y apagan), no pestañas: role="group" en el
+  // contenedor y aria-pressed en cada uno. Con role="tablist" sin role="tab" adentro,
+  // un lector de pantalla anunciaba una lista de pestañas vacía.
   const all = el('button', 'ct-chip is-active', 'Todos');
   all.type = 'button';
   all.dataset.category = 'todos';
+  all.setAttribute('aria-pressed', 'true');
   container.appendChild(all);
 
   PROFESSIONAL_CATEGORIES.forEach((cat) => {
     const chip = el('button', 'ct-chip');
     chip.type = 'button';
     chip.dataset.category = cat.value;
+    chip.setAttribute('aria-pressed', 'false');
     const icon = el('i', cat.icon);
     icon.setAttribute('aria-hidden', 'true');
     chip.appendChild(icon);
@@ -59,7 +64,10 @@ function buildCategoryChips() {
     const chip = e.target.closest('.ct-chip');
     if (!chip) return;
     activeCategory = chip.dataset.category;
-    container.querySelectorAll('.ct-chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+    container.querySelectorAll('.ct-chip').forEach((c) => {
+      c.classList.toggle('is-active', c === chip);
+      c.setAttribute('aria-pressed', String(c === chip));
+    });
     applyFilter();
   });
 }
@@ -406,7 +414,10 @@ function renderFeatured(list) {
 function scrollToProfessional(id) {
   if (activeCategory !== 'todos' || document.getElementById('ct-search-input')?.value) {
     activeCategory = 'todos';
-    document.querySelectorAll('.ct-chip').forEach((c) => c.classList.toggle('is-active', c.dataset.category === 'todos'));
+    document.querySelectorAll('#ct-categories .ct-chip').forEach((c) => {
+      c.classList.toggle('is-active', c.dataset.category === 'todos');
+      c.setAttribute('aria-pressed', String(c.dataset.category === 'todos'));
+    });
     const searchInput = document.getElementById('ct-search-input');
     if (searchInput) searchInput.value = '';
     applyFilter();

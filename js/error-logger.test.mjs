@@ -4,7 +4,7 @@
  * Correr con:  node js/error-logger.test.mjs
  */
 import assert from "node:assert/strict";
-import { sanitizeUrlForLogging } from "./error-logger.js";
+import { sanitizeUrlForLogging, isDevHost } from "./error-logger.js";
 
 const check = (name, fn) => {
   try {
@@ -46,6 +46,23 @@ check("una URL sin nada sensible sale intacta", () => {
 
 check("una URL inválida no revienta, devuelve null", () => {
   assert.equal(sanitizeUrlForLogging("no es una url"), null);
+});
+
+
+console.log("isDevHost");
+
+check("localhost, 127.x, ::1 y redes privadas son desarrollo", () => {
+  for (const h of ["localhost", "LOCALHOST", "app.localhost", "127.0.0.1", "127.1.2.3", "::1", "[::1]", "0.0.0.0",
+    "192.168.0.10", "10.0.0.5", "172.16.0.1", "172.31.255.1", ""]) {
+    assert.equal(isDevHost(h), true, h);
+  }
+});
+
+check("el sitio publicado, los previews de Vercel y un dominio propio NO son desarrollo", () => {
+  for (const h of ["proyectopdisc.vercel.app", "proyectopdisc-git-x-baradero-local.vercel.app",
+    "baraderolocal.com.ar", "www.baraderolocal.com.ar", "172.32.0.1", "8.8.8.8", "localhost.com.ar"]) {
+    assert.equal(isDevHost(h), false, h);
+  }
 });
 
 if (process.exitCode) {

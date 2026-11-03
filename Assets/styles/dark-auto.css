@@ -418,9 +418,6 @@ html[data-theme="dark"] .ord-alert--ok {
   background: #153f23;
   color: #b9eece;
 }
-html[data-theme="dark"] .pro-highlight-card__stars {
-  color: #f3bf68;
-}
 html[data-theme="dark"] .panel-onboarding__card-icon {
   color: var(--dk-accent-text);
 }
@@ -609,7 +606,7 @@ html[data-theme="dark"] .pm-price-block {
   background: linear-gradient(135deg, #1b232c, #121b37);
 }
 html[data-theme="dark"] .pm-stock__text--low {
-  color: #f3bf68;
+  color: #f5b687;
 }
 html[data-theme="dark"] .pm-quantity__btn {
   color: var(--bl-text-secondary);
@@ -732,7 +729,7 @@ html[data-theme="dark"] .account-title {
   color: #d9dde7;
 }
 html[data-theme="dark"] .account-desc {
-  color: #99a4be;
+  color: #a6b0c6;
 }
 html[data-theme="dark"] .auth-footer {
   color: #b3bbce;
@@ -1200,9 +1197,6 @@ html[data-theme="dark"] .of-photo__btn {
 html[data-theme="dark"] .of-photo__btn:hover:not([disabled]) {
   color: var(--dk-oficios-text);
 }
-html[data-theme="dark"] .of-review__stars {
-  color: #f3bf68;
-}
 html[data-theme="dark"] .of-review__reply-label {
   color: var(--dk-oficios-text);
 }
@@ -1372,9 +1366,6 @@ html[data-theme="dark"] .ct-card__category {
 html[data-theme="dark"] .ct-card__specialty {
   background: rgba(111, 141, 206, 0.16);
   color: var(--dk-accent-text);
-}
-html[data-theme="dark"] .ct-card__stars {
-  color: #f3bf68;
 }
 html[data-theme="dark"] .ct-card__social-link {
   color: var(--bl-text-secondary);
@@ -1729,12 +1720,6 @@ html[data-theme="dark"] .pub-status--ready {
 }
 html[data-theme="dark"] .pub-status--cancelled {
   color: #ec8383;
-}
-html[data-theme="dark"] .rv-summary__stars {
-  color: #f3bf68;
-}
-html[data-theme="dark"] .rv-card__stars {
-  color: #f3bf68;
 }
 html[data-theme="dark"] .rv-card__target {
   color: var(--bl-text-secondary);

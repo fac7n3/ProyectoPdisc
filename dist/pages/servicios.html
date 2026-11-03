@@ -2,8 +2,9 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <meta name="description" content="Servicios y números de emergencia de Baradero: policía, hospital, ambulancia, veterinarias de turno y más." />
     <title>Servicios - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -11,93 +12,12 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <style>
-      /* Acento propio por categoría, se declara con custom properties para no
-         repetir cada regla de color -- .sv-card--emergencias/.sv-card--veterinarias
-         solo pisan estas dos variables. */
-      .sv-card { --sv-accent: var(--bl-primary); --sv-accent-soft: rgba(40, 65, 117, 0.1); }
-      .sv-card--emergencias { --sv-accent: var(--bl-danger); --sv-accent-soft: rgba(239, 68, 68, 0.1); }
-      .sv-card--veterinarias { --sv-accent: #0d9488; --sv-accent-soft: rgba(13, 148, 136, 0.1); }
-
-      .sv-page { max-width: 800px; margin: 0 auto 3rem; padding: 0 1rem; }
-
-      /* --- Hero de la página --- */
-      .sv-hero {
-        display: flex; align-items: center; gap: 1rem;
-        margin: 1.75rem 0 1.75rem;
-      }
-      .sv-hero__icon {
-        flex-shrink: 0; width: 3rem; height: 3rem; border-radius: var(--bl-radius-lg);
-        background: var(--bl-primary); color: #fff;
-        display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
-        box-shadow: var(--bl-shadow-md);
-      }
-      .sv-hero__title { font-size: 1.6rem; color: var(--bl-primary-deeper); line-height: 1.2; }
-      .sv-hero__subtitle { color: var(--bl-text-secondary); font-size: 0.9rem; margin-top: 0.15rem; }
-
-      /* --- Tarjeta por categoría --- */
-      .sv-card {
-        background: var(--bl-surface); border: 1px solid var(--bl-border);
-        border-radius: var(--bl-radius-xl); box-shadow: var(--bl-shadow-card);
-        overflow: hidden; margin-bottom: 1.5rem;
-      }
-      .sv-card__head {
-        display: flex; align-items: center; gap: 0.85rem;
-        padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--bl-border-light);
-        background: var(--sv-accent-soft);
-      }
-      .sv-card__icon {
-        flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%;
-        background: var(--sv-accent); color: #fff;
-        display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
-      }
-      .sv-card__title { font-size: 1.1rem; color: var(--bl-text); line-height: 1.2; }
-      .sv-card__desc { font-size: 0.8125rem; color: var(--bl-text-secondary); margin-top: 0.1rem; }
-
-      .sv-card__list { display: flex; flex-direction: column; }
-      .sv-contact {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 0.9rem 1.25rem;
-      }
-      .sv-contact + .sv-contact { border-top: 1px solid var(--bl-border-light); }
-      .sv-contact__dot {
-        flex-shrink: 0; width: 0.5rem; height: 0.5rem; border-radius: 50%;
-        background: var(--sv-accent); opacity: 0.55;
-      }
-      .sv-contact__info { flex: 1; min-width: 0; }
-      .sv-contact__name { font-weight: 600; color: var(--bl-text); font-size: 0.9375rem; }
-      .sv-contact__notes {
-        display: block; font-size: 0.78125rem; color: var(--bl-text-secondary);
-        margin-top: 0.15rem;
-      }
-      .sv-contact__call {
-        flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.5rem 0.9rem; border-radius: var(--bl-radius-pill);
-        background: var(--sv-accent); color: #fff; text-decoration: none;
-        font-size: 0.8125rem; font-weight: 700; white-space: nowrap;
-        box-shadow: var(--bl-shadow-sm); transition: transform .15s, box-shadow .15s, opacity .15s;
-      }
-      .sv-contact__call:hover { transform: translateY(-1px); box-shadow: var(--bl-shadow-md); opacity: 0.92; }
-      .sv-contact__call i { font-size: 0.75rem; }
-
-      /* --- Estado vacío --- */
-      .sv-empty {
-        display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-        text-align: center; padding: 2.5rem 1.5rem; color: var(--bl-text-secondary);
-        background: var(--bl-surface); border: 1px dashed var(--bl-border);
-        border-radius: var(--bl-radius-xl); font-size: 0.9375rem;
-      }
-      .sv-empty i { font-size: 1.75rem; color: var(--bl-text-muted); }
-
-      @media (max-width: 480px) {
-        .sv-hero { margin: 1.25rem 0 1.5rem; }
-        .sv-contact { flex-wrap: wrap; row-gap: 0.6rem; }
-        .sv-contact__call { margin-left: auto; }
-      }
-    </style>
-    <script type="module" crossorigin src="/assets/servicios-C0FlDq4O.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CpnR9onH.js">
-    <link rel="stylesheet" crossorigin href="/assets/home-BGgsJLUr.css">
+    <style>.sv-card{--sv-accent:var(--bl-primary);--sv-accent-soft:#2841751a}.sv-card--emergencias{--sv-accent:#dc2626;--sv-accent-soft:#ef44441a}.sv-card--veterinarias{--sv-accent:#0f766e;--sv-accent-soft:#0d94881a}.sv-page{max-width:800px;margin:0 auto 3rem;padding:0 1rem}.sv-hero{align-items:center;gap:1rem;margin:1.75rem 0;display:flex}.sv-hero__icon{border-radius:var(--bl-radius-lg);background:var(--bl-primary);color:#fff;width:3rem;height:3rem;box-shadow:var(--bl-shadow-md);flex-shrink:0;justify-content:center;align-items:center;font-size:1.25rem;display:flex}.sv-hero__title{color:var(--bl-primary-deeper);font-size:1.6rem;line-height:1.2}.sv-hero__subtitle{color:var(--bl-text-secondary);margin-top:.15rem;font-size:.9rem}.sv-card{background:var(--bl-surface);border:1px solid var(--bl-border);border-radius:var(--bl-radius-xl);box-shadow:var(--bl-shadow-card);margin-bottom:1.5rem;overflow:hidden}.sv-card__head{border-bottom:1px solid var(--bl-border-light);background:var(--sv-accent-soft);align-items:center;gap:.85rem;padding:1.1rem 1.25rem;display:flex}.sv-card__icon{background:var(--sv-accent);color:#fff;border-radius:50%;flex-shrink:0;justify-content:center;align-items:center;width:2.5rem;height:2.5rem;font-size:1.05rem;display:flex}.sv-card__title{color:var(--bl-text);font-size:1.1rem;line-height:1.2}.sv-card__desc{color:var(--bl-text-secondary);margin-top:.1rem;font-size:.8125rem}.sv-card__list{flex-direction:column;display:flex}.sv-contact{align-items:center;gap:.75rem;padding:.9rem 1.25rem;display:flex}.sv-contact+.sv-contact{border-top:1px solid var(--bl-border-light)}.sv-contact__dot{background:var(--sv-accent);opacity:.55;border-radius:50%;flex-shrink:0;width:.5rem;height:.5rem}.sv-contact__info{flex:1;min-width:0}.sv-contact__name{color:var(--bl-text);font-size:.9375rem;font-weight:600}.sv-contact__notes{color:var(--bl-text-secondary);margin-top:.15rem;font-size:.78125rem;display:block}.sv-contact__call{border-radius:var(--bl-radius-pill);background:var(--sv-accent);color:#fff;white-space:nowrap;box-shadow:var(--bl-shadow-sm);flex-shrink:0;align-items:center;gap:.4rem;padding:.5rem .9rem;font-size:.8125rem;font-weight:700;text-decoration:none;transition:transform .15s,box-shadow .15s,opacity .15s;display:inline-flex}.sv-contact__call:hover{box-shadow:var(--bl-shadow-md);opacity:.92;transform:translateY(-1px)}.sv-contact__call i{font-size:.75rem}.sv-empty{text-align:center;color:var(--bl-text-secondary);background:var(--bl-surface);border:1px dashed var(--bl-border);border-radius:var(--bl-radius-xl);flex-direction:column;align-items:center;gap:.6rem;padding:2.5rem 1.5rem;font-size:.9375rem;display:flex}.sv-empty i{color:var(--bl-text-muted);font-size:1.75rem}@media (width<=480px){.sv-hero{margin:1.25rem 0 1.5rem}.sv-contact{flex-wrap:wrap;row-gap:.6rem}.sv-contact__call{margin-left:auto}}</style>
+    <script type="module" crossorigin src="/assets/servicios-DC8r7wSU.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
   </head>
   <body>
     <nav class="navbar" role="navigation" aria-label="Navegación principal">

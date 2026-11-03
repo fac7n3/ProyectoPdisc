@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="view-transition" content="same-origin"/>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
   <meta name="description" content="Términos y condiciones de uso de Baradero Local." />
   <title>Términos y Condiciones — Baradero Local</title>
   <meta property="og:type" content="website" />
@@ -17,78 +18,15 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
 
-  <style>
-    .terms-container {
-      max-width: 800px;
-      margin: 4rem auto;
-      padding: 3rem;
-      background: white;
-      border-radius: 1rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    }
-    .terms-container h1 {
-      color: var(--bl-primary);
-      margin-bottom: 0.5rem;
-      font-size: 2.25rem;
-      font-weight: 800;
-    }
-    .terms-container .last-updated {
-      color: var(--bl-text-muted);
-      font-size: 0.875rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid var(--bl-border);
-      padding-bottom: 1rem;
-    }
-    .terms-container h2 {
-      color: var(--bl-text);
-      font-size: 1.25rem;
-      margin-top: 2rem;
-      margin-bottom: 0.75rem;
-      font-weight: 700;
-    }
-    .terms-container p {
-      color: var(--bl-text-secondary);
-      line-height: 1.7;
-      margin-bottom: 1.25rem;
-      font-size: 0.95rem;
-    }
-    .terms-container ul {
-      margin-left: 1.5rem;
-      margin-bottom: 1.25rem;
-      color: var(--bl-text-secondary);
-      line-height: 1.7;
-    }
-    .terms-container li {
-      margin-bottom: 0.5rem;
-    }
-    .btn-outline {
-      padding: 0.5rem 1rem;
-      border: 1.5px solid var(--bl-primary);
-      color: var(--bl-primary);
-      border-radius: var(--bl-radius-md);
-      font-weight: 600;
-      font-size: 0.875rem;
-      cursor: pointer;
-      background: transparent;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-    }
-    .btn-outline:hover {
-      background: var(--bl-primary);
-      color: white;
-    }
-  </style>
-  <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-  <link rel="stylesheet" crossorigin href="/assets/home-BGgsJLUr.css">
-</head>
+  <style>.terms-container{background:#fff;border-radius:1rem;max-width:800px;margin:4rem auto;padding:3rem;box-shadow:0 4px 20px #0000000d}.terms-container h1{color:var(--bl-primary);margin-bottom:.5rem;font-size:2.25rem;font-weight:800}.terms-container .last-updated{color:var(--bl-text-muted);border-bottom:1px solid var(--bl-border);margin-bottom:2rem;padding-bottom:1rem;font-size:.875rem}.terms-container h2{color:var(--bl-text);margin-top:2rem;margin-bottom:.75rem;font-size:1.25rem;font-weight:700}.terms-container h3{color:var(--bl-text);margin-top:1.5rem;margin-bottom:.5rem;font-size:1.05rem;font-weight:700}.terms-container p{color:var(--bl-text-secondary);margin-bottom:1.25rem;font-size:.95rem;line-height:1.7}.terms-container ul{color:var(--bl-text-secondary);margin-bottom:1.25rem;margin-left:1.5rem;line-height:1.7}.terms-container li{margin-bottom:.5rem}.btn-outline{border:1.5px solid var(--bl-primary);color:var(--bl-primary);border-radius:var(--bl-radius-md);cursor:pointer;background:0 0;justify-content:center;align-items:center;padding:.5rem 1rem;font-size:.875rem;font-weight:600;text-decoration:none;transition:all .2s;display:inline-flex}.btn-outline:hover{background:var(--bl-primary);color:#fff}@media (width<=600px){.terms-container{margin:1rem .75rem 2rem;padding:1.5rem 1.125rem}.terms-container h1{font-size:1.75rem}}</style>
+    <script type="module" crossorigin src="/assets/theme-Bv9HNMLw.js"></script>
+    <script type="module" crossorigin src="/assets/scroll-top-btn-umD5Wi6u.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
+  </head>
 <body class="bl-bg">
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
          categorias, que en TalkBack son mas de 20 pasos en cada pagina. -->
@@ -113,7 +51,7 @@
 
   <main id="contenido-principal" tabindex="-1" class="terms-container">
     <h1>Términos y Condiciones de Uso</h1>
-    <div class="last-updated">Última actualización: 14 de julio de 2026</div>
+    <div class="last-updated">Última actualización: 21 de octubre de 2026</div>
 
     <p><strong>Este documento es un borrador redactado con criterios generales de la legislación argentina y todavía no fue revisado por un abogado.</strong> No debe considerarse asesoramiento legal definitivo hasta esa revisión.</p>
 
@@ -136,8 +74,32 @@
     <p>Los precios se muestran en pesos argentinos (ARS), publicados por cada comercio. Los medios de pago disponibles son Mercado Pago (tarjeta, efectivo o dinero en cuenta) y transferencia bancaria con comprobante. El pago con Mercado Pago es procesado directamente por Mercado Pago S.R.L. — Baradero Local no almacena datos de tarjetas.</p>
     <p>Un pedido puede dividirse en varias órdenes si el carrito incluye productos de más de un comercio; cada comercio gestiona su propia orden de forma independiente. Cuando pagás con Mercado Pago, el pago se acredita en la cuenta de Baradero Local, que luego transfiere a cada comercio el monto correspondiente a sus ventas, según el procedimiento de conciliación que se describe en la cláusula 7. Cuando pagás con transferencia, el pago se realiza a la cuenta de Baradero Local y se confirma una vez que el comercio verifica el comprobante.</p>
 
-    <h2>5. Envío y retiro</h2>
-    <p>Cada compra puede realizarse con retiro en el local del comercio o envío a domicilio dentro de Baradero, según lo que ofrezca cada comercio. El costo de envío (si aplica) se muestra antes de confirmar la compra.</p>
+    <h2 id="envios">5. Envío y retiro</h2>
+    <p>Cada compra puede realizarse con retiro en el local del comercio o envío a domicilio dentro de Baradero, según lo que ofrezca cada comercio. El costo de envío (si aplica) se muestra antes de confirmar la compra. El pago en efectivo solo está disponible con retiro en el local.</p>
+
+    <h3>5.1. Cómo funciona un envío con repartidor</h3>
+    <p>Una vez pagado el pedido, un repartidor puede tomarlo. Al llegar al comercio, el repartidor le informa el número de pedido y el comercio confirma que se lo entregó. En ese momento el repartidor saca una foto en la que se ven todos los productos que retira, y el pedido pasa a "En camino". Al entregarlo, el repartidor te pide el código de 4 números que ves en "Mis compras": ese código es la constancia de que lo recibiste vos.</p>
+
+    <h3>5.2. Demoras</h3>
+    <p>Los tiempos de entrega son estimados. Si el repartidor se demora en retirar el pedido, puede avisar la demora al comercio y al comprador; si no puede cumplir, puede soltar el pedido y este vuelve a quedar disponible para otro repartidor, sin costo ni penalidad para el comprador. Un pedido tomado que lleva mucho tiempo sin retirarse vuelve a la lista automáticamente.</p>
+
+    <h3>5.3. Cancelación de un pedido con envío</h3>
+    <ul>
+      <li><strong>Antes de pagar:</strong> podés cancelarlo desde "Mis compras" y el stock vuelve al comercio.</li>
+      <li><strong>Ya pagado, hasta que el repartidor retire el pedido del comercio:</strong> podés cancelarlo desde "Mis compras". Como ya lo habías pagado, el comercio debe devolverte el dinero según el medio de pago utilizado; la devolución se coordina con el comercio y, si hace falta, con Soporte.</li>
+      <li><strong>Con el pedido ya en camino:</strong> ya no se puede cancelar y debés recibirlo igualmente. Si no es lo que esperabas, no se devuelve en el momento: con el comprobante de tu compra podés acercarte al comercio con el producto en las mismas condiciones en que lo recibiste (por ejemplo, un yogur cerrado, o abierto pero sin mayor consumo) para resolver el cambio o la devolución. Lo anterior no limita tu derecho de arrepentimiento (cláusula 6).</li>
+      <li><strong>Cancelación por el comercio:</strong> el comercio puede cancelar un pedido con envío hasta que el repartidor lo retire, indicando el motivo, y debe devolverte el dinero si ya lo habías pagado. Si lo cancela, el repartidor es avisado y no puede retirarlo ni salir en camino con ese pedido. Con el pedido ya en camino, solo puede cancelarlo el equipo de Baradero Local.</li>
+    </ul>
+
+    <h3>5.4. Fotos de la entrega</h3>
+    <p>Para proteger a compradores, comercios y repartidores, la plataforma guarda dos fotos de cada envío: la que saca el repartidor al retirar el pedido y, si algo llega mal, la que sube el comprador al reclamar. Las fotos se guardan de forma privada y solo las pueden ver quienes participan del pedido (comprador, comercio y repartidor) y el equipo de Baradero Local, con el único fin de resolver reclamos. Procurá que no aparezcan personas ni datos que no sean necesarios.</p>
+
+    <h3>5.5. Cómo llegó tu pedido y reclamos</h3>
+    <p>Cuando recibís un pedido con envío te preguntamos cómo llegó. Si llegó bien, alcanza con avisarlo. Si llegó roto, dañado, incompleto o distinto de lo pedido, tenés <strong>48 horas desde la entrega</strong> para abrir el reclamo desde "Mis compras", indicando qué pasó y subiendo una foto donde se vean todos los productos tal como te llegaron. El reclamo se registra en Soporte y lo ven el comercio y nuestro equipo junto con la foto del retiro. Pasado ese plazo, igualmente podés escribir a Soporte, pero no podemos garantizar la misma respuesta.</p>
+    <p>Para cambios o devoluciones de productos recibidos, el producto debe conservarse en las mismas condiciones en que fue recibido (cerrado o, en alimentos, sin mayor consumo) y llevarse al comercio junto con el comprobante de la compra. Los productos perecederos ya consumidos no admiten devolución.</p>
+
+    <h3>5.6. Problemas con la entrega</h3>
+    <p>Si el repartidor no puede entregar el pedido porque no hay nadie que lo reciba, la dirección es incorrecta o no se puede ubicar al comprador, avisa el problema desde la plataforma: se te notifica a vos y al comercio, y se coordina una nueva entrega o la devolución del pedido al comercio. Podés ayudar manteniendo cargados tu teléfono y una dirección completa. Un envío fallido por datos incorrectos del comprador puede implicar la pérdida del costo de envío.</p>
 
     <h2>6. Derecho de arrepentimiento (revocación de la compra)</h2>
     <p>De acuerdo con la Ley 24.240 de Defensa del Consumidor y la Resolución 424/2020, en toda compra realizada a distancia (online) tenés derecho a <strong>arrepentirte de la compra dentro de los 10 (diez) días hábiles</strong> posteriores a la misma, sin necesidad de justificar el motivo y sin penalidad alguna. Todas las compras realizadas a través de Baradero Local se consideran compras a distancia — incluyendo aquellas en las que elegiste retiro en el local del comercio, ya que la decisión de compra y el pago se concretan online. Podés ejercer este derecho desde <a href="./perfil.html">"Mis compras"</a>, donde vas a encontrar el botón "Solicitar arrepentimiento" en cada pedido dentro del plazo vigente. Al solicitarlo, se notifica automáticamente al comercio vendedor, que debe coordinar la devolución del pago según el medio utilizado.</p>
@@ -163,6 +125,11 @@
     <h2>12. Contacto</h2>
     <p>Ante dudas sobre estos Términos, escribinos a <strong>soporte@baraderolocal.com.ar</strong>.</p>
   </main>
+
+  <!-- Volver arriba: mismo botón del inicio (js/scroll-top-btn.js lo muestra al bajar) -->
+  <button class="scroll-top" id="scroll-top-btn" type="button" aria-label="Volver arriba">
+    <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+  </button>
 
   <footer class="footer">
     <div class="footer__container" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">

@@ -8,6 +8,11 @@ import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex } from './h
 import { loadViewedProducts } from './interests.js';
 import { weightCategories, interleaveByInterest } from './interests-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
+import { setJsonLd } from './seo.js';
+import { buildSiteJsonLd } from './seo-utils.js';
+
+// Datos estructurados del sitio (nombre, logo y buscador) para los buscadores.
+setJsonLd('site', buildSiteJsonLd(window.location.origin));
 // Importamos supabase para que el SDK procese los tokens OAuth
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
@@ -859,6 +864,8 @@ function initHeroExploreCta() {
  * final no se reescribe y termina apuntando a un archivo que no existe).
  */
 function getBannerImageUrl(banner) {
+  // Si se toca antes de que lleguen las promos, la foto fija todavía no está puesta.
+  banner.removeAttribute('data-bg-defer');
   const bg = getComputedStyle(banner).backgroundImage;
   const matches = [...bg.matchAll(/url\((['"]?)(.*?)\1\)/g)];
   return matches.length ? matches[matches.length - 1][2] : '';
@@ -1094,6 +1101,22 @@ async function loadHomePromos() {
   const banners = document.querySelectorAll('[data-promo-slot]');
   if (!banners.length) return;
 
+  // Las fotos fijas esperan a esta consulta (data-bg-defer, ver home.css): se
+  // liberan en los espacios que no tienen publicidad, si falla, o a los 3 s.
+  const releaseStaticBackgrounds = () => banners.forEach((b) => {
+    if (!b.classList.contains('is-store-promo')) b.removeAttribute('data-bg-defer');
+  });
+  const safety = setTimeout(releaseStaticBackgrounds, 3000);
+
+  try {
+    await paintHomePromos(banners);
+  } finally {
+    clearTimeout(safety);
+    releaseStaticBackgrounds();
+  }
+}
+
+async function paintHomePromos(banners) {
   // Hasta 3 publicidades por espacio (columna `position`, migración 137).
   const { data, error } = await supabase
     .from('home_promos')

@@ -2,10 +2,13 @@ User-agent: *
 Allow: /
 Disallow: /pages/login.html
 Disallow: /pages/register.html
+Disallow: /pages/recuperar-password.html
+Disallow: /pages/nueva-contrasena.html
 Disallow: /pages/perfil.html
 Disallow: /pages/carrito.html
 Disallow: /pages/vender.html
 Disallow: /pages/profesional.html
 Disallow: /pages/repartidor.html
 Disallow: /pages/admin.html
-Disallow: /pages/mensajes.html
+
+# La línea "Sitemap:" la agrega el build con el dominio correcto (scripts/sitemap.mjs).

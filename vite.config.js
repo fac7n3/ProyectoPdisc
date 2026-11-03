@@ -1,5 +1,7 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { buildSitemapXml, withSitemapLine, resolveOrigin, fetchSitemapRows } from './scripts/sitemap.mjs';
 
 // Plugin to inject standard security headers in dev server
 function securityHeadersPlugin() {
@@ -19,8 +21,33 @@ function securityHeadersPlugin() {
   };
 }
 
+// Escribe dist/sitemap.xml y la línea "Sitemap:" de dist/robots.txt al terminar
+// el build (ver scripts/sitemap.mjs). Si la base no responde, sale con las
+// páginas fijas y el build sigue.
+function sitemapPlugin() {
+  let outDir;
+  let env;
+  return {
+    name: 'sitemap',
+    apply: 'build',
+    configResolved(cfg) {
+      outDir = resolve(cfg.root, cfg.build.outDir);
+      env = loadEnv(cfg.mode, cfg.root, 'VITE_');
+    },
+    async closeBundle() {
+      const origin = resolveOrigin(process.env);
+      const rows = await fetchSitemapRows({ supabaseUrl: env.VITE_SUPABASE_URL, key: env.VITE_SUPABASE_ANON_KEY });
+      writeFileSync(resolve(outDir, 'sitemap.xml'), buildSitemapXml(origin, rows));
+      const robotsPath = resolve(outDir, 'robots.txt');
+      const robots = existsSync(robotsPath) ? readFileSync(robotsPath, 'utf8') : 'User-agent: *\nAllow: /\n';
+      writeFileSync(robotsPath, withSitemapLine(robots, origin));
+      console.log(`[sitemap] ${origin}/sitemap.xml: ${rows.stores.length} comercios, ${rows.products.length} productos`);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [securityHeadersPlugin()],
+  plugins: [securityHeadersPlugin(), sitemapPlugin()],
   build: {
     rollupOptions: {
       input: {

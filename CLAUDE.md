@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-11-02. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-11-03. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -90,6 +90,20 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 
 ## Pendientes activos
 Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local`.
+- **Hecho 2026-11-03 (migración 152 APLICADA) — Mejoras de la auditoría general, tanda 1**, a pedido del usuario (auditó todo el sitio y
+  pidió implementar la lista). Detalle y lo que quedó para la próxima tanda: skill `progreso-baradero-local`, entrada 2026-11-03.
+  **Hecho:** el logger de errores ya no registra desde localhost/redes privadas (`isDevHost`; el 100% de `error_logs` era ruido de
+  `vite preview`) y Speed Insights solo corre en el sitio publicado; **Inter servida desde el sitio** (`Assets/fonts/` + `fonts.css`, sin
+  Google Fonts ni en HTML ni en el CSP); caché HTTP para `/vendor` (7 d) e `/img` (1 d) y `/` redirige en el servidor; **accesibilidad: 0
+  problemas WCAG A/AA en las 15 páginas públicas, claro y oscuro, con datos reales** (axe); canónica + JSON-LD (inicio, producto, comercio) +
+  `sitemap.xml` generado en cada build con comercios y productos; el inicio ya no baja las fotos fijas de los banners que tapa una publicidad;
+  service worker v2 (tope, sin guardar errores, revalida `/img`); 4 índices de FK. **Reglas nuevas:** texto verde/rojo con
+  `--bl-success-text`/`--bl-danger-text` (los `--bl-success`/`--bl-danger` son para fondos), estrellas con `--bl-star`, y `--bl-text-muted`
+  ahora es `#5f6b7d`; ninguna fuente ni CSS de otro dominio (el CSP ya no lo permite); una página pública nueva va al `STATIC_PAGES` de
+  `scripts/sitemap.mjs`. **Desde esta sesión el sandbox SÍ llega a Supabase:** al probar contra producción, bloquear las escrituras
+  (`log_*`, `increment_professional_metric`, `report_review`). **Font Awesome no se recortó** (el admin escribe a mano la clase del ícono de
+  cada categoría). **Pendiente del usuario:** "Leaked password protection" (Authentication -> Policies). **Sin probar en el teléfono real**
+  ni con sesión iniciada en los paneles.
 - **Hecho 2026-11-02 (migración 151 APLICADA a producción, en Supabase figura como `148_admin_mfa_aal2`: la 148-150 del repo son de otra sesión del mismo día) — Verificación en dos pasos (TOTP) para admin y moderador** (P-01 del hardening),
   a pedido del usuario. **Servidor (el control real):** `public.jwt_role()` (SECURITY DEFINER, lee `auth.mfa_factors`) reemplazó la lectura del rol
   del JWT en las **98 policies y 25 funciones** que la hacían (la migración lo hace con un DO block y **falla si queda una lectura directa**): un

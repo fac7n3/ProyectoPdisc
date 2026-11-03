@@ -2,7 +2,7 @@
    PÁGINA PRINCIPAL — Baradero Local
    =================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import './fonts.css';
 
 :root {
   /* Paleta de marca — ancla oficial #284175, ver docs/brand-guidelines.md */
@@ -21,7 +21,7 @@
   /* Texto */
   --bl-text: #1a202c;
   --bl-text-secondary: #4a5568;
-  --bl-text-muted: #94a3b8;
+  --bl-text-muted: #5f6b7d; /* era #94a3b8 (2,56:1 sobre blanco); este da >= 4,89:1 sobre todas las superficies claras */
   --bl-text-inverse: #ffffff;
 
   /* Bordes */
@@ -31,6 +31,13 @@
   /* Retroalimentación */
   --bl-success: #10b981;
   --bl-danger: #ef4444;
+  /* Para TEXTO verde o rojo sobre fondo claro: --bl-success (#10b981) da 2,3-2,5:1 y
+     --bl-danger 3,5-3,8:1, no llegan a 4,5. Los de fondo siguen siendo los de arriba. */
+  --bl-success-text: #047857;
+  --bl-danger-text: #b91c1c;
+  /* Estrellas de reseñas: el ámbar de marca (#f59e0b) da 2,14:1 sobre blanco y
+     las estrellas llevan la nota escrita al lado ("4.5 (2)"). */
+  --bl-star: #b45309;
 
   /* Sombras */
   --bl-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -1567,7 +1574,7 @@ button.coupon-chip:hover {
 
 .coupon-chip__pct {
   font-weight: 700;
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 .coupon-chip__scope {
@@ -1978,6 +1985,14 @@ button.coupon-chip:hover {
 .promo-banner-2.is-store-promo:focus-visible {
   transform: scale(1.02);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+/* Mientras home.js consulta home_promos, los espacios no bajan su foto fija
+   (data-bg-defer en home.html): si el espacio tiene publicidad de un comercio,
+   la foto fija nunca se ve y eran ~100 KB tirados por espacio. home.js saca el
+   atributo de los espacios sin publicidad, si la consulta falla, o a los 3 s. */
+[data-promo-slot][data-bg-defer]:not(.is-store-promo) {
+  background-image: none !important;
 }
 
 /* Promo con más de una imagen (hasta 3, columnas image_url/_2/_3 de
@@ -3795,7 +3810,7 @@ html.bl-reduce-motion .bl-toast.is-leaving {
 .product-card__discount {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 .product-card__rating {
@@ -3936,7 +3951,7 @@ html.bl-reduce-motion .bl-toast.is-leaving {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.65); /* 0.5 daba 4,16:1 sobre el azul del footer; 0.65 da 5,86:1 */
   margin-bottom: 1rem;
 }
 
@@ -5534,7 +5549,7 @@ html.bl-reduce-motion .bl-toast.is-leaving {
 
 .pro-highlight-card__stars {
   font-size: 0.78125rem;
-  color: #f59e0b;
+  color: var(--bl-star);
   font-weight: 700;
 }
 

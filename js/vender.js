@@ -4264,12 +4264,12 @@ function renderOnboardingChecklist(hasProducts) {
 
     const icon = document.createElement('i');
     icon.className = step.done ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle';
-    icon.style.color = step.done ? '#059669' : 'var(--bl-text-muted, #94a3b8)';
+    icon.style.color = step.done ? '#059669' : 'var(--bl-text-muted, #5f6b7d)';
     btn.appendChild(icon);
 
     const text = document.createElement('span');
     text.textContent = step.label;
-    if (step.done) text.style.cssText = 'text-decoration: line-through; color: var(--bl-text-muted, #94a3b8);';
+    if (step.done) text.style.cssText = 'text-decoration: line-through; color: var(--bl-text-muted, #5f6b7d);';
     btn.appendChild(text);
 
     list.appendChild(btn);

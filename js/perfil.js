@@ -484,7 +484,7 @@ async function loadAddresses(userId) {
 
     if (addr.phone) {
       const phoneP = document.createElement('p');
-      phoneP.style.cssText = 'margin: 0.1rem 0; font-size: 0.85rem; color: var(--bl-text-muted, #94a3b8);';
+      phoneP.style.cssText = 'margin: 0.1rem 0; font-size: 0.85rem; color: var(--bl-text-muted, #5f6b7d);';
       phoneP.textContent = `Tel: ${addr.phone}`;
       info.appendChild(phoneP);
     }

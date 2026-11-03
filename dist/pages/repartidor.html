@@ -2,26 +2,33 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <title>Mi panel de repartidor - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/repartidor-B57IP5d2.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CpnR9onH.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-iEvU9gaB.js">
-    <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CkgV1SVI.js">
+    <script type="module" crossorigin src="/assets/repartidor-B8kcuPRh.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-sfS7V7TP.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DqxUH78P.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DVbvRg2u.js">
-    <link rel="stylesheet" crossorigin href="/assets/repartidor-CraLtCgv.css">
-    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-Bh621w21.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BGgsJLUr.css">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-0oyv2Qbd.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BcCh9uRa.js">
+    <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
+    <link rel="modulepreload" crossorigin href="/assets/delivery-evidence-PDpYRVKt.js">
+    <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
+    <link rel="modulepreload" crossorigin href="/assets/courier-utils-CwjtcuJt.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="stylesheet" crossorigin href="/assets/repartidor-Cu6t8AIy.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-BVwoWwWT.css">
   </head>
   <body>
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
@@ -81,13 +88,27 @@
           <header class="rp-header">
             <div>
               <h1 class="rp-header__title">Panel de repartidor</h1>
-              <p class="rp-header__sub">Los pedidos aparecen ordenados por llegada. Se pintan de amarillo a los 5 minutos sin que nadie los tome, y de rojo a los 10.</p>
+              <p class="rp-header__sub">Los pedidos aparecen del más viejo al más nuevo. Podés llevar hasta 3 a la vez.</p>
             </div>
-            <button type="button" class="rp-refresh-btn" id="rp-refresh"><i class="fa-solid fa-arrows-rotate"></i> Actualizar</button>
+            <div class="rp-header__actions">
+              <button type="button" class="rp-refresh-btn" id="rp-tutorial-toggle" aria-controls="rp-tutorial" aria-expanded="false"><i class="fa-regular fa-circle-question"></i> ¿Cómo funciona?</button>
+              <button type="button" class="rp-refresh-btn" id="rp-refresh"><i class="fa-solid fa-arrows-rotate"></i> Actualizar</button>
+            </div>
           </header>
 
+          <details class="rp-tutorial" id="rp-tutorial">
+            <summary class="rp-tutorial__summary">¿Cómo funciona el panel?</summary>
+            <ol class="rp-tutorial__steps">
+              <li><strong>Tomá un pedido.</strong> Tocá "Tomar pedido" en la lista de abajo. Es de un toque: si dos repartidores lo tocan a la vez, se lo queda el primero. Podés llevar hasta 3.</li>
+              <li><strong>Retirá en el comercio.</strong> Andá al local (el link "Cómo llegar" abre el mapa) y decile al comercio el <strong>número de pedido</strong> que ves en tu tarjeta. Cuando el comercio lo confirme, se habilita el botón para sacar la <strong>foto</strong>: tienen que verse todos los productos.</li>
+              <li><strong>Salí en camino.</strong> Al subir la foto el pedido pasa a "En camino" y el comprador se entera.</li>
+              <li><strong>Entregá con el código.</strong> Pedile al comprador el código de 4 números que tiene en "Mis compras" y cargalo en "Marcar entregado".</li>
+              <li><strong>Si algo falla.</strong> En "Tengo un problema" podés avisar una demora, decir que ya lo estás retirando o soltar el pedido para que lo tome otro. Si lo cancelan antes del retiro, te aparece un cartel rojo: no lo busques. Si en camino no podés entregarlo, avisá el problema.</li>
+            </ol>
+          </details>
+
           <section class="rp-section" aria-labelledby="rp-mine-title">
-            <h2 class="rp-section__title" id="rp-mine-title">Mis entregas en curso</h2>
+            <h2 class="rp-section__title" id="rp-mine-title">Mis entregas en curso <span class="rp-section__count" id="rp-active-count" title="Pedidos en curso"></span></h2>
             <div id="rp-mine-list" class="rp-list"></div>
           </section>
 

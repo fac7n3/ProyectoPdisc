@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <meta name="description" content="Contratar profesionales y técnicos de Baradero: plomeros, electricistas, clases particulares y más, por WhatsApp o teléfono." />
     <title>Contratar - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -91,7 +91,7 @@
         font-size: 0.75rem; font-weight: 700;
       }
       .ct-card__stars {
-        display: block; margin-top: 0.3rem; font-size: 0.8125rem; color: #f59e0b; font-weight: 700;
+        display: block; margin-top: 0.3rem; font-size: 0.8125rem; color: var(--bl-star); font-weight: 700;
       }
       .ct-card__stars--empty { color: var(--bl-text-muted); font-weight: 500; }
       .ct-card__chevron { flex-shrink: 0; color: var(--bl-text-muted); transition: transform .2s; }
@@ -336,7 +336,7 @@
       </section>
 
       <!-- Chips de categoría, poblados por js/contratar.js -->
-      <div class="ct-categories" id="ct-categories" role="tablist" aria-label="Categorías"></div>
+      <div class="ct-categories" id="ct-categories" role="group" aria-label="Filtrar por categoría"></div>
 
       <div class="ct-search">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>

@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <meta name="description" content="Baradero Local — Descubrí todos los comercios locales de Baradero: almacén, panadería, verdulería y mucho más." />
     <title>Comercios — Baradero Local</title>
     <meta property="og:type" content="website" />
@@ -17,9 +17,6 @@
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
@@ -122,7 +119,7 @@
         </div>
         <div>
           <div class="footer__col-title">Comprá</div>
-          <nav class="footer__links">
+          <nav class="footer__links" aria-label="Comprá">
             <a href="./search.html?cat=ofertas" class="footer__link">Ofertas del día</a>
             <a href="./search.html?cat=supermercado" class="footer__link">Supermercado</a>
             <a href="./search.html" class="footer__link">Categorías</a>
@@ -131,18 +128,18 @@
         </div>
         <div>
           <div class="footer__col-title">Vendé</div>
-          <nav class="footer__links">
+          <nav class="footer__links" aria-label="Vendé">
             <a href="./vender.html" class="footer__link">Registrar comercio</a>
-            <a href="./info.html" class="footer__link">Cómo vender</a>
-            <a href="./info.html" class="footer__link">Costos y comisiones</a>
+            <a href="./info.html#faq-vender" class="footer__link">Cómo vender</a>
+            <a href="./info.html#faq-vender" class="footer__link">Costos y comisiones</a>
           </nav>
         </div>
         <div>
           <div class="footer__col-title">Ayuda</div>
-          <nav class="footer__links">
-            <a href="./info.html" class="footer__link">Contacto</a>
-            <a href="./info.html" class="footer__link">Preguntas frecuentes</a>
-            <a href="./info.html" class="footer__link">Devoluciones</a>
+          <nav class="footer__links" aria-label="Ayuda">
+            <a href="./info.html#faq-ayuda" class="footer__link">Contacto</a>
+            <a href="./info.html#faq-compras" class="footer__link">Preguntas frecuentes</a>
+            <a href="./info.html#arrepentimiento" class="footer__link">Devoluciones</a>
             <a href="./terminos.html" class="footer__link">Términos</a>
           </nav>
         </div>

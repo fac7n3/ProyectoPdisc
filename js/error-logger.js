@@ -4,6 +4,21 @@
 const MAX_LOGS_PER_SESSION = 20;
 let loggedCount = 0;
 
+/** true si la página corre en una máquina de desarrollo (vite dev/preview,
+ *  pruebas con Playwright, la red de la casa) y no en el sitio publicado.
+ *  Desde ahí no se registra nada: la base es la de producción, y hasta
+ *  2026-11-03 el 100% de error_logs (213 de 213 en 30 días) venía de
+ *  localhost:4173, el script de Speed Insights que fuera de Vercel no existe
+ *  ("Unexpected token '<'"), tapando cualquier error real. */
+export function isDevHost(hostname) {
+  const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+  if (!host) return true; // file:// u otro origen sin host
+  if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host === '0.0.0.0') return true;
+  if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
+  return false;
+}
+
 // Claves que jamás deben viajar a la base, ni de queryString ni de hash.
 // El caso real: los links de recuperación de contraseña, confirmación de
 // email y el callback de Google OAuth vuelven con `#access_token=...&
@@ -33,6 +48,8 @@ export function sanitizeUrlForLogging(href) {
 }
 
 export function initErrorLogging(supabaseClient) {
+  if (isDevHost(window.location.hostname)) return;
+
   async function logError(message, stack) {
     if (loggedCount >= MAX_LOGS_PER_SESSION) return;
     loggedCount++;

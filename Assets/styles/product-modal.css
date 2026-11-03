@@ -366,7 +366,7 @@
   align-items: center;
   gap: 0.3rem;
   font-size: 0.65rem;
-  color: var(--bl-success);
+  color: var(--bl-success-text);
   font-weight: 600;
   margin-top: 0.4rem;
 }
@@ -386,11 +386,11 @@
 }
 
 .pm-stock__text--low {
-  color: #f59e0b;
+  color: #b45309; /* #f59e0b daba 2,14:1 sobre blanco */
 }
 
 .pm-stock__text--ok {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 .pm-stock__bar {
@@ -720,7 +720,7 @@
 }
 
 .pm-shop-info__meta i {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
   font-size: 0.6rem;
 }
 

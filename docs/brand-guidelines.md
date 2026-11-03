@@ -12,7 +12,7 @@ Baradero Local es **comercio de proximidad**, no una tienda online genérica ni 
 |---|---|
 | Color primario (oficial, decidido 2026-08-05) | `#284175` (azul oscuro, "ancla") |
 | Color secundario | `#3f85ba` (azul medio, acento de superficie) / `#78b4eb` (azul claro, superficies) |
-| Fuente principal (oficial, decidido 2026-08-05) | Inter (`@import` de Google Fonts, sitio + video) |
+| Fuente principal (oficial, decidido 2026-08-05) | Inter (sitio: servida desde el propio sitio, `Assets/fonts/` + `Assets/styles/fonts.css`, desde 2026-11-03; video: Google Fonts) |
 | Voz en 3 palabras | Vecinal, cálida, directa |
 
 ---
@@ -101,6 +101,13 @@ Calculados según la fórmula de luminancia relativa de WCAG 2.1 (mínimo AA: 4.
 | Blanco sobre `--bl-vendor-accent` (#2f5aa8) | 6.68:1 | ✅ | ✅ |
 
 **Conclusiones prácticas:** los 3 colores semánticos nuevos pasan AA como texto sólido tanto sobre blanco como sobre el fondo gris del sitio (`--bg-color`), en cualquier combinación. `--primary-color` (#3f85ba) como fondo con texto blanco encima **no** llega a 4.5:1 — usarlo solo con texto grande/bold o iconografía (ya es como se usa hoy: botones píldora con texto corto en mayúscula/negrita), nunca con párrafos. `--primary-light` nunca lleva texto blanco (por eso la card de login ya usa texto oscuro sobre ella). `--text-muted` sobre `--bg-color` está al límite (4.18:1): evitarlo para texto de cuerpo pequeño sobre el fondo gris, está pensado para blanco/superficies claras (5.57:1 ahí).
+
+**Tokens del sitio para texto (actualizado 2026-11-03, verificado con axe en las 15 páginas públicas, claro y oscuro):**
+`--bl-text-muted` es `#5f6b7d` (antes `#94a3b8`, que daba 2,56:1 sobre blanco). El verde y el rojo de estado
+(`--bl-success` #10b981, `--bl-danger` #ef4444) **no llegan a 4,5:1 como texto ni con letra blanca encima**: para
+texto se usan `--bl-success-text` (#047857) y `--bl-danger-text` (#b91c1c), y un botón rojo con letra blanca va en
+`#dc2626`. Las estrellas de reseñas van en `--bl-star` (#b45309; el ámbar `#f59e0b` queda para fondos e íconos
+grandes). En modo oscuro los tres tokens tienen su versión clara en `dark.css`.
 
 ---
 

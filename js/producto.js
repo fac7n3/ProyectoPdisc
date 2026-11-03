@@ -5,6 +5,8 @@ import { renderReviewsSection } from './reviews-utils.js';
 import { fetchProductDetail } from './product-detail-api.js';
 import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
 import { buildContactAction } from './store-contact-utils.js';
+import { setJsonLd, applyCanonical } from './seo.js';
+import { buildProductJsonLd } from './seo-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const productId = params.get('id');
 
   if (!productId) {
-    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: #ef4444;">No se especificó un producto.</div>';
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--bl-danger-text, #b91c1c);">No se especificó un producto.</div>';
     return;
   }
 
@@ -40,6 +42,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // para el salto por encabezados: sin esto queda en "Cargando producto".
     const pageH1 = document.getElementById('page-h1');
     if (pageH1) pageH1.textContent = product.title;
+    // Datos estructurados (schema.org Product): Google los usa para mostrar precio,
+    // stock y estrellas en los resultados. Se arman con lo que ya trajo la página.
+    setJsonLd('product', buildProductJsonLd(product, {
+      origin: window.location.origin,
+      url: applyCanonical() || window.location.href,
+    }));
 
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';
@@ -315,7 +323,7 @@ async function renderStockAlertWidget(container, productId) {
   if (!session) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.style.cssText = 'padding: 0.6rem 1.25rem; border: 2px solid var(--bl-text-muted, #94a3b8); color: var(--bl-text-secondary, #4a5568); border-radius: var(--bl-radius-md); font-weight: 600; background: none; cursor: pointer;';
+    btn.style.cssText = 'padding: 0.6rem 1.25rem; border: 2px solid var(--bl-text-muted, #5f6b7d); color: var(--bl-text-secondary, #4a5568); border-radius: var(--bl-radius-md); font-weight: 600; background: none; cursor: pointer;';
     btn.textContent = 'Avisarme cuando vuelva el stock';
     btn.addEventListener('click', () => {
       showToast('Iniciá sesión para que te avisemos.', 'default');
@@ -340,7 +348,7 @@ async function renderStockAlertWidget(container, productId) {
 
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
-    cancelBtn.style.cssText = 'display: block; margin-top: 0.35rem; background: none; border: none; color: var(--bl-text-muted, #94a3b8); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
+    cancelBtn.style.cssText = 'display: block; margin-top: 0.35rem; background: none; border: none; color: var(--bl-text-muted, #5f6b7d); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
     cancelBtn.textContent = 'Cancelar aviso';
     cancelBtn.addEventListener('click', async () => {
       await supabase.from('stock_alerts').delete().eq('product_id', productId).eq('client_id', session.user.id);

@@ -2,56 +2,40 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <title>Mi panel de profesional - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <style>
-      /* El badge de modo vive en vender.html como CSS inline; acá se necesita
-         la misma regla porque esta página no comparte ese <style>. */
-      .oficios-mode-badge {
-        display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.35rem 0.9rem; background: var(--bl-accent); color: #fff;
-        border-radius: var(--bl-radius-pill); font-size: 0.8rem;
-        font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
-      }
-      /* Sin esto el inline-flex de autor le gana al display:none del
-         user-agent para [hidden] -- mismo detalle que en vender.html. */
-      .oficios-mode-badge[hidden] { display: none; }
-      @media (max-width: 768px) {
-        .oficios-mode-badge { display: none; }
-      }
-      .prof-status-card {
-        max-width: 640px; margin: 2.5rem auto; padding: 2rem;
-        background: var(--bl-surface-alt); border: 1px solid var(--bl-border);
-        border-radius: var(--bl-radius-lg); text-align: center;
-      }
-    </style>
-    <script type="module" crossorigin src="/assets/profesional-DD7uaAZS.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CpnR9onH.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-iEvU9gaB.js">
+    <style>.oficios-mode-badge{background:var(--bl-accent);color:#fff;border-radius:var(--bl-radius-pill);letter-spacing:.02em;white-space:nowrap;align-items:center;gap:.4rem;padding:.35rem .9rem;font-size:.8rem;font-weight:700;display:inline-flex}.oficios-mode-badge[hidden]{display:none}@media (width<=768px){.oficios-mode-badge{display:none}}.prof-status-card{background:var(--bl-surface-alt);border:1px solid var(--bl-border);border-radius:var(--bl-radius-lg);text-align:center;max-width:640px;margin:2.5rem auto;padding:2rem}</style>
+    <script type="module" crossorigin src="/assets/profesional-8gh2fZlA.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
+    <link rel="modulepreload" crossorigin href="/assets/vender-shell-CQ821sAb.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-DlB4Qv41.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-sfS7V7TP.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DqxUH78P.js">
-    <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-CkgV1SVI.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DVbvRg2u.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-CFnsUu9v.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-0oyv2Qbd.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BcCh9uRa.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-B4_QJTeI.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-C_cIOlPE.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-BpqYMND6.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-1XVlAv2k.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
-    <link rel="modulepreload" crossorigin href="/assets/vender-shell-DZXY0qg3.js">
-    <link rel="stylesheet" crossorigin href="/assets/profesional-BAxR_c6I.css">
-    <link rel="stylesheet" crossorigin href="/assets/a11y-B54MCS9q.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-Bh621w21.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BGgsJLUr.css">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-kedvLOjS.js">
+    <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-JNeKhXUZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-B4_QJTeI.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CopZU83P.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="stylesheet" crossorigin href="/assets/profesional-Cv7ZUZOf.css">
+    <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-BVwoWwWT.css">
   </head>
   <body>
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
@@ -150,6 +134,7 @@
               </div>
             </div>
 
+            <button type="button" class="mc-navlink mc-navitem" data-section="recomendaciones"><i class="fa-regular fa-lightbulb mc-navicon"></i> Recomendaciones</button>
             <button type="button" class="mc-navlink mc-navitem" data-section="notificaciones"><i class="fa-regular fa-bell mc-navicon"></i> Notificaciones</button>
             <button type="button" class="mc-navlink mc-navitem" data-section="soporte"><i class="fa-solid fa-headset mc-navicon"></i> Soporte</button>
 
@@ -348,6 +333,27 @@
                 </div>
               </div>
               <div id="of-metrics"></div>
+            </section>
+
+            <!-- === Recomendaciones ===
+                 Consejos para conseguir más clientes. Por ahora solo el cascarón: el
+                 contenido se carga cuando estén escritas las recomendaciones. -->
+            <section class="mc-section" data-section="recomendaciones" hidden>
+              <div class="of-head">
+                <div class="of-head__titles">
+                  <h2 class="of-title">Recomendaciones para impulsar tu emprendimiento</h2>
+                  <p class="of-sub">Ideas simples para que más vecinos te encuentren y te contraten.</p>
+                </div>
+              </div>
+              <ol class="rc-list" id="of-recomendaciones">
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">1</span><span class="rc-item__text">Buenas imágenes o imágenes llamativas.</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">2</span><span class="rc-item__text">Ser respetuosos con sus clientes y demás personas.</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">3</span><span class="rc-item__text">Estar siempre atentos a consultas, pedidos y notificaciones.</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">4</span><span class="rc-item__text">Agregar sus redes sociales (si tienen).</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">5</span><span class="rc-item__text">Ser constantes con sus publicaciones.</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">6</span><span class="rc-item__text">Descripciones coherentes con sus servicios.</span></li>
+                <li class="rc-item"><span class="rc-item__num" aria-hidden="true">7</span><span class="rc-item__text">Tratar de evitar la acumulación de muchos pedidos o consultas.</span></li>
+              </ol>
             </section>
 
             <!-- === Notificaciones === -->

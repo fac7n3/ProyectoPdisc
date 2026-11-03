@@ -1,11 +1,13 @@
-// Speed Insights initialization for Vercel
+// Speed Insights de Vercel (Web Vitals reales de los visitantes).
+// Solo se inyecta en el sitio publicado: en vite dev/preview el script
+// `/_vercel/speed-insights/script.js` no existe, el servidor devuelve el HTML
+// de la página y el navegador tira "Unexpected token '<'" en cada carga
+// (era el 100% de lo que llegaba a error_logs, ver isDevHost).
 import { injectSpeedInsights } from '@vercel/speed-insights';
+import { isDevHost } from './error-logger.js';
 
-// Initialize Speed Insights
-// This will automatically track page views and web vitals
-// The tracking only works in production (on Vercel), not in development mode
-injectSpeedInsights({
-  debug: false, // Set to true if you want to see debug logs in development
-});
+if (!isDevHost(window.location.hostname)) {
+  injectSpeedInsights({ debug: false });
+}
 
 export { injectSpeedInsights };

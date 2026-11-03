@@ -608,7 +608,7 @@
 }
 
 .transfer-info-box__data .fa-circle-check {
-  color: var(--bl-success, #10b981);
+  color: var(--bl-success-text);
 }
 
 .transfer-info-box__missing {
@@ -676,7 +676,7 @@
   margin-left: 0.35rem;
   font-weight: 500;
   font-size: 0.6875rem;
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 /* La dirección puede ser larga: envuelve, no se recorta (ese era justamente el
@@ -732,7 +732,7 @@
 }
 
 .coupon-message.is-success {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 /* Totales */
@@ -762,11 +762,11 @@
 }
 
 .cart-summary__row--discount .cart-summary__row-label {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 .cart-summary__row--discount .cart-summary__row-value {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 .cart-summary__row--shipping .cart-summary__row-label {
@@ -774,7 +774,7 @@
 }
 
 .cart-summary__row--shipping .cart-summary__row-value {
-  color: var(--bl-success);
+  color: var(--bl-success-text);
 }
 
 /* Avisos del resumen (pendientes / seleccionado y oculto por el filtro).

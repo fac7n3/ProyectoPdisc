@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import './fonts.css';
 
 :root {
   --auth-bg: #f2f6fc;
@@ -284,7 +284,7 @@ input[type="checkbox"] {
 
 .account-desc {
   font-size: 0.6875rem;
-  color: #718096;
+  color: #5f6b7d; /* #718096 daba 4,01:1 sobre blanco */
 }
 
 .auth-footer {

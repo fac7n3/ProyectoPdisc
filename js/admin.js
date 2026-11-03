@@ -1634,7 +1634,7 @@ async function fetchReportedReviews() {
 
     const tdReview = document.createElement('td');
     const starsSpan = document.createElement('span');
-    starsSpan.style.color = '#f59e0b';
+    starsSpan.style.color = 'var(--bl-star, #b45309)';
     starsSpan.textContent = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
     tdReview.appendChild(starsSpan);
     if (review.comment) {
@@ -1944,7 +1944,7 @@ async function renderAdminThreadMessages(threadDiv, ticketId) {
     threadDiv.appendChild(errP);
   } else if (!messages || messages.length === 0) {
     const noMsgs = document.createElement('p');
-    noMsgs.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
+    noMsgs.style.cssText = 'color: var(--bl-text-muted, #5f6b7d); font-size: 0.85rem;';
     noMsgs.textContent = 'Todavía no hay mensajes en el hilo.';
     threadDiv.appendChild(noMsgs);
   } else {
@@ -1956,7 +1956,7 @@ async function renderAdminThreadMessages(threadDiv, ticketId) {
       bubble.style.cssText = `padding: 0.5rem 0.75rem; border-radius: 12px; max-width: 80%; font-size: 0.875rem; ${isMine ? 'align-self: flex-end; background: var(--bl-primary, #2563eb); color: white;' : 'align-self: flex-start; background: var(--bl-surface, white); color: var(--bl-text, inherit);'}`;
       bubble.textContent = m.message;
       const meta = document.createElement('div');
-      meta.style.cssText = `font-size: 0.7rem; color: ${isMine ? 'rgba(255,255,255,0.7)' : 'var(--bl-text-muted, #94a3b8)'}; margin-top: 0.2rem;`;
+      meta.style.cssText = `font-size: 0.7rem; color: ${isMine ? 'rgba(255,255,255,0.7)' : 'var(--bl-text-muted, #5f6b7d)'}; margin-top: 0.2rem;`;
       meta.textContent = new Date(m.created_at).toLocaleString('es-AR');
       bubble.appendChild(meta);
       threadDiv.appendChild(bubble);
@@ -1993,7 +1993,7 @@ async function toggleAdminTicketThread(tr, ticket) {
   threadRow._reloadMessages = () => renderAdminThreadMessages(threadDiv, ticket.id);
 
   const loadingP = document.createElement('p');
-  loadingP.style.cssText = 'color: var(--bl-text-muted, #94a3b8); font-size: 0.85rem;';
+  loadingP.style.cssText = 'color: var(--bl-text-muted, #5f6b7d); font-size: 0.85rem;';
   loadingP.textContent = 'Cargando mensajes...';
   threadDiv.appendChild(loadingP);
 
@@ -2040,7 +2040,7 @@ async function toggleAdminTicketThread(tr, ticket) {
     threadCell.appendChild(replyForm);
   } else {
     const closed = document.createElement('p');
-    closed.style.cssText = 'font-size: 0.85rem; color: var(--bl-text-muted, #94a3b8);';
+    closed.style.cssText = 'font-size: 0.85rem; color: var(--bl-text-muted, #5f6b7d);';
     closed.textContent = ticket.status === 'cancelled' ? 'Reclamo cancelado por el usuario.' : 'Reclamo resuelto.';
     threadCell.appendChild(closed);
   }

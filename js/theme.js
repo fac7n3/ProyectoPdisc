@@ -9,6 +9,9 @@
 // guardada el sitio queda claro, como siempre.
 
 import { THEME_KEY, normalizeTheme, nextTheme, themeToggleLabel } from './theme-utils.js';
+// Dirección canónica de la página (seo.js). Va acá porque theme.js es el único
+// módulo que cargan TODAS las páginas, incluidas las estáticas (info, términos).
+import './seo.js';
 
 // SVG propio y no Font Awesome: el panel de admin no carga esa fuente de íconos.
 const SUN_SVG =
