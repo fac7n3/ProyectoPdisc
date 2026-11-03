@@ -10,9 +10,11 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "optimize-images": "node scripts/optimize-images.mjs",
-    "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done"
+    "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done",
+    "subset-icons": "node scripts/subset-fontawesome.mjs"
   },
   "devDependencies": {
+    "@fortawesome/fontawesome-free": "^6.5.2",
     "postcss": "^8.5.31",
     "sharp": "^0.35.3",
     "supabase": "^2.109.1",

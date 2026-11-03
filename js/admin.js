@@ -1,3 +1,4 @@
+import { CATEGORY_ICON_OPTIONS, isAllowedCategoryIcon } from './category-icons.js';
 import { supabase, showToast, guardPage } from './auth-utils.js';
 import { statusLabel as supportStatusLabel, buildAttachmentChips } from './support-utils.js';
 import { buildDropdown } from './dropdown.js';
@@ -679,6 +680,16 @@ async function fetchCategories() {
 }
 
 function setupCategoryForm() {
+  // Lista cerrada de íconos (js/category-icons.js): el sitio carga un Font Awesome
+  // recortado, un ícono que no esté en la lista se vería como un cuadrado vacío.
+  const iconSelect = document.getElementById('cat-icon');
+  CATEGORY_ICON_OPTIONS.forEach(({ value, label }) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    iconSelect.appendChild(opt);
+  });
+
   document.getElementById('category-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('cat-name').value.trim();
@@ -687,6 +698,10 @@ function setupCategoryForm() {
 
     if (!name || !slug) {
       showToast('Nombre y slug son obligatorios.', 'error');
+      return;
+    }
+    if (!isAllowedCategoryIcon(icon)) {
+      showToast('Elegí un ícono de la lista.', 'error');
       return;
     }
 

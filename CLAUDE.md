@@ -104,6 +104,16 @@ Historial completo de cómo se llegó a cada uno: skill `progreso-baradero-local
   (`log_*`, `increment_professional_metric`, `report_review`). **Font Awesome no se recortó** (el admin escribe a mano la clase del ícono de
   cada categoría). **Pendiente del usuario:** "Leaked password protection" (Authentication -> Policies). **Sin probar en el teléfono real**
   ni con sesión iniciada en los paneles.
+- **Hecho 2026-11-03 (migración 153 APLICADA) — Mejoras de la auditoría general, tanda 2**, a pedido del usuario ("sigue"). Detalle: skill
+  `progreso-baradero-local`, entrada "tanda 2". **Hecho:** (1) **vista previa propia al compartir** un producto o comercio por
+  WhatsApp/Facebook/Instagram/Telegram/X: `middleware.js` (Routing Middleware de Vercel) responde solo a los robots de vista previa con nombre,
+  foto, precio y comercio (`js/og-preview-utils.js`); las personas ven la página de siempre (se probó en un deploy de prueba); (2) **límite de
+  llamadas anónimas** (migración 153): cupones 30 / 10 min, vistas y búsquedas 300 / h, métricas de profesional 60 / h, por cuenta o por hash con
+  sal de la IP (nunca la IP en claro, se borra a las 24 h; está en el registro de tratamientos y en la política de privacidad); (3) **Font Awesome
+  recortado de ~400 KB a ~41 KB** (`npm run subset-icons`; `npm test` falla si el código usa un ícono que no está en el recorte) y el ícono de
+  una categoría nueva se elige de una **lista cerrada** (`js/category-icons.js`). **Regla nueva:** un ícono nuevo = escribirlo en el código y
+  correr `npm run subset-icons` (necesita Python con `fonttools` y `brotli`). **Gotcha del conector de Supabase:** una consulta con bloques
+  sensibles pide una confirmación en pantalla y se corta a los 60 s si nadie la acepta.
 - **Hecho 2026-11-02 (migración 151 APLICADA a producción, en Supabase figura como `148_admin_mfa_aal2`: la 148-150 del repo son de otra sesión del mismo día) — Verificación en dos pasos (TOTP) para admin y moderador** (P-01 del hardening),
   a pedido del usuario. **Servidor (el control real):** `public.jwt_role()` (SECURITY DEFINER, lee `auth.mfa_factors`) reemplazó la lectura del rol
   del JWT en las **98 policies y 25 funciones** que la hacían (la migración lo hace con un DO block y **falla si queda una lectura directa**): un

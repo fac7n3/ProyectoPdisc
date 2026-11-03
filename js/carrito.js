@@ -1081,7 +1081,11 @@ function initCouponEvents() {
         couponPercent = 0;
         couponStoreId = null;
         appliedCouponCode = null;
-        message.textContent = 'Código inválido o expirado.';
+        // Migración 153: tope de intentos por IP/cuenta. Con el tope, decir
+        // "código inválido" sería mentira: el código puede ser bueno.
+        message.textContent = error?.hint === 'rate_limited'
+          ? 'Probaste muchos códigos seguidos. Esperá unos minutos y volvé a intentar.'
+          : 'Código inválido o expirado.';
         message.classList.add('is-error');
       } else if (noAplica) {
         couponPercent = 0;

@@ -6199,3 +6199,69 @@ en todas), límite de llamadas a las RPC anónimas (`validate_coupon_code`, `log
 CSP en un solo lugar, prueba de punta a punta de una compra, notificaciones web push,
 mover la base a São Paulo, decidir si `dist/` se sigue versionando y achicar
 `CLAUDE.md`. Del usuario: "Leaked password protection" en el dashboard.
+
+## 2026-11-03 — Mejoras de la auditoría general, tanda 2 (migración 153 aplicada)
+
+Sigue de la tanda 1 (entrada de arriba), a pedido del usuario ("sigue").
+
+- **Vista previa propia al compartir un producto o comercio** (`middleware.js` en la raíz +
+  `js/og-preview-utils.js`, 14 tests). Routing Middleware de Vercel (runtime edge) con
+  `matcher` solo para `/pages/producto.html` y `/pages/comercio.html`: si el User-Agent es un
+  robot de vista previa (WhatsApp, Facebook/Instagram/iMessage, Telegram, X, Slack, Discord,
+  LinkedIn, Pinterest, Snapchat, Reddit...) responde una página mínima con `og:` y `twitter:`
+  (nombre, foto, precio con oferta, comercio, `product:price:*`); para todo lo demás no hace
+  nada. **Googlebot no entra** (ejecuta JS y ya lee el JSON-LD). **Los navegadores internos de
+  Instagram/Facebook/Line NO son robots** (su UA trae el nombre de la app): la lista tiene solo
+  nombres de robots. Lee con la clave pública (`get_product_detail` / `stores` aprobados),
+  timeout 2,5 s; ante cualquier problema deja pasar a la página normal. La página mínima trae
+  un `<script>` que manda a la real con `?bl_full=1` (con ese parámetro el middleware no actúa),
+  por si algún navegador se hiciera pasar por robot. Respuesta `cache-control: private` +
+  `vary: User-Agent` + `x-bl-preview` (para ver desde curl que actuó). **Verificado en un
+  deploy de prueba de la rama** (curl con UA de WhatsApp/Facebook: preview; con UA de Instagram
+  in-app: página normal; costo para una persona ~20-30 ms). De paso `og:image` de las páginas
+  fijas pasa a URL absoluta en el build (`absoluteOgImagePlugin` en `vite.config.js`): las
+  relativas las ignoran Facebook y WhatsApp. **Env vars:** usa `VITE_SUPABASE_URL`/`_ANON_KEY`
+  del proyecto de Vercel (ya están). **Si Facebook guarda una vista previa vieja:** limpiarla
+  en developers.facebook.com/tools/debug.
+- **Límite de llamadas a las RPC anónimas** (migración **153**, `db/schema/153_limite_llamadas_anonimas.sql`,
+  APLICADA). `_rate_limit_ok(bucket, tope, ventana)` + `api_rate_limits` (RLS sin policies, sin
+  grants): cupones 30 / 10 min (error con `hint = 'rate_limited'`; el carrito dice "Probaste
+  muchos códigos seguidos" en vez de "código inválido"), `log_product_view` y `log_search_event`
+  300 / hora y `increment_professional_metric` 60 / hora (los tres paran **en silencio**). Cliente
+  = cuenta (`u:<uid>`) o **hash sha256 con sal de la IP** (`ip:<hash>`, header
+  `cf-connecting-ip` / `x-forwarded-for`; sal en `api_rate_limit_salt`); sin IP (cron, SQL
+  editor) no se limita. Se borra a las 24 h dentro de `purge_expired_personal_data()` (reescrita
+  con un paso más). Documentado en `REGISTRO-TRATAMIENTOS.md` (T15, retención) y en la política
+  de privacidad. **Verificado contra la base real en una transacción que se deshace sola** (un
+  `DO` que crea todo y termina en `raise exception`: se probó que el cupón 31 da `rate_limited`,
+  otra IP sigue andando, 305 vistas -> 300 filas, la IP nunca está en claro, `anon` no puede
+  leer las tablas ni llamar a las funciones internas, sin headers no se guarda nada, la ventana
+  vencida reinicia, la purga borra). **Gotcha del conector:** ese primer intento se colgó 60 s
+  esperando una confirmación que nadie veía (el conector trata el bloque como sensible); el
+  segundo, con el usuario atento, corrió. **Pendiente:** el tope de cupones es por IP: varios
+  vecinos detrás de la misma IP (un local, un colegio) comparten los 30 intentos.
+- **Font Awesome recortado** (`npm run subset-icons`, `scripts/subset-fontawesome.mjs` +
+  `scripts/fa-usage.mjs`, test `js/fontawesome-subset.test.mjs`). De ~400 KB (CSS 101 + solid
+  153 + brands 115 + regular 25) a **~41 KB** (CSS 20 + solid 15,6 + regular 3 + brands 1,4):
+  165 íconos usados. El script lee todo `fa-nombre` de `js/`, `pages/`, `index.html` y los CSS,
+  cruza con el CSS original (`@fortawesome/fontawesome-free` 6.5.2 como devDependency: es byte a
+  byte la versión que ya se servía), deja solo las reglas usadas, saca Font Awesome 5, la
+  compatibilidad v4 y los .ttf, pone `font-display: swap` (antes `block` dejaba los íconos
+  invisibles mientras bajaba) y recorta las fuentes con `fontTools.subset` (Python con
+  `fonttools` y `brotli`; otro intérprete con `FA_PYTHON=`). **Si se agrega un ícono al código y
+  no se vuelve a correr el script, `npm test` falla** y dice en qué archivo está. Verificado:
+  las 174 combinaciones estilo/ícono reales dan el mismo píxel que el Font Awesome completo.
+  **El campo "Ícono" de nueva categoría del admin es ahora una lista cerrada**
+  (`js/category-icons.js`, 45 íconos; si no está en la lista se vería un cuadrado vacío): para
+  sumar uno, agregarlo ahí y correr el script. `/vendor` cachea 7 días con
+  `stale-while-revalidate`: un navegador con el CSS viejo en caché sigue andando (el CSS viejo
+  pide los mismos nombres de fuente y los glifos usados están en las nuevas).
+
+### Lo que sigue (de la lista de la auditoría)
+
+Fotos de producto en 2 tamaños con `srcset`, CSS por página (`home.css` + `dark-auto.css`
+cargan en todas), sacar restos sin uso (`confirm_simulated_payment`, `update_delivery_status`
+camino viejo, `product_variants`, `free_shipping_threshold`, `styles.css`), partir `vender.js`
+(6.000 líneas), CSP en un solo lugar, prueba de punta a punta de una compra, notificaciones
+web push, mover la base a São Paulo, decidir si `dist/` se sigue versionando y achicar
+`CLAUDE.md` (2.100 líneas). Del usuario: "Leaked password protection" en el dashboard.

@@ -29,7 +29,7 @@
 | T12 | Soporte y reclamos | Todos | Asunto, mensaje, adjuntos, respuestas | Atender reclamos | Contractual; obligación legal (Defensa del Consumidor) | `support_tickets`, `support_ticket_messages`, bucket `support-attachments` (migración 73 sin aplicar) | La persona; admin |
 | T13 | Notificaciones | Todos | Tipo, contenido, leída | Avisar cambios de pedidos y cuenta | Contractual | `notifications` | La persona |
 | T14 | Recomendaciones y búsqueda | Visitantes, clientes | Búsquedas, productos vistos (en la base: seudonimizados a los 30 días); productos vistos en el navegador (`localStorage`) | Mejorar el buscador; recomendar productos | Interés legítimo (minimizado) | `search_events`, `product_views`, `localStorage` | Admin (agregado) |
-| T15 | Registro técnico y seguridad | Visitantes, usuarios | Mensaje de error, URL sin tokens, navegador, id de cuenta; acciones de admins y eventos de seguridad (sin datos personales) | Detectar errores y abusos; rendición de cuentas | Interés legítimo; obligación de seguridad (art. 9) | `error_logs`, `admin_audit_log`; logs de Supabase y Vercel | Admin |
+| T15 | Registro técnico y seguridad | Visitantes, usuarios | Mensaje de error, URL sin tokens, navegador, id de cuenta; acciones de admins y eventos de seguridad (sin datos personales); **contador de llamadas por cliente: hash con sal de la IP (nunca la IP en claro) o id de cuenta, para frenar abusos de cupones y métricas (migración 153)** | Detectar errores y abusos; rendición de cuentas | Interés legítimo; obligación de seguridad (art. 9) | `error_logs`, `admin_audit_log`; logs de Supabase y Vercel | Admin |
 | T16 | Ubicación para "Comercios cerca tuyo" | Visitantes | Latitud/longitud | Mostrar comercios cercanos y el mapa | Consentimiento (permiso del navegador, a pedido) | Solo `sessionStorage` del navegador; se envía a Google Maps para dibujar el mapa | Nadie en la plataforma |
 | T17 | Combos "Impulsá tus ventas" | Comercios | Plan comprado, pago | Cobrar y activar el combo | Contractual | `boost_purchases`, Mercado Pago | Dueño; admin |
 
@@ -76,6 +76,7 @@ contractuales y evaluar la región de Supabase si algún día se migra el proyec
 | Notificaciones leídas | 1 año | `purge_expired_personal_data()` (diario) |
 | Búsquedas y productos vistos | Seudonimizados a 30 días; borrados a 180 | Ídem |
 | Errores técnicos | 90 días | Ídem |
+| Contador de llamadas anónimas (hash de IP) | 1 día | Ídem |
 | Estados OAuth de Mercado Pago | 10 minutos de validez; borrados al día | Ídem |
 | Log de auditoría (sin datos personales) | 2 años | Ídem |
 | Backups cifrados (si se activa P-02) | 30 días | Retención del artefacto |
