@@ -9,6 +9,7 @@
  * generan (siempre daba 0 estrellas / "vendidos" inventado).
  */
 
+import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
 import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
@@ -174,7 +175,7 @@ function buildRelatedStubCard(item) {
   const imgWrap = document.createElement('div');
   imgWrap.className = 'product-card__image';
   const img = document.createElement('img');
-  img.setAttribute('src', item.image_url || '/img/no-image.svg');
+  setProductImage(img, item.image_url, '160px');
   imgWrap.appendChild(img);
   const name = document.createElement('div');
   name.className = 'product-card__name';

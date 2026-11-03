@@ -1,3 +1,4 @@
+import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
 import { updateCartBadge, showToast, localIsoDate, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
@@ -25,9 +26,10 @@ function buildProductCard(product, store) {
   imageDiv.className = 'product-card__image';
 
   const img = document.createElement('img');
-  img.src = product.image_url || '/img/no-image.svg';
+  setProductImage(img, product.image_url);
   img.alt = product.title;
   img.loading = 'lazy';
+  img.decoding = 'async';
   imageDiv.appendChild(img);
 
   const wishBtn = document.createElement('button');

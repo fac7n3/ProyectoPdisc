@@ -6272,3 +6272,32 @@ camino viejo, `product_variants`, `free_shipping_threshold`, `styles.css`), part
 (6.000 líneas), CSP en un solo lugar, prueba de punta a punta de una compra, notificaciones
 web push, mover la base a São Paulo, decidir si `dist/` se sigue versionando y achicar
 `CLAUDE.md` (2.100 líneas). Del usuario: "Leaked password protection" en el dashboard.
+
+## 2026-11-03 — Mejoras de la auditoría general, tanda 3 (sin migración)
+
+Sigue de las tandas 1 y 2 (entradas de arriba), a pedido del usuario ("sigue con la siguiente tanda").
+
+- **Fotos de producto en dos tamaños** (`js/product-image.js`, `scripts/make-product-thumbs.mjs` = `npm run thumbs`,
+  test `js/product-thumbs.test.mjs`). Cada `public/img/productos/NOMBRE.webp` (800 px) tiene `s/NOMBRE.webp` de **520 px**
+  (~25 KB vs ~50 KB). `setProductImage(img, url)` pone `src` (la grande, a propósito: el modal, el carrito y los pedidos leen
+  `getAttribute('src')` de la tarjeta), `srcset="s/X 520w, X 800w"` y `sizes`. Se usa en las tarjetas de inicio, comercio, búsqueda
+  (resultados, grupos "Compará antes de comprar" y relacionados del modal). Solo aplica a `/img/productos/*.webp`: las fotos de
+  Supabase Storage y las de `/img/prod-*.webp` quedan igual. **Por qué 520 y no 400:** una primera versión de 400 px no ahorraba
+  nada en celular (un Pixel de pantalla 2,6x necesita ~500 px para una tarjeta de 190 px y elegía siempre la grande). **Medido
+  (Chromium, base real):** búsqueda 24 productos celular 108 -> 55 KB, escritorio 160 -> 94 KB; inicio escritorio 455 -> 57 KB
+  (con 400 px; con 520 son algo más). El repo suma ~15 MB (public) + ~15 MB (dist, que se versiona). **Foto nueva en
+  `public/img/productos/` = correr `npm run thumbs`**; si no, `npm test` falla (la tarjeta pediría un archivo que no existe).
+- **`CLAUDE.md` de 203 KB / 2.134 líneas a 21 KB / 175.** Se cargaba entero en cada sesión y casi todo eran tareas resueltas.
+  Las **153 entradas originales, sin tocar**, están en `docs/HISTORIAL-PENDIENTES.md` (no se carga solo; `grep -n` para buscar).
+  Lo que queda en `CLAUDE.md`: pendientes del usuario, pendientes de desarrollo abiertos, y un resumen de **reglas y gotchas vigentes**
+  (numeración de migraciones, conector de Supabase, roles con `jwt_role()`, CSP, colores/tokens, íconos y miniaturas, trampas conocidas,
+  cómo probar en este entorno). **Regla nueva: no agregar entradas "Hecho" a `CLAUDE.md`** (el detalle va a este skill).
+  De paso se verificó contra la base: la migración **66** (`cart_hints_enabled`) **ya está aplicada** (la nota decía lo contrario) y la
+  **73 (adjuntos de soporte) NO**: no existe la columna `support_tickets.attachments` ni el bucket `support-attachments`, así que
+  adjuntar una captura a un reclamo falla hoy. Quedó como pendiente abierto.
+- **Restos sin uso:** se buscaron JS, CSS e imágenes que nadie referencia. Solo `Assets/styles/styles.css` (4 KB, no se sirve; lo
+  cita la documentación de marca, por eso no se borró). Los PNG de `Assets/images/` son las fuentes de `scripts/optimize-images.mjs`.
+  Lo de la base (`confirm_simulated_payment`, `product_variants`, `free_shipping_threshold`, bucket `store-banners`) no se tocó: el
+  conector se cuelga con `DROP`/`DELETE` y no hay apuro.
+- **Lo que sigue:** CSS por página (`home.css` + `dark-auto.css` cargan en todas), CSP en un solo lugar, partir `vender.js`, prueba de
+  punta a punta de una compra, notificaciones web push, mover la base a `sa-east-1`, aplicar la migración 73.

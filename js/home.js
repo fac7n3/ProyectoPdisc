@@ -1,4 +1,5 @@
 // Interacciones de la página principal
+import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
@@ -256,9 +257,10 @@ function buildProductCard(product) {
   imageDiv.className = 'product-card__image';
 
   const img = document.createElement('img');
-  img.src = product.image_url || '/img/no-image.svg';
+  setProductImage(img, product.image_url);
   img.alt = product.title;
   img.loading = 'lazy';
+  img.decoding = 'async';
   imageDiv.appendChild(img);
 
   const wishBtn = document.createElement('button');

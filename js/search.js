@@ -4,6 +4,7 @@
 // encabezado que refleja la consulta, chips de filtros activos removibles,
 // rango de precio funcional, ordenamiento, paginación ("cargar más") y
 // estado sin resultados con recuperación.
+import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
 import { logSearch, logSearchClick } from './search-analytics.js';
@@ -362,7 +363,7 @@ function buildCompareGroup(group, userLoc, coords) {
   head.className = 'pc-group__head';
   const img = document.createElement('img');
   img.className = 'pc-group__img';
-  img.src = cheapest.image_url || '/img/no-image.svg';
+  setProductImage(img, cheapest.image_url, '64px');
   img.alt = '';
   img.loading = 'lazy';
   const headText = document.createElement('div');
@@ -514,7 +515,7 @@ function openCompareProduct(item) {
   const imgWrap = document.createElement('div');
   imgWrap.className = 'product-card__image';
   const img = document.createElement('img');
-  img.setAttribute('src', item.image_url || '/img/no-image.svg');
+  setProductImage(img, item.image_url);
   imgWrap.appendChild(img);
   const shop = document.createElement('span');
   shop.className = 'product-card__shop';
@@ -769,9 +770,10 @@ function buildCard(product) {
   const imageDiv = document.createElement('div');
   imageDiv.className = 'product-card__image';
   const img = document.createElement('img');
-  img.src = product.image_url || '/img/no-image.svg';
+  setProductImage(img, product.image_url);
   img.alt = product.title;
   img.loading = 'lazy';
+  img.decoding = 'async';
   imageDiv.appendChild(img);
   const wishBtn = document.createElement('button');
   wishBtn.className = 'product-card__wishlist';
