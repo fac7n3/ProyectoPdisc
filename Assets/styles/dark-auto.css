@@ -1943,3 +1943,7 @@ html[data-theme="dark"] .mp-status--ok {
 html[data-theme="dark"] .social-row__icon {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] #store-profile-form .pf-actions .form-btn.is-done,
+html[data-theme="dark"] #store-profile-form .pf-actions .form-btn.is-done:disabled {
+  background: color-mix(in srgb, var(--bl-success) 55%, var(--bl-primary-deeper));
+}
