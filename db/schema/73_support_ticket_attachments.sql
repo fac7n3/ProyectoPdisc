@@ -18,43 +18,60 @@ alter table public.support_tickets
 
 -- Tope también en la DB: el front limita a 5, pero el insert es un borde de
 -- confianza (la API de Supabase está abierta a cualquier cliente).
-alter table public.support_tickets drop constraint if exists support_tickets_attachments_max;
-alter table public.support_tickets
-  add constraint support_tickets_attachments_max
-  check (attachments is null or array_length(attachments, 1) <= 5);
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'support_tickets_attachments_max'
+                   and conrelid = 'public.support_tickets'::regclass) then
+    alter table public.support_tickets
+      add constraint support_tickets_attachments_max
+      check (attachments is null or array_length(attachments, 1) <= 5);
+  end if;
+end $$;
 
 insert into storage.buckets (id, name, public)
 values ('support-attachments', 'support-attachments', false)
 on conflict (id) do nothing;
 
-drop policy if exists support_attachments_insert_own on storage.objects;
-create policy support_attachments_insert_own on storage.objects for insert
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'support_attachments_insert_own') then
+    execute $p$create policy support_attachments_insert_own on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'support-attachments'
   and (storage.foldername(name))[1] = auth.uid()::text
-);
+)$p$;
+  end if;
+end $$;
 
 -- Lo ve el autor y el equipo de soporte (mismos roles que el hilo de
 -- mensajes, 54_support_ticket_messages.sql).
-drop policy if exists support_attachments_select_own_or_staff on storage.objects;
-create policy support_attachments_select_own_or_staff on storage.objects for select
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'support_attachments_select_own_or_staff') then
+    execute $p$create policy support_attachments_select_own_or_staff on storage.objects for select
 to authenticated
 using (
   bucket_id = 'support-attachments'
   and (
     (storage.foldername(name))[1] = auth.uid()::text
-    or coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), 'cliente') in ('admin', 'moderador')
+    or coalesce(public.jwt_role(), 'cliente') in ('admin', 'moderador')
   )
-);
+)$p$;
+  end if;
+end $$;
 
 -- Borrado propio: es lo que permite limpiar los archivos si el insert del
 -- ticket falla después de haberlos subido (si no, quedan pagos para siempre,
 -- el mismo bug que arregló storage-utils.js con las fotos de producto).
-drop policy if exists support_attachments_delete_own on storage.objects;
-create policy support_attachments_delete_own on storage.objects for delete
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'support_attachments_delete_own') then
+    execute $p$create policy support_attachments_delete_own on storage.objects for delete
 to authenticated
 using (
   bucket_id = 'support-attachments'
   and (storage.foldername(name))[1] = auth.uid()::text
-);
+)$p$;
+  end if;
+end $$;

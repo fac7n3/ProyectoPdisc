@@ -6301,3 +6301,15 @@ Sigue de las tandas 1 y 2 (entradas de arriba), a pedido del usuario ("sigue con
   conector se cuelga con `DROP`/`DELETE` y no hay apuro.
 - **Lo que sigue:** CSS por página (`home.css` + `dark-auto.css` cargan en todas), CSP en un solo lugar, partir `vender.js`, prueba de
   punta a punta de una compra, notificaciones web push, mover la base a `sa-east-1`, aplicar la migración 73.
+
+### 2026-11-03 — Migración 73 aplicada (adjuntos en reclamos de soporte)
+
+La 73 (`db/schema/73_support_ticket_attachments.sql`, de septiembre) nunca se había aplicado: no existían `support_tickets.attachments`
+ni el bucket `support-attachments`, así que **adjuntar una captura a un reclamo fallaba**. Se aplicó con el usuario ("aplicala así"), en una
+versión corregida que **quedó como el archivo del repo**: sin `drop` (el conector se cuelga con ellos: el tope y las 3 policies se crean
+solo si no existen, con `do $$ ... if not exists ...`) y con `public.jwt_role()` en la regla de lectura en lugar de leer el JWT
+directo (si no, un admin sin código de dos pasos habría visto los adjuntos). **Verificado en la base real, en transacciones que se
+deshacen solas:** una persona sube a su carpeta y no a la de otra; no ve los archivos ajenos; anónimo no ve nada; un admin con sesión
+`aal2` ve todo y el mismo admin con `aal1` no ve nada (la base lo trata como cliente: es el diseño de la verificación en dos pasos);
+el tope rechaza 6 adjuntos; el bucket es privado. **Sin probar de punta a punta en el navegador:** subir una captura real desde
+Mi perfil -> Soporte y abrirla desde el panel de admin (los signed URLs de 60 s).

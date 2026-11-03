@@ -117,9 +117,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Fotos con licencia dudosa:** jean, medias, collar y asado (migración 120) vienen de repos públicos sin licencia declarada: reemplazar antes del lanzamiento.
 
 ### Pendientes de desarrollo abiertos
-- **Migración 73 SIN APLICAR** (`db/schema/73_support_ticket_attachments.sql`): falta la columna `support_tickets.attachments` y el bucket
-  `support-attachments` (verificado 2026-11-03). El código es defensivo, pero **adjuntar capturas a un reclamo falla** hasta que se aplique.
-  (La 66, `cart_hints_enabled`, ya está aplicada.) Los números 61-65 están reservados por la rama sin mergear `feature/logistica-terceros`.
+- **Números de migración reservados:** 61-65 los tiene la rama sin mergear `feature/logistica-terceros` (no reusarlos). La 73 (adjuntos de soporte) y la 66 ya están aplicadas.
 - **Mercado Pago por tienda (A113-274):** falta elegir el método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo), verificar que
   `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean los de producción (`MP_ACCESS_TOKEN` ya lo es) y probar con una cuenta real (vincular, pagar en cadena, que `mp-webhook` confirme).
   Sin probar con plata: combos "Impulsá tus ventas" (cobran con el token global) y compra común tras `mp-webhook` v7.
@@ -136,7 +134,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **153**. Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **153** (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.
