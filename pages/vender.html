@@ -1171,6 +1171,33 @@
         #store-profile-form .pf-card__title { font-size: 1.125rem; }
       }
 
+      /* ---- Que nada se salga del ancho de la pantalla (celulares angostos, letra grande) ----
+         Causas que cubre: (1) el contenido del panel se ajusta a su contenido en vez de al
+         ancho de la pantalla (.mc-shell alinea al inicio), (2) columnas 1fr que crecen con lo
+         que llevan adentro, (3) campos y botones sin tope, (4) textos largos sin cortar. */
+      @media (max-width: 959px) {
+        .mc-content:has(#store-profile-section) { width: 100%; max-width: 100%; }
+        #store-profile-section { width: 100%; max-width: 100%; min-width: 0; overflow-x: clip; }
+        #store-profile-form .pf-grid, #store-profile-form .social-grid { grid-template-columns: minmax(0, 1fr); }
+        #store-profile-form .pf-card, #store-profile-form .pf-field, #store-profile-form .fl,
+        #store-profile-form .social-row, #store-profile-form .pf-phone, #store-profile-form .pf-phone > *,
+        #store-profile-form .store-logo-picker, #store-profile-form .store-logo-picker__field { min-width: 0; max-width: 100%; }
+        #store-profile-form .form-input, #store-profile-form .btn-outline, #store-profile-form .form-btn { max-width: 100%; min-width: 0; }
+        #store-profile-form .pf-card__hint, #store-profile-form small, #store-profile-form .sl-status,
+        #store-profile-form .pf-menu__title, #store-profile-form .mp-status { overflow-wrap: anywhere; }
+        #store-profile-form .sl-btn, #store-profile-form .store-logo-picker .btn-outline { white-space: normal; text-align: center; }
+        #store-profile-form .pf-phone .bl-dropdown__menu { max-width: calc(100vw - 2rem); }
+        #store-profile-form .catfield__panel { max-width: 100%; }
+        .pf-menu, .pf-menu__item, .pf-menu__text { min-width: 0; max-width: 100%; }
+      }
+      /* El país del WhatsApp ("Argentina (+54)") es ancho: en pantallas angostas va arriba del número. */
+      @media (max-width: 520px) {
+        #store-profile-form .pf-phone { flex-direction: column; }
+        #store-profile-form .pf-phone > #store-whatsapp-dial-slot { width: 100%; }
+        #store-profile-form .pf-phone .bl-dropdown, #store-profile-form .pf-phone .bl-dropdown__trigger { width: 100%; }
+        #store-profile-form .pf-phone .bl-dropdown__menu { max-width: 100%; }
+      }
+
       @media (max-width: 640px) {
         .pf-grid { grid-template-columns: 1fr; }
         .sl-map { height: 260px; }
