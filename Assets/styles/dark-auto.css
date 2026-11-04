@@ -181,6 +181,12 @@ html[data-theme="dark"] .promo-banner-2--f {
   background-color: #d90368;
   background-image: linear-gradient(180deg, rgba(217, 3, 104, 0) 0%, rgba(217, 3, 104, 0) 40%, rgba(226, 90, 154, 0.24) 55%, rgba(226, 90, 154, 0.35) 75%, rgba(217, 3, 104, 0.6) 100%), url('../images/banners/promo-comercios-test.svg');
 }
+html[data-theme="dark"] .products__more-btn {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .products__more-btn:hover:not(:disabled) {
+  color: var(--bl-text-inverse);
+}
 html[data-theme="dark"] .promo-banner__dot {
   background: rgba(255, 255, 255, 0.5);
 }
@@ -282,15 +288,6 @@ html[data-theme="dark"] .skeleton-img,
 html[data-theme="dark"] .store-skeleton__bar {
   background: #232a33;
 }
-}
-html[data-theme="dark"] .bl-toast {
-  box-shadow: 0 12px 32px rgba(112, 139, 204, 0.252), 0 2px 6px rgba(112, 139, 204, 0.112);
-}
-html[data-theme="dark"] .bl-toast__head {
-  color: #a0abc2;
-}
-html[data-theme="dark"] .bl-toast__action {
-  color: var(--dk-accent-text);
 }
 html[data-theme="dark"] .store-skeleton__bar {
   background: linear-gradient(90deg, #232a33 25%, #1e2730 37%, #232a33 63%);

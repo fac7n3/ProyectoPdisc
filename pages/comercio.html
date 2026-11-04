@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <meta name="description" content="Conocé los comercios locales de Baradero: productos, ubicación y horarios." />
     <title>Cargando comercio... — Baradero Local</title>
     <meta property="og:type" content="website" />
@@ -810,8 +810,6 @@
       </div>
     </footer>
 
-    <!-- Notificación Toast -->
-    <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
     <!-- Modal de mapa (dirección del comercio) -- comercio.js completa el iframe -->
     <div class="store-map-overlay" id="store-map-overlay">

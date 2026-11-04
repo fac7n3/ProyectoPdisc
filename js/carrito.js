@@ -1,6 +1,7 @@
 // Lógica del carrito de compras — Baradero Local
 // Usa localStorage para persistir los productos entre páginas.
 import { supabase } from './auth-utils.js';
+import { notify } from './notice.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
@@ -1480,17 +1481,7 @@ function initClearCartModal() {
 
 // --- Toast de notificación ---
 function showCartToast(message, type = 'default') {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = 'toast';
-  if (type === 'success') toast.classList.add('toast--success');
-  toast.classList.add('toast--visible');
-
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove('toast--visible');
-  }, 5500);
+  notify(message, type);
 }
 
 /**

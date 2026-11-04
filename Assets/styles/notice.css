@@ -1,0 +1,157 @@
+/* notice.css — avisos y notificaciones emergentes de todo el sitio. Lo importan
+   home.css y auth.css; el JS es js/notice.js y js/toast-utils.js. */
+
+/* ── Avisos y notificaciones emergentes ────────────────────────────────
+   UNA sola pila para todo el sitio (#bl-toast-container), arriba a la derecha
+   debajo del navbar en compu y arriba de todo en celular, una debajo de la
+   otra. Salen de dos lados con el mismo aspecto:
+     · js/notice.js  -> avisos cortos ("Agregado al carrito", errores): .bl-toast--notice
+     · js/toast-utils.js -> notificaciones de la campanita, con link: .bl-toast--push
+   Diseño (2026-11-03, "que no parezca hecho por IA"): chato y sobrio, como un
+   cartel de papel -- esquinas casi rectas, una franja de color a la izquierda
+   que dice de qué se trata, sin íconos en círculo ni colores pastel, sin
+   rebote ni sombras difusas. Todo con tokens (con respaldo para las páginas que no cargan home.css:
+   login, registro, recuperar contraseña): el modo oscuro sale solo. */
+#bl-toast-container {
+  position: fixed;
+  top: calc(var(--bl-navbar-height, 4.5rem) + 0.75rem);
+  right: 1rem;
+  z-index: 11000; /* por encima del modal de producto (500) y los carteles de confirmación (10500) */
+  width: min(380px, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.bl-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  background: var(--bl-surface, #ffffff);
+  color: var(--bl-text, #1a202c);
+  border: 1px solid var(--bl-border, #e2e8f0);
+  border-left: 4px solid var(--bl-primary, #284175);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out;
+  touch-action: pan-x;
+}
+
+.bl-toast.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.bl-toast.is-dragging { transition: none; }
+.bl-toast.is-leaving { transition: opacity 0.18s ease-in, transform 0.18s ease-in; }
+.bl-toast.is-leaving[data-leave="right"] { transform: translateX(110%); }
+.bl-toast.is-leaving[data-leave="left"] { transform: translateX(-110%); }
+.bl-toast.is-leaving[data-leave="up"] { transform: translateY(-120%); }
+
+/* La franja dice el tipo: azul = informa, verde = salió bien, ámbar = ojo, rojo = falló */
+.bl-toast--success { border-left-color: var(--bl-success, #10b981); }
+.bl-toast--warning { border-left-color: var(--bl-accent, #f59e0b); }
+.bl-toast--error { border-left-color: var(--bl-danger, #ef4444); }
+
+.bl-toast__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.7rem 0.25rem 0.7rem 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* Notificación de la campanita: título, detalle y una acción de texto */
+.bl-toast__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.25rem 0.75rem 0.85rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.bl-toast__main { cursor: pointer; }
+a.bl-toast__main:focus-visible {
+  outline: 2px solid var(--bl-primary, #284175);
+  outline-offset: 2px;
+}
+
+.bl-toast__title {
+  font-size: 0.925rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--bl-text, #1a202c);
+}
+
+.bl-toast__body {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--bl-text-secondary, #4a5568);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bl-toast__action {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--bl-primary, #284175);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bl-toast__close {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0.3rem 0.3rem 0 0;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--bl-text-muted, #5f6b7d);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.bl-toast__close:hover { color: var(--bl-text, #1a202c); background: var(--bl-surface-alt, #f0f4f8); }
+.bl-toast__close:focus-visible {
+  outline: 2px solid var(--bl-primary, #284175);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  #bl-toast-container {
+    top: calc(var(--bl-navbar-height, 3.5rem) + 0.5rem);
+    right: 0.5rem;
+    width: calc(100vw - 1rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-toast,
+  .bl-toast.is-leaving {
+    transition: opacity 0.12s linear;
+    transform: none !important;
+  }
+}
+
+html.bl-reduce-motion .bl-toast,
+html.bl-reduce-motion .bl-toast.is-leaving {
+  transition: opacity 0.12s linear;
+  transform: none !important;
+}

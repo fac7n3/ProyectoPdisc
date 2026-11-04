@@ -3,6 +3,7 @@
    =================================================== */
 
 @import './fonts.css';
+@import './notice.css';
 
 :root {
   /* Paleta de marca — ancla oficial #284175, ver docs/brand-guidelines.md */
@@ -1962,6 +1963,111 @@ button.coupon-chip:hover {
 }
 
 /* ===========================================================
+   FRANJAS Y PARES DE BANNERS EXTRA (mosaic_g..l, migración 154)
+   Van entre las secciones de productos. Sin promo cargada son carteles de
+   color liso con un texto y un link a una sección del sitio; con promo de un
+   comercio (home_promos) toman la proporción de su imagen, igual que los
+   mosaicos de arriba (ver los --promo-ratio del @media de más abajo).
+   =========================================================== */
+.promo-strip {
+  max-width: 1320px;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.promo-strip__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.promo-strip__grid--pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.promo-banner-2--g,
+.promo-banner-2--h,
+.promo-banner-2--i,
+.promo-banner-2--j,
+.promo-banner-2--k,
+.promo-banner-2--l {
+  aspect-ratio: 4 / 1;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 1.25rem 1.75rem;
+}
+
+.promo-banner-2--g,
+.promo-banner-2--j {
+  aspect-ratio: 5 / 1;
+}
+
+/* Cartel fijo (sin promo de comercio): color liso, sin degradé ni foto */
+.promo-banner-2--g:not(.is-store-promo) { background-color: #284175; }
+.promo-banner-2--h:not(.is-store-promo) { background-color: #1f6f55; }
+.promo-banner-2--i:not(.is-store-promo) { background-color: #a1472e; }
+.promo-banner-2--j:not(.is-store-promo) { background-color: #1f3460; }
+.promo-banner-2--k:not(.is-store-promo) { background-color: #5b3a73; }
+.promo-banner-2--l:not(.is-store-promo) { background-color: #0f5d73; }
+
+.promo-banner-2--g:not(.is-store-promo),
+.promo-banner-2--h:not(.is-store-promo),
+.promo-banner-2--i:not(.is-store-promo),
+.promo-banner-2--j:not(.is-store-promo),
+.promo-banner-2--k:not(.is-store-promo),
+.promo-banner-2--l:not(.is-store-promo) {
+  aspect-ratio: auto;
+  min-height: 6.5rem;
+}
+
+@media (max-width: 640px) {
+  .promo-strip__grid--pair {
+    grid-template-columns: 1fr;
+  }
+
+  .promo-banner-2--g.is-store-promo,
+  .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
+  .promo-banner-2--h.is-store-promo,
+  .promo-banner-2--i.is-store-promo,
+  .promo-banner-2--k.is-store-promo,
+  .promo-banner-2--l.is-store-promo { --promo-ratio: 25%; }
+}
+
+/* "Ver más productos" de Seguí descubriendo */
+.products__more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.products__more-btn {
+  padding: 0.7rem 2rem;
+  border: 1px solid var(--bl-primary);
+  border-radius: var(--bl-radius-md);
+  background: var(--bl-surface);
+  color: var(--bl-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.products__more-btn:hover:not(:disabled) {
+  background: var(--bl-primary);
+  color: var(--bl-text-inverse);
+}
+
+.products__more-btn:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
+}
+
+.products__more-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ===========================================================
    PROMO DE UN COMERCIO EN UN ESPACIO DEL MOSAICO (home_promos, migración 108)
    loadHomePromos() en home.js pone la imagen en --promo-img y agrega
    .is-store-promo. Dos clases de especificidad para pisar el
@@ -3512,174 +3618,6 @@ button.coupon-chip:hover {
   }
 }
 
-/* ── Toasts de notificaciones nuevas (A113-268): capa nueva y reusable,
-   abajo a la derecha en PC y abajo del todo (ancho completo) en celular.
-   Se apilan de a una (máx. 3, ver toast-utils.js), con ícono de campanita +
-   texto corto, y desaparecen solas a los ~5s o con el botón de cerrar. ── */
-/* Notificaciones emergentes (js/toast-utils.js): con forma de notificación de
-   celular, para que se lean (2026-10-02, a pedido del usuario). Abajo a la
-   derecha en compu; en celular, abajo de todo con casi todo el ancho. */
-#bl-toast-container {
-  position: fixed;
-  right: 1.25rem;
-  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
-  z-index: 10000;
-  width: min(400px, calc(100vw - 1.5rem));
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  pointer-events: none;
-}
-
-.bl-toast {
-  pointer-events: auto;
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  background: var(--bl-surface);
-  color: var(--bl-text);
-  border: 1px solid var(--bl-border);
-  border-radius: 1.125rem;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
-  opacity: 0;
-  transform: translateY(calc(100% + 1.5rem));
-  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15);
-  touch-action: pan-y;
-  user-select: none;
-}
-
-.bl-toast.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.bl-toast.is-dragging { transition: none; }
-.bl-toast.is-leaving { transition: opacity 0.25s ease, transform 0.28s ease-in; }
-.bl-toast.is-leaving[data-leave="right"] { transform: translateX(110%); }
-.bl-toast.is-leaving[data-leave="left"] { transform: translateX(-110%); }
-.bl-toast.is-leaving[data-leave="down"],
-.bl-toast.is-leaving:not([data-leave]) { transform: translateY(calc(100% + 1.5rem)); }
-
-.bl-toast__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.8rem 0.5rem 0.85rem 0.95rem;
-  color: inherit;
-  text-decoration: none;
-  border-radius: inherit;
-  -webkit-tap-highlight-color: transparent;
-}
-
-a.bl-toast__main { cursor: pointer; }
-a.bl-toast__main:focus-visible {
-  outline: 2px solid var(--bl-primary);
-  outline-offset: 2px;
-}
-
-.bl-toast__head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.15rem;
-  font-size: 0.75rem;
-  /* #64748b y no --bl-text-muted: el token da 2.6:1 sobre blanco, poco para
-     letra de 12 px; este llega a 4.5:1. */
-  color: #64748b;
-}
-
-.bl-toast__app-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  object-fit: contain;
-}
-
-.bl-toast__app {
-  font-weight: 600;
-  color: var(--bl-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.bl-toast__time::before {
-  content: "·";
-  margin-right: 0.4rem;
-}
-
-.bl-toast__title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--bl-text);
-}
-
-.bl-toast__body {
-  font-size: 0.875rem;
-  line-height: 1.4;
-  color: var(--bl-text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bl-toast__action {
-  margin-top: 0.3rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--bl-primary);
-}
-
-.bl-toast__action::after {
-  content: " →";
-}
-
-.bl-toast__close {
-  flex-shrink: 0;
-  display: inline-grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  margin: 0.45rem 0.45rem 0 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--bl-text-muted);
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-.bl-toast__close:hover { color: var(--bl-text); background: var(--bl-surface-alt, #f1f5f9); }
-.bl-toast__close:focus-visible {
-  outline: 2px solid var(--bl-primary);
-  outline-offset: 1px;
-}
-
-@media (max-width: 640px) {
-  #bl-toast-container {
-    right: 0.5rem;
-    width: calc(100vw - 1rem);
-    bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bl-toast,
-  .bl-toast.is-leaving {
-    transition: opacity 0.15s linear;
-    transform: none !important;
-  }
-}
-
-html.bl-reduce-motion .bl-toast,
-html.bl-reduce-motion .bl-toast.is-leaving {
-  transition: opacity 0.15s linear;
-  transform: none !important;
-}
-
 /* ── Skeleton de la sección Tienda (A113-281/284/285): header + grilla de
    productos con el mismo lenguaje visual que .skeleton-img de arriba,
    mientras comercio.js resuelve el fetch. El footer se mantiene oculto
@@ -4014,41 +3952,6 @@ html.bl-reduce-motion .bl-toast.is-leaving {
 
 .footer__social:hover {
   color: #fff;
-}
-
-/* ===========================================================
-   NOTIFICACIÓN TOAST
-   =========================================================== */
-
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  padding: 0.875rem 1.25rem;
-  background: var(--bl-text);
-  color: #fff;
-  border-radius: var(--bl-radius-lg);
-  font-size: 0.875rem;
-  font-weight: 500;
-  box-shadow: var(--bl-shadow-lg);
-  /* Por encima de TODO (modal de producto: 500, carteles de confirmación:
-     10500): un aviso como "Elegí sabor antes de comprar" salía detrás del
-     modal desde el que se disparaba y no se veía. */
-  z-index: 11000;
-  transform: translateY(120%);
-  opacity: 0;
-  transition: all 0.3s ease;
-  /* Es solo un aviso: nunca tapa un botón que quede debajo. */
-  pointer-events: none;
-}
-
-.toast--visible {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.toast--success {
-  background: var(--bl-success);
 }
 
 /* F10-04: estado de error consistente (grillas/detalle que fallan al cargar) */
@@ -6090,3 +5993,92 @@ html[data-sess] #home-panel-action:not([data-ready]) { visibility: hidden; }
 .dev-evidence__empty { margin: 0; padding: 1.5rem 0.75rem; text-align: center; font-size: 0.85rem; color: #64748b; background: var(--bl-surface-alt); border-radius: var(--bl-radius-md); }
 .dev-evidence__feedback { margin: 0; font-size: 0.9rem; }
 .dev-evidence__close { justify-self: end; padding: 0.55rem 1.2rem; border-radius: var(--bl-radius-pill); border: 1px solid var(--bl-border); background: var(--bl-surface); color: var(--bl-text); font-weight: 700; cursor: pointer; }
+
+/* Video de un producto o de la galería de un profesional (migración 155): el
+   mismo reproductor en la ficha, el modal y las tarjetas. Fondo negro fijo a
+   propósito: es el "letterbox" del video, no un color del tema. */
+.bl-video {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  margin-top: 0.75rem;
+  border-radius: var(--bl-radius-md);
+  background: #000;
+  object-fit: contain;
+}
+
+/* "Este producto en otros comercios" (js/price-compare-ui.js): en la ficha y el
+   modal de producto. Lista plana, sin tarjetas: una fila por comercio. */
+.bl-compare {
+  margin: 1rem 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--bl-border);
+}
+
+.bl-compare__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.bl-compare__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bl-compare__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--bl-border-light);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.bl-compare__row {
+  cursor: pointer;
+}
+
+button.bl-compare__row:hover,
+button.bl-compare__row:focus-visible {
+  background: var(--bl-surface-hover);
+  outline: none;
+}
+
+.bl-compare__row.is-current {
+  background: var(--bl-surface-alt);
+}
+
+.bl-compare__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bl-compare__store {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.bl-compare__note {
+  font-size: 0.78rem;
+  color: var(--bl-text-muted);
+}
+
+.bl-compare__price {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bl-compare__price.is-best {
+  color: var(--bl-success-text);
+}

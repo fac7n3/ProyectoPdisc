@@ -8,7 +8,7 @@
  * Formato de salida (el mismo por el RPC y por el respaldo), como lo devolvía
  * el .select() de antes más el resumen de reseñas:
  *   { id, title, description, price, compare_at_price, offer_expires_at, stock,
- *     image_url,
+ *     image_url, video_url,
  *     stores: { id, name, owner_id, delivery_fee,
  *               contact_method, whatsapp } | null,
  *     product_images: [{ url, position }],
@@ -27,7 +27,7 @@ import { rememberViewedProduct } from './interests.js';
 // (migración 118) todavía no está en la base. Ojo: son las lentas -- los joins
 // anidados disparan en cadena las policies de products/orders/stores.
 const LEGACY_SELECT = [
-  'id, title, description, price, compare_at_price, offer_expires_at, stock, image_url',
+  'id, title, description, price, compare_at_price, offer_expires_at, stock, image_url, video_url',
   'stores(id, name, owner_id, delivery_fee, contact_method, whatsapp)',
   'product_images(url, position)',
   'product_options(id, name, position, product_option_values(id, value, is_available, position))',

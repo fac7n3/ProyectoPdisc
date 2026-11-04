@@ -6313,3 +6313,52 @@ deshacen solas:** una persona sube a su carpeta y no a la de otra; no ve los arc
 `aal2` ve todo y el mismo admin con `aal1` no ve nada (la base lo trata como cliente: es el diseño de la verificación en dos pasos);
 el tope rechaza 6 adjuntos; el bucket es privado. **Sin probar de punta a punta en el navegador:** subir una captura real desde
 Mi perfil -> Soporte y abrirla desde el panel de admin (los signed URLs de 60 s).
+
+
+## 2026-11-03 — Videos, avisos unificados, comparador en la ficha y home más largo (migraciones 154 y 155 aplicadas)
+
+Pedido del usuario: videos al subir productos y en la galería de profesionales, terminar la comparación de precios, cambiar los avisos
+"que no parezcan hechos por IA", verificar por dónde sale cada aviso en el inicio, y un home más largo con más productos y banners.
+
+**Avisos (sin migración).** Había cinco `showToast` distintos (`auth-utils`, `cart-utils`, `carrito.js`, `hints-utils`, `support-utils`) más las
+notificaciones de la campanita (`toast-utils.js`): dos salían abajo a la derecha una encima de la otra y, como solo 9 páginas tenían el
+`<div id="toast">`, en el resto los de `cart-utils` no se veían. Ahora **todo sale por `notify(mensaje, tipo)` de `js/notice.js`** a una sola
+pila (`#bl-toast-container`): **arriba a la derecha debajo del navbar en compu, arriba de todo en celular**, máx. 4, el mismo texto repetido
+no se apila, se frenan con el mouse/foco. Diseño plano (franja de color a la izquierda: azul informa, verde bien, ámbar ojo, rojo falló;
+esquinas de 3 px, sin íconos en círculo, sin pasteles, sin rebote); las notificaciones de la campanita perdieron la cabecera con logo y
+"BARADERO LOCAL · ahora" y se cierran deslizando hacia arriba. CSS en `Assets/styles/notice.css` (importado por `home.css` **y** `auth.css`,
+con respaldo de colores porque login/registro no cargan los tokens `--bl-*`). Se borró el `#toast` de las 9 páginas y el CSS `.toast`.
+**Regla: avisos cortos nuevos = `notify()`, nunca un toast propio.** Auditoría del inicio (elementos `position: fixed`): pantalla de bienvenida
+(z 9999, se va sola), banner "sin conexión" (arriba, z 9998), modal de producto (500), lightbox de banners (600), botón volver arriba
+(abajo a la izquierda, z 90), pila de avisos (z 11000). Quedan dos `alert()` nativos en `admin.js` (detalle de logs), a propósito.
+
+**Home (migración 154).** Seis espacios de banner nuevos `mosaic_g..l` (check de `home_promos.slot` ampliado + 18 filas vacías, 3 posiciones por
+espacio): `g` franja entre Recomendados y el mapa, `h`+`i` par entre Esenciales y Ofertas, `j` franja bajo "Seguí descubriendo", `k`+`l` par
+de cierre. Sin promo cargada muestran un cartel de color liso con link (`data-promo-href`: comercios, servicios, ofertas, vender, farmacias);
+con promo toman la imagen igual que los de antes. El admin los ve en el mismo panel (`HOME_PROMO_SLOTS`, 12 espacios). "Productos
+recomendados" pasó de 12 a 16, Esenciales/Ofertas de a 8 (dos filas) con 32 traídos, y hay una sección nueva **"Seguí descubriendo"**
+(`initDiscover` en `home.js`): el catálogo de a 12 con "Ver más productos", orden estable (`created_at desc, id`) con `range`, salteando lo ya
+mostrado; pide la primera tanda recién cuando se acerca (IntersectionObserver). **No se vio con IntersectionObserver real**: el panel
+de pruebas no los dispara; sí se probó el botón (23 tarjetas, 0 repetidas).
+
+**Videos (migración 155, a/b/c).** `products.video_url` (uno por producto) y `professional_promos.media_type` (`image`|`video`, el archivo sigue
+en `image_url`); tope de 30 MB por archivo en los buckets `products` y `professional-promos` (el plan Free permite 50). **No se limitaron los
+tipos MIME** a propósito (las fotos suben cualquier `image/*`, HEIC incluido). `get_product_detail` devuelve `video_url` y
+`get_professionals_directory` el `media_type` de cada foto/video. Vendedor: bloque "Video (opcional)" en el formulario de producto (MP4, WebM
+o MOV, ≤ 30 MB); `persistProductVideo` sube a `{product_id}/video-….ext`, guarda la URL y recién ahí borra el archivo viejo; los borrados de
+producto también limpian el video. Profesional: botón "Agregar video" en "Fotos y videos de trabajos" (hasta 6 en total, máx. 2 videos). Se
+reproduce en el modal y `producto.html` (debajo de las fotos) y en la tarjeta del profesional de Contratar/Servicios (a todo el ancho, sin
+autoplay, `preload="metadata"`). **El CSP ahora exige `media-src 'self' blob: https://*.supabase.co`** en las 22 páginas (`js/csp.test.mjs` lo
+chequea; `blob:` es para la vista previa del video recién elegido). Helpers puros con test en `js/storage-utils.js` (`videoFileProblem`,
+`videoExtension`, `safeVideoUrl`). No hay transcodificación: se sube tal cual, y un MOV de iPhone puede no verse en todos los navegadores.
+Sin íconos nuevos de Font Awesome (no había Python para `npm run subset-icons`): se usaron `fa-cloud-arrow-up` y `fa-trash`.
+
+**Comparador de precios en la ficha (sin migración).** El comparador de la búsqueda (migraciones 147-150) ya estaba; lo que faltaba era
+verlo donde se decide la compra. `js/price-compare-ui.js` agrega "Este producto en otros comercios" en el modal y en `producto.html`: el mismo
+producto por comercio, del más barato al más caro, con "Mejor precio" / "+$X que el más barato", "Estás viendo este" y la distancia si la persona
+ya compartió su ubicación; tocar otra fila abre ese producto. Lógica pura y testeada: `offersForProduct` en `price-compare-utils.js`.
+Verificado con el Dove de 90 g (3 comercios). Sigue sin probarse con cuentas reales ni con el GPS de un teléfono.
+
+**Entorno:** el `node_modules` del checkout principal está viejo (falta `qrcode-generator`, `typescript`): `npm ci` en el worktree antes de
+`vite build`. Un build fallido **vacía `dist/`**: restaurar con `git checkout -- dist && git clean -fd dist`. En Windows `npm test` no corre (el
+`for` es de bash) y `js/fontawesome-subset.test.mjs` falla en Windows por una ruta `C:\C:\...` armada con `new URL().pathname` (es del test, no de los íconos); el resto pasa corriendo cada archivo con `node`.

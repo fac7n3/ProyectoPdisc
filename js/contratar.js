@@ -9,7 +9,7 @@ import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professi
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import { getVisibleSocialLinks } from './store-contact-utils.js';
 import { formatTarifa } from './professional-service-utils.js';
-import { fileToDataUrl } from './storage-utils.js';
+import { fileToDataUrl, safeVideoUrl } from './storage-utils.js';
 import { localIsoDate } from './cart-utils.js';
 import {
   agruparPorDia,
@@ -274,9 +274,12 @@ function buildCard(pro) {
     detail.appendChild(socialRow);
   }
 
-  if (pro._promos && pro._promos.length > 0) {
+  const promoPhotos = (pro._promos || []).filter((promo) => promo.media_type !== 'video');
+  const promoVideos = (pro._promos || []).filter((promo) => promo.media_type === 'video' && safeVideoUrl(promo.image_url));
+
+  if (promoPhotos.length > 0) {
     const promos = el('div', 'ct-card__promos');
-    pro._promos.forEach((promo) => {
+    promoPhotos.forEach((promo) => {
       const thumb = el('button', 'ct-card__promo');
       thumb.type = 'button';
       thumb.setAttribute('aria-label', `Ver foto de ${pro.full_name}`);
@@ -293,6 +296,19 @@ function buildCard(pro) {
     });
     detail.appendChild(promos);
   }
+
+  // Videos de trabajos (migración 155): a todo el ancho, con controles. Un
+  // reproductor por video y sin autoplay: no baja nada hasta que lo tocan
+  // (preload="metadata" solo pide el primer cuadro).
+  promoVideos.forEach((promo) => {
+    const video = el('video', 'bl-video');
+    video.src = `${safeVideoUrl(promo.image_url)}#t=0.1`;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.setAttribute('aria-label', promo.description || `Video de un trabajo de ${pro.full_name}`);
+    detail.appendChild(video);
+  });
 
   detail.appendChild(el('div', 'ct-card__reviews'));
   card.appendChild(detail);

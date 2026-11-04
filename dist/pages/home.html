@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <!-- Con sesión iniciada, el botón de la fila de accesos ("Vender" o "Panel",
          según la cuenta) arranca oculto desde el primer pintado y se muestra ya
          con el texto correcto (script de abajo y js/home.js). Va en el <head> a
@@ -34,25 +34,27 @@
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/home-CCQjm3nx.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-sfS7V7TP.js">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <script type="module" crossorigin src="/assets/home-arMrTE9s.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-BSejLRT3.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-lAMIFZrr.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CKYIIiD5.js">
+    <link rel="modulepreload" crossorigin href="/assets/price-compare-utils-COLCOLau.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CopZU83P.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-CBEene8L.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-CNNFVZGg.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-B1jRz1Ih.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-c-EQlqwh.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-vleom_hj.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-0oyv2Qbd.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BcCh9uRa.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-BLoZGAeK.js">
-    <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-DpwFy053.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-D9rJCFNe.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BICstD0O.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-CrS5flqi.js">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-DM0u5B4-.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-d99rfU2Y.css">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-sBq-a6Wr.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-BwcziAQz.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-XYovlgO0.css">
   </head>
   <body>
@@ -334,6 +336,18 @@
         </div>
       </section>
 
+      <!-- Espacios de banners extra (migración 154): mismos data-promo-slot que
+           los mosaicos, el admin les asigna comercio desde el mismo panel. Sin
+           promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
+      <section class="promo-strip" aria-label="Retiro en el local">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--g" data-promo-slot="mosaic_g" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Retiro en el local</span>
+            <span class="promo-banner__title">Comprá online y retirá sin esperar</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Comercios cerca tuyo: geolocalización del navegador (sin Google de
            por medio) + mapa embebido de Google (sin API key, técnica
            output=embed) centrado en esa ubicación. El botón de abajo abre
@@ -406,6 +420,19 @@
               <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
               <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Más promociones">
+        <div class="promo-strip__grid promo-strip__grid--pair">
+          <div class="promo-banner-2 promo-banner-2--h" data-promo-slot="mosaic_h" data-promo-href="./servicios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Servicios</span>
+            <span class="promo-banner__title">Plomeros, electricistas y más profesionales</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--i" data-promo-slot="mosaic_i" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Comercios</span>
+            <span class="promo-banner__title">Conocé los comercios de Baradero</span>
           </div>
         </div>
       </section>
@@ -488,6 +515,41 @@
         </div>
       </section>
 
+      <!-- Seguí descubriendo: el resto del catálogo, de a 12 con "Ver más
+           productos" (initDiscover en home.js). Arranca vacío y recién pide los
+           productos cuando la persona llega cerca, así no pesa en la carga. -->
+      <section class="products" id="descubrir" aria-label="Seguí descubriendo" hidden>
+        <div class="section-header">
+          <h2 class="section-header__title">Seguí descubriendo</h2>
+        </div>
+        <div class="products__grid" id="discover-grid"></div>
+        <div class="products__more">
+          <button type="button" class="products__more-btn" id="discover-more">Ver más productos</button>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Ofertas">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--j" data-promo-slot="mosaic_j" data-promo-href="./search.html?cat=ofertas" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Ofertas</span>
+            <span class="promo-banner__title">Mirá todo lo que está en oferta</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Más promociones">
+        <div class="promo-strip__grid promo-strip__grid--pair">
+          <div class="promo-banner-2 promo-banner-2--k" data-promo-slot="mosaic_k" data-promo-href="./vender.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Vendé con nosotros</span>
+            <span class="promo-banner__title">Registrá tu comercio en Baradero Local</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--l" data-promo-slot="mosaic_l" data-promo-href="./farmacias.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Farmacias</span>
+            <span class="promo-banner__title">Farmacias de turno de Baradero</span>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Lightbox para ver ampliada la imagen de un banner promocional al
@@ -562,11 +624,9 @@
       <i class="fa-solid fa-chevron-up"></i>
     </button>
 
-    <!-- Notificación Toast -->
-    <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
     <!-- Asistente de accesibilidad -->
     <style>.sr-only{clip:rect(0,0,0,0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}</style>
-
+
   </body>
 </html>

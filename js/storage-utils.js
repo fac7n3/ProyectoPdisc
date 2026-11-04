@@ -121,3 +121,39 @@ export async function getImageDimensions(file) {
     img.src = dataUrl;
   });
 }
+
+/** Tope de un video subido (productos y galería de profesionales): coincide con
+ *  el file_size_limit de los buckets (migración 155). */
+export const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+
+const VIDEO_EXT_BY_TYPE = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
+
+/** Extensión para guardar el archivo ("mp4", "webm" o "mov"), o null si no es un video aceptado. */
+export function videoExtension(file) {
+  return VIDEO_EXT_BY_TYPE[file?.type] ?? null;
+}
+
+/** ¿Por qué no se puede subir este video? Texto para mostrar, o null si está bien. */
+export function videoFileProblem(file) {
+  if (!file) return "No se eligió ningún video.";
+  if (!videoExtension(file)) return "El video tiene que ser MP4, WebM o MOV.";
+  if (file.size > MAX_VIDEO_BYTES) {
+    return `El video pesa ${formatFileSize(file.size)} y el máximo es ${formatFileSize(MAX_VIDEO_BYTES)}.`;
+  }
+  return null;
+}
+
+/**
+ * URL de un video guardado en la base, lista para poner en un <video src>, o ""
+ * si no es una URL https válida. El valor lo escribe el vendedor/profesional, así
+ * que no se confía: nada de javascript:, data: ni rutas raras.
+ */
+export function safeVideoUrl(url) {
+  if (typeof url !== "string" || url.length > 600) return "";
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" ? u.href : "";
+  } catch {
+    return "";
+  }
+}

@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Mi Perfil - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -534,8 +534,6 @@
 
     </div>
 
-    <!-- Notificación Toast -->
-    <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
     <!-- A113-292: "Mis favoritos" abre el detalle en el mismo modal que
          home/búsqueda/comercio (antes mandaba a la página producto.html

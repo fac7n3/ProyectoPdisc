@@ -7,7 +7,7 @@ import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
-import { removeStoredObjects, getImageDimensions, fileToDataUrl } from './storage-utils.js';
+import { removeStoredObjects, getImageDimensions, fileToDataUrl, videoFileProblem, videoExtension } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel } from './professional-categories.js';
 import { sortOptionGroups, describeSelectedOptions } from './product-options-utils.js';
@@ -4423,7 +4423,7 @@ function buildPubActions(p) {
       .from('product_images')
       .select('url')
       .eq('product_id', p.id);
-    const imageUrls = [p.image_url, ...(imgRows || []).map((r) => r.url)];
+    const imageUrls = [p.image_url, p.video_url, ...(imgRows || []).map((r) => r.url)];
 
     const { error } = await supabase.from('products').delete().eq('id', p.id);
     if (error) {
@@ -4654,7 +4654,7 @@ async function bulkDeletePublicaciones() {
     .select('url')
     .in('product_id', ids);
   const imageUrls = [
-    ...pubProducts.filter((p) => ids.includes(p.id)).map((p) => p.image_url),
+    ...pubProducts.filter((p) => ids.includes(p.id)).flatMap((p) => [p.image_url, p.video_url]),
     ...(imgRows || []).map((r) => r.url),
   ];
 
@@ -4840,6 +4840,17 @@ let galleryDragFrom = null;
  */
 let savedImageUrlsAtLoad = [];
 
+/**
+ * Video del producto (products.video_url, migración 155): uno solo, opcional.
+ *   { kind: 'saved', url }            -> ya está en storage
+ *   { kind: 'new', file, previewUrl } -> elegido recién, todavía sin subir
+ * savedVideoUrlAtLoad es el que tenía al abrir el formulario: al guardar, si
+ * cambió o se quitó, el archivo viejo se borra del bucket (mismo criterio que
+ * las fotos).
+ */
+let productVideo = null;
+let savedVideoUrlAtLoad = null;
+
 /** Carga en la galería la portada + las adicionales de un producto ya guardado. */
 async function hydrateProductGallery(product) {
   resetProductGallery();
@@ -4860,6 +4871,10 @@ async function hydrateProductGallery(product) {
 
   savedImageUrlsAtLoad = productImages.map((item) => item.url);
   renderProductGallery();
+
+  savedVideoUrlAtLoad = product.video_url || null;
+  productVideo = savedVideoUrlAtLoad ? { kind: 'saved', url: savedVideoUrlAtLoad } : null;
+  renderProductVideo();
 }
 
 /** Vacía la galería, liberando las previews en memoria de las fotos sin subir. */
@@ -4870,6 +4885,10 @@ function resetProductGallery() {
   productImages = [];
   savedImageUrlsAtLoad = [];
   renderProductGallery();
+  if (productVideo?.kind === 'new') URL.revokeObjectURL(productVideo.previewUrl);
+  productVideo = null;
+  savedVideoUrlAtLoad = null;
+  renderProductVideo();
 }
 
 /** Envuelve en rojo unos segundos el campo que hay que corregir y lo enfoca. */
@@ -5161,6 +5180,76 @@ async function uploadProductImage(productId, file) {
     return null;
   }
   return supabase.storage.from('products').getPublicUrl(path).data.publicUrl;
+}
+
+/** Muestra u oculta el reproductor del formulario según haya o no video elegido. */
+function renderProductVideo() {
+  const box = document.getElementById('prod-video-box');
+  const player = document.getElementById('prod-video-preview');
+  const pick = document.getElementById('prod-video-pick');
+  if (!box || !player) return;
+  const src = productVideo ? (productVideo.kind === 'new' ? productVideo.previewUrl : productVideo.url) : '';
+  if (src) {
+    if (player.getAttribute('src') !== src) player.src = src;
+  } else {
+    player.removeAttribute('src');
+    player.load();
+  }
+  box.hidden = !src;
+  if (pick) pick.lastChild.textContent = src ? ' Cambiar el video' : ' Elegir un video';
+}
+
+/** Un video recién elegido: se valida y queda como "nuevo" hasta guardar. */
+function setProductVideoFile(file) {
+  if (!file) return;
+  const problem = videoFileProblem(file);
+  if (problem) {
+    showToast(problem, 'error');
+    return;
+  }
+  if (productVideo?.kind === 'new') URL.revokeObjectURL(productVideo.previewUrl);
+  productVideo = { kind: 'new', file, previewUrl: URL.createObjectURL(file) };
+  renderProductVideo();
+}
+
+/** F-video: sube el video al bucket 'products' y devuelve su URL pública (null si falló). */
+async function uploadProductVideo(productId, file) {
+  const path = `${productId}/video-${Date.now()}.${videoExtension(file)}`;
+  const { error } = await supabase.storage.from('products').upload(path, file, { contentType: file.type });
+  if (error) {
+    console.error('Error al subir el video:', error);
+    showToast('No se pudo subir el video. El producto se guardó sin cambios en el video.', 'error');
+    return null;
+  }
+  return supabase.storage.from('products').getPublicUrl(path).data.publicUrl;
+}
+
+/**
+ * Deja products.video_url como lo dejó el vendedor: sube el nuevo si hay, guarda
+ * la URL y recién con la base escrita borra el archivo anterior del bucket. Si la
+ * subida o el guardado fallan no se toca nada (el video de antes sigue).
+ */
+async function persistProductVideo(productId) {
+  let url = null;
+  if (productVideo?.kind === 'saved') {
+    url = productVideo.url;
+  } else if (productVideo?.kind === 'new') {
+    url = await uploadProductVideo(productId, productVideo.file);
+    if (!url) return;
+  }
+  if (url === savedVideoUrlAtLoad) return;
+
+  const { error } = await supabase.from('products').update({ video_url: url }).eq('id', productId);
+  if (error) {
+    console.error('No se pudo guardar el video:', error);
+    showToast('El producto se guardó, pero falló el video.', 'error');
+    return;
+  }
+  const previous = savedVideoUrlAtLoad;
+  if (productVideo?.kind === 'new') URL.revokeObjectURL(productVideo.previewUrl);
+  savedVideoUrlAtLoad = url;
+  productVideo = url ? { kind: 'saved', url } : null;
+  if (previous && previous !== url) await removeStoredObjects(supabase, 'products', [previous]);
 }
 
 /**
@@ -5866,6 +5955,19 @@ function setupDashboardEvents() {
     dropZone.addEventListener('drop', (e) => addFilesToGallery(e.dataTransfer?.files));
   }
 
+  // Video opcional: botón + input oculto, y "Quitar".
+  const videoInput = document.getElementById('prod-video');
+  document.getElementById('prod-video-pick')?.addEventListener('click', () => videoInput?.click());
+  videoInput?.addEventListener('change', () => {
+    setProductVideoFile(videoInput.files?.[0]);
+    videoInput.value = '';
+  });
+  document.getElementById('prod-video-remove')?.addEventListener('click', () => {
+    if (productVideo?.kind === 'new') URL.revokeObjectURL(productVideo.previewUrl);
+    productVideo = null;
+    renderProductVideo();
+  });
+
   // 'click' cubre el día elegido en el calendario propio, que no dispara input.
   ['input', 'change', 'click'].forEach((evt) => addForm.addEventListener(evt, scheduleProductDraftSave));
   restoreProductDraft();
@@ -5995,6 +6097,7 @@ function setupDashboardEvents() {
         console.error('No se pudo guardar la foto de portada:', coverError);
         showToast('El producto se guardó, pero falló la foto de portada.', 'error');
       }
+      await persistProductVideo(savedProductId);
     }
 
     // Producto nuevo en modo "Variantes": el formulario NO se cierra. Las

@@ -7,7 +7,7 @@
  * paga (el bug que este módulo vino a arreglar).
  */
 import assert from "node:assert/strict";
-import { publicUrlToStoragePath, removeStoredObjects, formatFileSize, storedFileName } from "./storage-utils.js";
+import { publicUrlToStoragePath, removeStoredObjects, formatFileSize, storedFileName, videoExtension, videoFileProblem, MAX_VIDEO_BYTES, safeVideoUrl } from "./storage-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -165,6 +165,35 @@ check("saca el timestamp que va adelante del nombre", () => {
   assert.equal(storedFileName("uid-1/captura.png"), "captura.png");
   assert.equal(storedFileName("1756000000-"), "1756000000-");
   assert.equal(storedFileName(null), "");
+});
+
+console.log("videos");
+
+check("acepta mp4, webm y mov, y rechaza el resto", () => {
+  assert.equal(videoExtension({ type: "video/mp4" }), "mp4");
+  assert.equal(videoExtension({ type: "video/webm" }), "webm");
+  assert.equal(videoExtension({ type: "video/quicktime" }), "mov");
+  assert.equal(videoExtension({ type: "image/png" }), null);
+  assert.equal(videoExtension({ type: "video/x-msvideo" }), null);
+  assert.equal(videoExtension(null), null);
+});
+
+check("explica por qué no sube un video", () => {
+  assert.equal(videoFileProblem({ type: "video/mp4", size: 1024 }), null);
+  assert.equal(videoFileProblem({ type: "video/mp4", size: MAX_VIDEO_BYTES }), null);
+  assert.match(videoFileProblem({ type: "video/mp4", size: MAX_VIDEO_BYTES + 1 }), /máximo es 30 MB/);
+  assert.match(videoFileProblem({ type: "application/pdf", size: 10 }), /MP4, WebM o MOV/);
+  assert.match(videoFileProblem(null), /ningún video/);
+});
+
+check("solo deja pasar URLs https de video", () => {
+  assert.equal(safeVideoUrl("https://x.supabase.co/storage/v1/object/public/products/1/video-1.mp4"), "https://x.supabase.co/storage/v1/object/public/products/1/video-1.mp4");
+  assert.equal(safeVideoUrl("javascript:alert(1)"), "");
+  assert.equal(safeVideoUrl("http://x.com/a.mp4"), "");
+  assert.equal(safeVideoUrl("data:video/mp4;base64,AAAA"), "");
+  assert.equal(safeVideoUrl("/relativa.mp4"), "");
+  assert.equal(safeVideoUrl(null), "");
+  assert.equal(safeVideoUrl("https://x.com/" + "a".repeat(700)), "");
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");
