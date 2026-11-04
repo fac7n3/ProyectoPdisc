@@ -6422,3 +6422,14 @@ cargar** (~1,1 MB), incluidos el 2º y 3º de cada carrusel y el mosaico de más
   móvil las bajaría a la mitad pero hay que rehacer las imágenes (están en `public/img/promos/`, las hizo una sesión anterior con HTML+Chromium).
 - **Lo que sigue:** versiones móviles de las publicidades, CSS por página, CSP en un solo lugar, partir `vender.js`, prueba de punta a
   punta de una compra, notificaciones web push, mover la base a `sa-east-1`.
+
+### 2026-11-04 — Tanda 5, segunda parte: publicidades para celular y fuente adelantada
+
+- **Publicidades del inicio en versión de celular** (`npm run thumbs` ahora también genera `public/img/promos/m/*.webp` a 800 px: 28 imágenes,
+  625 KB contra 1.642 KB, -62%). `promoBannerUrl(url, smallScreen)` / `promoMobileUrl` en `js/home-promos-utils.js` (con tests): en pantallas de
+  <= 768 px el banner usa la chica; **la imagen ampliada sigue usando la original**; las que no son de `/img/promos/` (Supabase Storage) no
+  tienen versión y quedan como estaban. Una publicidad nueva en `public/img/promos/` = correr `npm run thumbs` (el test falla si falta).
+- **`<link rel="preload">` de Inter** en las 20 páginas de `pages/` (Vite lo reescribe al mismo archivo con hash que usa el CSS; verificado en
+  11 páginas: un solo pedido de la fuente y sin avisos de "preload sin usar"). Antes el navegador la descubría recién al leer el CSS.
+- **Advisor de seguridad de Supabase revisado al final de la sesión:** sin hallazgos nuevos (las tablas `api_rate_limits` y
+  `api_rate_limit_salt` figuran como "RLS sin policies" = INFO a propósito; las 4 funciones anónimas con tope ya estaban marcadas antes).

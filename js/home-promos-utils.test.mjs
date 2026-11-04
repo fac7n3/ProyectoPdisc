@@ -3,7 +3,7 @@
  * Correr con:  node js/home-promos-utils.test.mjs
  */
 import assert from "node:assert/strict";
-import { HOME_PROMO_SLOTS, slotLabel, isPromoLive, promoHref, promoAriaLabel, promoPosition, groupLivePromosBySlot, stepIndex } from "./home-promos-utils.js";
+import { HOME_PROMO_SLOTS, slotLabel, isPromoLive, promoHref, promoAriaLabel, promoPosition, groupLivePromosBySlot, stepIndex, promoMobileUrl, promoBannerUrl } from "./home-promos-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -114,3 +114,18 @@ check("retrocede y da la vuelta", () => {
   assert.equal(stepIndex(0, -1, 3), 2);
 });
 check("sin promos no explota", () => assert.equal(stepIndex(0, 1, 0), 0));
+
+console.log("promoMobileUrl / promoBannerUrl");
+check("una publicidad del repo tiene su versión de 800 px en /m/", () => {
+  assert.equal(promoMobileUrl("/img/promos/promo-kiosco-el-paso.webp"), "/img/promos/m/promo-kiosco-el-paso.webp");
+});
+check("las de otro lado (Storage), vacías o que ya son la chica no tienen", () => {
+  for (const u of ["https://x.supabase.co/storage/v1/object/public/home-promos/a.png", "", null, undefined, "/img/promos/m/a.webp", "/img/promos/a.png"]) {
+    assert.equal(promoMobileUrl(u), null, String(u));
+  }
+});
+check("la chica solo en pantalla chica; si no hay versión, la original", () => {
+  assert.equal(promoBannerUrl("/img/promos/a.webp", true), "/img/promos/m/a.webp");
+  assert.equal(promoBannerUrl("/img/promos/a.webp", false), "/img/promos/a.webp");
+  assert.equal(promoBannerUrl("https://x.co/a.png", true), "https://x.co/a.png");
+});

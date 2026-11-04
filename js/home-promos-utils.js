@@ -88,3 +88,15 @@ export function promoAriaLabel(promo) {
   const title = (promo?.title || '').trim();
   return title ? `Promoción de ${store}: ${title}` : `Ver promoción de ${store}`;
 }
+
+/** Versión de 800 px de una publicidad del repo (`/img/promos/X.webp` -> `/img/promos/m/X.webp`), o null
+ *  si la imagen es de otro lado (Supabase Storage). Se genera con `npm run thumbs`. */
+export function promoMobileUrl(url) {
+  const m = /^\/img\/promos\/([^/]+\.webp)$/.exec(String(url || ''));
+  return m ? `/img/promos/m/${m[1]}` : null;
+}
+
+/** La URL que se pinta en el banner: la versión chica en pantallas chicas (donde 1600 px es de más), si existe. */
+export function promoBannerUrl(url, smallScreen) {
+  return (smallScreen && promoMobileUrl(url)) || url;
+}

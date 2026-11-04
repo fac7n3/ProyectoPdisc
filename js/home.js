@@ -5,7 +5,7 @@ import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast,
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
-import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex } from './home-promos-utils.js';
+import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex, promoBannerUrl } from './home-promos-utils.js';
 import { loadViewedProducts } from './interests.js';
 import { weightCategories, interleaveByInterest } from './interests-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -1082,6 +1082,9 @@ function initPromoBanners() {
  *  más de una publicidad (los de una sola siguen con la imagen de fondo). */
 const promoSliders = new WeakMap();
 
+/** Pantalla chica: ahí un banner de 1600 px es de más; se usa la versión de 800 px (la imagen ampliada usa la original). */
+const isSmallScreen = () => window.matchMedia('(max-width: 768px)').matches;
+
 /**
  * Llama a `cb` una sola vez cuando `el` está cerca de entrar en pantalla (400 px
  * antes). Las publicidades del inicio bajaban TODAS las imágenes al cargar
@@ -1164,7 +1167,7 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
     const slide = slides[i];
     if (!slide || slide.dataset.loaded) return;
     slide.dataset.loaded = '1';
-    slide.style.backgroundImage = `url("${encodeURI(items[i].url)}")`;
+    slide.style.backgroundImage = `url("${encodeURI(promoBannerUrl(items[i].url, isSmallScreen()))}")`;
   };
   // La siguiente espera: se baja unos segundos antes del cambio (queda lista para el
   // fundido) y no compite con lo que hace falta para pintar la página.
@@ -1265,7 +1268,7 @@ async function paintHomePromos(banners) {
       // La URL queda en data-promo-img (el modo ampliado la lee de ahí) y la imagen
       // se pone cuando el espacio se acerca a la pantalla.
       banner.dataset.promoImg = items[0].url;
-      whenNearViewport(banner, () => banner.style.setProperty('--promo-img', `url("${encodeURI(items[0].url)}")`));
+      whenNearViewport(banner, () => banner.style.setProperty('--promo-img', `url("${encodeURI(promoBannerUrl(items[0].url, isSmallScreen()))}")`));
       applyPromoItem(banner, eyebrow, title, items[0]);
     }
     banner.classList.add('is-store-promo');

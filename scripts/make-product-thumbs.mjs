@@ -1,5 +1,6 @@
 /**
- * make-product-thumbs.mjs — Versiones de 520 px de las fotos de producto.
+ * make-product-thumbs.mjs — Versiones chicas de las fotos de producto (520 px) y de las
+ * publicidades del inicio (800 px, para celular: public/img/promos/m/).
  *
  *   npm run thumbs
  *
@@ -31,3 +32,19 @@ for (const name of readdirSync(src).filter((f) => f.endsWith('.webp'))) {
   made++;
 }
 console.log(`Miniaturas: ${made} nuevas (${(bytes / 1024).toFixed(0)} KB), ${kept} ya estaban.`);
+
+// Publicidades del inicio: la versión de 800 px es la que se usa en pantallas chicas
+// (js/home-promos-utils.js, promoMobileUrl). La imagen ampliada usa la original.
+const promosSrc = path.join(root, 'public/img/promos');
+const promosOut = path.join(promosSrc, 'm');
+mkdirSync(promosOut, { recursive: true });
+let pMade = 0, pBytes = 0;
+for (const name of readdirSync(promosSrc).filter((f) => f.endsWith('.webp'))) {
+  const from = path.join(promosSrc, name);
+  const to = path.join(promosOut, name);
+  if (existsSync(to) && statSync(to).mtimeMs >= statSync(from).mtimeMs) continue;
+  const info = await sharp(from).resize({ width: 800, withoutEnlargement: true }).webp({ quality: 78, effort: 5 }).toFile(to);
+  pBytes += info.size;
+  pMade++;
+}
+console.log(`Publicidades (celular): ${pMade} nuevas (${(pBytes / 1024).toFixed(0)} KB).`);
