@@ -938,6 +938,7 @@ function initHeroExploreCta() {
 function getBannerImageUrl(banner) {
   // Si se toca antes de que lleguen las promos, la foto fija todavía no está puesta.
   banner.removeAttribute('data-bg-defer');
+  if (banner.dataset.promoImg) return encodeURI(banner.dataset.promoImg); // publicidad de un comercio, aunque su imagen no haya bajado todavía
   const bg = getComputedStyle(banner).backgroundImage;
   const matches = [...bg.matchAll(/url\((['"]?)(.*?)\1\)/g)];
   return matches.length ? matches[matches.length - 1][2] : '';
@@ -1080,6 +1081,23 @@ function initPromoBanners() {
 /** Banner -> { items, index, show(i), pause(), resume() } de los que tienen
  *  más de una publicidad (los de una sola siguen con la imagen de fondo). */
 const promoSliders = new WeakMap();
+
+/**
+ * Llama a `cb` una sola vez cuando `el` está cerca de entrar en pantalla (400 px
+ * antes). Las publicidades del inicio bajaban TODAS las imágenes al cargar
+ * (~1,2 MB: 6 espacios x 3 publicidades, y el mosaico de abajo que nadie había
+ * visto todavía); ahora cada espacio baja solo la que se ve, cuando se acerca.
+ * Sin IntersectionObserver (navegadores muy viejos) corre al toque, como antes.
+ */
+function whenNearViewport(el, cb) {
+  if (typeof IntersectionObserver === 'undefined') { cb(); return; }
+  const io = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    cb();
+  }, { rootMargin: '400px 0px' });
+  io.observe(el);
+}
 const PROMO_ROTATE_MS = 4500;
 
 /**
@@ -1124,8 +1142,7 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
   const slides = items.map((item) => {
     const slide = document.createElement('span');
     slide.className = 'promo-banner__slide';
-    slide.style.backgroundImage = `url("${encodeURI(item.url)}")`;
-    wrap.appendChild(slide);
+    wrap.appendChild(slide); // la imagen se pone en loadSlide(), cuando hace falta
     return slide;
   });
   const dots = document.createElement('span');
@@ -1140,23 +1157,46 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
   banner.append(wrap, dots);
   banner.classList.add('has-slides');
 
-  const slider = { items, index: 0, paused: false };
+  const slider = { items, index: 0, paused: false, visible: false };
+  // Pone la imagen de la capa i (una sola vez). La actual y la SIGUIENTE se bajan
+  // juntas, así cuando llega el cambio la siguiente ya está lista para el fundido.
+  const loadSlide = (i) => {
+    const slide = slides[i];
+    if (!slide || slide.dataset.loaded) return;
+    slide.dataset.loaded = '1';
+    slide.style.backgroundImage = `url("${encodeURI(items[i].url)}")`;
+  };
+  // La siguiente espera: se baja unos segundos antes del cambio (queda lista para el
+  // fundido) y no compite con lo que hace falta para pintar la página.
+  let nextTimer = null;
+  const preloadNext = () => {
+    clearTimeout(nextTimer);
+    const next = stepIndex(slider.index, 1, items.length);
+    nextTimer = setTimeout(() => loadSlide(next), Math.max(0, PROMO_ROTATE_MS - 2000));
+  };
   slider.show = (i) => {
     slider.index = i;
     slides.forEach((slide, n) => slide.classList.toggle('is-active', n === i));
     dotEls.forEach((dot, n) => dot.classList.toggle('is-active', n === i));
     applyPromoItem(banner, eyebrow, title, items[i]);
+    if (slider.visible) { loadSlide(i); preloadNext(); }
   };
   slider.pause = () => { slider.paused = true; };
   slider.resume = () => { slider.paused = false; };
   slider.show(0);
   promoSliders.set(banner, slider);
+  whenNearViewport(banner, () => {
+    slider.visible = true;
+    loadSlide(slider.index);
+    preloadNext();
+  });
 
   banner.addEventListener('mouseenter', slider.pause);
   banner.addEventListener('mouseleave', slider.resume);
   setTimeout(() => {
     setInterval(() => {
-      if (slider.paused || document.hidden) return;
+      // Un espacio que todavía no se acercó a la pantalla no rota (no hay imágenes puestas).
+      if (slider.paused || document.hidden || !slider.visible) return;
       slider.show(stepIndex(slider.index, 1, items.length));
     }, PROMO_ROTATE_MS);
   }, startDelay);
@@ -1222,7 +1262,10 @@ async function paintHomePromos(banners) {
       // Varias publicidades: capas que pasan solas (el texto va sobre todas).
       mountPromoSlides(banner, items, eyebrow, title, (n % 3) * 1500);
     } else {
-      banner.style.setProperty('--promo-img', `url("${encodeURI(items[0].url)}")`);
+      // La URL queda en data-promo-img (el modo ampliado la lee de ahí) y la imagen
+      // se pone cuando el espacio se acerca a la pantalla.
+      banner.dataset.promoImg = items[0].url;
+      whenNearViewport(banner, () => banner.style.setProperty('--promo-img', `url("${encodeURI(items[0].url)}")`));
       applyPromoItem(banner, eyebrow, title, items[0]);
     }
     banner.classList.add('is-store-promo');

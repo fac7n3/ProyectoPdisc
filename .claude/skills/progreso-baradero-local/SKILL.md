@@ -6401,3 +6401,24 @@ Verificado con el Dove de 90 g (3 comercios). Sigue sin probarse con cuentas rea
 **Entorno:** el `node_modules` del checkout principal está viejo (falta `qrcode-generator`, `typescript`): `npm ci` en el worktree antes de
 `vite build`. Un build fallido **vacía `dist/`**: restaurar con `git checkout -- dist && git clean -fd dist`. En Windows `npm test` no corre (el
 `for` es de bash) y `js/fontawesome-subset.test.mjs` falla en Windows por una ruta `C:\C:\...` armada con `new URL().pathname` (es del test, no de los íconos); el resto pasa corriendo cada archivo con `node`.
+
+## 2026-11-04 — Mejoras de la auditoría general, tanda 5: publicidades del inicio bajo demanda (sin migración)
+
+Medido antes (producción, Pixel 7): el inicio pesaba 2,8 MB y **los 18 slides de publicidad (6 espacios x 3) se bajaban todos al
+cargar** (~1,1 MB), incluidos el 2º y 3º de cada carrusel y el mosaico de más abajo que nadie había visto. Con los 6 espacios nuevos
+`mosaic_g..l` de la otra sesión (hoy sin comercio asignado: cuando se asignen, el problema crecía a 36 imágenes).
+
+- **`js/home.js`:** `whenNearViewport(el, cb)` (IntersectionObserver, 400 px de margen; sin IO corre al toque) y `loadSlide(i)`.
+  Cada espacio baja **solo la publicidad que se ve, cuando el espacio se acerca a la pantalla**; la siguiente se baja `PROMO_ROTATE_MS - 2000`
+  ms después de mostrar la actual (queda lista para el fundido sin competir con la carga). Un espacio que todavía no se acercó no rota.
+  Las publicidades de un solo comercio guardan la URL en `data-promo-img` (la imagen ampliada la lee de ahí, así abre bien aunque
+  la imagen del banner no haya bajado) y ponen `--promo-img` al acercarse. **Medido:** a 1,5 s de cargar, 18 imágenes / 379 KB ->
+  **3 / 115 KB**; tras scrollear toda la página baja lo mismo que antes (1,1 MB: se bajan a medida que se necesitan). Verificado en
+  Chromium contra la base real: cada espacio con varias capas tiene su capa activa con imagen tras un ciclo de rotación, la imagen ampliada abre
+  con la del comercio correcto y sin errores de página.
+- **No se tocó (decidido tras mirarlo):** el chunk de 215 KB que se baja en todas las páginas es `@supabase/supabase-js` entero (auth +
+  realtime + postgrest + storage): no se puede sacar Realtime sin dejar de usar `createClient`, es una refactor grande (pedir `auth-js` y
+  `postgrest-js` por separado), no una mejora de una tanda. Las publicidades siguen siendo imágenes de 1600x900 (~60-115 KB): una versión
+  móvil las bajaría a la mitad pero hay que rehacer las imágenes (están en `public/img/promos/`, las hizo una sesión anterior con HTML+Chromium).
+- **Lo que sigue:** versiones móviles de las publicidades, CSS por página, CSP en un solo lugar, partir `vender.js`, prueba de punta a
+  punta de una compra, notificaciones web push, mover la base a `sa-east-1`.
