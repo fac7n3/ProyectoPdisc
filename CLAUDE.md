@@ -95,11 +95,11 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 > `progreso-baradero-local`. **Al terminar una tarea:** detalle al skill, y acá solo si deja un pendiente
 > abierto o una regla nueva (no se acumulan entradas "Hecho" en este archivo).
 
-**Última tanda (2026-11-03, auditoría general, migraciones 152 y 153 aplicadas):** logger de errores sin ruido de
+**Última tanda (2026-11-03/04, auditoría general, migraciones 152 a 154 aplicadas):** logger de errores sin ruido de
 localhost, Inter y Font Awesome servidos desde el sitio (CSS+fuentes de ~400 KB a ~41 KB), 0 problemas WCAG A/AA en
 las páginas públicas, canónica + JSON-LD + `sitemap.xml` en cada build, vista previa propia al compartir un producto
 o comercio (`middleware.js`), límite de llamadas anónimas (cupones/vistas/búsquedas/métricas), service worker v2 y
-fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-03".
+fotos de producto en dos tamaños (`srcset`), compresión de toda imagen que se sube y consultas livianas. Detalle: skill, entradas "2026-11-03" y "2026-11-04".
 
 ### Pendientes que necesitan al usuario (no se resuelven con código)
 - **Supabase (dashboard):** activar "Leaked password protection" (Authentication -> Policies); activar **TOTP** (Authentication ->
@@ -134,7 +134,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **153** (la 73 se aplicó el 2026-11-03). Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **154** (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.
@@ -158,6 +158,9 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Trampas conocidas:** `window.open` después de un `await` lo bloquea el navegador (abrir antes, navegar después); fechas con `localIsoDate()` (no `toISOString()`, que es UTC); `buildStarRating` es solo
   del formulario, para mostrar usar `buildStarsText`; `history.replaceState` en `perfil.js` pasa `window.history.state`; un `data-tooltip` en un botón pegado al borde derecho necesita anclaje; Realtime: los DELETE no se pueden filtrar y
   `user_carts.items` se compara con `canonicalJson`; los tests con `page.routeWebSocket` **no pasan por el CSP**; en `vite preview` Speed Insights no existe (el logger ya ignora localhost).
+- **Subidas de imágenes:** toda foto que un usuario sube pasa por `compressImage(file, uso)` (`js/image-compress.js`: WebP, lado máximo por uso, devuelve el original si falla); una subida nueva
+  tiene que hacer lo mismo, y comprimir **antes** de validar el peso. Lo ya subido no se achica solo (re-subir desde el panel).
+- **Consultas:** no bajar filas para contarlas ni `select *`/embeds que la pantalla no usa (medir con las respuestas de `rest/v1` en la pestaña de red); los conteos van a una función SQL (`featured_category_counts`).
 - **Notificaciones/paneles:** el alcance por panel sale de `currentPanelScope()`; el puntero "último aviso" es de toda la cuenta.
 
 **Cómo probar en este entorno**

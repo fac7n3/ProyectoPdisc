@@ -1,4 +1,5 @@
 import { supabase, guardPage, showToast, getPanelAccess } from "./auth-utils.js";
+import { compressImage } from './image-compress.js';
 import { describeSelectedOptions } from './product-options-utils.js';
 import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-utils.js";
 import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
@@ -1997,13 +1998,15 @@ function buildPaymentProofSection(order, transferInfoByStoreId) {
   wrap.appendChild(uploadBtn);
 
   uploadBtn.addEventListener('click', async () => {
-    const file = picker.getFile();
-    if (!file) return;
+    const rawFile = picker.getFile();
+    if (!rawFile) return;
 
     uploadBtn.disabled = true;
     uploadBtn.textContent = 'Subiendo...';
 
     try {
+      // Comprobante de transferencia: si es una foto se achica (sigue legible); un PDF pasa igual.
+      const file = await compressImage(rawFile, 'attachment');
       // Sanea el nombre de archivo: nada de "/" ni ".." que intente escapar
       // de la carpeta {order.id}/ que usan las policies de storage.
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
@@ -2544,10 +2547,12 @@ function setupAvatarControls() {
   pickBtn.addEventListener("click", () => fileInput.click());
 
   fileInput.addEventListener("change", async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
+    const rawFile = fileInput.files?.[0];
+    if (!rawFile) return;
     clearFail();
 
+    // Una foto de celular pesa 3-5 MB: se achica ANTES de mirar el tope de 2 MB.
+    const file = await compressImage(rawFile, 'avatar');
     if (file.size > MAX_AVATAR_BYTES) {
       fail("Esa imagen pesa más de 2 MB. Probá con una más liviana.");
       fileInput.value = "";

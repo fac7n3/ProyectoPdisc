@@ -6313,3 +6313,42 @@ deshacen solas:** una persona sube a su carpeta y no a la de otra; no ve los arc
 `aal2` ve todo y el mismo admin con `aal1` no ve nada (la base lo trata como cliente: es el diseño de la verificación en dos pasos);
 el tope rechaza 6 adjuntos; el bucket es privado. **Sin probar de punta a punta en el navegador:** subir una captura real desde
 Mi perfil -> Soporte y abrirla desde el panel de admin (los signed URLs de 60 s).
+
+## 2026-11-04 — Mejoras de la auditoría general, tanda 4 (migración 154 aplicada)
+
+Sigue de la tanda 3 (a pedido del usuario: "sigue con la siguiente tanda"). Esta vez se eligió **con datos**: se midió el peso real
+de las páginas en producción (Pixel 7, base real): inicio 2,8 MB (imágenes 1,6 MB, respuestas de la base 478 KB), búsqueda 1,4 MB,
+Comercios 1,3 MB (respuestas 489 KB).
+
+- **Compresión de imágenes antes de subirlas** (`js/image-compress.js`, 14 tests en `js/image-compress.test.mjs`). Hallazgo: **ninguna
+  subida se achicaba**. En el Storage ya había fotos de producto de 1,3 MB (71 archivos, 14 MB en `products`), 2 imágenes de promo de
+  2,4 MB y un logo de comercio de **361 KB** (Ferretería El Clavo) que se bajaba en el inicio y en Comercios; con comercios reales
+  subiendo desde el celular (3-5 MB, 4000 px) cada tarjeta habría pesado varios MB. `compressImage(file, uso)` decodifica con
+  `createImageBitmap(..., {imageOrientation:'from-image'})` (respeta la orientación EXIF), achica al lado máximo del uso y guarda
+  **WebP** (con transparencia, sirve para logos). Usos (`IMAGE_PRESETS`): `product` 1600, `banner` 1600, `promo` 1920, `logo` 512,
+  `avatar` 512, `photo` 1200, `attachment` 1600. **Nunca impide una subida:** si ya es chica y liviana (< 120 KB y dentro del máximo),
+  si no es una imagen achicable (GIF, SVG, PDF), si el navegador no codifica WebP (Safari viejo) o si algo falla, devuelve el archivo
+  original. Conectado en: fotos de producto y logo (`vender.js`), foto del alta de profesional, banner y logo (`comercio.js`),
+  avatar y comprobante de transferencia (`perfil.js`), publicidades del inicio (`home-promos-editor.js`), fotos del profesional
+  (`profesional.js`, `profesional-galeria.js`), fotos de consultas (`contratar.js`) y adjuntos de soporte (`support-utils.js`).
+  **De paso se arregló un bug que habría aparecido:** los paneles de profesional, su galería y el avatar rechazaban fotos de más de 2 MB
+  **antes** de comprimir, o sea que una foto normal de celular daba error; ahora se comprime primero y recién ahí se mira el tope.
+  **Verificado en Chromium real:** una foto de 4000x3000 -> 1600x1200 WebP (1 MB -> 114 KB, con ruido de prueba; una foto real
+  comprime más), un logo PNG con transparencia 2000x1000 -> 512x256 (65 -> 17 KB), lo chico/PDF/archivo corrupto se devuelven sin
+  tocar. **Sin probar:** subir una foto real desde un celular por cada pantalla (necesitan sesión). **Lo ya subido NO se achica solo:**
+  el logo de El Clavo y las promos de `home-promos` siguen pesados hasta que se vuelvan a subir desde el panel (ya pasan por la
+  compresión). No hay credencial de service role para reprocesar el Storage desde acá.
+- **Migración 154** (`db/schema/154_consultas_livianas.sql`, aplicada): (1) `featured_category_counts()` (SECURITY INVOKER, la RLS decide
+  qué cuenta cada visitante): la tira de categorías destacadas (`getFeaturedCategories`, en cada página con barra de categorías)
+  bajaba `category_id` de **todos** los productos activos para contarlos (30 KB con 527 productos y creciendo con el catálogo); ahora
+  1 KB, con respaldo a la consulta vieja si la función no existiera. (2) Se cargó `stores.category_slug` en 4 comercios de seed que no
+  lo tenían (Almacén La Esquina, Carnicería El Novillo, Ferretería El Clavo, TecnoCenter: la categoría con más productos activos) y se
+  sacó de `comercios.js` el embed `products(categories(name))` y su función de respaldo. **Comercios: respuestas de la base 57 -> 8 KB**
+  con el mismo resultado visible (33 tarjetas, mismos rubros), medido contra producción real. Quedan sin rubro (sin etiqueta) Deportes
+  Maratón y Tienda Test Split P06, que no tienen productos.
+- **Lo que se vio y NO se tocó:** el script de 215 KB que aparece como `speed-insights-*.js` no es Speed Insights: es el chunk compartido
+  con el cliente de Supabase (auth + realtime), que se baja en todas las páginas; achicarlo pide cargar Realtime solo donde hace falta
+  (cambio de arquitectura, no de una tanda). El inicio sigue bajando ~100 KB por cada una de las ~6 imágenes de publicidad
+  (`/img/promos/*.webp`, 1600x900): una versión móvil más chica las bajaría a la mitad.
+- **Lo que sigue:** versiones móviles de las promos del inicio, cargar Realtime solo donde hace falta, CSS por página, CSP en un solo
+  lugar, partir `vender.js`, prueba de punta a punta de una compra, notificaciones web push, mover la base a `sa-east-1`.

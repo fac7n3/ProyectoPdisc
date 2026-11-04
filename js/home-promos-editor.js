@@ -8,6 +8,7 @@
  *    el comercio ni el on/off (lo bloquea además el trigger home_promos_guard).
  * Estilos: bloque .hp-* en home.css (lo cargan las dos páginas).
  */
+import { compressImage } from './image-compress.js';
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
@@ -233,6 +234,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
       // La policy del bucket deja subir al admin o al dueño del comercio
       // asignado a ESA publicidad.
       if (pendingFile) {
+        pendingFile = await compressImage(pendingFile, 'promo');
         const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[pendingFile.type];
         // Carpeta = espacio + posición: la policy no deja que el dueño de una
         // publicidad pise los archivos de otra del mismo espacio.
