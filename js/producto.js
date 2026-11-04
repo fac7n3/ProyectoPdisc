@@ -1,4 +1,6 @@
 import { supabase } from './auth-utils.js';
+import { safeVideoUrl } from './storage-utils.js';
+import { renderSameProductOffers } from './price-compare-ui.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
@@ -88,6 +90,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       gallery.appendChild(thumbsRow);
     }
 
+    // Video del producto (migración 155): reproductor debajo de las fotos.
+    const videoUrl = safeVideoUrl(product.video_url);
+    if (videoUrl) {
+      const video = document.createElement('video');
+      video.className = 'bl-video';
+      video.src = `${videoUrl}#t=0.1`;
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.setAttribute('aria-label', `Video de ${product.title}`);
+      gallery.appendChild(video);
+    }
+
     container.appendChild(gallery);
 
     const info = document.createElement('div');
@@ -115,6 +130,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     priceDiv.className = 'product-price';
     priceDiv.textContent = formatPrice(product.price);
     info.appendChild(priceDiv);
+
+    // Comparador: este mismo producto en otros comercios (price-compare-ui.js).
+    const compareSlot = document.createElement('div');
+    info.appendChild(compareSlot);
+    renderSameProductOffers(
+      compareSlot,
+      { productId: product.id, storeId },
+      { onOpen: (item) => { window.location.href = `./producto.html?id=${encodeURIComponent(item.id)}`; } },
+    ).catch((e) => console.warn('Comparador de la ficha:', e));
 
     const descDiv = document.createElement('div');
     descDiv.className = 'product-description';

@@ -89,3 +89,31 @@ export function formatDistance(meters) {
   if (meters < 1000) return `${Math.max(50, Math.round(meters / 50) * 50)} m`;
   return `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
 }
+
+/**
+ * Para la ficha de UN producto: de lo que devuelve same_product_offers([id])
+ * (el mismo producto en cada comercio, incluido el que se está mirando si tiene
+ * stock), arma la lista a mostrar, del más barato al más caro.
+ *
+ * Cada fila vuelve con:
+ *   isCurrent   es el comercio de la ficha (mismo store_id, o mismo id)
+ *   isCheapest  tiene el mejor precio (los empates también)
+ *   diff        pesos de más que el más barato (0 si es el más barato)
+ * Devuelve null si no hay con qué comparar: ningún OTRO comercio lo tiene.
+ * Con el producto de la ficha sin stock (no viene en la lista) igual sirve: se
+ * muestran los otros comercios y ninguna fila queda como "isCurrent".
+ */
+export function offersForProduct(rows, { productId, storeId } = {}) {
+  const [group] = groupSameProducts(rows, { minStores: 1 });
+  if (!group) return null;
+  const items = rankByPrice(group.items);
+  const others = items.filter((it) => it.id !== productId && it.store_id !== storeId);
+  if (!others.length) return null;
+  const best = items[0].price;
+  return items.map((it) => ({
+    ...it,
+    isCurrent: it.id === productId || it.store_id === storeId,
+    isCheapest: it.price === best,
+    diff: it.price - best,
+  }));
+}

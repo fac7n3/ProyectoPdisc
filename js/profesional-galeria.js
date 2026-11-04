@@ -8,10 +8,11 @@
 
 import { compressImage } from './image-compress.js';
 import { supabase, showToast } from './auth-utils.js';
-import { removeStoredObjects } from './storage-utils.js';
+import { removeStoredObjects, videoFileProblem, videoExtension, safeVideoUrl } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
-const MAX_FOTOS = 6;
+const MAX_FOTOS = 6; // entre fotos y videos
+const MAX_VIDEOS = 2;
 const MAX_BYTES = 2 * 1024 * 1024;
 const BUCKET = 'professional-promos';
 
@@ -21,13 +22,14 @@ let fotos = [];
 export function initGaleria(contexto) {
   ctx = contexto;
   document.getElementById('of-photo-upload')?.addEventListener('change', subir);
+  document.getElementById('of-video-upload')?.addEventListener('change', subirVideo);
   ctx.alMostrar('galeria', cargar);
 }
 
 async function cargar() {
   const { data, error } = await supabase
     .from('professional_promos')
-    .select('id, image_url, description, sort_order')
+    .select('id, image_url, description, sort_order, media_type')
     .eq('professional_id', ctx.prof.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
@@ -47,18 +49,20 @@ function render() {
   if (!grid) return;
   const { el, icono } = ctx;
 
-  const label = document.getElementById('of-photo-upload-label');
-  if (label) {
-    const lleno = fotos.length >= MAX_FOTOS;
-    label.classList.toggle('is-disabled', lleno);
-    label.style.pointerEvents = lleno ? 'none' : '';
-    label.style.opacity = lleno ? '0.5' : '';
-  }
+  const llenoTotal = fotos.length >= MAX_FOTOS;
+  const llenoVideos = fotos.filter(esVideo).length >= MAX_VIDEOS;
+  [['of-photo-upload-label', llenoTotal], ['of-video-upload-label', llenoTotal || llenoVideos]].forEach(([id, bloqueado]) => {
+    const label = document.getElementById(id);
+    if (!label) return;
+    label.classList.toggle('is-disabled', bloqueado);
+    label.style.pointerEvents = bloqueado ? 'none' : '';
+    label.style.opacity = bloqueado ? '0.5' : '';
+  });
 
   if (!fotos.length) {
     const vacio = el('div', 'of-empty');
     vacio.appendChild(icono('fa-solid fa-camera'));
-    vacio.appendChild(el('p', null, 'Todavía no subiste fotos.'));
+    vacio.appendChild(el('p', null, 'Todavía no subiste fotos ni videos.'));
     vacio.appendChild(el('p', 'of-sub', 'Mostrar trabajos terminados es lo que más convence a alguien que no te conoce.'));
     grid.replaceChildren(vacio);
     return;
@@ -72,11 +76,21 @@ function tarjeta(foto, indice) {
   const card = el('div', 'of-photo');
 
   const marco = el('div', 'of-photo__img');
-  const img = document.createElement('img');
-  img.src = foto.image_url;
-  img.alt = foto.description || 'Foto de un trabajo';
-  img.loading = 'lazy';
-  marco.appendChild(img);
+  if (esVideo(foto)) {
+    const video = document.createElement('video');
+    video.src = `${safeVideoUrl(foto.image_url)}#t=0.1`;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.setAttribute('aria-label', foto.description || 'Video de un trabajo');
+    marco.appendChild(video);
+  } else {
+    const img = document.createElement('img');
+    img.src = foto.image_url;
+    img.alt = foto.description || 'Foto de un trabajo';
+    img.loading = 'lazy';
+    marco.appendChild(img);
+  }
   card.appendChild(marco);
 
   const body = el('div', 'of-photo__body');
@@ -123,6 +137,10 @@ function tarjeta(foto, indice) {
   return card;
 }
 
+function esVideo(foto) {
+  return foto.media_type === 'video';
+}
+
 async function subir(event) {
   const elegido = event.target.files?.[0];
   event.target.value = '';
@@ -166,6 +184,53 @@ async function subir(event) {
   showToast('Foto agregada.', 'success');
 }
 
+async function subirVideo(event) {
+  const archivo = event.target.files?.[0];
+  event.target.value = '';
+  if (!archivo) return;
+
+  if (fotos.length >= MAX_FOTOS) {
+    showToast(`Podés tener hasta ${MAX_FOTOS} entre fotos y videos. Borrá uno para subir otro.`);
+    return;
+  }
+  if (fotos.filter(esVideo).length >= MAX_VIDEOS) {
+    showToast(`Podés tener hasta ${MAX_VIDEOS} videos. Borrá uno para subir otro.`);
+    return;
+  }
+  const problema = videoFileProblem(archivo);
+  if (problema) {
+    showToast(problema);
+    return;
+  }
+
+  showToast('Subiendo el video…', 'success');
+  const ruta = `${ctx.user.id}/${Date.now()}.${videoExtension(archivo)}`;
+  const { error: errSubida } = await supabase.storage.from(BUCKET).upload(ruta, archivo, { contentType: archivo.type });
+  if (errSubida) {
+    console.error('Error subiendo el video:', errSubida);
+    showToast('No pudimos subir el video.');
+    return;
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(ruta);
+  const { error } = await supabase.from('professional_promos').insert({
+    professional_id: ctx.prof.id,
+    image_url: data?.publicUrl,
+    media_type: 'video',
+    sort_order: fotos.length,
+  });
+  if (error) {
+    console.error('Error guardando el video:', error);
+    // Subido pero sin fila: se borra el archivo para no dejarlo huérfano.
+    await removeStoredObjects(supabase, BUCKET, [data?.publicUrl]);
+    showToast('El video se subió pero no se pudo guardar.');
+    return;
+  }
+
+  await cargar();
+  showToast('Video agregado.', 'success');
+}
+
 async function guardarPie(foto, texto) {
   const valor = texto || null;
   if ((foto.description || null) === valor) return;
@@ -185,7 +250,8 @@ async function guardarPie(foto, texto) {
 }
 
 async function eliminar(foto) {
-  if (!(await confirmDialog('¿Borramos esta foto?', { confirmText: 'Borrar', danger: true }))) return;
+  const nombre = esVideo(foto) ? 'este video' : 'esta foto';
+  if (!(await confirmDialog(`¿Borramos ${nombre}?`, { confirmText: 'Borrar', danger: true }))) return;
 
   const { error } = await supabase.from('professional_promos').delete().eq('id', foto.id);
   if (error) {
@@ -198,7 +264,7 @@ async function eliminar(foto) {
   // ya se corrigió con las fotos de producto (js/storage-utils.js).
   await removeStoredObjects(supabase, BUCKET, [foto.image_url]);
   await cargar();
-  showToast('Foto borrada.', 'success');
+  showToast(esVideo(foto) ? 'Video borrado.' : 'Foto borrada.', 'success');
 }
 
 async function mover(indice, delta) {

@@ -13,6 +13,7 @@
  */
 import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
+import { notify } from './notice.js';
 import { formatFileSize, storedFileName } from './storage-utils.js';
 import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
@@ -884,16 +885,5 @@ async function renderTicketThread(threadEl, ticket, myId, container) {
 }
 
 function showToast(msg, type = 'default') {
-  const toast = document.getElementById('toast');
-  if (!toast) {
-    alert(msg);
-    return;
-  }
-  toast.textContent = msg;
-  toast.className = 'toast';
-  if (type === 'success') toast.classList.add('toast--success');
-  if (type === 'error') toast.classList.add('toast--error');
-  toast.classList.add('toast--visible');
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.remove('toast--visible'), 5500);
+  notify(msg, type);
 }

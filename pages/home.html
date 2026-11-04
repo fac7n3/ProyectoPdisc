@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://www.google.com;">
     <!-- Con sesión iniciada, el botón de la fila de accesos ("Vender" o "Panel",
          según la cuenta) arranca oculto desde el primer pintado y se muestra ya
          con el texto correcto (script de abajo y js/home.js). Va en el <head> a
@@ -321,6 +321,18 @@
         </div>
       </section>
 
+      <!-- Espacios de banners extra (migración 154): mismos data-promo-slot que
+           los mosaicos, el admin les asigna comercio desde el mismo panel. Sin
+           promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
+      <section class="promo-strip" aria-label="Retiro en el local">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--g" data-promo-slot="mosaic_g" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Retiro en el local</span>
+            <span class="promo-banner__title">Comprá online y retirá sin esperar</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Comercios cerca tuyo: geolocalización del navegador (sin Google de
            por medio) + mapa embebido de Google (sin API key, técnica
            output=embed) centrado en esa ubicación. El botón de abajo abre
@@ -393,6 +405,19 @@
               <div class="skeleton-text" style="width: 90%; height: 16px; margin-bottom: 1rem; background: #cbd5e1; border-radius: 4px;"></div>
               <div class="skeleton-text" style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 4px;"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Más promociones">
+        <div class="promo-strip__grid promo-strip__grid--pair">
+          <div class="promo-banner-2 promo-banner-2--h" data-promo-slot="mosaic_h" data-promo-href="./servicios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Servicios</span>
+            <span class="promo-banner__title">Plomeros, electricistas y más profesionales</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--i" data-promo-slot="mosaic_i" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Comercios</span>
+            <span class="promo-banner__title">Conocé los comercios de Baradero</span>
           </div>
         </div>
       </section>
@@ -475,6 +500,41 @@
         </div>
       </section>
 
+      <!-- Seguí descubriendo: el resto del catálogo, de a 12 con "Ver más
+           productos" (initDiscover en home.js). Arranca vacío y recién pide los
+           productos cuando la persona llega cerca, así no pesa en la carga. -->
+      <section class="products" id="descubrir" aria-label="Seguí descubriendo" hidden>
+        <div class="section-header">
+          <h2 class="section-header__title">Seguí descubriendo</h2>
+        </div>
+        <div class="products__grid" id="discover-grid"></div>
+        <div class="products__more">
+          <button type="button" class="products__more-btn" id="discover-more">Ver más productos</button>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Ofertas">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--j" data-promo-slot="mosaic_j" data-promo-href="./search.html?cat=ofertas" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Ofertas</span>
+            <span class="promo-banner__title">Mirá todo lo que está en oferta</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="promo-strip" aria-label="Más promociones">
+        <div class="promo-strip__grid promo-strip__grid--pair">
+          <div class="promo-banner-2 promo-banner-2--k" data-promo-slot="mosaic_k" data-promo-href="./vender.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Vendé con nosotros</span>
+            <span class="promo-banner__title">Registrá tu comercio en Baradero Local</span>
+          </div>
+          <div class="promo-banner-2 promo-banner-2--l" data-promo-slot="mosaic_l" data-promo-href="./farmacias.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Farmacias</span>
+            <span class="promo-banner__title">Farmacias de turno de Baradero</span>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Lightbox para ver ampliada la imagen de un banner promocional al
@@ -549,8 +609,6 @@
       <i class="fa-solid fa-chevron-up"></i>
     </button>
 
-    <!-- Notificación Toast -->
-    <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
     <!-- Asistente de accesibilidad -->
     <style>

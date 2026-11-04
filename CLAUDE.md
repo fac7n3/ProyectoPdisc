@@ -95,11 +95,18 @@ Para que cualquier máquina/sesión trabaje con las mismas herramientas, según 
 > `progreso-baradero-local`. **Al terminar una tarea:** detalle al skill, y acá solo si deja un pendiente
 > abierto o una regla nueva (no se acumulan entradas "Hecho" en este archivo).
 
-**Última tanda (2026-11-03/04, auditoría general, migraciones 152 a 154 aplicadas):** logger de errores sin ruido de
+**Última tanda (2026-11-04, auditoría general, tanda 4, migración 156 aplicada):** toda imagen que se sube se comprime en el navegador (`js/image-compress.js`; antes no se achicaba nada y había fotos de 1,3 MB y un logo de 361 KB en el Storage), el conteo de categorías lo hace la base (`featured_category_counts`) y Comercios dejó de traer productos anidados (respuestas 57 -> 8 KB). Detalle: skill, entrada "2026-11-04".
+
+**Tanda anterior (2026-11-03, videos + avisos + home, migraciones 154 y 155 aplicadas):** videos opcionales en productos y en la galería de
+profesionales, avisos unificados en `js/notice.js` (una pila arriba a la derecha, diseño plano), comparador "mismo producto en otros
+comercios" en la ficha, y home más largo (6 espacios de banner nuevos `mosaic_g..l`, "Seguí descubriendo" con "Ver más productos"). Detalle: skill,
+entrada "Videos, avisos unificados...".
+
+**Dos tandas antes (2026-11-03, auditoría general tandas 1 a 3, migraciones 152 y 153 aplicadas):** logger de errores sin ruido de
 localhost, Inter y Font Awesome servidos desde el sitio (CSS+fuentes de ~400 KB a ~41 KB), 0 problemas WCAG A/AA en
 las páginas públicas, canónica + JSON-LD + `sitemap.xml` en cada build, vista previa propia al compartir un producto
 o comercio (`middleware.js`), límite de llamadas anónimas (cupones/vistas/búsquedas/métricas), service worker v2 y
-fotos de producto en dos tamaños (`srcset`), compresión de toda imagen que se sube y consultas livianas. Detalle: skill, entradas "2026-11-03" y "2026-11-04".
+fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-03".
 
 ### Pendientes que necesitan al usuario (no se resuelven con código)
 - **Supabase (dashboard):** activar "Leaked password protection" (Authentication -> Policies); activar **TOTP** (Authentication ->
@@ -117,6 +124,9 @@ fotos de producto en dos tamaños (`srcset`), compresión de toda imagen que se 
 - **Fotos con licencia dudosa:** jean, medias, collar y asado (migración 120) vienen de repos públicos sin licencia declarada: reemplazar antes del lanzamiento.
 
 ### Pendientes de desarrollo abiertos
+- **Videos y banners nuevos, sin probar con cuentas reales:** subir un video como vendedor y como profesional (30 MB, MP4/WebM/MOV; no hay transcodificación, un MOV de
+  iPhone puede no verse en todos los navegadores), y que el admin asigne comercios a los espacios `mosaic_g..l` (hoy muestran el cartel fijo). "Seguí descubriendo" se probó con el
+  botón, no con el IntersectionObserver real.
 - **Números de migración reservados:** 61-65 los tiene la rama sin mergear `feature/logistica-terceros` (no reusarlos). La 73 (adjuntos de soporte) y la 66 ya están aplicadas.
 - **Mercado Pago por tienda (A113-274):** falta elegir el método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo), verificar que
   `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean los de producción (`MP_ACCESS_TOKEN` ya lo es) y probar con una cuenta real (vincular, pagar en cadena, que `mp-webhook` confirme).
@@ -134,7 +144,7 @@ fotos de producto en dos tamaños (`srcset`), compresión de toda imagen que se 
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **154** (la 73 se aplicó el 2026-11-03). Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **156** (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.
@@ -150,6 +160,10 @@ fotos de producto en dos tamaños (`srcset`), compresión de toda imagen que se 
 - **CSP:** copiada a mano en las 22 páginas. Todo tipo de conexión/host nuevo se suma a **todas** (`https://` y `wss://` de Supabase son esquemas distintos). `js/csp.test.mjs` lo cuida. No hay fuentes, CSS ni scripts de otros dominios.
 - **Colores:** tokens de `home.css`/`dark.css`; los colores fijos de CSS se espejan solos con `node scripts/gen-dark-css.mjs` (`dark-auto.css` es GENERADO: el test falla si quedó viejo); los de JS en línea van con tokens.
   Para **texto** verde/rojo usar `--bl-success-text`/`--bl-danger-text`, estrellas `--bl-star`, texto apagado `--bl-text-muted` (#5f6b7d); `--bl-success`/`--bl-danger` son para fondos. Estilos compartidos del navbar van en `home.css`.
+- **Avisos y videos:** un aviso corto = `notify(mensaje, 'success'|'error'|'warning')` de `js/notice.js` (los `showToast` viejos ya delegan ahí); nunca un toast ni un
+  `<div id="toast">` propios. Los videos (`products.video_url`, `professional_promos.media_type='video'`) se validan con `videoFileProblem` y se muestran solo con
+  `safeVideoUrl`; el CSP de las 22 páginas lleva `media-src 'self' blob: https://*.supabase.co` (`js/csp.test.mjs` lo exige). Sin Python no se pueden sumar íconos de
+  Font Awesome: reusar uno que ya esté en `public/vendor/fontawesome/css/all.min.css`.
 - **Íconos y fotos:** ícono nuevo de Font Awesome = escribirlo y correr `npm run subset-icons` (Python con `fonttools` y `brotli`; el test falla si falta); los de categorías salen de `js/category-icons.js`. Foto nueva en
   `public/img/productos/` = correr `npm run thumbs` (miniatura de 520 px en `s/`; el test falla si falta) y usar `setProductImage` (`js/product-image.js`) al dibujar tarjetas. Fotos del Drive: ver "Decisiones de producto".
 - **Páginas nuevas:** `vite.config.js` (input), `scripts/sitemap.mjs` (`STATIC_PAGES`, si es pública), `public/robots.txt` (si es privada), CSP, script de tema en el `<head>` + `dark.css` + `theme.js` (lo exige `npm test`).

@@ -4,11 +4,12 @@
  *
  * Capa nueva y reusable: cualquier página puede llamar a
  * `initNotificationToasts(userId)` para que, mientras esa pestaña esté
- * abierta, cada notificación nueva del usuario aparezca abajo a la derecha
- * (abajo de todo en celular) con forma de notificación de celular (2026-10-02, a pedido del usuario: el
- * cartelito chico de la esquina se pasaba sin leer): ícono y nombre de la app,
- * "ahora", título en negrita, una línea de detalle y la acción ("Ver pedido").
- * Se apilan, máximo 3 a la vez. Duran 8 s, pero el tiempo se frena mientras
+ * abierta, cada notificación nueva del usuario aparezca arriba a la derecha
+ * (arriba de todo en celular), en la misma pila que los avisos cortos de
+ * js/notice.js: título en negrita, una línea de detalle y la acción ("Ver
+ * pedido"). 2026-11-03: se sacó la cabecera con logo + "BARADERO LOCAL · ahora"
+ * (parecía una notificación de celular copiada) y la pila pasó de abajo a
+ * arriba, junto a la campanita. Máximo 4 a la vez. Duran 8 s, pero el tiempo se frena mientras
  * el mouse o el dedo están encima (o tiene el foco), para que dé tiempo a
  * leerla. Se cierra con la X o deslizándola, y tocarla la abre y la marca
  * como leída.
@@ -29,17 +30,13 @@ import {
   fetchNotifications, notificationInScope, currentPanelScope, buildNotificationTitle, buildNotificationLink, buildNotificationPreview, markNotificationRead,
 } from './notifications-utils.js';
 import { getPref } from './settings-utils.js';
-// El mismo logo del navbar (Vite le pone el mismo nombre con hash, así que el
-// navegador ya lo tiene en caché). Antes iba /icon.svg, que a 20 px se veía
-// celeste y no del azul oscuro de la marca.
-import appLogoUrl from '../Assets/images/Logos/logoazulpng.png';
+import { noticeStack, MAX_NOTICES } from './notice.js';
 import { startNotificationsLive, onNotificationsChanged } from './notifications-live.js';
 
-const MAX_TOASTS = 3;
+const MAX_TOASTS = MAX_NOTICES;
 const AUTO_DISMISS_MS = 8000;
 /** Cuánto hay que deslizarla (px) para que se cierre. */
 const SWIPE_DISMISS_PX = 70;
-const APP_ICON_SRC = appLogoUrl;
 // Fecha (created_at) de la última notificación ya mostrada en este navegador.
 // Hasta el 2026-10-02 se guardaba el id (LEGACY_LAST_SEEN_KEY), y eso tenía un
 // problema: si la persona borraba justo esa notificación, el id dejaba de
@@ -50,18 +47,6 @@ const LEGACY_LAST_SEEN_KEY = 'bl_toast_last_notif_id';
 
 /** Ya mostradas en esta pestaña: el aviso en vivo y la puesta al día no se duplican. */
 const shownIds = new Set();
-
-let container = null;
-
-function ensureContainer() {
-  if (container && document.body.contains(container)) return container;
-  container = document.createElement('div');
-  container.id = 'bl-toast-container';
-  container.setAttribute('role', 'status');
-  container.setAttribute('aria-live', 'polite');
-  document.body.appendChild(container);
-  return container;
-}
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -85,31 +70,23 @@ function el(tag, className, text) {
  * @returns {() => void} para cerrarla
  */
 export function showNotificationToast({ title, body = null, href = null, actionLabel = null, onOpen = null }) {
-  const c = ensureContainer();
+  const c = noticeStack();
 
-  // Máximo 3 a la vez: si ya hay 3, se saca la más vieja (la primera en el
-  // DOM) para que entre la nueva.
+  // Máximo 4 a la vez (incluye los avisos cortos): si ya hay 4, se saca la
+  // más vieja (la primera en el DOM) para que entre la nueva.
   while (c.children.length >= MAX_TOASTS) {
     const oldest = c.firstElementChild;
     if (!oldest) break;
     oldest.remove();
   }
 
-  const toast = el('div', 'bl-toast');
+  const toast = el('div', 'bl-toast bl-toast--push');
+  toast.setAttribute('role', 'status');
 
   // Todo el cuerpo es un solo link (o un bloque sin link): la X queda afuera,
   // como hermana, para no anidar un botón adentro de un <a>.
   const main = el(href ? 'a' : 'div', 'bl-toast__main');
   if (href) main.href = href;
-
-  const head = el('div', 'bl-toast__head');
-  const appIcon = el('img', 'bl-toast__app-icon');
-  appIcon.src = APP_ICON_SRC;
-  appIcon.alt = '';
-  appIcon.width = 20;
-  appIcon.height = 20;
-  head.append(appIcon, el('span', 'bl-toast__app', 'Baradero Local'), el('span', 'bl-toast__time', 'ahora'));
-  main.appendChild(head);
 
   // El número de pedido (#BL-1070) nunca se parte en dos renglones por el guion.
   const titleEl = el('strong', 'bl-toast__title');
@@ -192,7 +169,7 @@ export function showNotificationToast({ title, body = null, href = null, actionL
   main.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.id) return;
     drag.dx = e.clientX - drag.x;
-    drag.dy = Math.max(0, e.clientY - drag.y); // hacia abajo, nunca hacia arriba
+    drag.dy = Math.max(0, drag.y - e.clientY); // hacia arriba (la pila está arriba), nunca hacia abajo
     if (!drag.moved && Math.hypot(drag.dx, drag.dy) > 8) {
       drag.moved = true;
       toast.classList.add('is-dragging');
@@ -200,7 +177,7 @@ export function showNotificationToast({ title, body = null, href = null, actionL
     }
     if (drag.moved) {
       const horizontal = Math.abs(drag.dx) >= drag.dy;
-      toast.style.transform = horizontal ? `translateX(${drag.dx}px)` : `translateY(${drag.dy}px)`;
+      toast.style.transform = horizontal ? `translateX(${drag.dx}px)` : `translateY(${-drag.dy}px)`;
       const distance = horizontal ? Math.abs(drag.dx) : drag.dy;
       toast.style.opacity = String(Math.max(0.35, 1 - distance / 260));
     }
@@ -217,7 +194,7 @@ export function showNotificationToast({ title, body = null, href = null, actionL
       if ((horizontal && Math.abs(dx) > SWIPE_DISMISS_PX) || (!horizontal && dy > SWIPE_DISMISS_PX * 0.6)) {
         toast.style.transform = '';
         toast.style.opacity = '';
-        dismiss(horizontal ? (dx > 0 ? 'right' : 'left') : 'down');
+        dismiss(horizontal ? (dx > 0 ? 'right' : 'left') : 'up');
         return;
       }
       toast.style.transform = '';

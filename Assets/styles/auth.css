@@ -1,4 +1,5 @@
 @import './fonts.css';
+@import './notice.css';
 
 :root {
   --auth-bg: #f2f6fc;

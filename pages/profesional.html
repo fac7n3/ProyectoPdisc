@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <title>Mi panel de profesional - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -295,11 +295,15 @@
             <section class="mc-section" data-section="galeria" hidden>
               <div class="of-head">
                 <div class="of-head__titles">
-                  <h2 class="of-title">Fotos de trabajos</h2>
-                  <p class="of-sub">Hasta 6 fotos, 2 MB cada una. Se ven en tu tarjeta cuando alguien la despliega; la primera es la que más se mira.</p>
+                  <h2 class="of-title">Fotos y videos de trabajos</h2>
+                  <p class="of-sub">Hasta 6 entre fotos y videos: las fotos de hasta 2 MB, los videos (MP4, WebM o MOV) de hasta 30 MB y como máximo 2. Se ven en tu tarjeta cuando alguien la despliega; la primera foto es la que más se mira.</p>
                 </div>
-                <label class="of-btn" for="of-photo-upload" id="of-photo-upload-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Agregar foto</label>
-                <input type="file" id="of-photo-upload" accept="image/*" hidden />
+                <div class="of-head__actions">
+                  <label class="of-btn" for="of-photo-upload" id="of-photo-upload-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Agregar foto</label>
+                  <input type="file" id="of-photo-upload" accept="image/*" hidden />
+                  <label class="of-btn" for="of-video-upload" id="of-video-upload-label"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Agregar video</label>
+                  <input type="file" id="of-video-upload" accept="video/mp4,video/webm,video/quicktime" hidden />
+                </div>
               </div>
               <div class="of-gallery" id="of-gallery"></div>
             </section>

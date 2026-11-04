@@ -1,7 +1,7 @@
 // Interacciones de la página principal
 import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
-import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
+import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
@@ -333,7 +333,7 @@ async function loadActiveBoosts() {
 const PLANS_WITH_TOP_PRODUCTS = ['barrio', 'baradero'];
 
 /** Cuántos productos muestra "Productos recomendados". */
-const RECOMMENDED_COUNT = 12;
+const RECOMMENDED_COUNT = 16;
 /** Con intereses conocidos, cuántos lugares de arriba conservan los comercios con combo. */
 const BOOSTED_TOP_WITH_INTERESTS = 3;
 
@@ -444,13 +444,13 @@ async function loadProducts() {
 //
 // La página real (turno del día + semana completa + mapa) está pendiente y
 // depende de tener una fuente de datos mantenida, no de la interfaz.
-/** Paginador de a 4 para Esenciales/Ofertas: distinto de "Productos
+/** Paginador de a 8 (dos filas) para Esenciales/Ofertas: distinto de "Productos
  *  recomendados", que muestra todo lo que carga de una. Acá se guarda el
  *  array completo ya traído de Supabase y las flechas del header solo
- *  cambian qué 4 se ven — no vuelven a pedirle nada al servidor.
+ *  cambian qué 8 se ven — no vuelven a pedirle nada al servidor.
  *  @param {{gridId: string, prevId: string, nextId: string, pageSize?: number}} opts
  *  @returns {{ setItems: (items: object[]) => void }} */
-function initGridPager({ gridId, prevId, nextId, pageSize = 4 }) {
+function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   const grid = document.getElementById(gridId);
   const prevBtn = document.getElementById(prevId);
   const nextBtn = document.getElementById(nextId);
@@ -496,6 +496,76 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 4 }) {
 const offersPager = initGridPager({ gridId: 'offers-grid', prevId: 'offers-prev', nextId: 'offers-next' });
 const essentialsPager = initGridPager({ gridId: 'essentials-grid', prevId: 'essentials-prev', nextId: 'essentials-next' });
 
+/** Seguí descubriendo: el resto del catálogo, de a DISCOVER_PAGE con un botón
+ *  "Ver más productos". Orden fijo (más nuevos primero, id de desempate) para
+ *  que `range` no repita ni saltee productos entre una página y otra. Los que
+ *  ya salen en la página se saltean. La sección está oculta hasta que haya algo
+ *  para mostrar, y recién pide la primera tanda cuando la persona se acerca
+ *  (IntersectionObserver): no suma una consulta a la carga. */
+const DISCOVER_PAGE = 12;
+function initDiscover() {
+  const section = document.getElementById('descubrir');
+  const grid = document.getElementById('discover-grid');
+  const btn = document.getElementById('discover-more');
+  if (!section || !grid || !btn) return;
+
+  let offset = 0;
+  let loading = false;
+  let exhausted = false;
+  let started = false;
+
+  async function loadMore() {
+    if (loading || exhausted) return;
+    loading = true;
+    btn.disabled = true;
+    btn.textContent = 'Cargando…';
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .order('id')
+        .range(offset, offset + DISCOVER_PAGE - 1);
+      if (error) throw error;
+      const rows = data || [];
+      offset += rows.length;
+      if (rows.length < DISCOVER_PAGE) exhausted = true;
+      const shown = new Set([...document.querySelectorAll('.product-card[id]')].map((c) => c.id));
+      rows.filter((p) => !shown.has(p.id)).forEach((p) => grid.appendChild(buildProductCard(p)));
+      initCartButtons();
+      initWishlist();
+      section.hidden = grid.children.length === 0;
+      btn.hidden = exhausted;
+    } catch (err) {
+      console.error('Error fetching más productos:', err);
+      showToast('No se pudieron cargar más productos. Probá de nuevo.');
+    } finally {
+      loading = false;
+      btn.disabled = false;
+      btn.textContent = 'Ver más productos';
+    }
+  }
+
+  btn.addEventListener('click', loadMore);
+  const start = () => {
+    if (started) return;
+    started = true;
+    section.hidden = false;
+    loadMore();
+  };
+  if ('IntersectionObserver' in window) {
+    // El centinela es la sección de ofertas: cuando se ve, falta poco para la nuestra.
+    const sentinel = document.getElementById('ofertas') || section;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); start(); }
+    }, { rootMargin: '600px 0px' });
+    io.observe(sentinel);
+  } else {
+    start();
+  }
+}
+
 /** Ofertas: mismo criterio de "oferta" que usa el resto del sitio
  *  (compare_at_price > price, sin vencer - ver buildPriceRow() en
  *  cart-utils.js). compare_at_price > price no se puede filtrar en la
@@ -514,7 +584,7 @@ async function loadOffers() {
       .eq('is_active', true)
       .not('compare_at_price', 'is', null)
       .or(`offer_expires_at.is.null,offer_expires_at.gt.${nowIso}`)
-      .limit(24);
+      .limit(32);
 
     if (error) throw error;
 
@@ -546,7 +616,7 @@ async function loadEssentials() {
       .select(`${PRODUCT_SELECT}, categories!inner(slug)`)
       .eq('is_active', true)
       .in('categories.slug', ['almacen', 'limpieza', 'lacteos'])
-      .limit(24);
+      .limit(32);
 
     if (error) throw error;
 
@@ -1207,6 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   loadOffers();
   loadEssentials();
+  initDiscover();
 
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();

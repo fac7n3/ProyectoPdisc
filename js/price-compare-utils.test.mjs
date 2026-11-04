@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  normalizeProductTitle, groupSameProducts, rankByPrice, rankByDistance, distanceMeters, formatDistance,
+  normalizeProductTitle, groupSameProducts, rankByPrice, rankByDistance, distanceMeters, formatDistance, offersForProduct,
 } from "./price-compare-utils.js";
 
 let failed = 0;
@@ -107,6 +107,31 @@ console.log("formatDistance");
 check("metros redondeados a 50", () => { assert.equal(formatDistance(340), "350 m"); assert.equal(formatDistance(10), "50 m"); });
 check("kilómetros con coma", () => assert.equal(formatDistance(1234), "1,2 km"));
 check("sin dato => vacío", () => { assert.equal(formatDistance(null), ""); assert.equal(formatDistance(NaN), ""); });
+
+console.log("offersForProduct");
+const rowsFicha = [
+  { ...p("m1", "S1", "Leche 1L", 2000), match_key: "k", store_name: "Uno" },
+  { ...p("m2", "S2", "Leche 1L", 1900), match_key: "k", store_name: "Dos" },
+  { ...p("m3", "S3", "Leche 1L", 1900), match_key: "k", store_name: "Tres" },
+  { ...p("m4", "S2", "Leche 1L", 2500), match_key: "k", store_name: "Dos" },
+];
+check("ordena por precio, marca el actual y la diferencia con el mejor", () => {
+  const r = offersForProduct(rowsFicha, { productId: "m1", storeId: "S1" });
+  assert.deepEqual(r.map((x) => x.store_name), ["Dos", "Tres", "Uno"]);
+  assert.deepEqual(r.map((x) => x.isCheapest), [true, true, false]);
+  assert.deepEqual(r.map((x) => x.diff), [0, 0, 100]);
+  assert.deepEqual(r.map((x) => x.isCurrent), [false, false, true]);
+});
+check("si el comercio de la ficha no está (sin stock), lista los otros", () => {
+  const r = offersForProduct(rowsFicha.slice(1, 3), { productId: "zz", storeId: "S9" });
+  assert.equal(r.length, 2);
+  assert.equal(r.some((x) => x.isCurrent), false);
+});
+check("nada con qué comparar: solo el propio comercio, o lista vacía", () => {
+  assert.equal(offersForProduct([rowsFicha[0]], { productId: "m1", storeId: "S1" }), null);
+  assert.equal(offersForProduct([], { productId: "m1", storeId: "S1" }), null);
+  assert.equal(offersForProduct(null, {}), null);
+});
 
 if (failed) { console.log(`\n${failed} fallaron`); process.exit(1); }
 console.log("\nTodo ok");

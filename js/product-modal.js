@@ -11,6 +11,8 @@
 
 import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
+import { safeVideoUrl } from './storage-utils.js';
+import { renderSameProductOffers } from './price-compare-ui.js';
 import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
@@ -89,6 +91,7 @@ async function fetchProductData(productId) {
     priceOldText: hasDiscount ? formatPrice(product.compare_at_price) : '',
     discountText: hasDiscount ? `-${discountPct}%` : '',
     images,
+    videoUrl: safeVideoUrl(product.video_url),
     imgSrc: images[0],
     imgAlt: escapeHTML(product.title || 'Producto'),
     shippingText,
@@ -384,6 +387,12 @@ function buildModalHTML(data) {
     `;
   }
 
+  // Video del producto (migración 155): un reproductor debajo de las fotos. Sin
+  // autoplay; "#t=0.1" hace que el navegador muestre un cuadro como portada.
+  const videoHTML = data.videoUrl
+    ? `<video class="bl-video" src="${encodeURI(data.videoUrl)}#t=0.1" controls playsinline preload="metadata" aria-label="Video de ${data.imgAlt}"></video>`
+    : '';
+
   const ratingHTML = data.hasRating
     ? `
       <div class="pm-rating__stars">${renderStars(data.fullStars, data.halfStars, data.emptyStars)}</div>
@@ -460,6 +469,7 @@ function buildModalHTML(data) {
             <img class="pm-gallery__img" id="pm-gallery-img" src="${encodeURI(data.imgSrc)}" alt="${data.imgAlt}" />
           </div>
           ${thumbsHTML}
+          ${videoHTML}
         </div>
 
         <div class="pm-info">
@@ -484,6 +494,9 @@ function buildModalHTML(data) {
               ${data.shippingText}
             </div>
           </div>
+
+          <!-- Comparador: este mismo producto en otros comercios (price-compare-ui.js) -->
+          <div class="pm-compare-slot"></div>
 
           <!-- Stock -->
           <div class="pm-stock">
@@ -692,6 +705,11 @@ async function openProductModal(card, { skipHistoryPush = false } = {}) {
     currentProductData = data;
     overlay.innerHTML = buildModalHTML(data);
     bindModalEvents(overlay, data);
+    renderSameProductOffers(
+      overlay.querySelector('.pm-compare-slot'),
+      { productId: data.id, storeId: data.shopId },
+      { onOpen: (item) => openProductModal(buildRelatedStubCard(item)) },
+    ).catch((e) => console.warn('Comparador de la ficha:', e));
     relatedPromise.then((items) => {
       if (currentOverlay === overlay) renderRelatedSection(overlay, items);
     });

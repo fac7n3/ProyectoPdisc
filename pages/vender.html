@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co https://tile.openstreetmap.org; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://nominatim.openstreetmap.org;">
     <title>Vender - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -837,6 +837,13 @@
       .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); outline: none; }
       .pubform__drop i { font-size: 1.6rem; color: var(--bl-vendor-accent); }
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
+      .pubform__optional { font-weight: 400; color: var(--bl-text-muted); }
+      .pubform__video-pick { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-text); font: inherit; font-weight: 600; cursor: pointer; }
+      .pubform__video-pick:hover, .pubform__video-pick:focus-visible { border-color: var(--bl-vendor-accent); outline: none; }
+      .pubform__video { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; margin-top: 0.75rem; }
+      .pubform__video video { width: 100%; max-width: 420px; max-height: 280px; border-radius: var(--bl-radius-md); background: #000; }
+      .pubform__video-remove { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-danger-text); font: inherit; font-size: 0.875rem; cursor: pointer; }
+      .pubform__video-remove:hover, .pubform__video-remove:focus-visible { border-color: var(--bl-danger); outline: none; }
 
       /* Los estilos de .catpick viven en home.css: los comparten el alta de
          producto y el alta de comercio. */
@@ -1864,6 +1871,24 @@
                   </fieldset>
 
                   <fieldset class="pubform__card">
+                    <legend class="pubform__legend">Video <span class="pubform__optional">(opcional)</span></legend>
+                    <p class="pubform__hint">
+                      Mostrá el producto en uso: se ve en la ficha, después de las fotos.
+                      MP4, WebM o MOV · hasta 30 MB (unos 30 segundos alcanzan).
+                    </p>
+                    <button type="button" class="pubform__video-pick" id="prod-video-pick">
+                      <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Elegir un video
+                    </button>
+                    <input type="file" id="prod-video" accept="video/mp4,video/webm,video/quicktime" hidden aria-label="Elegir video del producto" />
+                    <div class="pubform__video" id="prod-video-box" hidden>
+                      <video id="prod-video-preview" controls muted playsinline preload="metadata"></video>
+                      <button type="button" class="pubform__video-remove" id="prod-video-remove">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i> Quitar video
+                      </button>
+                    </div>
+                  </fieldset>
+
+                  <fieldset class="pubform__card">
                     <legend class="pubform__legend">Datos básicos</legend>
                     <div class="form-group">
                       <label class="form-label" for="prod-name">Nombre del producto</label>
@@ -1969,8 +1994,6 @@
         </div>
       </main>
 
-      <!-- Notificación Toast -->
-      <div class="toast" id="toast" aria-live="polite" role="status"></div>
     </div>
 
     <script type="module" src="../js/vender.js"></script>

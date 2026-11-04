@@ -5,7 +5,7 @@
     <script>try{if(localStorage.getItem('bl_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="view-transition" content="same-origin" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.googleusercontent.com https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com;">
     <title>Mi panel de profesional - Baradero Local</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#284175" />
@@ -13,29 +13,30 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
     <style>.oficios-mode-badge{background:var(--bl-accent);color:#fff;border-radius:var(--bl-radius-pill);letter-spacing:.02em;white-space:nowrap;align-items:center;gap:.4rem;padding:.35rem .9rem;font-size:.8rem;font-weight:700;display:inline-flex}.oficios-mode-badge[hidden]{display:none}@media (width<=768px){.oficios-mode-badge{display:none}}.prof-status-card{background:var(--bl-surface-alt);border:1px solid var(--bl-border);border-radius:var(--bl-radius-lg);text-align:center;max-width:640px;margin:2.5rem auto;padding:2rem}</style>
-    <script type="module" crossorigin src="/assets/profesional-ayxo4I5U.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-Bv9HNMLw.js">
-    <link rel="modulepreload" crossorigin href="/assets/storage-utils-Bjqg9YZt.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CUvzssRN.js">
+    <script type="module" crossorigin src="/assets/profesional-BnSrfWUc.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-BSejLRT3.js">
+    <link rel="modulepreload" crossorigin href="/assets/image-compress-D0FfQ9U_.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-C7-EN7wS.js">
     <link rel="modulepreload" crossorigin href="/assets/vender-shell-CQ821sAb.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-DlB4Qv41.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-sfS7V7TP.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-BGvLBQVq.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CrGcPVqL.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-0oyv2Qbd.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-DmUkRi7D.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-C5XtuyWE.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-C4BtxhPm.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
     <link rel="modulepreload" crossorigin href="/assets/store-contact-utils-P83dn3fT.js">
     <link rel="modulepreload" crossorigin href="/assets/validation-utils-BzZAHDfL.js">
+    <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-DnzFfBbf.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-ibGK7ccz.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-B4_QJTeI.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CopZU83P.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-DoiVRBK4.css">
-    <link rel="stylesheet" crossorigin href="/assets/profesional-Cv7ZUZOf.css">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-DJKWXZPA.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-d99rfU2Y.css">
+    <link rel="stylesheet" crossorigin href="/assets/profesional-BGQrfShX.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-Cq5XlLYJ.css">
-    <link rel="stylesheet" crossorigin href="/assets/auth-BVwoWwWT.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-BwcziAQz.css">
+    <link rel="stylesheet" crossorigin href="/assets/auth-JM4w52S9.css">
   </head>
   <body>
     <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
@@ -292,11 +293,15 @@
             <section class="mc-section" data-section="galeria" hidden>
               <div class="of-head">
                 <div class="of-head__titles">
-                  <h2 class="of-title">Fotos de trabajos</h2>
-                  <p class="of-sub">Hasta 6 fotos, 2 MB cada una. Se ven en tu tarjeta cuando alguien la despliega; la primera es la que más se mira.</p>
+                  <h2 class="of-title">Fotos y videos de trabajos</h2>
+                  <p class="of-sub">Hasta 6 entre fotos y videos: las fotos de hasta 2 MB, los videos (MP4, WebM o MOV) de hasta 30 MB y como máximo 2. Se ven en tu tarjeta cuando alguien la despliega; la primera foto es la que más se mira.</p>
                 </div>
-                <label class="of-btn" for="of-photo-upload" id="of-photo-upload-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Agregar foto</label>
-                <input type="file" id="of-photo-upload" accept="image/*" hidden />
+                <div class="of-head__actions">
+                  <label class="of-btn" for="of-photo-upload" id="of-photo-upload-label"><i class="fa-solid fa-camera" aria-hidden="true"></i> Agregar foto</label>
+                  <input type="file" id="of-photo-upload" accept="image/*" hidden />
+                  <label class="of-btn" for="of-video-upload" id="of-video-upload-label"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> Agregar video</label>
+                  <input type="file" id="of-video-upload" accept="video/mp4,video/webm,video/quicktime" hidden />
+                </div>
               </div>
               <div class="of-gallery" id="of-gallery"></div>
             </section>

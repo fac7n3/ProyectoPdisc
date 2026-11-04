@@ -29,8 +29,8 @@ const base = {
 };
 
 console.log("HOME_PROMO_SLOTS");
-check("son los 6 espacios que acepta el check de la tabla", () => {
-  assert.deepEqual(HOME_PROMO_SLOTS.map((s) => s.slot), ["mosaic_a", "mosaic_b", "mosaic_c", "mosaic_d", "mosaic_e", "mosaic_f"]);
+check("son los 12 espacios que acepta el check de la tabla (migraciones 108 y 154)", () => {
+  assert.deepEqual(HOME_PROMO_SLOTS.map((s) => s.slot), ["mosaic_a", "mosaic_b", "mosaic_c", "mosaic_d", "mosaic_e", "mosaic_f", "mosaic_g", "mosaic_h", "mosaic_i", "mosaic_j", "mosaic_k", "mosaic_l"]);
 });
 check("slotLabel cae al id si no lo conoce", () => {
   assert.equal(slotLabel("otro"), "otro");

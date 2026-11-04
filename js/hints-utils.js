@@ -12,6 +12,7 @@
  */
 
 import { supabase } from './auth-utils.js';
+import { notify } from './notice.js';
 
 /**
  * Cache local de la preferencia. La fuente de verdad es `profiles.cart_hints_enabled`
@@ -123,18 +124,7 @@ export async function setHintsEnabled(enabled) {
 export function showHint(message, type = 'default') {
   if (!message || !areHintsEnabled()) return;
 
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-
-  // textContent (no innerHTML): el nombre del comercio sale de la base y se
+  // notify() usa textContent: el nombre del comercio sale de la base y se
   // interpola en varios de estos mensajes.
-  toast.textContent = message;
-  toast.className = 'toast';
-  if (type === 'success') toast.classList.add('toast--success');
-  toast.classList.add('toast--visible');
-
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove('toast--visible');
-  }, 5500);
+  notify(message, type);
 }

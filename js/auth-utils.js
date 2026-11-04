@@ -5,6 +5,7 @@ import { applyDevicePreferences } from "./settings-utils.js";
 import { completePendingLink, consumeLinkNext } from "./linked-accounts.js";
 
 import { friendlyError } from './friendly-error.js';
+import { notify } from './notice.js';
 // Preferencias visuales elegidas en Perfil → Ajustes (hoy: "Reducir
 // animaciones"). Va acá porque este módulo lo importa cualquier página del
 // sitio: es el único punto que corre en todas sin repetir la llamada. Y va
@@ -74,76 +75,11 @@ if (document.body) {
   document.addEventListener("DOMContentLoaded", updateOfflineBanner);
 }
 
-// --- Sistema de Notificaciones ---
-function initToastContainer() {
-  let container = document.getElementById("toast-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "toast-container";
-    container.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      max-width: calc(100vw - 40px);
-      z-index: 11000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      pointer-events: none;
-    `;
-    document.body.appendChild(container);
-  }
-  return container;
-}
-
+// --- Avisos cortos ---
+// Una sola pila para todo el sitio (js/notice.js). Se conserva la firma de
+// siempre: el tipo por defecto es "error" y cualquier otro valor es éxito.
 export function showToast(message, type = "error") {
-  const container = initToastContainer();
-  const toast = document.createElement("div");
-  
-  const bgColor = type === "error" ? "#fee2e2" : "#dcfce7";
-  const textColor = type === "error" ? "#991b1b" : "#166534";
-  const iconClass = type === "error"
-    ? "fa-solid fa-circle-exclamation"
-    : "fa-solid fa-circle-check";
-
-  toast.style.cssText = `
-    background-color: ${bgColor};
-    color: ${textColor};
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-  `;
-  
-  const iconEl = document.createElement("i");
-  iconEl.className = iconClass;
-  const span = document.createElement("span");
-  span.textContent = message;
-  toast.appendChild(iconEl);
-  toast.appendChild(span);
-  container.appendChild(toast);
-
-  // Animar entrada
-  requestAnimationFrame(() => {
-    toast.style.opacity = "1";
-    toast.style.transform = "translateY(0)";
-  });
-
-  // Eliminar después de 7 segundos
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-    setTimeout(() => {
-      if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 300);
-  }, 7000);
+  notify(message, type === "error" ? "error" : "success");
 }
 
 // --- Utilidades de Interfaz ---

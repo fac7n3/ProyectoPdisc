@@ -1,4 +1,5 @@
 import { supabase } from './auth-utils.js';
+import { notify } from './notice.js';
 import { itemLineKey } from './product-options-utils.js';
 import { subscribeToChanges } from './realtime-utils.js';
 
@@ -580,16 +581,7 @@ export function buildStoreCard(store) {
 }
 
 export function showToast(message, type = 'default') {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = 'toast';
-  if (type === 'success') toast.classList.add('toast--success');
-  toast.classList.add('toast--visible');
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.classList.remove('toast--visible');
-  }, 5500);
+  notify(message, type);
 }
 
 /**

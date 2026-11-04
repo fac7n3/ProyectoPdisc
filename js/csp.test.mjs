@@ -55,6 +55,15 @@ export function cspProblems(html) {
   // La API REST y la auth van por https; Realtime por wss. Son dos esquemas distintos.
   if (!connect.includes("https://*.supabase.co")) problems.push("connect-src no permite https://*.supabase.co (API REST y auth)");
   if (!connect.includes("wss://*.supabase.co")) problems.push("connect-src no permite wss://*.supabase.co (Realtime): el websocket queda bloqueado y el tiempo real cae al polling");
+  // Los videos de productos y profesionales (migración 155) salen de Supabase
+  // Storage; la vista previa de uno recién elegido es un blob:. Sin media-src el
+  // navegador cae a default-src 'self' y no los reproduce.
+  const media = directiveSources(csp, "media-src");
+  if (!media) problems.push("el CSP no define media-src: los videos de productos y profesionales no se reproducen");
+  else {
+    if (!media.includes("https://*.supabase.co")) problems.push("media-src no permite https://*.supabase.co (videos)");
+    if (!media.includes("blob:")) problems.push("media-src no permite blob: (vista previa del video elegido)");
+  }
   return problems;
 }
 
@@ -80,7 +89,7 @@ for (const file of pages) {
 console.log("el chequeo en sí");
 
 check("detecta un CSP sin wss (el bug del 2026-10-02)", () => {
-  const html = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co https://accounts.google.com;">`;
+  const html = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co https://accounts.google.com;">`;
   const problems = cspProblems(html);
   assert.equal(problems.length, 1);
   assert.match(problems[0], /wss:\/\/\*\.supabase\.co/);
@@ -92,14 +101,21 @@ check("detecta una página sin CSP y un CSP sin connect-src", () => {
 });
 
 check("acepta el CSP correcto aunque lleve otras fuentes y use comillas simples", () => {
-  const html = `<meta http-equiv='Content-Security-Policy' content='default-src "self"; connect-src "self" https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org;'>`;
+  const html = `<meta http-equiv='Content-Security-Policy' content='default-src "self"; media-src "self" blob: https://*.supabase.co; connect-src "self" https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org;'>`;
   assert.deepEqual(cspProblems(html), []);
 });
 
 check("no confunde wss en otra directiva con connect-src", () => {
   // wss en img-src no sirve de nada para el websocket.
-  const html = `<meta http-equiv="Content-Security-Policy" content="img-src wss://*.supabase.co; connect-src 'self' https://*.supabase.co;">`;
+  const html = `<meta http-equiv="Content-Security-Policy" content="img-src wss://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co;">`;
   assert.equal(cspProblems(html).length, 1);
+});
+
+check("detecta un CSP sin media-src (los videos no se reproducen)", () => {
+  const html = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co;">`;
+  const problems = cspProblems(html);
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /media-src/);
 });
 
 if (!process.exitCode) console.log("\nTodo bien.");

@@ -6,7 +6,7 @@
  * vendedor (cargar la imagen y la publicación de su espacio).
  */
 
-/** Los 6 espacios, en el orden en que aparecen en el home. `ratio` es la
+/** Los 12 espacios (los 6 primeros de la migración 108, los otros 6 de la 154), en el orden en que aparecen en el home. `ratio` es la
  *  proporción aproximada del banner, para orientar a quien diseña la imagen. */
 export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_a', label: 'Mosaico de arriba · grande (izquierda)', ratio: '16:9 (ej. 1600x900)' },
@@ -15,6 +15,12 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_d', label: 'Mosaico de abajo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
   { slot: 'mosaic_e', label: 'Mosaico de abajo · izquierda', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_g', label: 'Franja entre Recomendados y el mapa · ancha', ratio: '5:1 (ej. 1600x320)' },
+  { slot: 'mosaic_h', label: 'Entre Esenciales y Ofertas · izquierda', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_i', label: 'Entre Esenciales y Ofertas · derecha', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_j', label: 'Debajo de Seguí descubriendo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
+  { slot: 'mosaic_k', label: 'Cierre de la página · izquierda', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_l', label: 'Cierre de la página · derecha', ratio: '4:1 (ej. 1200x300)' },
 ];
 
 export function slotLabel(slot) {
