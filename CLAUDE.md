@@ -124,6 +124,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Fotos con licencia dudosa:** jean, medias, collar y asado (migración 120) vienen de repos públicos sin licencia declarada: reemplazar antes del lanzamiento.
 
 ### Pendientes de desarrollo abiertos
+- **Pedido del usuario 2026-11-04 (menús/productos mobile).** Hecho: menús del navbar (Categorías, campanita, cuenta) como panel lateral izquierdo en ≤768 px (`home.css`, bloque `drawer-in`; el fondo oscuro es un `body:has(...)::after`). **Pendientes:** (1) sacar todo producto cuya foto la generó Claude (no viene del Drive); (2) crear productos con las fotos del Drive (regla de "Fotos del Drive" en Decisiones); (3) "Productos recomendados" en celular: scroll horizontal en vez de vertical.
 - **Videos y banners nuevos, sin probar con cuentas reales:** subir un video como vendedor y como profesional (30 MB, MP4/WebM/MOV; no hay transcodificación, un MOV de
   iPhone puede no verse en todos los navegadores), y que el admin asigne comercios a los espacios `mosaic_g..l` (hoy muestran el cartel fijo). "Seguí descubriendo" se probó con el
   botón, no con el IntersectionObserver real.

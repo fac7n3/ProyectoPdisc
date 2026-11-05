@@ -1235,6 +1235,55 @@ ul, ol {
   }
 }
 
+/* ── Menús del navbar en teléfono: panel lateral desde la izquierda ──
+   Categorías, campanita y cuenta dejan de ser una ventana flotante junto a su
+   botón. El fondo oscuro es un ::after del body (se ve mientras haya un panel
+   abierto): como su clic cae fuera de los contenedores, los handlers de
+   "clic afuera" de nav-utils.js ya lo cierran, sin JS nuevo. Va después de las
+   reglas de cada panel para ganarles por orden. */
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+  .cat-mega__panel,
+  .cat-mega--in-navbar .cat-mega__panel,
+  .notif-dropdown,
+  .account-dropdown {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: min(320px, 85vw);
+    max-height: none;
+    overflow-y: auto;
+    border-radius: 0 var(--bl-radius-lg) var(--bl-radius-lg) 0;
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    z-index: 210;
+    animation: drawer-in 0.2s ease;
+  }
+
+  .cat-mega__grid { grid-template-columns: 1fr; }
+
+  body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])) {
+    overflow: hidden;
+  }
+
+  body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden]))::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 99;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-mega__panel, .notif-dropdown, .account-dropdown { animation: none; }
+}
+
 .category-bar__item {
   position: relative;
   padding: 0.75rem 1rem;

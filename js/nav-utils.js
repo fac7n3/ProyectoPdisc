@@ -606,6 +606,7 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
  */
 function keepInsideViewport(panel) {
   panel.style.right = '';
+  if (window.matchMedia('(max-width: 768px)').matches) return; // en teléfono es un panel lateral fijo (home.css)
   const margin = 16;
   const { left, right } = panel.getBoundingClientRect();
   const vw = document.documentElement.clientWidth;
