@@ -3,7 +3,7 @@ import { test as base, expect } from '@playwright/test';
 // Funciones de lectura que el sitio público llama por POST /rest/v1/rpc/<nombre>.
 // Todo lo demás que no sea GET/HEAD/OPTIONS contra Supabase se corta: estas
 // pruebas corren contra la base de producción y no deben escribir nada.
-const RPC_DE_LECTURA = /^(get_|search_|same_product_offers|nearby_|list_)/;
+const RPC_DE_LECTURA = /^(get_|search_|same_product_offers|nearby_|list_|featured_category_counts)/;
 
 const esSupabase = (url) => /\.supabase\.co\//.test(url);
 

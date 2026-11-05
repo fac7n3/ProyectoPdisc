@@ -184,7 +184,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
   `log_*`, `increment_professional_metric`, `report_review` escriben). Para un deploy de prueba de una rama: `get_access_to_vercel_url` da el link con permiso.
 - **Pruebas e2e (humo del sitio público):** `npm run test:e2e` (Playwright, carpeta `e2e/`, config `playwright.config.mjs`). Abre las páginas públicas en un navegador real contra
   `vite preview` del `dist/` versionado y falla ante excepciones, `console.error`, violaciones de CSP, respuestas >= 400 o hosts de terceros; **corta toda escritura a Supabase**
-  (solo deja pasar GET y las RPC `get_*`/`search_*`/`same_product_offers`/`nearby_*`/`list_*`; `log_*` se corta sin fallar). Local usa el Chrome instalado (`PW_CHANNEL`); en CI, un job `e2e` aparte.
+  (solo deja pasar GET y las RPC `get_*`/`search_*`/`same_product_offers`/`nearby_*`/`list_*`/`featured_category_counts`; `log_*` se corta sin fallar). Local usa el Chrome instalado (`PW_CHANNEL`); en CI, un job `e2e` aparte.
   Si se prueba algo nuevo del sitio público, sumarlo a `e2e/humo.spec.mjs`. Prueba el `dist/` tal cual está: si se tocó código, reconstruirlo antes.
 - `npm test` corre ~64 archivos (necesita `npm ci`). `pkill -f "vite preview"` mata también la propia shell: cortar por puerto (`lsof -t -i:4173`).
 
