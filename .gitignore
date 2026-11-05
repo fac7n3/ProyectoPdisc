@@ -12,3 +12,7 @@ context.md
 # publicaciones.png, etc). La barra inicial ancla la regla a la raiz: las
 # imagenes del sitio viven en Assets/images/ y public/, y no se ven afectadas.
 /*.png
+
+# Pruebas e2e (Playwright)
+/test-results/
+/playwright-report/

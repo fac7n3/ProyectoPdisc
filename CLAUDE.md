@@ -124,10 +124,11 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Fotos con licencia dudosa:** jean, medias, collar y asado (migración 120) vienen de repos públicos sin licencia declarada: reemplazar antes del lanzamiento.
 
 ### Pendientes de desarrollo abiertos
+- **E2E nivel 2 (con login):** el humo (`e2e/humo.spec.mjs`) no cubre comprar, vender, panel de profesional ni admin: hace falta un proyecto o rama de Supabase de prueba con cuentas propias para no ensuciar producción.
+  El test del comparador se saltea si hoy ningún producto del home está en más de un comercio.
 - **Pedido del usuario 2026-11-04 (menús/productos mobile).** Hecho: menús del navbar (Categorías, campanita, cuenta) como panel lateral izquierdo en ≤768 px (`home.css`, bloque `drawer-in`; el fondo oscuro es un `body:has(...)::after`). **Pendientes:** (1) sacar todo producto cuya foto la generó Claude (no viene del Drive); (2) crear productos con las fotos del Drive (regla de "Fotos del Drive" en Decisiones). Hecho también: "Productos recomendados" en celular es una fila con scroll horizontal (`#products-grid` en `home.css`, solo ≤768 px).
 - **Videos y banners nuevos, sin probar con cuentas reales:** subir un video como vendedor y como profesional (30 MB, MP4/WebM/MOV; no hay transcodificación, un MOV de
-  iPhone puede no verse en todos los navegadores), y que el admin asigne comercios a los espacios `mosaic_g..l` (hoy muestran el cartel fijo). "Seguí descubriendo" se probó con el
-  botón, no con el IntersectionObserver real.
+  iPhone puede no verse en todos los navegadores), y que el admin asigne comercios a los espacios `mosaic_g..l` (hoy muestran el cartel fijo). "Seguí descubriendo" ya se probó con el IntersectionObserver real (e2e).
 - **Números de migración reservados:** 61-65 los tiene la rama sin mergear `feature/logistica-terceros` (no reusarlos). La 73 (adjuntos de soporte) y la 66 ya están aplicadas.
 - **Mercado Pago por tienda (A113-274):** falta elegir el método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo), verificar que
   `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean los de producción (`MP_ACCESS_TOKEN` ya lo es) y probar con una cuenta real (vincular, pagar en cadena, que `mp-webhook` confirme).
@@ -181,6 +182,10 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 **Cómo probar en este entorno**
 - El sandbox **sí llega a Supabase** y a `proyectopdisc.vercel.app`, pero sale por un grupo de IPs que rota. Al probar contra producción con Playwright, **bloquear toda escritura** (todo salvo GET y las RPC de lectura:
   `log_*`, `increment_professional_metric`, `report_review` escriben). Para un deploy de prueba de una rama: `get_access_to_vercel_url` da el link con permiso.
+- **Pruebas e2e (humo del sitio público):** `npm run test:e2e` (Playwright, carpeta `e2e/`, config `playwright.config.mjs`). Abre las páginas públicas en un navegador real contra
+  `vite preview` del `dist/` versionado y falla ante excepciones, `console.error`, violaciones de CSP, respuestas >= 400 o hosts de terceros; **corta toda escritura a Supabase**
+  (solo deja pasar GET y las RPC `get_*`/`search_*`/`same_product_offers`/`nearby_*`/`list_*`/`featured_category_counts`; `log_*` se corta sin fallar). Local usa el Chrome instalado (`PW_CHANNEL`); en CI, un job `e2e` aparte.
+  Si se prueba algo nuevo del sitio público, sumarlo a `e2e/humo.spec.mjs`. Prueba el `dist/` tal cual está: si se tocó código, reconstruirlo antes.
 - `npm test` corre ~64 archivos (necesita `npm ci`). `pkill -f "vite preview"` mata también la propia shell: cortar por puerto (`lsof -t -i:4173`).
 
 ## Scripts de tooling

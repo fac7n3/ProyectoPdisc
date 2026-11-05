@@ -6402,6 +6402,15 @@ Verificado con el Dove de 90 g (3 comercios). Sigue sin probarse con cuentas rea
 `vite build`. Un build fallido **vacía `dist/`**: restaurar con `git checkout -- dist && git clean -fd dist`. En Windows `npm test` no corre (el
 `for` es de bash) y `js/fontawesome-subset.test.mjs` falla en Windows por una ruta `C:\C:\...` armada con `new URL().pathname` (es del test, no de los íconos); el resto pasa corriendo cada archivo con `node`.
 
+## 2026-11-04 — Pruebas e2e de humo con Playwright (sin migración)
+
+Antes solo había tests de lógica (`js/*.test.mjs`, `npm test`); nada abría una página en un navegador, por eso nada atrapó el toast que no se veía ni el comparador ausente. Ahora `npm run test:e2e`
+(`@playwright/test`, `e2e/helpers.mjs` + `e2e/humo.spec.mjs`): 13 páginas públicas sin errores, home con 16 recomendados y banners nuevos, "Seguí descubriendo" (primera tanda por **IntersectionObserver real**,
+botón, sin repetir), modal de producto, ficha, comercio, aviso arriba a la derecha y comparador (se saltea si no hay datos). Corre sobre `vite preview` del `dist/` versionado (trae la clave pública, el CI
+no necesita `.env`); todo POST a Supabase que no sea RPC de lectura se corta y se anota. Hallazgos: `log_search_event` se dispara al abrir la búsqueda (telemetría, se corta); Recomendados y Esenciales pueden
+compartir productos (no es un bug de "Seguí descubriendo", que sí deduplica). `vite preview` responde 200 con el index a una ruta que no existe, así que ahí un 404 no se detecta. Job `e2e` nuevo en `ci.yml`.
+Con esto el "Seguí descubriendo" por IntersectionObserver quedó verificado en un navegador real (el panel de pruebas del agente no lo dispara).
+
 ## 2026-11-04 — Mejoras de la auditoría general, tanda 5: publicidades del inicio bajo demanda (sin migración)
 
 Medido antes (producción, Pixel 7): el inicio pesaba 2,8 MB y **los 18 slides de publicidad (6 espacios x 3) se bajaban todos al
