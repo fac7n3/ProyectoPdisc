@@ -121,12 +121,12 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
   (`docs/seguridad/HARDENING-SOC2-ISO27701.md`). Los Términos del envío (5.1 a 5.6) los redactó Claude **sin revisión legal**.
 - **Comercios reales (F11-06):** las tiendas son de seed/prueba; faltan vendedores reales aprobados. Hoy solo 2 comercios vincularon Mercado Pago
   y casi ninguno cargó alias/CBU o la ubicación del local (son de prueba; avisarles a los reales).
-- **Fotos con licencia dudosa:** jean, medias, collar y asado (migración 120) vienen de repos públicos sin licencia declarada: reemplazar antes del lanzamiento.
+- **Fotos con licencia dudosa:** ya no hay productos con las de jean, medias, collar y asado (el 2026-11-04 se borraron los productos con imágenes genéricas, ver skill). Si vuelve a aparecer alguna foto de repos públicos sin licencia, reemplazarla antes del lanzamiento.
 
 ### Pendientes de desarrollo abiertos
 - **E2E nivel 2 (con login):** el humo (`e2e/humo.spec.mjs`) no cubre comprar, vender, panel de profesional ni admin: hace falta un proyecto o rama de Supabase de prueba con cuentas propias para no ensuciar producción.
   El test del comparador se saltea si hoy ningún producto del home está en más de un comercio.
-- **Pedido del usuario 2026-11-04 (menús/productos mobile).** Hecho: menús del navbar (Categorías, campanita, cuenta) como panel lateral izquierdo en ≤768 px (`home.css`, bloque `drawer-in`; el fondo oscuro es un `body:has(...)::after`). **Pendientes:** (1) sacar todo producto cuya foto la generó Claude (no viene del Drive); (2) crear productos con las fotos del Drive (regla de "Fotos del Drive" en Decisiones). Hecho también: "Productos recomendados" en celular es una fila con scroll horizontal (`#products-grid` en `home.css`, solo ≤768 px).
+- **Pendiente tras la tanda de menús/productos mobile (2026-11-04):** crear productos con fotos nuevas del Drive. El Drive no tiene fotos nuevas desde la migración 144 (solo 8 de Tecnología del 29/10) ni carpeta de Ferretería; hay una carpeta "Kitchen-Live" (27/10) sin revisar y ~162 fotos chicas de la tanda 144 que quedaron sin subir por el límite del conector. Los comercios Ferretería El Clavo y Almacén La Esquina se borraron junto con sus productos genéricos.
 - **Videos y banners nuevos, sin probar con cuentas reales:** subir un video como vendedor y como profesional (30 MB, MP4/WebM/MOV; no hay transcodificación, un MOV de
   iPhone puede no verse en todos los navegadores), y que el admin asigne comercios a los espacios `mosaic_g..l` (hoy muestran el cartel fijo). "Seguí descubriendo" ya se probó con el IntersectionObserver real (e2e).
 - **Números de migración reservados:** 61-65 los tiene la rama sin mergear `feature/logistica-terceros` (no reusarlos). La 73 (adjuntos de soporte) y la 66 ya están aplicadas.
