@@ -445,6 +445,13 @@ function renderCart() {
 
   if (!tableBody) return;
 
+  // Sin nada en el carrito no hay pedido que resumir: se esconde el cuadro
+  // "Resumen del pedido" y el estado vacío ocupa todo el ancho. style.display
+  // y no [hidden]: .cart-summary / .cart-layout fijan su propio display.
+  const summaryBox = document.querySelector('.cart-summary');
+  if (summaryBox) summaryBox.style.display = cart.length === 0 ? 'none' : '';
+  document.querySelector('.cart-layout')?.classList.toggle('cart-layout--empty', cart.length === 0);
+
   // Mostrar/ocultar estado vacío
   if (cart.length === 0) {
     storeFilter = 'all';

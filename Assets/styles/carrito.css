@@ -26,6 +26,11 @@
   align-items: start;
 }
 
+/* Carrito vacío: sin cuadro de resumen, el estado vacío usa todo el ancho */
+.cart-layout--empty {
+  grid-template-columns: 1fr;
+}
+
 /* ===========================================================
    TABLA DE PRODUCTOS
    =========================================================== */
