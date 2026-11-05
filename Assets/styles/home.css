@@ -3550,6 +3550,28 @@ button.coupon-chip:hover {
   }
 }
 
+/* "Productos recomendados" en teléfono: una fila que se desliza hacia el
+   costado en vez de una grilla que crece hacia abajo. Solo #products-grid
+   (Esenciales, Ofertas y Seguí descubriendo tienen otros ids y no cambian). El
+   id le gana a los .products__grid de los @media de más abajo. */
+@media (max-width: 768px) {
+  #products-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  #products-grid::-webkit-scrollbar { display: none; }
+
+  #products-grid > .product-card {
+    flex: 0 0 min(44%, 190px);
+    scroll-snap-align: start;
+  }
+}
+
 /* Responsive para sidebar */
 @media (max-width: 992px) {
   .catalog-layout {
