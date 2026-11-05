@@ -11,6 +11,7 @@
  * reclamo. Van a un bucket privado, se suben ANTES de insertar el ticket y
  * se abren con signed URLs (ver db/schema/73_support_ticket_attachments.sql).
  */
+import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
 import { formatFileSize, storedFileName } from './storage-utils.js';
@@ -65,7 +66,7 @@ async function uploadAttachments(files, userId, onProgress) {
   const paths = [];
   for (let i = 0; i < files.length; i++) {
     onProgress?.(i + 1, files.length);
-    const file = files[i];
+    const file = await compressImage(files[i], 'attachment'); // capturas: se achican; un PDF pasa igual
     // Sanea el nombre: nada de "/" ni ".." que intente escapar de la carpeta
     // {uid}/ que exige la policy del bucket.
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '') || 'archivo';

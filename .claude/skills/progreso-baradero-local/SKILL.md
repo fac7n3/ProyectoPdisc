@@ -6314,6 +6314,45 @@ deshacen solas:** una persona sube a su carpeta y no a la de otra; no ve los arc
 el tope rechaza 6 adjuntos; el bucket es privado. **Sin probar de punta a punta en el navegador:** subir una captura real desde
 Mi perfil -> Soporte y abrirla desde el panel de admin (los signed URLs de 60 s).
 
+## 2026-11-04 — Mejoras de la auditoría general, tanda 4 (migración 156 aplicada; en Supabase `154_consultas_livianas`)
+
+Sigue de la tanda 3 (a pedido del usuario: "sigue con la siguiente tanda"). Esta vez se eligió **con datos**: se midió el peso real
+de las páginas en producción (Pixel 7, base real): inicio 2,8 MB (imágenes 1,6 MB, respuestas de la base 478 KB), búsqueda 1,4 MB,
+Comercios 1,3 MB (respuestas 489 KB).
+
+- **Compresión de imágenes antes de subirlas** (`js/image-compress.js`, 14 tests en `js/image-compress.test.mjs`). Hallazgo: **ninguna
+  subida se achicaba**. En el Storage ya había fotos de producto de 1,3 MB (71 archivos, 14 MB en `products`), 2 imágenes de promo de
+  2,4 MB y un logo de comercio de **361 KB** (Ferretería El Clavo) que se bajaba en el inicio y en Comercios; con comercios reales
+  subiendo desde el celular (3-5 MB, 4000 px) cada tarjeta habría pesado varios MB. `compressImage(file, uso)` decodifica con
+  `createImageBitmap(..., {imageOrientation:'from-image'})` (respeta la orientación EXIF), achica al lado máximo del uso y guarda
+  **WebP** (con transparencia, sirve para logos). Usos (`IMAGE_PRESETS`): `product` 1600, `banner` 1600, `promo` 1920, `logo` 512,
+  `avatar` 512, `photo` 1200, `attachment` 1600. **Nunca impide una subida:** si ya es chica y liviana (< 120 KB y dentro del máximo),
+  si no es una imagen achicable (GIF, SVG, PDF), si el navegador no codifica WebP (Safari viejo) o si algo falla, devuelve el archivo
+  original. Conectado en: fotos de producto y logo (`vender.js`), foto del alta de profesional, banner y logo (`comercio.js`),
+  avatar y comprobante de transferencia (`perfil.js`), publicidades del inicio (`home-promos-editor.js`), fotos del profesional
+  (`profesional.js`, `profesional-galeria.js`), fotos de consultas (`contratar.js`) y adjuntos de soporte (`support-utils.js`).
+  **De paso se arregló un bug que habría aparecido:** los paneles de profesional, su galería y el avatar rechazaban fotos de más de 2 MB
+  **antes** de comprimir, o sea que una foto normal de celular daba error; ahora se comprime primero y recién ahí se mira el tope.
+  **Verificado en Chromium real:** una foto de 4000x3000 -> 1600x1200 WebP (1 MB -> 114 KB, con ruido de prueba; una foto real
+  comprime más), un logo PNG con transparencia 2000x1000 -> 512x256 (65 -> 17 KB), lo chico/PDF/archivo corrupto se devuelven sin
+  tocar. **Sin probar:** subir una foto real desde un celular por cada pantalla (necesitan sesión). **Lo ya subido NO se achica solo:**
+  el logo de El Clavo y las promos de `home-promos` siguen pesados hasta que se vuelvan a subir desde el panel (ya pasan por la
+  compresión). No hay credencial de service role para reprocesar el Storage desde acá.
+- **Migración 156** (`db/schema/156_consultas_livianas.sql`, aplicada en Supabase como `154_consultas_livianas`: el 154 y el 155 del repo los tomó otra sesión): (1) `featured_category_counts()` (SECURITY INVOKER, la RLS decide
+  qué cuenta cada visitante): la tira de categorías destacadas (`getFeaturedCategories`, en cada página con barra de categorías)
+  bajaba `category_id` de **todos** los productos activos para contarlos (30 KB con 527 productos y creciendo con el catálogo); ahora
+  1 KB, con respaldo a la consulta vieja si la función no existiera. (2) Se cargó `stores.category_slug` en 4 comercios de seed que no
+  lo tenían (Almacén La Esquina, Carnicería El Novillo, Ferretería El Clavo, TecnoCenter: la categoría con más productos activos) y se
+  sacó de `comercios.js` el embed `products(categories(name))` y su función de respaldo. **Comercios: respuestas de la base 57 -> 8 KB**
+  con el mismo resultado visible (33 tarjetas, mismos rubros), medido contra producción real. Quedan sin rubro (sin etiqueta) Deportes
+  Maratón y Tienda Test Split P06, que no tienen productos.
+- **Lo que se vio y NO se tocó:** el script de 215 KB que aparece como `speed-insights-*.js` no es Speed Insights: es el chunk compartido
+  con el cliente de Supabase (auth + realtime), que se baja en todas las páginas; achicarlo pide cargar Realtime solo donde hace falta
+  (cambio de arquitectura, no de una tanda). El inicio sigue bajando ~100 KB por cada una de las ~6 imágenes de publicidad
+  (`/img/promos/*.webp`, 1600x900): una versión móvil más chica las bajaría a la mitad.
+- **Lo que sigue:** versiones móviles de las promos del inicio, cargar Realtime solo donde hace falta, CSS por página, CSP en un solo
+  lugar, partir `vender.js`, prueba de punta a punta de una compra, notificaciones web push, mover la base a `sa-east-1`.
+
 
 ## 2026-11-03 — Videos, avisos unificados, comparador en la ficha y home más largo (migraciones 154 y 155 aplicadas)
 
@@ -6371,3 +6410,35 @@ botón, sin repetir), modal de producto, ficha, comercio, aviso arriba a la dere
 no necesita `.env`); todo POST a Supabase que no sea RPC de lectura se corta y se anota. Hallazgos: `log_search_event` se dispara al abrir la búsqueda (telemetría, se corta); Recomendados y Esenciales pueden
 compartir productos (no es un bug de "Seguí descubriendo", que sí deduplica). `vite preview` responde 200 con el index a una ruta que no existe, así que ahí un 404 no se detecta. Job `e2e` nuevo en `ci.yml`.
 Con esto el "Seguí descubriendo" por IntersectionObserver quedó verificado en un navegador real (el panel de pruebas del agente no lo dispara).
+
+## 2026-11-04 — Mejoras de la auditoría general, tanda 5: publicidades del inicio bajo demanda (sin migración)
+
+Medido antes (producción, Pixel 7): el inicio pesaba 2,8 MB y **los 18 slides de publicidad (6 espacios x 3) se bajaban todos al
+cargar** (~1,1 MB), incluidos el 2º y 3º de cada carrusel y el mosaico de más abajo que nadie había visto. Con los 6 espacios nuevos
+`mosaic_g..l` de la otra sesión (hoy sin comercio asignado: cuando se asignen, el problema crecía a 36 imágenes).
+
+- **`js/home.js`:** `whenNearViewport(el, cb)` (IntersectionObserver, 400 px de margen; sin IO corre al toque) y `loadSlide(i)`.
+  Cada espacio baja **solo la publicidad que se ve, cuando el espacio se acerca a la pantalla**; la siguiente se baja `PROMO_ROTATE_MS - 2000`
+  ms después de mostrar la actual (queda lista para el fundido sin competir con la carga). Un espacio que todavía no se acercó no rota.
+  Las publicidades de un solo comercio guardan la URL en `data-promo-img` (la imagen ampliada la lee de ahí, así abre bien aunque
+  la imagen del banner no haya bajado) y ponen `--promo-img` al acercarse. **Medido:** a 1,5 s de cargar, 18 imágenes / 379 KB ->
+  **3 / 115 KB**; tras scrollear toda la página baja lo mismo que antes (1,1 MB: se bajan a medida que se necesitan). Verificado en
+  Chromium contra la base real: cada espacio con varias capas tiene su capa activa con imagen tras un ciclo de rotación, la imagen ampliada abre
+  con la del comercio correcto y sin errores de página.
+- **No se tocó (decidido tras mirarlo):** el chunk de 215 KB que se baja en todas las páginas es `@supabase/supabase-js` entero (auth +
+  realtime + postgrest + storage): no se puede sacar Realtime sin dejar de usar `createClient`, es una refactor grande (pedir `auth-js` y
+  `postgrest-js` por separado), no una mejora de una tanda. Las publicidades siguen siendo imágenes de 1600x900 (~60-115 KB): una versión
+  móvil las bajaría a la mitad pero hay que rehacer las imágenes (están en `public/img/promos/`, las hizo una sesión anterior con HTML+Chromium).
+- **Lo que sigue:** versiones móviles de las publicidades, CSS por página, CSP en un solo lugar, partir `vender.js`, prueba de punta a
+  punta de una compra, notificaciones web push, mover la base a `sa-east-1`.
+
+### 2026-11-04 — Tanda 5, segunda parte: publicidades para celular y fuente adelantada
+
+- **Publicidades del inicio en versión de celular** (`npm run thumbs` ahora también genera `public/img/promos/m/*.webp` a 800 px: 28 imágenes,
+  625 KB contra 1.642 KB, -62%). `promoBannerUrl(url, smallScreen)` / `promoMobileUrl` en `js/home-promos-utils.js` (con tests): en pantallas de
+  <= 768 px el banner usa la chica; **la imagen ampliada sigue usando la original**; las que no son de `/img/promos/` (Supabase Storage) no
+  tienen versión y quedan como estaban. Una publicidad nueva en `public/img/promos/` = correr `npm run thumbs` (el test falla si falta).
+- **`<link rel="preload">` de Inter** en las 20 páginas de `pages/` (Vite lo reescribe al mismo archivo con hash que usa el CSS; verificado en
+  11 páginas: un solo pedido de la fuente y sin avisos de "preload sin usar"). Antes el navegador la descubría recién al leer el CSS.
+- **Advisor de seguridad de Supabase revisado al final de la sesión:** sin hallazgos nuevos (las tablas `api_rate_limits` y
+  `api_rate_limit_salt` figuran como "RLS sin policies" = INFO a propósito; las 4 funciones anónimas con tope ya estaban marcadas antes).

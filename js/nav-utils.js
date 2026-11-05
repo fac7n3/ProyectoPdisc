@@ -78,15 +78,24 @@ export function getFeaturedCategories(limit = 6) {
   if (!_featuredPromise) {
     _featuredPromise = (async () => {
       const categories = await getCategories();
-      const { data, error } = await supabase
-        .from('products')
-        .select('category_id')
-        .eq('is_active', true);
-      if (error || !data) return categories.slice(0, limit); // fallback: primeras N
+      // El conteo lo hace la base (migración 154): antes se bajaba la columna
+      // category_id de TODOS los productos activos solo para contarla (30 KB con 527
+      // productos, creciendo con el catálogo, en cada página con barra de categorías).
       const counts = new Map();
-      data.forEach((r) => {
-        if (r.category_id) counts.set(r.category_id, (counts.get(r.category_id) || 0) + 1);
-      });
+      const { data: counted, error: rpcError } = await supabase.rpc('featured_category_counts');
+      if (!rpcError && Array.isArray(counted)) {
+        counted.forEach((r) => counts.set(r.category_id, Number(r.n)));
+      } else {
+        // Respaldo si la función todavía no existe: la consulta de siempre.
+        const { data, error } = await supabase
+          .from('products')
+          .select('category_id')
+          .eq('is_active', true);
+        if (error || !data) return categories.slice(0, limit); // fallback: primeras N
+        data.forEach((r) => {
+          if (r.category_id) counts.set(r.category_id, (counts.get(r.category_id) || 0) + 1);
+        });
+      }
       return categories
         .map((c) => ({ ...c, _count: counts.get(c.id) || 0 }))
         .filter((c) => c._count > 0)
@@ -597,6 +606,7 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
  */
 function keepInsideViewport(panel) {
   panel.style.right = '';
+  if (window.matchMedia('(max-width: 768px)').matches) return; // en teléfono es un panel lateral fijo (home.css)
   const margin = 16;
   const { left, right } = panel.getBoundingClientRect();
   const vw = document.documentElement.clientWidth;

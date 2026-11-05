@@ -4,6 +4,7 @@
 // Anti-XSS: todo lo que viene de la base se pinta con DOM API (textContent),
 // nunca con innerHTML — misma convención que js/servicios.js.
 
+import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
@@ -715,7 +716,7 @@ function construirSelectorDeFotos() {
 async function subirFotosConsulta(files, userId, professionalId) {
   const paths = [];
   for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+    const file = await compressImage(files[i], 'attachment');
     // Sanea el nombre: nada de "/" ni ".." que intente escapar de la carpeta
     // {uid}/{professional_id}/ que exige la policy del bucket.
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '') || 'foto';

@@ -10,6 +10,7 @@
  * vendedor (vender-shell.js) para que los dos se manejen igual.
  */
 
+import { compressImage } from './image-compress.js';
 import { supabase, guardPage, showToast, setLoading } from './auth-utils.js';
 import { initVenderShell } from './vender-shell.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
@@ -554,11 +555,14 @@ async function alternarPausa(btn) {
 }
 
 async function subirFoto(event) {
-  const archivo = event.target.files?.[0];
+  const elegido = event.target.files?.[0];
   event.target.value = '';
-  if (!archivo) return;
+  if (!elegido) return;
 
   const msg = document.getElementById('of-photo-msg');
+  if (msg) msg.textContent = 'Preparando la foto…';
+  // Una foto de celular pesa 3-5 MB: se achica ANTES de mirar el tope de 2 MB.
+  const archivo = await compressImage(elegido, 'photo');
   if (archivo.size > MAX_FOTO_BYTES) {
     if (msg) msg.textContent = 'La foto no puede pesar más de 2 MB.';
     return;

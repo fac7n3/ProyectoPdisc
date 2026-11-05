@@ -6,6 +6,7 @@
  * orden y sin pie de foto.
  */
 
+import { compressImage } from './image-compress.js';
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects, videoFileProblem, videoExtension, safeVideoUrl } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
@@ -141,9 +142,11 @@ function esVideo(foto) {
 }
 
 async function subir(event) {
-  const archivo = event.target.files?.[0];
+  const elegido = event.target.files?.[0];
   event.target.value = '';
-  if (!archivo) return;
+  if (!elegido) return;
+  // Una foto de celular pesa 3-5 MB: se achica ANTES de mirar el tope de 2 MB.
+  const archivo = await compressImage(elegido, 'photo');
 
   if (fotos.length >= MAX_FOTOS) {
     showToast(`Podés tener hasta ${MAX_FOTOS} fotos. Borrá una para subir otra.`);

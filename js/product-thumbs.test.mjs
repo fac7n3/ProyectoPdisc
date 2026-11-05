@@ -66,6 +66,17 @@ check("no quedan miniaturas huérfanas (de una foto que ya no existe)", () => {
   assert.deepEqual(orphans, []);
 });
 
+console.log("publicidades del inicio para celular");
+check("cada publicidad de /img/promos tiene su versión de 800 px en /m/, más liviana", () => {
+  const dirP = path.join(root, "public/img/promos");
+  const promos = readdirSync(dirP).filter((f) => f.endsWith(".webp"));
+  assert.ok(promos.length > 5);
+  const missing = promos.filter((f) => !existsSync(path.join(dirP, "m", f)));
+  assert.deepEqual(missing, [], "Faltan versiones de celular: corré  npm run thumbs");
+  const bigger = promos.filter((f) => statSync(path.join(dirP, "m", f)).size >= statSync(path.join(dirP, f)).size);
+  assert.deepEqual(bigger, []);
+});
+
 if (process.exitCode) {
   console.error("\nHay fallas.");
 } else {

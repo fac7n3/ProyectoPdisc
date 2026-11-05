@@ -1,4 +1,5 @@
 import { setProductImage } from './product-image.js';
+import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
 import { updateCartBadge, showToast, localIsoDate, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
@@ -178,7 +179,8 @@ function applyHeaderBanner(header, url) {
 }
 
 /** Sube el banner a store-logos/{uid del dueño}/ y actualiza stores.banner_url. */
-async function uploadStoreBanner(file, store) {
+async function uploadStoreBanner(rawFile, store) {
+  const file = await compressImage(rawFile, 'banner');
   const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
   const path = `${store.owner_id}/banner-${Date.now()}.${ext || 'jpg'}`;
 
@@ -341,7 +343,8 @@ function buildColorPopover(store, header) {
 }
 
 /** Sube el archivo elegido a store-logos/{uid del dueño}/ y actualiza stores.logo_url. */
-async function uploadStoreLogo(file, store) {
+async function uploadStoreLogo(rawFile, store) {
+  const file = await compressImage(rawFile, 'logo');
   const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').slice(0, 5);
   // La carpeta tiene que ser el uid del dueño: es lo que exige la policy del
   // bucket (storage no sabe qué tienda es dueño cada usuario).

@@ -1,4 +1,5 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
+import { compressImage } from './image-compress.js';
 import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
@@ -656,9 +657,11 @@ function setupProfessionalPhotoPicker() {
   document.getElementById('prof-photo-pick-btn')?.addEventListener('click', () => input.click());
 
   input.addEventListener('change', async () => {
-    const file = input.files?.[0];
+    let file = input.files?.[0];
     if (!file) return;
 
+    // Una foto de celular pesa 3-5 MB: se achica ANTES de mirar el tope de 2 MB.
+    file = await compressImage(file, 'photo');
     if (file.size > MAX_PROF_PHOTO_BYTES) {
       showToast('Esa imagen pesa más de 2 MB. Probá con una más liviana.', 'error');
       input.value = '';
@@ -2626,7 +2629,11 @@ function setupStoreLogoPicker() {
 
   // Compartida entre el único camino de subida que queda: siempre pasa por
   // el recortador, así que siempre sube el Blob que salió del <canvas>.
-  const uploadStoreLogo = async (blob, contentType) => {
+  const uploadStoreLogo = async (rawBlob, rawType) => {
+    // El recortador devuelve un PNG/WebP/JPEG de hasta LOGO_CROP_OUTPUT px: se achica y pasa a WebP.
+    const compressed = await compressImage(new File([rawBlob], 'logo', { type: rawType }), 'logo');
+    const blob = compressed;
+    const contentType = compressed.type || rawType;
     pickBtn.disabled = true;
     pickBtn.textContent = 'Subiendo…';
     const previousUrl = currentStoreLogoUrl;
@@ -5169,7 +5176,8 @@ function closeProductForm() {
 }
 
 /** F5-04: sube una foto al bucket 'products' y devuelve su URL pública (null si falló). */
-async function uploadProductImage(productId, file) {
+async function uploadProductImage(productId, rawFile) {
+  const file = await compressImage(rawFile, 'product');
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
   const path = `${productId}/${Date.now()}-${safeName}`;
 
