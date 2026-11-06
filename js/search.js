@@ -12,6 +12,7 @@ import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist,
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { groupSameProducts, rankByPrice, rankByDistance, formatDistance } from './price-compare-utils.js';
 import { isMissingFunctionError } from './product-detail-utils.js';
+import { loadUserLocation, saveUserLocation, locationParams } from './store-location-utils.js';
 
 const PAGE_SIZE = 24;
 
@@ -234,25 +235,8 @@ function scheduleSearchLog(query, results) {
 // por producto con dos filas: los comercios del más barato al más caro, y del
 // más cerca al más lejos de la persona.
 const COMPARE_MAX_GROUPS = 3;
-// La misma clave que usa el mapa "Comercios cerca tuyo" del inicio: si ya la
-// compartió ahí, acá no se le vuelve a pedir.
-const NEARBY_LOCATION_KEY = 'bl_nearby_location';
-
-function loadUserLocation() {
-  try {
-    const raw = sessionStorage.getItem(NEARBY_LOCATION_KEY);
-    const loc = raw ? JSON.parse(raw) : null;
-    return loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng) ? loc : null;
-  } catch (_) {
-    return null;
-  }
-}
-
-function saveUserLocation(lat, lng) {
-  try {
-    sessionStorage.setItem(NEARBY_LOCATION_KEY, JSON.stringify({ lat, lng }));
-  } catch (_) { /* sin sessionStorage: vale solo para esta vista */ }
-}
+// La ubicación se comparte con el mapa "Comercios cerca tuyo" del inicio
+// (store-location-utils.js): si ya la dio ahí, acá no se le vuelve a pedir.
 
 // Ubicación de los comercios (stores.lat/lng, migración 147). Aparte de
 // getStores() para que, si la columna todavía no existe, falle solo esto y la
@@ -488,7 +472,10 @@ function buildLocationPrompt() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         saveUserLocation(pos.coords.latitude, pos.coords.longitude);
-        drawPriceCompare(); // redibuja todas las tarjetas con la distancia
+        // Con "Más relevantes" la cercanía cambia el orden: se vuelve a buscar
+        // (redibuja también el comparador). Si no, solo el comparador.
+        if (filterState.sortBy === 'relevancia') runSearch();
+        else drawPriceCompare();
       },
       () => {
         btn.disabled = false;
@@ -588,6 +575,7 @@ async function runSearch({ append = false } = {}) {
       p_sort: filterState.sortBy,
       p_limit: PAGE_SIZE,
       p_offset: filterState.page * PAGE_SIZE,
+      ...locationParams(),
     });
 
     if (error) throw error;

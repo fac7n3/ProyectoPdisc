@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   BARADERO_CENTER, isValidPoint, roundPoint, isNearBaradero, parseCoordsFromMapsUrl,
+  loadUserLocation, saveUserLocation, locationParams,
 } from "./store-location-utils.js";
 
 let failed = 0;
@@ -42,6 +43,27 @@ check("vacío / basura => null", () => {
   assert.equal(parseCoordsFromMapsUrl(""), null);
   assert.equal(parseCoordsFromMapsUrl(null), null);
   assert.equal(parseCoordsFromMapsUrl("https://www.google.com/maps/@999,999,1z"), null);
+});
+
+console.log("ubicación de la persona -> parámetros de search_products");
+check("sin sessionStorage (node) => sin parámetros", () => {
+  assert.equal(loadUserLocation(), null);
+  assert.deepEqual(locationParams(), {});
+});
+check("guardada => p_lat/p_lng; basura => sin parámetros", () => {
+  const store = new Map();
+  globalThis.sessionStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) };
+  try {
+    assert.deepEqual(locationParams(), {});
+    saveUserLocation(-33.81, -59.5);
+    assert.deepEqual(locationParams(), { p_lat: -33.81, p_lng: -59.5 });
+    store.set("bl_nearby_location", "{roto");
+    assert.deepEqual(locationParams(), {});
+    store.set("bl_nearby_location", JSON.stringify({ lat: 999, lng: 0 }));
+    assert.equal(loadUserLocation(), null);
+  } finally {
+    delete globalThis.sessionStorage;
+  }
 });
 
 if (failed) { console.log(`\n${failed} fallaron`); process.exit(1); }

@@ -21,6 +21,7 @@ import { initNotificationToasts } from './toast-utils.js';
 import { onNotificationsChanged } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
 import { getInstallState, triggerInstall } from './install-app.js';
+import { locationParams } from './store-location-utils.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -508,7 +509,7 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
 
     const token = ++lastToken;
     const { data: products, error } = await supabase.rpc('search_products', {
-      p_query: q, p_limit: 6, p_offset: 0, p_sort: 'relevancia',
+      p_query: q, p_limit: 6, p_offset: 0, p_sort: 'relevancia', ...locationParams(),
     });
     if (token !== lastToken) return; // llegó una respuesta más nueva
     if (error) { console.error('Error en sugerencias:', error); close(); return; }

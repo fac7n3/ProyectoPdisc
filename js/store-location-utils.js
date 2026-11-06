@@ -21,6 +21,32 @@ export function roundPoint(p) {
   return { lat: Math.round(p.lat * 1e6) / 1e6, lng: Math.round(p.lng * 1e6) / 1e6 };
 }
 
+// Ubicación que compartió la persona (mapa del inicio o "Usar mi ubicación"
+// del buscador). Solo en esta pestaña: sessionStorage, nunca a la base.
+const USER_LOCATION_KEY = 'bl_nearby_location';
+
+/** {lat, lng} guardado en la pestaña, o null. */
+export function loadUserLocation() {
+  try {
+    const loc = JSON.parse(sessionStorage.getItem(USER_LOCATION_KEY));
+    return isValidPoint(loc) ? loc : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function saveUserLocation(lat, lng) {
+  try {
+    sessionStorage.setItem(USER_LOCATION_KEY, JSON.stringify({ lat, lng }));
+  } catch (_) { /* sin sessionStorage: vale solo para esta vista */ }
+}
+
+/** Parámetros p_lat/p_lng de search_products (migración 159): con ubicación, rankea por cercanía. */
+export function locationParams() {
+  const loc = loadUserLocation();
+  return loc ? { p_lat: loc.lat, p_lng: loc.lng } : {};
+}
+
 export function isNearBaradero(p, maxKm = MAX_KM_FROM_BARADERO) {
   return isValidPoint(p) && distanceMeters(BARADERO_CENTER, p) <= maxKm * 1000;
 }

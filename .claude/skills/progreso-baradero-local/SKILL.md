@@ -6452,3 +6452,25 @@ Pedido del usuario: (1) menús del navbar como panel lateral en celular, (2) sac
 - **Windows:** `npm test` no corre (el script usa un `for` de bash) y `js/fontawesome-subset.test.mjs` falla por una ruta `C:\C:\...`; el resto pasa corriendo cada test con `node`.
 - **Corrección del mismo día (archivo 158):** la carpeta "Ferretería" del Drive SÍ existía (5 fotos del 13/10, nunca importadas); se la dio por inexistente porque `search_files` devuelve 5 carpetas por página y no se paginó. Se recreó Ferretería El Clavo (mismo dueño que el seed, sin logo/banner porque los anteriores eran mockups de Claude) con 5 productos: martillo de uña ($9.800), pinza de presión ($8.900), llave ajustable 200 mm ($7.900), set de 11 destornilladores de precisión ($6.500) y taladro Black+Decker 20V con set ($89.900). Precios y stock inventados, como en las tandas anteriores. Flujo: fotos -> webp 800 px (foto entera sobre copia desenfocada; fondo blanco -> blanco) + `npm run thumbs` -> push -> esperar 200 `image/webp` en producción -> `execute_sql` del archivo 158 (probado antes con `raise exception`). Total: 501 productos.
 - **Cómo bajar fotos del Drive (versión rápida):** `download_file_content` devuelve el base64; las chicas (< ~60 KB) vienen en el resultado y las grandes se guardan en `tool-results/*.txt` (JSON). Un script de Node decodifica ambas (las chicas, leyendo el `.jsonl` de la sesión). 5 fotos entran en una sesión sin subagentes. Con `Read` sobre el JPG decodificado se ve la imagen.
+
+## Buscador etapa 2: ranking con señales + cercanía (2026-11-06, migración 159)
+
+Pedido del usuario: "un algoritmo de búsqueda parecido al de Mercado Libre/Temu/Shein, incluyendo la cercanía".
+- **`search_products` v2** (firma nueva con `p_lat`, `p_lng` al final, default null; la de 8 parámetros se borró
+  porque dos versiones con defaults hacen que PostgREST no sepa cuál llamar; un front viejo que manda 8 sigue andando).
+  Con `p_sort='relevancia'`: `score = texto × (1 + señales + oferta + cercanía) × (sin stock ? 0,3 : 1)`, y después
+  diversidad: el k-ésimo producto de un mismo comercio se divide por `1 + 0,1·(k-1)`. Sin consulta el texto vale 10
+  para todos (navegar una categoría ordena por señales). Se sumó `id` como último desempate (paginación estable).
+- **`search_product_boost(uuid[])`** (SECURITY DEFINER): ventas 180 días (`0,12·ln(1+n)`, pedidos paid/ready_for_pickup/
+  shipped/completed), vistas 30 días (`0,04·ln(1+n)`), reseñas del producto y del comercio con promedio bayesiano
+  (3 reseñas de 3,5 de base; pesos 0,10 y 0,05), todo topado en [-0,3; +0,6]. Devuelve **un solo número redondeado**
+  para no exponer cuánto vende cada comercio (anon la puede llamar).
+- **Cercanía:** `+0,35 / (1 + km/1,5)` (haversine contra `stores.lat/lng`). Sin ubicación de la persona o del comercio,
+  no suma ni resta. **Hoy 0 de 32 comercios cargaron la ubicación**: no cambia nada hasta que la carguen (vender.html).
+  Probado con una simulación revertida: con la persona al lado de un comercio, sus productos suben al 1.º y 2.º puesto.
+- **Front:** `loadUserLocation`/`saveUserLocation`/`locationParams` pasaron a `js/store-location-utils.js` (misma clave
+  `bl_nearby_location` de sessionStorage que el mapa del inicio); `search.js` y el autocompletado de `nav-utils.js`
+  mandan la ubicación. Al tocar "Usar mi ubicación" en el comparador, con "Más relevantes" se vuelve a buscar.
+- **Tiempos:** ~62 ms anónimo, ~78 ms con sesión (en caliente; la primera llamada en frío ~190 ms).
+- **e2e:** pasa salvo `"Ver más productos" suma tarjetas sin repetir ninguna` (home, no usa `search_products`: carrera
+  previa entre "Seguí descubriendo" y los carruseles que terminan de cargar después).
