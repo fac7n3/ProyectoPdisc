@@ -310,6 +310,9 @@ html[data-theme="dark"] .bl-text-stroke {
   color: #668be4;
   text-shadow: 2px 2px 0 rgba(98, 136, 218, 0.5), 3px 3px 0 rgba(98, 136, 218, 0.5), 4px 4px 0 rgba(98, 136, 218, 0.5);
 }
+html[data-theme="dark"] .store-logo-link--more {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .notif-item__mark {
   color: var(--dk-accent-text);
 }
