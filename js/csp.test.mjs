@@ -2,8 +2,9 @@
  * Chequeo del CSP (Content-Security-Policy) de las páginas.
  * Correr con:  node js/csp.test.mjs
  *
- * Por qué existe: el CSP está copiado a mano en un <meta> de cada HTML (las
- * páginas de pages/ más index.html) y nadie lo mira hasta que algo se rompe.
+ * Por qué existe: el CSP vive en un <meta> de cada HTML (las páginas de pages/
+ * más index.html) y nadie lo mira hasta que algo se rompe. Desde 2026-11 se
+ * define una sola vez en scripts/sync-csp.mjs y se vuelca a los HTML con ese script.
  * El 2026-10-02 se publicó el tiempo real (Supabase Realtime) y quedó
  * bloqueado en producción sin que ningún test lo notara: el websocket va por
  * `wss://`, y `connect-src https://*.supabase.co` NO lo cubre (en CSP el
@@ -20,6 +21,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { withCsp } from "../scripts/sync-csp.mjs";
 
 const check = (name, fn) => {
   try {
@@ -83,6 +85,14 @@ for (const file of pages) {
   check(`${file}: permite https y wss de Supabase en connect-src`, () => {
     const problems = cspProblems(readFileSync(path.join(root, file), "utf8"));
     assert.deepEqual(problems, []);
+  });
+}
+
+// El CSP se define una sola vez en scripts/sync-csp.mjs; los HTML solo lo reflejan.
+for (const file of pages) {
+  check(`${file}: el CSP coincide con scripts/sync-csp.mjs`, () => {
+    const html = readFileSync(path.join(root, file), "utf8");
+    assert.equal(withCsp(html, file.replaceAll("\\", "/")), html, "desactualizado: correr `node scripts/sync-csp.mjs`");
   });
 }
 

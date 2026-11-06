@@ -1505,28 +1505,17 @@ async function validateCartFreshness() {
 
   const productIds = [...new Set(cart.map((item) => item.id))];
 
-  const [{ data: products, error }, { data: optionRows, error: optionsError }] = await Promise.all([
-    supabase
-      .from('products')
-      .select('id, price, stock, is_active, store_id, stores(name, delivery_fee, mp_collector_id)')
-      .in('id', productIds),
-    supabase
-      .from('product_options')
-      .select('id, product_id, name, position, product_option_values(id, value, is_available, position)')
-      .in('product_id', productIds),
-  ]);
-
+  // Una sola consulta (migración 158): productos + tienda + opciones, con la misma
+  // visibilidad que la policy de products. Si falla se deja el carrito como está:
+  // create_order revalida todo igual antes de cobrar.
+  const { data: products, error } = await supabase.rpc('get_cart_catalog', { p_product_ids: productIds });
   if (error) {
     console.error('Error al revalidar el carrito:', error);
     return;
   }
-  if (optionsError) {
-    // Sin esto no se puede decir si la elección sigue en pie. Mejor dejar el
-    // carrito como está que borrar líneas por un error de red: create_order
-    // las revalida igual antes de cobrar.
-    console.error('Error al revalidar las opciones del carrito:', optionsError);
-    return;
-  }
+  const optionRows = (products || []).flatMap((p) =>
+    (p.product_options || []).map((o) => ({ ...o, product_id: p.id }))
+  );
 
   const byId = new Map((products || []).map((p) => [p.id, p]));
 

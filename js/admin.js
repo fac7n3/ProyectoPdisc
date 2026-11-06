@@ -10,6 +10,7 @@ import { buildPromoEditorCard } from './home-promos-editor.js';
 import { promoPosition } from './home-promos-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { orderLabel } from './order-utils.js';
+import { openEvidenceViewer } from './delivery-evidence.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { friendlyError } from './friendly-error.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
@@ -1934,12 +1935,43 @@ async function fetchSupportTickets() {
     replyBtn.appendChild(document.createTextNode('Ver hilo'));
     replyBtn.addEventListener('click', () => toggleAdminTicketThread(tr, ticket));
     tdActions.appendChild(replyBtn);
+
+    // Reclamos de entrega (submit_delivery_feedback): el asunto trae "#BL-<número>"
+    // y las fotos viven en el pedido, no en el ticket.
+    const deliveryNumber = ticket.subject?.match(/^Problema con el pedido #BL-(\d+)$/)?.[1];
+    if (deliveryNumber) {
+      const photosBtn = document.createElement('button');
+      photosBtn.type = 'button';
+      photosBtn.style.cssText = `${replyBtn.style.cssText} margin-left: 0.4rem;`;
+      photosBtn.textContent = '📷 Ver fotos';
+      photosBtn.addEventListener('click', () => openDeliveryPhotos(deliveryNumber, photosBtn));
+      tdActions.appendChild(photosBtn);
+    }
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
   });
 
   reopen.forEach(([tr, ticket]) => toggleAdminTicketThread(tr, ticket));
+}
+
+/** Abre las fotos de la entrega (retiro + recepción) del pedido BL-<número> de un reclamo. */
+async function openDeliveryPhotos(orderNumber, button) {
+  button.disabled = true;
+  try {
+    const { data: order, error } = await supabase.from('orders').select('id').eq('order_number', orderNumber).maybeSingle();
+    if (error) throw error;
+    if (!order) {
+      showToast('No se encontró el pedido de este reclamo.', 'error');
+      return;
+    }
+    await openEvidenceViewer(order.id, { orderLabel: `#BL-${orderNumber}` });
+  } catch (err) {
+    console.error('Error al abrir las fotos de la entrega:', err);
+    showToast('No se pudieron cargar las fotos.', 'error');
+  } finally {
+    button.disabled = false;
+  }
 }
 
 /** Los mensajes de un reclamo dentro de `threadDiv` (se puede volver a llamar para actualizarlos). */

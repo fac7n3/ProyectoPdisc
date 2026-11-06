@@ -133,19 +133,17 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Mercado Pago por tienda (A113-274):** falta elegir el método de pago **por comercio** dentro de un mismo carrito (hoy es uno para todo), verificar que
   `MP_CLIENT_ID`/`MP_CLIENT_SECRET` sean los de producción (`MP_ACCESS_TOKEN` ya lo es) y probar con una cuenta real (vincular, pagar en cadena, que `mp-webhook` confirme).
   Sin probar con plata: combos "Impulsá tus ventas" (cobran con el token global) y compra común tras `mp-webhook` v7.
-- **Admin:** pantalla para ver reclamos de entrega con sus fotos (`openEvidenceViewer` no está conectado a ninguna pantalla) y para ver compras de combos.
+- **Admin:** pantalla para ver compras de combos (los reclamos de entrega ya tienen el botón "Ver fotos" en Soporte).
 - **Buscador:** etapa 2 (ranking por ventas/reseñas/stock/envío) y etapa 4 (similares, comprados juntos, "para vos"); reporte `admin_search_report` sin pantalla.
-- **Carrito:** `carrito.js` sigue pidiendo `products`/`product_options` con joins anidados (lento con sesión); la salida es una función auxiliar SECURITY DEFINER para las policies.
 - **Restos sin uso:** columna `stores.free_shipping_threshold` (un frontend viejo en caché aún la pide) y el bucket vacío `store-banners` (hay que borrarlo desde el dashboard/API de Storage: por SQL no deja). `confirm_simulated_payment` y `release_delivery` **siguen en uso** (proveedor simulado de pago y panel del repartidor), no borrarlos. `Assets/styles/styles.css` no lo carga ninguna página pero es la fuente de verdad que citan los documentos de marca: no borrarlo sin actualizar `docs/brand-guidelines.md`, `Assets/design-tokens.*` y `video/`. `product_variants` ya se borró (migración 157).
-- **Mejoras identificadas, sin hacer:** CSS por página (`home.css` + `dark-auto.css` cargan en todas), CSP en un solo lugar (hoy copiada a mano en 22 HTML con
-  `'unsafe-inline'`), partir `vender.js`/`perfil.js`/`admin.js`, prueba de punta a punta de una compra (F10-02), notificaciones web push, mover la base a
+- **Mejoras identificadas, sin hacer:** CSS por página (`home.css` + `dark-auto.css` cargan en todas), sacar `'unsafe-inline'` del CSP, partir `vender.js`/`perfil.js`/`admin.js`, prueba de punta a punta de una compra (F10-02), notificaciones web push, mover la base a
   `sa-east-1` (cada pedido desde Argentina suma ~245 ms), apps nativas, F12-18 (facturación/AFIP, fuera de alcance).
 - **Sin probar con cuentas reales / en teléfono:** casi todo lo de paneles logueados (vendedor, profesional, repartidor, admin), el GPS del mapa del local,
   MFA con una app de autenticación real, el tope de cupones de punta a punta (el sandbox sale por IPs que rotan), instalar la app en un celular.
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **157** (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **158** (la 158 es `get_cart_catalog`, copia a mano la policy de `products`) (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.
@@ -153,12 +151,12 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
   `set_config('app.role_change_authorized','true',true)`; `handle_new_user()` fuerza `cliente` a propósito. Una cuenta es comercio **o** profesional.
 - **Pedidos:** `create_order` es el único camino para crear uno; `orders.status` no se toca por la API (RPC del flujo); los avisos de pedido los manda el trigger `orders_after_change` (no agregar `create_notification` sueltos).
   Cupones, envío y totales: `js/cart-totals.js` copia la aritmética del RPC (tienda por tienda, redondeo por tienda). Efectivo solo con retiro. Envío gratis no existe (solo `delivery_fee`).
-- **Funciones que copian a mano una policy** (`get_product_detail`, `get_store_orders`, `get_courier_panel`): si cambia la policy, cambiar la función. Medir consultas **con sesión iniciada** (las policies encadenadas multiplican x10 el plan).
+- **Funciones que copian a mano una policy** (`get_product_detail`, `get_cart_catalog`, `get_store_orders`, `get_courier_panel`): si cambia la policy, cambiar la función. Medir consultas **con sesión iniciada** (las policies encadenadas multiplican x10 el plan).
 - **Privacidad:** dato personal nuevo = responder las 4 preguntas de `docs/seguridad/POLITICAS-SEGURIDAD.md` §1; si es telemetría, sumarlo a `purge_expired_personal_data()` y a `REGISTRO-TRATAMIENTOS.md`/privacidad. Tabla nueva: RLS activo, sin policies ni grants hasta que haga falta.
 - **Cuentas de prueba** (`proyectopdisc+xxx@gmail.com`): la contraseña no está en el repo. Las 14 tiendas de seed tienen `owner_id` de una cuenta admin (por eso "Dueño de..." no aparece en esa cuenta).
 
 **Sitio (frontend)**
-- **CSP:** copiada a mano en las 22 páginas. Todo tipo de conexión/host nuevo se suma a **todas** (`https://` y `wss://` de Supabase son esquemas distintos). `js/csp.test.mjs` lo cuida. No hay fuentes, CSS ni scripts de otros dominios.
+- **CSP:** se define UNA vez en `scripts/sync-csp.mjs` (base + extras por página); después de tocarla correr `node scripts/sync-csp.mjs` para volcarla a los 22 HTML (`js/csp.test.mjs` falla si quedaron distintos). `https://` y `wss://` de Supabase son esquemas distintos. No hay fuentes, CSS ni scripts de otros dominios.
 - **Colores:** tokens de `home.css`/`dark.css`; los colores fijos de CSS se espejan solos con `node scripts/gen-dark-css.mjs` (`dark-auto.css` es GENERADO: el test falla si quedó viejo); los de JS en línea van con tokens.
   Para **texto** verde/rojo usar `--bl-success-text`/`--bl-danger-text`, estrellas `--bl-star`, texto apagado `--bl-text-muted` (#5f6b7d); `--bl-success`/`--bl-danger` son para fondos. Estilos compartidos del navbar van en `home.css`.
 - **Avisos y videos:** un aviso corto = `notify(mensaje, 'success'|'error'|'warning')` de `js/notice.js` (los `showToast` viejos ya delegan ahí); nunca un toast ni un
