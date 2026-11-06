@@ -4383,6 +4383,12 @@ button.coupon-chip:hover {
   position: relative;
 }
 
+.store-logo-link--more {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--bl-primary);
+}
+
 .store-logo-img {
   width: 100%;
   height: 100%;

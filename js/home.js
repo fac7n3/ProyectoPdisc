@@ -888,6 +888,14 @@ async function loadStores() {
       carousel.appendChild(link);
     });
 
+    // Último cuadro: lleva a la página de comercios
+    const more = document.createElement('a');
+    more.href = './comercios.html';
+    more.className = 'store-logo-link store-logo-link--more';
+    more.setAttribute('aria-label', 'Ver todos los comercios');
+    more.textContent = 'Ver más';
+    carousel.appendChild(more);
+
   } catch (err) {
     console.error('Error fetching stores:', err);
     carousel.innerHTML = '';
