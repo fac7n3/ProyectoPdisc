@@ -383,6 +383,10 @@ async function loadInterestProducts(limit) {
 }
 
 /** Obtener productos de Supabase */
+/** Todo producto que traen Recomendados, Ofertas y Esenciales (también los de
+ *  páginas del paginador que todavía no se ven): "Seguí descubriendo" no los repite. */
+const homeProductIds = new Set();
+
 async function loadProducts() {
   const grid = document.getElementById('products-grid');
   if (!grid) return;
@@ -420,7 +424,10 @@ async function loadProducts() {
       return;
     }
 
-    products.forEach(product => grid.appendChild(buildProductCard(product)));
+    products.forEach((product) => {
+      homeProductIds.add(product.id);
+      grid.appendChild(buildProductCard(product));
+    });
 
     // Re-bind events to new DOM elements
     initCartButtons();
@@ -487,6 +494,7 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   return {
     setItems(newItems) {
       items = newItems;
+      items.forEach((it) => homeProductIds.add(it.id));
       page = 0;
       render();
     },
@@ -501,9 +509,12 @@ const essentialsPager = initGridPager({ gridId: 'essentials-grid', prevId: 'esse
  *  que `range` no repita ni saltee productos entre una página y otra. Los que
  *  ya salen en la página se saltean. La sección está oculta hasta que haya algo
  *  para mostrar, y recién pide la primera tanda cuando la persona se acerca
- *  (IntersectionObserver): no suma una consulta a la carga. */
+ *  (IntersectionObserver): no suma una consulta a la carga. Antes de la primera
+ *  tanda espera a que las otras secciones terminen (`ready`): si no, un
+ *  carrusel que llega tarde repetía productos de acá.
+ *  @param {Promise<unknown>} ready */
 const DISCOVER_PAGE = 12;
-function initDiscover() {
+function initDiscover(ready) {
   const section = document.getElementById('descubrir');
   const grid = document.getElementById('discover-grid');
   const btn = document.getElementById('discover-more');
@@ -520,19 +531,26 @@ function initDiscover() {
     btn.disabled = true;
     btn.textContent = 'Cargando…';
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(PRODUCT_SELECT)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .order('id')
-        .range(offset, offset + DISCOVER_PAGE - 1);
-      if (error) throw error;
-      const rows = data || [];
-      offset += rows.length;
-      if (rows.length < DISCOVER_PAGE) exhausted = true;
-      const shown = new Set([...document.querySelectorAll('.product-card[id]')].map((c) => c.id));
-      rows.filter((p) => !shown.has(p.id)).forEach((p) => grid.appendChild(buildProductCard(p)));
+      await ready;
+      // Si una tanda entera ya salía en otras secciones, se pide la siguiente:
+      // cada toque del botón suma algo (o termina).
+      let added = 0;
+      while (!added && !exhausted) {
+        const { data, error } = await supabase
+          .from('products')
+          .select(PRODUCT_SELECT)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .order('id')
+          .range(offset, offset + DISCOVER_PAGE - 1);
+        if (error) throw error;
+        const rows = data || [];
+        offset += rows.length;
+        if (rows.length < DISCOVER_PAGE) exhausted = true;
+        const shown = new Set([...document.querySelectorAll('.product-card[id]')].map((c) => c.id));
+        rows.filter((p) => !shown.has(p.id) && !homeProductIds.has(p.id))
+          .forEach((p) => { grid.appendChild(buildProductCard(p)); added++; });
+      }
       initCartButtons();
       initWishlist();
       section.hidden = grid.children.length === 0;
@@ -1328,10 +1346,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cargar datos dinámicos
   loadStores();
   initStoresCarouselArrows();
-  loadProducts();
-  loadOffers();
-  loadEssentials();
-  initDiscover();
+  initDiscover(Promise.allSettled([loadProducts(), loadOffers(), loadEssentials()]));
 
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();

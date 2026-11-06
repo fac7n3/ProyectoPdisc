@@ -6474,3 +6474,9 @@ Pedido del usuario: "un algoritmo de búsqueda parecido al de Mercado Libre/Temu
 - **Tiempos:** ~62 ms anónimo, ~78 ms con sesión (en caliente; la primera llamada en frío ~190 ms).
 - **e2e:** pasa salvo `"Ver más productos" suma tarjetas sin repetir ninguna` (home, no usa `search_products`: carrera
   previa entre "Seguí descubriendo" y los carruseles que terminan de cargar después).
+- **Arreglo del mismo día, inicio "Seguí descubriendo":** repetía productos de Recomendados/Ofertas/Esenciales cuando esas
+  secciones terminaban de cargar después de su primera tanda, o cuando el producto estaba en una página del paginador que
+  todavía no se veía (solo se miraban las tarjetas del DOM). Ahora hay un `homeProductIds` (Set) que llenan las tres
+  secciones con todo lo que traen, `initDiscover` espera `Promise.allSettled` de las tres antes de pedir, y si una tanda
+  queda entera filtrada pide la siguiente (cada toque de "Ver más" suma algo). El e2e pasa 4 de 4 veces.
+  El test del comparador del inicio se saltea con los datos de hoy (también con el código anterior): no es una falla.
