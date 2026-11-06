@@ -9,7 +9,8 @@ import { build } from '../scripts/gen-dark-css.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const current = fs.readFileSync(path.join(ROOT, 'Assets/styles/dark-auto.css'), 'utf8');
+// En Windows git (autocrlf) deja el archivo con CRLF; build() siempre genera LF.
+const current = fs.readFileSync(path.join(ROOT, 'Assets/styles/dark-auto.css'), 'utf8').replace(/\r\n/g, '\n');
 assert.equal(
   current,
   build(),

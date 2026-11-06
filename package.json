@@ -10,7 +10,7 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "optimize-images": "node scripts/optimize-images.mjs",
-    "test": "for f in js/*.test.mjs supabase/functions/_tests/*.test.mjs; do echo \"--- $f\"; node \"$f\" || exit 1; done",
+    "test": "node scripts/run-tests.mjs",
     "test:e2e": "playwright test",
     "subset-icons": "node scripts/subset-fontawesome.mjs",
     "thumbs": "node scripts/make-product-thumbs.mjs"
