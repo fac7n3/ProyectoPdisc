@@ -136,8 +136,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Admin:** pantalla para ver reclamos de entrega con sus fotos (`openEvidenceViewer` no está conectado a ninguna pantalla) y para ver compras de combos.
 - **Buscador:** etapa 2 (ranking por ventas/reseñas/stock/envío) y etapa 4 (similares, comprados juntos, "para vos"); reporte `admin_search_report` sin pantalla.
 - **Carrito:** `carrito.js` sigue pidiendo `products`/`product_options` con joins anidados (lento con sesión); la salida es una función auxiliar SECURITY DEFINER para las policies.
-- **Restos sin uso (se pueden borrar):** `confirm_simulated_payment`, el camino viejo de `update_delivery_status`/`release_delivery`, tabla `product_variants`, columna
-  `stores.free_shipping_threshold` (un frontend viejo en caché aún la pide), `Assets/styles/styles.css`, bucket vacío `store-banners`.
+- **Restos sin uso:** columna `stores.free_shipping_threshold` (un frontend viejo en caché aún la pide) y el bucket vacío `store-banners` (hay que borrarlo desde el dashboard/API de Storage: por SQL no deja). `confirm_simulated_payment` y `release_delivery` **siguen en uso** (proveedor simulado de pago y panel del repartidor), no borrarlos. `Assets/styles/styles.css` no lo carga ninguna página pero es la fuente de verdad que citan los documentos de marca: no borrarlo sin actualizar `docs/brand-guidelines.md`, `Assets/design-tokens.*` y `video/`. `product_variants` ya se borró (migración 157).
 - **Mejoras identificadas, sin hacer:** CSS por página (`home.css` + `dark-auto.css` cargan en todas), CSP en un solo lugar (hoy copiada a mano en 22 HTML con
   `'unsafe-inline'`), partir `vender.js`/`perfil.js`/`admin.js`, prueba de punta a punta de una compra (F10-02), notificaciones web push, mover la base a
   `sa-east-1` (cada pedido desde Argentina suma ~245 ms), apps nativas, F12-18 (facturación/AFIP, fuera de alcance).
@@ -146,7 +145,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **156** (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **157** (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.

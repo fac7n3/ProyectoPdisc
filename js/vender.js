@@ -5397,8 +5397,8 @@ async function handleProductModeChange() {
  * Reemplaza al manager de "variantes" de F5-03, que dejaba cargar nombre +
  * precio + stock por variante pero **no se integraba con el carrito**: el
  * cliente solo veía una lista con un "consultá con el vendedor". La tabla
- * `product_variants` quedó sin un solo registro en producción; se deja en la
- * base sin uso (mismo criterio que las tablas de `repartidor`) y el frontend
+ * `product_variants` quedó sin un solo registro en producción y se borró en la
+ * migración 157; el frontend
  * pasa a `product_options` / `product_option_values`, que sí llegan hasta el
  * pedido (migración 102).
  *
