@@ -149,3 +149,43 @@ html.bl-reduce-motion *::after {
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
+
+/* ------------------------------------------------------------------ */
+/* Pulido de UX/UI compartido (comodidad al tocar, leer y navegar)     */
+/* ------------------------------------------------------------------ */
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; -webkit-text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+::selection { background: rgba(40, 65, 117, 0.18); }
+a, button, [role="button"], input, select, textarea { -webkit-tap-highlight-color: transparent; }
+
+/* Anillo de foco visible y consistente para quien navega con teclado. */
+:where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--bl-accent, #f59e0b);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Respuesta táctil: los botones se hunden un poco al apretarlos. */
+button:not(:disabled), [role="button"] { transition: background-color .15s ease, box-shadow .15s ease, transform .1s ease, opacity .15s ease; }
+button:not(:disabled):active, [role="button"]:active { transform: scale(0.97); }
+button:disabled { cursor: not-allowed; }
+
+/* Imágenes: sin saltos de layout y sin deformarse. */
+img { max-width: 100%; height: auto; }
+
+/* Texto cómodo de leer. */
+p, li { line-height: 1.55; }
+h1, h2, h3 { text-wrap: balance; }
+
+/* Pantallas táctiles: controles de al menos 44px y más aire entre vecinos. */
+@media (pointer: coarse) {
+  button, [role="button"], .home-action, input[type="checkbox"] + label { min-height: 44px; }
+  .home-action { display: inline-flex; align-items: center; justify-content: center; padding-inline: 0.875rem; }
+  input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; font-size: max(16px, 1rem); }
+}
+
+/* Quien pide menos movimiento no recibe animaciones ni scroll suave. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
