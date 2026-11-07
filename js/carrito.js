@@ -790,7 +790,27 @@ async function loadTransferInfo() {
   const data = await fetchStoreTransferData(supabase, storeIds);
   storeTransferDataById.clear();
   data.forEach((store, id) => storeTransferDataById.set(id, store));
+  applyTransferAvailability(storeIds);
   renderTransferInfo();
+}
+
+/**
+ * Si algún comercio del carrito ya se sabe que no cargó sus datos para
+ * transferir, la opción "Transferencia bancaria" se deshabilita (y se pasa a
+ * Mercado Pago si estaba elegida): antes se podía elegir un método inviable.
+ * Si la consulta no trajo datos de un comercio, no se asume nada.
+ */
+function applyTransferAvailability(storeIds) {
+  const radio = document.getElementById('payment-transferencia');
+  if (!radio) return;
+  const unavailable = storeIds.some((id) => storeTransferDataById.has(id) && !hasTransferData(storeTransferDataById.get(id)));
+  radio.disabled = unavailable;
+  radio.title = unavailable ? 'Un comercio de tu carrito todavía no cargó sus datos para transferencia' : '';
+  radio.closest('label')?.classList.toggle('is-disabled', unavailable);
+  if (unavailable && radio.checked) {
+    const mp = document.getElementById('payment-mercadopago');
+    if (mp && !mp.disabled) { mp.checked = true; syncPaymentMethod(); }
+  }
 }
 
 /**
