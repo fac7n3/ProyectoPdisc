@@ -25,7 +25,7 @@ await check("páginas fijas + comercios + productos, con lastmod", () => {
   assert.match(xml, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
   assert.equal((xml.match(/<url>/g) || []).length, STATIC_PAGES.length + 2);
   assert.ok(xml.includes(`<loc>${O}/pages/comercio.html?id=${S1}</loc>\n    <lastmod>2026-10-20</lastmod>`));
-  assert.ok(xml.includes(`<loc>${O}/pages/producto.html?id=${P1}</loc>\n    <changefreq>`), "sin fecha no pone lastmod");
+  assert.ok(xml.includes(`<loc>${O}/pages/producto.html?id=${P1}</loc>\n    <lastmod>2026-11-07</lastmod>`), "sin fecha usa la del build");
 });
 await check("escapa & en las URLs y descarta ids que no son uuid", () => {
   const xml = buildSitemapXml(O, { stores: [{ id: "<script>" }, { id: "1 OR 1=1" }] });
