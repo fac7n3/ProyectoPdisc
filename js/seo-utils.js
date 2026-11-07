@@ -159,6 +159,22 @@ export function buildStoreJsonLd(store, { origin, url, categoryName } = {}) {
   });
 }
 
+/** JSON-LD de migas de pan (BreadcrumbList). `items`: [{ name, url }], de la raíz a la página actual. */
+export function buildBreadcrumbJsonLd(items) {
+  const list = (items || []).filter((i) => i?.name && i?.url);
+  if (list.length < 2) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: list.map((i, n) => ({
+      '@type': 'ListItem',
+      position: n + 1,
+      name: clean(i.name, 200),
+      item: i.url,
+    })),
+  };
+}
+
 /** JSON listo para ir adentro de <script type="application/ld+json">: escapa "<"
  *  para que un "</script>" en un nombre o descripción no pueda cerrar el bloque. */
 export function serializeJsonLd(data) {

@@ -8,7 +8,7 @@ import { fetchProductDetail } from './product-detail-api.js';
 import { initSearchBox, initNotificationsBell, initCategoryBar, initAccountMenu } from './nav-utils.js';
 import { buildContactAction } from './store-contact-utils.js';
 import { setJsonLd, applyCanonical } from './seo.js';
-import { buildProductJsonLd } from './seo-utils.js';
+import { buildProductJsonLd, buildBreadcrumbJsonLd } from './seo-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -50,6 +50,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       origin: window.location.origin,
       url: applyCanonical() || window.location.href,
     }));
+    if (product.stores?.id && product.stores?.name) {
+      setJsonLd('breadcrumb', buildBreadcrumbJsonLd([
+        { name: 'Inicio', url: `${window.location.origin}/pages/home.html` },
+        { name: product.stores.name, url: `${window.location.origin}/pages/comercio.html?id=${product.stores.id}` },
+        { name: product.title, url: applyCanonical() || window.location.href },
+      ]));
+    }
 
     const storeName = product.stores ? product.stores.name : 'Tienda';
     const storeId = product.stores ? product.stores.id : '';

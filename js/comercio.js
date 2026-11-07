@@ -9,7 +9,7 @@ import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils
 import { confirmDialog } from './confirm-dialog.js';
 import { offersFirst } from './store-products-order.js';
 import { setJsonLd, applyCanonical } from './seo.js';
-import { buildStoreJsonLd } from './seo-utils.js';
+import { buildStoreJsonLd, buildBreadcrumbJsonLd } from './seo-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -974,6 +974,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       url: applyCanonical() || window.location.href,
       categoryName,
     }));
+    setJsonLd('breadcrumb', buildBreadcrumbJsonLd([
+      { name: 'Inicio', url: `${window.location.origin}/pages/home.html` },
+      { name: 'Comercios', url: `${window.location.origin}/pages/comercios.html` },
+      { name: store.name, url: applyCanonical() || window.location.href },
+    ]));
 
     // --- Construir con DOM API (anti-XSS: nada de innerHTML con datos de la DB) ---
     mainContent.innerHTML = '';

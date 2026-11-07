@@ -3,7 +3,7 @@
  * Correr con:  node js/seo-utils.test.mjs
  */
 import assert from "node:assert/strict";
-import { canonicalUrl, absoluteUrl, buildProductJsonLd, buildStoreJsonLd, buildSiteJsonLd, serializeJsonLd } from "./seo-utils.js";
+import { canonicalUrl, absoluteUrl, buildProductJsonLd, buildStoreJsonLd, buildSiteJsonLd, buildBreadcrumbJsonLd, serializeJsonLd } from "./seo-utils.js";
 
 const check = (name, fn) => {
   try {
@@ -112,4 +112,13 @@ if (process.exitCode) {
   console.error("\nHay fallas.");
 } else {
   console.log("\nTodo bien.");
+}
+
+console.log("buildBreadcrumbJsonLd");
+{
+  const ld = buildBreadcrumbJsonLd([{ name: "Inicio", url: "https://x.test/pages/home.html" }, { name: "Pan", url: "https://x.test/pages/producto.html?id=1" }]);
+  assert.equal(ld["@type"], "BreadcrumbList");
+  assert.equal(ld.itemListElement.length, 2);
+  assert.equal(ld.itemListElement[1].position, 2);
+  assert.equal(buildBreadcrumbJsonLd([{ name: "Solo", url: "https://x.test" }]), null);
 }
