@@ -13,6 +13,7 @@ import { orderLabel } from './order-utils.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { friendlyError } from './friendly-error.js';
+import { setupBenefitsSection, loadBenefitsSection } from './admin-beneficios.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Una recarga en vivo (initAdminLive) no muestra la fila de "Cargando...": la
@@ -2183,6 +2184,7 @@ const SECTION_LOADERS = {
   'pharmacies': loadPharmaciesSection,
   'emergency-contacts': fetchEmergencyContacts,
   'home-promos': fetchHomePromos,
+  'benefits': loadBenefitsSection,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
   'repartidores': fetchRepartidores,
@@ -2279,6 +2281,7 @@ function initAdminPage() {
   setupPharmacyForms();
   setupEmergencyContactForm();
   setupProductSearch();
+  setupBenefitsSection();
   setupRepartidorAddForm();
   setupSectionNav();
 
@@ -2363,7 +2366,7 @@ function initAdminLive() {
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'professionals', 'metrics', 'categories', 'coupons',
-  'pharmacies', 'emergency-contacts', 'home-promos',
+  'pharmacies', 'emergency-contacts', 'home-promos', 'benefits',
   'stores-mod', 'products-mod', 'proofs', 'repartidores',
   'revocations', 'error-logs', 'audit-log',
 ];

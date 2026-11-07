@@ -1753,6 +1753,44 @@ html[data-theme="dark"] .bp-status a,
 html[data-theme="dark"] .bp-status button.bp-link {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .bp-card--discount {
+  border: 2px solid #e65757;
+}
+html[data-theme="dark"] .bp-card__save {
+  background: #153f23;
+  color: #afeec7;
+}
+html[data-theme="dark"] .bs-type {
+  background: #141d3c;
+  color: #9792df;
+}
+html[data-theme="dark"] .bs-type--banner {
+  background: #15273e;
+  color: #7493ec;
+}
+html[data-theme="dark"] .bs-type--social {
+  background: #3a152a;
+  color: #ef91b7;
+}
+html[data-theme="dark"] .bs-type--products {
+  background: #453c17;
+  color: #f5ba95;
+}
+html[data-theme="dark"] .bs-type--ranking {
+  background: #1a1339;
+  color: #a073e6;
+}
+html[data-theme="dark"] .bs-type--profile {
+  background: #153f23;
+  color: #afeec7;
+}
+html[data-theme="dark"] .bs-type--stats {
+  background: #142c3d;
+  color: #92d3f6;
+}
+html[data-theme="dark"] .bs-more__summary {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .pd-header__title {
   color: var(--bl-text);
 }

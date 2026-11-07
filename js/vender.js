@@ -17,8 +17,11 @@ import { isValidAlias, normalizeAlias, isValidCbu, normalizeCbu, formatCbuForDis
 import { buildDropdown } from './dropdown.js';
 import { buildPromoEditorCard } from './home-promos-editor.js';
 import { promoPosition } from './home-promos-utils.js';
-import { renderBoostPlans } from './boost-plans.js';
-import { describeBoostState, formatBoostDate, boostReturnMessage, PLANS_WITH_BANNER } from './boost-utils.js';
+import { renderBoostPlans, renderBoostServices } from './boost-plans.js';
+import {
+  describeBoostState, formatBoostDate, boostReturnMessage, BANNER_SERVICE_IDS,
+  holdingsMap, activeServicePurchases,
+} from './boost-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { cropImage } from './image-cropper.js';
 import { saveProductDraft, loadProductDraft, clearProductDraft } from './product-draft.js';
@@ -5712,36 +5715,52 @@ function buildOptionValueChip(value, group, productId) {
  * combo es mp-webhook cuando el pago se acredita, nunca esta pantalla.
  */
 let boostPlans = [];
+let boostItems = [];
+let boostServices = [];
+let boostHoldings = {};
 let boostPurchases = [];
 let boostBusy = false;
 
 async function refreshBoost() {
   const container = document.getElementById('boost-plans');
+  const servicesBox = document.getElementById('boost-services');
   if (!container || !isStoreOwner || !currentStoreId) return;
 
-  const [plansRes, purchasesRes] = await Promise.all([
+  const [plansRes, itemsRes, servicesRes, purchasesRes, benefitsRes] = await Promise.all([
     supabase.from('boost_plans').select('id, name, price, duration_days').eq('is_active', true).order('sort_order'),
+    supabase.from('boost_plan_items').select('plan_id, service_id, quantity'),
+    supabase.from('boost_services')
+      .select('id, name, kind, contents, purpose, price, max_per_store, slot_note, duration_days, sort_order')
+      .eq('is_active', true).order('sort_order'),
     supabase.from('boost_purchases')
-      .select('id, plan_id, status, starts_at, ends_at, created_at')
+      .select('id, plan_id, service_id, quantity, source, status, starts_at, ends_at, created_at')
       .eq('store_id', currentStoreId)
       .order('created_at', { ascending: false })
-      .limit(20),
+      .limit(50),
+    supabase.rpc('get_store_benefits', { p_store_id: currentStoreId }),
   ]);
 
-  if (plansRes.error || !plansRes.data?.length) {
-    console.error('Error al cargar los combos:', plansRes.error);
+  if (plansRes.error || !plansRes.data?.length || servicesRes.error || itemsRes.error) {
+    console.error('Error al cargar los combos:', plansRes.error || servicesRes.error || itemsRes.error);
     container.replaceChildren(rsEl('p', 'bp-note', 'No pudimos cargar los combos. Probá de nuevo en un rato.'));
+    servicesBox?.replaceChildren();
     return;
   }
   boostPlans = plansRes.data;
-  // Si falla solo la lectura de compras no se bloquea la pantalla: se muestra
-  // como sin combo, y la base igual rechaza un cambio de combo con uno vigente.
+  boostItems = itemsRes.data || [];
+  boostServices = servicesRes.data || [];
+  // Si falla solo la lectura de compras o de lo que ya tiene, no se bloquea la
+  // pantalla: la base igual rechaza lo que pase un tope o cambie de combo.
   if (purchasesRes.error) console.error('Error al cargar tus compras de combos:', purchasesRes.error);
+  if (benefitsRes.error) console.error('Error al cargar tus beneficios vigentes:', benefitsRes.error);
   boostPurchases = purchasesRes.data || [];
+  boostHoldings = holdingsMap(benefitsRes.data);
 
   const state = describeBoostState(boostPurchases);
+  const catalog = { items: boostItems, services: boostServices, plans: boostPlans };
   renderBoostStatus(state);
-  renderBoostPlans(container, boostPlans, state, chooseBoostPlan, formatPrice);
+  renderBoostPlans(container, boostPlans, state, chooseBoostPlan, formatPrice, catalog);
+  if (servicesBox) renderBoostServices(servicesBox, boostServices, boostHoldings, catalog, chooseBoostService, formatPrice);
 }
 
 function renderBoostStatus(state) {
@@ -5771,20 +5790,33 @@ function renderBoostStatus(state) {
     add('bp-status--active', 'fa-solid fa-circle-check', (t) => {
       const strong = rsEl('strong', null, `Tenés el ${plan?.name || 'combo'} activo`);
       t.append(strong, ` hasta el ${formatBoostDate(state.active.endsAt)} (${state.active.daysLeft === 1 ? 'queda 1 día' : `quedan ${state.active.daysLeft} días`}). `);
-      if (PLANS_WITH_BANNER.includes(state.active.planId)) {
-        t.append('Para aparecer en un banner del inicio, cargá la imagen en ');
-        t.append(linkTo('Banner del inicio', 'promo-inicio'));
-        t.append(': el equipo te asigna el lugar.');
-      }
     });
   } else if (state.pending) {
     add('', 'fa-solid fa-hourglass-half', (t) => {
       t.append('Estamos esperando que se acredite tu pago en Mercado Pago. Apenas llegue, activamos tu combo.');
     });
   }
+  const loose = activeServicePurchases(boostPurchases);
+  if (loose.length) {
+    add('bp-status--active', 'fa-solid fa-circle-check', (t) => {
+      t.append(rsEl('strong', null, 'Servicios sueltos activos: '));
+      t.append(loose.map((l) => {
+        const sv = boostServices.find((x) => x.id === l.serviceId);
+        return `${sv?.name || 'Servicio'}${l.quantity > 1 ? ` x${l.quantity}` : ''} (hasta el ${formatBoostDate(l.endsAt)})`;
+      }).join(', ') + '.');
+    });
+  }
+  const hasBanner = BANNER_SERVICE_IDS.some((id) => (boostHoldings[id] || 0) > 0);
+  if (hasBanner) {
+    add('', 'fa-solid fa-image', (t) => {
+      t.append('Tenés un banner incluido. Para aparecer en el inicio, cargá la imagen en ');
+      t.append(linkTo('Banner del inicio', 'promo-inicio'));
+      t.append(': el equipo te asigna el lugar.');
+    });
+  }
   if (state.needsReview) {
     add('bp-status--warn', 'fa-solid fa-triangle-exclamation', (t) => {
-      t.append('Hay un pago de combo en revisión (no cubre el valor del combo o fue devuelto). ');
+      t.append('Hay un pago de combo en revisión (no cubre el valor, fue devuelto o el comercio ya llegó al máximo de ese servicio). ');
       t.append(linkTo('Escribinos por Soporte', 'soporte'));
       t.append(' y lo resolvemos.');
     });
@@ -5826,6 +5858,37 @@ async function chooseBoostPlan(plan) {
   }
 }
 
+async function chooseBoostService(service, quantity) {
+  if (boostBusy || !currentStoreId) return;
+  const total = service.price * quantity;
+  const ok = await confirmDialog(
+    `Vas a pagar ${formatPrice(total)} con Mercado Pago por ${quantity > 1 ? `${quantity} unidades de ` : ''}${service.name}. ` +
+    `Empieza cuando se acredite el pago y dura ${service.duration_days} días.`,
+    { title: `Contratar ${service.name}`, confirmText: 'Ir a pagar' },
+  );
+  if (!ok) return;
+
+  boostBusy = true;
+  document.querySelectorAll('#boost-plans .bp-card__btn, #boost-services .bs-card__btn').forEach((b) => { b.disabled = true; });
+  try {
+    const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
+      body: { store_id: currentStoreId, service_id: service.id, quantity },
+    });
+    const url = data?.init_point || data?.sandbox_init_point;
+    if (error || !url) {
+      showToast(await friendlyFunctionError(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
+      return;
+    }
+    window.location.href = url;
+  } catch (err) {
+    console.error('Error al iniciar el pago del servicio:', err);
+    showToast('No se pudo iniciar el pago. Probá de nuevo.', 'error');
+  } finally {
+    boostBusy = false;
+    refreshBoost();
+  }
+}
+
 /** Vuelta de Mercado Pago (`?boost=...`): avisa y, si falta, espera a que el webhook active el combo. */
 async function handleBoostReturn() {
   const params = new URLSearchParams(window.location.search);
@@ -5841,8 +5904,8 @@ async function handleBoostReturn() {
   for (let i = 0; i < 12; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     await refreshBoost();
-    if (describeBoostState(boostPurchases).active) {
-      showToast('¡Listo! Tu combo ya está activo.', 'success');
+    if (describeBoostState(boostPurchases).active || activeServicePurchases(boostPurchases).length) {
+      showToast('¡Listo! Ya está activo.', 'success');
       return;
     }
   }

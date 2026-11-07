@@ -6480,3 +6480,11 @@ Pedido del usuario: "un algoritmo de búsqueda parecido al de Mercado Libre/Temu
   secciones con todo lo que traen, `initDiscover` espera `Promise.allSettled` de las tres antes de pedir, y si una tanda
   queda entera filtrada pide la siguiente (cada toque de "Ver más" suma algo). El e2e pasa 4 de 4 veces.
   El test del comparador del inicio se saltea con los datos de hoy (también con el código anterior): no es una falla.
+
+
+## 2026-11-07 — Impulsá tus ventas: servicios individuales, planes nuevos y beneficios por admin (migración 160, sin aplicar)
+- **Base:** `boost_services` (catálogo, precio y `max_per_store`), `boost_plan_items` (qué trae cada plan), planes `base` 20.000 / `intermedio` 71.000 / `pro` 80.000 (ahorro $68.000 vs $148.000 por separado). Los combos viejos local/barrio/baradero quedan inactivos con sus ítems cargados (las compras vigentes siguen valiendo). `boost_purchases` ahora es plan **o** servicio (`plan_id`/`service_id` + `quantity`), `source` compra|admin, precio 0 solo para regalos.
+- **Topes:** `benefit_has_room` / `plan_blocked_service` se controlan al crear la compra, al activar (si otra compra ocupó el lugar entre medio: `needs_review`) y al otorgar; lock por comercio (`pg_advisory_xact_lock`). Renovar el mismo plan no se controla (arranca al vencer el actual).
+- **RPC:** `create_service_purchase`, `get_store_benefits` (dueño/admin), `get_active_benefits` (público, el inicio), `admin_find_stores_by_email`, `admin_grant_benefit`, `admin_revoke_benefit`, `admin_list_benefits` (todas admin vía `jwt_role()`, con registro en `admin_audit_log`). Probado en un Postgres local con la 131 + 160 (topes, planes, regalos, permisos).
+- **Frontend:** `js/boost-plans.js` (planes con ahorro + servicios desplegables con ejemplos/incentivos/límites; los textos de venta viven ahí, precios/topes salen de la base), `js/boost-utils.js` (lógica pura, testeada), `js/admin-beneficios.js` + sección "Beneficios de comercios" en `pages/admin.html`, `home.js` lee `get_active_benefits` (con caída a `get_active_boosts`). Edge `mp-create-boost-preference` acepta `service_id` + `quantity`; `mp-webhook` no cambió (sigue activando por `boost:<id>`).
+- **Gotcha:** el test de dark-auto.css falla si se agregan colores fijos al CSS inline de una página: correr `node scripts/gen-dark-css.mjs`.

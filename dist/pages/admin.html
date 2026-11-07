@@ -11,23 +11,23 @@
     <meta name="theme-color" content="#284175" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
-    <script type="module" crossorigin src="/assets/admin-CijiudtB.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-B5y7MQFL.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-C7-EN7wS.js">
+    <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
+    <script type="module" crossorigin src="/assets/admin-D3PTV-6J.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-DvRqkmnM.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Kl1fdpsC.js">
     <link rel="modulepreload" crossorigin href="/assets/image-compress-D0FfQ9U_.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CrGcPVqL.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-CfcoDdl9.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-ibGK7ccz.js">
-    <link rel="modulepreload" crossorigin href="/assets/order-utils-SFQIJEw1.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-DmLNFpAQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/order-utils-DSqGKFoV.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-DlsUZB35.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-BGvLBQVq.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-Dp6_fnQQ.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-DfkNS-sC.js">
-    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-xNCvBLYu.js">
-    <link rel="modulepreload" crossorigin href="/assets/delivery-evidence-DAPxqXO2.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-DQ5uzh87.css">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-D7PMoBgW.js">
+    <link rel="modulepreload" crossorigin href="/assets/delivery-evidence-DphApgDE.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-LG9R66ZA.css">
     <link rel="stylesheet" crossorigin href="/assets/admin-zDmO7NTw.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
     <link rel="stylesheet" crossorigin href="/assets/home-BY8-SE8Z.css">
@@ -105,6 +105,9 @@
               </button>
               <button type="button" class="admin-nav__item" data-target="home-promos">
                 <i class="admin-emoji" aria-hidden="true">📣</i><span>Promos del inicio</span>
+              </button>
+              <button type="button" class="admin-nav__item" data-target="benefits">
+                <i class="admin-emoji" aria-hidden="true">🎁</i><span>Beneficios de comercios</span>
               </button>
             </div>
 
@@ -513,6 +516,75 @@
                 <div class="hp-grid" id="home-promos-grid"></div>
               </section>
 
+              <!-- ===== Beneficios de comercios (Impulsá tus ventas: servicios y combos, tablas boost_*) ===== -->
+              <section class="admin-section" data-section="benefits">
+                <div class="admin-section__head">
+                  <div>
+                    <h2 class="admin-section__title">Beneficios de comercios</h2>
+                    <p class="admin-section__subtitle">Escribí el email del dueño de un comercio y otorgale servicios o un combo de "Impulsá tus ventas" sin cargo, con la cantidad y los días que quieras. Se respetan los topes por comercio (por ejemplo, 1 banner mediano o 5 productos recomendados a la vez, contando lo que ya tiene por compra o por un combo). Abajo ves todo lo que tiene cada comercio, comprado o regalado, y podés quitarlo.</p>
+                  </div>
+                  <button class="admin-btn admin-btn--ghost" id="btn-refresh-benefits"><i class="admin-emoji" aria-hidden="true">🔄</i> Refrescar</button>
+                </div>
+                <form class="admin-inline-form" id="benefit-form">
+                  <div class="form-group" style="flex: 2 1 260px;">
+                    <label for="benefit-email">Email del dueño del comercio</label>
+                    <input type="email" id="benefit-email" placeholder="comercio@gmail.com" autocomplete="off" />
+                  </div>
+                  <button type="button" class="action-btn btn-approve" id="benefit-search"><i class="admin-emoji" aria-hidden="true">🔎</i> Buscar</button>
+                  <p id="benefit-found" aria-live="polite" style="flex: 1 1 100%; margin: 0; font-size: 0.88rem;"></p>
+                  <div id="benefit-grant-fields" style="display: none;">
+                    <div class="form-group">
+                      <label for="benefit-store">Comercio</label>
+                      <select id="benefit-store"></select>
+                    </div>
+                    <div class="form-group">
+                      <label for="benefit-type">Tipo</label>
+                      <select id="benefit-type">
+                        <option value="service">Servicio individual</option>
+                        <option value="plan">Combo</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="flex: 2 1 220px;">
+                      <label for="benefit-item">Elemento</label>
+                      <select id="benefit-item"></select>
+                    </div>
+                    <div class="form-group" style="flex: 0 1 90px;">
+                      <label for="benefit-qty">Cantidad</label>
+                      <input type="number" id="benefit-qty" min="1" max="10" value="1" />
+                    </div>
+                    <div class="form-group" style="flex: 0 1 100px;">
+                      <label for="benefit-days">Días</label>
+                      <input type="number" id="benefit-days" min="1" max="365" value="30" />
+                    </div>
+                    <div class="form-group" style="flex: 2 1 220px;">
+                      <label for="benefit-note">Motivo (opcional)</label>
+                      <input type="text" id="benefit-note" maxlength="200" placeholder="Ej: promo de lanzamiento" />
+                    </div>
+                    <button type="submit" class="action-btn btn-approve"><i class="admin-emoji" aria-hidden="true">🎁</i> Otorgar</button>
+                    <p id="benefit-hint" aria-live="polite" style="flex: 1 1 100%; margin: 0; font-size: 0.82rem; color: var(--bl-text-muted);"></p>
+                  </div>
+                </form>
+                <div class="admin-card">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Comercio</th>
+                          <th>Email</th>
+                          <th>Beneficio</th>
+                          <th>Cant.</th>
+                          <th>Origen</th>
+                          <th>Estado</th>
+                          <th>Vence</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="benefits-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
               <!-- ===== Moderación · Comercios ===== -->
               <section class="admin-section" data-section="stores-mod">
                 <div class="admin-section__head">
@@ -770,6 +842,6 @@
         </div>
       </div>
     </div>
-
+
   </body>
 </html>
