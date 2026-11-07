@@ -73,6 +73,9 @@ function buildProductCard(product, store) {
     addBtn.style.cssText = 'opacity: 0.5; cursor: not-allowed;';
     addBtn.title = 'Producto sin stock';
   }
+  addBtn.setAttribute('aria-label', outOfStock
+    ? `${product.title} sin stock`
+    : `Agregar ${product.title} al carrito`);
   addBtn.append(outOfStock ? ' Sin stock' : ' Agregar');
   body.appendChild(addBtn);
 
