@@ -439,6 +439,9 @@ function buildModalHTML(data) {
           <i class="fa-solid fa-chevron-left"></i> Atrás
         </button>
         <div class="pm-topbar__actions">
+          <button class="pm-topbar__btn" id="pm-whatsapp-btn" aria-label="Compartir por WhatsApp">
+            <i class="fa-brands fa-whatsapp"></i>
+          </button>
           <button class="pm-topbar__btn" id="pm-share-btn" aria-label="Compartir producto">
             <i class="fa-solid fa-share-nodes"></i>
           </button>
@@ -977,12 +980,24 @@ function bindModalEvents(overlay, data) {
   });
 
   // Compartir
+  // Link directo a la ficha del producto: el modal no cambia la URL, así que
+  // compartir location.href mandaba a quien lo recibía a la home.
+  const shareUrl = data.id
+    ? `${window.location.origin}/pages/producto.html?id=${data.id}`
+    : window.location.href;
+  const plainName = new DOMParser().parseFromString(data.name, 'text/html').documentElement.textContent;
+  const shareText = `Mirá ${plainName} en Baradero Local por ${data.priceText}`;
+
+  overlay.querySelector('#pm-whatsapp-btn')?.addEventListener('click', () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} — ${shareUrl}`)}`, '_blank', 'noopener');
+  });
+
   const shareBtn = overlay.querySelector('#pm-share-btn');
   shareBtn?.addEventListener('click', async () => {
     const shareData = {
-      title: data.name,
-      text: `Mirá ${data.name} en Baradero Local por ${data.priceText}`,
-      url: window.location.href
+      title: plainName,
+      text: shareText,
+      url: shareUrl
     };
 
     try {
@@ -995,7 +1010,7 @@ function bindModalEvents(overlay, data) {
     } catch (err) {
       if (err.name !== 'AbortError') {
         try {
-          await navigator.clipboard.writeText(window.location.href);
+          await navigator.clipboard.writeText(shareUrl);
           _showToast('¡Link copiado!', 'success');
         } catch { /* silently fail */ }
       }
