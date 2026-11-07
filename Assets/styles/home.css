@@ -6159,3 +6159,13 @@ button.bl-compare__row:focus-visible {
 .bl-compare__price.is-best {
   color: var(--bl-success-text);
 }
+
+/* Objetivos táctiles de 44px en pantallas táctiles: el área se amplía con ::after, sin agrandar el ícono. */
+@media (pointer: coarse) {
+  .navbar__action-circle::after {
+    content: '';
+    position: absolute;
+    inset: -0.25rem;
+  }
+  .navbar__action-circle { margin: 0.125rem; }
+}

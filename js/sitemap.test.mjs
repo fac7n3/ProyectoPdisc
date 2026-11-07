@@ -21,7 +21,7 @@ const P1 = "22222222-2222-4222-8222-222222222222";
 
 console.log("sitemap");
 await check("páginas fijas + comercios + productos, con lastmod", () => {
-  const xml = buildSitemapXml(O, { stores: [{ id: S1, updated_at: "2026-10-20T13:00:00Z" }], products: [{ id: P1, updated_at: null }] });
+  const xml = buildSitemapXml(O, { stores: [{ id: S1, updated_at: "2026-10-20T13:00:00Z" }], products: [{ id: P1, updated_at: null }], today: new Date("2026-11-07T10:00:00Z") });
   assert.match(xml, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
   assert.equal((xml.match(/<url>/g) || []).length, STATIC_PAGES.length + 2);
   assert.ok(xml.includes(`<loc>${O}/pages/comercio.html?id=${S1}</loc>\n    <lastmod>2026-10-20</lastmod>`));
@@ -60,7 +60,7 @@ await check("lee comercios aprobados y productos activos con la clave pública, 
   assert.equal(rows.products.length, 1003);
   assert.ok(calls.every((c) => c.key === "anon"));
   assert.ok(calls.some((c) => c.url.includes("stores?select=id,updated_at&status=eq.approved")));
-  assert.ok(calls.some((c) => c.url.includes("products?select=id,updated_at&is_active=eq.true")));
+  assert.ok(calls.some((c) => c.url.includes("products?select=id,updated_at&is_active=eq.true&stock=gt.0")));
 });
 await check("si la base falla o no hay .env, no tira: devuelve listas vacías", async () => {
   const quiet = { warn: () => {} };

@@ -52,14 +52,16 @@ const isoDay = (value) => {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Arma el XML. `stores`/`products`: filas { id, updated_at }. Ignora ids que no son uuid. */
-export function buildSitemapXml(origin, { stores = [], products = [] } = {}) {
+export function buildSitemapXml(origin, { stores = [], products = [], today = new Date() } = {}) {
+  // Sin updated_at en la fila, se usa la fecha del build: así ninguna URL queda sin lastmod.
+  const buildDay = isoDay(today);
   const urls = [
     ...STATIC_PAGES.map((p) => ({ loc: origin + p.path, changefreq: p.changefreq, priority: p.priority })),
     ...stores.filter((s) => UUID.test(s?.id || '')).map((s) => ({
-      loc: `${origin}/pages/comercio.html?id=${s.id}`, lastmod: isoDay(s.updated_at), changefreq: 'weekly', priority: '0.8',
+      loc: `${origin}/pages/comercio.html?id=${s.id}`, lastmod: isoDay(s.updated_at) || buildDay, changefreq: 'weekly', priority: '0.8',
     })),
     ...products.filter((p) => UUID.test(p?.id || '')).map((p) => ({
-      loc: `${origin}/pages/producto.html?id=${p.id}`, lastmod: isoDay(p.updated_at), changefreq: 'weekly', priority: '0.6',
+      loc: `${origin}/pages/producto.html?id=${p.id}`, lastmod: isoDay(p.updated_at) || buildDay, changefreq: 'weekly', priority: '0.6',
     })),
   ];
   const body = urls.map((u) => [
@@ -105,7 +107,7 @@ export async function fetchSitemapRows({ supabaseUrl, key, fetchImpl = fetch, ti
   try {
     const [stores, products] = await Promise.all([
       fetchAll(supabaseUrl, key, 'stores?select=id,updated_at&status=eq.approved&order=id', fetchImpl, timeoutMs),
-      fetchAll(supabaseUrl, key, 'products?select=id,updated_at&is_active=eq.true&order=id', fetchImpl, timeoutMs),
+      fetchAll(supabaseUrl, key, 'products?select=id,updated_at&is_active=eq.true&stock=gt.0&order=id', fetchImpl, timeoutMs),
     ]);
     return { stores, products };
   } catch (err) {
