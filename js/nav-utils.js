@@ -245,6 +245,7 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   trigger.className = 'cat-mega__trigger';
   trigger.setAttribute('aria-haspopup', 'true');
   trigger.setAttribute('aria-expanded', 'false');
+  trigger.setAttribute('aria-label', 'Categorías');
   const barsIcon = document.createElement('i');
   barsIcon.className = 'fa-solid fa-bars';
   trigger.appendChild(barsIcon);
