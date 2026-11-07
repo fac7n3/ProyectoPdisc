@@ -5827,6 +5827,7 @@ async function chooseBoostPlan(plan) {
   if (boostBusy) return;
   if (!currentStoreId) return;
   const renewing = describeBoostState(boostPurchases).active?.planId === plan.id;
+  boostBusy = true; // antes del diálogo: dos clics seguidos no abren dos
   const ok = await confirmDialog(
     `Vas a pagar ${formatPrice(plan.price)} con Mercado Pago por el ${plan.name}. ` +
     (renewing
@@ -5834,10 +5835,9 @@ async function chooseBoostPlan(plan) {
       : `Empieza cuando se acredite el pago y dura ${plan.duration_days} días.`),
     { title: renewing ? `Renovar el ${plan.name}` : `Contratar el ${plan.name}`, confirmText: 'Ir a pagar' },
   );
-  if (!ok) return;
+  if (!ok) { boostBusy = false; return; }
 
-  boostBusy = true;
-  document.querySelectorAll('#boost-plans .bp-card__btn').forEach((b) => { b.disabled = true; });
+  document.querySelectorAll('#boost-plans .bp-card__btn, #boost-services .bs-card__btn').forEach((b) => { b.disabled = true; });
   try {
     const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
       body: { store_id: currentStoreId, plan_id: plan.id },
@@ -5861,14 +5861,14 @@ async function chooseBoostPlan(plan) {
 async function chooseBoostService(service, quantity) {
   if (boostBusy || !currentStoreId) return;
   const total = service.price * quantity;
+  boostBusy = true; // antes del diálogo: dos clics seguidos no abren dos
   const ok = await confirmDialog(
     `Vas a pagar ${formatPrice(total)} con Mercado Pago por ${quantity > 1 ? `${quantity} unidades de ` : ''}${service.name}. ` +
     `Empieza cuando se acredite el pago y dura ${service.duration_days} días.`,
     { title: `Contratar ${service.name}`, confirmText: 'Ir a pagar' },
   );
-  if (!ok) return;
+  if (!ok) { boostBusy = false; return; }
 
-  boostBusy = true;
   document.querySelectorAll('#boost-plans .bp-card__btn, #boost-services .bs-card__btn').forEach((b) => { b.disabled = true; });
   try {
     const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
@@ -5889,22 +5889,35 @@ async function chooseBoostService(service, quantity) {
   }
 }
 
-/** Vuelta de Mercado Pago (`?boost=...`): avisa y, si falta, espera a que el webhook active el combo. */
+/** Parámetros que Mercado Pago agrega al volver; no hace falta dejarlos en la barra. */
+const MP_RETURN_PARAMS = ['boost', 'collection_id', 'collection_status', 'payment_id', 'status',
+  'external_reference', 'payment_type', 'merchant_order_id', 'preference_id', 'site_id', 'processing_mode', 'merchant_account_id'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Vuelta de Mercado Pago (`?boost=...`): avisa y, si falta, espera a que el webhook active la compra. */
 async function handleBoostReturn() {
   const params = new URLSearchParams(window.location.search);
   const ret = boostReturnMessage(params.get('boost'));
   if (!ret) return;
-  params.delete('boost');
+  // external_reference = "boost:<id de la compra>": sirve solo para saber QUÉ esperar
+  // (no da ningún permiso; si no viene o no es un uuid, se usa el criterio general).
+  const refId = String(params.get('external_reference') || '').replace(/^boost:/, '');
+  const waitFor = UUID_RE.test(refId) ? refId : null;
+  MP_RETURN_PARAMS.forEach((k) => params.delete(k));
   const qs = params.toString();
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
   showToast(ret.message, ret.tone);
   if (!ret.poll) return;
 
+  const activated = () => (waitFor
+    ? boostPurchases.some((p) => p.id === waitFor && p.status === 'active')
+    : describeBoostState(boostPurchases).active || activeServicePurchases(boostPurchases).length > 0);
+
   // El webhook puede tardar unos segundos: se mira cada 5 s, hasta 1 minuto.
   for (let i = 0; i < 12; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     await refreshBoost();
-    if (describeBoostState(boostPurchases).active || activeServicePurchases(boostPurchases).length) {
+    if (activated()) {
       showToast('¡Listo! Ya está activo.', 'success');
       return;
     }

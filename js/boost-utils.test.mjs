@@ -100,6 +100,12 @@ check('planBreakdown ordena por catálogo y trae cantidades', () => {
   const b = planBreakdown('pro', ITEMS, SERVICES);
   assert.deepEqual(b.map((x) => [x.id, x.quantity]), [['banner_mediano', 1], ['productos_recomendados', 2]]);
 });
+check('un servicio con pago pendiente o en revisión también avisa', () => {
+  const pend = describeBoostState([{ plan_id: null, service_id: 'banner_chico', status: 'pending', created_at: iso(NOW - 60000) }], NOW);
+  assert.equal(pend.pending, true);
+  const rev = describeBoostState([{ plan_id: null, service_id: 'banner_chico', status: 'needs_review', created_at: iso(NOW) }], NOW);
+  assert.equal(rev.needsReview, true);
+});
 check('planSavings: precio por separado y ahorro (nunca negativo)', () => {
   assert.deepEqual(planSavings(PLANS[0], ITEMS, SERVICES), { listPrice: 20000, savings: 0, percent: 0 });
   assert.deepEqual(planSavings(PLANS[1], ITEMS, SERVICES), { listPrice: 20000, savings: 5000, percent: 25 });

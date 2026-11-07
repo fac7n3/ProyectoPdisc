@@ -17,6 +17,20 @@
 -- Beneficio vigente = fila 'active' con starts_at <= now() < ends_at. Los topes
 -- por comercio se controlan al crear la compra, al activarla y al otorgar.
 -- Precios de planes y servicios: planilla de costos del equipo (2026-11-07).
+--
+-- Seguridad (ver también cada función):
+--   * El precio, el tope y la cantidad se validan SIEMPRE en la base; el navegador
+--     y la Edge Function solo pasan ids.
+--   * Todo lo de admin usa public.jwt_role() (exige MFA aal2), nunca el JWT crudo:
+--     también se corrigen las policies de la 131 (boost_plans / boost_purchases).
+--   * El dueño del comercio no puede leer `note` ni `granted_by` (notas internas
+--     del admin): select por columnas en boost_purchases.
+--   * Un pago revocado por el admin no se reactiva si Mercado Pago reintenta el
+--     webhook (los avisos de un mismo pago llegan varias veces).
+--   * Orden de locks fijo (candado por comercio PRIMERO, después las filas) para
+--     que activar un pago y crear una compra a la vez no se traben entre sí.
+--   * Esta migración tiene `drop policy`: el conector de Supabase pide confirmación
+--     en pantalla; aplicarla en dos partes (hasta "-- compras", y el resto) si se corta.
 
 -- ------------------------------------------------------------- servicios
 create table if not exists public.boost_services (
@@ -88,16 +102,45 @@ do $pol$ begin
   create policy boost_services_select on public.boost_services for select to anon, authenticated using (true);
 exception when duplicate_object then null; end $pol$;
 do $pol$ begin
-  create policy boost_services_admin_write on public.boost_services for all to authenticated
+  create policy boost_services_admin_insert on public.boost_services for insert to authenticated
+    with check ((select public.jwt_role()) = 'admin');
+exception when duplicate_object then null; end $pol$;
+do $pol$ begin
+  create policy boost_services_admin_update on public.boost_services for update to authenticated
     using ((select public.jwt_role()) = 'admin') with check ((select public.jwt_role()) = 'admin');
+exception when duplicate_object then null; end $pol$;
+do $pol$ begin
+  create policy boost_services_admin_delete on public.boost_services for delete to authenticated
+    using ((select public.jwt_role()) = 'admin');
 exception when duplicate_object then null; end $pol$;
 do $pol$ begin
   create policy boost_plan_items_select on public.boost_plan_items for select to anon, authenticated using (true);
 exception when duplicate_object then null; end $pol$;
 do $pol$ begin
-  create policy boost_plan_items_admin_write on public.boost_plan_items for all to authenticated
+  create policy boost_plan_items_admin_insert on public.boost_plan_items for insert to authenticated
+    with check ((select public.jwt_role()) = 'admin');
+exception when duplicate_object then null; end $pol$;
+do $pol$ begin
+  create policy boost_plan_items_admin_update on public.boost_plan_items for update to authenticated
     using ((select public.jwt_role()) = 'admin') with check ((select public.jwt_role()) = 'admin');
 exception when duplicate_object then null; end $pol$;
+do $pol$ begin
+  create policy boost_plan_items_admin_delete on public.boost_plan_items for delete to authenticated
+    using ((select public.jwt_role()) = 'admin');
+exception when duplicate_object then null; end $pol$;
+
+-- La 131 chequeaba el rol con el JWT crudo: un admin con sesión aal1 (sin TOTP)
+-- podía cambiar precios. Se rehacen con jwt_role().
+drop policy if exists boost_plans_admin_insert on public.boost_plans;
+create policy boost_plans_admin_insert on public.boost_plans
+  for insert to authenticated with check ((select public.jwt_role()) = 'admin');
+drop policy if exists boost_plans_admin_update on public.boost_plans;
+create policy boost_plans_admin_update on public.boost_plans
+  for update to authenticated
+  using ((select public.jwt_role()) = 'admin') with check ((select public.jwt_role()) = 'admin');
+drop policy if exists boost_plans_admin_delete on public.boost_plans;
+create policy boost_plans_admin_delete on public.boost_plans
+  for delete to authenticated using ((select public.jwt_role()) = 'admin');
 
 -- ------------------------------------------------------------- compras
 alter table public.boost_purchases alter column plan_id drop not null;
@@ -113,6 +156,28 @@ alter table public.boost_purchases add constraint boost_purchases_price_check
 alter table public.boost_purchases drop constraint if exists boost_purchases_one_item;
 alter table public.boost_purchases add constraint boost_purchases_one_item
   check ((plan_id is null) <> (service_id is null));
+
+alter table public.boost_purchases drop constraint if exists boost_purchases_note_len;
+alter table public.boost_purchases add constraint boost_purchases_note_len
+  check (note is null or char_length(note) <= 200);
+
+-- El dueño ve sus compras pero NO `note` ni `granted_by` (notas internas del
+-- admin). El admin lee todo por admin_list_benefits (SECURITY DEFINER).
+revoke select on public.boost_purchases from anon, authenticated;
+grant select (id, store_id, plan_id, service_id, quantity, price, duration_days, status,
+              payment_id, paid_amount, starts_at, ends_at, source, created_by, created_at, updated_at)
+  on public.boost_purchases to authenticated;
+
+drop policy if exists boost_purchases_select on public.boost_purchases;
+create policy boost_purchases_select on public.boost_purchases
+  for select to authenticated
+  using (
+    (select public.jwt_role()) = 'admin'
+    or exists (
+      select 1 from public.stores s
+      where s.id = boost_purchases.store_id and s.owner_id = (select auth.uid())
+    )
+  );
 
 create index if not exists boost_purchases_service_id_idx on public.boost_purchases (service_id);
 create index if not exists boost_purchases_granted_by_idx on public.boost_purchases (granted_by);
@@ -371,13 +436,21 @@ declare
   v_owner uuid;
   v_start timestamptz;
   v_name  text;
+  v_store uuid;
 begin
+  -- Orden de locks: primero el candado del comercio, DESPUÉS la fila (igual que
+  -- create_*: si fuera al revés, activar un pago y crear una compra a la vez
+  -- podrían trabarse entre sí).
+  select bp.store_id into v_store from public.boost_purchases bp where bp.id = p_purchase_id;
+  if not found then
+    return 'not_found';
+  end if;
+  perform pg_advisory_xact_lock(hashtext(coalesce(v_store::text, '')));
+
   select * into v_row from public.boost_purchases bp where bp.id = p_purchase_id for update;
   if not found then
     return 'not_found';
   end if;
-
-  perform pg_advisory_xact_lock(hashtext(coalesce(v_row.store_id::text, '')));
 
   select s.owner_id into v_owner from public.stores s where s.id = v_row.store_id;
   if v_row.plan_id is not null then
@@ -388,6 +461,13 @@ begin
   end if;
 
   if v_row.status = 'active' then
+    return 'already';
+  end if;
+
+  -- Una compra que ya tuvo un pago y quedó cancelada (el admin la quitó) NO se
+  -- reactiva si Mercado Pago reintenta o repite el aviso. Una cancelada sin pago
+  -- (intento reemplazado por otro) sí puede activarse si pagan ese link viejo.
+  if v_row.status = 'cancelled' and v_row.payment_id is not null then
     return 'already';
   end if;
 
@@ -523,6 +603,9 @@ begin
   end if;
   if v_days < 1 or v_days > 365 then
     raise exception 'La duración tiene que estar entre 1 y 365 días.' using errcode = '22023';
+  end if;
+  if char_length(coalesce(p_note, '')) > 200 then
+    raise exception 'El motivo puede tener hasta 200 caracteres.' using errcode = '22023';
   end if;
 
   select s.owner_id into v_owner from public.stores s where s.id = p_store_id;

@@ -330,11 +330,11 @@ async function loadActiveBoosts() {
   try {
     const { data, error } = await supabase.rpc('get_active_boosts');
     if (error) throw error;
-    // Combos viejos: todos traían la fila de locales; Barrio y Baradero, además, productos arriba.
-    return (data || []).flatMap((b) => [
-      { store_id: b.store_id, service_id: 'negocios_principales', quantity: 1 },
-      ...(['barrio', 'baradero'].includes(b.plan_id) ? [{ store_id: b.store_id, service_id: 'productos_recomendados', quantity: 1 }] : []),
-    ]);
+    // Solo los combos viejos: los tres traían la fila de locales; Barrio y Baradero,
+    // además, productos arriba. Un plan nuevo (Base/Intermedio/Pro) no se mapea
+    // acá: sin la función nueva no se sabe qué trae, y es mejor no destacar de más.
+    const LEGACY = { local: ['negocios_principales'], barrio: ['negocios_principales', 'productos_recomendados'], baradero: ['negocios_principales', 'productos_recomendados'] };
+    return (data || []).flatMap((b) => (LEGACY[b.plan_id] || []).map((service_id) => ({ store_id: b.store_id, service_id, quantity: 1 })));
   } catch (err) {
     console.warn('No se pudieron leer los combos vigentes:', err);
     return [];

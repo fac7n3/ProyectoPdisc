@@ -24,9 +24,9 @@ export function describeBoostState(purchases, nowMs = Date.now()) {
   let needsReview = false;
 
   for (const p of purchases || []) {
-    // Las compras de servicios sueltos (sin plan_id) no son un plan: van aparte.
-    if (!p.plan_id) continue;
-    if (p.status === 'active' && p.starts_at && p.ends_at) {
+    // Un servicio suelto (sin plan_id) nunca es "el combo activo" (eso lo cuenta
+    // activeServicePurchases), pero su pago pendiente o en revisión sí se avisa.
+    if (p.status === 'active' && p.plan_id && p.starts_at && p.ends_at) {
       const start = new Date(p.starts_at).getTime();
       const end = new Date(p.ends_at).getTime();
       if (nowMs >= start && nowMs < end && (!active || end > active.endsAt.getTime())) {

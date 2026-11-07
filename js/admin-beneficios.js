@@ -17,7 +17,7 @@ const SOURCE_LABEL = { purchase: 'Compra', admin: 'Regalo del admin' };
 const STATUS_LABEL = { active: 'Vigente', pending: 'Esperando pago', needs_review: 'En revisión', cancelled: 'Quitado' };
 const STATUS_CLASS = { active: 'status-approved', pending: 'status-suspended', needs_review: 'status-suspended', cancelled: 'status-rejected' };
 
-const state = { services: [], plans: [], stores: [], holdings: {}, catalogLoaded: false };
+const state = { services: [], plans: [], stores: [], holdings: {}, catalogLoaded: false, busy: false };
 
 const $ = (id) => document.getElementById(id);
 
@@ -135,8 +135,18 @@ async function loadHoldings() {
   updateHint();
 }
 
+/** Si cambia el email, lo buscado antes deja de valer: no se puede otorgar a un comercio que ya no corresponde al email visible. */
+function resetSearch() {
+  state.stores = [];
+  state.holdings = {};
+  $('benefit-store').replaceChildren();
+  $('benefit-grant-fields').style.display = 'none';
+  $('benefit-found').textContent = '';
+}
+
 async function grant(e) {
   e.preventDefault();
+  if (state.busy) return;
   const storeId = selectedStoreId();
   if (!storeId) { showToast('Buscá primero el comercio.', 'error'); return; }
   const type = $('benefit-type').value;
@@ -155,6 +165,9 @@ async function grant(e) {
   );
   if (!ok) return;
 
+  state.busy = true;
+  const submit = $('benefit-form').querySelector('button[type="submit"]');
+  submit.disabled = true;
   const { error } = await supabase.rpc('admin_grant_benefit', {
     p_store_id: storeId,
     p_plan_id: type === 'plan' ? itemId : null,
@@ -163,10 +176,12 @@ async function grant(e) {
     p_days: days,
     p_note: $('benefit-note').value.trim() || null,
   });
+  state.busy = false;
+  submit.disabled = false;
   if (error) {
     console.error('Error al otorgar el beneficio:', error);
-    // 23514 = pasaría el tope por comercio: la base ya dice cuál, en español.
-    showToast(error.code === '23514' ? error.message : friendlyError(error, 'No se pudo otorgar el beneficio.'), 'error');
+    // 23514 (pasaría el tope) y 22023 (dato inválido): la base ya lo dice en español.
+    showToast(['23514', '22023'].includes(error.code) ? error.message : friendlyError(error, 'No se pudo otorgar el beneficio.'), 'error');
     return;
   }
   showToast('Beneficio otorgado. El comercio recibe un aviso.', 'success');
@@ -241,6 +256,7 @@ export function setupBenefitsSection() {
   if (!$('benefit-form')) return;
   $('btn-refresh-benefits').addEventListener('click', loadBenefitsSection);
   $('benefit-search').addEventListener('click', searchStore);
+  $('benefit-email').addEventListener('input', resetSearch);
   $('benefit-email').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); searchStore(); } });
   $('benefit-type').addEventListener('change', fillItems);
   $('benefit-item').addEventListener('change', updateHint);

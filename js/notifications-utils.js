@@ -208,6 +208,7 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
     }
     case 'boost_needs_review':
       if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
+      if (p.over_limit) return 'Tu comercio ya llegó al máximo de ese servicio. Lo revisamos y te avisamos';
       return p.refunded ? 'El pago fue devuelto o desconocido' : null;
     case 'order_paid':
     case 'order_shipped':
