@@ -4,7 +4,7 @@
     {
       "source": "/",
       "destination": "/pages/home.html",
-      "permanent": false
+      "permanent": true
     }
   ],
   "headers": [
