@@ -85,15 +85,16 @@ const SERVICE_COPY = {
     ],
   },
   redes_sociales: {
-    what: 'Difundimos tu comercio fuera de la plataforma, en nuestras redes sociales, con tu imagen, un texto y enlaces a tu tienda. Te sirve para llegar a gente que todavía no entró a Baradero Local.',
+    what: 'Difundimos tu comercio fuera de la plataforma: cuando subís una historia, nosotros la resubimos en nuestras redes sociales, con tu imagen, tu texto y los enlaces a tu tienda. Te sirve para llegar a gente que todavía no entró a Baradero Local.',
     examples: [
-      'Una pizzería promociona su menú del fin de semana.',
-      'Un comercio nuevo anuncia su apertura con el enlace a su tienda.',
-      'Una florería avisa su catálogo para el Día de la Madre.',
+      'Una pizzería sube la historia con su menú del fin de semana y nosotros la resubimos.',
+      'Un comercio nuevo sube su apertura con el enlace a su tienda y la resubimos.',
+      'Una florería sube su catálogo para el Día de la Madre y también lo difundimos.',
     ],
     why: [
+      'No hay tope de historias: todas las que subas las resubimos.',
       'Llegás a vecinos que no están buscando en la plataforma.',
-      'Tu publicación lleva enlaces directos a tu tienda.',
+      'Tus historias llevan enlaces directos a tu tienda.',
       'Está incluido en los tres planes.',
     ],
   },
