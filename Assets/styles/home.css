@@ -88,6 +88,7 @@ body {
    scroll quedan corridas unos pixeles entre sí y el contenido centrado
    "salta". */
 html {
+  -webkit-tap-highlight-color: transparent; /* sin el recuadro azul al tocar en celular */
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: var(--bl-text-muted) var(--bl-bg);
