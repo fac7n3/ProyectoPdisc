@@ -6480,3 +6480,33 @@ Pedido del usuario: "un algoritmo de búsqueda parecido al de Mercado Libre/Temu
   secciones con todo lo que traen, `initDiscover` espera `Promise.allSettled` de las tres antes de pedir, y si una tanda
   queda entera filtrada pide la siguiente (cada toque de "Ver más" suma algo). El e2e pasa 4 de 4 veces.
   El test del comparador del inicio se saltea con los datos de hoy (también con el código anterior): no es una falla.
+
+## 2026-11-10 — Inicio en celular: los banners chicos de los mosaicos van de a dos (sin migración)
+
+Pedido del usuario (con una imagen de referencia): que en el teléfono los banners chicos queden más chicos, uno al lado del otro.
+- **Qué cambió:** en <=640 px el grande de cada mosaico (`mosaic_a`, `mosaic_d`) sigue solo en su fila y los dos chicos
+  (`b`/`c`, `e`/`f`) van debajo en dos columnas parejas, en vez de apilados a todo el ancho. A 390 px cada chico mide
+  165 px (antes 342); el primer mosaico pasó de ~800 px de alto a ~430. Solo CSS (`Assets/styles/home.css`), sin tocar
+  el HTML ni `home.js`. Escritorio y tablet (>640 px) quedan igual. Las franjas `g..l` no cambian.
+- **El orden es el del HTML** (grande arriba, par abajo). En la imagen de referencia el par estaba arriba, pero era un
+  montaje: el grande de abajo era el espacio `b` real y los dos de arriba eran el `a` partido. Si se quiere el par
+  arriba: `order: -1` a `.promo-mosaic__side` dentro del mismo `@media`.
+- **Gotchas:**
+  - `.promo-mosaic__side` pasa a `display: grid` y no a flex en fila: el alto de la imagen de una publicidad sale de un
+    `padding-top` en % (`--promo-ratio`), que en un hijo de grid se mide sobre su columna y en un hijo de flex sobre el
+    ancho del contenedor entero (la tarjeta quedaría el doble de alta).
+  - La regla de las dos columnas está en el `@media` del **segundo** mosaico: tiene que ir después de la definición base
+    de `.promo-mosaic-2__side` (misma especificidad) o no la pisa. Pasó: `e`/`f` seguían apilados.
+  - El rótulo de los chicos va con `justify-content: flex-start` (pegado a la foto): las dos tarjetas de la fila miden
+    lo mismo de alto y a la del texto más corto le sobra azul abajo, no un hueco entre la foto y el texto.
+- **Probado** con Playwright a 320, 390, 700 y 1280 px, con publicidades y sin (banners fijos), sin scroll horizontal.
+  Test nuevo en `e2e/humo.spec.mjs` ("home en teléfono"). `npm test` 44 archivos bien; e2e 20 pasan, 1 salteado (el del comparador).
+- **Entorno (sandbox de Linux):**
+  - `npm run test:e2e` no encuentra navegador (la versión de `@playwright/test` del proyecto pide otra build): correrlo con
+    una config aparte que importe la del repo y agregue `use.launchOptions.executablePath: '/opt/pw-browsers/chromium'`,
+    `channel: undefined` y `webServer.cwd` apuntando al repo.
+  - Los HTML de `dist/` commiteados tienen fines de línea de Windows (CRLF, algunos repetidos) y el build de Linux los deja
+    en LF: el diff marca los 21 archivos enteros. Después de `npm run build`, devolverle a cada línea el fin de línea que
+    tiene en `HEAD` (script de Node de 10 líneas) deja el diff en las 2 líneas por página que cambian de verdad.
+  - Al cambiar `home.css` cambian de nombre también ~15 JS de `dist/assets` con el mismo contenido: Vite mete el CSS que
+    importa cada entrada en el hash de su JS. Es normal.
