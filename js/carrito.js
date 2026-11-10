@@ -418,7 +418,13 @@ function renderCheckoutButton(selectedCount, total) {
   }
 
   btn.disabled = false;
-  btn.append(`Iniciar pago · ${formatPrice(total)}`);
+  btn.append(`Iniciar pago (${selectedCount})`);
+  // En el celular el total ya se ve a la izquierda de la barra fija: este
+  // pedazo se esconde ahí (carrito.css, .cart-summary__checkout-total).
+  const totalSpan = document.createElement('span');
+  totalSpan.className = 'cart-summary__checkout-total';
+  totalSpan.textContent = ` · ${formatPrice(total)}`;
+  btn.appendChild(totalSpan);
   const arrow = document.createElement('i');
   arrow.className = 'fa-solid fa-arrow-right';
   btn.appendChild(arrow);

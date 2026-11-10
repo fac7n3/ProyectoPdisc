@@ -6510,3 +6510,16 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
     tiene en `HEAD` (script de Node de 10 líneas) deja el diff en las 2 líneas por página que cambian de verdad.
   - Al cambiar `home.css` cambian de nombre también ~15 JS de `dist/assets` con el mismo contenido: Vite mete el CSS que
     importa cada entrada en el hash de su JS. Es normal.
+
+## 2026-11-10 — Carrito en celular rediseñado (sin migración)
+- Pedido del usuario: rehacer SOLO el responsive mobile del carrito, inspirado en una captura de un carrito de un marketplace
+  grande, pero con los colores y la esencia de Baradero Local. Escritorio no cambia.
+- Todo en un solo bloque `@media (max-width: 768px)` de `Assets/styles/carrito.css` (+ ajuste a 380 px):
+  tarjetas blancas por comercio de borde a borde sobre el fondo gris, cabecera con el comercio en grande y el envío como
+  subtítulo, fila de producto en grilla (`grid-template-areas`: casilla | foto 88 px | nombre/opciones/precio c/u | tacho,
+  y cantidad + subtotal grande abajo; `.cart-item__product` pasa a `display: contents`), "Ver detalle" oculto.
+- Barra fija abajo (total a la izquierda, "Iniciar pago (N)" a la derecha): son `position: fixed` dentro de `.cart-summary`
+  (`::after` hace de fondo), así se esconden solos cuando el resumen o el carrito se ocultan (vacío, paso "Transferí").
+  `carrito.js` (`renderCheckoutButton`) pone el monto en `.cart-summary__checkout-total`, que el celular esconde.
+- Gotcha: `.cart-layout` necesita `minmax(0, 1fr)` en mobile; con `1fr` la fila de chips del filtro (que no corta) estiraba
+  la columna a ~460 px y el subtotal y el tacho quedaban fuera de pantalla.
