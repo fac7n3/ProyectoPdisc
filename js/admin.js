@@ -1936,6 +1936,18 @@ async function fetchSupportTickets() {
     replyBtn.addEventListener('click', () => toggleAdminTicketThread(tr, ticket));
     tdActions.appendChild(replyBtn);
 
+    // Pedido de espacio de banner (vender.js, "Pedir este espacio"): el espacio se
+    // asigna en "Promos del inicio"; este atajo evita buscarlo en el menú (celular).
+    if (ticket.subject === 'Quiero un espacio de banner en el inicio') {
+      const assignBtn = document.createElement('button');
+      assignBtn.type = 'button';
+      assignBtn.className = 'support-assign-banner';
+      assignBtn.style.cssText = `${replyBtn.style.cssText} margin-left: 0.4rem; background: var(--bl-primary, #2563eb); color: #fff;`;
+      assignBtn.textContent = '📣 Asignar banner';
+      assignBtn.addEventListener('click', () => showSection('home-promos'));
+      tdActions.appendChild(assignBtn);
+    }
+
     // Reclamos de entrega (submit_delivery_feedback): el asunto trae "#BL-<número>"
     // y las fotos viven en el pedido, no en el ticket.
     const deliveryNumber = ticket.subject?.match(/^Problema con el pedido #BL-(\d+)$/)?.[1];

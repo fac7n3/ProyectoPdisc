@@ -885,6 +885,36 @@
     padding: 0.7rem 0.75rem;
     font-size: 0.8125rem;
   }
+
+  /* Soporte en celular: una tarjeta por reclamo (con la tabla de 6 columnas
+     los botones quedaban fuera de pantalla y el admin no veía cómo actuar). */
+  [data-section="support"] thead {
+    display: none;
+  }
+  [data-section="support"] table,
+  [data-section="support"] tbody,
+  [data-section="support"] tr:not(.ticket-thread-row),
+  [data-section="support"] tr:not(.ticket-thread-row) > td {
+    display: block;
+    width: 100%;
+  }
+  [data-section="support"] tr:not(.ticket-thread-row) {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--bl-border, #e2e8f0);
+  }
+  [data-section="support"] tr:not(.ticket-thread-row) > td {
+    border: 0;
+    padding: 0.3rem 0.75rem;
+    max-width: none !important;
+  }
+  [data-section="support"] tr:not(.ticket-thread-row) > td:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  [data-section="support"] td:last-child button {
+    margin-left: 0 !important;
+  }
 }
 
 /* ===========================================================
