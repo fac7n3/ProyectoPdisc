@@ -212,6 +212,15 @@
 
       </div>
 
+      <!-- Barra inferior fija, solo en celular: total siempre a la vista y botón de continuar -->
+      <div class="cart-mobile-bar" id="cart-mobile-bar" hidden>
+        <div class="cart-mobile-bar__total">
+          <span class="cart-mobile-bar__label">Total</span>
+          <strong class="cart-mobile-bar__value" id="cart-mobile-total">$0</strong>
+        </div>
+        <button type="button" class="cart-mobile-bar__btn" id="cart-mobile-btn">Continuar</button>
+      </div>
+
       <!-- Paso "Transferí": reemplaza al carrito apenas se crea un pedido con
            "Transferencia bancaria". Una tarjeta por comercio con monto, alias,
            CBU/CVU, titular, número de pedido y contacto, todo copiable

@@ -1708,3 +1708,23 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAddressSelector();
   handleMercadoPagoReturn();
 });
+
+// Barra inferior del celular: refleja el total y dispara el mismo botón de pago.
+(function initMobileBar() {
+  const bar = document.getElementById('cart-mobile-bar');
+  const total = document.getElementById('summary-total');
+  const real = document.getElementById('cart-checkout-btn');
+  const layout = document.querySelector('.cart-layout');
+  if (!bar || !total || !real || !layout) return;
+  const out = document.getElementById('cart-mobile-total');
+  const sync = () => {
+    out.textContent = total.textContent;
+    bar.hidden = layout.classList.contains('cart-layout--empty');
+    document.getElementById('cart-mobile-btn').disabled = real.disabled;
+  };
+  new MutationObserver(sync).observe(total, { childList: true, characterData: true, subtree: true });
+  new MutationObserver(sync).observe(layout, { attributes: true, attributeFilter: ['class'] });
+  new MutationObserver(sync).observe(real, { attributes: true, attributeFilter: ['disabled'] });
+  document.getElementById('cart-mobile-btn').addEventListener('click', () => real.click());
+  sync();
+})();

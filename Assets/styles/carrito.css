@@ -1442,3 +1442,56 @@
      conserva todo el ancho que pueda. */
   .trf-copy { padding: 0.375rem 0.625rem; }
 }
+
+/* ===========================================================
+   CARRITO EN CELULAR (estilo "lista + barra fija"): solo <= 768px
+   =========================================================== */
+.cart-mobile-bar { display: none; }
+@media (max-width: 768px) {
+  .cart-page { padding-bottom: 6rem; }
+  .cart-layout { grid-template-columns: 1fr; gap: 0.75rem; }
+  .cart-page__title { font-size: 1.25rem; margin-bottom: 0.75rem; }
+
+  .cart-item {
+    grid-template-columns: 1.5rem 1fr auto;
+    grid-template-areas: "sel prod del" ". qty sub";
+    gap: 0.625rem 0.75rem;
+    align-items: center;
+  }
+  .cart-item__select { grid-area: sel; grid-row: auto; grid-column: auto; align-self: start; padding-top: 0.25rem; }
+  .cart-item__product { grid-area: prod; grid-row: auto; grid-column: auto; align-items: flex-start; }
+  .cart-item__actions { grid-area: del; grid-column: auto; align-self: start; justify-content: flex-end; }
+  .cart-item__delete { min-width: 44px; min-height: 44px; color: var(--bl-text-muted); }
+  .cart-item__img { width: 84px; height: 84px; border-radius: var(--bl-radius-lg); object-fit: cover; }
+  .cart-item__price { display: none; }
+  .cart-qty { grid-area: qty; grid-column: auto; border-radius: var(--bl-radius-lg); }
+  .cart-qty__btn { width: 2.75rem; height: 2.75rem; }
+  .cart-qty__value { min-width: 2rem; text-align: center; font-weight: 600; }
+  .cart-item__subtotal { grid-area: sub; grid-column: auto; justify-self: end; font-size: 1.125rem; font-weight: 700; color: var(--bl-text); }
+
+  .cart-group__header { background: var(--bl-surface); border-bottom: 1px solid var(--bl-border); }
+  .cart-group { margin-bottom: 0.75rem; border-radius: 0; }
+
+  /* El resumen pasa a ser una tarjeta debajo de la lista; el total y el botón viven en la barra fija */
+  .cart-summary { position: static; }
+  .cart-summary__checkout { display: none; }
+
+  .cart-mobile-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: var(--bl-surface);
+    border-top: 1px solid var(--bl-border);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+  .cart-mobile-bar[hidden] { display: none; }
+  .cart-mobile-bar__total { display: flex; flex-direction: column; line-height: 1.2; }
+  .cart-mobile-bar__label { font-size: 0.75rem; color: var(--bl-text-secondary); }
+  .cart-mobile-bar__value { font-size: 1.375rem; color: var(--bl-text); }
+  .cart-mobile-bar__btn {
+    flex: 1; max-width: 14rem; min-height: 48px; border: 0;
+    border-radius: var(--bl-radius-pill); background: var(--bl-primary); color: #fff;
+    font-size: 1rem; font-weight: 700;
+  }
+  .cart-mobile-bar__btn:disabled { opacity: 0.55; }
+}
