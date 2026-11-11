@@ -1,6 +1,7 @@
 import { setProductImage } from './product-image.js';
 import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
+import { promptLogin } from './login-prompt.js';
 import { updateCartBadge, showToast, localIsoDate, initCartButtons, initWishlist, getFavoriteIds, buildPriceRow, renderErrorState, renderEmptyState, getFavoriteStoreIds, toggleFavoriteStore } from './cart-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
@@ -619,6 +620,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     favBtn.addEventListener('click', async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        if (promptLogin('Iniciá sesión para guardar tus comercios favoritos.')) return;
         showToast('Iniciá sesión para guardar comercios favoritos', 'default');
         return;
       }
