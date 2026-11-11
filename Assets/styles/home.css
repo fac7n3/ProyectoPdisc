@@ -1264,12 +1264,18 @@ ul, ol {
     padding-top: calc(1rem + env(safe-area-inset-top));
     z-index: 210;
     animation: drawer-in 0.2s ease;
+    /* El scroll del panel no se "encadena" al fondo cuando llega al final. */
+    overscroll-behavior: contain;
   }
 
   .cat-mega__grid { grid-template-columns: 1fr; }
 
+  /* Con un panel abierto el fondo no scrollea. Hay que trabar html Y body:
+     en iOS Safari, `overflow: hidden` solo en el body no frena el scroll. */
+  html:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])),
   body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])) {
     overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden]))::after {
@@ -1278,6 +1284,8 @@ ul, ol {
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 99;
+    /* Arrastrar sobre el fondo oscuro no mueve la página de atrás. */
+    touch-action: none;
   }
 }
 
