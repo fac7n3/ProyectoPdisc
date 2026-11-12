@@ -6481,6 +6481,48 @@ Pedido del usuario: "un algoritmo de búsqueda parecido al de Mercado Libre/Temu
   queda entera filtrada pide la siguiente (cada toque de "Ver más" suma algo). El e2e pasa 4 de 4 veces.
   El test del comparador del inicio se saltea con los datos de hoy (también con el código anterior): no es una falla.
 
+## 2026-11-10 — Inicio en celular: los banners chicos de los mosaicos van de a dos (sin migración)
+
+Pedido del usuario (con una imagen de referencia): que en el teléfono los banners chicos queden más chicos, uno al lado del otro.
+- **Qué cambió:** en <=640 px el grande de cada mosaico (`mosaic_a`, `mosaic_d`) sigue solo en su fila y los dos chicos
+  (`b`/`c`, `e`/`f`) van debajo en dos columnas parejas, en vez de apilados a todo el ancho. A 390 px cada chico mide
+  165 px (antes 342); el primer mosaico pasó de ~800 px de alto a ~430. Solo CSS (`Assets/styles/home.css`), sin tocar
+  el HTML ni `home.js`. Escritorio y tablet (>640 px) quedan igual. Las franjas `g..l` no cambian.
+- **El orden es el del HTML** (grande arriba, par abajo). En la imagen de referencia el par estaba arriba, pero era un
+  montaje: el grande de abajo era el espacio `b` real y los dos de arriba eran el `a` partido. Si se quiere el par
+  arriba: `order: -1` a `.promo-mosaic__side` dentro del mismo `@media`.
+- **Gotchas:**
+  - `.promo-mosaic__side` pasa a `display: grid` y no a flex en fila: el alto de la imagen de una publicidad sale de un
+    `padding-top` en % (`--promo-ratio`), que en un hijo de grid se mide sobre su columna y en un hijo de flex sobre el
+    ancho del contenedor entero (la tarjeta quedaría el doble de alta).
+  - La regla de las dos columnas está en el `@media` del **segundo** mosaico: tiene que ir después de la definición base
+    de `.promo-mosaic-2__side` (misma especificidad) o no la pisa. Pasó: `e`/`f` seguían apilados.
+  - El rótulo de los chicos va con `justify-content: flex-start` (pegado a la foto): las dos tarjetas de la fila miden
+    lo mismo de alto y a la del texto más corto le sobra azul abajo, no un hueco entre la foto y el texto.
+- **Probado** con Playwright a 320, 390, 700 y 1280 px, con publicidades y sin (banners fijos), sin scroll horizontal.
+  Test nuevo en `e2e/humo.spec.mjs` ("home en teléfono"). `npm test` 44 archivos bien; e2e 20 pasan, 1 salteado (el del comparador).
+- **Entorno (sandbox de Linux):**
+  - `npm run test:e2e` no encuentra navegador (la versión de `@playwright/test` del proyecto pide otra build): correrlo con
+    una config aparte que importe la del repo y agregue `use.launchOptions.executablePath: '/opt/pw-browsers/chromium'`,
+    `channel: undefined` y `webServer.cwd` apuntando al repo.
+  - Los HTML de `dist/` commiteados tienen fines de línea de Windows (CRLF, algunos repetidos) y el build de Linux los deja
+    en LF: el diff marca los 21 archivos enteros. Después de `npm run build`, devolverle a cada línea el fin de línea que
+    tiene en `HEAD` (script de Node de 10 líneas) deja el diff en las 2 líneas por página que cambian de verdad.
+  - Al cambiar `home.css` cambian de nombre también ~15 JS de `dist/assets` con el mismo contenido: Vite mete el CSS que
+    importa cada entrada en el hash de su JS. Es normal.
+
+## 2026-11-10 — Carrito en celular rediseñado (sin migración)
+- Pedido del usuario: rehacer SOLO el responsive mobile del carrito, inspirado en una captura de un carrito de un marketplace
+  grande, pero con los colores y la esencia de Baradero Local. Escritorio no cambia.
+- Todo en un solo bloque `@media (max-width: 768px)` de `Assets/styles/carrito.css` (+ ajuste a 380 px):
+  tarjetas blancas por comercio de borde a borde sobre el fondo gris, cabecera con el comercio en grande y el envío como
+  subtítulo, fila de producto en grilla (`grid-template-areas`: casilla | foto 88 px | nombre/opciones/precio c/u | tacho,
+  y cantidad + subtotal grande abajo; `.cart-item__product` pasa a `display: contents`), "Ver detalle" oculto.
+- Barra fija abajo (total a la izquierda, "Iniciar pago (N)" a la derecha): son `position: fixed` dentro de `.cart-summary`
+  (`::after` hace de fondo), así se esconden solos cuando el resumen o el carrito se ocultan (vacío, paso "Transferí").
+  `carrito.js` (`renderCheckoutButton`) pone el monto en `.cart-summary__checkout-total`, que el celular esconde.
+- Gotcha: `.cart-layout` necesita `minmax(0, 1fr)` en mobile; con `1fr` la fila de chips del filtro (que no corta) estiraba
+  la columna a ~460 px y el subtotal y el tacho quedaban fuera de pantalla.
 
 ## 2026-11-07 — Impulsá tus ventas: servicios individuales, planes nuevos y beneficios por admin (migración 160, sin aplicar)
 - **Base:** `boost_services` (catálogo, precio y `max_per_store`), `boost_plan_items` (qué trae cada plan), planes `base` 20.000 / `intermedio` 71.000 / `pro` 80.000 (ahorro $68.000 vs $148.000 por separado). Los combos viejos local/barrio/baradero quedan inactivos con sus ítems cargados (las compras vigentes siguen valiendo). `boost_purchases` ahora es plan **o** servicio (`plan_id`/`service_id` + `quantity`), `source` compra|admin, precio 0 solo para regalos.

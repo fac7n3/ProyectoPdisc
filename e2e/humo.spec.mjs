@@ -74,6 +74,36 @@ test.describe('home', () => {
   });
 });
 
+test.describe('home en teléfono', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('los banners chicos de cada mosaico van de a dos, debajo del grande', async ({ page, problemas }) => {
+    await page.goto('/pages/home.html');
+    await expect(page.locator('#products-grid .product-card[id]').first()).toBeVisible();
+    // Con las publicidades ya pintadas (o los banners fijos, si un espacio no tiene).
+    await page.waitForLoadState('networkidle');
+
+    for (const slots of [['mosaic_a', 'mosaic_b', 'mosaic_c'], ['mosaic_d', 'mosaic_e', 'mosaic_f']]) {
+      const [grande, izq, der] = await page.evaluate((lista) => lista.map((slot) => {
+        const r = document.querySelector(`[data-promo-slot="${slot}"]`).getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
+      }), slots);
+      const nombre = slots.join('/');
+      expect(Math.abs(izq.top - der.top), `${nombre}: los dos chicos arrancan a la misma altura`).toBeLessThan(1);
+      expect(Math.abs(izq.height - der.height), `${nombre}: los dos chicos miden lo mismo de alto`).toBeLessThan(1);
+      expect(izq.right, `${nombre}: uno al lado del otro, sin pisarse`).toBeLessThanOrEqual(der.left);
+      expect(izq.top, `${nombre}: debajo del grande`).toBeGreaterThanOrEqual(grande.bottom);
+      expect(izq.width, `${nombre}: cada chico ocupa menos de la mitad del grande`).toBeLessThan(grande.width / 2);
+      expect(Math.abs(izq.width - der.width), `${nombre}: columnas parejas`).toBeLessThan(1);
+      expect(der.right, `${nombre}: no se sale del ancho del grande`).toBeLessThanOrEqual(grande.right + 1);
+    }
+
+    const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(sobra, 'La página no debe tener scroll horizontal').toBeLessThanOrEqual(0);
+    sinProblemas(problemas);
+  });
+});
+
 test.describe('ficha de producto y comercio', () => {
   test('producto.html carga el detalle de un producto real', async ({ page, problemas }) => {
     await page.goto('/pages/home.html');

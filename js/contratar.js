@@ -6,6 +6,7 @@
 
 import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
+import { promptLogin } from './login-prompt.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import { getVisibleSocialLinks } from './store-contact-utils.js';
@@ -749,7 +750,9 @@ async function abrirFormularioConsulta(pro) {
   // quién le estaba por escribir. No se manda un ?redirect= porque el login
   // del proyecto no lo soporta (resolvePostLoginRedirect, auth-utils.js) y
   // sería prometer una vuelta que no pasa.
+  // En celular sale el cartel central común del sitio (js/login-prompt.js).
   if (!session) {
+    if (promptLogin(`Para pedirle un presupuesto a ${pro.full_name} necesitás iniciar sesión.`)) return;
     mostrarModalConsulta(pro, construirAvisoDeSesion());
     return;
   }

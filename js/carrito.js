@@ -2,6 +2,7 @@
 // Usa localStorage para persistir los productos entre páginas.
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
+import { promptLogin } from './login-prompt.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
@@ -418,7 +419,13 @@ function renderCheckoutButton(selectedCount, total) {
   }
 
   btn.disabled = false;
-  btn.append(`Iniciar pago · ${formatPrice(total)}`);
+  btn.append(`Iniciar pago (${selectedCount})`);
+  // En el celular el total ya se ve a la izquierda de la barra fija: este
+  // pedazo se esconde ahí (carrito.css, .cart-summary__checkout-total).
+  const totalSpan = document.createElement('span');
+  totalSpan.className = 'cart-summary__checkout-total';
+  totalSpan.textContent = ` · ${formatPrice(total)}`;
+  btn.appendChild(totalSpan);
   const arrow = document.createElement('i');
   arrow.className = 'fa-solid fa-arrow-right';
   btn.appendChild(arrow);
@@ -1279,6 +1286,7 @@ function initCartEvents() {
     // 1. Requerir autenticación
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      if (promptLogin('Para finalizar tu compra necesitás iniciar sesión. Tu carrito te espera.')) return;
       showCartToast('Debes iniciar sesión para comprar');
       setTimeout(() => window.location.href = './login.html', 1500);
       return;
