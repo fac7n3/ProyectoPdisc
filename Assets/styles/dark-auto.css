@@ -1070,6 +1070,29 @@ html[data-theme="dark"] .admin-inline-form input:focus {
 html[data-theme="dark"] .admin-scrim {
   background: rgba(112, 139, 204, 0.35);
 }
+html[data-theme="dark"] .bf-alert {
+  border: 1px solid #f0934c;
+  background: rgba(226, 149, 90, 0.128);
+}
+html[data-theme="dark"] .bf-link {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .bf-when {
+  color: #f5b687;
+}
+html[data-theme="dark"] .bf-when--expired {
+  color: #e87171;
+}
+html[data-theme="dark"] .bf-chip {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .bf-chip:hover {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .bf-chip.is-active {
+  background: var(--bl-primary);
+  color: #fff;
+}
 
 /* ===== Assets/styles/profesional.css ===== */
 html[data-theme="dark"] .prof-panel-summary__inactive {

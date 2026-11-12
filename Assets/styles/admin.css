@@ -903,3 +903,92 @@
     transition: none;
   }
 }
+
+/* ===========================================================
+   BENEFICIOS DE COMERCIOS (Impulsar): insignia del menú, avisos,
+   tarjetas de renovaciones y de Redes sociales, filtros
+   =========================================================== */
+
+/* Cantidad de pendientes (compras en revisión + renovaciones). Es <b>, no <span>: el
+   `.admin-nav__item span` de arriba le daría flex: 1. */
+.admin-nav__badge {
+  flex-shrink: 0;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--bl-radius-pill);
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.admin-nav__badge[hidden] { display: none; }
+
+.bf-alert {
+  margin-bottom: 1.1rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid #b45309;
+  border-radius: var(--bl-radius-lg);
+  background: rgba(180, 83, 9, 0.08);
+  color: var(--bl-text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.bf-alert[hidden] { display: none; }
+.bf-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--bl-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.bf-card { margin-bottom: 1.25rem; }
+.bf-card__head { padding: 1rem 1.25rem 0.5rem; }
+.bf-card__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--bl-text); }
+.bf-card__title span { color: var(--bl-text-muted); font-weight: 600; }
+.bf-card__sub { margin: 0.3rem 0 0; font-size: 0.84rem; line-height: 1.45; color: var(--bl-text-secondary); }
+.bf-list { padding: 0.25rem 0 0.5rem; }
+.bf-empty { margin: 0; padding: 0.75rem 1.25rem 1rem; font-size: 0.88rem; color: var(--bl-text-muted); }
+.bf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1.25rem;
+  border-top: 1px solid var(--bl-border);
+}
+.bf-row__main { flex: 1 1 260px; min-width: 0; }
+.bf-row__title { font-size: 0.92rem; color: var(--bl-text); overflow-wrap: anywhere; }
+.bf-row__meta { margin-top: 0.15rem; font-size: 0.8rem; color: var(--bl-text-muted); overflow-wrap: anywhere; }
+.bf-row__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.bf-row__actions .action-btn { margin: 0; text-decoration: none; display: inline-flex; align-items: center; }
+.bf-row__actions .action-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.bf-when { font-weight: 700; color: #b45309; }
+.bf-when--expired { color: #dc2626; }
+
+.bf-toolbar { align-items: flex-end; }
+.bf-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.bf-chip {
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-pill);
+  background: var(--bl-surface);
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--bl-text-secondary);
+  cursor: pointer;
+}
+.bf-chip:hover { border-color: var(--bl-primary); color: var(--bl-primary); }
+.bf-chip.is-active { background: var(--bl-primary); border-color: var(--bl-primary); color: #fff; }
+.bf-chip:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+.bf-count { flex: 1 1 100%; margin: 0; font-size: 0.82rem; color: var(--bl-text-muted); }

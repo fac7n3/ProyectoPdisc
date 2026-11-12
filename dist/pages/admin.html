@@ -12,23 +12,23 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
-    <script type="module" crossorigin src="/assets/admin-CeMCMJSJ.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-Bh5WmWZa.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Wzrxa_zD.js">
+    <script type="module" crossorigin src="/assets/admin-D86cYNgW.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-Blaq1MHr.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-NIs88Q42.js">
     <link rel="modulepreload" crossorigin href="/assets/image-compress-D0FfQ9U_.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-Dh-jg29Q.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-iskUsnnN.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-C3HtWXR9.js">
-    <link rel="modulepreload" crossorigin href="/assets/support-utils-BedYEk0v.js">
-    <link rel="modulepreload" crossorigin href="/assets/order-utils-B-ZOeP-n.js">
+    <link rel="modulepreload" crossorigin href="/assets/support-utils-C04TrVjc.js">
+    <link rel="modulepreload" crossorigin href="/assets/order-utils-BmjEJ9_i.js">
     <link rel="modulepreload" crossorigin href="/assets/datepicker-DlsUZB35.js">
     <link rel="modulepreload" crossorigin href="/assets/professional-categories-D3_N40VM.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-BSxigtLJ.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-onboarding-utils-_bfdfW9B.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-DfkNS-sC.js">
-    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-BlX1g5qu.js">
-    <link rel="modulepreload" crossorigin href="/assets/delivery-evidence-DL_H8lQe.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-C_bAKMjR.css">
-    <link rel="stylesheet" crossorigin href="/assets/admin-zDmO7NTw.css">
+    <link rel="modulepreload" crossorigin href="/assets/home-promos-editor-Dzw_z1vF.js">
+    <link rel="modulepreload" crossorigin href="/assets/delivery-evidence-NwctEXXZ.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-B1U0sAZg.css">
+    <link rel="stylesheet" crossorigin href="/assets/admin-MN87JaKl.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
     <link rel="stylesheet" crossorigin href="/assets/home-V5mMxl4K.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-JM4w52S9.css">
@@ -107,7 +107,7 @@
                 <i class="admin-emoji" aria-hidden="true">📣</i><span>Promos del inicio</span>
               </button>
               <button type="button" class="admin-nav__item" data-target="benefits">
-                <i class="admin-emoji" aria-hidden="true">🎁</i><span>Beneficios de comercios</span>
+                <i class="admin-emoji" aria-hidden="true">🎁</i><span>Beneficios de comercios</span><b class="admin-nav__badge" id="benefits-badge" hidden>0</b>
               </button>
             </div>
 
@@ -521,10 +521,18 @@
                 <div class="admin-section__head">
                   <div>
                     <h2 class="admin-section__title">Beneficios de comercios</h2>
-                    <p class="admin-section__subtitle">Escribí el email del dueño de un comercio y otorgale servicios o un combo de "Impulsá tus ventas" sin cargo, con la cantidad y los días que quieras. Se respetan los topes por comercio (por ejemplo, 1 banner mediano o 5 productos recomendados a la vez, contando lo que ya tiene por compra o por un combo). Abajo ves todo lo que tiene cada comercio, comprado o regalado, y podés quitarlo.</p>
+                    <p class="admin-section__subtitle">Acá se activan y se renuevan los combos y servicios de "Impulsá tus ventas", que se coordinan por WhatsApp. Arriba ves lo que hay que renovar y lo que está en revisión; después podés otorgar un servicio o un combo con la cantidad y los días que quieras (se respetan los topes por comercio: por ejemplo, 1 banner mediano o 5 productos recomendados a la vez, contando lo que ya tiene por compra o por un combo). Abajo está todo, comprado o regalado, con filtros: podés renovarlo o quitarlo.</p>
                   </div>
                   <button class="admin-btn admin-btn--ghost" id="btn-refresh-benefits"><i class="admin-emoji" aria-hidden="true">🔄</i> Refrescar</button>
                 </div>
+                <div class="bf-alert" id="benefits-alert" role="status" hidden></div>
+                <section class="admin-card bf-card" aria-labelledby="benefits-renewals-title">
+                  <div class="bf-card__head">
+                    <h3 class="bf-card__title" id="benefits-renewals-title">Renovaciones: recordales que abonen <span id="benefits-renewals-count"></span></h3>
+                    <p class="bf-card__sub">Vencen en 3 días o menos, o vencieron esta semana y todavía no se renovaron. Cada día te llega un aviso en la campanita del sitio. Escribile al comercio por WhatsApp y, cuando ya abonó, tocá "Renovar".</p>
+                  </div>
+                  <div class="bf-list" id="benefits-renewals"></div>
+                </section>
                 <form class="admin-inline-form" id="benefit-form">
                   <div class="form-group" style="flex: 2 1 260px;">
                     <label for="benefit-email">Email del dueño del comercio</label>
@@ -564,6 +572,32 @@
                     <p id="benefit-hint" aria-live="polite" style="flex: 1 1 100%; margin: 0; font-size: 0.82rem; color: var(--bl-text-muted);"></p>
                   </div>
                 </form>
+                <section class="admin-card bf-card" aria-labelledby="benefits-redes-title">
+                  <div class="bf-card__head">
+                    <h3 class="bf-card__title" id="benefits-redes-title">Redes sociales: historias para resubir <span id="benefits-redes-count"></span></h3>
+                    <p class="bf-card__sub">Comercios que tienen el servicio vigente ahora (comprado, regalado o dentro de un combo). Cada historia que suban, la resubimos.</p>
+                  </div>
+                  <div class="bf-list" id="benefits-redes"></div>
+                </section>
+                <div class="admin-inline-form bf-toolbar" role="search" aria-label="Filtrar beneficios">
+                  <div class="form-group" style="flex: 2 1 220px;">
+                    <label for="bf-q">Buscar</label>
+                    <input type="search" id="bf-q" placeholder="Comercio, email o combo/servicio" autocomplete="off" />
+                  </div>
+                  <div class="form-group">
+                    <label for="bf-state">Estado</label>
+                    <select id="bf-state"></select>
+                  </div>
+                  <div class="form-group" style="flex: 1.4 1 200px;">
+                    <label for="bf-item">Combo o servicio</label>
+                    <select id="bf-item"><option value="">Todos</option></select>
+                  </div>
+                  <div class="bf-chips">
+                    <button type="button" class="bf-chip" id="bf-chip-review" aria-pressed="false">En revisión (0)</button>
+                    <button type="button" class="bf-chip" id="bf-chip-expiring" aria-pressed="false">Vencen pronto (0)</button>
+                  </div>
+                  <p class="bf-count" id="bf-count" aria-live="polite"></p>
+                </div>
                 <div class="admin-card">
                   <div class="table-container">
                     <table>
