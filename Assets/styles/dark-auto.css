@@ -359,6 +359,9 @@ html[data-theme="dark"] .bl-confirm-overlay {
 html[data-theme="dark"] .bl-confirm-card {
   box-shadow: 0 20px 40px rgba(112, 139, 204, 0.35);
 }
+html[data-theme="dark"] .bl-login-prompt__icon {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .crop-aspect.is-active {
   background: var(--bl-primary);
   color: #fff;
@@ -1067,6 +1070,29 @@ html[data-theme="dark"] .admin-inline-form input:focus {
 html[data-theme="dark"] .admin-scrim {
   background: rgba(112, 139, 204, 0.35);
 }
+html[data-theme="dark"] .bf-alert {
+  border: 1px solid #f0934c;
+  background: rgba(226, 149, 90, 0.128);
+}
+html[data-theme="dark"] .bf-link {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .bf-when {
+  color: #f5b687;
+}
+html[data-theme="dark"] .bf-when--expired {
+  color: #e87171;
+}
+html[data-theme="dark"] .bf-chip {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .bf-chip:hover {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .bf-chip.is-active {
+  background: var(--bl-primary);
+  color: #fff;
+}
 
 /* ===== Assets/styles/profesional.css ===== */
 html[data-theme="dark"] .prof-panel-summary__inactive {
@@ -1766,6 +1792,44 @@ html[data-theme="dark"] .bp-status--warn i {
 }
 html[data-theme="dark"] .bp-status a,
 html[data-theme="dark"] .bp-status button.bp-link {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .bp-card--discount {
+  border: 2px solid #e65757;
+}
+html[data-theme="dark"] .bp-card__save {
+  background: #153f23;
+  color: #afeec7;
+}
+html[data-theme="dark"] .bs-type {
+  background: #141d3c;
+  color: #9792df;
+}
+html[data-theme="dark"] .bs-type--banner {
+  background: #15273e;
+  color: #7493ec;
+}
+html[data-theme="dark"] .bs-type--social {
+  background: #3a152a;
+  color: #ef91b7;
+}
+html[data-theme="dark"] .bs-type--products {
+  background: #453c17;
+  color: #f5ba95;
+}
+html[data-theme="dark"] .bs-type--ranking {
+  background: #1a1339;
+  color: #a073e6;
+}
+html[data-theme="dark"] .bs-type--profile {
+  background: #153f23;
+  color: #afeec7;
+}
+html[data-theme="dark"] .bs-type--stats {
+  background: #142c3d;
+  color: #92d3f6;
+}
+html[data-theme="dark"] .bs-card__more {
   color: var(--dk-accent-text);
 }
 html[data-theme="dark"] .pd-header__title {

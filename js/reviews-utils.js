@@ -1,5 +1,6 @@
 import { supabase, showToast } from './auth-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
+import { promptLogin } from './login-prompt.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 
 import { friendlyError } from './friendly-error.js';
@@ -404,6 +405,8 @@ export async function renderReviewsSection(container, targetType, targetId, { hi
         reportBtn.style.cssText = 'background: none; border: none; color: var(--bl-text-muted); text-decoration: underline; cursor: pointer; font-size: 0.8rem;';
         reportBtn.textContent = 'Reportar';
         reportBtn.addEventListener('click', async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session && promptLogin('Para reportar una reseña necesitás iniciar sesión.')) return;
           // Cartel propio en vez de prompt()/alert(): el nativo desentona y en el
           // navegador interno de Instagram/Facebook puede no aparecer nunca.
           const reason = await formDialog('Contanos qué tiene de malo. El equipo la va a revisar.', {
@@ -475,6 +478,9 @@ function buildReviewForm(container, targetType, targetId, ownReview, onSubmitted
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    // Sin sesión en celular: cartel central en vez del aviso de error de abajo.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session && promptLogin('Para dejar una reseña necesitás iniciar sesión.')) return;
     try {
       const rating = stars.getValue();
       const comment = commentInput.value.trim();

@@ -13,6 +13,7 @@ import { orderLabel } from './order-utils.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { friendlyError } from './friendly-error.js';
+import { setupBenefitsSection, loadBenefitsSection, refreshBenefitsBadge } from './admin-beneficios.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Una recarga en vivo (initAdminLive) no muestra la fila de "Cargando...": la
@@ -2195,6 +2196,7 @@ const SECTION_LOADERS = {
   'pharmacies': loadPharmaciesSection,
   'emergency-contacts': fetchEmergencyContacts,
   'home-promos': fetchHomePromos,
+  'benefits': loadBenefitsSection,
   'stores-mod': fetchStoresForModeration,
   'products-mod': null, // se llena al buscar (setupProductSearch)
   'repartidores': fetchRepartidores,
@@ -2291,12 +2293,25 @@ function initAdminPage() {
   setupPharmacyForms();
   setupEmergencyContactForm();
   setupProductSearch();
+  setupBenefitsSection();
   setupRepartidorAddForm();
   setupSectionNav();
 
-  // Abrir la primera sección visible (respeta el rol) y cargar solo esa.
+  // Abrir la primera sección visible (respeta el rol) y cargar solo esa. Si la URL trae
+  // `#seccion` (la notificación de renovaciones lleva a `admin.html#benefits`) y esa
+  // sección está habilitada para este rol, se abre esa.
   const firstNav = document.querySelector('.admin-nav__item[data-target]:not([hidden])');
-  showSection(firstNav ? firstNav.dataset.target : 'metrics');
+  const wanted = decodeURIComponent(location.hash.replace('#', ''));
+  const wantedNav = wanted
+    ? Array.from(document.querySelectorAll('.admin-nav__item[data-target]:not([hidden])')).find((item) => item.dataset.target === wanted)
+    : null;
+  const firstKey = wantedNav ? wanted : (firstNav ? firstNav.dataset.target : 'metrics');
+  showSection(firstKey);
+
+  // Insignia de pendientes de "Beneficios de comercios": compras en revisión + renovaciones.
+  // Solo la ve el admin (el moderador no tiene la sección y la RPC se lo rechazaría).
+  const benefitsSection = document.querySelector('.admin-section[data-section="benefits"]');
+  if (benefitsSection && benefitsSection.dataset.disabled !== 'true' && firstKey !== 'benefits') refreshBenefitsBadge();
 
   initAdminLive();
 }
@@ -2375,7 +2390,7 @@ function initAdminLive() {
 // que van a fallar.
 const MODERADOR_HIDDEN_SECTIONS = [
   'seller-requests', 'professionals', 'metrics', 'categories', 'coupons',
-  'pharmacies', 'emergency-contacts', 'home-promos',
+  'pharmacies', 'emergency-contacts', 'home-promos', 'benefits',
   'stores-mod', 'products-mod', 'proofs', 'repartidores',
   'revocations', 'error-logs', 'audit-log',
 ];

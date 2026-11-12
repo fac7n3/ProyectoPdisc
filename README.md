@@ -4,7 +4,7 @@
 
 Baradero Local es una plataforma de comercio de proximidad para la ciudad de Baradero (Buenos Aires, Argentina). Permite a los vecinos descubrir y comprar productos de los comercios de la ciudad, y a los comerciantes administrar su tienda, su stock y sus pedidos desde un panel propio. Además, incluye un directorio de profesionales y técnicos, información de servicios locales y un panel de administración para la gestión de la plataforma.
 
-Producción: <https://proyectopdisc.vercel.app>
+Producción: <https://baraderolocal.vercel.app> (también responde en <https://proyectopdisc.vercel.app>)
 
 ---
 

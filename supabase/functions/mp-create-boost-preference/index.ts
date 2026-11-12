@@ -1,14 +1,17 @@
-// Combos de "Impulsá tus ventas": crea el checkout de Mercado Pago para que un
-// comercio pague un combo (tabla boost_plans, migración 131).
+// "Impulsá tus ventas": crea el checkout de Mercado Pago para que un comercio
+// pague un combo (tabla boost_plans, migración 131) o un servicio suelto (tabla
+// boost_services, migración 160).
 //
 // A diferencia de mp-create-preference (donde cobra el VENDEDOR por un pedido
 // de un cliente), acá cobra la PLATAFORMA: se usa siempre el MP_ACCESS_TOKEN
 // global, nunca el token de un vendedor.
 //
 // Seguridad: el precio NO viene del navegador. El body solo trae { store_id,
-// plan_id }; el monto sale de boost_plans a través de create_boost_purchase
-// (SECURITY DEFINER), que además valida del lado del servidor que el comercio
-// sea del que llama y que no quiera cambiar de combo con otro vigente. Esta
+// plan_id } o { store_id, service_id, quantity }; el monto sale de boost_plans /
+// boost_services a través de create_boost_purchase / create_service_purchase
+// (SECURITY DEFINER), que además validan del lado del servidor que el comercio
+// sea del que llama, que no cambie de combo con otro vigente y que no pase el
+// tope de unidades por comercio. Esta
 // función corre con el JWT del dueño (no con service role), así que esa
 // validación usa auth.uid() de verdad.
 //
@@ -24,6 +27,7 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PLAN_ID_RE = /^[a-z]{1,30}$/;
+const SERVICE_ID_RE = /^[a-z_]{1,40}$/;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,8 +47,10 @@ function statusForPgCode(code: string | undefined): number {
   switch (code) {
     case "28000": return 401; // sin sesión
     case "42501": return 403; // no es dueño de un comercio aprobado
-    case "P0002": return 404; // combo inexistente o dado de baja
+    case "P0002": return 404; // combo o servicio inexistente o dado de baja
     case "23505": return 409; // ya tiene otro combo vigente
+    case "23514": return 409; // pasaría el tope por comercio
+    case "22023": return 400; // cantidad inválida
     default: return 500;
   }
 }
@@ -61,12 +67,26 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => null);
     const storeId = body?.store_id;
     const planId = body?.plan_id;
+    const serviceId = body?.service_id;
 
     if (typeof storeId !== "string" || !UUID_RE.test(storeId)) {
       return jsonResponse({ error: "El comercio elegido no es válido." }, 400);
     }
-    if (typeof planId !== "string" || !PLAN_ID_RE.test(planId)) {
+    // Un combo O un servicio, nunca los dos ni ninguno.
+    const isService = serviceId !== undefined && serviceId !== null;
+    if (isService) {
+      if (planId !== undefined && planId !== null) {
+        return jsonResponse({ error: "Elegí un combo o un servicio, no los dos." }, 400);
+      }
+      if (typeof serviceId !== "string" || !SERVICE_ID_RE.test(serviceId)) {
+        return jsonResponse({ error: "El servicio elegido no es válido." }, 400);
+      }
+    } else if (typeof planId !== "string" || !PLAN_ID_RE.test(planId)) {
       return jsonResponse({ error: "El combo elegido no es válido." }, 400);
+    }
+    const quantity = body?.quantity ?? 1;
+    if (isService && (!Number.isInteger(quantity) || quantity < 1 || quantity > 10)) {
+      return jsonResponse({ error: "La cantidad elegida no es válida." }, 400);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -80,15 +100,21 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Tenés que iniciar sesión." }, 401);
     }
 
-    const { data: rows, error: purchaseError } = await supabase.rpc("create_boost_purchase", {
-      p_store_id: storeId,
-      p_plan_id: planId,
-    });
+    const { data: rows, error: purchaseError } = isService
+      ? await supabase.rpc("create_service_purchase", {
+        p_store_id: storeId,
+        p_service_id: serviceId,
+        p_quantity: quantity,
+      })
+      : await supabase.rpc("create_boost_purchase", {
+        p_store_id: storeId,
+        p_plan_id: planId,
+      });
 
     if (purchaseError) {
       const status = statusForPgCode((purchaseError as { code?: string }).code);
       if (status === 500) {
-        console.error("Error creando la compra del combo:", purchaseError);
+        console.error("Error creando la compra del combo o servicio:", purchaseError);
         return jsonResponse({ error: "No se pudo iniciar la compra del combo." }, 500);
       }
       return jsonResponse({ error: purchaseError.message }, status);
@@ -96,7 +122,7 @@ Deno.serve(async (req: Request) => {
 
     const purchase = Array.isArray(rows) ? rows[0] : rows;
     if (!purchase?.purchase_id) {
-      console.error("create_boost_purchase no devolvió la compra:", rows);
+      console.error("La compra no devolvió datos:", rows);
       return jsonResponse({ error: "No se pudo iniciar la compra del combo." }, 500);
     }
 

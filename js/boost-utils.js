@@ -9,8 +9,8 @@
 export const PENDING_WINDOW_MS = 2 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Ids de combos que incluyen un banner del inicio (hay que asignarles el espacio a mano). */
-export const PLANS_WITH_BANNER = ['barrio', 'baradero'];
+/** Servicios que son un banner del inicio (hay que asignarles el espacio a mano). */
+export const BANNER_SERVICE_IDS = ['banner_chico', 'banner_mediano', 'banner_grande'];
 
 /**
  * @param {Array<{plan_id:string,status:string,starts_at?:string|null,ends_at?:string|null,created_at:string}>} purchases
@@ -24,7 +24,9 @@ export function describeBoostState(purchases, nowMs = Date.now()) {
   let needsReview = false;
 
   for (const p of purchases || []) {
-    if (p.status === 'active' && p.starts_at && p.ends_at) {
+    // Un servicio suelto (sin plan_id) nunca es "el combo activo" (eso lo cuenta
+    // activeServicePurchases), pero su pago pendiente o en revisión sí se avisa.
+    if (p.status === 'active' && p.plan_id && p.starts_at && p.ends_at) {
       const start = new Date(p.starts_at).getTime();
       const end = new Date(p.ends_at).getTime();
       if (nowMs >= start && nowMs < end && (!active || end > active.endsAt.getTime())) {
@@ -40,17 +42,40 @@ export function describeBoostState(purchases, nowMs = Date.now()) {
 }
 
 /**
- * Qué muestra el botón de cada combo según el estado.
- *  - sin combo vigente: "Elegir este combo"
- *  - mismo combo vigente: "Renovar" (la base lo suma a continuación del actual)
- *  - otro combo vigente: deshabilitado (create_boost_purchase también lo rechaza)
+ * Qué muestra el botón de cada combo según el estado. Siempre está habilitado: el botón
+ * abre WhatsApp con atención al cliente (ver boostWhatsAppUrl), que decide cada caso
+ * (renovar, subir de combo, etc.); ya no hay un pago automático que lo rechace.
+ *  - mismo combo vigente: "Renovar 30 días más"
+ *  - cualquier otro caso: "Elegir este combo"
  * @returns {{ label: string, disabled: boolean, hint: string|null }}
  */
 export function planAction(planId, state) {
-  const { active } = state;
-  if (!active) return { label: 'Elegir este combo', disabled: false, hint: null };
-  if (active.planId === planId) return { label: 'Renovar 30 días más', disabled: false, hint: 'Tu combo actual' };
-  return { label: 'Elegir este combo', disabled: true, hint: 'Podés cambiarlo cuando termine el actual' };
+  const renewing = state.active?.planId === planId;
+  return { label: renewing ? 'Renovar 30 días más' : 'Elegir este combo', disabled: false, hint: null };
+}
+
+/**
+ * Mensaje que le llega a atención al cliente cuando un comercio toca "Elegir este
+ * combo" o "Comprar". Con más de una unidad lo aclara.
+ * @param {{ storeName?: string, itemName: string, quantity?: number }} p
+ */
+export function boostWhatsAppMessage({ storeName, itemName, quantity = 1 }) {
+  const store = String(storeName || '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'mi comercio';
+  const item = String(itemName || '').replace(/\s+/g, ' ').trim();
+  const what = quantity > 1 ? `${quantity} unidades de ${item}` : item;
+  return `Hola, soy de ${store} y estamos viendo de obtener ${what}`;
+}
+
+/**
+ * Link de WhatsApp (wa.me) al número de atención al cliente, con el mensaje ya escrito.
+ * Devuelve null si el número no parece uno válido (8 a 15 dígitos) o falta el nombre
+ * del combo/servicio, para no abrir un chat roto.
+ * @param {{ phone: string, storeName?: string, itemName: string, quantity?: number }} p
+ */
+export function boostWhatsAppUrl({ phone, storeName, itemName, quantity = 1 }) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 15 || !String(itemName || '').trim()) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(boostWhatsAppMessage({ storeName, itemName, quantity }))}`;
 }
 
 /** 'DD/MM/YYYY' en hora de Argentina (no la del navegador: evita que cambie el día). */
@@ -75,4 +100,112 @@ export function boostReturnMessage(param) {
     default:
       return null;
   }
+}
+
+
+// ---------------------------------------------------------------------------
+// Servicios individuales y planes con composición (migración 160)
+// ---------------------------------------------------------------------------
+
+/** Etiqueta del tipo de servicio (`boost_services.kind`). */
+export const SERVICE_KIND_LABEL = {
+  banner: 'Banner', social: 'Difusión', products: 'Productos',
+  ranking: 'Búsquedas', profile: 'Perfil', stats: 'Métricas',
+};
+
+/** Qué incluye un plan: [{ id, name, quantity, price }] en el orden del catálogo. */
+export function planBreakdown(planId, items, services) {
+  const byId = new Map((services || []).map((s) => [s.id, s]));
+  return (items || [])
+    .filter((it) => it.plan_id === planId && byId.has(it.service_id))
+    .map((it) => {
+      const sv = byId.get(it.service_id);
+      return { id: sv.id, name: sv.name, quantity: it.quantity, price: sv.price, sort: sv.sort_order ?? 0 };
+    })
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ sort, ...rest }) => rest);
+}
+
+/**
+ * Precio de los servicios del plan comprados por separado y cuánto se ahorra
+ * con el plan. `savings` nunca es negativo; `percent` va redondeado.
+ */
+export function planSavings(plan, items, services) {
+  const listPrice = planBreakdown(plan.id, items, services)
+    .reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const savings = Math.max(0, listPrice - plan.price);
+  return { listPrice, savings, percent: listPrice > 0 ? Math.round((savings / listPrice) * 100) : 0 };
+}
+
+/** Pasa las filas de get_store_benefits a { service_id: unidades vigentes }. */
+export function holdingsMap(rows) {
+  const out = {};
+  for (const r of rows || []) out[r.service_id] = r.held ?? 0;
+  return out;
+}
+
+/**
+ * Cuánto puede comprar el comercio de un servicio, dado lo que ya tiene vigente.
+ * @returns {{ held:number, max:number|null, remaining:number|null, canBuy:boolean, maxQty:number }}
+ *   `maxQty` es el tope del selector de cantidad. Un servicio SIN tope por comercio
+ *   (hoy, Redes sociales: se resuben todas las historias) se compra de a 1: comprar
+ *   más unidades no suma ningún beneficio y el comercio podría pagar de más. Se
+ *   puede volver a comprar; el servidor igual admite hasta 10 por compra (resguardo).
+ */
+export function serviceAvailability(service, held = 0) {
+  const max = service.max_per_store ?? null;
+  const remaining = max == null ? null : Math.max(0, max - held);
+  const canBuy = max == null || remaining > 0;
+  return { held, max, remaining, canBuy, maxQty: max == null ? 1 : Math.max(1, remaining) };
+}
+
+/** Texto corto de "cuántos tenés": "Tenés 1 de 2" / "Tenés 3 (sin tope)". */
+export function holdingLabel(service, held = 0) {
+  const { max, remaining } = serviceAvailability(service, held);
+  if (max == null) return held > 0 ? `Tenés ${held} · sin tope por comercio` : 'Sin tope por comercio';
+  if (remaining === 0) return `Tenés ${held} de ${max} · máximo alcanzado`;
+  return `Tenés ${held} de ${max} · podés sumar ${remaining}`;
+}
+
+/** Líneas de "Límites" de un servicio, sacadas de los datos (no de texto escrito a mano). */
+export function serviceLimitLines(service) {
+  const lines = [];
+  lines.push(service.max_per_store == null
+    ? 'Sin tope de unidades por comercio.'
+    : `Máximo ${service.max_per_store} ${service.max_per_store === 1 ? 'unidad vigente' : 'unidades vigentes'} a la vez por comercio (cuentan las que vienen dentro de un plan).`);
+  if (service.slot_note) lines.push(service.slot_note);
+  lines.push(`Dura ${service.duration_days} días desde que se acredita el pago.`);
+  return lines;
+}
+
+/** Costo por día, redondeado ("$200 por día"). */
+export function pricePerDay(price, days) {
+  return days > 0 ? Math.round(price / days) : price;
+}
+
+/**
+ * Planes que traen este servicio, con lo que se ahorra comprando el plan.
+ * @returns {Array<{ id:string, name:string, quantity:number, savings:number }>}
+ */
+export function plansIncluding(serviceId, plans, items, services) {
+  return (plans || [])
+    .map((plan) => {
+      const it = (items || []).find((x) => x.plan_id === plan.id && x.service_id === serviceId);
+      return it ? { id: plan.id, name: plan.name, quantity: it.quantity, savings: planSavings(plan, items, services).savings } : null;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Servicios sueltos vigentes (los regalados también): [{ serviceId, quantity, endsAt }].
+ */
+export function activeServicePurchases(purchases, nowMs = Date.now()) {
+  const out = [];
+  for (const p of purchases || []) {
+    if (!p.service_id || p.status !== 'active' || !p.starts_at || !p.ends_at) continue;
+    const start = new Date(p.starts_at).getTime();
+    const end = new Date(p.ends_at).getTime();
+    if (nowMs >= start && nowMs < end) out.push({ serviceId: p.service_id, quantity: p.quantity ?? 1, endsAt: new Date(end) });
+  }
+  return out;
 }

@@ -2,6 +2,7 @@
 // Usa localStorage para persistir los productos entre páginas.
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
+import { promptLogin } from './login-prompt.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
@@ -1285,6 +1286,7 @@ function initCartEvents() {
     // 1. Requerir autenticación
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      if (promptLogin('Para finalizar tu compra necesitás iniciar sesión. Tu carrito te espera.')) return;
       showCartToast('Debes iniciar sesión para comprar');
       setTimeout(() => window.location.href = './login.html', 1500);
       return;

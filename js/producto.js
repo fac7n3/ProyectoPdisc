@@ -1,4 +1,5 @@
 import { supabase } from './auth-utils.js';
+import { promptLogin } from './login-prompt.js';
 import { safeVideoUrl } from './storage-utils.js';
 import { renderSameProductOffers } from './price-compare-ui.js';
 import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
@@ -350,6 +351,7 @@ async function renderStockAlertWidget(container, productId) {
     btn.style.cssText = 'padding: 0.6rem 1.25rem; border: 2px solid var(--bl-text-muted, #5f6b7d); color: var(--bl-text-secondary, #4a5568); border-radius: var(--bl-radius-md); font-weight: 600; background: none; cursor: pointer;';
     btn.textContent = 'Avisarme cuando vuelva el stock';
     btn.addEventListener('click', () => {
+      if (promptLogin('Iniciá sesión para que te avisemos cuando vuelva el stock.')) return;
       showToast('Iniciá sesión para que te avisemos.', 'default');
       window.location.href = './login.html';
     });

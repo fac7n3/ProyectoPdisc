@@ -1264,12 +1264,18 @@ ul, ol {
     padding-top: calc(1rem + env(safe-area-inset-top));
     z-index: 210;
     animation: drawer-in 0.2s ease;
+    /* El scroll del panel no se "encadena" al fondo cuando llega al final. */
+    overscroll-behavior: contain;
   }
 
   .cat-mega__grid { grid-template-columns: 1fr; }
 
+  /* Con un panel abierto el fondo no scrollea. Hay que trabar html Y body:
+     en iOS Safari, `overflow: hidden` solo en el body no frena el scroll. */
+  html:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])),
   body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])) {
     overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden]))::after {
@@ -1278,6 +1284,8 @@ ul, ol {
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 99;
+    /* Arrastrar sobre el fondo oscuro no mueve la página de atrás. */
+    touch-action: none;
   }
 }
 
@@ -5298,6 +5306,44 @@ button.coupon-chip:hover {
 .bl-confirm-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ===== Cartel "Iniciá sesión" en el centro (js/login-prompt.js, solo celular) =====
+   Es la misma tarjeta de confirmación, centrada, con un círculo de ícono arriba.
+   Todo por tokens: en modo oscuro cambia solo. */
+.bl-login-prompt {
+  max-width: 20rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bl-login-prompt__icon {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.9rem;
+  border-radius: 50%;
+  background: var(--bl-surface-alt);
+  color: var(--bl-primary);
+  font-size: 1.35rem;
+}
+.bl-login-prompt .bl-confirm-title { font-size: 1.15rem; margin-bottom: 0.5rem; }
+.bl-login-prompt .bl-confirm-msg { text-align: center; }
+.bl-login-prompt__actions {
+  align-self: stretch;
+  flex-direction: column;
+  justify-content: stretch;
+  margin-top: 1.4rem;
+}
+.bl-login-prompt__actions .bl-confirm-btn {
+  width: 100%;
+  padding: 0.75rem 1.2rem;
+  font-size: 0.95rem;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 /* Editor de encuadre de fotos (js/image-cropper.js). */
