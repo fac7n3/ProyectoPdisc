@@ -2128,6 +2128,24 @@ button.coupon-chip:hover {
   min-height: 0;
 }
 
+/* En escritorio y tablet tiene el mismo alto que el banner principal de
+   arriba (.hero__carousel: 280px, 200px desde 768px). En teléfono (<= 640px)
+   sigue la proporción de arriba, que es la que usan las promos de comercio. */
+@media (min-width: 641px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    aspect-ratio: auto;
+    height: 280px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    height: 200px;
+  }
+}
+
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;

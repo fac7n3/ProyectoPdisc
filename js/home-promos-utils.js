@@ -15,7 +15,7 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_d', label: 'Mosaico entre Esenciales y Ofertas · franja ancha', ratio: '5:1 (ej. 1600x320)' },
   { slot: 'mosaic_e', label: 'Mosaico entre Esenciales y Ofertas · izquierda', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_f', label: 'Mosaico entre Esenciales y Ofertas · derecha', ratio: '4:1 (ej. 1200x300)' },
-  { slot: 'mosaic_g', label: 'Banner grande antes de Seguí descubriendo (ancho completo)', ratio: '8:3 (ej. 1600x600)' },
+  { slot: 'mosaic_g', label: 'Banner grande antes de Seguí descubriendo (ancho completo)', ratio: 'poco más de 4:1 en escritorio (ej. 1600x280)' },
   { slot: 'mosaic_h', label: 'Franja debajo de Recomendados', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_i', label: 'Entre Esenciales y Ofertas · derecha', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_j', label: 'Debajo de Seguí descubriendo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
