@@ -3,8 +3,9 @@
 //
 // Planes (Base / Intermedio / Pro): cada uno es un paquete de servicios; lo que
 // incluye sale de boost_plan_items (migración 160), no de acá. Servicios sueltos:
-// una tarjeta por servicio de boost_services, desplegable con para qué sirve,
-// ejemplos, por qué conviene y límites.
+// una tarjeta por servicio de boost_services, con un botón "Ver detalles" que abre
+// una ventana central (js/detail-dialog.js) con para qué sirve, ejemplos, por qué
+// conviene y límites.
 //
 // El PRECIO, el NOMBRE y los TOPES salen de la base (boost_plans, boost_services):
 // es lo mismo que cobra la Edge Function, así que la pantalla no puede mostrar un
@@ -22,10 +23,11 @@ import {
   planAction, planBreakdown, planSavings, serviceAvailability, holdingLabel,
   serviceLimitLines, pricePerDay, plansIncluding, SERVICE_KIND_LABEL,
 } from './boost-utils.js';
+import { openDetailDialog } from './detail-dialog.js';
 
-const PLAN_COPY = {
+export const PLAN_COPY = {
   base: { tagline: 'Para empezar a mostrarte en el inicio.' },
-  intermedio: { tagline: 'Más lugares y tu comercio destacado.', featured: true },
+  intermedio: { tagline: 'Más lugares y tu comercio destacado.' },
   pro: { tagline: 'Toda la vidriera del inicio, al mejor precio.' },
 };
 
@@ -44,7 +46,7 @@ export const FREE_PLAN_FEATURES = [
 
 // Textos de venta de cada servicio. `what`: qué es y para qué sirve; `examples`:
 // usos concretos; `why`: por qué conviene. Los límites y precios NO van acá.
-const SERVICE_COPY = {
+export const SERVICE_COPY = {
   banner_chico: {
     what: 'Un banner pequeño con una foto, un título y un enlace, que se muestra en el inicio de Baradero Local. Sirve para dar a conocer una promo, un producto o tu comercio de forma simple.',
     examples: [
@@ -172,12 +174,6 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const listOf = (cls, lines) => {
-  const ul = el('ul', cls);
-  lines.forEach((l) => ul.appendChild(el('li', null, l)));
-  return ul;
-};
-
 /**
  * Dibuja la grilla de planes dentro de `container`.
  * @param {HTMLElement} container
@@ -196,11 +192,10 @@ export function renderBoostPlans(container, plans, state, onChoose, formatPrice,
     const { listPrice, savings, percent } = planSavings(plan, catalog.items, catalog.services);
     const hasDiscount = savings > 0;
 
-    const card = el('article', copy.featured && !hasDiscount ? 'bp-card bp-card--featured' : hasDiscount ? 'bp-card bp-card--discount' : 'bp-card');
+    const card = el('article', hasDiscount ? 'bp-card bp-card--discount' : 'bp-card');
     card.dataset.plan = plan.id;
     if (isCurrent) card.appendChild(el('span', 'bp-card__badge', 'Tu combo actual'));
     else if (hasDiscount) card.appendChild(el('span', 'bp-card__badge bp-card__badge--hot', 'SUPER DESCUENTO'));
-    else if (copy.featured) card.appendChild(el('span', 'bp-card__badge', 'Recomendado'));
 
     card.appendChild(el('h3', 'bp-card__name', plan.name));
     card.appendChild(el('p', 'bp-card__tagline', copy.tagline));
@@ -215,11 +210,8 @@ export function renderBoostPlans(container, plans, state, onChoose, formatPrice,
 
     const btn = el('button', 'bp-card__btn', action.label);
     btn.type = 'button';
-    btn.disabled = action.disabled;
-    if (action.disabled) btn.title = action.hint || '';
     btn.addEventListener('click', () => onChoose(plan));
     card.appendChild(btn);
-    if (action.disabled && action.hint) card.appendChild(el('p', 'bp-card__hint', action.hint));
 
     card.appendChild(el('p', 'bp-card__includes', 'Incluye:'));
     const list = el('ul', 'bp-card__perks');
@@ -240,8 +232,34 @@ export function renderBoostPlans(container, plans, state, onChoose, formatPrice,
   container.replaceChildren(grid, free);
 }
 
-/** Ids de servicios desplegados, para que un refresco de la pantalla no los cierre. */
-const openServices = new Set();
+/**
+ * Secciones de la ventana de detalles de un servicio (para `openDetailDialog`).
+ * Pura: los textos de venta salen de `SERVICE_COPY`; el precio por día, los planes
+ * que lo incluyen y los límites salen de los datos de la base, no de texto escrito.
+ * @param {{id:string,name:string,kind:string,contents:string,purpose:string,price:number,max_per_store:number|null,slot_note:string|null,duration_days:number}} service
+ * @param {{ plans: Array<object>, items: Array<object>, services: Array<object> }} catalog
+ * @param {(price: number) => string} formatPrice
+ * @returns {Array<{ title: string, text?: string, items?: string[], check?: boolean }>}
+ */
+export function serviceDetailSections(service, catalog, formatPrice) {
+  const copy = SERVICE_COPY[service.id] || { what: service.purpose, examples: [], why: [] };
+
+  const why = [...copy.why];
+  why.push(`Equivale a ${formatPrice(pricePerDay(service.price, service.duration_days))} por día.`);
+  const included = plansIncluding(service.id, catalog.plans, catalog.items, catalog.services).filter((p) => p.savings > 0);
+  if (included.length) {
+    why.push(`Si necesitás varios servicios juntos, el ${included.map((p) => p.name).join(' o el ')} te sale más barato (ahorrás hasta ${formatPrice(Math.max(...included.map((p) => p.savings)))}).`);
+  }
+
+  const sections = [
+    { title: 'Qué contiene', text: service.contents },
+    { title: 'Para qué sirve', text: copy.what },
+  ];
+  if (copy.examples.length) sections.push({ title: 'Ejemplos de uso', items: copy.examples });
+  sections.push({ title: 'Por qué conviene', items: why, check: true });
+  sections.push({ title: 'Límites', items: serviceLimitLines(service) });
+  return sections;
+}
 
 /**
  * Dibuja el catálogo de servicios individuales dentro de `container`.
@@ -256,7 +274,6 @@ export function renderBoostServices(container, services, holdings, catalog, onBu
   const grid = el('div', 'bs-grid');
 
   services.forEach((service) => {
-    const copy = SERVICE_COPY[service.id] || { what: service.purpose, examples: [], why: [] };
     const held = holdings[service.id] ?? 0;
     const avail = serviceAvailability(service, held);
 
@@ -278,33 +295,19 @@ export function renderBoostServices(container, services, holdings, catalog, onBu
 
     card.appendChild(el('p', avail.canBuy ? 'bs-card__held' : 'bs-card__held bs-card__held--max', holdingLabel(service, held)));
 
-    // Desplegable: para qué sirve en detalle, ejemplos, por qué conviene y límites.
-    const more = el('details', 'bs-more');
-    if (openServices.has(service.id)) more.open = true;
-    more.addEventListener('toggle', () => {
-      if (more.open) openServices.add(service.id); else openServices.delete(service.id);
+    // "Ver detalles": abre una ventana en el centro de la pantalla (como el visor de
+    // banners del inicio) con para qué sirve, ejemplos, por qué conviene y límites.
+    const more = el('button', 'bs-card__more', 'Ver detalles, ejemplos y límites');
+    more.type = 'button';
+    more.setAttribute('aria-haspopup', 'dialog');
+    more.addEventListener('click', () => {
+      openDetailDialog({
+        title: service.name,
+        subtitle: `${SERVICE_KIND_LABEL[service.kind] || service.kind} · ${formatPrice(service.price)} por ${service.duration_days} días`,
+        sections: serviceDetailSections(service, catalog, formatPrice),
+        trigger: more,
+      });
     });
-    more.appendChild(el('summary', 'bs-more__summary', 'Ver detalles, ejemplos y límites'));
-
-    const body = el('div', 'bs-more__body');
-    const section = (title, content) => {
-      const s = el('section', 'bs-more__sec');
-      s.appendChild(el('h5', null, title));
-      s.appendChild(content);
-      body.appendChild(s);
-    };
-    section('Para qué sirve', el('p', null, copy.what));
-    if (copy.examples.length) section('Ejemplos de uso', listOf('bs-more__list', copy.examples));
-
-    const why = [...copy.why];
-    why.push(`Equivale a ${formatPrice(pricePerDay(service.price, service.duration_days))} por día.`);
-    const included = plansIncluding(service.id, catalog.plans, catalog.items, catalog.services).filter((p) => p.savings > 0);
-    if (included.length) {
-      why.push(`Si necesitás varios servicios juntos, el ${included.map((p) => p.name).join(' o el ')} te sale más barato (ahorrás hasta ${formatPrice(Math.max(...included.map((p) => p.savings)))}).`);
-    }
-    section('Por qué conviene', listOf('bs-more__list bs-more__list--why', why));
-    section('Límites', listOf('bs-more__list', serviceLimitLines(service)));
-    more.appendChild(body);
     card.appendChild(more);
 
     const foot = el('div', 'bs-card__foot');
@@ -316,9 +319,10 @@ export function renderBoostServices(container, services, holdings, catalog, onBu
     let qty = 1;
     const btn = el('button', 'bs-card__btn');
     btn.type = 'button';
-    btn.disabled = !avail.canBuy;
+    // Siempre habilitado: abre WhatsApp con atención al cliente. Si ya tiene el máximo
+    // (lo dice la línea "Tenés X de Y") el botón pasa a "Consultar".
     const refreshBtn = () => {
-      btn.textContent = !avail.canBuy ? (avail.max === 1 ? 'Ya lo tenés' : 'Máximo alcanzado')
+      btn.textContent = !avail.canBuy ? 'Consultar'
         : qty > 1 ? `Comprar ${formatPrice(service.price * qty)}` : 'Comprar';
     };
 

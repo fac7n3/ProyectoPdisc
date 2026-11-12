@@ -20,8 +20,9 @@ import { promoPosition } from './home-promos-utils.js';
 import { renderBoostPlans, renderBoostServices } from './boost-plans.js';
 import {
   describeBoostState, formatBoostDate, boostReturnMessage, BANNER_SERVICE_IDS,
-  holdingsMap, activeServicePurchases,
+  holdingsMap, activeServicePurchases, boostWhatsAppUrl,
 } from './boost-utils.js';
+import { SUPPORT_WHATSAPP } from './support-contact.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
 import { cropImage } from './image-cropper.js';
 import { saveProductDraft, loadProductDraft, clearProductDraft } from './product-draft.js';
@@ -781,6 +782,7 @@ const VENDOR_SECTION_COPY = {
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
   recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para vender más y destacarte entre los comercios de Baradero.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
+  impulsar: { icon: 'fa-solid fa-rocket', title: 'Impulsar', desc: 'Combos y servicios para que más vecinos conozcan tu comercio: banners, productos destacados, posicionamiento y más.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen; al tocarla, el vecino va a la página de tu comercio.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
   notificaciones: { icon: 'fa-regular fa-bell', title: 'Notificaciones', desc: 'Avisos de pedidos nuevos, pagos y novedades de tu comercio.' },
@@ -5719,7 +5721,6 @@ let boostItems = [];
 let boostServices = [];
 let boostHoldings = {};
 let boostPurchases = [];
-let boostBusy = false;
 
 async function refreshBoost() {
   const container = document.getElementById('boost-plans');
@@ -5823,70 +5824,35 @@ function renderBoostStatus(state) {
   }
 }
 
-async function chooseBoostPlan(plan) {
-  if (boostBusy) return;
-  if (!currentStoreId) return;
-  const renewing = describeBoostState(boostPurchases).active?.planId === plan.id;
-  boostBusy = true; // antes del diálogo: dos clics seguidos no abren dos
-  const ok = await confirmDialog(
-    `Vas a pagar ${formatPrice(plan.price)} con Mercado Pago por el ${plan.name}. ` +
-    (renewing
-      ? `Se suman ${plan.duration_days} días a continuación de los que ya tenés.`
-      : `Empieza cuando se acredite el pago y dura ${plan.duration_days} días.`),
-    { title: renewing ? `Renovar el ${plan.name}` : `Contratar el ${plan.name}`, confirmText: 'Ir a pagar' },
-  );
-  if (!ok) { boostBusy = false; return; }
-
-  document.querySelectorAll('#boost-plans .bp-card__btn, #boost-services .bs-card__btn').forEach((b) => { b.disabled = true; });
-  try {
-    const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
-      body: { store_id: currentStoreId, plan_id: plan.id },
-    });
-    const url = data?.init_point || data?.sandbox_init_point;
-    if (error || !url) {
-      showToast(await friendlyFunctionError(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
-      return;
-    }
-    window.location.href = url;
-  } catch (err) {
-    console.error('Error al iniciar el pago del combo:', err);
-    showToast('No se pudo iniciar el pago. Probá de nuevo.', 'error');
-  } finally {
-    boostBusy = false;
-    // Si se está yendo a Mercado Pago, esto no se ve; si falló, vuelve a habilitar.
-    refreshBoost();
+/**
+ * "Elegir este combo" / "Comprar" / "Consultar": abre WhatsApp con atención al cliente,
+ * con el mensaje ya escrito ("Hola, soy de <local> y estamos viendo de obtener <combo o
+ * servicio>"). El pago y la activación se coordinan por ahí; el equipo activa el beneficio
+ * desde Admin -> Beneficios de comercios. (La compra con Mercado Pago -- la Edge Function
+ * mp-create-boost-preference y las RPC create_*_purchase -- sigue en la base pero esta
+ * pantalla ya no la usa.) Es un clic directo, sin await: el navegador no bloquea la pestaña.
+ */
+function contactAboutBoost(itemName, quantity = 1) {
+  const url = boostWhatsAppUrl({ phone: SUPPORT_WHATSAPP, storeName: currentStoreName, itemName, quantity });
+  if (!url) {
+    showToast('No pudimos abrir WhatsApp. Escribinos por Soporte y te ayudamos.', 'error');
+    return;
   }
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
-async function chooseBoostService(service, quantity) {
-  if (boostBusy || !currentStoreId) return;
-  const total = service.price * quantity;
-  boostBusy = true; // antes del diálogo: dos clics seguidos no abren dos
-  const ok = await confirmDialog(
-    `Vas a pagar ${formatPrice(total)} con Mercado Pago por ${quantity > 1 ? `${quantity} unidades de ` : ''}${service.name}. ` +
-    `Empieza cuando se acredite el pago y dura ${service.duration_days} días.`,
-    { title: `Contratar ${service.name}`, confirmText: 'Ir a pagar' },
-  );
-  if (!ok) { boostBusy = false; return; }
+function chooseBoostPlan(plan) {
+  contactAboutBoost(plan.name);
+}
 
-  document.querySelectorAll('#boost-plans .bp-card__btn, #boost-services .bs-card__btn').forEach((b) => { b.disabled = true; });
-  try {
-    const { data, error } = await supabase.functions.invoke('mp-create-boost-preference', {
-      body: { store_id: currentStoreId, service_id: service.id, quantity },
-    });
-    const url = data?.init_point || data?.sandbox_init_point;
-    if (error || !url) {
-      showToast(await friendlyFunctionError(error, data, 'No se pudo iniciar el pago. Probá de nuevo.'), 'error');
-      return;
-    }
-    window.location.href = url;
-  } catch (err) {
-    console.error('Error al iniciar el pago del servicio:', err);
-    showToast('No se pudo iniciar el pago. Probá de nuevo.', 'error');
-  } finally {
-    boostBusy = false;
-    refreshBoost();
-  }
+function chooseBoostService(service, quantity) {
+  contactAboutBoost(service.name, quantity);
 }
 
 /** Parámetros que Mercado Pago agrega al volver; no hace falta dejarlos en la barra. */

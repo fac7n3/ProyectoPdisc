@@ -42,17 +42,40 @@ export function describeBoostState(purchases, nowMs = Date.now()) {
 }
 
 /**
- * Qué muestra el botón de cada combo según el estado.
- *  - sin combo vigente: "Elegir este combo"
- *  - mismo combo vigente: "Renovar" (la base lo suma a continuación del actual)
- *  - otro combo vigente: deshabilitado (create_boost_purchase también lo rechaza)
+ * Qué muestra el botón de cada combo según el estado. Siempre está habilitado: el botón
+ * abre WhatsApp con atención al cliente (ver boostWhatsAppUrl), que decide cada caso
+ * (renovar, subir de combo, etc.); ya no hay un pago automático que lo rechace.
+ *  - mismo combo vigente: "Renovar 30 días más"
+ *  - cualquier otro caso: "Elegir este combo"
  * @returns {{ label: string, disabled: boolean, hint: string|null }}
  */
 export function planAction(planId, state) {
-  const { active } = state;
-  if (!active) return { label: 'Elegir este combo', disabled: false, hint: null };
-  if (active.planId === planId) return { label: 'Renovar 30 días más', disabled: false, hint: 'Tu combo actual' };
-  return { label: 'Elegir este combo', disabled: true, hint: 'Podés cambiarlo cuando termine el actual' };
+  const renewing = state.active?.planId === planId;
+  return { label: renewing ? 'Renovar 30 días más' : 'Elegir este combo', disabled: false, hint: null };
+}
+
+/**
+ * Mensaje que le llega a atención al cliente cuando un comercio toca "Elegir este
+ * combo" o "Comprar". Con más de una unidad lo aclara.
+ * @param {{ storeName?: string, itemName: string, quantity?: number }} p
+ */
+export function boostWhatsAppMessage({ storeName, itemName, quantity = 1 }) {
+  const store = String(storeName || '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'mi comercio';
+  const item = String(itemName || '').replace(/\s+/g, ' ').trim();
+  const what = quantity > 1 ? `${quantity} unidades de ${item}` : item;
+  return `Hola, soy de ${store} y estamos viendo de obtener ${what}`;
+}
+
+/**
+ * Link de WhatsApp (wa.me) al número de atención al cliente, con el mensaje ya escrito.
+ * Devuelve null si el número no parece uno válido (8 a 15 dígitos) o falta el nombre
+ * del combo/servicio, para no abrir un chat roto.
+ * @param {{ phone: string, storeName?: string, itemName: string, quantity?: number }} p
+ */
+export function boostWhatsAppUrl({ phone, storeName, itemName, quantity = 1 }) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 15 || !String(itemName || '').trim()) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(boostWhatsAppMessage({ storeName, itemName, quantity }))}`;
 }
 
 /** 'DD/MM/YYYY' en hora de Argentina (no la del navegador: evita que cambie el día). */

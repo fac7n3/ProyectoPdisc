@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   describeBoostState, planAction, boostReturnMessage, formatBoostDate, PENDING_WINDOW_MS,
   planBreakdown, planSavings, holdingsMap, serviceAvailability, holdingLabel, serviceLimitLines,
-  pricePerDay, plansIncluding, activeServicePurchases,
+  pricePerDay, plansIncluding, activeServicePurchases, boostWhatsAppMessage, boostWhatsAppUrl,
 } from './boost-utils.js';
 
 let n = 0;
@@ -53,12 +53,19 @@ check('needs_review y cancelled', () => {
 console.log('--- botón de cada combo ---');
 check('sin combo: todos eligibles', () => {
   const s = describeBoostState([], NOW);
-  for (const id of ['base', 'intermedio', 'pro']) assert.equal(planAction(id, s).disabled, false);
+  for (const id of ['base', 'intermedio', 'pro']) {
+    assert.equal(planAction(id, s).disabled, false);
+    assert.equal(planAction(id, s).label, 'Elegir este combo');
+  }
 });
-check('con Intermedio vigente: Intermedio renueva, los otros quedan deshabilitados', () => {
+check('con Intermedio vigente: Intermedio dice "Renovar" y NINGÚN botón queda deshabilitado (el equipo decide por WhatsApp)', () => {
   const s = describeBoostState([{ plan_id: 'intermedio', status: 'active', starts_at: iso(NOW - DAY), ends_at: iso(NOW + DAY), created_at: iso(NOW - DAY) }], NOW);
-  assert.match(planAction('intermedio', s).label, /Renovar/); assert.equal(planAction('intermedio', s).disabled, false);
-  assert.equal(planAction('base', s).disabled, true); assert.equal(planAction('pro', s).disabled, true);
+  assert.match(planAction('intermedio', s).label, /Renovar/);
+  for (const id of ['base', 'intermedio', 'pro']) {
+    assert.equal(planAction(id, s).disabled, false);
+    assert.equal(planAction(id, s).hint, null);
+  }
+  assert.equal(planAction('pro', s).label, 'Elegir este combo');
 });
 
 console.log('--- vuelta de Mercado Pago ---');
@@ -151,6 +158,43 @@ check('activeServicePurchases: vigentes, con cantidad; vencidas y futuras no', (
   ];
   const a = activeServicePurchases(rows, NOW);
   assert.equal(a.length, 1); assert.equal(a[0].serviceId, 'banner_chico'); assert.equal(a[0].quantity, 2);
+});
+
+console.log('--- WhatsApp de atención al cliente ---');
+check('el mensaje es el pedido: "Hola, soy de <local> y estamos viendo de obtener <combo>"', () => {
+  assert.equal(boostWhatsAppMessage({ storeName: 'Ferretería El Clavo', itemName: 'Plan Pro' }),
+    'Hola, soy de Ferretería El Clavo y estamos viendo de obtener Plan Pro');
+});
+check('con varias unidades las aclara; sin nombre de local usa "mi comercio"', () => {
+  assert.equal(boostWhatsAppMessage({ storeName: 'Kiosco Sol', itemName: 'Productos recomendados', quantity: 3 }),
+    'Hola, soy de Kiosco Sol y estamos viendo de obtener 3 unidades de Productos recomendados');
+  assert.match(boostWhatsAppMessage({ storeName: '   ', itemName: 'Banner chico' }), /^Hola, soy de mi comercio y/);
+  assert.match(boostWhatsAppMessage({ itemName: 'Banner chico' }), /^Hola, soy de mi comercio y/);
+});
+check('limpia espacios y recorta un nombre de local larguísimo', () => {
+  assert.match(boostWhatsAppMessage({ storeName: ' Pan  y\n  Más ', itemName: 'Plan Base' }), /^Hola, soy de Pan y Más y estamos/);
+  const largo = boostWhatsAppMessage({ storeName: 'x'.repeat(500), itemName: 'Plan Base' });
+  assert.ok(largo.length < 160);
+});
+check('el link es wa.me con el número en dígitos y el texto codificado', () => {
+  const url = boostWhatsAppUrl({ phone: '+54 9 3329 12-3456', storeName: 'Ferretería El Clavo', itemName: 'Plan Pro' });
+  assert.ok(url.startsWith('https://wa.me/5493329123456?text='));
+  const u = new URL(url);
+  assert.equal(u.searchParams.get('text'), 'Hola, soy de Ferretería El Clavo y estamos viendo de obtener Plan Pro');
+  assert.doesNotMatch(url, / /);
+});
+check('caracteres raros del nombre no rompen el link (&, #, ?, comillas)', () => {
+  const url = boostWhatsAppUrl({ phone: '5493329123456', storeName: 'Pan & Más #1 "El mejor"?', itemName: 'Plan Base' });
+  const u = new URL(url);
+  assert.equal([...u.searchParams.keys()].join(','), 'text');
+  assert.equal(u.searchParams.get('text'), 'Hola, soy de Pan & Más #1 "El mejor"? y estamos viendo de obtener Plan Base');
+});
+check('sin número válido o sin nombre del combo no arma el link', () => {
+  assert.equal(boostWhatsAppUrl({ phone: '', storeName: 'X', itemName: 'Plan Pro' }), null);
+  assert.equal(boostWhatsAppUrl({ phone: 'abc', storeName: 'X', itemName: 'Plan Pro' }), null);
+  assert.equal(boostWhatsAppUrl({ phone: '1234567', storeName: 'X', itemName: 'Plan Pro' }), null);
+  assert.equal(boostWhatsAppUrl({ phone: '5'.repeat(16), storeName: 'X', itemName: 'Plan Pro' }), null);
+  assert.equal(boostWhatsAppUrl({ phone: '5493329123456', storeName: 'X', itemName: '  ' }), null);
 });
 
 console.log(`\n${n} checks`);
