@@ -4431,6 +4431,11 @@ button.coupon-chip:hover {
 .stores-carousel__arrow--prev { left: 0.5rem; }
 .stores-carousel__arrow--next { right: 0.5rem; }
 
+/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos. */
+@media (max-width: 768px) {
+  .stores-carousel__arrow { display: none !important; }
+}
+
 /* Sin hover a propósito: el de antes (translateY + scale + z-index:2 al
    pasar el mouse) creaba un contexto de apilamiento nuevo que a veces
    quedaba por encima de la flecha del carrusel (misma z-index:2), e

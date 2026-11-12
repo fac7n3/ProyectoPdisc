@@ -18,7 +18,7 @@
 
 ## ✅ Reglas esenciales antes de trabajar
 1. **`git pull` en `main`** siempre primero (ver aviso arriba).
-2. **Todos los cambios van directo a `main`** (decisión del usuario, 2026-10-28: todavía no estamos en producción real, así que no hace falta una rama por tarea ni PR). Si la sesión arranca en una rama propia, se pushea a `main` igual (`git push origin <rama>:main`) una vez que `git fetch` confirma que `main` no tiene commits nuevos; si los tiene, traerlos antes (merge, nunca `reset --hard`). **Volver a una rama por tarea + PR cuando haya usuarios reales.**
+2. **Todos los cambios se pushean SIEMPRE a `main`, sin preguntar** (decisión del usuario, 2026-10-28, reconfirmada 2026-11-12: todavía estamos en etapa de prueba, así que no hace falta una rama por tarea ni PR). Si la sesión arranca en una rama propia, se pushea a `main` igual (`git push origin <rama>:main`) una vez que `git fetch` confirma que `main` no tiene commits nuevos; si los tiene, traerlos antes (merge, nunca `reset --hard`). **Volver a una rama por tarea + PR cuando haya usuarios reales.**
 3. El commit que cierra una tarea debe incluir la clave `A113-XXX` (hook `post-commit`, ver "Flujo de trabajo y tracking"). **Ojo:** cada push a `main` dispara deploy automático a Vercel (`proyectopdisc.vercel.app`) — pushear cuando la tarea esté terminada y probada, no a mitad de camino.
 4. Si `git pull` trae conflicto con cambios locales sin commitear: `git stash -u` antes de pull, nunca `git checkout .` ni `reset --hard` para "sacárselos de encima".
 
