@@ -113,7 +113,12 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
   Multi-Factor) y que las 3 cuentas admin/moderador enrolen, **recién ahí** `update public.security_settings set require_staff_mfa = true, updated_at = now() where id;`;
   aplicar la política de contraseñas de `supabase/config.toml` (P-04).
 - **Backups (P-02):** el plan Free no tiene; pasar a Pro o cargar `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE` para `backup-db.yml` (sin probar).
-- **Dominio propio (F11-04, decisión de costo):** hoy `proyectopdisc.vercel.app`; pasos en `docs/DEPLOY.md`. Con dominio: crear
+- **Dominio (2026-11-12):** el usuario pidió `baraderolocal.vercel.app`; ya está agregado al proyecto de Vercel (verificado, responde 200) y
+  **el viejo `proyectopdisc.vercel.app` sigue andando** (no se redirige). **El código no se tocó**: las Edge Functions de Mercado Pago, el
+  sitemap y los mails siguen con el dominio viejo por defecto. Para que login con Google, mails y Mercado Pago vuelvan al nuevo hay que
+  cargar `https://baraderolocal.vercel.app` a mano en Supabase (Authentication -> URL Configuration: Site URL y Redirect URLs `.../**`),
+  en la app de Mercado Pago (Redirect URL de OAuth `.../pages/vender.html`, igual a `REDIRECT_URI` de las funciones), en el secret/variable
+  `SITE_URL` (Supabase y Vercel) y en Google Cloud si corresponde; recién después cambiar los defaults del código. Dominio propio de verdad (F11-04, decisión de costo): pasos en `docs/DEPLOY.md`. Con dominio: crear
   `soporte@...` (P-05) y poner `SITE_URL` en Vercel (sitemap/canónica/vistas previas lo toman solos).
 - **Mail con marca:** el remitente de los emails de Auth dice "Supabase": hace falta Custom SMTP con un proveedor (Resend recomendado), y es el
   mismo bloqueante que **F8-02/F8-03** (notificaciones por email/WhatsApp; plantillas en `docs/WHATSAPP_TEMPLATES.md`; ninguna Edge Function las manda todavía).
