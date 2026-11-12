@@ -2120,10 +2120,20 @@ button.coupon-chip:hover {
   min-height: 6.5rem;
 }
 
+/* Banner grande de arriba (mosaic_g): ocupa el alto del mosaico de tres que
+   estaba ahí (bloque de 2/3 del ancho en 16:9 = 8:3 en todo el ancho). */
+.promo-banner-2--g.promo-banner-2--hero,
+.promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+  aspect-ratio: 8 / 3;
+  min-height: 0;
+}
+
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
   }
+
+  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 37.5%; }
 
   .promo-banner-2--g.is-store-promo,
   .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
