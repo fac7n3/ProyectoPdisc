@@ -322,6 +322,18 @@
         </div>
       </section>
 
+      <!-- Espacios de banners extra (migración 154): mismos data-promo-slot que
+           los mosaicos, el admin les asigna comercio desde el mismo panel. Sin
+           promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
+      <section class="promo-strip" aria-label="Retiro en el local">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--g" data-promo-slot="mosaic_g" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Retiro en el local</span>
+            <span class="promo-banner__title">Comprá online y retirá sin esperar</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Comercios cerca tuyo: geolocalización del navegador (sin Google de
            por medio) + mapa embebido de Google (sin API key, técnica
            output=embed) centrado en esa ubicación. El botón de abajo abre
