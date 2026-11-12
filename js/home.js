@@ -1,5 +1,5 @@
 // Interacciones de la página principal
-import { keepGridFull } from './grid-fill.js';
+import { gridColumns } from './grid-fill.js';
 import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
@@ -532,7 +532,6 @@ const DISCOVER_PAGE = 12;
 function initDiscover(ready) {
   const section = document.getElementById('descubrir');
   const grid = document.getElementById('discover-grid');
-  keepGridFull(grid);
   const btn = document.getElementById('discover-more');
   if (!section || !grid || !btn) return;
 
@@ -550,19 +549,24 @@ function initDiscover(ready) {
       await ready;
       // Si una tanda entera ya salía en otras secciones, se pide la siguiente:
       // cada toque del botón suma algo (o termina).
+      // Además, la última fila tiene que quedar completa: mientras sobren
+      // tarjetas sueltas se piden justo las que faltan (productos reales).
+      const cols = gridColumns(grid);
+      const missing = () => (cols > 1 ? (cols - (grid.children.length % cols)) % cols : 0);
       let added = 0;
-      while (!added && !exhausted) {
+      while ((!added || missing()) && !exhausted) {
+        const size = added ? missing() : DISCOVER_PAGE;
         const { data, error } = await supabase
           .from('products')
           .select(PRODUCT_SELECT)
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .order('id')
-          .range(offset, offset + DISCOVER_PAGE - 1);
+          .range(offset, offset + size - 1);
         if (error) throw error;
         const rows = data || [];
         offset += rows.length;
-        if (rows.length < DISCOVER_PAGE) exhausted = true;
+        if (rows.length < size) exhausted = true;
         const shown = new Set([...document.querySelectorAll('.product-card[id]')].map((c) => c.id));
         rows.filter((p) => !shown.has(p.id) && !homeProductIds.has(p.id))
           .forEach((p) => { grid.appendChild(buildProductCard(p)); added++; });

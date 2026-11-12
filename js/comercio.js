@@ -1,4 +1,3 @@
-import { keepGridFull } from './grid-fill.js';
 import { setProductImage } from './product-image.js';
 import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
@@ -998,7 +997,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const grid = document.createElement('div');
     grid.className = 'products__grid';
     grid.id = 'store-products-grid';
-    keepGridFull(grid);
 
     // Se pide una sola vez (no en cada tecla de búsqueda) y se reusa en cada
     // renderGrid -- initWishlist acepta la lista ya resuelta para no repetir
