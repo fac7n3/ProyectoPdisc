@@ -907,7 +907,10 @@ ul, ol {
   flex: 1;
   min-width: 0;
   height: auto; /* lo define el alto de la fila */
-  padding: 0 1rem;
+  /* Sin padding horizontal: con flex-basis 0 el padding se suma a la base y el
+     wrapper del menú (sin padding) quedaba más ancho que los <a>; al montarse
+     corría los otros botones a la izquierda. */
+  padding: 0;
   /* Solo una línea divisoria entre botones: los bordes de arriba y abajo
      duplicaban el borde que ya trae la fila. */
   border: none;
@@ -953,6 +956,8 @@ ul, ol {
   flex: 1;
   min-width: 0;
   display: flex;
+  /* la misma divisoria que lleva el <a> (el botón de adentro no la tiene) */
+  border-right: 1px solid var(--bl-border);
 }
 
 .home-action--menu {
