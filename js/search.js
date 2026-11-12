@@ -4,6 +4,7 @@
 // encabezado que refleja la consulta, chips de filtros activos removibles,
 // rango de precio funcional, ordenamiento, paginación ("cargar más") y
 // estado sin resultados con recuperación.
+import { keepGridFull } from './grid-fill.js';
 import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
 import './speed-insights.js';
@@ -208,6 +209,7 @@ async function renderProfessionalResults() {
 
 // --- Referencias DOM ---
 const grid = document.getElementById('products-grid');
+keepGridFull(grid);
 const countEl = document.getElementById('catalog-count');
 const titleEl = document.getElementById('catalog-title');
 const chipsEl = document.getElementById('active-filters');

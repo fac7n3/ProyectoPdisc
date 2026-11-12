@@ -1,4 +1,5 @@
 // Interacciones de la página principal
+import { keepGridFull } from './grid-fill.js';
 import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
@@ -531,6 +532,7 @@ const DISCOVER_PAGE = 12;
 function initDiscover(ready) {
   const section = document.getElementById('descubrir');
   const grid = document.getElementById('discover-grid');
+  keepGridFull(grid);
   const btn = document.getElementById('discover-more');
   if (!section || !grid || !btn) return;
 
