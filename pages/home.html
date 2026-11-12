@@ -322,14 +322,25 @@
         </div>
       </section>
 
-      <!-- Espacios de banners extra (migración 154): mismos data-promo-slot que
-           los mosaicos, el admin les asigna comercio desde el mismo panel. Sin
-           promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
-      <section class="promo-strip" aria-label="Retiro en el local">
-        <div class="promo-strip__grid">
-          <div class="promo-banner-2 promo-banner-2--g" data-promo-slot="mosaic_g" data-promo-href="./comercios.html" role="link" tabindex="0">
-            <span class="promo-banner__eyebrow">Retiro en el local</span>
-            <span class="promo-banner__title">Comprá online y retirá sin esperar</span>
+      <!-- Segundo mosaico de banners: mismo grid que el de arriba
+           (promo-mosaic) -- bloque grande a la izquierda + los otros dos
+           apilados a la derecha -- para que se lea como la misma sección,
+           no como dos secciones con distinta lógica. Mismos espacios
+           asignables que el de arriba (data-promo-slot). -->
+      <section class="promo-mosaic-2" aria-label="Más promociones">
+        <div class="promo-mosaic-2__grid">
+          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
+            <span class="promo-banner__eyebrow">Novedades</span>
+          </div>
+          <div class="promo-mosaic-2__side">
+            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" data-bg-defer>
+              <span class="promo-banner__eyebrow">Envíos</span>
+              <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
+            </div>
+            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
+              <span class="promo-banner__eyebrow">Comercios</span>
+              <span class="promo-banner__title">Sumate a Baradero Local</span>
+            </div>
           </div>
         </div>
       </section>
@@ -474,25 +485,14 @@
         </div>
       </section>
 
-      <!-- Segundo mosaico de banners: mismo grid que el de arriba
-           (promo-mosaic) -- bloque grande a la izquierda + los otros dos
-           apilados a la derecha -- para que se lea como la misma sección,
-           no como dos secciones con distinta lógica. Mismos espacios
-           asignables que el de arriba (data-promo-slot). -->
-      <section class="promo-mosaic-2" aria-label="Más promociones">
-        <div class="promo-mosaic-2__grid">
-          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
-            <span class="promo-banner__eyebrow">Novedades</span>
-          </div>
-          <div class="promo-mosaic-2__side">
-            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" data-bg-defer>
-              <span class="promo-banner__eyebrow">Envíos</span>
-              <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
-            </div>
-            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
-              <span class="promo-banner__eyebrow">Comercios</span>
-              <span class="promo-banner__title">Sumate a Baradero Local</span>
-            </div>
+      <!-- Espacios de banners extra (migración 154): mismos data-promo-slot que
+           los mosaicos, el admin les asigna comercio desde el mismo panel. Sin
+           promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
+      <section class="promo-strip" aria-label="Retiro en el local">
+        <div class="promo-strip__grid">
+          <div class="promo-banner-2 promo-banner-2--g" data-promo-slot="mosaic_g" data-promo-href="./comercios.html" role="link" tabindex="0">
+            <span class="promo-banner__eyebrow">Retiro en el local</span>
+            <span class="promo-banner__title">Comprá online y retirá sin esperar</span>
           </div>
         </div>
       </section>
