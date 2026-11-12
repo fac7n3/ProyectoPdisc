@@ -124,13 +124,16 @@ export function holdingsMap(rows) {
 /**
  * Cuánto puede comprar el comercio de un servicio, dado lo que ya tiene vigente.
  * @returns {{ held:number, max:number|null, remaining:number|null, canBuy:boolean, maxQty:number }}
- *   `maxQty` es el tope del selector de cantidad (10 si el servicio no tiene tope).
+ *   `maxQty` es el tope del selector de cantidad. Un servicio SIN tope por comercio
+ *   (hoy, Redes sociales: se resuben todas las historias) se compra de a 1: comprar
+ *   más unidades no suma ningún beneficio y el comercio podría pagar de más. Se
+ *   puede volver a comprar; el servidor igual admite hasta 10 por compra (resguardo).
  */
 export function serviceAvailability(service, held = 0) {
   const max = service.max_per_store ?? null;
   const remaining = max == null ? null : Math.max(0, max - held);
   const canBuy = max == null || remaining > 0;
-  return { held, max, remaining, canBuy, maxQty: max == null ? 10 : Math.max(1, remaining) };
+  return { held, max, remaining, canBuy, maxQty: max == null ? 1 : Math.max(1, remaining) };
 }
 
 /** Texto corto de "cuántos tenés": "Tenés 1 de 2" / "Tenés 3 (sin tope)". */

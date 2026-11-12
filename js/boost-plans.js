@@ -309,7 +309,7 @@ export function renderBoostServices(container, services, holdings, catalog, onBu
 
     const foot = el('div', 'bs-card__foot');
     const price = el('span', 'bs-card__price');
-    price.append(formatPrice(service.price), el('small', null, avail.maxQty > 1 ? ' c/u · 30 días' : ` · ${service.duration_days} días`));
+    price.append(formatPrice(service.price), el('small', null, avail.maxQty > 1 ? ` c/u · ${service.duration_days} días` : ` · ${service.duration_days} días`));
     foot.appendChild(price);
 
     const buy = el('span', 'bs-card__buy');

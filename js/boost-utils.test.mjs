@@ -115,7 +115,9 @@ check('serviceAvailability respeta el tope por comercio', () => {
   assert.deepEqual(serviceAvailability(SERVICES[0], 1), { held: 1, max: 2, remaining: 1, canBuy: true, maxQty: 1 });
   assert.equal(serviceAvailability(SERVICES[1], 1).canBuy, false);
   assert.equal(serviceAvailability(SERVICES[3], 7).canBuy, true);
-  assert.equal(serviceAvailability(SERVICES[3], 0).maxQty, 10);
+  // Sin tope por comercio (Redes sociales): siempre se puede comprar, pero de a 1 y sin selector.
+  assert.deepEqual(serviceAvailability(SERVICES[3], 0), { held: 0, max: null, remaining: null, canBuy: true, maxQty: 1 });
+  assert.deepEqual(serviceAvailability(SERVICES[3], 25), { held: 25, max: null, remaining: null, canBuy: true, maxQty: 1 });
   assert.equal(serviceAvailability(SERVICES[2], 0).maxQty, 5);
 });
 check('holdingLabel', () => {
