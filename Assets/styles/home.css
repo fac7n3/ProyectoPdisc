@@ -2151,7 +2151,7 @@ button.coupon-chip:hover {
     grid-template-columns: 1fr;
   }
 
-  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 37.5%; }
+  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 21.9%; } /* 1600x350 */
 
   .promo-banner-2--g.is-store-promo,
   .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
