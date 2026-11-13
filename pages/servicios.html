@@ -73,15 +73,13 @@
         display: block; font-size: 0.78125rem; color: var(--bl-text-secondary);
         margin-top: 0.15rem;
       }
+      /* El número se ve como el resto del texto (no como botón) y al tocarlo se copia. */
       .sv-contact__call {
-        flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.4rem;
-        padding: 0.5rem 0.9rem; border-radius: var(--bl-radius-pill);
-        background: var(--sv-accent); color: #fff; text-decoration: none;
-        font-size: 0.8125rem; font-weight: 700; white-space: nowrap;
-        box-shadow: var(--bl-shadow-sm); transition: transform .15s, box-shadow .15s, opacity .15s;
+        flex-shrink: 0; padding: 0.25rem 0; border: 0; background: none;
+        font: inherit; font-size: 0.9375rem; font-weight: 600; color: var(--bl-text);
+        white-space: nowrap; cursor: pointer; text-align: right;
       }
-      .sv-contact__call:hover { transform: translateY(-1px); box-shadow: var(--bl-shadow-md); opacity: 0.92; }
-      .sv-contact__call i { font-size: 0.75rem; }
+      .sv-contact__call:hover { text-decoration: underline; text-underline-offset: 3px; }
 
       /* --- Estado vacío --- */
       .sv-empty {
