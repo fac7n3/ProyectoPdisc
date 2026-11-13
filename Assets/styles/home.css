@@ -2389,7 +2389,8 @@ button.coupon-chip:hover {
 
 .promo-lightbox {
   position: relative;
-  max-width: min(960px, 100%);
+  /* Deja lugar a los costados para las flechas (quedan por fuera de la imagen). */
+  max-width: min(960px, calc(100vw - 8rem));
   max-height: 100%;
   transform: scale(0.95);
   opacity: 0;
@@ -2411,7 +2412,7 @@ button.coupon-chip:hover {
 }
 
 /* La imagen y sus flechas: el stage mide lo que la imagen, así las flechas
-   quedan sobre sus costados. Solo se muestran con más de una imagen. */
+   quedan a sus costados, por fuera. Solo se muestran con más de una imagen. */
 .promo-lightbox__stage {
   position: relative;
   display: flex;
@@ -2447,11 +2448,18 @@ button.coupon-chip:hover {
 }
 
 .promo-lightbox__nav--prev {
-  left: 0.6rem;
+  left: -3.5rem;
 }
 
 .promo-lightbox__nav--next {
-  right: 0.6rem;
+  right: -3.5rem;
+}
+
+@media (max-width: 640px) {
+  .promo-lightbox { max-width: calc(100vw - 6rem); }
+  .promo-lightbox__nav { width: 2.25rem; height: 2.25rem; font-size: 0.9rem; }
+  .promo-lightbox__nav--prev { left: -2.75rem; }
+  .promo-lightbox__nav--next { right: -2.75rem; }
 }
 
 .promo-lightbox__count {
