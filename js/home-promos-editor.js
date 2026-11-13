@@ -12,7 +12,7 @@ import { compressImage } from './image-compress.js';
 import { supabase, showToast } from './auth-utils.js';
 import { removeStoredObjects } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
-import { slotLabel, HOME_PROMO_SLOTS, PROMO_POSITIONS, promoPosition } from './home-promos-utils.js';
+import { slotLabel, HOME_PROMO_SLOTS, promoPositionsFor, promoPosition } from './home-promos-utils.js';
 
 import { friendlyError } from './friendly-error.js';
 const BUCKET = 'home-promos';
@@ -104,12 +104,12 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   card.noValidate = true;
 
   const head = el('div', 'hp-card__head');
-  // Cada espacio es un carrusel de hasta 3 publicidades (una tarjeta por
+  // Cada espacio es un carrusel de hasta 3 (5 el banner grande) publicidades (una tarjeta por
   // posición, cada una con su propio comercio).
   const position = promoPosition(promo);
   const titleWrap = el('div');
   titleWrap.appendChild(el('h3', 'hp-card__title', slotLabel(promo.slot)));
-  titleWrap.appendChild(el('p', 'hp-card__position', `Publicidad ${position} de ${PROMO_POSITIONS.length}`));
+  titleWrap.appendChild(el('p', 'hp-card__position', `Publicidad ${position} de ${promoPositionsFor(promo.slot).length}`));
   head.appendChild(titleWrap);
   const statusText = !promo.store_id
     ? 'Libre'
