@@ -442,7 +442,7 @@ ul, ol {
   align-items: center;
   justify-content: center;
   gap: 1.1rem;
-  background: var(--bl-primary);
+  background: #243c7b; /* el azul del logo */
   opacity: 1;
   transition: opacity 0.4s ease;
 }
