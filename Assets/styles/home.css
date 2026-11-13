@@ -2241,7 +2241,7 @@ button.coupon-chip:hover {
 /* Mientras home.js consulta home_promos, los espacios no bajan su foto fija
    (data-bg-defer en home.html): si el espacio tiene publicidad de un comercio,
    la foto fija nunca se ve y eran ~100 KB tirados por espacio. home.js saca el
-   atributo de los espacios sin publicidad, si la consulta falla, o a los 3 s. */
+   atributo de los espacios sin publicidad, si la consulta falla, o a los 20 s. */
 [data-promo-slot][data-bg-defer]:not(.is-store-promo) {
   background-image: none !important;
 }

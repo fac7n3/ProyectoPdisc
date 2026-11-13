@@ -1263,11 +1263,13 @@ async function loadHomePromos() {
   if (!banners.length) return;
 
   // Las fotos fijas esperan a esta consulta (data-bg-defer, ver home.css): se
-  // liberan en los espacios que no tienen publicidad, si falla, o a los 3 s.
+  // liberan en los espacios que no tienen publicidad, si falla, o a los 20 s
+  // (antes 3 s: con la conexión lenta salían las fotos de ejemplo un rato y
+  // después se cambiaban por las publicidades reales).
   const releaseStaticBackgrounds = () => banners.forEach((b) => {
     if (!b.classList.contains('is-store-promo')) b.removeAttribute('data-bg-defer');
   });
-  const safety = setTimeout(releaseStaticBackgrounds, 3000);
+  const safety = setTimeout(releaseStaticBackgrounds, 20000);
 
   try {
     await paintHomePromos(banners);
