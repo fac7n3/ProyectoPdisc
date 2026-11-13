@@ -104,7 +104,7 @@ export function buildPromoEditorCard({ promo, mode, stores = [], storeName = '',
   card.noValidate = true;
 
   const head = el('div', 'hp-card__head');
-  // Cada espacio es un carrusel de hasta 3 (5 el banner grande) publicidades (una tarjeta por
+  // Cada espacio es un carrusel de hasta 3 (10 el banner grande) publicidades (una tarjeta por
   // posición, cada una con su propio comercio).
   const position = promoPosition(promo);
   const titleWrap = el('div');

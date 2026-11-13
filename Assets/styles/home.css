@@ -2128,6 +2128,23 @@ button.coupon-chip:hover {
   min-height: 0;
 }
 
+/* Con promo de comercio la imagen ya trae su texto: no se le pone encima el
+   nombre del comercio ni el título, ni el degradé oscuro de abajo. */
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__eyebrow,
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__title {
+  display: none;
+}
+
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo {
+  background-image: var(--promo-img);
+  background-size: contain;
+  background-position: center;
+}
+
+.promo-banner-2--g.promo-banner-2--hero .promo-banner__slides::after {
+  display: none;
+}
+
 /* En escritorio y tablet tiene el mismo alto que el banner principal de
    arriba (.hero__carousel: 280px, 200px desde 768px). En teléfono (<= 640px)
    sigue la proporción de arriba, que es la que usan las promos de comercio. */

@@ -31,9 +31,9 @@ export function slotLabel(slot) {
  *  1 a 3), cada una con su propio comercio, publicación, título e imagen. */
 export const PROMO_POSITIONS = [1, 2, 3];
 
-/** El banner grande (mosaic_g) admite hasta 5 (migración 162). */
+/** El banner grande (mosaic_g) admite hasta 10 (migraciones 162 y 164). */
 export function promoPositionsFor(slot) {
-  return slot === 'mosaic_g' ? [1, 2, 3, 4, 5] : PROMO_POSITIONS;
+  return slot === 'mosaic_g' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : PROMO_POSITIONS;
 }
 
 /** Posición de una fila; las filas de antes de la migración 137 no la traen. */
