@@ -2494,11 +2494,9 @@ button.coupon-chip:hover {
 
 .promo-lightbox__close {
   position: absolute;
-  /* Afuera de la imagen (en el aire de arriba que deja el padding del overlay):
-     así nunca queda parte de la X sobre la imagen y un toque que se corre un
-     poco cae en el vacío, no en la imagen que lleva a la publicación. */
-  top: -2.75rem;
-  right: 0;
+  /* En la esquina de arriba a la derecha, mitad sobre la imagen y mitad afuera. */
+  top: -1.25rem;
+  right: -1.25rem;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
