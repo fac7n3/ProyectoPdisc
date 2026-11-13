@@ -2243,7 +2243,21 @@ button.coupon-chip:hover {
    la foto fija nunca se ve y eran ~100 KB tirados por espacio. home.js saca el
    atributo de los espacios sin publicidad, si la consulta falla, o a los 20 s. */
 [data-promo-slot][data-bg-defer]:not(.is-store-promo) {
-  background-image: none !important;
+  /* Mientras carga: bloque gris que brilla, igual que los skeletons de productos
+     (sin el color ni el texto del banner fijo, que se cambiarían de golpe). */
+  background-color: var(--bl-border) !important;
+  background-image: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.55) 37%, transparent 63%) !important;
+  background-size: 400% 100% !important;
+  animation: bl-skeleton-shimmer 1.4s ease infinite;
+  pointer-events: none;
+}
+
+[data-promo-slot][data-bg-defer]:not(.is-store-promo) > * {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-promo-slot][data-bg-defer]:not(.is-store-promo) { animation: none; }
 }
 
 /* Promo con más de una imagen (hasta 3, columnas image_url/_2/_3 de
