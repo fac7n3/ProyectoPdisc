@@ -375,6 +375,20 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   });
 
   inner.appendChild(quick);
+
+  // La tira no tiene barra visible: la rueda vertical del mouse la mueve en
+  // horizontal, y un degradé avisa de qué lado hay más categorías.
+  const syncEdges = () => {
+    quick.classList.toggle('has-more-left', quick.scrollLeft > 2);
+    quick.classList.toggle('has-more-right', quick.scrollLeft + quick.clientWidth < quick.scrollWidth - 2);
+  };
+  quick.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || quick.scrollWidth <= quick.clientWidth) return;
+    e.preventDefault();
+    quick.scrollLeft += e.deltaY;
+  }, { passive: false });
+  quick.addEventListener('scroll', syncEdges, { passive: true });
+  new ResizeObserver(syncEdges).observe(quick); // también corre al inicio
 }
 
 // ── Buscador con autocompletado ─────────────────────────────

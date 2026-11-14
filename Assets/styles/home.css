@@ -1041,6 +1041,20 @@ ul, ol {
   display: none;
 }
 
+/* Degradé en el borde donde quedan categorías por ver (clases de nav-utils.js). */
+.category-bar__quick.has-more-right {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+.category-bar__quick.has-more-left {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+}
+.category-bar__quick.has-more-left.has-more-right {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+
 /* ── Mega-menú "Categorías" ── */
 .cat-mega {
   position: relative;

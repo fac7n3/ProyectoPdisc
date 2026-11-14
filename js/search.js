@@ -1038,7 +1038,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   readUrl();
 
   // Navbar de categorías (resalta la categoría activa) + buscador con autocompletado.
-  const activeSlug = filterState.category && filterState.category !== 'todas' ? filterState.category : 'inicio';
+  // Búsqueda sin categoría: no se resalta nada (no es "Inicio").
+  const activeSlug = filterState.category && filterState.category !== 'todas' ? filterState.category : null;
   initCategoryBar({ activeSlug });
   initSearchBox({
     initialQuery: filterState.query,
