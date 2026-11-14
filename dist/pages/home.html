@@ -85,6 +85,9 @@
         <div class="bl-spinner__dot"></div>
       </div>
     </div>
+    <!-- Solo al entrar al sitio o al recargar: si se llega al home desde otra
+         página del sitio (botón Inicio, logo, atrás), se saca antes de pintarse. -->
+    <script>(function(){try{var n=performance.getEntriesByType('navigation')[0];var r=n&&n.type==='reload';var interno=document.referrer&&new URL(document.referrer).origin===location.origin;if(!r&&(interno||(n&&n.type==='back_forward'))){var s=document.getElementById('welcome-splash');if(s)s.remove();}}catch(e){}})();</script>
 
     <!-- ====== BARRA DE NAVEGACIÓN ====== -->
     <!-- navbar--single-row: variante de una sola fila, por ahora SOLO en el
