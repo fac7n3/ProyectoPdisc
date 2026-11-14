@@ -869,7 +869,7 @@
   position: fixed;
   inset: 0;
   z-index: 600;
-  background: rgba(26, 32, 44, 0.55);
+  background: var(--bl-overlay);
   display: flex;
   align-items: center;
   justify-content: center;

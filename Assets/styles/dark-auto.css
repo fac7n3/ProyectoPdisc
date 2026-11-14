@@ -350,9 +350,6 @@ html[data-theme="dark"] .tkt-chip {
 html[data-theme="dark"] .tkt-chip:hover:not(:disabled) {
   background: rgba(111, 141, 206, 0.096);
 }
-html[data-theme="dark"] .bl-confirm-overlay {
-  background: rgba(112, 139, 204, 0.35);
-}
 html[data-theme="dark"] .bl-confirm-card {
   box-shadow: 0 20px 40px rgba(112, 139, 204, 0.35);
 }
@@ -523,9 +520,6 @@ html[data-theme="dark"] .addr-option {
 }
 html[data-theme="dark"] .addr-option:has(input:checked) {
   background: rgba(111, 141, 206, 0.08);
-}
-html[data-theme="dark"] .bl-confirm-overlay {
-  background: rgba(133, 150, 183, 0.35);
 }
 html[data-theme="dark"] .bl-confirm__btn--ghost {
   color: var(--bl-text-secondary);

@@ -36,6 +36,8 @@ export function closeLoginPrompt() {
   if (!activePrompt) return;
   document.removeEventListener('keydown', activePrompt.onKeydown);
   activePrompt.overlay.remove();
+  document.documentElement.style.overflow = activePrompt.htmlOverflow;
+  document.body.style.overflow = activePrompt.bodyOverflow;
   const { opener } = activePrompt;
   activePrompt = null;
   if (opener?.isConnected) opener.focus?.();
@@ -110,7 +112,16 @@ export function promptLogin(message = 'Para seguir necesitás iniciar sesión.',
   };
   document.addEventListener('keydown', onKeydown);
 
-  activePrompt = { overlay, onKeydown, opener };
+  // El fondo no se scrollea mientras el cartel está abierto.
+  activePrompt = {
+    overlay,
+    onKeydown,
+    opener,
+    htmlOverflow: document.documentElement.style.overflow,
+    bodyOverflow: document.body.style.overflow,
+  };
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
   (document.querySelector('dialog:modal') || document.body).appendChild(overlay);
   enter.focus();
   return true;
