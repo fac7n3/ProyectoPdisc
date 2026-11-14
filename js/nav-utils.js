@@ -694,12 +694,14 @@ export async function initNotificationsBell() {
   }
 
   async function open() {
+    // Igual que el menú de perfil: sin sesión va el cartel central, no un panel.
+    await sessionReady;
+    if (!session && promptLogin('Para ver tus notificaciones necesitás iniciar sesión.')) return;
+
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
-
-    await sessionReady;
 
     if (!session) {
       const msg = document.createElement('p');
