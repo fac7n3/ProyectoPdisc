@@ -261,9 +261,6 @@ html[data-theme="dark"] .pc-row__label {
 html[data-theme="dark"] .pc-row__locate {
   color: var(--dk-accent-text);
 }
-html[data-theme="dark"] .filter-chip {
-  color: var(--dk-accent-text);
-}
 html[data-theme="dark"] .load-more-btn {
   color: var(--dk-accent-text);
 }
