@@ -345,8 +345,9 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 
+  // "Inicio" solo donde va resaltado (producto, comercio...): en la búsqueda no aparece.
   const quickItems = [
-    { slug: 'inicio', name: 'Inicio', href: './home.html' },
+    ...(activeSlug === 'inicio' ? [{ slug: 'inicio', name: 'Inicio', href: './home.html' }] : []),
     { slug: 'ofertas', name: 'Ofertas', href: './search.html?cat=ofertas' },
     ...featured.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
   ];

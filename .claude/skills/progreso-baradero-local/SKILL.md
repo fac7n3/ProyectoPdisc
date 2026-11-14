@@ -6568,6 +6568,7 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 
 ### 2026-11-14 — Navbar en la búsqueda
 - `search.js`: una búsqueda sin categoría pasa `activeSlug: null` a `initCategoryBar` (antes `'inicio'`, que dejaba "Inicio" resaltado). Con `?cat=ofertas` se resalta solo Ofertas.
+- "Inicio" solo se dibuja cuando `activeSlug === 'inicio'` (producto, comercio, comercios): en `search.html` (búsqueda o categoría) no aparece, pedido del usuario.
 - `nav-utils.js` (`renderCategoryBar`): la tira `.category-bar__quick` se mueve con la rueda vertical del mouse y lleva las clases `has-more-left/right` (scroll + ResizeObserver) que en `home.css` ponen un degradé con `mask-image` del lado donde quedan categorías. El deslizamiento con el dedo ya andaba; faltaba la señal.
 
 
