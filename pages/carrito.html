@@ -95,7 +95,7 @@
         </div>
 
         <!-- Sidebar — Resumen del pedido -->
-        <aside class="cart-summary">
+        <aside class="cart-summary" id="resumen-pedido">
           <h2 class="cart-summary__title">Resumen del pedido</h2>
 
           <!-- Secciones desplegables -->
@@ -200,6 +200,9 @@
 
             <div class="cart-summary__row cart-summary__row--total">
               <span class="cart-summary__row-label">Total</span>
+              <!-- Solo en celular (carrito.css): la fila del total es fija abajo y
+                   este enlace sube al resumen (cupón, envío, pago). -->
+              <a class="cart-summary__see" href="#resumen-pedido">Ver resumen</a>
               <span class="cart-summary__row-value" id="summary-total">$0</span>
             </div>
           </div>

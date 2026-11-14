@@ -6574,3 +6574,8 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 
 ### 2026-11-14 — Comparador: sin salto al compartir la ubicación
 - `search.js`: "Usar mi ubicación" con orden "Más relevantes" llama `runSearch({ quiet: true })`, que no cambia la grilla por el spinner "Cargando" (los resultados viejos quedan hasta que llegan los nuevos). `renderPriceCompare` ya no oculta/vacía el comparador al empezar: solo lo hace (`clear()`) si al final no hay nada que mostrar; si hay grupos, `drawPriceCompare` reemplaza el contenido de una vez.
+
+### 2026-11-14 — Carrito en celular, estilo Mercado Libre
+- `carrito.css`, bloque `@media (max-width: 768px)` reescrito (escritorio no cambia): una tarjeta redondeada por comercio con margen sobre el fondo gris (`--bl-radius-lg` + `--bl-shadow-card`), cabecera con el comercio y el envío en verde debajo (sin ícono de tienda), fila de producto en grilla `chk | foto | nombre+opciones / precio c/u / Eliminar | stepper píldora | subtotal`. "Eliminar" es el mismo botón del tacho con el texto puesto por CSS (`::after`), así el JS y el escritorio no se tocan.
+- Barra fija de abajo: fila "Total · Ver resumen · $monto" y "Iniciar pago" a todo el ancho (píldora). "Ver resumen" es un `<a href="#resumen-pedido">` nuevo en `carrito.html` (el `aside.cart-summary` lleva ese id y `scroll-margin-top` por el navbar); en escritorio se esconde con `.cart-summary__see { display: none }`. "Volver al inicio" y "Vaciar mi carrito" quedan como enlaces chicos.
+- Probado a 375 px en claro y oscuro, escritorio sin cambios, `npm test` y e2e (con `PW_CHANNEL=msedge`: esta máquina no tiene Chrome en la ruta que Playwright busca).
