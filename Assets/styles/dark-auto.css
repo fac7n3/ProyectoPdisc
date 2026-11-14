@@ -91,9 +91,6 @@ html[data-theme="dark"] .cat-mega__item i {
 html[data-theme="dark"] .cat-mega__item:hover {
   color: var(--dk-accent-text);
 }
-html[data-theme="dark"] .cat-mega__footer-link {
-  color: var(--dk-accent-text);
-}
 html[data-theme="dark"] .cat-mega--in-navbar .cat-mega__trigger,
 html[data-theme="dark"] .cat-mega--in-navbar .cat-mega__trigger:hover,
 html[data-theme="dark"] .cat-mega--in-navbar.is-open .cat-mega__trigger {

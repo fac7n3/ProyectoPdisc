@@ -1139,21 +1139,64 @@ ul, ol {
   border-top: 1px solid var(--bl-border);
 }
 
+/* Acceso destacado a Ofertas: tarjeta ancha con ícono en círculo ámbar,
+   título + bajada y flecha. Los tintes salen de tokens, así sirve en oscuro. */
 .cat-mega__footer-link {
-  display: inline-flex;
+  flex: 1 1 100%;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--bl-radius-pill);
-  background: var(--bl-surface-alt);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--bl-radius-lg, 0.875rem);
+  border: 1px solid color-mix(in srgb, var(--bl-accent) 45%, var(--bl-surface));
+  background: linear-gradient(110deg,
+    color-mix(in srgb, var(--bl-accent) 22%, var(--bl-surface)),
+    color-mix(in srgb, var(--bl-accent) 6%, var(--bl-surface)));
   color: var(--bl-primary);
-  transition: background 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .cat-mega__footer-link:hover {
-  background: var(--bl-border-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--bl-accent) 35%, transparent);
+}
+
+.cat-mega__footer-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--bl-accent);
+  color: #422006;
+  font-size: 0.9375rem;
+}
+
+.cat-mega__footer-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.cat-mega__footer-text small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--bl-text-muted);
+}
+
+.cat-mega__footer-arrow {
+  flex: none;
+  font-size: 0.75rem;
+  transition: transform 0.15s;
+}
+
+.cat-mega__footer-link:hover .cat-mega__footer-arrow {
+  transform: translateX(3px);
 }
 
 @media (max-width: 640px) {

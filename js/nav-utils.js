@@ -292,7 +292,7 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   const megaFooter = document.createElement('div');
   megaFooter.className = 'cat-mega__footer';
   const footerLinks = [
-    { href: './search.html?cat=ofertas', icon: 'fa-tags', text: 'Ofertas' },
+    { href: './search.html?cat=ofertas', icon: 'fa-tags', text: 'Ofertas', sub: 'Precios rebajados de tus comercios' },
   ];
   footerLinks.forEach((f) => {
     const a = document.createElement('a');
@@ -301,8 +301,20 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
     a.setAttribute('role', 'menuitem');
     const i = document.createElement('i');
     i.className = `fa-solid ${f.icon}`;
-    a.appendChild(i);
-    a.append(` ${f.text}`);
+    const ico = document.createElement('span');
+    ico.className = 'cat-mega__footer-ico';
+    ico.setAttribute('aria-hidden', 'true');
+    ico.appendChild(i);
+    const text = document.createElement('span');
+    text.className = 'cat-mega__footer-text';
+    text.append(f.text);
+    const sub = document.createElement('small');
+    sub.textContent = f.sub;
+    text.appendChild(sub);
+    const arrow = document.createElement('i');
+    arrow.className = 'fa-solid fa-chevron-right cat-mega__footer-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    a.append(ico, text, arrow);
     megaFooter.appendChild(a);
   });
   panel.appendChild(megaFooter);
