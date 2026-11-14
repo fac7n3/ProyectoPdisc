@@ -1,4 +1,5 @@
 // Interacciones de la página principal
+import { gridColumns } from './grid-fill.js';
 import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
@@ -314,23 +315,37 @@ function buildProductCard(product) {
 }
 
 /**
- * Combos vigentes de "Impulsá tus ventas" (get_active_boosts, migración 131):
- * { store_id, plan_id }. Si falla o no existe todavía, el inicio se ve como
- * siempre -- un combo nunca puede romper la portada.
+ * Beneficios vigentes de "Impulsá tus ventas" (get_active_benefits, migración
+ * 160): { store_id, service_id, quantity }. Si falla o no existe todavía, cae a
+ * los combos viejos (get_active_boosts) y, si tampoco, el inicio se ve como
+ * siempre -- un beneficio nunca puede romper la portada.
  */
 async function loadActiveBoosts() {
   try {
-    const { data, error } = await supabase.rpc('get_active_boosts');
+    const { data, error } = await supabase.rpc('get_active_benefits');
     if (error) throw error;
     return data || [];
+  } catch (err) {
+    console.warn('No se pudieron leer los beneficios vigentes:', err);
+  }
+  try {
+    const { data, error } = await supabase.rpc('get_active_boosts');
+    if (error) throw error;
+    // Solo los combos viejos: los tres traían la fila de locales; Barrio y Baradero,
+    // además, productos arriba. Un plan nuevo (Base/Intermedio/Pro) no se mapea
+    // acá: sin la función nueva no se sabe qué trae, y es mejor no destacar de más.
+    const LEGACY = { local: ['negocios_principales'], barrio: ['negocios_principales', 'productos_recomendados'], baradero: ['negocios_principales', 'productos_recomendados'] };
+    return (data || []).flatMap((b) => (LEGACY[b.plan_id] || []).map((service_id) => ({ store_id: b.store_id, service_id, quantity: 1 })));
   } catch (err) {
     console.warn('No se pudieron leer los combos vigentes:', err);
     return [];
   }
 }
 
-/** Planes cuyos productos salen arriba en "Productos recomendados". */
-const PLANS_WITH_TOP_PRODUCTS = ['barrio', 'baradero'];
+/** Servicio cuyos productos salen arriba en "Productos recomendados". */
+const SERVICE_TOP_PRODUCTS = 'productos_recomendados';
+/** Servicio que mete al comercio en la fila "Locales destacados". */
+const SERVICE_FEATURED_STORE = 'negocios_principales';
 
 /** Cuántos productos muestra "Productos recomendados". */
 const RECOMMENDED_COUNT = 16;
@@ -394,7 +409,7 @@ async function loadProducts() {
   try {
     const boosts = await loadActiveBoosts();
     const boostedStoreIds = boosts
-      .filter((b) => PLANS_WITH_TOP_PRODUCTS.includes(b.plan_id))
+      .filter((b) => b.service_id === SERVICE_TOP_PRODUCTS)
       .map((b) => b.store_id);
 
     const [generalRes, boostedRes, interestProducts] = await Promise.all([
@@ -534,19 +549,24 @@ function initDiscover(ready) {
       await ready;
       // Si una tanda entera ya salía en otras secciones, se pide la siguiente:
       // cada toque del botón suma algo (o termina).
+      // Además, la última fila tiene que quedar completa: mientras sobren
+      // tarjetas sueltas se piden justo las que faltan (productos reales).
+      const cols = gridColumns(grid);
+      const missing = () => (cols > 1 ? (cols - (grid.children.length % cols)) % cols : 0);
       let added = 0;
-      while (!added && !exhausted) {
+      while ((!added || missing()) && !exhausted) {
+        const size = added ? missing() : DISCOVER_PAGE;
         const { data, error } = await supabase
           .from('products')
           .select(PRODUCT_SELECT)
           .eq('is_active', true)
           .order('created_at', { ascending: false })
           .order('id')
-          .range(offset, offset + DISCOVER_PAGE - 1);
+          .range(offset, offset + size - 1);
         if (error) throw error;
         const rows = data || [];
         offset += rows.length;
-        if (rows.length < DISCOVER_PAGE) exhausted = true;
+        if (rows.length < size) exhausted = true;
         const shown = new Set([...document.querySelectorAll('.product-card[id]')].map((c) => c.id));
         rows.filter((p) => !shown.has(p.id) && !homeProductIds.has(p.id))
           .forEach((p) => { grid.appendChild(buildProductCard(p)); added++; });
@@ -850,11 +870,11 @@ async function loadStores() {
     ]);
     if (storesRes.error) throw storesRes.error;
 
-    // Los comercios con un combo vigente (cualquiera de los tres incluye la
-    // fila) van primero. Sort estable: el resto queda en el orden de siempre.
+    // Los comercios con "Negocios principales" vigente (lo traen los planes
+    // Intermedio y Pro, o se compra suelto) van primero. Sort estable: el resto queda en el orden de siempre.
     // Con el límite de 15, un comercio con combo que no entró en esos 15 se
     // pide aparte para que no quede afuera de lo que pagó.
-    const boostedIds = new Set(boosts.map((b) => b.store_id));
+    const boostedIds = new Set(boosts.filter((b) => b.service_id === SERVICE_FEATURED_STORE).map((b) => b.store_id));
     let stores = storesRes.data || [];
     const missing = [...boostedIds].filter((id) => !stores.some((s) => s.id === id));
     if (missing.length) {
@@ -1243,11 +1263,13 @@ async function loadHomePromos() {
   if (!banners.length) return;
 
   // Las fotos fijas esperan a esta consulta (data-bg-defer, ver home.css): se
-  // liberan en los espacios que no tienen publicidad, si falla, o a los 3 s.
+  // liberan en los espacios que no tienen publicidad, si falla, o a los 20 s
+  // (antes 3 s: con la conexión lenta salían las fotos de ejemplo un rato y
+  // después se cambiaban por las publicidades reales).
   const releaseStaticBackgrounds = () => banners.forEach((b) => {
     if (!b.classList.contains('is-store-promo')) b.removeAttribute('data-bg-defer');
   });
-  const safety = setTimeout(releaseStaticBackgrounds, 3000);
+  const safety = setTimeout(releaseStaticBackgrounds, 20000);
 
   try {
     await paintHomePromos(banners);

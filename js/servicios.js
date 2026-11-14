@@ -5,6 +5,8 @@
 // nunca con innerHTML — misma convención que js/farmacias.js.
 
 import { supabase } from './auth-utils.js';
+import { copyToClipboard } from './transfer-details.js';
+import { notify } from './notice.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const CATEGORIES = [
@@ -43,12 +45,15 @@ function buildContact(contact) {
   if (contact.notes) info.appendChild(el('span', 'sv-contact__notes', contact.notes));
   row.appendChild(info);
 
-  const call = el('a', 'sv-contact__call');
-  call.href = `tel:${contact.phone.replace(/[^\d+]/g, '')}`;
-  const icon = el('i', 'fa-solid fa-phone');
-  icon.setAttribute('aria-hidden', 'true');
-  call.appendChild(icon);
-  call.append(document.createTextNode(contact.phone));
+  // El número no llama: al tocarlo se copia al portapapeles.
+  const call = el('button', 'sv-contact__call', contact.phone);
+  call.type = 'button';
+  call.title = 'Tocá para copiar';
+  call.setAttribute('aria-label', `Copiar el número ${contact.phone} (${contact.name})`);
+  call.addEventListener('click', async () => {
+    const ok = await copyToClipboard(contact.phone);
+    notify(ok ? `Número copiado: ${contact.phone}` : 'No se pudo copiar el número. Probá de nuevo.', ok ? 'success' : 'error');
+  });
   row.appendChild(call);
 
   return row;

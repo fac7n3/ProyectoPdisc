@@ -1,6 +1,7 @@
 import { supabase } from './auth-utils.js';
 import { formatPrice } from './cart-utils.js';
 import { formatBoostDate } from './boost-utils.js';
+import { renewalReminderPreview } from './admin-beneficios-utils.js';
 import { buildDropdown } from './dropdown.js';
 import { formatDueDate } from './order-utils.js';
 import { rememberNotificationIds, onNotificationsChanged, startNotificationsLive } from './notifications-live.js';
@@ -40,6 +41,7 @@ const TYPE_LABELS = {
   mp_payment_refunded: 'Un pago fue devuelto o desconocido',
   boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
   boost_needs_review: 'Un pago de tu combo necesita revisión',
+  boost_renewal_reminder: 'Hay combos o servicios por vencer: recordales que abonen',
   transfer_method_missing: 'Cargá un medio de transferencia en tu comercio: es obligatorio',
   store_location_missing: '¿Tenés local a la calle? Marcalo en el mapa',
   delivery_cancelled: 'Se canceló un pedido que tenías tomado',
@@ -105,6 +107,7 @@ const TYPE_TONE = {
   mp_payment_refunded: 'danger',
   boost_activated: 'success',
   boost_needs_review: 'accent',
+  boost_renewal_reminder: 'accent',
   transfer_method_missing: 'danger',
   store_location_missing: 'info',
   delivery_cancelled: 'danger',
@@ -181,6 +184,9 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
         : null;
     case 'mp_payment_refunded':
       return MP_DISPUTE_LABELS[p.mp_status] || null;
+    // Lo manda la base todos los días SOLO a los admins (migración 161): hay combos o servicios que vencen en 3 días o menos.
+    case 'boost_renewal_reminder':
+      return renewalReminderPreview(p);
     case 'boost_activated':
       return p.plan_name && p.ends_at ? `${p.plan_name}, hasta el ${formatBoostDate(new Date(p.ends_at))}` : (p.plan_name || null);
     // Lo manda la base cada 6 horas mientras el comercio no tenga alias ni CBU/CVU (migración 133).
@@ -208,6 +214,7 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
     }
     case 'boost_needs_review':
       if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
+      if (p.over_limit) return 'Tu comercio ya llegó al máximo de ese servicio. Lo revisamos y te avisamos';
       return p.refunded ? 'El pago fue devuelto o desconocido' : null;
     case 'order_paid':
     case 'order_shipped':
@@ -270,6 +277,9 @@ function buildNotificationLink(n) {
     case 'boost_activated':
     case 'boost_needs_review':
       return { href: './vender.html#impulsar', label: 'Ver mi combo' };
+    // Recordatorio a los admins: va a la tarjeta de renovaciones de Admin.
+    case 'boost_renewal_reminder':
+      return { href: './admin.html#benefits', label: 'Ver renovaciones' };
     // Recordatorio de comercio sin medio de transferencia: lo lleva al campo.
     case 'transfer_method_missing':
       return { href: './vender.html#perfil-comercio', label: 'Cargar ahora' };

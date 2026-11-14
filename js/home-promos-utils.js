@@ -12,11 +12,11 @@ export const HOME_PROMO_SLOTS = [
   { slot: 'mosaic_a', label: 'Mosaico de arriba · grande (izquierda)', ratio: '16:9 (ej. 1600x900)' },
   { slot: 'mosaic_b', label: 'Mosaico de arriba · chico (arriba a la derecha)', ratio: '16:9 (ej. 900x507)' },
   { slot: 'mosaic_c', label: 'Mosaico de arriba · chico (abajo a la derecha)', ratio: '16:9 (ej. 900x507)' },
-  { slot: 'mosaic_d', label: 'Mosaico de abajo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
-  { slot: 'mosaic_e', label: 'Mosaico de abajo · izquierda', ratio: '4:1 (ej. 1200x300)' },
-  { slot: 'mosaic_f', label: 'Mosaico de abajo · derecha', ratio: '4:1 (ej. 1200x300)' },
-  { slot: 'mosaic_g', label: 'Franja entre Recomendados y el mapa · ancha', ratio: '5:1 (ej. 1600x320)' },
-  { slot: 'mosaic_h', label: 'Entre Esenciales y Ofertas · izquierda', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_d', label: 'Mosaico entre Esenciales y Ofertas · franja ancha', ratio: '5:1 (ej. 1600x320)' },
+  { slot: 'mosaic_e', label: 'Mosaico entre Esenciales y Ofertas · izquierda', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_f', label: 'Mosaico entre Esenciales y Ofertas · derecha', ratio: '4:1 (ej. 1200x300)' },
+  { slot: 'mosaic_g', label: 'Banner grande antes de Seguí descubriendo (ancho completo)', ratio: '4.5:1 (ej. 1600x350)' },
+  { slot: 'mosaic_h', label: 'Franja debajo de Recomendados', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_i', label: 'Entre Esenciales y Ofertas · derecha', ratio: '4:1 (ej. 1200x300)' },
   { slot: 'mosaic_j', label: 'Debajo de Seguí descubriendo · franja ancha', ratio: '5:1 (ej. 1600x320)' },
   { slot: 'mosaic_k', label: 'Cierre de la página · izquierda', ratio: '4:1 (ej. 1200x300)' },
@@ -30,6 +30,11 @@ export function slotLabel(slot) {
 /** Cada espacio es un carrusel de hasta 3 publicidades (filas con `position`
  *  1 a 3), cada una con su propio comercio, publicación, título e imagen. */
 export const PROMO_POSITIONS = [1, 2, 3];
+
+/** El banner grande (mosaic_g) admite hasta 10 (migraciones 162 y 164). */
+export function promoPositionsFor(slot) {
+  return slot === 'mosaic_g' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : PROMO_POSITIONS;
+}
 
 /** Posición de una fila; las filas de antes de la migración 137 no la traen. */
 export function promoPosition(promo) {

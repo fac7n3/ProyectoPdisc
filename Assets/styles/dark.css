@@ -122,6 +122,18 @@ html[data-theme="dark"] .bl-splash__logo {
   background: #fff;
 }
 
+/* Pantalla de bienvenida en modo oscuro: fondo oscuro (antes tomaba el azul
+   claro de --bl-primary), título y puntos del spinner claros. */
+html[data-theme="dark"] .bl-splash {
+  background: var(--bl-bg);
+}
+html[data-theme="dark"] .bl-splash__title {
+  color: var(--bl-text);
+}
+html[data-theme="dark"] .bl-splash .bl-spinner {
+  --uib-color: var(--dk-accent-text, #8fb0ff);
+}
+
 /* ---- Banners de los mosaicos del inicio: iguales que en modo claro.
    dark-auto.css les aclaraba el degradé de color; se pidió que la imagen no
    cambie, así que se vuelve al degradé original de home.css. ---- */

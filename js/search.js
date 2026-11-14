@@ -14,7 +14,7 @@ import { groupSameProducts, rankByPrice, rankByDistance, formatDistance } from '
 import { isMissingFunctionError } from './product-detail-utils.js';
 import { loadUserLocation, saveUserLocation, locationParams } from './store-location-utils.js';
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 60; // múltiplo de 2, 3, 4, 5 y 6: la grilla queda completa con cualquier cantidad de columnas
 
 const filterState = {
   query: '',
@@ -563,7 +563,7 @@ async function runSearch({ append = false } = {}) {
   // Comercios y profesionales se piden a la par de los productos (antes
   // recién después, dos viajes más en serie). Se dibujan abajo, cuando ya se
   // sabe que esta búsqueda sigue siendo la última.
-  if (!append && filterState.query) { getStores(); getProfessionals(); }
+  if (!append && filterState.query) getStores(); // solo para el comparador de precios
 
   try {
     const { data: products, error } = await supabase.rpc('search_products', {
@@ -588,11 +588,10 @@ async function runSearch({ append = false } = {}) {
     renderHeader();
     renderChips();
 
-    // Los comercios y profesionales no se paginan: solo se recalculan en una búsqueda nueva.
-    const [storeMatches, proMatches] = append
-      ? [0, 0]
-      : await Promise.all([renderStoreResults(), renderProfessionalResults()]);
-    if (!append) scheduleSearchLog(filterState.query, totalCount + storeMatches + proMatches);
+    // La búsqueda muestra solo productos (sin comercios ni profesionales).
+    const storeMatches = 0;
+    const proMatches = 0;
+    if (!append) scheduleSearchLog(filterState.query, totalCount);
 
     if ((!products || products.length === 0) && !append) {
       renderPriceCompare([], token);

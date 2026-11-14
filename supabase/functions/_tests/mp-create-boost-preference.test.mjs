@@ -19,9 +19,10 @@ function run(name, fn) {
   catch (e) { console.log(`❌ ${name}\n   ${e.message}`); process.exitCode = 1; }
 }
 
-async function call(body, { user = { id: 'u1', email: 'a@b.c', user_metadata: { full_name: 'Ana Pérez' } }, rpc, mpOk = true } = {}) {
+async function call(body, { user = { id: 'u1', email: 'a@b.c', user_metadata: { full_name: 'Ana Pérez' } }, rpc, serviceRpc, mpOk = true } = {}) {
   const sb = makeFakeSupabase({}, {
     create_boost_purchase: rpc ?? (() => ({ data: [{ purchase_id: PURCHASE, price: 19900, plan_name: 'Combo Barrio' }], error: null })),
+    create_service_purchase: serviceRpc ?? ((a) => ({ data: [{ purchase_id: PURCHASE, price: 6000 * a.p_quantity, plan_name: `Productos recomendados x${a.p_quantity}` }], error: null })),
   });
   sb.auth = { getUser: async () => ({ data: { user } }) };
   let pref = null;
@@ -108,4 +109,42 @@ for (const [code, status] of [['42501', 403], ['P0002', 404], ['23505', 409], ['
 {
   const r = await call({ store_id: STORE, plan_id: 'barrio' }, { mpOk: false });
   run('Mercado Pago rechaza la preferencia -> 502', () => assert.equal(r.status, 502));
+}
+
+// --- servicios sueltos (migración 160) ---
+{
+  const r = await call({ store_id: STORE, service_id: 'productos_recomendados', quantity: 2, price: 1 });
+  run('servicio suelto -> create_service_purchase con la cantidad, y el monto sale de la base', () => {
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.rpcs[0].name, 'create_service_purchase');
+    assert.equal(JSON.stringify(r.rpcs[0].args), JSON.stringify({ p_store_id: STORE, p_service_id: 'productos_recomendados', p_quantity: 2 }));
+    assert.equal(r.pref.body.items[0].unit_price, 12000);
+    assert.equal(r.pref.body.items[0].title, 'Productos recomendados x2 - Baradero Local');
+    assert.equal(r.pref.body.external_reference, `boost:${PURCHASE}`);
+  });
+}
+{
+  const r = await call({ store_id: STORE, service_id: 'banner_chico' });
+  run('servicio sin cantidad -> 1 unidad', () => {
+    assert.equal(r.status, 200); assert.equal(r.rpcs[0].args.p_quantity, 1);
+  });
+}
+for (const [name, body] of [
+  ['cantidad 0', { service_id: 'banner_chico', quantity: 0 }],
+  ['cantidad 11', { service_id: 'banner_chico', quantity: 11 }],
+  ['cantidad decimal', { service_id: 'banner_chico', quantity: 1.5 }],
+  ['cantidad texto', { service_id: 'banner_chico', quantity: '2' }],
+  ['service_id raro', { service_id: "'; drop table x;--" }],
+  ['plan y servicio a la vez', { service_id: 'banner_chico', plan_id: 'base' }],
+]) {
+  const r = await call({ store_id: STORE, ...body });
+  run(`${name} -> 400, no llega a la base`, () => { assert.equal(r.status, 400); assert.equal(r.rpcs.length, 0); });
+}
+for (const [code, status] of [['23514', 409], ['22023', 400], ['42501', 403]]) {
+  const r = await call({ store_id: STORE, service_id: 'banner_mediano' }, {
+    serviceRpc: () => ({ data: null, error: { code, message: `mensaje ${code}` } }),
+  });
+  run(`servicio: error ${code} de la base -> ${status} con su mensaje`, () => {
+    assert.equal(r.status, status); assert.equal(r.body.error, `mensaje ${code}`); assert.equal(r.pref, null);
+  });
 }

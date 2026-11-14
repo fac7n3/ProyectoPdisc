@@ -442,7 +442,7 @@ ul, ol {
   align-items: center;
   justify-content: center;
   gap: 1.1rem;
-  background: var(--bl-primary);
+  background: #243c7b; /* el azul del logo */
   opacity: 1;
   transition: opacity 0.4s ease;
 }
@@ -907,7 +907,10 @@ ul, ol {
   flex: 1;
   min-width: 0;
   height: auto; /* lo define el alto de la fila */
-  padding: 0 1rem;
+  /* Sin padding horizontal: con flex-basis 0 el padding se suma a la base y el
+     wrapper del menú (sin padding) quedaba más ancho que los <a>; al montarse
+     corría los otros botones a la izquierda. */
+  padding: 0;
   /* Solo una línea divisoria entre botones: los bordes de arriba y abajo
      duplicaban el borde que ya trae la fila. */
   border: none;
@@ -953,6 +956,8 @@ ul, ol {
   flex: 1;
   min-width: 0;
   display: flex;
+  /* la misma divisoria que lleva el <a> (el botón de adentro no la tiene) */
+  border-right: 1px solid var(--bl-border);
 }
 
 .home-action--menu {
@@ -2158,10 +2163,55 @@ button.coupon-chip:hover {
   min-height: 6.5rem;
 }
 
+/* Banner grande de arriba (mosaic_g): ocupa el alto del mosaico de tres que
+   estaba ahí (bloque de 2/3 del ancho en 16:9 = 8:3 en todo el ancho). */
+.promo-banner-2--g.promo-banner-2--hero,
+.promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+  aspect-ratio: 8 / 3;
+  min-height: 0;
+}
+
+/* Con promo de comercio la imagen ya trae su texto: no se le pone encima el
+   nombre del comercio ni el título, ni el degradé oscuro de abajo. */
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__eyebrow,
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__title {
+  display: none;
+}
+
+.promo-banner-2--g.promo-banner-2--hero.is-store-promo {
+  background-image: var(--promo-img);
+  background-size: contain;
+  background-position: center;
+}
+
+.promo-banner-2--g.promo-banner-2--hero .promo-banner__slides::after {
+  display: none;
+}
+
+/* En escritorio y tablet tiene el mismo alto que el banner principal de
+   arriba (.hero__carousel: 280px, 200px desde 768px). En teléfono (<= 640px)
+   sigue la proporción de arriba, que es la que usan las promos de comercio. */
+@media (min-width: 641px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    aspect-ratio: auto;
+    height: 280px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    height: 200px;
+  }
+}
+
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
   }
+
+  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 21.9%; } /* 1600x350 */
 
   .promo-banner-2--g.is-store-promo,
   .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
@@ -2234,9 +2284,23 @@ button.coupon-chip:hover {
 /* Mientras home.js consulta home_promos, los espacios no bajan su foto fija
    (data-bg-defer en home.html): si el espacio tiene publicidad de un comercio,
    la foto fija nunca se ve y eran ~100 KB tirados por espacio. home.js saca el
-   atributo de los espacios sin publicidad, si la consulta falla, o a los 3 s. */
+   atributo de los espacios sin publicidad, si la consulta falla, o a los 20 s. */
 [data-promo-slot][data-bg-defer]:not(.is-store-promo) {
-  background-image: none !important;
+  /* Mientras carga: bloque gris que brilla, igual que los skeletons de productos
+     (sin el color ni el texto del banner fijo, que se cambiarían de golpe). */
+  background-color: var(--bl-border) !important;
+  background-image: linear-gradient(90deg, transparent 25%, rgba(255, 255, 255, 0.55) 37%, transparent 63%) !important;
+  background-size: 400% 100% !important;
+  animation: bl-skeleton-shimmer 1.4s ease infinite;
+  pointer-events: none;
+}
+
+[data-promo-slot][data-bg-defer]:not(.is-store-promo) > * {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-promo-slot][data-bg-defer]:not(.is-store-promo) { animation: none; }
 }
 
 /* Promo con más de una imagen (hasta 3, columnas image_url/_2/_3 de
@@ -2399,7 +2463,8 @@ button.coupon-chip:hover {
 
 .promo-lightbox {
   position: relative;
-  max-width: min(960px, 100%);
+  /* Deja lugar a los costados para las flechas (quedan por fuera de la imagen). */
+  max-width: min(960px, calc(100vw - 8rem));
   max-height: 100%;
   transform: scale(0.95);
   opacity: 0;
@@ -2421,7 +2486,7 @@ button.coupon-chip:hover {
 }
 
 /* La imagen y sus flechas: el stage mide lo que la imagen, así las flechas
-   quedan sobre sus costados. Solo se muestran con más de una imagen. */
+   quedan a sus costados, por fuera. Solo se muestran con más de una imagen. */
 .promo-lightbox__stage {
   position: relative;
   display: flex;
@@ -2457,11 +2522,18 @@ button.coupon-chip:hover {
 }
 
 .promo-lightbox__nav--prev {
-  left: 0.6rem;
+  left: -3.5rem;
 }
 
 .promo-lightbox__nav--next {
-  right: 0.6rem;
+  right: -3.5rem;
+}
+
+@media (max-width: 640px) {
+  .promo-lightbox { max-width: calc(100vw - 6rem); }
+  .promo-lightbox__nav { width: 2.25rem; height: 2.25rem; font-size: 0.9rem; }
+  .promo-lightbox__nav--prev { left: -2.75rem; }
+  .promo-lightbox__nav--next { right: -2.75rem; }
 }
 
 .promo-lightbox__count {
@@ -2496,11 +2568,9 @@ button.coupon-chip:hover {
 
 .promo-lightbox__close {
   position: absolute;
-  /* Afuera de la imagen (en el aire de arriba que deja el padding del overlay):
-     así nunca queda parte de la X sobre la imagen y un toque que se corre un
-     poco cae en el vacío, no en la imagen que lleva a la publicación. */
-  top: -2.75rem;
-  right: 0;
+  /* En la esquina de arriba a la derecha, mitad sobre la imagen y mitad afuera. */
+  top: -1.25rem;
+  right: -1.25rem;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
@@ -4473,6 +4543,11 @@ button.coupon-chip:hover {
 
 .stores-carousel__arrow--prev { left: 0.5rem; }
 .stores-carousel__arrow--next { right: 0.5rem; }
+
+/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos. */
+@media (max-width: 768px) {
+  .stores-carousel__arrow { display: none !important; }
+}
 
 /* Sin hover a propósito: el de antes (translateY + scale + z-index:2 al
    pasar el mouse) creaba un contexto de apilamiento nuevo que a veces
