@@ -842,9 +842,7 @@ function commit() {
 
 function syncInputs() {
   const navInput = document.getElementById('search-input');
-  const sidebarInput = document.getElementById('sidebar-search-input');
   if (navInput) navInput.value = filterState.query;
-  if (sidebarInput) sidebarInput.value = filterState.query;
 }
 
 function syncPriceInputs() {
@@ -854,9 +852,8 @@ function syncPriceInputs() {
   if (maxEl) maxEl.value = filterState.maxPrice ?? '';
 }
 
-/** Refleja en los dos desplegables lo que dice filterState. */
+/** Refleja en el desplegable de orden lo que dice filterState. */
 function syncPills() {
-  catDropdown?.sync();
   sortDropdown?.sync();
 }
 
@@ -872,21 +869,17 @@ function clearAllFilters() {
   commit();
 }
 
-// ── Desplegables propios del sidebar (categoría y orden) ────
-// Los dos usan el mismo marcado y la misma mecánica --abrir, cerrar al hacer
-// click afuera, cerrar con Escape, marcar la opción activa-- así que se
-// cablean con una sola función en vez de tenerla copiada dos veces.
-//
-// `options` es [{ value, label }]. El de categoría las carga después (llegan
-// de la DB), de ahí setOptions().
-function initFilterDropdown({ rootId, triggerId, menuId, labelId, options = [], getValue, onSelect }) {
+// ── Desplegable propio del sidebar ("Ordenar por") ──────────
+// Abrir, cerrar al hacer click afuera, cerrar con Escape, marcar la opción
+// activa. `options` es [{ value, label }].
+function initFilterDropdown({ rootId, triggerId, menuId, labelId, options, getValue, onSelect }) {
   const root = document.getElementById(rootId);
   const trigger = document.getElementById(triggerId);
   const menu = document.getElementById(menuId);
   const label = document.getElementById(labelId);
   if (!root || !trigger || !menu) return null;
 
-  let current = options;
+  const current = options;
 
   const open = () => {
     menu.hidden = false;
@@ -941,7 +934,7 @@ function initFilterDropdown({ rootId, triggerId, menuId, labelId, options = [], 
   });
 
   render();
-  return { sync, close, setOptions: (next) => { current = next; render(); } };
+  return { sync, close };
 }
 
 const SORT_OPTIONS = [
@@ -952,38 +945,17 @@ const SORT_OPTIONS = [
   { value: 'nombre', label: 'Nombre (A-Z)' },
 ];
 
-let catDropdown = null;
 let sortDropdown = null;
 
-// ── Filtro de categoría: botón desplegable con todas las categorías
-//    (antes se listaban todas las pills una al lado de otra en el sidebar) ──
-async function renderCategoryPills() {
-  catDropdown = initFilterDropdown({
-    rootId: 'filter-categories',
-    triggerId: 'cat-filter-trigger',
-    menuId: 'cat-filter-menu',
-    labelId: 'cat-filter-label',
-    getValue: () => filterState.category,
-    onSelect: (value) => {
-      filterState.category = value;
-      syncPills();
-      commit();
-    },
-  });
-  // Sin desplegable en el sidebar igual hacen falta los nombres (título y chips).
+// Nombres de categoría para el título y los chips (la categoría se elige en el navbar).
+async function loadCategoryNames() {
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
   categoryNameBySlug['ofertas'] = 'Ofertas';
-
-  catDropdown?.setOptions([
-    { value: 'todas', label: 'Todas' },
-    ...categories.map((c) => ({ value: c.slug, label: c.name })),
-  ]);
 }
 
 // ── Filtros avanzados (sidebar) ─────────────────────────────
 function initSidebarFilters() {
-  const sidebarInput = document.getElementById('sidebar-search-input');
   const minEl = document.getElementById('filter-price-min');
   const maxEl = document.getElementById('filter-price-max');
   const mobileBtn = document.getElementById('mobile-filters-btn');
@@ -1002,14 +974,6 @@ function initSidebarFilters() {
       syncPills();
       commit();
     },
-  });
-
-  let searchTimer = null;
-  sidebarInput?.addEventListener('input', (e) => {
-    clearTimeout(searchTimer);
-    filterState.query = e.target.value.trim();
-    syncInputs();
-    searchTimer = setTimeout(commit, 300);
   });
 
   let priceTimer = null;
@@ -1056,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncInputs();
   syncPriceInputs();
 
-  await renderCategoryPills();
+  await loadCategoryNames();
   runSearch();
 
   loadMoreBtn?.addEventListener('click', () => {

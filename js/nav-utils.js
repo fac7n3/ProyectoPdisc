@@ -196,7 +196,7 @@ function initStickyHeightVars() {
 
 /**
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
- * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'/'inicio').
+ * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'; 'inicio' no resalta nada).
  *
  * Render en dos tiempos: si hay cache en localStorage, dibuja la barra al
  * instante (evita que el texto "desaparezca" en cada navegación mientras el
@@ -337,7 +337,7 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
     if (e.key === 'Escape') closeMega();
   });
 
-  // --- Tira de acceso rápido: Inicio + Ofertas + solo las categorías
+  // --- Tira de acceso rápido: Ofertas + solo las categorías
   //     destacadas (no las 14). El resto vive en el mega-menú de arriba.
   //     El home no la usa: esa fila la ocupa con sus propios botones. ---
   if (!inner) return;
@@ -345,9 +345,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 
-  // "Inicio" solo donde va resaltado (producto, comercio...): en la búsqueda no aparece.
+  // Sin "Inicio": al home se vuelve con el logo (pedido del usuario).
   const quickItems = [
-    ...(activeSlug === 'inicio' ? [{ slug: 'inicio', name: 'Inicio', href: './home.html' }] : []),
     { slug: 'ofertas', name: 'Ofertas', href: './search.html?cat=ofertas' },
     ...featured.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
   ];
