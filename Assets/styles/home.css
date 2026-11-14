@@ -3764,7 +3764,13 @@ button.coupon-chip:hover {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
+  /* En columna, align-items: flex-start deja el contenido al ancho de lo que
+     tiene adentro (la fila deslizable del comparador lo estiraba a 1200 px). */
+  .catalog-content {
+    width: 100%;
+  }
+
   .mobile-filters-btn {
     display: flex;
   }
