@@ -22,6 +22,7 @@ import { onNotificationsChanged } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
 import { getInstallState, triggerInstall } from './install-app.js';
 import { locationParams } from './store-location-utils.js';
+import { promptLogin } from './login-prompt.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -856,12 +857,16 @@ export async function initAccountMenu() {
   }
 
   async function open() {
+    // Sin sesión este menú queda vacío y ocupa todo el alto en celular: en su
+    // lugar va el cartel central (se espera la sesión antes de abrir el panel
+    // para que no parpadee).
+    await sessionReady;
+    if (!session && promptLogin('Para ver tu cuenta necesitás iniciar sesión.')) return;
+
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
-
-    await sessionReady;
 
     if (!session) {
       const msg = document.createElement('p');
