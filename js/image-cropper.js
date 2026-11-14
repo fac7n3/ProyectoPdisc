@@ -10,6 +10,7 @@
  * La cuenta del encuadre vive en js/image-crop-utils.js (con tests).
  */
 import { coverScale, clampOffset, sourceRect, outputSize } from './image-crop-utils.js';
+import { lockScroll } from './scroll-lock.js';
 
 const ASPECTS = [
   { label: 'Cuadrada', ratio: 1 },
@@ -149,10 +150,12 @@ export async function cropImage(source, fileName = 'foto') {
     });
     range.addEventListener('input', () => setZoom(Number(range.value)));
 
+    const unlock = lockScroll();
     const close = (value) => {
       document.removeEventListener('keydown', onKeydown);
       window.removeEventListener('resize', layout);
       overlay.remove();
+      unlock();
       URL.revokeObjectURL(objectUrl);
       resolve(value);
     };

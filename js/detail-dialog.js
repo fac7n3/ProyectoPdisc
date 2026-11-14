@@ -12,6 +12,8 @@
  * (`.bl-detail-*`) viven en pages/vender.html; el fondo reusa `.bl-confirm-overlay`.
  */
 
+import { lockScroll } from './scroll-lock.js';
+
 let active = null;
 let seq = 0;
 
@@ -20,11 +22,11 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 /** Cierra la ventana abierta (si hay) y devuelve el foco a quien la abrió. */
 export function closeDetailDialog() {
   if (!active) return;
-  const { overlay, onKeydown, prevHtmlOverflow, trigger } = active;
+  const { overlay, onKeydown, unlock, trigger } = active;
   active = null;
   document.removeEventListener('keydown', onKeydown, true);
   overlay.remove();
-  document.documentElement.style.overflow = prevHtmlOverflow;
+  unlock();
   if (trigger && trigger.isConnected && typeof trigger.focus === 'function') trigger.focus();
 }
 
@@ -145,20 +147,8 @@ export function openDetailDialog({ title, subtitle = '', sections = [], trigger 
   };
   document.addEventListener('keydown', onKeydown, true);
 
-  // El fondo no se mueve mientras está abierta: se traba SOLO el html. Nunca el body:
-  // a11y.css le pone `overflow-x: clip` justamente para que NO sea un contenedor de
-  // scroll, y un `overflow: hidden` en el body lo convierte en uno. Entonces el navbar
-  // y el menú lateral (`position: sticky`) pierden su referencia, vuelven al principio
-  // de la página y desaparecen de la pantalla. (Pasó: ver pruebas con el shell real.)
-  // No hace falta reponer el ancho de la barra: home.css reserva siempre ese espacio
-  // (`scrollbar-gutter: stable`), la página no salta.
-  active = {
-    overlay,
-    onKeydown,
-    trigger,
-    prevHtmlOverflow: document.documentElement.style.overflow,
-  };
-  document.documentElement.style.overflow = 'hidden';
+  // El fondo no se mueve mientras está abierta (por qué solo el html: js/scroll-lock.js).
+  active = { overlay, onKeydown, trigger, unlock: lockScroll() };
 
   // Un <dialog> abierto con showModal() deja inerte todo lo de afuera: se monta adentro.
   (document.querySelector('dialog:modal') || document.body).appendChild(overlay);

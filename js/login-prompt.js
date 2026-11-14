@@ -13,6 +13,8 @@
  * home.css, colores por tokens, modo oscuro incluido). Sin dependencias.
  */
 
+import { lockScroll } from './scroll-lock.js';
+
 const MOBILE_QUERY = '(max-width: 768px)';
 const LOGIN_PATH = 'login.html';
 
@@ -36,8 +38,7 @@ export function closeLoginPrompt() {
   if (!activePrompt) return;
   document.removeEventListener('keydown', activePrompt.onKeydown);
   activePrompt.overlay.remove();
-  document.documentElement.style.overflow = activePrompt.htmlOverflow;
-  document.body.style.overflow = activePrompt.bodyOverflow;
+  activePrompt.unlock();
   const { opener } = activePrompt;
   activePrompt = null;
   if (opener?.isConnected) opener.focus?.();
@@ -112,16 +113,7 @@ export function promptLogin(message = 'Para seguir necesitás iniciar sesión.',
   };
   document.addEventListener('keydown', onKeydown);
 
-  // El fondo no se scrollea mientras el cartel está abierto.
-  activePrompt = {
-    overlay,
-    onKeydown,
-    opener,
-    htmlOverflow: document.documentElement.style.overflow,
-    bodyOverflow: document.body.style.overflow,
-  };
-  document.documentElement.style.overflow = 'hidden';
-  document.body.style.overflow = 'hidden';
+  activePrompt = { overlay, onKeydown, opener, unlock: lockScroll() };
   (document.querySelector('dialog:modal') || document.body).appendChild(overlay);
   enter.focus();
   return true;

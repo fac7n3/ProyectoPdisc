@@ -3,6 +3,7 @@
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
 import { promptLogin } from './login-prompt.js';
+import { lockScroll } from './scroll-lock.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
@@ -1426,10 +1427,13 @@ function initCartEvents() {
  * cierra, y al cerrar el foco vuelve al botón que lo abrió.
  */
 let clearModalLastFocus = null;
+let unlockClearModal = null;
 
 function openClearCartModal() {
   const modal = document.getElementById('clear-cart-modal');
   if (!modal) return;
+  unlockClearModal?.();
+  unlockClearModal = lockScroll();
   // Fallback al botón que abre el modal: si se llegó acá con el foco en el
   // <body> (pasa al activar por teclado desde otro lado), devolverlo al body
   // dejaría el foco en un elemento ya oculto.
@@ -1446,6 +1450,8 @@ function closeClearCartModal() {
   const modal = document.getElementById('clear-cart-modal');
   if (!modal) return;
   modal.style.display = 'none';
+  unlockClearModal?.();
+  unlockClearModal = null;
   if (clearModalLastFocus instanceof HTMLElement) clearModalLastFocus.focus();
 }
 
