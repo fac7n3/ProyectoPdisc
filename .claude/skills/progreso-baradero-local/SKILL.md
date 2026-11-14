@@ -6569,3 +6569,7 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 ### 2026-11-14 — Navbar en la búsqueda
 - `search.js`: una búsqueda sin categoría pasa `activeSlug: null` a `initCategoryBar` (antes `'inicio'`, que dejaba "Inicio" resaltado). Con `?cat=ofertas` se resalta solo Ofertas.
 - `nav-utils.js` (`renderCategoryBar`): la tira `.category-bar__quick` se mueve con la rueda vertical del mouse y lleva las clases `has-more-left/right` (scroll + ResizeObserver) que en `home.css` ponen un degradé con `mask-image` del lado donde quedan categorías. El deslizamiento con el dedo ya andaba; faltaba la señal.
+
+
+### 2026-11-14 — Comparador: sin salto al compartir la ubicación
+- `search.js`: "Usar mi ubicación" con orden "Más relevantes" llama `runSearch({ quiet: true })`, que no cambia la grilla por el spinner "Cargando" (los resultados viejos quedan hasta que llegan los nuevos). `renderPriceCompare` ya no oculta/vacía el comparador al empezar: solo lo hace (`clear()`) si al final no hay nada que mostrar; si hay grupos, `drawPriceCompare` reemplaza el contenido de una vez.

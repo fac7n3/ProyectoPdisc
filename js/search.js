@@ -289,12 +289,11 @@ async function renderPriceCompare(products, token) {
   const section = document.getElementById('price-compare');
   const list = document.getElementById('price-compare-list');
   if (!section || !list) return;
-  section.hidden = true;
-  list.textContent = '';
-  compareState = null;
+  // Lo anterior queda a la vista hasta tener el reemplazo (si no, la página salta).
+  const clear = () => { section.hidden = true; list.textContent = ''; compareState = null; };
 
   const pageProducts = (products || []).filter((p) => p.id && p.title);
-  if (!filterState.query || !pageProducts.length) return;
+  if (!filterState.query || !pageProducts.length) return clear();
 
   const [{ rows, error }, stores, coords] = await Promise.all([
     fetchSameProducts(pageProducts),
@@ -304,7 +303,7 @@ async function renderPriceCompare(products, token) {
   if (token !== searchToken) return;
   if (error) {
     console.warn('Comparador: no se pudieron traer los mismos productos de otros comercios', error);
-    return;
+    return clear();
   }
 
   const storeById = new Map(stores.map((s) => [s.id, s]));
@@ -319,7 +318,7 @@ async function renderPriceCompare(products, token) {
   named.sort((a, b) => (pageIndex.get(a.id) ?? 1e9) - (pageIndex.get(b.id) ?? 1e9));
 
   const groups = groupSameProducts(named).slice(0, COMPARE_MAX_GROUPS);
-  if (!groups.length) return;
+  if (!groups.length) return clear();
 
   compareState = { groups, coords };
   drawPriceCompare();
@@ -474,7 +473,7 @@ function buildLocationPrompt() {
         saveUserLocation(pos.coords.latitude, pos.coords.longitude);
         // Con "Más relevantes" la cercanía cambia el orden: se vuelve a buscar
         // (redibuja también el comparador). Si no, solo el comparador.
-        if (filterState.sortBy === 'relevancia') runSearch();
+        if (filterState.sortBy === 'relevancia') runSearch({ quiet: true });
         else drawPriceCompare();
       },
       () => {
@@ -518,7 +517,7 @@ function openCompareProduct(item) {
 }
 
 // ── Búsqueda principal (RPC search_products) ────────────────
-async function runSearch({ append = false } = {}) {
+async function runSearch({ append = false, quiet = false } = {}) {
   if (!grid) return;
 
   const token = ++searchToken;
@@ -530,7 +529,8 @@ async function runSearch({ append = false } = {}) {
     // ahí sí mostramos el spinner. A113-289: los filtros se aplican solos (sin
     // botón "Aplicar filtros"), así que este es el único aviso de que la
     // búsqueda está en curso.
-    if (!grid.querySelector('.skeleton-card')) {
+    // quiet: reordenar sin spinner (los resultados viejos quedan hasta que llegan los nuevos).
+    if (!quiet && !grid.querySelector('.skeleton-card')) {
       grid.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'bl-loading-block';
@@ -970,13 +970,12 @@ async function renderCategoryPills() {
       commit();
     },
   });
-  if (!catDropdown) return;
-
+  // Sin desplegable en el sidebar igual hacen falta los nombres (título y chips).
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
   categoryNameBySlug['ofertas'] = 'Ofertas';
 
-  catDropdown.setOptions([
+  catDropdown?.setOptions([
     { value: 'todas', label: 'Todas' },
     ...categories.map((c) => ({ value: c.slug, label: c.name })),
   ]);
