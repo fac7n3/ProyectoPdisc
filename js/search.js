@@ -1,7 +1,7 @@
 // Página de resultados de búsqueda (search.html)
 // Optimizada con patrones de e-commerce grande (Mercado Libre/Amazon):
 // búsqueda insensible a acentos y multi-campo vía el RPC search_products,
-// encabezado que refleja la consulta, chips de filtros activos removibles,
+// encabezado que refleja la consulta,
 // rango de precio funcional, ordenamiento, paginación ("cargar más") y
 // estado sin resultados con recuperación.
 import { setProductImage } from './product-image.js';
@@ -26,7 +26,7 @@ const filterState = {
 };
 
 let totalCount = 0;
-let categoryNameBySlug = {}; // slug -> nombre (para header y chips)
+let categoryNameBySlug = {}; // slug -> nombre (para el header)
 let searchToken = 0; // descarta respuestas viejas del RPC (cambios rápidos de filtro)
 
 // ── Comercios que coinciden con la búsqueda ─────────────────
@@ -210,7 +210,6 @@ async function renderProfessionalResults() {
 const grid = document.getElementById('products-grid');
 const countEl = document.getElementById('catalog-count');
 const titleEl = document.getElementById('catalog-title');
-const chipsEl = document.getElementById('active-filters');
 const loadMoreWrap = document.getElementById('load-more-wrap');
 const loadMoreBtn = document.getElementById('load-more-btn');
 
@@ -586,7 +585,6 @@ async function runSearch({ append = false, quiet = false } = {}) {
     totalCount = products && products.length ? Number(products[0].total_count) : (append ? totalCount : 0);
 
     renderHeader();
-    renderChips();
 
     // La búsqueda muestra solo productos (sin comercios ni profesionales).
     const storeMatches = 0;
@@ -652,54 +650,6 @@ function renderHeader() {
   }
   if (countEl) {
     countEl.textContent = `${totalCount} resultado${totalCount !== 1 ? 's' : ''}`;
-  }
-}
-
-// ── Chips de filtros activos (removibles) ───────────────────
-function renderChips() {
-  if (!chipsEl) return;
-  chipsEl.textContent = '';
-
-  const chips = [];
-  if (filterState.query) {
-    chips.push({ label: `"${filterState.query}"`, onRemove: () => { filterState.query = ''; syncInputs(); commit(); } });
-  }
-  if (filterState.category === 'ofertas') {
-    chips.push({ label: 'Ofertas', onRemove: () => { filterState.category = 'todas'; syncPills(); commit(); } });
-  } else if (filterState.category && filterState.category !== 'todas') {
-    chips.push({ label: categoryNameBySlug[filterState.category] || filterState.category, onRemove: () => { filterState.category = 'todas'; syncPills(); commit(); } });
-  }
-  if (filterState.minPrice != null || filterState.maxPrice != null) {
-    const min = filterState.minPrice != null ? formatPrice(filterState.minPrice) : '$0';
-    const max = filterState.maxPrice != null ? formatPrice(filterState.maxPrice) : '∞';
-    chips.push({ label: `${min} — ${max}`, onRemove: () => { filterState.minPrice = null; filterState.maxPrice = null; syncPriceInputs(); commit(); } });
-  }
-
-  if (chips.length === 0) return;
-
-  chips.forEach((c) => {
-    const chip = document.createElement('span');
-    chip.className = 'filter-chip';
-    chip.append(c.label + ' ');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'filter-chip__remove';
-    btn.setAttribute('aria-label', `Quitar filtro ${c.label}`);
-    const x = document.createElement('i');
-    x.className = 'fa-solid fa-xmark';
-    btn.appendChild(x);
-    btn.addEventListener('click', c.onRemove);
-    chip.appendChild(btn);
-    chipsEl.appendChild(chip);
-  });
-
-  if (chips.length > 1) {
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'active-filters__clear';
-    clearBtn.textContent = 'Limpiar todo';
-    clearBtn.addEventListener('click', clearAllFilters);
-    chipsEl.appendChild(clearBtn);
   }
 }
 
@@ -947,7 +897,7 @@ const SORT_OPTIONS = [
 
 let sortDropdown = null;
 
-// Nombres de categoría para el título y los chips (la categoría se elige en el navbar).
+// Nombres de categoría para el título (la categoría se elige en el navbar).
 async function loadCategoryNames() {
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
