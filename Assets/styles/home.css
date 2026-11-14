@@ -2776,38 +2776,9 @@ button.coupon-chip:hover {
   color: var(--bl-text-secondary);
 }
 
-.filter-search-wrapper {
-  position: relative;
-}
-
-.filter-search-wrapper i {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--bl-text-muted);
-  font-size: 0.875rem;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 0.625rem 0.625rem 0.625rem 2.25rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-md);
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: var(--bl-primary);
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
-}
-
-/* Las clases .filter-select / .filter-select-wrapper se borraron al pasar el
-   "Ordenar por" del sidebar a .cat-filter-dropdown: envolvían al último
-   <select> nativo que quedaba en la búsqueda y ninguna otra página las usaba. */
+/* .filter-select*, .filter-search-wrapper y .filter-input se borraron: eran del
+   <select> nativo de "Ordenar por" y del buscador del sidebar de la búsqueda,
+   que ya no existen (la búsqueda va por el navbar). */
 
 /* ── .bl-date: selector de fecha propio en lugar de <input type="date"> ──
    Lo arma js/datepicker.js. Campo de texto con máscara dd/mm/aaaa (escribir es
