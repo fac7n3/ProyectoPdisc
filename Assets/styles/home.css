@@ -3228,6 +3228,57 @@ button.coupon-chip:hover {
 .catpick__opt:has(.catpick__input:checked) .catpick__check { opacity: 1; }
 .catpick__opt:has(.catpick__input:checked) .catpick__name { font-weight: 600; }
 
+/* Variante desplegable (.catpick--dropdown, la arma js/vender.js para la categoría del
+   perfil del comercio): en celular, una barra que al tocarla abre la lista. En compu
+   la barra no existe y se ve la grilla de siempre. */
+.catpick__toggle { display: none; }
+
+@media (max-width: 768px) {
+  .catpick--dropdown .catpick__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--bl-border);
+    border-radius: var(--bl-radius-md);
+    background: var(--bl-surface);
+    color: var(--bl-text);
+    font: inherit;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .catpick--dropdown .catpick__toggle:focus-visible {
+    outline: 2px solid var(--catpick-accent);
+    outline-offset: 2px;
+  }
+  .catpick--open .catpick__toggle { border-color: var(--catpick-accent); }
+  .catpick__toggle-icon { width: 1.1rem; text-align: center; color: var(--catpick-accent); flex-shrink: 0; }
+  .catpick__toggle-text { flex: 1; min-width: 0; font-weight: 600; }
+  .catpick__toggle--empty .catpick__toggle-text { font-weight: 400; color: var(--bl-text-muted); }
+  .catpick__toggle--empty .catpick__toggle-icon { color: var(--bl-text-muted); }
+  .catpick__toggle-chevron { color: var(--bl-text-muted); font-size: 0.8rem; transition: transform 0.15s; }
+  .catpick--open .catpick__toggle-chevron { transform: rotate(180deg); }
+
+  /* Plegada por defecto; abierta es una lista de una columna con su propio scroll. */
+  .catpick--dropdown:not(.catpick--open) .catpick__grid { display: none; }
+  .catpick--dropdown .catpick__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+    max-height: 17rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 0.4rem;
+    padding: 0.4rem;
+    border: 1px solid var(--bl-border);
+    border-radius: var(--bl-radius-md);
+    background: var(--bl-surface);
+  }
+}
+
 /* ── Filtro de categoría: dropdown en vez de todas las pills inline ── */
 .cat-filter-dropdown {
   position: relative;

@@ -448,9 +448,13 @@ function getShopCategorySlugs() {
 let pendingStoreCategorySlug = null; // por si loadDashboard resuelve antes que loadCategories
 
 function renderStoreCategoryOptions() {
+  // Sin `required` nativo: en celular la lista está plegada (display:none) y un radio
+  // oculto con `required` frena el envío sin poder mostrar el aviso. Igual se valida
+  // al guardar (getStoreCategorySlug + aviso "Elegí una categoría").
   renderCategoryPicker('store-category-options', {
-    name: 'store-category', type: 'radio', required: true,
+    name: 'store-category', type: 'radio',
   });
+  setupStoreCategoryDropdown();
   // loadDashboard() puede resolver antes que este fetch de categorías: si ya
   // había un rubro pendiente de marcar (ver setStoreCategorySlug), se aplica
   // recién ahora que existen los radios para marcarlo.
@@ -463,6 +467,70 @@ function setStoreCategorySlug(slug) {
   document.querySelectorAll('input[name="store-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+  updateStoreCategoryToggle();
+}
+
+/**
+ * Celular (<= 768 px): la categoría del comercio se ve como UNA barra que, al tocarla,
+ * despliega la lista (en compu sigue la grilla de siempre; el CSS decide con
+ * `.catpick--dropdown` en home.css). Los radios son los mismos: solo cambia cómo se muestran.
+ */
+function updateStoreCategoryToggle() {
+  const toggle = document.getElementById('store-category-toggle');
+  if (!toggle) return;
+  const checked = document.querySelector('input[name="store-category"]:checked');
+  const text = toggle.querySelector('.catpick__toggle-text');
+  const icon = toggle.querySelector('.catpick__toggle-icon');
+  const cat = checked && categoriesCache.find((c) => c.slug === checked.value);
+  text.textContent = cat ? cat.name : 'Elegí una categoría';
+  toggle.classList.toggle('catpick__toggle--empty', !cat);
+  icon.className = cat
+    ? `${(cat.icon || 'fa-solid fa-tag').replace(/[^a-zA-Z0-9 -]/g, '')} catpick__toggle-icon`
+    : 'fa-solid fa-tag catpick__toggle-icon';
+}
+
+function setupStoreCategoryDropdown() {
+  const grid = document.getElementById('store-category-options');
+  const fieldset = grid?.closest('.catpick');
+  if (!grid || !fieldset) return;
+  if (!document.getElementById('store-category-toggle')) {
+    fieldset.classList.add('catpick--dropdown');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'store-category-toggle';
+    toggle.className = 'catpick__toggle';
+    toggle.setAttribute('aria-haspopup', 'listbox');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'store-category-options');
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-tag catpick__toggle-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.className = 'catpick__toggle-text';
+    const chevron = document.createElement('i');
+    chevron.className = 'fa-solid fa-chevron-down catpick__toggle-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    toggle.append(icon, text, chevron);
+    grid.before(toggle);
+
+    const setOpen = (open) => {
+      fieldset.classList.toggle('catpick--open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+    toggle.addEventListener('click', () => setOpen(!fieldset.classList.contains('catpick--open')));
+    // Al elegir una categoría la lista se pliega y la barra muestra la elegida.
+    grid.addEventListener('change', () => { updateStoreCategoryToggle(); setOpen(false); });
+    document.addEventListener('click', (e) => {
+      if (!fieldset.contains(e.target)) setOpen(false);
+    });
+    fieldset.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && fieldset.classList.contains('catpick--open')) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+  }
+  updateStoreCategoryToggle();
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */

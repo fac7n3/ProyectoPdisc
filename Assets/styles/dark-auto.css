@@ -240,6 +240,14 @@ html[data-theme="dark"] .catpick__opt:has(.catpick__input:checked) .catpick__ico
 html[data-theme="dark"] .catpick__check {
   color: var(--dk-accent-text);
 }
+@media (max-width: 768px) {
+html[data-theme="dark"] .catpick__toggle-icon {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .catpick__toggle--empty .catpick__toggle-icon {
+  color: var(--bl-text-muted);
+}
+}
 html[data-theme="dark"] .cat-filter-dropdown__item--active {
   color: var(--dk-accent-text);
 }
