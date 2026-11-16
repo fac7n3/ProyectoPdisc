@@ -386,7 +386,10 @@
       .mc-backdrop[hidden] { display: none; }
 
       @media (max-width: 900px) {
-        .mc-shell { flex-direction: column; padding: 0 0.75rem; }
+        /* En columna, `flex-start` dejaba al contenido del ancho de lo que tuviera adentro: una fila que no
+           corta línea lo estiraba más allá de la pantalla (tarjetas cortadas a la derecha). Estirado al ancho disponible. */
+        .mc-shell { flex-direction: column; align-items: stretch; padding: 0 0.75rem; }
+        .mc-content { width: 100%; max-width: 100%; }
         .mc-sidebar {
           position: fixed;
           top: 0; left: 0; bottom: 0;
@@ -606,9 +609,9 @@
       /* Celular: los tres filtros en una sola fila (antes "De mis productos" caía abajo).
          Chips más compactos y, si en una pantalla muy angosta no entran, la fila se desliza. */
       @media (max-width: 480px) {
-        .rv-filters { display: flex; flex-wrap: nowrap; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .rv-filters { display: flex; flex-wrap: nowrap; gap: 0.3rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .rv-filters::-webkit-scrollbar { display: none; }
-        .rv-filters .pub-chip { flex: 0 0 auto; padding: 0.5rem 0.7rem; font-size: 0.82rem; white-space: nowrap; }
+        .rv-filters .pub-chip { flex: 0 0 auto; padding: 0.5rem 0.6rem; font-size: 0.8rem; white-space: nowrap; }
       }
       .rv-list { display: flex; flex-direction: column; gap: 0.75rem; }
       .rv-card { padding: 1rem 1.15rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-sm); }
@@ -825,6 +828,7 @@
       .pd-detail__head { display: flex; align-items: flex-start; gap: 0.75rem; padding-right: 2.5rem; }
       .pd-detail__head > div { flex: 1; }
       .pd-detail__title { margin: 0; font-size: 1.2rem; }
+      .pd-detail__ref { white-space: nowrap; }
       .pd-detail__sub { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--bl-text-muted); }
       .pd-detail__section { border-top: 1px solid var(--bl-border-light); padding-top: 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
       .pd-detail__h { margin: 0 0 0.3rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bl-text-muted); }
@@ -918,6 +922,9 @@
       .pubform__opt { font-weight: 400; color: var(--bl-text-muted); }
       .pubform__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
       .pubform__card .form-group:last-child { margin-bottom: 0; }
+      .pubform__row > .form-group { min-width: 0; }
+      .pubform__row + .pubform__row { margin-top: 1rem; }
+      .pubform .form-input { max-width: 100%; box-sizing: border-box; }
 
       /* Precio: el "$" va adentro del input (el sistema es de pesos enteros) */
       .pubform__money { position: relative; }
@@ -935,6 +942,7 @@
       .pubform__optional { font-weight: 400; color: var(--bl-text-muted); }
       .pubform__video-pick { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-text); font: inherit; font-weight: 600; cursor: pointer; }
       .pubform__video-pick:hover, .pubform__video-pick:focus-visible { border-color: var(--bl-vendor-accent); outline: none; }
+      .pubform__video[hidden] { display: none; }
       .pubform__video { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; margin-top: 0.75rem; }
       .pubform__video video { width: 100%; max-width: 420px; max-height: 280px; border-radius: var(--bl-radius-md); background: #000; }
       .pubform__video-remove { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-danger-text); font: inherit; font-size: 0.875rem; cursor: pointer; }
@@ -1045,6 +1053,26 @@
       .pf-field .form-label { margin-bottom: 0.4rem; }
       .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
       .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      /* Teléfono / WhatsApp: código de país + número. En celular van uno sobre otro (el número se cortaba). */
+      .pf-phone { display: flex; gap: 0.5rem; }
+      .pf-phone__dial { flex: 0 0 auto; }
+      .pf-phone__num { flex: 1; min-width: 0; }
+      @media (max-width: 480px) {
+        .pf-phone { flex-direction: column; }
+        .pf-phone__dial, .pf-phone__dial .bl-dropdown, .pf-phone__dial .bl-dropdown__trigger { width: 100%; box-sizing: border-box; }
+      }
+      /* Mis cupones: formulario de alta (4 columnas en compu; en celular se apila). */
+      .cp-form { background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 1rem; align-items: end; }
+      .cp-form > div { min-width: 0; }
+      .cp-form .form-input { width: 100%; min-width: 0; box-sizing: border-box; }
+      .cp-form__btn { width: auto; padding: 0.75rem 1.5rem; }
+      @media (max-width: 900px) {
+        .cp-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .cp-form__btn { grid-column: 1 / -1; width: 100%; }
+      }
+      @media (max-width: 560px) {
+        .cp-form { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+      }
       /* Empleados: formulario para agregar y fila de cada empleado. */
       #store-staff-section { min-width: 0; max-width: 100%; }
       #store-staff-section > p { overflow-wrap: anywhere; }
@@ -1131,7 +1159,8 @@
         .pf-actions { justify-content: stretch; }
         .pf-actions .form-btn { width: 100%; }
         .pubform__card { padding: 1.1rem; }
-        .pubform__row { grid-template-columns: 1fr; }
+        .pubform__row { grid-template-columns: minmax(0, 1fr); }
+        .pubform__row > .form-group { margin-bottom: 0; }
         .pubform__variant-add { grid-template-columns: 1fr 1fr; }
         .pubform__variant-add .btn-outline { grid-column: 1 / -1; }
         .pubform__gallery { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
@@ -1536,9 +1565,9 @@
                     </div>
                     <div class="pf-field pf-field--full" id="store-whatsapp-field">
                       <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
-                      <div style="display: flex; gap: 0.5rem;">
-                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
-                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      <div class="pf-phone">
+                        <div id="store-whatsapp-dial-slot" class="pf-phone__dial"></div>
+                        <input type="text" id="store-whatsapp" class="form-input pf-phone__num" placeholder="Ej: 3329123456" />
                       </div>
                       <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
@@ -1672,7 +1701,7 @@
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
             <div class="pub-wrap" id="my-coupons-section">
               <div class="pub-header"><h2 class="pub-title">Mis cupones</h2></div>
-              <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+              <form id="my-coupon-form" class="cp-form">
                 <div>
                   <label class="form-label" for="my-coupon-code">Código</label>
                   <input type="text" id="my-coupon-code" class="form-input" placeholder="Ej: MITIENDA10" required />
@@ -1685,7 +1714,7 @@
                   <label class="form-label" for="my-coupon-expires">Vencimiento (opcional)</label>
                   <input type="date" id="my-coupon-expires" class="form-input" />
                 </div>
-                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
+                <button type="submit" class="form-btn cp-form__btn">Crear cupón</button>
               </form>
               <div id="my-coupons-container" class="pub-list"></div>
             </div>
