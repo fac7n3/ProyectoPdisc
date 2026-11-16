@@ -821,6 +821,14 @@
   font-size: 1.375rem;
 }
 
+/* Destello del resumen al tocar "Ver resumen" */
+@keyframes cart-summary-flash {
+  from { box-shadow: 0 0 0 3px var(--bl-primary); }
+  to { box-shadow: 0 0 0 3px transparent; }
+}
+.cart-summary--flash { animation: cart-summary-flash 1.2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .cart-summary--flash { animation: none; } }
+
 /* "Ver resumen" existe solo en celular (ver el bloque de 768px) */
 .cart-summary__see { display: none; }
 

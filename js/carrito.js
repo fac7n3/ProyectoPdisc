@@ -1266,6 +1266,18 @@ function initCartEvents() {
   const clearBtn = document.getElementById('cart-clear-btn');
   clearBtn?.addEventListener('click', () => openClearCartModal());
 
+  // "Ver resumen" (solo celular): con la página al final el resumen ya está casi a la
+  // vista y el salto del ancla apenas se nota; scroll suave + destello para que se vea.
+  document.querySelector('.cart-summary__see')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const summary = document.getElementById('resumen-pedido');
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    summary.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+    summary.classList.remove('cart-summary--flash');
+    void summary.offsetWidth; // reinicia la animación si se toca dos veces seguidas
+    summary.classList.add('cart-summary--flash');
+  });
+
   // Botón iniciar pago: crea la(s) orden(es) de verdad vía el RPC create_order.
   // El método de entrega queda fijo en "pickup" sin dirección por ahora —
   // elegir retiro/envío + calcular delivery_fee es F2-05, todavía no tiene UI.
