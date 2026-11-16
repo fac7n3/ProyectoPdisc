@@ -888,9 +888,31 @@ a.compra-item-text:hover {
   gap: 1.5rem;
 }
 
-/* Dos columnas en el celular: con una sola cada foto cuadrada ocupaba todo el ancho. */
-@media (max-width: 480px) {
-  .favoritos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+/* En teléfono los favoritos (productos y comercios) se deslizan hacia el
+   costado, igual que "Productos recomendados" del home, en vez de una
+   columna que crece hacia abajo (pedido 2026-11-16). */
+@media (max-width: 768px) {
+  .favoritos-grid {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  .favoritos-grid::-webkit-scrollbar { display: none; }
+
+  .favoritos-grid > .fav-card {
+    flex: 0 0 min(44%, 190px);
+    scroll-snap-align: start;
+  }
+
+  /* Mensajes ("Cargando...", "Aún no agregaste...") ocupan todo el ancho */
+  .favoritos-grid > :not(.fav-card) {
+    flex: 1 0 100%;
+  }
 }
 
 .fav-card {

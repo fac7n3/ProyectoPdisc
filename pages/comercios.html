@@ -162,7 +162,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
@@ -212,6 +212,80 @@
         color: var(--bl-text-muted);
       }
       .store-card__meta i { width: 1rem; text-align: center; margin-right: 0.25rem; }
+
+      /* Celular: los comercios van como lista (una fila por comercio: logo,
+         nombre, zona y rubro, flecha) en vez de tarjetas sueltas en grilla.
+         Solo en #stores-grid: los resultados de búsqueda reusan buildStoreCard. */
+      @media (max-width: 768px) {
+        #stores-grid {
+          grid-template-columns: 1fr;
+          gap: 0;
+          background: var(--bl-surface);
+          border: 1px solid var(--bl-border);
+          border-radius: var(--bl-radius-xl);
+          overflow: hidden;
+        }
+        #stores-grid > .product-card {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.875rem;
+          padding: 0.75rem 1rem;
+          border: 0;
+          border-bottom: 1px solid var(--bl-border);
+          border-radius: 0;
+          box-shadow: none;
+          transform: none;
+          position: relative;
+        }
+        #stores-grid > .product-card:last-child { border-bottom: 0; }
+        #stores-grid > .product-card:hover { transform: none; box-shadow: none; background: var(--bl-border-light); }
+        #stores-grid > .product-card:active { background: var(--bl-border-light); }
+        #stores-grid > .product-card:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: -2px; }
+        #stores-grid .product-card__image {
+          flex: 0 0 3.5rem;
+          width: 3.5rem;
+          height: 3.5rem;
+          padding: 0;
+          border-radius: var(--bl-radius-lg);
+          background: transparent;
+        }
+        #stores-grid .store-card__logo-fallback {
+          width: 3.5rem;
+          height: 3.5rem;
+          font-size: 1.375rem;
+        }
+        #stores-grid .product-card__body {
+          flex: 1;
+          min-width: 0;
+          padding: 0;
+        }
+        #stores-grid .product-card__name {
+          display: block;
+          min-height: 0;
+          margin-bottom: 0.125rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        #stores-grid .store-card__meta { flex-direction: row; flex-wrap: wrap; gap: 0.125rem 0.75rem; }
+        /* Flecha de "entrar al comercio" (dibujada con bordes: no suma un ícono al subset). */
+        #stores-grid > a.product-card::after {
+          content: "";
+          flex: 0 0 auto;
+          width: 0.5rem;
+          height: 0.5rem;
+          margin-left: auto;
+          border-top: 2px solid var(--bl-text-muted);
+          border-right: 2px solid var(--bl-text-muted);
+          transform: rotate(45deg);
+        }
+        /* Esqueletos de carga con la misma forma de fila. */
+        #stores-grid > .skeleton-card { min-height: 4.75rem; }
+        #stores-grid > .skeleton-card .skeleton-img { flex: 0 0 3.5rem; width: 3.5rem; height: 3.5rem; border-radius: var(--bl-radius-lg); }
+        #stores-grid > .skeleton-card .skeleton-body { flex: 1; padding: 0 !important; }
+      }
     </style>
 
     <script type="module" src="../js/comercios.js"></script>

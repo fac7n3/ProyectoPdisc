@@ -1358,6 +1358,16 @@ ul, ol {
 
   .cat-mega__grid { grid-template-columns: 1fr; }
 
+  /* En las páginas con barra de categorías propia (productos, comercios, producto) el
+     botón vive dentro de `.category-bar`, que es `sticky` con z-index 40 y por eso un
+     contexto de apilamiento más bajo que el fondo oscuro (99) y que el navbar (100):
+     el panel quedaba oscurecido, con la parte de arriba tapada por el navbar, y los
+     toques caían en el fondo (que cierra el menú) en vez de llegar a las categorías.
+     Con el panel abierto, la barra sube por encima de los dos. */
+  .category-bar:has(.cat-mega__panel:not([hidden])) {
+    z-index: 210;
+  }
+
   /* Con un panel abierto el fondo no scrollea. Hay que trabar html Y body:
      en iOS Safari, `overflow: hidden` solo en el body no frena el scroll. */
   html:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])),
@@ -2559,6 +2569,13 @@ button.coupon-chip:hover {
 
 .promo-lightbox__close:hover {
   transform: scale(1.08);
+}
+
+/* En celular la X sube por encima de la imagen (en el relleno de arriba del
+   overlay) en vez de montarse en la esquina: con un banner bajo quedaba pegada
+   a la flecha de "siguiente". Va después de la regla base para ganarle. */
+@media (max-width: 640px) {
+  .promo-lightbox__close { top: -3rem; right: 0; }
 }
 
 /* ===========================================================
@@ -5920,7 +5937,8 @@ button.coupon-chip:hover {
    =========================================================== */
 .hp-intro {
   color: var(--bl-text-secondary);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
   margin: 0 0 1rem;
   max-width: 70ch;
 }
@@ -6127,6 +6145,9 @@ button.coupon-chip:hover {
 .hp-empty p {
   margin: 0;
   max-width: 50ch;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* Pros/contras de no tener un espacio asignado + botón para pedirlo (estado
@@ -6138,7 +6159,7 @@ button.coupon-chip:hover {
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
   width: 100%;
-  max-width: 60ch;
+  max-width: 46rem;
   margin: 0.5rem 0;
   text-align: left;
 }
@@ -6157,8 +6178,8 @@ button.coupon-chip:hover {
 }
 
 .hp-empty__perk-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--bl-text);
 }
@@ -6169,14 +6190,14 @@ button.coupon-chip:hover {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.6rem;
 }
 
 .hp-empty__perk-list li {
   position: relative;
-  padding-left: 1.35rem;
-  font-size: 0.82rem;
-  line-height: 1.4;
+  padding-left: 1.6rem;
+  font-size: 1.05rem;
+  line-height: 1.35;
   color: var(--bl-text-secondary);
 }
 

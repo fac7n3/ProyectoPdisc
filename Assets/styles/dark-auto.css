@@ -1398,6 +1398,11 @@ html[data-theme="dark"] .store-filter__chip:hover {
 html[data-theme="dark"] .store-filter__chip[aria-pressed="true"] {
   color: var(--bl-text-inverse);
 }
+@media (max-width: 768px) {
+html[data-theme="dark"] #stores-grid .product-card__image {
+  background: transparent;
+}
+}
 
 /* ===== pages/contratar.html (<style>) ===== */
 html[data-theme="dark"] .ct-hero__title {
