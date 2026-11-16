@@ -36,6 +36,7 @@ import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
 import { createStoreLocationPicker } from './store-location-map.js';
+import { loadStatsSummary, loadStatsSection } from './vender-estadisticas.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -865,6 +866,7 @@ const VENDOR_SECTION_COPY = {
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
   recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para vender más y destacarte entre los comercios de Baradero.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
+  estadisticas: { icon: 'fa-solid fa-chart-line', title: 'Estadísticas', desc: 'Cuántos vecinos visitan tu comercio, miran tus publicaciones y tocan tus botones de contacto y redes. El detalle día por día es de Estadísticas Pro.' },
   impulsar: { icon: 'fa-solid fa-rocket', title: 'Impulsar', desc: 'Combos y servicios para que más vecinos conozcan tu comercio: banners, productos destacados, posicionamiento y más.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen; al tocarla, el vecino va a la página de tu comercio.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
@@ -951,7 +953,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (greetingName) greetingName.textContent = currentUserFirstName;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
-  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section', 'boost-section'].forEach((id) => {
+  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section', 'boost-section', 'stats-section'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = isStoreOwner ? '' : 'none';
   });
@@ -4294,6 +4296,13 @@ async function renderResumen() {
 
   // Métricas de negocio
   metricsContainer.textContent = '';
+  if (isStoreOwner) {
+    // "Tu comercio en números": resumen gratis de visitas y toques (migración 168, js/vender-estadisticas.js).
+    // Se dibuja solo cuando llegan los datos: no demora el resto del Resumen.
+    const statsHost = rsEl('div', 'rs-card st-summary');
+    metricsContainer.appendChild(statsHost);
+    loadStatsSummary(statsHost, currentStoreId, { goTo: (section) => { location.hash = section; } });
+  }
   metricsContainer.appendChild(rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d));
   metricsContainer.appendChild(rsSales30Card(dailyCounts, orders30dCount, pctChange30d));
 }
@@ -6054,6 +6063,18 @@ function initBoostSection() {
   });
 }
 
+/** Sección "Estadísticas" (migración 168): se pide al entrar (#estadisticas), siempre fresca. Solo el dueño. */
+function initStatsSection() {
+  if (!isStoreOwner) return;
+  const open = () => loadStatsSection(document.getElementById('stats-section'), currentStoreId, {
+    goTo: (section) => { location.hash = section; },
+  });
+  if (location.hash === '#estadisticas') open();
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#estadisticas') open();
+  });
+}
+
 function setupDashboardEvents() {
   setupStoreProfileForm();
   setupStoreLogoPicker();
@@ -6062,6 +6083,7 @@ function setupDashboardEvents() {
   initPublicacionesControls();
   initPedidosControls();
   initBoostSection();
+  initStatsSection();
 
   attachMoneyFormatting(document.getElementById('prod-price'));
   attachMoneyFormatting(document.getElementById('prod-compare-price'));

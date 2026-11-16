@@ -153,15 +153,16 @@ export const SERVICE_COPY = {
     ],
   },
   estadisticas_pro: {
-    what: 'Estadísticas de cuántas personas ven tus redes y cuántas hacen click en tu perfil y en tus publicaciones. Sirve para saber qué funciona y dónde conviene invertir.',
+    what: 'Mirás cuántas personas visitan tu comercio, abren tus publicaciones y tocan los botones de contacto y de tus redes, día por día y comparado con los 30 días anteriores. Sirve para saber qué funciona y dónde conviene invertir.',
     examples: [
-      'Descubrís qué publicación generó más visitas a tu tienda.',
-      'Comparás cuántos clicks recibió tu perfil antes y después de una promo.',
-      'Decidís si te conviene renovar un banner según cuánto rindió.',
+      'Descubrís cuál es la publicación más vista de tu comercio.',
+      'Comparás cuántos toques recibieron tus redes antes y después de una promo.',
+      'Ves qué red te trae más gente: Instagram, Facebook, TikTok...',
     ],
     why: [
-      'Dejás de adivinar: ves qué publicidad te trae gente.',
-      'Te ayuda a no gastar en lo que no rinde.',
+      'Dejás de adivinar: ves qué te trae gente.',
+      'Te ayuda a decidir si te conviene renovar un banner según cuánto rindió.',
+      'El resumen de 30 días lo ves gratis; Pro suma el detalle, el ranking y la comparación.',
       'Viene incluida en el Plan Pro.',
     ],
   },
