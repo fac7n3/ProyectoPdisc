@@ -2111,7 +2111,7 @@ button.coupon-chip:hover {
   .promo-mosaic__side,
   .promo-mosaic-2__side {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
@@ -2242,6 +2242,11 @@ button.coupon-chip:hover {
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
+  }
+
+  /* Franjas casi de borde a borde: menos margen lateral = banner más grande */
+  .promo-strip {
+    padding: 0 0.25rem;
   }
 
   .promo-banner-2--g.is-store-promo,
@@ -2530,10 +2535,13 @@ button.coupon-chip:hover {
 }
 
 @media (max-width: 640px) {
-  .promo-lightbox { max-width: calc(100vw - 6rem); }
+  /* Casi a pantalla completa; las flechas van encima de la imagen, no a los costados. */
+  .promo-lightbox-overlay { padding: 3.5rem 0.25rem 1rem; }
+  .promo-lightbox { max-width: calc(100vw - 0.5rem); width: calc(100vw - 0.5rem); }
+  .promo-lightbox__img { width: 100%; }
   .promo-lightbox__nav { width: 2.25rem; height: 2.25rem; font-size: 0.9rem; }
-  .promo-lightbox__nav--prev { left: -2.75rem; }
-  .promo-lightbox__nav--next { right: -2.75rem; }
+  .promo-lightbox__nav--prev { left: 0.4rem; }
+  .promo-lightbox__nav--next { right: 0.4rem; }
 }
 
 .promo-lightbox__count {
@@ -6318,12 +6326,6 @@ button.coupon-chip:hover {
   -webkit-mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
   mask: url('/img/icono-zapatilla.svg') center / contain no-repeat;
 }
-
-/* Botón "Vender"/"Panel" del home: con sesión iniciada arranca oculto y se
-   muestra recién cuando ya tiene el texto que le corresponde a la cuenta
-   (script de pages/home.html + renderPanelAction/showVenderLink de js/home.js).
-   Así no se ve "Vender" un instante y después "Panel". */
-html[data-sess] #home-panel-action:not([data-ready]) { visibility: hidden; }
 
 /* ---- Entregas con repartidor (migración 138) ---- */
 
