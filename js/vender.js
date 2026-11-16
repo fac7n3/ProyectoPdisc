@@ -3564,12 +3564,21 @@ function buildCouponRow(coupon) {
 
   const statusCell = document.createElement('div');
   statusCell.className = 'pub-row__cell';
+  // Rótulo fantasma: reserva la misma línea que "Stock"/"Ventas" para que la
+  // insignia quede a la altura de los números y no más abajo.
+  const ghost = pubCellLabel('Estado');
+  ghost.classList.add('pub-row__cell-label--ghost');
+  ghost.setAttribute('aria-hidden', 'true');
+  statusCell.appendChild(ghost);
   const badge = document.createElement('span');
   const statusVariant = isExpired ? 'cancelled' : (coupon.is_active ? 'active' : 'paused');
   const statusLabel = isExpired ? 'Vencido' : (coupon.is_active ? 'Activo' : 'Inactivo');
   badge.className = `pub-status pub-status--${statusVariant}`;
   badge.textContent = statusLabel;
-  statusCell.appendChild(badge);
+  const badgeBox = document.createElement('div');
+  badgeBox.className = 'pub-row__cell-box';
+  badgeBox.appendChild(badge);
+  statusCell.appendChild(badgeBox);
   row.appendChild(statusCell);
 
   const wrap = document.createElement('div');
@@ -4678,10 +4687,19 @@ function buildPubRow(p) {
 
   const statusCell = document.createElement('div');
   statusCell.className = 'pub-row__cell';
+  // Rótulo fantasma: reserva la misma línea que "Stock"/"Ventas" para que la
+  // insignia quede a la altura de los números y no más abajo.
+  const ghost = pubCellLabel('Estado');
+  ghost.classList.add('pub-row__cell-label--ghost');
+  ghost.setAttribute('aria-hidden', 'true');
+  statusCell.appendChild(ghost);
   const badge = document.createElement('span');
   badge.className = 'pub-status ' + (p.is_active ? 'pub-status--active' : 'pub-status--paused');
   badge.textContent = p.is_active ? 'Activa' : 'Pausada';
-  statusCell.appendChild(badge);
+  const badgeBox = document.createElement('div');
+  badgeBox.className = 'pub-row__cell-box';
+  badgeBox.appendChild(badge);
+  statusCell.appendChild(badgeBox);
   row.appendChild(statusCell);
 
   row.appendChild(buildPubActions(p));
