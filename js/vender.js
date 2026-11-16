@@ -5214,9 +5214,8 @@ async function restoreProductDraft() {
   }
 }
 
-/** Muestra el form. Va ANTES del listado en el HTML (no lo reemplaza): los
- *  productos ya publicados se corren para abajo, el vendedor los sigue
- *  viendo mientras carga uno nuevo. No hace scroll acá adentro a propósito:
+/** Muestra el form. Mientras está abierto, el listado de publicaciones se
+ *  oculta (clase `is-form-open` en `.pub-wrap`). No hace scroll acá adentro a propósito:
  *  al editar, todavía falta cargar la galería y las variantes (async, con
  *  fotos reales de por medio) -- si el scroll "smooth" arranca antes de que
  *  termine ese trabajo, el cambio de alto de la página a mitad de la
@@ -5226,6 +5225,9 @@ async function restoreProductDraft() {
 function openProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
+  // Las publicaciones (buscador, filtros, selección y lista) solo se ven en
+  // "Publicaciones", no mientras se crea o edita un producto.
+  container?.closest('.pub-wrap')?.classList.add('is-form-open');
   // "Seleccionar varios" es del listado: mientras se crea o edita una
   // publicación no tiene que verse (y se sale del modo selección).
   if (pubSelectMode) setPubSelectMode(false);
@@ -5244,6 +5246,7 @@ function scrollToProductForm() {
 function closeProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = true;
+  container?.closest('.pub-wrap')?.classList.remove('is-form-open');
   const bulk = document.getElementById('pub-bulk');
   if (bulk) bulk.hidden = false;
 }

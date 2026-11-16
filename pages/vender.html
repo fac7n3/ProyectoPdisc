@@ -504,6 +504,11 @@
       .pub-publish__item--soon { color: var(--bl-text-secondary); }
       .pub-soon { margin-left: auto; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: var(--bl-surface-alt); color: var(--bl-text-muted); padding: 0.12rem 0.45rem; border-radius: var(--bl-radius-pill); }
 
+      /* Con el formulario de producto abierto no se muestran las publicaciones
+         (buscador, filtros, selección y lista): solo aparecen en "Publicaciones". */
+      .pub-wrap.is-form-open #pub-toolbar,
+      .pub-wrap.is-form-open #pub-bulk,
+      .pub-wrap.is-form-open #pub-list { display: none; }
       .pub-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
       .pub-search { position: relative; flex: 1 1 240px; min-width: 200px; }
       .pub-search i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-muted); font-size: 0.85rem; }
@@ -1906,10 +1911,9 @@
                 </div>
               </div>
 
-              <!-- Formulario de alta/edición. Oculto por defecto. Va ANTES del
-                   listado a propósito (A113): al publicar/editar, los productos ya
-                   publicados se corren para abajo en vez de desaparecer -- el
-                   vendedor los sigue viendo mientras carga uno nuevo. -->
+              <!-- Formulario de alta/edición. Oculto por defecto. Al abrirlo, vender.js
+                   le pone `is-form-open` a .pub-wrap y se esconden las publicaciones
+                   (buscador, filtros, selección y lista): solo se ven en "Publicaciones". -->
               <div id="add-product-form-container" class="pubform" hidden>
                 <div class="pubform__head">
                   <button type="button" class="pubform__back" id="btn-back-publicaciones">
