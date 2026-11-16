@@ -240,7 +240,7 @@ html[data-theme="dark"] .catpick__opt:has(.catpick__input:checked) .catpick__ico
 html[data-theme="dark"] .catpick__check {
   color: var(--dk-accent-text);
 }
-@media (max-width: 768px) {
+@media all {
 html[data-theme="dark"] .catpick__toggle-icon {
   color: var(--dk-accent-text);
 }
@@ -1686,6 +1686,11 @@ html[data-theme="dark"] .mc-navitem.is-active {
 }
 html[data-theme="dark"] .mc-hamburger {
   color: var(--dk-accent-text);
+}
+@media (max-width: 900px) {
+html[data-theme="dark"] .mc-hamburger {
+  color: var(--dk-accent-text);
+}
 }
 html[data-theme="dark"] .rs-card__title {
   color: var(--bl-text);

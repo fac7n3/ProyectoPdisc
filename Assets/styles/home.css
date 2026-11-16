@@ -3204,11 +3204,11 @@ button.coupon-chip:hover {
 .catpick__opt:has(.catpick__input:checked) .catpick__name { font-weight: 600; }
 
 /* Variante desplegable (.catpick--dropdown, la arma js/vender.js para la categoría del
-   perfil del comercio): en celular, una barra que al tocarla abre la lista. En compu
-   la barra no existe y se ve la grilla de siempre. */
+   producto y la del perfil del comercio): una barra que al tocarla abre la lista, en
+   celular y en compu. Sin esa clase se ve la grilla de siempre (alta de comercio). */
 .catpick__toggle { display: none; }
 
-@media (max-width: 768px) {
+@media all {
   .catpick--dropdown .catpick__toggle {
     display: flex;
     align-items: center;
