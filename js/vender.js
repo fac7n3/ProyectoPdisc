@@ -1986,7 +1986,10 @@ function renderOrderDetail(order, events) {
 
   const head = rsEl('div', 'pd-detail__head');
   const title = rsEl('div');
-  title.appendChild(rsEl('h2', 'pd-detail__title', `Pedido ${orderLabel(order)}`));
+  // "#BL-1056" no se parte en el guion: nowrap solo en el número.
+  const titleH2 = rsEl('h2', 'pd-detail__title', 'Pedido ');
+  titleH2.appendChild(rsEl('span', 'pd-detail__ref', orderLabel(order)));
+  title.appendChild(titleH2);
   title.appendChild(rsEl('p', 'pd-detail__sub', new Date(order.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })));
   head.append(title, rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS[order.status] || order.status));
   body.appendChild(head);
