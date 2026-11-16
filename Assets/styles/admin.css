@@ -250,6 +250,28 @@
   color: var(--bl-primary);
 }
 
+.admin-topbar__back {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--bl-radius-md);
+  color: var(--bl-text-secondary);
+  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.admin-topbar__back[hidden] {
+  display: none;
+}
+
+.admin-topbar__back:hover {
+  background: var(--bl-surface-alt);
+  color: var(--bl-primary);
+}
+
 .admin-topbar__title {
   display: flex;
   flex-direction: column;
@@ -861,6 +883,7 @@
 
   .admin-topbar {
     padding: 0 1rem;
+    gap: 0.5rem;
   }
 
   .admin-topbar__home span,

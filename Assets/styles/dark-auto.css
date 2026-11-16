@@ -1018,6 +1018,12 @@ html[data-theme="dark"] .admin-topbar__menu {
 html[data-theme="dark"] .admin-topbar__menu:hover {
   color: var(--dk-accent-text);
 }
+html[data-theme="dark"] .admin-topbar__back {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .admin-topbar__back:hover {
+  color: var(--dk-accent-text);
+}
 html[data-theme="dark"] .admin-section__title {
   color: var(--dk-accent-text);
 }
