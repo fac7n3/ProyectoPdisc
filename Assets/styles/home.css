@@ -1976,25 +1976,6 @@ button.coupon-chip:hover {
   background-image: linear-gradient(180deg, rgba(6, 167, 125, 0) 0%, rgba(6, 167, 125, 0) 40%, rgba(6, 167, 125, 0.15) 55%, rgba(6, 167, 125, 0.35) 75%, rgba(6, 167, 125, 0.6) 100%), url('../images/banners/promo-gaseosas.webp');
 }
 
-/* Sombra extra encima del degradé, para que "Promoción"/"Combos"/"Oferta
-   del día" y el título se lean bien caiga donde caiga el texto de la
-   tarjeta sobre la foto. */
-.promo-banner__eyebrow,
-.promo-banner__title {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.45);
-}
-
-.promo-banner__eyebrow {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.promo-banner__title {
-  font-size: 1.0625rem;
-  font-weight: 700;
-}
-
 @media (max-width: 640px) {
   /* El grande queda solo en su fila y los dos chicos van debajo, uno al lado
      del otro (ver .promo-mosaic__side en el @media del segundo mosaico, que
@@ -2124,25 +2105,6 @@ button.coupon-chip:hover {
     gap: 0.75rem;
   }
 
-  /* A la mitad del ancho no entra el texto del tamaño de escritorio. */
-  .promo-mosaic__side .promo-banner,
-  .promo-mosaic-2__side .promo-banner-2 {
-    padding: 0.6rem;
-  }
-
-  .promo-mosaic__side .promo-banner__eyebrow,
-  .promo-mosaic-2__side .promo-banner__eyebrow {
-    font-size: 0.6875rem;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-
-  .promo-mosaic__side .promo-banner__title,
-  .promo-mosaic-2__side .promo-banner__title {
-    font-size: 0.8125rem;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
 }
 
 /* ===========================================================
@@ -2211,21 +2173,11 @@ button.coupon-chip:hover {
   min-height: 0;
 }
 
-/* Con promo de comercio la imagen ya trae su texto: no se le pone encima el
-   nombre del comercio ni el título, ni el degradé oscuro de abajo. */
-.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__eyebrow,
-.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__title {
-  display: none;
-}
-
+/* Con promo de comercio la imagen ya trae su texto: solo se ve la imagen. */
 .promo-banner-2--g.promo-banner-2--hero.is-store-promo {
   background-image: var(--promo-img);
   background-size: contain;
   background-position: center;
-}
-
-.promo-banner-2--g.promo-banner-2--hero .promo-banner__slides::after {
-  display: none;
 }
 
 /* En escritorio y tablet tiene el mismo alto que el banner principal de
@@ -2301,16 +2253,15 @@ button.coupon-chip:hover {
    .is-store-promo. Dos clases de especificidad para pisar el
    background-image/size fijo de cada variante (--a, --d, --e...). La
    imagen va entera (contain, sin recortarle el texto propio) sobre el azul
-   de marca, con una franja oscura abajo para que se lea el nombre del
-   comercio.
+   de marca. No lleva nombre del comercio ni título encima: solo la imagen.
    =========================================================== */
 .promo-banner.is-store-promo,
 .promo-banner-2.is-store-promo {
   background-color: var(--bl-primary);
-  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
-  background-size: 100% 100%, contain;
-  background-position: 0 0, center;
-  background-repeat: no-repeat, no-repeat;
+  background-image: var(--promo-img);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
@@ -2362,13 +2313,6 @@ button.coupon-chip:hover {
   overflow: hidden;
 }
 
-.promo-banner__slides::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%);
-}
-
 .promo-banner__slide {
   position: absolute;
   inset: 0;
@@ -2381,12 +2325,6 @@ button.coupon-chip:hover {
 
 .promo-banner__slide.is-active {
   opacity: 1;
-}
-
-.has-slides .promo-banner__eyebrow,
-.has-slides .promo-banner__title {
-  position: relative;
-  z-index: 1;
 }
 
 /* Puntitos arriba a la derecha: avisan que hay más de una imagen. */
@@ -2414,18 +2352,16 @@ button.coupon-chip:hover {
   transform: scale(1.25);
 }
 
-/* En el celular cada espacio ocupa todo el ancho y la imagen del comercio
-   (que ya trae su propio texto y precio) lo llena entera: el rótulo de abajo
-   (comercio + título) le caía encima y tapaba el precio. Acá la imagen va
-   arriba, con su propia proporción (la de cada espacio: 1600x900 en a/b/c,
-   1600x320 en d, 1200x300 en e/f), y el rótulo en una franja azul debajo.
+/* En el celular cada espacio ocupa todo el ancho y mide lo que la imagen del
+   comercio, con su propia proporción (la de cada espacio: 1600x900 en a/b/c,
+   1600x320 en d, 1200x300 en e/f). Sin rótulo ni franja debajo.
    El padding-top en % se mide sobre el ancho: es el alto de la imagen. */
 @media (max-width: 640px) {
   .promo-banner.is-store-promo,
   .promo-banner-2.is-store-promo {
     --promo-ratio: 56.25%;
     aspect-ratio: auto;
-    padding: calc(var(--promo-ratio) + 0.6rem) 0.9rem 0.75rem;
+    padding: var(--promo-ratio) 0 0;
     background-image: var(--promo-img);
     background-size: 100% auto;
     background-position: center top;
@@ -2434,17 +2370,6 @@ button.coupon-chip:hover {
   .promo-banner-2--d.is-store-promo { --promo-ratio: 20%; }
   .promo-banner-2--e.is-store-promo,
   .promo-banner-2--f.is-store-promo { --promo-ratio: 25%; }
-
-  /* Los chicos van de a dos (ver .promo-mosaic__side arriba): menos aire
-     alrededor del rótulo, y el rótulo pegado a la imagen. Las dos tarjetas de
-     la fila miden lo mismo de alto (la del rótulo más largo manda), así que a
-     la otra le sobra azul abajo en vez de quedarle un hueco entre la foto y
-     el texto. */
-  .promo-mosaic__side .promo-banner.is-store-promo,
-  .promo-mosaic-2__side .promo-banner-2.is-store-promo {
-    justify-content: flex-start;
-    padding: calc(var(--promo-ratio) + 0.45rem) 0.6rem 0.6rem;
-  }
 
   .promo-mosaic__side .promo-banner__dots,
   .promo-mosaic-2__side .promo-banner__dots {
@@ -2468,10 +2393,6 @@ button.coupon-chip:hover {
     border-bottom-right-radius: 0;
   }
 
-  /* El degradé oscuro solo servía para leer el rótulo encima de la foto. */
-  .is-store-promo .promo-banner__slides::after {
-    display: none;
-  }
 }
 
 /* ===========================================================
