@@ -1986,6 +1986,9 @@ html[data-theme="dark"] .pub-alias-gate {
 html[data-theme="dark"] .pub-alias-gate__icon {
   color: #f5b687;
 }
+html[data-theme="dark"] .staff-row__remove {
+  color: #f05151;
+}
 html[data-theme="dark"] .sl-pin i {
   color: var(--dk-accent-text);
 }
