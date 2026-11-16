@@ -1158,16 +1158,11 @@ function promoItem(promo) {
     url: promo.image_url,
     href: promoHref(promo),
     alt: promoAriaLabel(promo),
-    store: promo.stores.name,
-    title: promo.title || '',
   };
 }
 
-/** Pone en el banner el rótulo, el destino y los textos accesibles de una publicidad. */
-function applyPromoItem(banner, eyebrow, title, item) {
-  eyebrow.textContent = item.store;
-  title.textContent = item.title;
-  title.hidden = !item.title;
+/** Pone en el banner el destino y los textos accesibles de una publicidad (sin rótulo visible: solo la imagen). */
+function applyPromoItem(banner, item) {
   banner.dataset.promoHref = item.href;
   // El click abre la imagen ampliada primero, igual que un banner fijo (ver
   // initPromoBanners): la página del comercio recién se abre en la 2da interacción.
@@ -1184,7 +1179,7 @@ function applyPromoItem(banner, eyebrow, title, item) {
  * del usuario: es publicidad de comercios y tiene que verse la de todos).
  * `startDelay` desfasa un banner de otro para que no cambien todos a la vez.
  */
-function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
+function mountPromoSlides(banner, items, startDelay) {
   const wrap = document.createElement('span');
   wrap.className = 'promo-banner__slides';
   wrap.setAttribute('aria-hidden', 'true');
@@ -1227,7 +1222,7 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
     slider.index = i;
     slides.forEach((slide, n) => slide.classList.toggle('is-active', n === i));
     dotEls.forEach((dot, n) => dot.classList.toggle('is-active', n === i));
-    applyPromoItem(banner, eyebrow, title, items[i]);
+    applyPromoItem(banner, items[i]);
     if (slider.visible) { loadSlide(i); preloadNext(); }
   };
   slider.pause = () => { slider.paused = true; };
@@ -1299,25 +1294,19 @@ async function paintHomePromos(banners) {
     if (!promos?.length) return;
     const items = promos.map(promoItem);
 
-    // La imagen del comercio ya trae su propio texto: el rótulo fijo del
-    // banner ("Combos", "Espacio para un banner"...) se reemplaza por el
-    // nombre del comercio + el título de la promo, si cargó uno.
+    // La imagen del comercio ya trae su propio texto: se vacía el banner y
+    // queda solo la imagen (sin nombre del comercio ni título encima).
     banner.textContent = '';
-    const eyebrow = document.createElement('span');
-    eyebrow.className = 'promo-banner__eyebrow';
-    const title = document.createElement('span');
-    title.className = 'promo-banner__title';
-    banner.append(eyebrow, title);
 
     if (items.length > 1) {
-      // Varias publicidades: capas que pasan solas (el texto va sobre todas).
-      mountPromoSlides(banner, items, eyebrow, title, (n % 3) * 1500);
+      // Varias publicidades: capas que pasan solas.
+      mountPromoSlides(banner, items, (n % 3) * 1500);
     } else {
       // La URL queda en data-promo-img (el modo ampliado la lee de ahí) y la imagen
       // se pone cuando el espacio se acerca a la pantalla.
       banner.dataset.promoImg = items[0].url;
       whenNearViewport(banner, () => banner.style.setProperty('--promo-img', `url("${encodeURI(promoBannerUrl(items[0].url, isSmallScreen()))}")`));
-      applyPromoItem(banner, eyebrow, title, items[0]);
+      applyPromoItem(banner, items[0]);
     }
     banner.classList.add('is-store-promo');
     banner.setAttribute('role', 'button');

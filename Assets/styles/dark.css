@@ -157,7 +157,7 @@ html[data-theme="dark"] .promo-banner-2--f {
 html[data-theme="dark"] .promo-banner.is-store-promo,
 html[data-theme="dark"] .promo-banner-2.is-store-promo {
   background-color: #284175;
-  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
+  background-image: var(--promo-img);
 }
 /* Varias publicidades en el mismo espacio (capas .promo-banner__slide): el fondo
    queda liso y el puntito activo sigue blanco, porque va sobre la foto. */
