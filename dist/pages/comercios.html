@@ -19,7 +19,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/comercios-I7OYWWR9.js"></script>
+    <style>.store-filter{flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;display:flex}.store-filter[hidden]{display:none}.store-filter__chip{font:inherit;border-radius:var(--bl-radius-pill);border:1px solid var(--bl-border);background:var(--bl-surface);color:var(--bl-text-secondary);cursor:pointer;padding:.375rem .875rem;font-size:.8125rem;font-weight:600;transition:background .15s,color .15s,border-color .15s}.store-filter__chip:hover{border-color:var(--bl-primary);color:var(--bl-primary)}.store-filter__chip[aria-pressed=true]{background:var(--bl-primary);border-color:var(--bl-primary);color:var(--bl-text-inverse)}.store-filter__chip:focus-visible{outline:2px solid var(--bl-primary);outline-offset:2px}</style>
+    <script type="module" crossorigin src="/assets/comercios-MmAba0mK.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/theme-D4m-qZEj.js">
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Dr2DW4EU.js">
     <link rel="modulepreload" crossorigin href="/assets/cart-utils-BxkiIYOE.js">
@@ -89,6 +90,8 @@
             <h1 class="results-title">Comercios de Baradero</h1>
             <span class="catalog-count" id="stores-count" role="status" aria-live="polite"></span>
           </div>
+
+          <div class="store-filter" id="store-filter" role="group" aria-label="Filtrar comercios por rubro" hidden></div>
 
           <div class="products__grid" id="stores-grid">
             <!-- skeleton -->
