@@ -1413,6 +1413,9 @@ html[data-theme="dark"] .ct-chip.is-active {
   background: var(--bl-primary);
   color: #fff;
 }
+html[data-theme="dark"] .ct-card__fav.is-favorite {
+  color: var(--bl-danger-text);
+}
 html[data-theme="dark"] .ct-card__category {
   color: var(--dk-accent-text);
 }

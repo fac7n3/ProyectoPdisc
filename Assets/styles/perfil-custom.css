@@ -840,15 +840,34 @@ a.compra-item-text:hover {
 
 .fav-chip--active .fav-chip__count { color: rgba(255, 255, 255, 0.75); }
 
-/* === Favoritos: sub-pestañas productos/comercios (P1-9) === */
+/* === Favoritos: sub-pestañas productos/comercios/servicios (P1-9) ===
+   Las tres se reparten el ancho por igual y, si el texto no entra (pantallas
+   muy angostas o letra grande), bajan de renglón en vez de salirse de la
+   tarjeta: antes "Servicios" quedaba cortado a la derecha en el celular. */
+.fav-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .fav-subtab-btn {
-  padding: 0.5rem 1.1rem;
+  flex: 1 1 0;
+  min-width: max-content;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--bl-perfil-border);
   border-radius: var(--radius-md);
   background: var(--bl-perfil-surface);
   color: var(--bl-perfil-text-sec);
+  font: inherit;
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
+}
+
+.fav-subtab-btn:focus-visible {
+  outline: 2px solid var(--bl-primary);
+  outline-offset: 2px;
 }
 
 .fav-subtab-btn--active {
@@ -857,16 +876,9 @@ a.compra-item-text:hover {
   color: #fff;
 }
 
-/* A113-291: "Servicios" visible pero deshabilitada -- todavía no hay esa
-   feature en la app, se muestra grisada para dejar en claro que está
-   pensada pero no lista, en vez de esconderla del todo. */
-.fav-subtab-btn--disabled,
-.fav-subtab-btn--disabled:hover {
-  background: var(--bl-perfil-bg);
-  border-color: var(--bl-perfil-border);
-  color: var(--bl-perfil-text-sec);
-  opacity: 0.55;
-  cursor: not-allowed;
+@media (max-width: 480px) {
+  .fav-subtabs { gap: 0.375rem; }
+  .fav-subtab-btn { padding: 0.5rem 0.4rem; font-size: 0.875rem; }
 }
 
 /* === Favoritos Grid === */
@@ -874,6 +886,11 @@ a.compra-item-text:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
+}
+
+/* Dos columnas en el celular: con una sola cada foto cuadrada ocupaba todo el ancho. */
+@media (max-width: 480px) {
+  .favoritos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 }
 
 .fav-card {
@@ -913,6 +930,27 @@ a.compra-item-text:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.fav-subtitle {
+  font-size: 0.8125rem;
+  color: var(--bl-perfil-text-sec);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Profesional sin foto: el mismo cuadrado que las fotos, con el ícono de persona. */
+.fav-card__placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bl-perfil-bg);
+  color: var(--bl-perfil-text-sec);
+  font-size: 2.5rem;
+  border-bottom: 1px solid var(--bl-perfil-border);
 }
 
 .fav-price {

@@ -81,6 +81,7 @@ const comprasContainer = document.getElementById("compras-container");
 const comprasFilterInput = document.getElementById("compras-filter-input");
 const favoritosContainer = document.getElementById("favoritos-container");
 const favoritosStoresContainer = document.getElementById("favoritos-stores-container");
+const favoritosServicesContainer = document.getElementById("favoritos-services-container");
 const favFilterInput = document.getElementById("fav-filter-input");
 
 // Hub de secciones (grilla de tarjetas) y panel de la sección abierta
@@ -827,15 +828,16 @@ if (addressForm) {
   });
 }
 
-// --- Favoritos: productos (favorites, F4-03) + comercios (favorite_stores, P1-9) ---
+// --- Favoritos: productos (favorites, F4-03) + comercios (favorite_stores, P1-9) + servicios (favorite_professionals, 167) ---
 // Se guardan en memoria para poder filtrar client-side sin repetir la query
 // por cada letra tecleada (el propio ítem del backlog dice "filtro simple,
 // no hace falta una query nueva").
 let favProductsCache = [];
 let favStoresCache = [];
+let favServicesCache = [];
 /** Categoría elegida en el filtro ('todas' = sin filtrar). */
 let favCategory = 'todas';
-/** Sub-pestaña abierta: el filtro por categoría solo aplica a productos. */
+/** Sub-pestaña abierta ('productos' | 'comercios' | 'servicios'): el filtro por categoría solo aplica a productos. */
 let favTab = 'productos';
 
 /**
@@ -900,6 +902,42 @@ function buildFavStoreCard(s) {
   titleSpan.className = 'fav-title';
   titleSpan.textContent = s.name;
   info.appendChild(titleSpan);
+
+  card.appendChild(info);
+  return card;
+}
+
+/** Tarjeta de un profesional favorito: lleva a su ficha en el directorio de Contratar. */
+function buildFavServiceCard(p) {
+  const card = document.createElement('a');
+  card.className = 'fav-card';
+  card.href = `./contratar.html?pro=${encodeURIComponent(p.id)}`;
+
+  if (p.photo_url) {
+    const img = document.createElement('img');
+    img.src = p.photo_url;
+    img.alt = p.full_name;
+    img.loading = 'lazy';
+    card.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'fav-card__placeholder';
+    ph.innerHTML = '<i class="fa-solid fa-user" aria-hidden="true"></i>';
+    card.appendChild(ph);
+  }
+
+  const info = document.createElement('div');
+  info.className = 'fav-card-info';
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'fav-title';
+  titleSpan.textContent = p.full_name;
+  info.appendChild(titleSpan);
+
+  const specialty = document.createElement('span');
+  specialty.className = 'fav-subtitle';
+  specialty.textContent = p.specialty || '';
+  info.appendChild(specialty);
 
   card.appendChild(info);
   return card;
@@ -1004,6 +1042,9 @@ function applyFavFilter() {
   if (q) products = products.filter((p) => p.title.toLowerCase().includes(q));
 
   const stores = q ? favStoresCache.filter((s) => s.name.toLowerCase().includes(q)) : favStoresCache;
+  const services = q
+    ? favServicesCache.filter((p) => `${p.full_name} ${p.specialty || ''}`.toLowerCase().includes(q))
+    : favServicesCache;
 
   // El mensaje de vacío distingue "no tenés nada" de "tu filtro no dio nada":
   // decirle "todavía no agregaste favoritos" a alguien que sí tiene, pero
@@ -1017,24 +1058,32 @@ function applyFavFilter() {
     favoritosStoresContainer, stores, buildFavStoreCard,
     filtrando ? 'No hay comercios que coincidan con lo que buscás.' : 'Aún no agregaste comercios a tus favoritos.'
   );
+  renderFavList(
+    favoritosServicesContainer, services, buildFavServiceCard,
+    q ? 'No hay servicios que coincidan con lo que buscás.' : 'Aún no agregaste servicios a tus favoritos. Tocá el corazón de un profesional en Contratar para guardarlo acá.'
+  );
 
   renderFavCategoryChips();
 }
 
-/** Sub-pestañas Productos/Comercios dentro de "Mis favoritos" (P1-9). */
+/** Sub-pestañas Productos/Comercios/Servicios dentro de "Mis favoritos" (P1-9). */
 function setupFavSubtabs() {
-  const btnProducts = document.getElementById('fav-subtab-products');
-  const btnStores = document.getElementById('fav-subtab-stores');
-  if (!btnProducts || !btnStores) return;
+  const tabs = [
+    { btn: document.getElementById('fav-subtab-products'), key: 'productos', container: favoritosContainer },
+    { btn: document.getElementById('fav-subtab-stores'), key: 'comercios', container: favoritosStoresContainer },
+    { btn: document.getElementById('fav-subtab-services'), key: 'servicios', container: favoritosServicesContainer },
+  ].filter((t) => t.btn);
+  if (!tabs.length) return;
 
-  [btnProducts, btnStores].forEach((btn) => {
+  tabs.forEach(({ btn, key }) => {
     btn.addEventListener('click', () => {
-      [btnProducts, btnStores].forEach((b) => b.classList.remove('fav-subtab-btn--active'));
-      btn.classList.add('fav-subtab-btn--active');
-      const target = btn.dataset.favTarget;
-      favTab = target === 'favoritos-container' ? 'productos' : 'comercios';
-      if (favoritosContainer) favoritosContainer.style.display = target === 'favoritos-container' ? '' : 'none';
-      if (favoritosStoresContainer) favoritosStoresContainer.style.display = target === 'favoritos-stores-container' ? '' : 'none';
+      favTab = key;
+      tabs.forEach((t) => {
+        const active = t.key === key;
+        t.btn.classList.toggle('fav-subtab-btn--active', active);
+        t.btn.setAttribute('aria-pressed', String(active));
+        if (t.container) t.container.style.display = active ? '' : 'none';
+      });
       renderFavCategoryChips();
     });
   });
@@ -1112,6 +1161,31 @@ async function loadFavoritos(userId) {
   } catch (err) {
     console.error("Error loading favorite stores", err);
     favStoresCache = [];
+  }
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: favServiceRows, error: favServiceError } = session
+      ? await supabase.from('favorite_professionals').select('professional_id').eq('client_id', session.user.id)
+      : { data: [], error: null };
+    if (favServiceError) throw favServiceError;
+
+    const professionalIds = (favServiceRows || []).map((f) => f.professional_id);
+    let services = [];
+    if (professionalIds.length > 0) {
+      // professionals solo muestra los activos: un profesional pausado o dado
+      // de baja desaparece de la lista sin dejar una tarjeta rota.
+      const { data, error } = await supabase
+        .from('professionals')
+        .select('id, full_name, specialty, photo_url')
+        .in('id', professionalIds);
+      if (error) throw error;
+      services = data || [];
+    }
+    favServicesCache = services;
+  } catch (err) {
+    console.error("Error loading favorite services", err);
+    favServicesCache = [];
   }
 
   applyFavFilter();
