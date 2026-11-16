@@ -809,7 +809,7 @@ function bindModalEvents(overlay, data) {
       favBtn.classList.toggle('is-active', isActive);
       icon.classList.toggle('fa-solid', isActive);
       icon.classList.toggle('fa-regular', !isActive);
-      _showToast(isActive ? 'Agregado a favoritos' : 'Eliminado de favoritos', isActive ? 'success' : 'default');
+      if (!isActive) _showToast('Eliminado de favoritos', 'default');
 
       try {
         await _toggleFavorite(data.id, wasActive);

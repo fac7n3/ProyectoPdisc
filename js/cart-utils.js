@@ -948,7 +948,6 @@ export async function initWishlist(knownFavoriteIds) {
       if (isActive) {
         icon.classList.replace('fa-regular', 'fa-solid');
         btn.style.color = '#ef4444';
-        showToast('Agregado a favoritos', 'success');
       } else {
         icon.classList.replace('fa-solid', 'fa-regular');
         btn.style.color = '';
