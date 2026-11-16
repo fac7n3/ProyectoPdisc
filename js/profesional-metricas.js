@@ -19,6 +19,7 @@ const EVENTOS = [
   { tipo: 'profile_view', label: 'Vieron tu tarjeta', icono: 'fa-solid fa-eye' },
   { tipo: 'call_click', label: 'Tocaron Llamar', icono: 'fa-solid fa-phone' },
   { tipo: 'whatsapp_click', label: 'Tocaron WhatsApp', icono: 'fa-brands fa-whatsapp' },
+  { tipo: 'social_click', label: 'Tocaron tus redes', icono: 'fa-solid fa-share-nodes' }, // migración 168
 ];
 
 let ctx = null;
@@ -68,8 +69,9 @@ function render(filas, cantConsultas) {
 
   const vistas = totales.get('profile_view');
   const contactos = totales.get('call_click') + totales.get('whatsapp_click');
+  const redes = totales.get('social_click');
 
-  if (!vistas && !contactos && !cantConsultas) {
+  if (!vistas && !contactos && !redes && !cantConsultas) {
     const vacio = el('div', 'of-empty');
     vacio.appendChild(icono('fa-solid fa-chart-simple'));
     vacio.appendChild(el('p', null, 'Todavía no hay movimiento para mostrar.'));
