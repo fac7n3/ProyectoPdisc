@@ -11,7 +11,12 @@ function reducedMotion() {
 }
 
 if (btn) {
-  const toggle = () => btn.classList.toggle('scroll-top--visible', window.scrollY > 400);
+  // Se esconde cuando el pie entra en pantalla: en celular tapaba sus enlaces.
+  const footer = document.querySelector('footer');
+  const toggle = () => {
+    const overFooter = footer && footer.getBoundingClientRect().top < window.innerHeight;
+    btn.classList.toggle('scroll-top--visible', window.scrollY > 400 && !overFooter);
+  };
   window.addEventListener('scroll', toggle, { passive: true });
   toggle();
   btn.addEventListener('click', () => {

@@ -246,6 +246,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   trigger.className = 'cat-mega__trigger';
   trigger.setAttribute('aria-haspopup', 'true');
   trigger.setAttribute('aria-expanded', 'false');
+  // En celular el texto "Categorías" se esconde y queda solo el ícono.
+  trigger.setAttribute('aria-label', 'Categorías');
   const barsIcon = document.createElement('i');
   barsIcon.className = 'fa-solid fa-bars';
   trigger.appendChild(barsIcon);
@@ -1064,8 +1066,11 @@ export function buildSectionBackButton(label = 'Volver') {
 export function initScrollTop() {
   const btn = document.getElementById('scroll-top-btn');
   if (!btn) return;
+  // Se esconde cuando el pie entra en pantalla: en celular tapaba sus enlaces.
+  const footer = document.querySelector('footer');
   window.addEventListener('scroll', () => {
-    btn.classList.toggle('scroll-top--visible', window.scrollY > 400);
+    const overFooter = footer && footer.getBoundingClientRect().top < window.innerHeight;
+    btn.classList.toggle('scroll-top--visible', window.scrollY > 400 && !overFooter);
   }, { passive: true });
   btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }

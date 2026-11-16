@@ -513,6 +513,9 @@
       .store-cat-arrow--next { right: 0; }
       @media (max-width: 768px) {
         .store-cat-arrow { display: none !important; }
+        /* Sin flechas no hace falta el hueco que les deja lugar: la primera
+           tarjeta arranca al ras del borde de la página. */
+        .store-cat-row__track { padding-left: 0; padding-right: 0; scroll-padding-left: 0; scroll-padding-right: 0; }
       }
 
       @media (max-width: 1024px) {
