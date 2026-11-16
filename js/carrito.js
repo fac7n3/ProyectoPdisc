@@ -297,15 +297,6 @@ function buildCartRow(item, index) {
     infoDiv.appendChild(warn);
   }
 
-  // El comercio ya está en la cabecera del grupo; acá se reemplaza por el
-  // estado del ítem, que es lo que ahora puede sorprender al usuario.
-  if (!selected) {
-    const pendingSpan = document.createElement('span');
-    pendingSpan.className = 'cart-item__pending-tag';
-    pendingSpan.textContent = 'Pendiente — no entra en esta compra';
-    infoDiv.appendChild(pendingSpan);
-  }
-
   const detailLink = document.createElement('a');
   detailLink.href = './home.html';
   detailLink.className = 'cart-item__detail-link';
@@ -1232,7 +1223,6 @@ function initCartEvents() {
       cart[index].selected = checked;
       saveCart(cart);
       renderCart();
-      showHint(checked ? CART_HINTS.itemSelected : CART_HINTS.itemDeselected, checked ? 'success' : 'default');
       return;
     }
 
