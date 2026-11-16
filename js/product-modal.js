@@ -367,7 +367,6 @@ function buildModalErrorHTML() {
 function buildModalHTML(data) {
   const stockInfo = getStockInfo(data.stock);
   const stockDisabled = data.stock <= 0;
-  const shopInitial = (data.shop || '?').charAt(0).toUpperCase();
 
   let badgeHTML = '';
   if (data.badgeText) {
@@ -562,7 +561,6 @@ function buildModalHTML(data) {
         <div class="pm-tabs" role="tablist">
           <button class="pm-tab is-active" data-tab="desc" role="tab" aria-selected="true">Descripción</button>
           <button class="pm-tab" data-tab="specs" role="tab" aria-selected="false">Características</button>
-          <button class="pm-tab" data-tab="shop" role="tab" aria-selected="false">Sobre la tienda</button>
           <button class="pm-tab" data-tab="reviews" role="tab" aria-selected="false">Reseñas${data.hasRating ? ` (${data.ratingCount})` : ''}</button>
         </div>
 
@@ -577,21 +575,6 @@ function buildModalHTML(data) {
             <div class="pm-feature-item">Vendido por ${data.shop}</div>
             <div class="pm-feature-item">${data.shippingText}</div>
             <div class="pm-feature-item">Disponible para envío y retiro en tienda</div>
-          </div>
-        </div>
-
-        <div class="pm-tab-content" data-tab-content="shop">
-          <div class="pm-shop-info">
-            <div class="pm-shop-info__avatar">${shopInitial}</div>
-            <div class="pm-shop-info__details">
-              <div class="pm-shop-info__name">${data.shop}</div>
-              <div class="pm-shop-info__meta">
-                <i class="fa-solid fa-circle-check"></i> Comercio verificado • Baradero
-              </div>
-            </div>
-            <button class="pm-shop-info__link" id="pm-view-shop-btn" aria-label="Ver todos los productos de ${data.shop}">
-              Ver tienda
-            </button>
           </div>
         </div>
 
@@ -802,7 +785,6 @@ function bindModalEvents(overlay, data) {
     shopLink?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToShop(); }
     });
-    overlay.querySelector('#pm-view-shop-btn')?.addEventListener('click', goToShop);
   }
 
   // Favoritos (F4-03): misma fuente de verdad que las grillas de producto

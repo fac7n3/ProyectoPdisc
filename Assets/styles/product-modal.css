@@ -947,11 +947,6 @@
     text-align: center;
   }
 
-  /* En celular no va la pestaña "Sobre la tienda" (pedido del usuario). */
-  .pm-tab[data-tab="shop"] {
-    display: none;
-  }
-
   /* minmax(154px) no deja dos columnas en 312px: salía una sola tarjeta
      gigante por fila y el modal medía 3500px. */
   .pm-related__scroll {
