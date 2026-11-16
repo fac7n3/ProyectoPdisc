@@ -705,17 +705,17 @@
         .bl-detail__body { padding: 1rem 1.1rem; }
         .bl-detail__foot { padding: 0.8rem 1.1rem 1rem; }
       }
-      .bs-card__foot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px solid var(--bl-border-light); display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+      .bs-card__foot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px solid var(--bl-border-light); display: flex; flex-direction: column; align-items: stretch; gap: 0.6rem; }
       .bs-card__price { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
       .bs-card__price small { font-size: 0.72rem; font-weight: 600; color: var(--bl-text-muted); }
-      .bs-card__buy { display: inline-flex; align-items: center; gap: 0.5rem; }
-      .bs-card__btn { background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.55rem 1rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+      .bs-card__buy { display: flex; align-items: stretch; gap: 0.5rem; }
+      .bs-card__btn { background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.55rem 0.6rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; flex: 1 1 auto; white-space: nowrap; }
       .bs-card__btn:hover { background: var(--bl-vendor-accent-dark); }
       .bs-card__btn:disabled { background: var(--bl-border); color: var(--bl-text-muted); cursor: not-allowed; }
-      .bs-qty { display: inline-flex; align-items: center; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; }
-      .bs-qty__btn { background: none; border: none; padding: 0.35rem 0.65rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--bl-text); }
+      .bs-qty { display: inline-flex; flex: 0 0 auto; align-items: center; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; }
+      .bs-qty__btn { background: none; border: none; padding: 0.35rem 0.5rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--bl-text); }
       .bs-qty__btn:disabled { color: var(--bl-text-muted); cursor: not-allowed; }
-      .bs-qty__value { min-width: 2rem; text-align: center; font-weight: 700; font-size: 0.9rem; border-inline: 1px solid var(--bl-border); padding: 0.35rem 0; }
+      .bs-qty__value { min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.9rem; border-inline: 1px solid var(--bl-border); padding: 0.35rem 0; }
 
 
       .pd-wrap { margin-top: 0.5rem; }
