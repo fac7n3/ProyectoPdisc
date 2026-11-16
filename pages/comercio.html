@@ -631,7 +631,10 @@
          empujando el botón. */
       @media (max-width: 768px) {
         .store-header__top {
-          padding: 2rem 3.25rem 1.5rem 1rem;
+          /* Simétrico: el corazón/lápiz va arriba en la esquina, el título queda
+             más abajo y no se pisan; con más padding a la derecha el título
+             se veía corrido a la izquierda. */
+          padding: 2rem 1rem 1.5rem;
         }
         .store-header__logo-wrap {
           width: 64px;
@@ -687,7 +690,7 @@
 
       @media (max-width: 480px) {
         .store-header__top {
-          padding: 1.5rem 2.75rem 1.25rem 0.75rem;
+          padding: 1.5rem 0.75rem 1.25rem;
         }
         .store-header__title {
           font-size: 1.4rem;
