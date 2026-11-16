@@ -182,6 +182,13 @@
       .store-logo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
       .store-logo-picker__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       .store-logo-picker__error { color: var(--bl-danger, #ef4444); }
+      /* Celular: el logo arriba y, debajo, los botones (uno al lado del otro) y el texto de ayuda. */
+      @media (max-width: 640px) {
+        .store-logo-picker { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+        .store-logo-picker__field { width: 100%; flex: none; }
+        .store-logo-picker__actions { flex-wrap: nowrap; }
+        .store-logo-picker__actions .btn-outline { flex: 1 1 0; min-width: 0; padding-inline: 0.75rem; }
+      }
 
       /* Recortador del logo (openLogoCropper en vender.js): se abre SIEMPRE
          al elegir una imagen (sea cuadrada o no), overlay fijo con el mismo
