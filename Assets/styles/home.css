@@ -6395,7 +6395,7 @@ button.coupon-chip:hover {
 
 .bl-compare__title::-webkit-details-marker { display: none; }
 .bl-compare__title::after {
-  content: "078";
+  content: "\f078";
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
   font-size: 0.75rem;
