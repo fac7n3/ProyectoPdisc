@@ -1389,13 +1389,21 @@ html[data-theme="dark"] .store-cat-chip:hover {
 }
 
 /* ===== pages/comercios.html (<style>) ===== */
-html[data-theme="dark"] .store-filter__chip {
-  color: var(--bl-text-secondary);
+html[data-theme="dark"] .store-filter__btn {
+  color: var(--bl-text);
 }
-html[data-theme="dark"] .store-filter__chip:hover {
+html[data-theme="dark"] .store-filter__btn i {
   color: var(--dk-accent-text);
 }
-html[data-theme="dark"] .store-filter__chip[aria-pressed="true"] {
+html[data-theme="dark"] .store-filter__list li {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .store-filter__list li.is-active,
+html[data-theme="dark"] .store-filter__list li:hover {
+  background: var(--bl-surface-alt, rgba(40, 65, 117, 0.08));
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .store-filter__list li[aria-selected="true"] {
   color: var(--bl-text-inverse);
 }
 @media (max-width: 768px) {
