@@ -2037,11 +2037,12 @@ button.coupon-chip:hover {
   .promo-mosaic__side,
   .promo-mosaic-2__side {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
-  /* A la mitad del ancho no entra el texto del tamaño de escritorio. */
+  /* (antes de a dos columnas; ahora uno por fila, a todo el ancho, para que
+     se vean más grandes en el celular) */
   .promo-mosaic__side .promo-banner,
   .promo-mosaic-2__side .promo-banner-2 {
     padding: 0.6rem;
@@ -2166,6 +2167,11 @@ button.coupon-chip:hover {
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
+  }
+
+  /* Franjas casi de borde a borde: menos margen lateral = banner más grande */
+  .promo-strip {
+    padding: 0 0.5rem;
   }
 
   .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 21.9%; } /* 1600x350 */
