@@ -3241,18 +3241,17 @@ function setupStoreProfileForm() {
 // dueño carga la imagen y la publicación de los espacios de SU comercio.
 
 const HOME_PROMO_PROS = [
-  'Aparecés en la portada del inicio: lo primero que ve cualquiera que entra al sitio, antes de buscar nada.',
-  'Más clicks directos a tu publicación, sin que el vecino tenga que buscarte o encontrarte de casualidad.',
-  'Te destacás como comercio activo y recomendado, no uno más en la lista de resultados.',
-  'Lo usás para lo que más te convenga en el momento: una oferta puntual, un producto nuevo, o simplemente darte a conocer.',
-  'No tiene costo extra: es un espacio que se asigna, no se paga aparte.',
-  'Podés cambiar la imagen y la publicación cuando quieras, sin esperar a nadie.',
+  'Salís en la portada, lo primero que se ve.',
+  'Más clicks directos a tu comercio.',
+  'Te destacás sobre el resto.',
+  'Sin costo extra.',
+  'Cambiás la imagen cuando quieras.',
 ];
 
 const HOME_PROMO_CONS = [
-  'Solo te encuentran buscando o navegando por categoría: te perdés a la mayoría, que entra directo al inicio.',
-  'Quedás al mismo nivel que cualquier otro comercio, sin nada que te distinga de entrada.',
-  'Tus ofertas o novedades no tienen ningún lugar destacado donde mostrarse.',
+  'Solo te encuentran si te buscan.',
+  'Sos uno más de la lista.',
+  'Tus ofertas no tienen dónde lucirse.',
 ];
 
 function buildHomePromoEmptyState(storeName) {
@@ -3265,7 +3264,7 @@ function buildHomePromoEmptyState(storeName) {
   empty.appendChild(icon);
 
   const text = document.createElement('p');
-  text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Si querés destacar una promoción, escribinos desde Soporte.';
+  text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Pedilo y lo vemos.';
   empty.appendChild(text);
 
   const perks = document.createElement('div');
