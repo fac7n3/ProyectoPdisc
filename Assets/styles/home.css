@@ -1358,6 +1358,16 @@ ul, ol {
 
   .cat-mega__grid { grid-template-columns: 1fr; }
 
+  /* En las páginas con barra de categorías propia (productos, comercios, producto) el
+     botón vive dentro de `.category-bar`, que es `sticky` con z-index 40 y por eso un
+     contexto de apilamiento más bajo que el fondo oscuro (99) y que el navbar (100):
+     el panel quedaba oscurecido, con la parte de arriba tapada por el navbar, y los
+     toques caían en el fondo (que cierra el menú) en vez de llegar a las categorías.
+     Con el panel abierto, la barra sube por encima de los dos. */
+  .category-bar:has(.cat-mega__panel:not([hidden])) {
+    z-index: 210;
+  }
+
   /* Con un panel abierto el fondo no scrollea. Hay que trabar html Y body:
      en iOS Safari, `overflow: hidden` solo en el body no frena el scroll. */
   html:has(.cat-mega__panel:not([hidden]), .notif-dropdown:not([hidden]), .account-dropdown:not([hidden])),
