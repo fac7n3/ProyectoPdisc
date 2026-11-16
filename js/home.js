@@ -81,17 +81,21 @@ function whenPanelLinkReady(fn) {
   else fn();
 }
 
-/** Cliente sin panel: vuelve a "Vender" (por si el script del HTML lo había
- *  cambiado con una respuesta vieja) y lo muestra. */
+/** Deja un acceso con su texto y destino de siempre (sin menú ni flecha). */
+function resetActionLink(link, label, href) {
+  if (!link) return;
+  link.textContent = label;
+  link.setAttribute('href', href);
+  link.classList.remove('home-action--menu');
+  link.setAttribute('data-ready', '1');
+}
+
+/** Cliente sin panel: vuelve "Vender" y "Contratar" a su estado normal (por si
+ *  el script del HTML los había cambiado con una respuesta vieja) y los muestra. */
 function showVenderLink() {
   whenPanelLinkReady(() => {
-    const link = document.getElementById('home-panel-action');
-    if (!link) return;
-    link.textContent = 'Vender';
-    link.setAttribute('href', './vender.html');
-    link.classList.remove('home-action--menu');
-    link.querySelector('i')?.remove();
-    link.setAttribute('data-ready', '1');
+    resetActionLink(document.getElementById('home-panel-action'), 'Vender', './vender.html');
+    resetActionLink(document.getElementById('home-contratar-action'), 'Contratar', './contratar.html');
   });
 }
 
@@ -143,8 +147,16 @@ initPanelAction();
  * abre un menú chico para elegir.
  */
 function renderPanelAction({ isAdmin, seller, role }) {
-  const link = document.getElementById('home-panel-action');
+  // El panel del profesional va en el lugar de "Contratar" (su panel es el del
+  // directorio); "Vender" queda como está para ofrecerle vender con otra cuenta.
+  // Todo lo demás (vendedor, repartidor, admin solo) reemplaza a "Vender".
+  const inContratar = seller === 'profesional';
+  const venderLink = document.getElementById('home-panel-action');
+  const contratarLink = document.getElementById('home-contratar-action');
+  const link = inContratar ? contratarLink : venderLink;
   if (!link) return;
+  if (inContratar) resetActionLink(venderLink, 'Vender', './vender.html');
+  else resetActionLink(contratarLink, 'Contratar', './contratar.html');
   link.setAttribute('data-ready', '1');
 
   const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
