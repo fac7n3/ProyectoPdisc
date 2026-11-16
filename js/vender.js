@@ -3652,7 +3652,7 @@ function buildStaffRow(s, email) {
   row.style.cssText = 'flex-direction: column; align-items: stretch; gap: 0;';
 
   const top = document.createElement('div');
-  top.style.cssText = 'display: flex; align-items: center; gap: 1rem; width: 100%;';
+  top.className = 'staff-row__top';
 
   const thumb = document.createElement('div');
   thumb.className = 'pub-row__thumb pub-row__thumb--icon';
@@ -3674,8 +3674,7 @@ function buildStaffRow(s, email) {
   // Única acción disponible: se muestra como botón visible, no kebab (mismo criterio que Pagos por confirmar).
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
-  removeBtn.className = 'btn-outline';
-  removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap;';
+  removeBtn.className = 'btn-outline staff-row__remove';
   removeBtn.textContent = 'Quitar acceso';
   removeBtn.addEventListener('click', async () => {
     if (!(await confirmDialog(`¿Quitarle el acceso a este panel a "${title.textContent}"?`, { confirmText: 'Quitar acceso', danger: true }))) return;

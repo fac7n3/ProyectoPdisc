@@ -1047,6 +1047,25 @@
       .pf-field .form-label { margin-bottom: 0.4rem; }
       .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
       .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      /* Empleados: formulario para agregar y fila de cada empleado. */
+      #store-staff-section { min-width: 0; max-width: 100%; }
+      #store-staff-section > p { overflow-wrap: anywhere; }
+      .staff-form { background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: end; }
+      .staff-form__field { min-width: 0; }
+      .staff-form__field .form-input { width: 100%; min-width: 0; box-sizing: border-box; }
+      .staff-form__btn { width: auto; padding: 0.75rem 1.5rem; }
+      .staff-row__top { display: flex; align-items: center; gap: 1rem; width: 100%; min-width: 0; }
+      .staff-row__top .pub-row__main { min-width: 0; }
+      .staff-row__remove { border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap; flex-shrink: 0; }
+      @media (max-width: 640px) {
+        .staff-form { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+        .staff-form__btn { width: 100%; }
+        /* La foto y el email arriba; "Quitar acceso" abajo, a todo el ancho. */
+        .staff-row__top { flex-wrap: wrap; row-gap: 0.75rem; }
+        .staff-row__top .pub-row__main { flex: 1 1 0; }
+        .staff-row__top .pub-row__title { white-space: normal; overflow-wrap: anywhere; }
+        .staff-row__remove { flex: 1 1 100%; }
+      }
       .staff-perms { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; width: 100%; padding-top: 0.75rem; margin-top: 0.25rem; border-top: 1px dashed var(--bl-border); }
       .staff-perms .pf-check { font-weight: 500; font-size: 0.85rem; gap: 0.4rem; }
       .staff-perms .pf-check input { width: 0.95rem; height: 0.95rem; }
@@ -1694,12 +1713,12 @@
               <p style="color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
                 Dale acceso a este panel a otra cuenta ya registrada en Baradero Local (nunca puede editar el perfil del comercio, los cupones ni la lista de empleados). Elegí qué secciones ve con los checks debajo de su nombre -- podés cambiarlas cuando quieras.
               </p>
-              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
-                <div>
+              <form id="store-staff-form" class="staff-form">
+                <div class="staff-form__field">
                   <label class="form-label" for="store-staff-email">Email de la cuenta a agregar</label>
                   <input type="email" id="store-staff-email" class="form-input" placeholder="empleado@email.com" required />
                 </div>
-                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Agregar</button>
+                <button type="submit" class="form-btn staff-form__btn">Agregar</button>
               </form>
               <div id="store-staff-container" class="pub-list"></div>
             </div>
