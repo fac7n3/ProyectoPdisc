@@ -537,13 +537,18 @@ async function loadProfessionals() {
   ]);
   currentUserId = session?.user?.id || null;
 
+  const professionals = data || [];
+
+  // El "Sumate" nace oculto (hidden en el HTML) y se muestra recién acá, para que
+  // quien ya está en el directorio no lo vea parpadear mientras carga.
+  const cta = document.querySelector('.ct-cta');
+  if (cta) cta.hidden = !!currentUserId && professionals.some((p) => p.owner_id === currentUserId);
+
   if (error) {
     console.error('Error al cargar los profesionales:', error);
     container.appendChild(buildEmpty('No pudimos cargar el directorio. Probá de nuevo en un rato.'));
     return;
   }
-
-  const professionals = data || [];
 
   if (professionals.length === 0) {
     allProfessionals = [];
