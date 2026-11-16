@@ -591,6 +591,13 @@
       .rv-summary__stars { color: var(--bl-star); font-size: 1.05rem; letter-spacing: 0.08em; }
       .rv-summary__count { color: var(--bl-text-secondary); font-size: 0.9rem; }
       .rv-filters { margin-bottom: 1rem; }
+      /* Celular: los tres filtros en una sola fila (antes "De mis productos" caía abajo).
+         Chips más compactos y, si en una pantalla muy angosta no entran, la fila se desliza. */
+      @media (max-width: 480px) {
+        .rv-filters { display: flex; flex-wrap: nowrap; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .rv-filters::-webkit-scrollbar { display: none; }
+        .rv-filters .pub-chip { flex: 0 0 auto; padding: 0.5rem 0.7rem; font-size: 0.82rem; white-space: nowrap; }
+      }
       .rv-list { display: flex; flex-direction: column; gap: 0.75rem; }
       .rv-card { padding: 1rem 1.15rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-sm); }
       .rv-card--new { animation: rv-new 6s ease-out; }
