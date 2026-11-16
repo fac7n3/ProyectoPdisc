@@ -59,8 +59,6 @@ async function loadStores() {
       grid.textContent = '';
       shown.forEach((store) => grid.appendChild(buildStoreCard(store)));
       countEl.textContent = `${shown.length} comercio${shown.length === 1 ? '' : 's'}`;
-      filterEl.querySelectorAll('button').forEach((b) =>
-        b.setAttribute('aria-pressed', String((b.dataset.slug || '') === (slug || ''))));
     };
 
     // Chips de rubro: solo los rubros que tienen al menos un comercio aprobado.
@@ -71,15 +69,17 @@ async function loadStores() {
       .map((c) => ({ slug: c.slug, label: `${c.name} (${counts.get(c.slug)})` }))];
     filterEl.textContent = '';
     if (chips.length > 2) {
+      const select = document.createElement('select');
+      select.className = 'store-filter__select';
+      select.setAttribute('aria-label', 'Filtrar comercios por rubro');
       chips.forEach(({ slug, label }) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'store-filter__chip';
-        b.dataset.slug = slug;
-        b.textContent = label;
-        b.addEventListener('click', () => render(slug));
-        filterEl.appendChild(b);
+        const o = document.createElement('option');
+        o.value = slug;
+        o.textContent = slug ? label : 'Todos los rubros';
+        select.appendChild(o);
       });
+      select.addEventListener('change', () => render(select.value));
+      filterEl.appendChild(select);
       filterEl.hidden = false;
     }
     render('');
