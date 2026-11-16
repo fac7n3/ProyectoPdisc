@@ -36,23 +36,23 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
-    <script type="module" crossorigin src="/assets/home-CG2nPMqL.js"></script>
+    <script type="module" crossorigin src="/assets/home-COnpmFTa.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/theme-wVB5S24I.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-C-01C9eG.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DWyM2hJ2.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-E_kr002U.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-DXC2tVgg.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DHKij42e.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-CzIrO0cT.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-PfG8al-X.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DlH3hrc_.js">
     <link rel="modulepreload" crossorigin href="/assets/scroll-lock-BK6xK4-l.js">
     <link rel="modulepreload" crossorigin href="/assets/login-prompt-DXizAglz.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BNjVHPOK.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-COOqqkRz.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-D3uNGbFb.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CKWrOrEK.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-Bulc372f.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-CQ7jBQLi.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-uU_NX0tP.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CkjMRofZ.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-iwo9nQ7r.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-Uv6jTAkz.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-DhjBbmmj.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-Ca6iceaT.js">
     <link rel="stylesheet" crossorigin href="/assets/theme-H1qYj9t2.css">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-CtBqHAO0.css">
@@ -136,12 +136,14 @@
     <nav class="category-bar" aria-label="Accesos">
       <div class="category-bar__inner category-bar__inner--home-actions">
         <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
-        <a href="./contratar.html" class="home-action">Contratar</a>
+        <a href="./contratar.html" class="home-action" id="home-contratar-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </nav>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
-         renderPanelAction), pero eso se sabe recién después de consultar la
+         renderPanelAction); para un PROFESIONAL el "Panel" va en el lugar de
+         "Contratar" (su panel es el del directorio) y "Vender" queda como está.
+         Eso se sabe recién después de consultar la base, pero eso se sabe recién después de consultar la
          base. Para que no se vea el cambio, el texto sale bien en el primer
          pintado: (1) de la última respuesta guardada en este navegador
          (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
@@ -169,18 +171,22 @@
           var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
           var href;
           var menu = false;
-          if (hint && hint.uid === uid) { href = hint.href; menu = !!hint.menu; }
+          var target = link; // "Vender", o "Contratar" si la cuenta es profesional
+          if (hint && hint.uid === uid) {
+            href = hint.href; menu = !!hint.menu;
+            if (hint.slot === 'contratar') target = document.getElementById('home-contratar-action') || link;
+          }
           else if (role === 'vendedor') href = './vender.html';
           else if (role === 'repartidor') href = './repartidor.html';
           else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
           if (href) {
-            link.textContent = 'Panel';
-            link.setAttribute('href', href);
+            target.textContent = 'Panel';
+            target.setAttribute('href', href);
             if (menu) { // vendedor/profesional que además es admin: lleva menú
-              link.classList.add('home-action--menu');
+              target.classList.add('home-action--menu');
               var c = document.createElement('i');
               c.className = 'fa-solid fa-chevron-down';
-              link.appendChild(c);
+              target.appendChild(c);
             }
           }
           ready();

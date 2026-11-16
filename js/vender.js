@@ -76,14 +76,27 @@ async function checkSellerState(user) {
   const reveal = (view) => {
     if (stateLoader) stateLoader.style.display = 'none';
     const blockedView = document.getElementById('prof-blocked-view');
-    if (blockedView) blockedView.style.display = view === 'blocked' ? 'block' : 'none';
-    if (view === 'blocked') {
+    if (blockedView) blockedView.style.display = view === 'blocked' || view === 'blocked-seller' ? 'block' : 'none';
+    if (view === 'blocked' || view === 'blocked-seller') {
+      // Con un comercio se bloquea el alta de profesional; con un profesional ya
+      // publicado, el alta de comercio. Misma pantalla, texto según el caso.
+      const forSeller = view === 'blocked-seller';
+      const title = document.getElementById('prof-blocked-title');
+      const text = document.getElementById('prof-blocked-text');
+      if (title) title.textContent = forSeller
+        ? 'Necesitás otra cuenta para vender'
+        : 'Necesitás otra cuenta para ser profesional';
+      if (text) text.textContent = forSeller
+        ? 'Esta cuenta ya está publicada como profesional. Para vender productos con un comercio, creá una cuenta nueva o ingresá con otra.'
+        : 'Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.';
       // Carga perezosa: solo esta pantalla necesita el selector de cuentas. Al
       // cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta de profesional.
       import('./account-switcher.js').then(({ initAccountSwitcher }) => initAccountSwitcher({
         toggle: document.getElementById('prof-switch-toggle'),
         panel: document.getElementById('prof-switch-panel'),
-        redirectTo: './vender.html?tipo=servicio',
+        // Al cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta
+        // que corresponde (profesional o comercio).
+        redirectTo: forSeller ? './vender.html' : './vender.html?tipo=servicio',
       })).catch((err) => console.error('No se pudo cargar el selector de cuentas:', err));
     }
     registerView.style.display = view === 'register' ? 'block' : 'none';
@@ -190,8 +203,8 @@ async function checkSellerState(user) {
   }
 
   // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional?
-  // Si lo está, su panel es una página aparte (pages/profesional.html): acá
-  // solo queda el alta.
+  // Si lo está, su panel es una página aparte (pages/profesional.html) y acá no
+  // puede vender: una cuenta es comercio O profesional.
   const { data: prof } = await supabase
     .from('professionals')
     .select('id')
@@ -199,7 +212,9 @@ async function checkSellerState(user) {
     .limit(1);
 
   if (prof?.length) {
-    window.location.replace('./profesional.html');
+    // Ya está publicado como profesional: su panel vive en profesional.html (se
+    // llega desde "Panel" del home), y acá no puede abrir un comercio.
+    reveal('blocked-seller');
     return;
   }
 

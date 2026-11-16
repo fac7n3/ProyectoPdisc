@@ -194,12 +194,15 @@ const PANEL_HINT_KEY = "bl_panel_hint";
  * Guarda la última respuesta de getPanelAccess para esta cuenta.
  * `href` es el panel al que lleva el botón (null = sin panel) y `menu` es true
  * si la cuenta tiene DOS paneles (vendedor/profesional + admin), caso en el
- * que el botón del home abre un menú en vez de ser un link.
+ * que el botón del home abre un menú en vez de ser un link. `slot` es
+ * "contratar" cuando el botón va en el lugar de "Contratar" (profesional).
  */
 function rememberPanelHint(uid, { isAdmin, seller }) {
   const href = seller ? `./${SELLER_PANEL_PAGES[seller]}` : isAdmin ? "./admin.html" : null;
   const hint = { uid, href };
   if (isAdmin && seller) hint.menu = true;
+  // El profesional tiene su "Panel" en el lugar de "Contratar" (no de "Vender").
+  if (seller === "profesional") hint.slot = "contratar";
   try { localStorage.setItem(PANEL_HINT_KEY, JSON.stringify(hint)); } catch { /* sin storage */ }
 }
 
