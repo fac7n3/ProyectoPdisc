@@ -181,6 +181,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Subidas de imágenes:** toda foto que un usuario sube pasa por `compressImage(file, uso)` (`js/image-compress.js`: WebP, lado máximo por uso, devuelve el original si falla); una subida nueva
   tiene que hacer lo mismo, y comprimir **antes** de validar el peso. Lo ya subido no se achica solo (re-subir desde el panel).
 - **Consultas:** no bajar filas para contarlas ni `select *`/embeds que la pantalla no usa (medir con las respuestas de `rest/v1` en la pestaña de red); los conteos van a una función SQL (`featured_category_counts`).
+- **Menús del navbar:** uno solo abierto a la vez; un menú/cajón nuevo llama `announceNavMenuOpen(owner)` al abrirse y `closeOnOtherNavMenuOpen(owner, cerrar)` (`js/nav-menus.js`), porque sus botones cortan la propagación y el "clic afuera" de los otros no se entera.
 - **Notificaciones/paneles:** el alcance por panel sale de `currentPanelScope()`; el puntero "último aviso" es de toda la cuenta.
 
 **Cómo probar en este entorno**

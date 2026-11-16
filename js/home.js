@@ -4,6 +4,7 @@ import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
 import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex, promoBannerUrl } from './home-promos-utils.js';
@@ -198,9 +199,11 @@ function renderPanelAction({ isAdmin, seller, role }) {
     menu.hidden = true;
     btn.setAttribute('aria-expanded', 'false');
   };
+  closeOnOtherNavMenuOpen(wrap, () => { if (!menu.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     menu.hidden = !menu.hidden;
+    if (!menu.hidden) announceNavMenuOpen(wrap);
     btn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
     if (!menu.hidden) menu.querySelector('.home-panel-menu__item')?.focus();
   });
