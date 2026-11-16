@@ -36,28 +36,28 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
-    <script type="module" crossorigin src="/assets/home-BPvwZ_h8.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-wVB5S24I.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BIg6hMLL.js">
+    <script type="module" crossorigin src="/assets/home-D2_r2vnb.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-XyjMvl1i.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-DpL75FfI.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-9R9Zj59x.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-BcjKhMot.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
     <link rel="modulepreload" crossorigin href="/assets/dropdown-DHKij42e.js">
     <link rel="modulepreload" crossorigin href="/assets/order-utils-CzIrO0cT.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-BDPphsAL.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DcBgFXVv.js">
     <link rel="modulepreload" crossorigin href="/assets/scroll-lock-BK6xK4-l.js">
     <link rel="modulepreload" crossorigin href="/assets/login-prompt-DXizAglz.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-B6Wu-FgS.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-Bc2WdQOV.js">
     <link rel="modulepreload" crossorigin href="/assets/confirm-dialog-D3uNGbFb.js">
-    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-BSyOGq0-.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-CqAP-cCk.js">
-    <link rel="modulepreload" crossorigin href="/assets/product-modal-DmgC_D_k.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-B_KHD9nA.js">
+    <link rel="modulepreload" crossorigin href="/assets/reviews-utils-CpPZm9wD.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-detail-api-BooBnN7N.js">
+    <link rel="modulepreload" crossorigin href="/assets/product-modal-BXpVJzv0.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-redirect-utils-6QGzRRWi.js">
     <link rel="modulepreload" crossorigin href="/assets/home-promos-utils-Ca6iceaT.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-H1qYj9t2.css">
+    <link rel="stylesheet" crossorigin href="/assets/theme-yByB0np7.css">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-CtBqHAO0.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-zQNFH4eO.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-SCw2XzzS.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
   </head>
   <body>
@@ -136,12 +136,14 @@
     <nav class="category-bar" aria-label="Accesos">
       <div class="category-bar__inner category-bar__inner--home-actions">
         <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
-        <a href="./contratar.html" class="home-action">Contratar</a>
+        <a href="./contratar.html" class="home-action" id="home-contratar-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </nav>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
-         renderPanelAction), pero eso se sabe recién después de consultar la
+         renderPanelAction); para un PROFESIONAL el "Panel" va en el lugar de
+         "Contratar" (su panel es el del directorio) y "Vender" queda como está.
+         Eso se sabe recién después de consultar la base, pero eso se sabe recién después de consultar la
          base. Para que no se vea el cambio, el texto sale bien en el primer
          pintado: (1) de la última respuesta guardada en este navegador
          (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
@@ -169,18 +171,22 @@
           var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
           var href;
           var menu = false;
-          if (hint && hint.uid === uid) { href = hint.href; menu = !!hint.menu; }
+          var target = link; // "Vender", o "Contratar" si la cuenta es profesional
+          if (hint && hint.uid === uid) {
+            href = hint.href; menu = !!hint.menu;
+            if (hint.slot === 'contratar') target = document.getElementById('home-contratar-action') || link;
+          }
           else if (role === 'vendedor') href = './vender.html';
           else if (role === 'repartidor') href = './repartidor.html';
           else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
           if (href) {
-            link.textContent = 'Panel';
-            link.setAttribute('href', href);
+            target.textContent = 'Panel';
+            target.setAttribute('href', href);
             if (menu) { // vendedor/profesional que además es admin: lleva menú
-              link.classList.add('home-action--menu');
+              target.classList.add('home-action--menu');
               var c = document.createElement('i');
               c.className = 'fa-solid fa-chevron-down';
-              link.appendChild(c);
+              target.appendChild(c);
             }
           }
           ready();
@@ -563,7 +569,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
