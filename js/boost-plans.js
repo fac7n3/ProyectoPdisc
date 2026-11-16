@@ -225,11 +225,7 @@ export function renderBoostPlans(container, plans, state, onChoose, formatPrice,
     grid.appendChild(card);
   });
 
-  const free = el('div', 'bp-free');
-  const freeTitle = el('strong', null, 'Gratis para todos los comercios: ');
-  free.append(freeTitle, FREE_PLAN_FEATURES.map((f) => f.charAt(0).toLowerCase() + f.slice(1)).join(' · ') + '.');
-
-  container.replaceChildren(grid, free);
+  container.replaceChildren(grid);
 }
 
 /**
