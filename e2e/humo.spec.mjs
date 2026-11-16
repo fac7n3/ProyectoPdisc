@@ -122,6 +122,7 @@ test.describe('ficha de producto y comercio', () => {
       await page.goto(`/pages/producto.html?id=${id}`);
       await page.waitForLoadState('networkidle');
       if (await page.locator('.bl-compare').count()) {
+        await page.locator('.bl-compare__title').click(); // viene cerrado
         await expect(page.locator('.bl-compare__row').nth(1)).toBeVisible();
         visto = true;
         break;

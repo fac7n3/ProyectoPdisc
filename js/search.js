@@ -10,9 +10,7 @@ import './speed-insights.js';
 import { logSearch, logSearchClick } from './search-analytics.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
-import { groupSameProducts, rankByPrice, rankByDistance, formatDistance } from './price-compare-utils.js';
-import { isMissingFunctionError } from './product-detail-utils.js';
-import { loadUserLocation, saveUserLocation, locationParams } from './store-location-utils.js';
+import { locationParams } from './store-location-utils.js';
 
 const PAGE_SIZE = 60; // múltiplo de 2, 3, 4, 5 y 6: la grilla queda completa con cualquier cantidad de columnas
 
@@ -228,293 +226,6 @@ function scheduleSearchLog(query, results) {
   }, 1200);
 }
 
-// ── Comparador: mismo producto en varios comercios ──────────
-// Cuando la búsqueda trae un producto que también vende otro comercio (mismo
-// nombre, ver price-compare-utils.js), arriba de los resultados va una tarjeta
-// por producto con dos filas: los comercios del más barato al más caro, y del
-// más cerca al más lejos de la persona.
-const COMPARE_MAX_GROUPS = 3;
-// La ubicación se comparte con el mapa "Comercios cerca tuyo" del inicio
-// (store-location-utils.js): si ya la dio ahí, acá no se le vuelve a pedir.
-
-// Ubicación de los comercios (stores.lat/lng, migración 147). Aparte de
-// getStores() para que, si la columna todavía no existe, falle solo esto y la
-// fila "Más cerca" diga que no hay ubicaciones cargadas.
-let storeCoordsCache = null;
-function getStoreCoords() {
-  storeCoordsCache ||= (async () => {
-    const { data, error } = await supabase
-      .from('stores')
-      .select('id, lat, lng')
-      .eq('status', 'approved')
-      .not('lat', 'is', null);
-    if (error) {
-      console.warn('Sin ubicación de comercios para comparar:', error.message);
-      return new Map();
-    }
-    return new Map((data || []).map((s) => [s.id, { lat: s.lat, lng: s.lng }]));
-  })();
-  return storeCoordsCache;
-}
-
-let compareState = null; // { groups, coords } de la última búsqueda, para redibujar al dar la ubicación
-
-// Los mismos productos en otros comercios. El criterio de "mismo producto"
-// vive en la base (product_match_key, migración 148: unidades, plurales,
-// orden de palabras y envase); la función devuelve cada uno con su clave
-// (`match_key`) y acá solo se agrupa por ella. Si la función todavía no
-// existe, se cae a lo de antes: mismo nombre exacto.
-async function fetchSameProducts(pageProducts) {
-  const { data, error } = await supabase.rpc('same_product_offers', {
-    p_product_ids: pageProducts.map((p) => p.id),
-  });
-  if (!error) return { rows: data || [] };
-  if (!isMissingFunctionError(error)) return { rows: [], error };
-
-  // Sin embed de `stores` a propósito (la cadena de RLS lo vuelve lento):
-  // el nombre del comercio sale de getStores().
-  const titles = [...new Set(pageProducts.map((p) => p.title))];
-  const fallback = await supabase
-    .from('products')
-    .select('id, title, price, compare_at_price, offer_expires_at, image_url, stock, store_id')
-    .in('title', titles)
-    .eq('is_active', true)
-    .gt('stock', 0)
-    .limit(300);
-  return { rows: fallback.data || [], error: fallback.error };
-}
-
-async function renderPriceCompare(products, token) {
-  const section = document.getElementById('price-compare');
-  const list = document.getElementById('price-compare-list');
-  if (!section || !list) return;
-  // Lo anterior queda a la vista hasta tener el reemplazo (si no, la página salta).
-  const clear = () => { section.hidden = true; list.textContent = ''; compareState = null; };
-
-  const pageProducts = (products || []).filter((p) => p.id && p.title);
-  if (!filterState.query || !pageProducts.length) return clear();
-
-  const [{ rows, error }, stores, coords] = await Promise.all([
-    fetchSameProducts(pageProducts),
-    getStores(),
-    getStoreCoords(),
-  ]);
-  if (token !== searchToken) return;
-  if (error) {
-    console.warn('Comparador: no se pudieron traer los mismos productos de otros comercios', error);
-    return clear();
-  }
-
-  const storeById = new Map(stores.map((s) => [s.id, s]));
-  const named = rows
-    .filter((p) => storeById.has(p.store_id)) // solo comercios aprobados
-    .map((p) => ({ ...p, store_name: p.store_name || storeById.get(p.store_id).name }));
-
-  // Orden de los grupos = orden en que aparecieron en los resultados: cada
-  // producto de la página vuelve con su propia clave, así que alcanza con
-  // poner primero los de la página, en su orden.
-  const pageIndex = new Map(pageProducts.map((p, i) => [p.id, i]));
-  named.sort((a, b) => (pageIndex.get(a.id) ?? 1e9) - (pageIndex.get(b.id) ?? 1e9));
-
-  const groups = groupSameProducts(named).slice(0, COMPARE_MAX_GROUPS);
-  if (!groups.length) return clear();
-
-  compareState = { groups, coords };
-  drawPriceCompare();
-}
-
-function drawPriceCompare() {
-  const section = document.getElementById('price-compare');
-  const list = document.getElementById('price-compare-list');
-  if (!section || !list || !compareState) return;
-  const { groups, coords } = compareState;
-  const userLoc = loadUserLocation();
-  list.textContent = '';
-  groups.forEach((g) => list.appendChild(buildCompareGroup(g, userLoc, coords)));
-  section.hidden = false;
-}
-
-function buildCompareGroup(group, userLoc, coords) {
-  const byPrice = rankByPrice(group.items);
-  const cheapest = byPrice[0];
-
-  const card = document.createElement('article');
-  card.className = 'pc-group';
-
-  const head = document.createElement('header');
-  head.className = 'pc-group__head';
-  const img = document.createElement('img');
-  img.className = 'pc-group__img';
-  setProductImage(img, cheapest.image_url, '64px');
-  img.alt = '';
-  img.loading = 'lazy';
-  const headText = document.createElement('div');
-  const title = document.createElement('h3');
-  title.className = 'pc-group__title';
-  title.textContent = cheapest.title;
-  const sub = document.createElement('p');
-  sub.className = 'pc-group__sub';
-  sub.textContent = `En ${group.items.length} comercios · desde ${formatPrice(cheapest.price)}`;
-  headText.append(title, sub);
-  head.append(img, headText);
-  card.appendChild(head);
-
-  // Fila 1: más barato
-  card.appendChild(buildCompareRow({
-    icon: 'fa-tag',
-    label: 'Más barato',
-    items: byPrice,
-    detail: (it) => (it === cheapest
-      ? 'El mejor precio'
-      : `+${formatPrice(it.price - cheapest.price)} que el más barato`),
-    badge: 'Más barato',
-  }));
-
-  // Fila 2: más cerca
-  if (!userLoc) {
-    card.appendChild(buildLocationPrompt());
-  } else {
-    const byDistance = rankByDistance(group.items, userLoc, coords);
-    const closest = byDistance[0];
-    if (closest.distance == null) {
-      card.appendChild(buildCompareNote('fa-location-dot', 'Más cerca',
-        'Estos comercios todavía no cargaron su ubicación.'));
-    } else {
-      card.appendChild(buildCompareRow({
-        icon: 'fa-location-dot',
-        label: 'Más cerca',
-        items: byDistance,
-        detail: (it) => (it.distance == null ? 'Sin ubicación cargada' : `a ${formatDistance(it.distance)}`),
-        badge: closest.store_id === cheapest.store_id ? 'Más cerca y más barato' : 'Más cerca',
-      }));
-    }
-  }
-  return card;
-}
-
-/** Una fila: etiqueta + comercios en orden; el primero lleva el distintivo. */
-function buildCompareRow({ icon, label, items, detail, badge }) {
-  const row = document.createElement('div');
-  row.className = 'pc-row';
-  row.appendChild(buildRowLabel(icon, label));
-
-  const ol = document.createElement('ol');
-  ol.className = 'pc-row__list';
-  ol.setAttribute('aria-label', label);
-  items.forEach((it, i) => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `pc-offer${i === 0 ? ' pc-offer--best' : ''}`;
-    btn.setAttribute('aria-label', `${it.store_name}, ${formatPrice(it.price)}, ${detail(it)}. Ver producto`);
-
-    if (i === 0) {
-      const tag = document.createElement('span');
-      tag.className = 'pc-offer__badge';
-      tag.textContent = badge;
-      btn.appendChild(tag);
-    }
-    const store = document.createElement('span');
-    store.className = 'pc-offer__store';
-    store.textContent = it.store_name;
-    const price = document.createElement('span');
-    price.className = 'pc-offer__price';
-    price.textContent = formatPrice(it.price);
-    const det = document.createElement('span');
-    det.className = 'pc-offer__detail';
-    det.textContent = detail(it);
-    btn.append(store, price, det);
-
-    btn.addEventListener('click', () => openCompareProduct(it));
-    li.appendChild(btn);
-    ol.appendChild(li);
-  });
-  row.appendChild(ol);
-  return row;
-}
-
-function buildRowLabel(icon, label) {
-  const el = document.createElement('span');
-  el.className = 'pc-row__label';
-  const i = document.createElement('i');
-  i.className = `fa-solid ${icon}`;
-  i.setAttribute('aria-hidden', 'true');
-  el.append(i, ` ${label}`);
-  return el;
-}
-
-function buildCompareNote(icon, label, text) {
-  const row = document.createElement('div');
-  row.className = 'pc-row';
-  row.appendChild(buildRowLabel(icon, label));
-  const p = document.createElement('p');
-  p.className = 'pc-row__note';
-  p.textContent = text;
-  row.appendChild(p);
-  return row;
-}
-
-function buildLocationPrompt() {
-  const row = buildCompareNote('fa-location-dot', 'Más cerca', 'Compartí tu ubicación para ver cuál te queda más cerca.');
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'pc-row__locate';
-  btn.textContent = 'Usar mi ubicación';
-  btn.addEventListener('click', () => {
-    if (!('geolocation' in navigator)) {
-      showToast('Tu navegador no permite compartir la ubicación.');
-      return;
-    }
-    btn.disabled = true;
-    btn.textContent = 'Buscando…';
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        saveUserLocation(pos.coords.latitude, pos.coords.longitude);
-        // Con "Más relevantes" la cercanía cambia el orden: se vuelve a buscar
-        // (redibuja también el comparador). Si no, solo el comparador.
-        if (filterState.sortBy === 'relevancia') runSearch({ quiet: true });
-        else drawPriceCompare();
-      },
-      () => {
-        btn.disabled = false;
-        btn.textContent = 'Usar mi ubicación';
-        showToast('No pudimos obtener tu ubicación. Revisá el permiso del navegador.');
-      },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
-    );
-  });
-  row.appendChild(btn);
-  return row;
-}
-
-/** Abre el modal del producto de ese comercio (no está necesariamente en la grilla). */
-function openCompareProduct(item) {
-  if (typeof window.openProductModal !== 'function') {
-    window.location.href = `producto.html?id=${encodeURIComponent(item.id)}`;
-    return;
-  }
-  const card = document.createElement('article');
-  card.className = 'product-card';
-  card.id = item.id;
-  card.dataset.price = item.price;
-  const imgWrap = document.createElement('div');
-  imgWrap.className = 'product-card__image';
-  const img = document.createElement('img');
-  setProductImage(img, item.image_url);
-  imgWrap.appendChild(img);
-  const shop = document.createElement('span');
-  shop.className = 'product-card__shop';
-  shop.textContent = item.store_name;
-  const name = document.createElement('div');
-  name.className = 'product-card__name';
-  name.textContent = item.title;
-  const price = document.createElement('div');
-  price.className = 'product-card__price';
-  price.textContent = formatPrice(item.price);
-  card.append(imgWrap, shop, name, price);
-  window.openProductModal(card);
-}
-
 // ── Búsqueda principal (RPC search_products) ────────────────
 async function runSearch({ append = false, quiet = false } = {}) {
   if (!grid) return;
@@ -562,7 +273,6 @@ async function runSearch({ append = false, quiet = false } = {}) {
   // Comercios y profesionales se piden a la par de los productos (antes
   // recién después, dos viajes más en serie). Se dibujan abajo, cuando ya se
   // sabe que esta búsqueda sigue siendo la última.
-  if (!append && filterState.query) getStores(); // solo para el comparador de precios
 
   try {
     const { data: products, error } = await supabase.rpc('search_products', {
@@ -592,15 +302,12 @@ async function runSearch({ append = false, quiet = false } = {}) {
     if (!append) scheduleSearchLog(filterState.query, totalCount);
 
     if ((!products || products.length === 0) && !append) {
-      renderPriceCompare([], token);
       renderNoResults(storeMatches, proMatches);
       updateLoadMore();
       return;
     }
 
     (products || []).forEach((p) => grid.appendChild(buildCard(p)));
-    // El comparador es un extra: no frena la grilla ni la rompe si falla.
-    if (!append) renderPriceCompare(products, token).catch((e) => console.warn('Comparador:', e));
 
     initCartButtons();
     initWishlist();
@@ -609,8 +316,6 @@ async function runSearch({ append = false, quiet = false } = {}) {
   } catch (err) {
     console.error('Error en la búsqueda:', err);
     if (!append) {
-      const compare = document.getElementById('price-compare');
-      if (compare) compare.hidden = true;
       renderErrorState(grid, 'No se pudieron buscar productos.', () => runSearch());
     } else if (loadMoreBtn) {
       loadMoreBtn.disabled = false;
