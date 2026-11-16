@@ -400,8 +400,10 @@ function renderCategoryPicker(gridId, { name, type, required = false }) {
 /** Alta de producto: una sola categoría. */
 function renderProductCategoryOptions() {
   renderCategoryPicker('prod-category-options', {
-    name: 'prod-category', type: 'radio', required: true,
+    name: 'prod-category', type: 'radio',
   });
+  // Sin `required` nativo (la lista plegada oculta los radios): lo valida el submit.
+  setupCategoryDropdown('prod-category');
   // Borrador recuperado antes de que llegaran las categorías: recién ahora
   // existen los radios para marcar.
   if (pendingDraftCategory && document.querySelector('input[name="prod-category"]')) {
@@ -449,6 +451,7 @@ function setProductCategorySlug(slug) {
   document.querySelectorAll('input[name="prod-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+  updateCategoryToggle('prod-category');
 }
 
 /** Rubros marcados en el alta de comercio. */
@@ -491,10 +494,12 @@ function setStoreCategorySlug(slug) {
  * despliega la lista (en compu sigue la grilla de siempre; el CSS decide con
  * `.catpick--dropdown` en home.css). Los radios son los mismos: solo cambia cómo se muestran.
  */
-function updateStoreCategoryToggle() {
-  const toggle = document.getElementById('store-category-toggle');
+function updateStoreCategoryToggle() { updateCategoryToggle('store-category'); }
+
+function updateCategoryToggle(name) {
+  const toggle = document.getElementById(`${name}-toggle`);
   if (!toggle) return;
-  const checked = document.querySelector('input[name="store-category"]:checked');
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
   const text = toggle.querySelector('.catpick__toggle-text');
   const icon = toggle.querySelector('.catpick__toggle-icon');
   const cat = checked && categoriesCache.find((c) => c.slug === checked.value);
@@ -505,19 +510,23 @@ function updateStoreCategoryToggle() {
     : 'fa-solid fa-tag catpick__toggle-icon';
 }
 
-function setupStoreCategoryDropdown() {
-  const grid = document.getElementById('store-category-options');
+function setupStoreCategoryDropdown() { setupCategoryDropdown('store-category'); }
+
+/** Convierte la grilla de radios `<name>-options` en una barra que despliega la lista. */
+function setupCategoryDropdown(name) {
+  const grid = document.getElementById(`${name}-options`);
   const fieldset = grid?.closest('.catpick');
   if (!grid || !fieldset) return;
-  if (!document.getElementById('store-category-toggle')) {
+  const toggleId = `${name}-toggle`;
+  if (!document.getElementById(toggleId)) {
     fieldset.classList.add('catpick--dropdown');
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.id = 'store-category-toggle';
+    toggle.id = toggleId;
     toggle.className = 'catpick__toggle';
     toggle.setAttribute('aria-haspopup', 'listbox');
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'store-category-options');
+    toggle.setAttribute('aria-controls', grid.id);
     const icon = document.createElement('i');
     icon.className = 'fa-solid fa-tag catpick__toggle-icon';
     icon.setAttribute('aria-hidden', 'true');
@@ -535,7 +544,9 @@ function setupStoreCategoryDropdown() {
     };
     toggle.addEventListener('click', () => setOpen(!fieldset.classList.contains('catpick--open')));
     // Al elegir una categoría la lista se pliega y la barra muestra la elegida.
-    grid.addEventListener('change', () => { updateStoreCategoryToggle(); setOpen(false); });
+    grid.addEventListener('change', () => { updateCategoryToggle(name); setOpen(false); });
+    // Reset del formulario: los radios vuelven solos, la barra hay que refrescarla.
+    fieldset.closest('form')?.addEventListener('reset', () => setTimeout(() => updateCategoryToggle(name), 0));
     document.addEventListener('click', (e) => {
       if (!fieldset.contains(e.target)) setOpen(false);
     });
@@ -546,7 +557,7 @@ function setupStoreCategoryDropdown() {
       }
     });
   }
-  updateStoreCategoryToggle();
+  updateCategoryToggle(name);
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
@@ -6258,7 +6269,7 @@ function setupDashboardEvents() {
     }
 
     const catRadios = document.querySelectorAll('input[name="prod-category"]');
-    if (Array.from(catRadios).some((r) => r.required) && !getProductCategorySlug()) {
+    if (catRadios.length && !getProductCategorySlug()) {
       showToast("Elegí una categoría para el producto.", "error");
       flagInvalidField('prod-category-options');
       return;

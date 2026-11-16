@@ -240,7 +240,7 @@ html[data-theme="dark"] .catpick__opt:has(.catpick__input:checked) .catpick__ico
 html[data-theme="dark"] .catpick__check {
   color: var(--dk-accent-text);
 }
-@media (max-width: 768px) {
+@media all {
 html[data-theme="dark"] .catpick__toggle-icon {
   color: var(--dk-accent-text);
 }
