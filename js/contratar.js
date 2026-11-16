@@ -323,6 +323,7 @@ function buildCard(pro) {
       link.rel = 'noopener noreferrer';
       link.setAttribute('aria-label', s.label);
       link.title = s.label;
+      link.addEventListener('click', () => registrarMetrica(pro.id, 'social_click')); // migración 168
       const icon = el('i', s.icon);
       icon.setAttribute('aria-hidden', 'true');
       link.appendChild(icon);

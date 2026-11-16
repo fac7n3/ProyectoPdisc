@@ -741,6 +741,83 @@
       .bs-card__foot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px solid var(--bl-border-light); display: flex; flex-direction: column; align-items: stretch; gap: 0.6rem; }
       .bs-card__price { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
       .bs-card__price small { font-size: 0.72rem; font-weight: 600; color: var(--bl-text-muted); }
+
+      /* Estadísticas del comercio (js/vender-estadisticas.js): resumen del panel y sección propia.
+         Solo tokens de color (modo oscuro automático). */
+      .st-summary { margin-bottom: 1rem; }
+      .st-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+      .st-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--bl-text); display: flex; align-items: center; gap: 0.4rem; }
+      .st-title i { color: var(--bl-vendor-accent); font-size: 0.9rem; }
+      .st-sub { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--bl-text-muted); }
+      .st-link { background: none; border: none; padding: 0; font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--bl-vendor-accent); cursor: pointer; text-decoration: underline; }
+      .st-link--strong { text-decoration: none; padding: 0.35rem 0; }
+      .st-link--strong::after { content: "\203A"; margin-left: 0.3rem; font-size: 1.1rem; line-height: 1; }
+      .st-link:hover { text-decoration: underline; }
+      .st-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+      .st-tile { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; padding: 0.9rem 1rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-sm); }
+      .st-summary .st-tile { background: var(--bl-surface-alt); box-shadow: none; }
+      .st-tile__top { display: flex; align-items: center; gap: 0.45rem; color: var(--bl-text-secondary); font-size: 0.8rem; font-weight: 600; }
+      .st-tile__top i { color: var(--bl-vendor-accent); font-size: 0.85rem; flex-shrink: 0; }
+      .st-tile__label { overflow-wrap: anywhere; }
+      .st-tile__value { font-size: 1.7rem; font-weight: 700; line-height: 1.1; color: var(--bl-text); }
+      .st-tile__hint { font-size: 0.74rem; line-height: 1.35; color: var(--bl-text-muted); margin-top: auto; }
+      .st-summary .st-tile__hint { display: none; }
+      .st-delta { display: flex; align-items: center; gap: 0.3rem; font-size: 0.74rem; font-weight: 600; color: var(--bl-text-muted); }
+      .st-delta--up { color: var(--bl-success-text); }
+      .st-delta--down { color: var(--bl-danger-text); }
+      .st-note { margin: 0.8rem 0 0; font-size: 0.85rem; line-height: 1.45; color: var(--bl-text-secondary); }
+      .st-note--box { padding: 0.9rem 1.1rem; border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); }
+      .st-note strong { color: var(--bl-text); }
+      .st-error { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; font-size: 0.88rem; color: var(--bl-text-secondary); }
+      .st-card { margin-top: 1rem; padding: 1.1rem 1.25rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card); min-width: 0; }
+      .st-card__title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--bl-text); }
+      .st-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.8rem 0; }
+      .st-tab { padding: 0.4rem 0.8rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-pill); background: var(--bl-surface); font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--bl-text-secondary); cursor: pointer; }
+      .st-tab:hover { background: var(--bl-surface-hover); }
+      .st-tab[aria-selected="true"] { background: var(--bl-vendor-accent); border-color: var(--bl-vendor-accent); color: #fff; }
+      .st-tab:focus-visible, .st-cta:focus-visible, .st-link:focus-visible { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
+      .st-bars { display: flex; align-items: flex-end; gap: 3px; height: 150px; padding-bottom: 2px; border-bottom: 1px solid var(--bl-border); }
+      .st-bar { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
+      .st-bar__fill { width: 100%; background: var(--bl-vendor-accent); border-radius: 3px 3px 0 0; }
+      .st-bar:hover .st-bar__fill { background: var(--bl-vendor-accent-dark); }
+      .st-axis { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.72rem; color: var(--bl-text-muted); }
+      .st-total { margin: 0.6rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--bl-text); }
+      .st-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 0; }
+      .st-two .st-card { margin-top: 1rem; }
+      .st-nets, .st-top { list-style: none; margin: 0.8rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+      .st-net { display: grid; grid-template-columns: minmax(5.5rem, 8rem) 1fr auto; align-items: center; gap: 0.6rem; font-size: 0.85rem; color: var(--bl-text-secondary); }
+      .st-net__label i { color: var(--bl-text-muted); width: 1.1rem; text-align: center; }
+      .st-net__track { height: 0.55rem; background: var(--bl-surface-alt); border-radius: var(--bl-radius-pill); overflow: hidden; }
+      .st-net__fill { height: 100%; background: var(--bl-vendor-accent); border-radius: var(--bl-radius-pill); }
+      .st-net__count, .st-top__views { font-weight: 700; color: var(--bl-text); white-space: nowrap; }
+      .st-top { counter-reset: st-rank; }
+      .st-top__item { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; font-size: 0.88rem; counter-increment: st-rank; }
+      .st-top__item::before { content: counter(st-rank) "."; color: var(--bl-text-muted); font-weight: 700; min-width: 1.2rem; }
+      .st-top__title { flex: 1; min-width: 0; color: var(--bl-vendor-accent); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+      .st-top__title:hover { text-decoration: underline; }
+      .st-pro { border-color: var(--bl-vendor-accent); }
+      .st-pro__head { display: flex; align-items: center; gap: 0.6rem; }
+      .st-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; padding: 0.15rem 0.55rem; border-radius: var(--bl-radius-pill); background: var(--bl-vendor-accent); color: #fff; }
+      .st-pro__body { display: grid; grid-template-columns: 1fr minmax(10rem, 14rem); gap: 1.25rem; align-items: center; margin-top: 0.9rem; }
+      .st-pro__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; line-height: 1.4; color: var(--bl-text-secondary); }
+      .st-pro__list i { color: var(--bl-success-text); }
+      .st-preview { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 7rem; padding: 0.6rem; background: var(--bl-surface-alt); border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-md); }
+      .st-preview__bar { flex: 1 1 0; background: var(--bl-border); border-radius: 3px 3px 0 0; }
+      .st-preview__tag { position: absolute; top: 0.4rem; right: 0.5rem; font-size: 0.68rem; font-weight: 700; color: var(--bl-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+      .st-cta { margin-top: 1rem; padding: 0.7rem 1.4rem; border: none; border-radius: var(--bl-radius-md); background: var(--bl-vendor-accent); color: #fff; font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; }
+      .st-cta:hover { background: var(--bl-vendor-accent-dark); }
+      .st-foot { margin-top: 1.25rem; font-size: 0.78rem; line-height: 1.5; color: var(--bl-text-muted); }
+      .st-foot p { margin: 0 0 0.4rem; }
+      @media (max-width: 1100px) { .st-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .st-two { grid-template-columns: 1fr; } }
+      @media (max-width: 600px) {
+        .st-pro__body { grid-template-columns: 1fr; }
+        .st-tile { padding: 0.8rem; }
+        .st-tile__top { align-items: flex-start; min-height: 2.6em; } /* dos renglones: los números quedan alineados */
+        .st-tile__value { font-size: 1.45rem; }
+        .st-net { grid-template-columns: minmax(4.5rem, 6.5rem) 1fr auto; }
+        .st-bars { height: 120px; gap: 2px; }
+        .st-card { padding: 1rem; }
+      }
       .bs-card__buy { display: flex; align-items: stretch; gap: 0.5rem; }
       .bs-card__btn { background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.55rem 0.6rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; flex: 1 1 auto; white-space: nowrap; }
       .bs-card__btn:hover { background: var(--bl-vendor-accent-dark); }
@@ -1416,6 +1493,10 @@
               </div>
             </div>
 
+            <!-- Estadísticas: cómo te encuentran los vecinos (js/vender-estadisticas.js). Solo el
+                 dueño. El resumen de 30 días es gratis; el detalle es de "Estadísticas Pro". -->
+            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="estadisticas"><i class="fa-solid fa-chart-line mc-navicon"></i> Estadísticas</button>
+
             <!-- Impulsar: combos y servicios para ganar visibilidad. Top-level (como
                  Publicaciones) y solo para el dueño, igual que cupones y empleados. -->
             <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="impulsar"><i class="fa-solid fa-rocket mc-navicon"></i> Impulsar</button>
@@ -1882,6 +1963,12 @@
                   <li class="rc-item"><span class="rc-item__num" aria-hidden="true">7</span><span class="rc-item__text">Tratar de evitar la acumulación de muchos pedidos o consultas.</span></li>
                 </ol>
               </div>
+            </section>
+
+            <!-- === Estadísticas del comercio ===
+                 Lo dibuja js/vender-estadisticas.js al entrar (#estadisticas). Solo el dueño. -->
+            <section class="mc-section" data-section="estadisticas" hidden>
+              <div class="pd-wrap" id="stats-section" aria-live="polite"></div>
             </section>
 
             <!-- === Impulsar tus ventas ===
