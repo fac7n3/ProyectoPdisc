@@ -36,7 +36,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
-    <script type="module" crossorigin src="/assets/home-DDdJ9HfJ.js"></script>
+    <script type="module" crossorigin src="/assets/home-Bq5pqd14.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/theme-BnSZrqe-.js">
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-DpL75FfI.js">
     <link rel="modulepreload" crossorigin href="/assets/storage-utils-DhPqDdRg.js">
@@ -57,7 +57,7 @@
     <link rel="stylesheet" crossorigin href="/assets/theme-COEO83w-.css">
     <link rel="stylesheet" crossorigin href="/assets/product-modal-CtBqHAO0.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-9BTyAhXh.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-D_diPJMY.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
   </head>
   <body>
@@ -140,60 +140,6 @@
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </nav>
-    <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
-         renderPanelAction); para un PROFESIONAL el "Panel" va en el lugar de
-         "Contratar" (su panel es el del directorio) y "Vender" queda como está.
-         Eso se sabe recién después de consultar la base, pero eso se sabe recién después de consultar la
-         base. Para que no se vea el cambio, el texto sale bien en el primer
-         pintado: (1) de la última respuesta guardada en este navegador
-         (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
-         rol que ya viaja en la sesión (vendedor / repartidor). Sin ninguna de
-         las dos, el botón queda oculto hasta saberlo (tope de 3 s) en vez de
-         mostrar "Vender". Sin sesión no se toca nada. -->
-    <script>
-      (function () {
-        var link = document.getElementById('home-panel-action');
-        if (!link) return;
-        function ready() { link.setAttribute('data-ready', '1'); }
-        try {
-          if (!document.documentElement.hasAttribute('data-sess')) { ready(); return; }
-          var uid = null, role = null;
-          for (var i = 0; i < localStorage.length; i++) {
-            var k = localStorage.key(i);
-            if (/^sb-.*-auth-token$/.test(k)) {
-              var s = JSON.parse(localStorage.getItem(k));
-              uid = s && s.user && s.user.id;
-              role = s && s.user && s.user.app_metadata && s.user.app_metadata.role;
-              break;
-            }
-          }
-          if (!uid) { ready(); return; }
-          var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
-          var href;
-          var menu = false;
-          var target = link; // "Vender", o "Contratar" si la cuenta es profesional
-          if (hint && hint.uid === uid) {
-            href = hint.href; menu = !!hint.menu;
-            if (hint.slot === 'contratar') target = document.getElementById('home-contratar-action') || link;
-          }
-          else if (role === 'vendedor') href = './vender.html';
-          else if (role === 'repartidor') href = './repartidor.html';
-          else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
-          if (href) {
-            target.textContent = 'Panel';
-            target.setAttribute('href', href);
-            if (menu) { // vendedor/profesional que además es admin: lleva menú
-              target.classList.add('home-action--menu');
-              var c = document.createElement('i');
-              c.className = 'fa-solid fa-chevron-down';
-              target.appendChild(c);
-            }
-          }
-          ready();
-        } catch (e) { ready(); /* sin storage: queda como está */ }
-      })();
-    </script>
-
     <!-- ====== CONTENIDO PRINCIPAL ====== -->
     <main id="contenido-principal" tabindex="-1">
 
