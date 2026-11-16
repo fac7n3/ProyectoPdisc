@@ -6378,11 +6378,28 @@ button.coupon-chip:hover {
 }
 
 .bl-compare__title {
-  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  margin: 0;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--bl-text);
 }
+
+.bl-compare__title::-webkit-details-marker { display: none; }
+.bl-compare__title::after {
+  content: "078";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+.bl-compare[open] > .bl-compare__title::after { transform: rotate(180deg); }
+.bl-compare[open] > .bl-compare__title { margin-bottom: 0.5rem; }
 
 .bl-compare__list {
   list-style: none;
