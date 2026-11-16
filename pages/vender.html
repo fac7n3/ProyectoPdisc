@@ -404,7 +404,20 @@
         }
         .mc-sidebar.is-open { transform: translateX(0); }
         .mc-close { display: inline-flex; }
-        .mc-hamburger { display: inline-flex; }
+        /* Mismo botón redondo que el de categorías del navbar del home en celular. */
+        .mc-hamburger {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.25rem;
+          height: 2.25rem;
+          padding: 0;
+          font-size: 0.875rem;
+          background: var(--bl-surface);
+          color: var(--bl-primary-dark);
+          border: 1px solid var(--bl-primary-dark);
+          border-radius: 50%;
+        }
       }
 
       /* --- Sección Resumen (diseño ML con paleta propia) --- */
