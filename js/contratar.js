@@ -545,6 +545,11 @@ async function loadProfessionals() {
 
   const professionals = data || [];
 
+  // Quien ya está en el directorio no necesita el "Sumate".
+  if (currentUserId && professionals.some((p) => p.owner_id === currentUserId)) {
+    document.querySelector('.ct-cta')?.remove();
+  }
+
   if (professionals.length === 0) {
     allProfessionals = [];
     renderFeatured([]);
