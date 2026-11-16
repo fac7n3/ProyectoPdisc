@@ -2111,7 +2111,7 @@ button.coupon-chip:hover {
   .promo-mosaic__side,
   .promo-mosaic-2__side {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
@@ -2242,6 +2242,11 @@ button.coupon-chip:hover {
 @media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
+  }
+
+  /* Franjas casi de borde a borde: menos margen lateral = banner más grande */
+  .promo-strip {
+    padding: 0 0.5rem;
   }
 
   .promo-banner-2--g.is-store-promo,
