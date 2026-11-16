@@ -1240,7 +1240,7 @@ function initOrdersLive() {
   // uno cancelado (el stock vuelve). No se redibuja con un menú de "⋯" abierto.
   const refreshProducts = createRefresher(fetchProducts, {
     delay: 1500,
-    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden])')),
+    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden]), .pub-stock__input')),
   });
 
   const onOrderChange = (change) => {
@@ -4543,6 +4543,76 @@ function buildPubActions(p) {
   return wrap;
 }
 
+/**
+ * Stock editable desde la lista: el número es un botón; al tocarlo se vuelve un
+ * campo numérico. Enter o salir del campo guarda, Esc cancela. Solo se escribe
+ * si el valor cambió y es un entero >= 0 (misma regla que el formulario).
+ */
+function buildStockEditor(p) {
+  const box = document.createElement('div');
+  box.className = 'pub-stock';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  const paint = () => {
+    const stock = p.stock ?? 0;
+    btn.className = 'pub-stock__btn' + (stock <= 0 ? ' pub-row__cell-val--zero' : '');
+    btn.textContent = stock;
+    btn.title = 'Tocá para cambiar el stock';
+    btn.setAttribute('aria-label', `Stock de "${p.title}": ${stock}. Tocá para cambiarlo`);
+  };
+  paint();
+
+  const edit = () => {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'pub-stock__input';
+    input.min = '0';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.value = p.stock ?? 0;
+    input.setAttribute('aria-label', `Nuevo stock de "${p.title}"`);
+    box.replaceChildren(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const close = () => { box.replaceChildren(btn); paint(); };
+    const save = async () => {
+      if (done) return;
+      done = true;
+      const raw = input.value.trim();
+      if (raw === String(p.stock ?? 0)) { close(); return; }
+      if (raw === '' || !isValidStock(raw)) {
+        showToast('El stock debe ser un número entero mayor o igual a 0.', 'error');
+        close();
+        return;
+      }
+      const next = parseInt(raw, 10);
+      input.disabled = true;
+      const { error } = await supabase.from('products').update({ stock: next }).eq('id', p.id);
+      if (error) {
+        showToast('No se pudo actualizar el stock.', 'error');
+        console.error(error);
+        close();
+        return;
+      }
+      p.stock = next;
+      close();
+      showToast('Stock actualizado', 'success');
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') { e.preventDefault(); done = true; close(); }
+    });
+    input.addEventListener('blur', save);
+  };
+  btn.addEventListener('click', edit);
+
+  box.appendChild(btn);
+  return box;
+}
+
 /** Fila de publicación estilo ML: miniatura + título/precio + stock + ventas + estado + acciones. */
 function buildPubRow(p) {
   const row = document.createElement('div');
@@ -4585,10 +4655,7 @@ function buildPubRow(p) {
   const stockCell = document.createElement('div');
   stockCell.className = 'pub-row__cell';
   stockCell.appendChild(pubCellLabel('Stock'));
-  const stockVal = document.createElement('span');
-  stockVal.className = 'pub-row__cell-val' + ((p.stock ?? 0) <= 0 ? ' pub-row__cell-val--zero' : '');
-  stockVal.textContent = p.stock ?? 0;
-  stockCell.appendChild(stockVal);
+  stockCell.appendChild(buildStockEditor(p));
   row.appendChild(stockCell);
 
   const salesCell = document.createElement('div');

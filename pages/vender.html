@@ -574,6 +574,12 @@
       .pub-row__cell-label { font-size: 0.7rem; color: var(--bl-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
       .pub-row__cell-val { font-weight: 600; color: var(--bl-text); }
       .pub-row__cell-val--zero { color: var(--bl-danger); }
+      .pub-stock { display: flex; justify-content: center; min-height: 2rem; }
+      .pub-stock__btn { font: inherit; font-weight: 600; color: var(--bl-text); background: transparent; border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-md); min-width: 2.75rem; min-height: 2rem; padding: 0.1rem 0.6rem; cursor: pointer; }
+      .pub-stock__btn.pub-row__cell-val--zero { color: var(--bl-danger); }
+      .pub-stock__btn:hover { border-color: var(--bl-vendor-accent); background: var(--bl-surface-alt); }
+      .pub-stock__btn:focus-visible, .pub-stock__input:focus-visible { outline: 2px solid var(--bl-vendor-accent); outline-offset: 2px; }
+      .pub-stock__input { width: 4.5rem; min-height: 2rem; box-sizing: border-box; font: inherit; font-size: 1rem; font-weight: 600; text-align: center; color: var(--bl-text); background: var(--bl-surface); border: 1px solid var(--bl-vendor-accent); border-radius: var(--bl-radius-md); padding: 0.1rem 0.25rem; }
       .pub-status { font-size: 0.76rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: var(--bl-radius-pill); white-space: nowrap; }
       .pub-status--active { background: rgba(16, 185, 129, 0.12); color: #047857; }
       .pub-status--paused { background: var(--bl-surface-alt); color: var(--bl-text-secondary); }
@@ -1169,6 +1175,8 @@
         .pub-row { flex-wrap: wrap; }
         .pub-row__main { flex-basis: calc(100% - 56px - 1rem); }
         .pub-row__cell { min-width: 0; flex: 1 1 auto; align-items: flex-start; text-align: left; }
+        .pub-stock { justify-content: flex-start; min-height: 2.75rem; }
+        .pub-stock__btn, .pub-stock__input { min-height: 2.75rem; }
         .pub-count { margin-left: 0; width: 100%; }
         .pub-bulk__actions { margin-left: 0; }
       }
