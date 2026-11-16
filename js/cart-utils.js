@@ -460,6 +460,34 @@ export function updateCartBadge() {
   }
 }
 
+/**
+ * Aviso de "agregado al carrito" sin cartel (en celular el toast tapaba la
+ * pantalla): el ícono del carrito del navbar rebota y, si hay botón, este
+ * cambia un momento a "Agregado". Las animaciones están en home.css.
+ */
+export function flashAddedToCart(btn) {
+  const restart = (el, cls) => {
+    el.classList.remove(cls);
+    void el.offsetWidth; // reflow: sin esto un segundo clic seguido no reinicia la animación
+    el.classList.add(cls);
+    el.addEventListener('animationend', () => el.classList.remove(cls), { once: true });
+  };
+
+  const cartLink = document.getElementById('nav-cart');
+  if (cartLink) restart(cartLink, 'is-bumping');
+
+  if (!btn) return;
+  btn._blOrigHTML ??= btn.innerHTML;
+  btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Agregado';
+  restart(btn, 'is-added-pop');
+  btn.classList.add('is-added');
+  clearTimeout(btn._blAddedTimer);
+  btn._blAddedTimer = setTimeout(() => {
+    btn.innerHTML = btn._blOrigHTML;
+    btn.classList.remove('is-added');
+  }, 1300);
+}
+
 /** Cantidad máxima por producto en el carrito */
 export const MAX_QTY = 99;
 
@@ -781,12 +809,8 @@ export function initCartButtons() {
 
       saveCart(cart);
 
-      // Animación rápida de escala
-      btn.style.transform = 'scale(0.93)';
-      setTimeout(() => { btn.style.transform = ''; }, 120);
-
       updateCartBadge();
-      showToast(`${name} agregado al carrito`, 'success');
+      flashAddedToCart(btn);
     });
   });
 }
@@ -951,7 +975,6 @@ export async function initWishlist(knownFavoriteIds) {
       } else {
         icon.classList.replace('fa-solid', 'fa-regular');
         btn.style.color = '';
-        showToast('Eliminado de favoritos');
       }
 
       try {

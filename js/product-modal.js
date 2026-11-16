@@ -13,7 +13,7 @@ import { setProductImage } from './product-image.js';
 import { supabase } from './auth-utils.js';
 import { safeVideoUrl } from './storage-utils.js';
 import { renderSameProductOffers } from './price-compare-ui.js';
-import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
+import { getCart as _getCart, saveCart as _saveCart, parsePrice as _parsePrice, formatPrice, updateCartBadge as _updateBadge, flashAddedToCart as _flashAddedToCart, showToast as _showToast, getFavoriteIds as _getFavoriteIds, toggleFavorite as _toggleFavorite, isOfferExpired } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { fetchProductDetail, prefetchProductDetail } from './product-detail-api.js';
@@ -809,7 +809,6 @@ function bindModalEvents(overlay, data) {
       favBtn.classList.toggle('is-active', isActive);
       icon.classList.toggle('fa-solid', isActive);
       icon.classList.toggle('fa-regular', !isActive);
-      if (!isActive) _showToast('Eliminado de favoritos', 'default');
 
       try {
         await _toggleFavorite(data.id, wasActive);
@@ -906,8 +905,7 @@ function bindModalEvents(overlay, data) {
       addCartBtn.innerHTML = originalHTML;
     }, 1800);
 
-    const chosen = describeSelectedOptions(buildSelectionSnapshot(data.optionGroups, selectedIds));
-    _showToast(`${data.name}${chosen ? ` (${chosen})` : ''} agregado al carrito (x${qty})`, 'success');
+    _flashAddedToCart(); // el botón ya muestra "¡Agregado!"; falta rebotar el carrito
   });
 
   // Comprar ahora

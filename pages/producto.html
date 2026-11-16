@@ -128,6 +128,16 @@
         background: var(--bl-primary-dark);
         transform: translateY(-2px);
       }
+      .btn-add-cart.is-added,
+      .btn-add-cart.is-added:hover {
+        background: var(--bl-success);
+      }
+      .btn-add-cart.is-added-pop {
+        animation: bl-add-pop 0.45s ease-out; /* keyframes en home.css */
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .btn-add-cart.is-added-pop { animation: none; }
+      }
       @media (max-width: 768px) {
         .product-page {
           grid-template-columns: 1fr;

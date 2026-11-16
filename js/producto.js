@@ -2,7 +2,7 @@ import { supabase } from './auth-utils.js';
 import { promptLogin } from './login-prompt.js';
 import { safeVideoUrl } from './storage-utils.js';
 import { renderSameProductOffers } from './price-compare-ui.js';
-import { getCart, saveCart, formatPrice, updateCartBadge, showToast, renderErrorState } from './cart-utils.js';
+import { getCart, saveCart, formatPrice, updateCartBadge, flashAddedToCart, showToast, renderErrorState } from './cart-utils.js';
 import { sortOptionGroups, missingOptionNames, buildSelectionSnapshot, describeSelectedOptions, cartLineKey, itemLineKey } from './product-options-utils.js';
 import { renderReviewsSection } from './reviews-utils.js';
 import { fetchProductDetail } from './product-detail-api.js';
@@ -318,13 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         saveCart(cart);
 
-        // Animation
-        btnAdd.style.transform = 'scale(0.95)';
-        setTimeout(() => { btnAdd.style.transform = ''; }, 100);
-
         updateCartBadge();
-        const chosen = describeSelectedOptions(buildSelectionSnapshot(optionGroups, selectedIds));
-        showToast(`${product.title}${chosen ? ` (${chosen})` : ''} agregado al carrito`, 'success');
+        flashAddedToCart(btnAdd);
       });
     }
 
