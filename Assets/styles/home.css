@@ -2180,9 +2180,16 @@ button.coupon-chip:hover {
   background-position: center;
 }
 
-/* En escritorio y tablet tiene el mismo alto que el banner principal de
-   arriba (.hero__carousel: 280px, 200px desde 768px). En teléfono (<= 640px)
-   sigue la proporción de arriba, que es la que usan las promos de comercio. */
+/* Mismo alto que el banner principal de arriba (.hero__carousel) en TODOS los
+   anchos, no solo escritorio/tablet: 280px de 1320 a 769px, 200px de 768 a
+   481px, 160px de 480px para abajo (mismos cortes que .hero__carousel más
+   abajo en este archivo). Antes, por debajo de 640px, en vez de altura fija
+   usaba la proporción real de la imagen (--promo-ratio, técnica que evita
+   letterbox en el resto de los espacios) y terminaba mucho más bajo que el
+   banner principal -- para este espacio puntual (el único pensado para
+   verse como una continuación del hero) importa más igualar el alto que
+   evitar el letterbox, igual que ya pasaba en escritorio/tablet (contain,
+   más abajo). */
 @media (min-width: 641px) {
   .promo-banner-2--g.promo-banner-2--hero,
   .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
@@ -2199,11 +2206,33 @@ button.coupon-chip:hover {
 }
 
 @media (max-width: 640px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    aspect-ratio: auto;
+    height: 200px;
+  }
+
+  .promo-banner-2--g.promo-banner-2--hero.is-store-promo {
+    /* Pisa la técnica general de abajo (padding-top en % + background-size:
+       100% auto, pensada para los demás espacios): acá va altura fija +
+       contain, igual que en escritorio/tablet. */
+    padding: 1.25rem 1.75rem;
+    background-size: contain;
+    background-position: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    height: 160px;
+  }
+}
+
+@media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
   }
-
-  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 21.9%; } /* 1600x350 */
 
   .promo-banner-2--g.is-store-promo,
   .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
@@ -3664,8 +3693,9 @@ button.coupon-chip:hover {
 
 /* "Productos recomendados" en teléfono: una fila que se desliza hacia el
    costado en vez de una grilla que crece hacia abajo. Solo #products-grid
-   (Esenciales, Ofertas y Seguí descubriendo tienen otros ids y no cambian). El
-   id le gana a los .products__grid de los @media de más abajo.
+   (Esenciales y Ofertas tienen su propio bloque, dos filas, justo abajo;
+   Seguí descubriendo tiene otro id y no cambia). El id le gana a los
+   .products__grid de los @media de más abajo.
    Solo hijo directo de #productos: en search.html el mismo id está dentro de
    .catalog-content y ahí la lista va en grilla vertical (pedido 2026-11-14). */
 @media (max-width: 768px) {
@@ -3683,6 +3713,48 @@ button.coupon-chip:hover {
   #productos > #products-grid > .product-card {
     flex: 0 0 min(44%, 190px);
     scroll-snap-align: start;
+  }
+}
+
+/* Esenciales para tu casa / Ofertas en teléfono: dos filas que se deslizan
+   juntas hacia el costado (como "Productos recomendados" de arriba, pero de
+   a dos en vez de una sola fila) en vez de la grilla de dos columnas que
+   crecía hacia abajo y las flechas de escritorio de initGridPager()
+   (pensadas para el mouse, no para el dedo). grid-auto-flow: column +
+   grid-template-rows de dos mantiene el orden de lectura (1 arriba, 2 abajo,
+   3 arriba de la siguiente columna...) -- initGridPager() en home.js deja de
+   paginar de a 8 en este ancho y pinta de una las hasta 32 que ya bajaron de
+   Supabase, así el scroll nativo llega a todas. Los ids le ganan en
+   especificidad a .products__grid.products__grid--paged de más arriba. */
+@media (max-width: 768px) {
+  #essentials-grid,
+  #offers-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, 1fr);
+    grid-auto-columns: min(44%, 190px);
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  #essentials-grid::-webkit-scrollbar,
+  #offers-grid::-webkit-scrollbar { display: none; }
+
+  #essentials-grid > .product-card,
+  #offers-grid > .product-card {
+    scroll-snap-align: start;
+  }
+
+  /* Las flechas de arriba (anteriores/siguientes) son para mouse: en
+     teléfono la grilla ya se desliza con el dedo (ver arriba). */
+  #essentials-prev,
+  #essentials-next,
+  #offers-prev,
+  #offers-next {
+    display: none !important;
   }
 }
 
@@ -4500,9 +4572,19 @@ button.coupon-chip:hover {
 .stores-carousel__arrow--prev { left: 0.5rem; }
 .stores-carousel__arrow--next { right: 0.5rem; }
 
-/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos. */
+/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos.
+   Sin flechas no hace falta el padding lateral de 3.25rem que les dejaba
+   lugar -- se achica a 1.5rem, igual que el resto de las secciones (hero,
+   mosaico de promos, grillas de productos), así el primer logo arranca al
+   ras del borde en vez de quedar corrido hacia adentro. */
 @media (max-width: 768px) {
   .stores-carousel__arrow { display: none !important; }
+
+  .stores-carousel {
+    padding: 0.5rem 1.5rem 1rem 1.5rem;
+    scroll-padding-left: 1.5rem;
+    scroll-padding-right: 1.5rem;
+  }
 }
 
 /* Sin hover a propósito: el de antes (translateY + scale + z-index:2 al

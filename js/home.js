@@ -470,6 +470,11 @@ async function loadProducts() {
  *  recomendados", que muestra todo lo que carga de una. Acá se guarda el
  *  array completo ya traído de Supabase y las flechas del header solo
  *  cambian qué 8 se ven — no vuelven a pedirle nada al servidor.
+ *  En teléfono (<= 768px) las flechas de PC se esconden por CSS (ver
+ *  .section-header__nav en home.css) y la grilla pasa a deslizarse con el
+ *  dedo (dos filas, como "fila" de a dos tarjetas) -- ahí no paginamos: se
+ *  pintan todas las que ya se bajaron de Supabase de una sola vez, así el
+ *  scroll nativo llega a las 32.
  *  @param {{gridId: string, prevId: string, nextId: string, pageSize?: number}} opts
  *  @returns {{ setItems: (items: object[]) => void }} */
 function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
@@ -480,18 +485,21 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   let items = [];
   let page = 0;
 
+  const effectivePageSize = () => (isSmallScreen() ? items.length : pageSize);
+
   function render() {
     if (!grid) return;
+    const size = effectivePageSize();
     grid.innerHTML = '';
     items
-      .slice(page * pageSize, page * pageSize + pageSize)
+      .slice(page * size, page * size + size)
       .forEach((item) => grid.appendChild(buildProductCard(item)));
 
     initCartButtons();
     initWishlist();
 
     if (prevBtn) prevBtn.disabled = page === 0;
-    if (nextBtn) nextBtn.disabled = (page + 1) * pageSize >= items.length;
+    if (nextBtn) nextBtn.disabled = (page + 1) * size >= items.length;
   }
 
   prevBtn?.addEventListener('click', () => {
@@ -501,7 +509,7 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   });
 
   nextBtn?.addEventListener('click', () => {
-    if ((page + 1) * pageSize >= items.length) return;
+    if ((page + 1) * effectivePageSize() >= items.length) return;
     page += 1;
     render();
   });
