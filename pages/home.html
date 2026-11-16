@@ -119,12 +119,14 @@
     <nav class="category-bar" aria-label="Accesos">
       <div class="category-bar__inner category-bar__inner--home-actions">
         <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
-        <a href="./contratar.html" class="home-action">Contratar</a>
+        <a href="./contratar.html" class="home-action" id="home-contratar-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </nav>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
-         renderPanelAction), pero eso se sabe recién después de consultar la
+         renderPanelAction); para un PROFESIONAL el "Panel" va en el lugar de
+         "Contratar" (su panel es el del directorio) y "Vender" queda como está.
+         Eso se sabe recién después de consultar la base, pero eso se sabe recién después de consultar la
          base. Para que no se vea el cambio, el texto sale bien en el primer
          pintado: (1) de la última respuesta guardada en este navegador
          (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
@@ -152,18 +154,22 @@
           var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
           var href;
           var menu = false;
-          if (hint && hint.uid === uid) { href = hint.href; menu = !!hint.menu; }
+          var target = link; // "Vender", o "Contratar" si la cuenta es profesional
+          if (hint && hint.uid === uid) {
+            href = hint.href; menu = !!hint.menu;
+            if (hint.slot === 'contratar') target = document.getElementById('home-contratar-action') || link;
+          }
           else if (role === 'vendedor') href = './vender.html';
           else if (role === 'repartidor') href = './repartidor.html';
           else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
           if (href) {
-            link.textContent = 'Panel';
-            link.setAttribute('href', href);
+            target.textContent = 'Panel';
+            target.setAttribute('href', href);
             if (menu) { // vendedor/profesional que además es admin: lleva menú
-              link.classList.add('home-action--menu');
+              target.classList.add('home-action--menu');
               var c = document.createElement('i');
               c.className = 'fa-solid fa-chevron-down';
-              link.appendChild(c);
+              target.appendChild(c);
             }
           }
           ready();
@@ -546,7 +552,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
