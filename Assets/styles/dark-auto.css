@@ -651,12 +651,6 @@ html[data-theme="dark"] .pm-tab.is-active {
 html[data-theme="dark"] .pm-tab.is-active::after {
   background: var(--bl-primary);
 }
-html[data-theme="dark"] .pm-shop-info__link {
-  color: var(--dk-accent-text);
-}
-html[data-theme="dark"] .pm-shop-info__link:hover {
-  background: rgba(111, 141, 206, 0.096);
-}
 html[data-theme="dark"] .pm-related-card__img {
   background: #1e2328;
 }
@@ -1378,6 +1372,17 @@ html[data-theme="dark"] .store-cat-chip {
 }
 html[data-theme="dark"] .store-cat-chip:hover {
   color: var(--dk-accent-text);
+}
+
+/* ===== pages/comercios.html (<style>) ===== */
+html[data-theme="dark"] .store-filter__chip {
+  color: var(--bl-text-secondary);
+}
+html[data-theme="dark"] .store-filter__chip:hover {
+  color: var(--dk-accent-text);
+}
+html[data-theme="dark"] .store-filter__chip[aria-pressed="true"] {
+  color: var(--bl-text-inverse);
 }
 
 /* ===== pages/contratar.html (<style>) ===== */
