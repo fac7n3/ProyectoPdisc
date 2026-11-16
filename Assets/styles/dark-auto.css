@@ -1687,6 +1687,11 @@ html[data-theme="dark"] .mc-navitem.is-active {
 html[data-theme="dark"] .mc-hamburger {
   color: var(--dk-accent-text);
 }
+@media (max-width: 900px) {
+html[data-theme="dark"] .mc-hamburger {
+  color: var(--dk-accent-text);
+}
+}
 html[data-theme="dark"] .rs-card__title {
   color: var(--bl-text);
 }
