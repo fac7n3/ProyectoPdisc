@@ -22,6 +22,8 @@ import { onNotificationsChanged } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
 import { getInstallState, triggerInstall } from './install-app.js';
 import { locationParams } from './store-location-utils.js';
+import { promptLogin } from './login-prompt.js';
+import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -195,7 +197,7 @@ function initStickyHeightVars() {
 
 /**
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
- * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'/'inicio').
+ * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'; 'inicio' no resalta nada).
  *
  * Render en dos tiempos: si hay cache en localStorage, dibuja la barra al
  * instante (evita que el texto "desaparezca" en cada navegación mientras el
@@ -245,6 +247,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   trigger.className = 'cat-mega__trigger';
   trigger.setAttribute('aria-haspopup', 'true');
   trigger.setAttribute('aria-expanded', 'false');
+  // En celular el texto "Categorías" se esconde y queda solo el ícono.
+  trigger.setAttribute('aria-label', 'Categorías');
   const barsIcon = document.createElement('i');
   barsIcon.className = 'fa-solid fa-bars';
   trigger.appendChild(barsIcon);
@@ -292,7 +296,7 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   const megaFooter = document.createElement('div');
   megaFooter.className = 'cat-mega__footer';
   const footerLinks = [
-    { href: './search.html?cat=ofertas', icon: 'fa-tags', text: 'Ofertas' },
+    { href: './search.html?cat=ofertas', icon: 'fa-tags', text: 'Ofertas', sub: 'Precios rebajados de tus comercios' },
   ];
   footerLinks.forEach((f) => {
     const a = document.createElement('a');
@@ -301,8 +305,20 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
     a.setAttribute('role', 'menuitem');
     const i = document.createElement('i');
     i.className = `fa-solid ${f.icon}`;
-    a.appendChild(i);
-    a.append(` ${f.text}`);
+    const ico = document.createElement('span');
+    ico.className = 'cat-mega__footer-ico';
+    ico.setAttribute('aria-hidden', 'true');
+    ico.appendChild(i);
+    const text = document.createElement('span');
+    text.className = 'cat-mega__footer-text';
+    text.append(f.text);
+    const sub = document.createElement('small');
+    sub.textContent = f.sub;
+    text.appendChild(sub);
+    const arrow = document.createElement('i');
+    arrow.className = 'fa-solid fa-chevron-right cat-mega__footer-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    a.append(ico, text, arrow);
     megaFooter.appendChild(a);
   });
   panel.appendChild(megaFooter);
@@ -311,8 +327,12 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   if (megaMount) mega.classList.add('cat-mega--in-navbar');
 
   // Toggle del mega-menú (click, no solo hover -> mejor en mobile y accesible)
-  const openMega = () => { panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); mega.classList.add('is-open'); };
+  const openMega = () => {
+    announceNavMenuOpen(mega); // cierra la campanita / la cuenta si estaban abiertas
+    panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); mega.classList.add('is-open');
+  };
   const closeMega = () => { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); mega.classList.remove('is-open'); };
+  closeOnOtherNavMenuOpen(mega, closeMega);
   trigger.addEventListener('click', (e) => {
     e.stopPropagation();
     if (panel.hidden) openMega(); else closeMega();
@@ -324,7 +344,7 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
     if (e.key === 'Escape') closeMega();
   });
 
-  // --- Tira de acceso rápido: Inicio + Ofertas + solo las categorías
+  // --- Tira de acceso rápido: Ofertas + solo las categorías
   //     destacadas (no las 14). El resto vive en el mega-menú de arriba.
   //     El home no la usa: esa fila la ocupa con sus propios botones. ---
   if (!inner) return;
@@ -332,8 +352,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   const quick = document.createElement('div');
   quick.className = 'category-bar__quick';
 
+  // Sin "Inicio": al home se vuelve con el logo (pedido del usuario).
   const quickItems = [
-    { slug: 'inicio', name: 'Inicio', href: './home.html' },
     { slug: 'ofertas', name: 'Ofertas', href: './search.html?cat=ofertas' },
     ...featured.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
   ];
@@ -362,6 +382,20 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   });
 
   inner.appendChild(quick);
+
+  // La tira no tiene barra visible: la rueda vertical del mouse la mueve en
+  // horizontal, y un degradé avisa de qué lado hay más categorías.
+  const syncEdges = () => {
+    quick.classList.toggle('has-more-left', quick.scrollLeft > 2);
+    quick.classList.toggle('has-more-right', quick.scrollLeft + quick.clientWidth < quick.scrollWidth - 2);
+  };
+  quick.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || quick.scrollWidth <= quick.clientWidth) return;
+    e.preventDefault();
+    quick.scrollLeft += e.deltaY;
+  }, { passive: false });
+  quick.addEventListener('scroll', syncEdges, { passive: true });
+  new ResizeObserver(syncEdges).observe(quick); // también corre al inicio
 }
 
 // ── Buscador con autocompletado ─────────────────────────────
@@ -681,12 +715,15 @@ export async function initNotificationsBell() {
   }
 
   async function open() {
+    // Igual que el menú de perfil: sin sesión va el cartel central, no un panel.
+    await sessionReady;
+    if (!session && promptLogin('Para ver tus notificaciones necesitás iniciar sesión.')) return;
+
+    announceNavMenuOpen(wrap);
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
-
-    await sessionReady;
 
     if (!session) {
       const msg = document.createElement('p');
@@ -712,6 +749,7 @@ export async function initNotificationsBell() {
     await renderNotificationsSection(content, session.user.id);
   }
 
+  closeOnOtherNavMenuOpen(wrap, () => { if (!panel.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (panel.hidden) open(); else close();
@@ -844,12 +882,17 @@ export async function initAccountMenu() {
   }
 
   async function open() {
+    // Sin sesión este menú queda vacío y ocupa todo el alto en celular: en su
+    // lugar va el cartel central (se espera la sesión antes de abrir el panel
+    // para que no parpadee).
+    await sessionReady;
+    if (!session && promptLogin('Para ver tu cuenta necesitás iniciar sesión.')) return;
+
+    announceNavMenuOpen(wrap);
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
     panel.textContent = '';
-
-    await sessionReady;
 
     if (!session) {
       const msg = document.createElement('p');
@@ -988,6 +1031,7 @@ export async function initAccountMenu() {
   // navbar para pasar a layout mobile, home.css línea ~210).
   const isMobileNav = () => window.matchMedia('(max-width: 768px)').matches;
 
+  closeOnOtherNavMenuOpen(wrap, () => { if (!panel.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!isMobileNav()) {
@@ -1031,8 +1075,11 @@ export function buildSectionBackButton(label = 'Volver') {
 export function initScrollTop() {
   const btn = document.getElementById('scroll-top-btn');
   if (!btn) return;
+  // Se esconde cuando el pie entra en pantalla: en celular tapaba sus enlaces.
+  const footer = document.querySelector('footer');
   window.addEventListener('scroll', () => {
-    btn.classList.toggle('scroll-top--visible', window.scrollY > 400);
+    const overFooter = footer && footer.getBoundingClientRect().top < window.innerHeight;
+    btn.classList.toggle('scroll-top--visible', window.scrollY > 400 && !overFooter);
   }, { passive: true });
   btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }

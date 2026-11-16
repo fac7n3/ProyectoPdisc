@@ -76,14 +76,27 @@ async function checkSellerState(user) {
   const reveal = (view) => {
     if (stateLoader) stateLoader.style.display = 'none';
     const blockedView = document.getElementById('prof-blocked-view');
-    if (blockedView) blockedView.style.display = view === 'blocked' ? 'block' : 'none';
-    if (view === 'blocked') {
+    if (blockedView) blockedView.style.display = view === 'blocked' || view === 'blocked-seller' ? 'block' : 'none';
+    if (view === 'blocked' || view === 'blocked-seller') {
+      // Con un comercio se bloquea el alta de profesional; con un profesional ya
+      // publicado, el alta de comercio. Misma pantalla, texto según el caso.
+      const forSeller = view === 'blocked-seller';
+      const title = document.getElementById('prof-blocked-title');
+      const text = document.getElementById('prof-blocked-text');
+      if (title) title.textContent = forSeller
+        ? 'Necesitás otra cuenta para vender'
+        : 'Necesitás otra cuenta para ser profesional';
+      if (text) text.textContent = forSeller
+        ? 'Esta cuenta ya está publicada como profesional. Para vender productos con un comercio, creá una cuenta nueva o ingresá con otra.'
+        : 'Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.';
       // Carga perezosa: solo esta pantalla necesita el selector de cuentas. Al
       // cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta de profesional.
       import('./account-switcher.js').then(({ initAccountSwitcher }) => initAccountSwitcher({
         toggle: document.getElementById('prof-switch-toggle'),
         panel: document.getElementById('prof-switch-panel'),
-        redirectTo: './vender.html?tipo=servicio',
+        // Al cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta
+        // que corresponde (profesional o comercio).
+        redirectTo: forSeller ? './vender.html' : './vender.html?tipo=servicio',
       })).catch((err) => console.error('No se pudo cargar el selector de cuentas:', err));
     }
     registerView.style.display = view === 'register' ? 'block' : 'none';
@@ -190,8 +203,8 @@ async function checkSellerState(user) {
   }
 
   // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional?
-  // Si lo está, su panel es una página aparte (pages/profesional.html): acá
-  // solo queda el alta.
+  // Si lo está, su panel es una página aparte (pages/profesional.html) y acá no
+  // puede vender: una cuenta es comercio O profesional.
   const { data: prof } = await supabase
     .from('professionals')
     .select('id')
@@ -199,7 +212,9 @@ async function checkSellerState(user) {
     .limit(1);
 
   if (prof?.length) {
-    window.location.replace('./profesional.html');
+    // Ya está publicado como profesional: su panel vive en profesional.html (se
+    // llega desde "Panel" del home), y acá no puede abrir un comercio.
+    reveal('blocked-seller');
     return;
   }
 
@@ -448,9 +463,13 @@ function getShopCategorySlugs() {
 let pendingStoreCategorySlug = null; // por si loadDashboard resuelve antes que loadCategories
 
 function renderStoreCategoryOptions() {
+  // Sin `required` nativo: en celular la lista está plegada (display:none) y un radio
+  // oculto con `required` frena el envío sin poder mostrar el aviso. Igual se valida
+  // al guardar (getStoreCategorySlug + aviso "Elegí una categoría").
   renderCategoryPicker('store-category-options', {
-    name: 'store-category', type: 'radio', required: true,
+    name: 'store-category', type: 'radio',
   });
+  setupStoreCategoryDropdown();
   // loadDashboard() puede resolver antes que este fetch de categorías: si ya
   // había un rubro pendiente de marcar (ver setStoreCategorySlug), se aplica
   // recién ahora que existen los radios para marcarlo.
@@ -463,6 +482,70 @@ function setStoreCategorySlug(slug) {
   document.querySelectorAll('input[name="store-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+  updateStoreCategoryToggle();
+}
+
+/**
+ * Celular (<= 768 px): la categoría del comercio se ve como UNA barra que, al tocarla,
+ * despliega la lista (en compu sigue la grilla de siempre; el CSS decide con
+ * `.catpick--dropdown` en home.css). Los radios son los mismos: solo cambia cómo se muestran.
+ */
+function updateStoreCategoryToggle() {
+  const toggle = document.getElementById('store-category-toggle');
+  if (!toggle) return;
+  const checked = document.querySelector('input[name="store-category"]:checked');
+  const text = toggle.querySelector('.catpick__toggle-text');
+  const icon = toggle.querySelector('.catpick__toggle-icon');
+  const cat = checked && categoriesCache.find((c) => c.slug === checked.value);
+  text.textContent = cat ? cat.name : 'Elegí una categoría';
+  toggle.classList.toggle('catpick__toggle--empty', !cat);
+  icon.className = cat
+    ? `${(cat.icon || 'fa-solid fa-tag').replace(/[^a-zA-Z0-9 -]/g, '')} catpick__toggle-icon`
+    : 'fa-solid fa-tag catpick__toggle-icon';
+}
+
+function setupStoreCategoryDropdown() {
+  const grid = document.getElementById('store-category-options');
+  const fieldset = grid?.closest('.catpick');
+  if (!grid || !fieldset) return;
+  if (!document.getElementById('store-category-toggle')) {
+    fieldset.classList.add('catpick--dropdown');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'store-category-toggle';
+    toggle.className = 'catpick__toggle';
+    toggle.setAttribute('aria-haspopup', 'listbox');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'store-category-options');
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-tag catpick__toggle-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.className = 'catpick__toggle-text';
+    const chevron = document.createElement('i');
+    chevron.className = 'fa-solid fa-chevron-down catpick__toggle-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    toggle.append(icon, text, chevron);
+    grid.before(toggle);
+
+    const setOpen = (open) => {
+      fieldset.classList.toggle('catpick--open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+    toggle.addEventListener('click', () => setOpen(!fieldset.classList.contains('catpick--open')));
+    // Al elegir una categoría la lista se pliega y la barra muestra la elegida.
+    grid.addEventListener('change', () => { updateStoreCategoryToggle(); setOpen(false); });
+    document.addEventListener('click', (e) => {
+      if (!fieldset.contains(e.target)) setOpen(false);
+    });
+    fieldset.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && fieldset.classList.contains('catpick--open')) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+  }
+  updateStoreCategoryToggle();
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
@@ -1918,7 +2001,10 @@ function renderOrderDetail(order, events) {
 
   const head = rsEl('div', 'pd-detail__head');
   const title = rsEl('div');
-  title.appendChild(rsEl('h2', 'pd-detail__title', `Pedido ${orderLabel(order)}`));
+  // "#BL-1056" no se parte en el guion: nowrap solo en el número.
+  const titleH2 = rsEl('h2', 'pd-detail__title', 'Pedido ');
+  titleH2.appendChild(rsEl('span', 'pd-detail__ref', orderLabel(order)));
+  title.appendChild(titleH2);
   title.appendChild(rsEl('p', 'pd-detail__sub', new Date(order.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })));
   head.append(title, rsEl('span', `pub-status pub-status--${ORDER_STATUS_BADGE_VARIANT[order.status] || 'paused'}`, ORDER_STATUS_LABELS[order.status] || order.status));
   body.appendChild(head);
@@ -3173,18 +3259,17 @@ function setupStoreProfileForm() {
 // dueño carga la imagen y la publicación de los espacios de SU comercio.
 
 const HOME_PROMO_PROS = [
-  'Aparecés en la portada del inicio: lo primero que ve cualquiera que entra al sitio, antes de buscar nada.',
-  'Más clicks directos a tu publicación, sin que el vecino tenga que buscarte o encontrarte de casualidad.',
-  'Te destacás como comercio activo y recomendado, no uno más en la lista de resultados.',
-  'Lo usás para lo que más te convenga en el momento: una oferta puntual, un producto nuevo, o simplemente darte a conocer.',
-  'No tiene costo extra: es un espacio que se asigna, no se paga aparte.',
-  'Podés cambiar la imagen y la publicación cuando quieras, sin esperar a nadie.',
+  'Salís en la portada, lo primero que se ve.',
+  'Más clicks directos a tu comercio.',
+  'Te destacás sobre el resto.',
+  'Sin costo extra.',
+  'Cambiás la imagen cuando quieras.',
 ];
 
 const HOME_PROMO_CONS = [
-  'Solo te encuentran buscando o navegando por categoría: te perdés a la mayoría, que entra directo al inicio.',
-  'Quedás al mismo nivel que cualquier otro comercio, sin nada que te distinga de entrada.',
-  'Tus ofertas o novedades no tienen ningún lugar destacado donde mostrarse.',
+  'Solo te encuentran si te buscan.',
+  'Sos uno más de la lista.',
+  'Tus ofertas no tienen dónde lucirse.',
 ];
 
 function buildHomePromoEmptyState(storeName) {
@@ -3197,7 +3282,7 @@ function buildHomePromoEmptyState(storeName) {
   empty.appendChild(icon);
 
   const text = document.createElement('p');
-  text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Si querés destacar una promoción, escribinos desde Soporte.';
+  text.textContent = 'Tu comercio todavía no tiene un espacio en el inicio. Pedilo y lo vemos.';
   empty.appendChild(text);
 
   const perks = document.createElement('div');
@@ -3584,7 +3669,7 @@ function buildStaffRow(s, email) {
   row.style.cssText = 'flex-direction: column; align-items: stretch; gap: 0;';
 
   const top = document.createElement('div');
-  top.style.cssText = 'display: flex; align-items: center; gap: 1rem; width: 100%;';
+  top.className = 'staff-row__top';
 
   const thumb = document.createElement('div');
   thumb.className = 'pub-row__thumb pub-row__thumb--icon';
@@ -3606,8 +3691,7 @@ function buildStaffRow(s, email) {
   // Única acción disponible: se muestra como botón visible, no kebab (mismo criterio que Pagos por confirmar).
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
-  removeBtn.className = 'btn-outline';
-  removeBtn.style.cssText = 'border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap;';
+  removeBtn.className = 'btn-outline staff-row__remove';
   removeBtn.textContent = 'Quitar acceso';
   removeBtn.addEventListener('click', async () => {
     if (!(await confirmDialog(`¿Quitarle el acceso a este panel a "${title.textContent}"?`, { confirmText: 'Quitar acceso', danger: true }))) return;
@@ -5146,9 +5230,8 @@ async function restoreProductDraft() {
   }
 }
 
-/** Muestra el form. Va ANTES del listado en el HTML (no lo reemplaza): los
- *  productos ya publicados se corren para abajo, el vendedor los sigue
- *  viendo mientras carga uno nuevo. No hace scroll acá adentro a propósito:
+/** Muestra el form. Mientras está abierto, el listado de publicaciones se
+ *  oculta (clase `is-form-open` en `.pub-wrap`). No hace scroll acá adentro a propósito:
  *  al editar, todavía falta cargar la galería y las variantes (async, con
  *  fotos reales de por medio) -- si el scroll "smooth" arranca antes de que
  *  termine ese trabajo, el cambio de alto de la página a mitad de la
@@ -5158,6 +5241,9 @@ async function restoreProductDraft() {
 function openProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = false;
+  // Las publicaciones (buscador, filtros, selección y lista) solo se ven en
+  // "Publicaciones", no mientras se crea o edita un producto.
+  container?.closest('.pub-wrap')?.classList.add('is-form-open');
   // "Seleccionar varios" es del listado: mientras se crea o edita una
   // publicación no tiene que verse (y se sale del modo selección).
   if (pubSelectMode) setPubSelectMode(false);
@@ -5176,6 +5262,7 @@ function scrollToProductForm() {
 function closeProductForm() {
   const container = document.getElementById('add-product-form-container');
   if (container) container.hidden = true;
+  container?.closest('.pub-wrap')?.classList.remove('is-form-open');
   const bulk = document.getElementById('pub-bulk');
   if (bulk) bulk.hidden = false;
 }

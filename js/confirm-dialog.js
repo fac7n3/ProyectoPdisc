@@ -10,12 +10,15 @@
  * retiro de un pedido).
  */
 
+import { lockScroll } from './scroll-lock.js';
+
 let activeDialog = null;
 
 function closeDialog(resolve, value) {
   if (!activeDialog) return;
   document.removeEventListener('keydown', activeDialog.onKeydown);
   activeDialog.overlay.remove();
+  activeDialog.unlock();
   activeDialog = null;
   resolve(value);
 }
@@ -68,7 +71,7 @@ function buildShell(message, title, resolve, cancelValue) {
   };
   document.addEventListener('keydown', onKeydown);
 
-  activeDialog = { overlay, onKeydown, resolve, cancelValue };
+  activeDialog = { overlay, onKeydown, resolve, cancelValue, unlock: lockScroll() };
   return { overlay, card };
 }
 

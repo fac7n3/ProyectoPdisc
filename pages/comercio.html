@@ -18,7 +18,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="../Assets/styles/carrito.css" />
@@ -72,7 +72,7 @@
       .store-header.has-banner button.store-header__icon-btn.is-favorite { color: #ef4444; }
       .store-header.has-banner .store-header__top { min-height: 14rem; }
       .store-header__top {
-        padding: 3rem 4.5rem 1.75rem 1.5rem;
+        padding: 3rem 1.5rem 1.75rem;
         text-align: center;
         border-bottom: 1px solid color-mix(in srgb, var(--sh-fg, var(--bl-text)) 12%, transparent);
       }
@@ -257,6 +257,18 @@
       }
       .store-header__icon-btn.is-favorite {
         color: #ef4444;
+      }
+      .store-header__icon-btn i.is-pop {
+        animation: store-heart-pop 0.45s ease-out;
+      }
+      @keyframes store-heart-pop {
+        0% { transform: scale(1); }
+        30% { transform: scale(1.5); }
+        60% { transform: scale(0.88); }
+        100% { transform: scale(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .store-header__icon-btn i.is-pop { animation: none; }
       }
       /* Cartel propio (data-tooltip) de los botones de la esquina: estos botones
          están pegados al borde derecho, y el cartel centrado debajo de ellos se
@@ -513,6 +525,12 @@
       .store-cat-arrow--next { right: 0; }
       @media (max-width: 768px) {
         .store-cat-arrow { display: none !important; }
+        /* Sin flechas no hace falta el hueco que les deja lugar: la primera
+           tarjeta arranca al ras del borde de la página. */
+        .store-cat-row__track { padding-left: 0; padding-right: 0; scroll-padding-left: 0; scroll-padding-right: 0; }
+        /* Dos tarjetas enteras por fila sin scrollear de costado (el resto, si
+           hay, se llega deslizando). */
+        .store-cat-row__track .product-card { flex-basis: calc((100% - 0.75rem) / 2); min-width: 0; }
       }
 
       @media (max-width: 1024px) {
@@ -628,7 +646,10 @@
          empujando el botón. */
       @media (max-width: 768px) {
         .store-header__top {
-          padding: 2rem 3.25rem 1.5rem 1rem;
+          /* Simétrico: el corazón/lápiz va arriba en la esquina, el título queda
+             más abajo y no se pisan; con más padding a la derecha el título
+             se veía corrido a la izquierda. */
+          padding: 2rem 1rem 1.5rem;
         }
         .store-header__logo-wrap {
           width: 64px;
@@ -662,6 +683,10 @@
           max-width: 9.5rem;
           gap: 0.35rem;
         }
+        /* "Ver en mapa" más chico que la dirección (0.875rem) en celular. */
+        .store-header__map-link {
+          font-size: 0.75rem;
+        }
         button.store-header__icon-btn {
           top: 0.75rem;
           right: 0.75rem;
@@ -684,7 +709,7 @@
 
       @media (max-width: 480px) {
         .store-header__top {
-          padding: 1.5rem 2.75rem 1.25rem 0.75rem;
+          padding: 1.5rem 0.75rem 1.25rem;
         }
         .store-header__title {
           font-size: 1.4rem;

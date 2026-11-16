@@ -1,7 +1,7 @@
 // Página de resultados de búsqueda (search.html)
 // Optimizada con patrones de e-commerce grande (Mercado Libre/Amazon):
 // búsqueda insensible a acentos y multi-campo vía el RPC search_products,
-// encabezado que refleja la consulta, chips de filtros activos removibles,
+// encabezado que refleja la consulta,
 // rango de precio funcional, ordenamiento, paginación ("cargar más") y
 // estado sin resultados con recuperación.
 import { setProductImage } from './product-image.js';
@@ -26,7 +26,7 @@ const filterState = {
 };
 
 let totalCount = 0;
-let categoryNameBySlug = {}; // slug -> nombre (para header y chips)
+let categoryNameBySlug = {}; // slug -> nombre (para el header)
 let searchToken = 0; // descarta respuestas viejas del RPC (cambios rápidos de filtro)
 
 // ── Comercios que coinciden con la búsqueda ─────────────────
@@ -210,7 +210,6 @@ async function renderProfessionalResults() {
 const grid = document.getElementById('products-grid');
 const countEl = document.getElementById('catalog-count');
 const titleEl = document.getElementById('catalog-title');
-const chipsEl = document.getElementById('active-filters');
 const loadMoreWrap = document.getElementById('load-more-wrap');
 const loadMoreBtn = document.getElementById('load-more-btn');
 
@@ -289,12 +288,11 @@ async function renderPriceCompare(products, token) {
   const section = document.getElementById('price-compare');
   const list = document.getElementById('price-compare-list');
   if (!section || !list) return;
-  section.hidden = true;
-  list.textContent = '';
-  compareState = null;
+  // Lo anterior queda a la vista hasta tener el reemplazo (si no, la página salta).
+  const clear = () => { section.hidden = true; list.textContent = ''; compareState = null; };
 
   const pageProducts = (products || []).filter((p) => p.id && p.title);
-  if (!filterState.query || !pageProducts.length) return;
+  if (!filterState.query || !pageProducts.length) return clear();
 
   const [{ rows, error }, stores, coords] = await Promise.all([
     fetchSameProducts(pageProducts),
@@ -304,7 +302,7 @@ async function renderPriceCompare(products, token) {
   if (token !== searchToken) return;
   if (error) {
     console.warn('Comparador: no se pudieron traer los mismos productos de otros comercios', error);
-    return;
+    return clear();
   }
 
   const storeById = new Map(stores.map((s) => [s.id, s]));
@@ -319,7 +317,7 @@ async function renderPriceCompare(products, token) {
   named.sort((a, b) => (pageIndex.get(a.id) ?? 1e9) - (pageIndex.get(b.id) ?? 1e9));
 
   const groups = groupSameProducts(named).slice(0, COMPARE_MAX_GROUPS);
-  if (!groups.length) return;
+  if (!groups.length) return clear();
 
   compareState = { groups, coords };
   drawPriceCompare();
@@ -474,7 +472,7 @@ function buildLocationPrompt() {
         saveUserLocation(pos.coords.latitude, pos.coords.longitude);
         // Con "Más relevantes" la cercanía cambia el orden: se vuelve a buscar
         // (redibuja también el comparador). Si no, solo el comparador.
-        if (filterState.sortBy === 'relevancia') runSearch();
+        if (filterState.sortBy === 'relevancia') runSearch({ quiet: true });
         else drawPriceCompare();
       },
       () => {
@@ -518,7 +516,7 @@ function openCompareProduct(item) {
 }
 
 // ── Búsqueda principal (RPC search_products) ────────────────
-async function runSearch({ append = false } = {}) {
+async function runSearch({ append = false, quiet = false } = {}) {
   if (!grid) return;
 
   const token = ++searchToken;
@@ -530,7 +528,8 @@ async function runSearch({ append = false } = {}) {
     // ahí sí mostramos el spinner. A113-289: los filtros se aplican solos (sin
     // botón "Aplicar filtros"), así que este es el único aviso de que la
     // búsqueda está en curso.
-    if (!grid.querySelector('.skeleton-card')) {
+    // quiet: reordenar sin spinner (los resultados viejos quedan hasta que llegan los nuevos).
+    if (!quiet && !grid.querySelector('.skeleton-card')) {
       grid.innerHTML = '';
       const loading = document.createElement('div');
       loading.className = 'bl-loading-block';
@@ -586,7 +585,6 @@ async function runSearch({ append = false } = {}) {
     totalCount = products && products.length ? Number(products[0].total_count) : (append ? totalCount : 0);
 
     renderHeader();
-    renderChips();
 
     // La búsqueda muestra solo productos (sin comercios ni profesionales).
     const storeMatches = 0;
@@ -652,54 +650,6 @@ function renderHeader() {
   }
   if (countEl) {
     countEl.textContent = `${totalCount} resultado${totalCount !== 1 ? 's' : ''}`;
-  }
-}
-
-// ── Chips de filtros activos (removibles) ───────────────────
-function renderChips() {
-  if (!chipsEl) return;
-  chipsEl.textContent = '';
-
-  const chips = [];
-  if (filterState.query) {
-    chips.push({ label: `"${filterState.query}"`, onRemove: () => { filterState.query = ''; syncInputs(); commit(); } });
-  }
-  if (filterState.category === 'ofertas') {
-    chips.push({ label: 'Ofertas', onRemove: () => { filterState.category = 'todas'; syncPills(); commit(); } });
-  } else if (filterState.category && filterState.category !== 'todas') {
-    chips.push({ label: categoryNameBySlug[filterState.category] || filterState.category, onRemove: () => { filterState.category = 'todas'; syncPills(); commit(); } });
-  }
-  if (filterState.minPrice != null || filterState.maxPrice != null) {
-    const min = filterState.minPrice != null ? formatPrice(filterState.minPrice) : '$0';
-    const max = filterState.maxPrice != null ? formatPrice(filterState.maxPrice) : '∞';
-    chips.push({ label: `${min} — ${max}`, onRemove: () => { filterState.minPrice = null; filterState.maxPrice = null; syncPriceInputs(); commit(); } });
-  }
-
-  if (chips.length === 0) return;
-
-  chips.forEach((c) => {
-    const chip = document.createElement('span');
-    chip.className = 'filter-chip';
-    chip.append(c.label + ' ');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'filter-chip__remove';
-    btn.setAttribute('aria-label', `Quitar filtro ${c.label}`);
-    const x = document.createElement('i');
-    x.className = 'fa-solid fa-xmark';
-    btn.appendChild(x);
-    btn.addEventListener('click', c.onRemove);
-    chip.appendChild(btn);
-    chipsEl.appendChild(chip);
-  });
-
-  if (chips.length > 1) {
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'active-filters__clear';
-    clearBtn.textContent = 'Limpiar todo';
-    clearBtn.addEventListener('click', clearAllFilters);
-    chipsEl.appendChild(clearBtn);
   }
 }
 
@@ -842,9 +792,7 @@ function commit() {
 
 function syncInputs() {
   const navInput = document.getElementById('search-input');
-  const sidebarInput = document.getElementById('sidebar-search-input');
   if (navInput) navInput.value = filterState.query;
-  if (sidebarInput) sidebarInput.value = filterState.query;
 }
 
 function syncPriceInputs() {
@@ -854,9 +802,8 @@ function syncPriceInputs() {
   if (maxEl) maxEl.value = filterState.maxPrice ?? '';
 }
 
-/** Refleja en los dos desplegables lo que dice filterState. */
+/** Refleja en el desplegable de orden lo que dice filterState. */
 function syncPills() {
-  catDropdown?.sync();
   sortDropdown?.sync();
 }
 
@@ -872,21 +819,17 @@ function clearAllFilters() {
   commit();
 }
 
-// ── Desplegables propios del sidebar (categoría y orden) ────
-// Los dos usan el mismo marcado y la misma mecánica --abrir, cerrar al hacer
-// click afuera, cerrar con Escape, marcar la opción activa-- así que se
-// cablean con una sola función en vez de tenerla copiada dos veces.
-//
-// `options` es [{ value, label }]. El de categoría las carga después (llegan
-// de la DB), de ahí setOptions().
-function initFilterDropdown({ rootId, triggerId, menuId, labelId, options = [], getValue, onSelect }) {
+// ── Desplegable propio del sidebar ("Ordenar por") ──────────
+// Abrir, cerrar al hacer click afuera, cerrar con Escape, marcar la opción
+// activa. `options` es [{ value, label }].
+function initFilterDropdown({ rootId, triggerId, menuId, labelId, options, getValue, onSelect }) {
   const root = document.getElementById(rootId);
   const trigger = document.getElementById(triggerId);
   const menu = document.getElementById(menuId);
   const label = document.getElementById(labelId);
   if (!root || !trigger || !menu) return null;
 
-  let current = options;
+  const current = options;
 
   const open = () => {
     menu.hidden = false;
@@ -941,7 +884,7 @@ function initFilterDropdown({ rootId, triggerId, menuId, labelId, options = [], 
   });
 
   render();
-  return { sync, close, setOptions: (next) => { current = next; render(); } };
+  return { sync, close };
 }
 
 const SORT_OPTIONS = [
@@ -952,39 +895,17 @@ const SORT_OPTIONS = [
   { value: 'nombre', label: 'Nombre (A-Z)' },
 ];
 
-let catDropdown = null;
 let sortDropdown = null;
 
-// ── Filtro de categoría: botón desplegable con todas las categorías
-//    (antes se listaban todas las pills una al lado de otra en el sidebar) ──
-async function renderCategoryPills() {
-  catDropdown = initFilterDropdown({
-    rootId: 'filter-categories',
-    triggerId: 'cat-filter-trigger',
-    menuId: 'cat-filter-menu',
-    labelId: 'cat-filter-label',
-    getValue: () => filterState.category,
-    onSelect: (value) => {
-      filterState.category = value;
-      syncPills();
-      commit();
-    },
-  });
-  if (!catDropdown) return;
-
+// Nombres de categoría para el título (la categoría se elige en el navbar).
+async function loadCategoryNames() {
   const categories = await getCategories();
   categoryNameBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
   categoryNameBySlug['ofertas'] = 'Ofertas';
-
-  catDropdown.setOptions([
-    { value: 'todas', label: 'Todas' },
-    ...categories.map((c) => ({ value: c.slug, label: c.name })),
-  ]);
 }
 
 // ── Filtros avanzados (sidebar) ─────────────────────────────
 function initSidebarFilters() {
-  const sidebarInput = document.getElementById('sidebar-search-input');
   const minEl = document.getElementById('filter-price-min');
   const maxEl = document.getElementById('filter-price-max');
   const mobileBtn = document.getElementById('mobile-filters-btn');
@@ -1003,14 +924,6 @@ function initSidebarFilters() {
       syncPills();
       commit();
     },
-  });
-
-  let searchTimer = null;
-  sidebarInput?.addEventListener('input', (e) => {
-    clearTimeout(searchTimer);
-    filterState.query = e.target.value.trim();
-    syncInputs();
-    searchTimer = setTimeout(commit, 300);
   });
 
   let priceTimer = null;
@@ -1038,7 +951,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   readUrl();
 
   // Navbar de categorías (resalta la categoría activa) + buscador con autocompletado.
-  const activeSlug = filterState.category && filterState.category !== 'todas' ? filterState.category : 'inicio';
+  // Búsqueda sin categoría: no se resalta nada (no es "Inicio").
+  const activeSlug = filterState.category && filterState.category !== 'todas' ? filterState.category : null;
   initCategoryBar({ activeSlug });
   initSearchBox({
     initialQuery: filterState.query,
@@ -1056,7 +970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncInputs();
   syncPriceInputs();
 
-  await renderCategoryPills();
+  await loadCategoryNames();
   runSearch();
 
   loadMoreBtn?.addEventListener('click', () => {

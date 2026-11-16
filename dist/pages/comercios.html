@@ -18,19 +18,30 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
-    <script type="module" crossorigin src="/assets/comercios-BX1LMwhT.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-Blaq1MHr.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-NIs88Q42.js">
-    <link rel="modulepreload" crossorigin href="/assets/cart-utils-iskUsnnN.js">
-    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
-    <link rel="modulepreload" crossorigin href="/assets/order-utils-BmjEJ9_i.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-MfdyGRps.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-XnPU1XXU.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-B1U0sAZg.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
+    <style>
+      .store-filter { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+      .store-filter[hidden] { display: none; }
+      .store-filter__chip { font: inherit; font-size: 0.8125rem; font-weight: 600; padding: 0.375rem 0.875rem; border-radius: var(--bl-radius-pill); border: 1px solid var(--bl-border); background: var(--bl-surface); color: var(--bl-text-secondary); cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+      .store-filter__chip:hover { border-color: var(--bl-primary); color: var(--bl-primary); }
+      .store-filter__chip[aria-pressed="true"] { background: var(--bl-primary); border-color: var(--bl-primary); color: var(--bl-text-inverse); }
+      .store-filter__chip:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+    </style>
+    <script type="module" crossorigin src="/assets/comercios-0gRoQDKe.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-b8OZ67AY.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-CQdGCA89.js">
+    <link rel="modulepreload" crossorigin href="/assets/cart-utils-B7QSGvwU.js">
+    <link rel="modulepreload" crossorigin href="/assets/scroll-lock-BK6xK4-l.js">
+    <link rel="modulepreload" crossorigin href="/assets/login-prompt-DXizAglz.js">
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-DK3Fl9T5.js">
+    <link rel="modulepreload" crossorigin href="/assets/dropdown-BcjXvxRo.js">
+    <link rel="modulepreload" crossorigin href="/assets/order-utils-CzIrO0cT.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-TDKwxSEn.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CJtKenz-.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-yByB0np7.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BOqY3hQS.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-DAYThVPW.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-9BTyAhXh.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -86,6 +97,8 @@
             <h1 class="results-title">Comercios de Baradero</h1>
             <span class="catalog-count" id="stores-count" role="status" aria-live="polite"></span>
           </div>
+
+          <div class="store-filter" id="store-filter" role="group" aria-label="Filtrar comercios por rubro" hidden></div>
 
           <div class="products__grid" id="stores-grid">
             <!-- skeleton -->
@@ -159,7 +172,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
@@ -172,7 +185,118 @@
     </button>
 
 
-    <style>.sr-only{clip:rect(0,0,0,0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}.store-card__logo{object-fit:contain;width:100%;height:100%}.store-card__logo-fallback{background:var(--bl-primary);color:#fff;border-radius:50%;justify-content:center;align-items:center;width:4rem;height:4rem;font-size:1.5rem;font-weight:700;display:flex}.store-card__meta{color:var(--bl-text-muted);flex-direction:column;gap:.25rem;font-size:.8125rem;display:flex}.store-card__meta i{text-align:center;width:1rem;margin-right:.25rem}</style>
+    <style>
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .store-card__logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .store-card__logo-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: var(--bl-primary);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.5rem;
+      }
+      .store-card__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.8125rem;
+        color: var(--bl-text-muted);
+      }
+      .store-card__meta i { width: 1rem; text-align: center; margin-right: 0.25rem; }
+
+      /* Celular: los comercios van como lista (una fila por comercio: logo,
+         nombre, zona y rubro, flecha) en vez de tarjetas sueltas en grilla.
+         Solo en #stores-grid: los resultados de búsqueda reusan buildStoreCard. */
+      @media (max-width: 768px) {
+        #stores-grid {
+          grid-template-columns: 1fr;
+          gap: 0;
+          background: var(--bl-surface);
+          border: 1px solid var(--bl-border);
+          border-radius: var(--bl-radius-xl);
+          overflow: hidden;
+        }
+        #stores-grid > .product-card {
+          flex-direction: row;
+          align-items: center;
+          gap: 0.875rem;
+          padding: 0.75rem 1rem;
+          border: 0;
+          border-bottom: 1px solid var(--bl-border);
+          border-radius: 0;
+          box-shadow: none;
+          transform: none;
+          position: relative;
+        }
+        #stores-grid > .product-card:last-child { border-bottom: 0; }
+        #stores-grid > .product-card:hover { transform: none; box-shadow: none; background: var(--bl-border-light); }
+        #stores-grid > .product-card:active { background: var(--bl-border-light); }
+        #stores-grid > .product-card:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: -2px; }
+        #stores-grid .product-card__image {
+          flex: 0 0 3.5rem;
+          width: 3.5rem;
+          height: 3.5rem;
+          padding: 0;
+          border-radius: var(--bl-radius-lg);
+          background: transparent;
+        }
+        #stores-grid .store-card__logo-fallback {
+          width: 3.5rem;
+          height: 3.5rem;
+          font-size: 1.375rem;
+        }
+        #stores-grid .product-card__body {
+          flex: 1;
+          min-width: 0;
+          padding: 0;
+        }
+        #stores-grid .product-card__name {
+          display: block;
+          min-height: 0;
+          margin-bottom: 0.125rem;
+          font-size: 0.9375rem;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        #stores-grid .store-card__meta { flex-direction: row; flex-wrap: wrap; gap: 0.125rem 0.75rem; }
+        /* Flecha de "entrar al comercio" (dibujada con bordes: no suma un ícono al subset). */
+        #stores-grid > a.product-card::after {
+          content: "";
+          flex: 0 0 auto;
+          width: 0.5rem;
+          height: 0.5rem;
+          margin-left: auto;
+          border-top: 2px solid var(--bl-text-muted);
+          border-right: 2px solid var(--bl-text-muted);
+          transform: rotate(45deg);
+        }
+        /* Esqueletos de carga con la misma forma de fila. */
+        #stores-grid > .skeleton-card { min-height: 4.75rem; }
+        #stores-grid > .skeleton-card .skeleton-img { flex: 0 0 3.5rem; width: 3.5rem; height: 3.5rem; border-radius: var(--bl-radius-lg); }
+        #stores-grid > .skeleton-card .skeleton-body { flex: 1; padding: 0 !important; }
+      }
+    </style>
 
   </body>
 </html>

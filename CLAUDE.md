@@ -109,9 +109,8 @@ o comercio (`middleware.js`), límite de llamadas anónimas (cupones/vistas/bús
 fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-03".
 
 ### Pendientes que necesitan al usuario (no se resuelven con código)
-- **Supabase (dashboard):** activar "Leaked password protection" (Authentication -> Policies); activar **TOTP** (Authentication ->
-  Multi-Factor) y que las 3 cuentas admin/moderador enrolen, **recién ahí** `update public.security_settings set require_staff_mfa = true, updated_at = now() where id;`;
-  aplicar la política de contraseñas de `supabase/config.toml` (P-04).
+- **Verificación en dos pasos del personal: DESACTIVADA (2026-11-16, migración 166 aplicada, pedido del usuario "por ahora no la vamos a usar").** `jwt_role()` ya no exige aal2, `guardPage` ya no pide código y se borraron los factores TOTP de las cuentas admin/moderador. Para volver a exigirla: reaplicar el cuerpo de `jwt_role()` de la 151 (sección 2), restaurar el bloque `ensureStaffMfa` en `guardPage` (`js/auth-utils.js`, ver git log), activar TOTP en Supabase, que las cuentas enrolen y recién ahí `update public.security_settings set require_staff_mfa = true`. Mi perfil sigue ofreciendo la verificación como opcional.
+- **Supabase (dashboard):** activar "Leaked password protection" (Authentication -> Policies); aplicar la política de contraseñas de `supabase/config.toml` (P-04).
 - **Backups (P-02):** el plan Free no tiene; pasar a Pro o cargar `SUPABASE_DB_URL` + `BACKUP_PASSPHRASE` para `backup-db.yml` (sin probar).
 - **Dominio (2026-11-12):** el usuario pidió `baraderolocal.vercel.app`; ya está agregado al proyecto de Vercel (verificado, responde 200) y
   **el viejo `proyectopdisc.vercel.app` sigue andando** (no se redirige). **El código no se tocó**: las Edge Functions de Mercado Pago, el
@@ -148,7 +147,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
 **Base de datos y migraciones**
-- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **165** (`sync_farmacias_turno`, aplicada: la base trae el turno desde la API del Colegio Farmacéutico cada 2 h); antes **164** (`banner_grande_hasta_10_imagenes`, aplicada; mosaic_g admite 10 posiciones; la 163 asigna sus 5 primeras publicidades); antes **161** (`recordatorio_renovacion_impulsar`, aplicada en Supabase; la 160 `boost_servicios_y_beneficios` se aplicó como 160a/160b/160c; antes la 159) (`search_ranking_senales_y_cercania`; la 158 es `get_cart_catalog`, copia a mano la policy de `products`) (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
+- **Numerar con cuidado:** mirar `list_migrations` de Supabase **y** `db/schema/` antes de elegir número (colisiones reales: 74/75, 107/108, 117/118, 138/139, 146-151). Último en el repo: **167** (`favorite_professionals`, aplicada: favoritos de servicios); antes **166** (`desactivar_mfa_personal`, aplicada); antes **165** (`sync_farmacias_turno`, aplicada: la base trae el turno desde la API del Colegio Farmacéutico cada 2 h); antes **164** (`banner_grande_hasta_10_imagenes`, aplicada; mosaic_g admite 10 posiciones; la 163 asigna sus 5 primeras publicidades); antes **161** (`recordatorio_renovacion_impulsar`, aplicada en Supabase; la 160 `boost_servicios_y_beneficios` se aplicó como 160a/160b/160c; antes la 159) (`search_ranking_senales_y_cercania`; la 158 es `get_cart_catalog`, copia a mano la policy de `products`) (el 154 y el 155 son de la tanda de videos; la 156 se aplicó en Supabase como `154_consultas_livianas`) (la 73 se aplicó el 2026-11-03). Los archivos se
   aplican por el conector, no hay runner: lo que está en producción manda (`pg_get_functiondef`), no el archivo.
 - **Conector de Supabase:** `DROP`, `DELETE` y bloques con cosas sensibles piden una confirmación en pantalla y se cortan a los 60 s si nadie la acepta. Salidas: `execute 'de' || 'lete ...'`, aplicar en partes
   (sin `drop`), y probar antes con un `DO` que termina en `raise exception 'RESULTADO %'` (se deshace solo). `apply_migration` de un `create index`/`create or replace` va al instante.
@@ -165,7 +164,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Colores:** tokens de `home.css`/`dark.css`; los colores fijos de CSS se espejan solos con `node scripts/gen-dark-css.mjs` (`dark-auto.css` es GENERADO: el test falla si quedó viejo); los de JS en línea van con tokens.
   Para **texto** verde/rojo usar `--bl-success-text`/`--bl-danger-text`, estrellas `--bl-star`, texto apagado `--bl-text-muted` (#5f6b7d); `--bl-success`/`--bl-danger` son para fondos. Estilos compartidos del navbar van en `home.css`.
 - **Avisos y videos:** un aviso corto = `notify(mensaje, 'success'|'error'|'warning')` de `js/notice.js` (los `showToast` viejos ya delegan ahí); nunca un toast ni un
-  `<div id="toast">` propios. Los videos (`products.video_url`, `professional_promos.media_type='video'`) se validan con `videoFileProblem` y se muestran solo con
+  `<div id="toast">` propios. "Agregado al carrito" **no** lleva aviso: `flashAddedToCart(btn)` de `js/cart-utils.js` (botón verde "Agregado" + rebote del carrito del navbar, estilos en `home.css`); un botón nuevo que agregue al carrito lo tiene que llamar. Los videos (`products.video_url`, `professional_promos.media_type='video'`) se validan con `videoFileProblem` y se muestran solo con
   `safeVideoUrl`; el CSP de las 22 páginas lleva `media-src 'self' blob: https://*.supabase.co` (`js/csp.test.mjs` lo exige). Sin Python no se pueden sumar íconos de
   Font Awesome: reusar uno que ya esté en `public/vendor/fontawesome/css/all.min.css`.
 - **Botón que exige sesión:** si el visitante no inició sesión, llamar `promptLogin(mensaje)` de `js/login-prompt.js` antes de avisar/redirigir; en celular (<= 768 px) muestra el cartel central "Iniciá sesión" y devuelve `true` (cortar ahí), en compu devuelve `false` y sigue el aviso de siempre. Ya conectado en finalizar compra, comercio favorito, avisarme de stock, pedir presupuesto, publicar/reportar reseña. Un botón nuevo con esa condición tiene que usarlo.
@@ -182,6 +181,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Subidas de imágenes:** toda foto que un usuario sube pasa por `compressImage(file, uso)` (`js/image-compress.js`: WebP, lado máximo por uso, devuelve el original si falla); una subida nueva
   tiene que hacer lo mismo, y comprimir **antes** de validar el peso. Lo ya subido no se achica solo (re-subir desde el panel).
 - **Consultas:** no bajar filas para contarlas ni `select *`/embeds que la pantalla no usa (medir con las respuestas de `rest/v1` en la pestaña de red); los conteos van a una función SQL (`featured_category_counts`).
+- **Menús del navbar:** uno solo abierto a la vez; un menú/cajón nuevo llama `announceNavMenuOpen(owner)` al abrirse y `closeOnOtherNavMenuOpen(owner, cerrar)` (`js/nav-menus.js`), porque sus botones cortan la propagación y el "clic afuera" de los otros no se entera.
 - **Notificaciones/paneles:** el alcance por panel sale de `currentPanelScope()`; el puntero "último aviso" es de toda la cuenta.
 
 **Cómo probar en este entorno**

@@ -35,7 +35,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="../Assets/styles/carrito.css" />
@@ -68,6 +68,9 @@
         <div class="bl-spinner__dot"></div>
       </div>
     </div>
+    <!-- Solo al entrar al sitio o al recargar: si se llega al home desde otra
+         página del sitio (botón Inicio, logo, atrás), se saca antes de pintarse. -->
+    <script>(function(){try{var n=performance.getEntriesByType('navigation')[0];var r=n&&n.type==='reload';var interno=document.referrer&&new URL(document.referrer).origin===location.origin;if(!r&&(interno||(n&&n.type==='back_forward'))){var s=document.getElementById('welcome-splash');if(s)s.remove();}}catch(e){}})();</script>
 
     <!-- ====== BARRA DE NAVEGACIÓN ====== -->
     <!-- navbar--single-row: variante de una sola fila, por ahora SOLO en el
@@ -116,12 +119,14 @@
     <nav class="category-bar" aria-label="Accesos">
       <div class="category-bar__inner category-bar__inner--home-actions">
         <a href="./vender.html" class="home-action" id="home-panel-action">Vender</a>
-        <a href="./contratar.html" class="home-action">Contratar</a>
+        <a href="./contratar.html" class="home-action" id="home-contratar-action">Contratar</a>
         <a href="./servicios.html" class="home-action">Emergencias</a>
       </div>
     </nav>
     <!-- "Vender" pasa a decir "Panel" para quien ya tiene uno (js/home.js,
-         renderPanelAction), pero eso se sabe recién después de consultar la
+         renderPanelAction); para un PROFESIONAL el "Panel" va en el lugar de
+         "Contratar" (su panel es el del directorio) y "Vender" queda como está.
+         Eso se sabe recién después de consultar la base, pero eso se sabe recién después de consultar la
          base. Para que no se vea el cambio, el texto sale bien en el primer
          pintado: (1) de la última respuesta guardada en este navegador
          (bl_panel_hint, la escribe getPanelAccess en auth-utils.js), o (2) del
@@ -149,18 +154,22 @@
           var hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
           var href;
           var menu = false;
-          if (hint && hint.uid === uid) { href = hint.href; menu = !!hint.menu; }
+          var target = link; // "Vender", o "Contratar" si la cuenta es profesional
+          if (hint && hint.uid === uid) {
+            href = hint.href; menu = !!hint.menu;
+            if (hint.slot === 'contratar') target = document.getElementById('home-contratar-action') || link;
+          }
           else if (role === 'vendedor') href = './vender.html';
           else if (role === 'repartidor') href = './repartidor.html';
           else { setTimeout(ready, 3000); return; } // todavía no se sabe: oculto
           if (href) {
-            link.textContent = 'Panel';
-            link.setAttribute('href', href);
+            target.textContent = 'Panel';
+            target.setAttribute('href', href);
             if (menu) { // vendedor/profesional que además es admin: lleva menú
-              link.classList.add('home-action--menu');
+              target.classList.add('home-action--menu');
               var c = document.createElement('i');
               c.className = 'fa-solid fa-chevron-down';
-              link.appendChild(c);
+              target.appendChild(c);
             }
           }
           ready();
@@ -261,19 +270,10 @@
            su imagen ampliada. -->
       <section class="promo-mosaic" aria-label="Promociones">
         <div class="promo-mosaic__grid">
-          <div class="promo-banner promo-banner--a" data-promo-slot="mosaic_a" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano">
-            <span class="promo-banner__eyebrow">Promoción</span>
-            <span class="promo-banner__title">Bebidas para el verano</span>
-          </div>
+          <div class="promo-banner promo-banner--a" data-promo-slot="mosaic_a" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Promoción: Bebidas para el verano" aria-label="Ver imagen ampliada: Bebidas para el verano"></div>
           <div class="promo-mosaic__side">
-            <div class="promo-banner promo-banner--b" data-promo-slot="mosaic_b" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas">
-              <span class="promo-banner__eyebrow">Combos</span>
-              <span class="promo-banner__title">Combo hamburguesas</span>
-            </div>
-            <div class="promo-banner promo-banner--c" data-promo-slot="mosaic_c" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas">
-              <span class="promo-banner__eyebrow">Oferta del día</span>
-              <span class="promo-banner__title">2x1 en gaseosas</span>
-            </div>
+            <div class="promo-banner promo-banner--b" data-promo-slot="mosaic_b" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Combos: Combo hamburguesas" aria-label="Ver imagen ampliada: Combo hamburguesas"></div>
+            <div class="promo-banner promo-banner--c" data-promo-slot="mosaic_c" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Oferta del día: 2x1 en gaseosas" aria-label="Ver imagen ampliada: 2x1 en gaseosas"></div>
           </div>
         </div>
       </section>
@@ -405,18 +405,10 @@
            asignables que el de arriba (data-promo-slot). -->
       <section class="promo-mosaic-2" aria-label="Más promociones">
         <div class="promo-mosaic-2__grid">
-          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades">
-            <span class="promo-banner__eyebrow">Novedades</span>
-          </div>
+          <div class="promo-banner-2 promo-banner-2--d" data-promo-slot="mosaic_d" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Novedades" aria-label="Ver imagen ampliada: Novedades"></div>
           <div class="promo-mosaic-2__side">
-            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" data-bg-defer>
-              <span class="promo-banner__eyebrow">Envíos</span>
-              <span class="promo-banner__title">Recibí en la puerta de tu casa</span>
-            </div>
-            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local">
-              <span class="promo-banner__eyebrow">Comercios</span>
-              <span class="promo-banner__title">Sumate a Baradero Local</span>
-            </div>
+            <div class="promo-banner-2 promo-banner-2--e" data-promo-slot="mosaic_e" data-bg-defer></div>
+            <div class="promo-banner-2 promo-banner-2--f" data-promo-slot="mosaic_f" data-bg-defer role="button" tabindex="0" data-lightbox-alt="Comercios: Sumate a Baradero Local" aria-label="Ver imagen ampliada: Sumate a Baradero Local"></div>
           </div>
         </div>
       </section>
@@ -481,10 +473,7 @@
            promo cargada, queda el cartel fijo de acá, que lleva a una sección. -->
       <section class="promo-strip" aria-label="Promociones">
         <div class="promo-strip__grid">
-          <div class="promo-banner-2 promo-banner-2--g promo-banner-2--hero" data-promo-slot="mosaic_g" data-bg-defer data-promo-href="./comercios.html" role="link" tabindex="0">
-            <span class="promo-banner__eyebrow">Promoción</span>
-            <span class="promo-banner__title">Descubrí los comercios de Baradero</span>
-          </div>
+          <div class="promo-banner-2 promo-banner-2--g promo-banner-2--hero" data-promo-slot="mosaic_g" data-bg-defer data-promo-href="./comercios.html" role="link" tabindex="0" aria-label="Descubrí los comercios de Baradero"></div>
         </div>
       </section>
 
@@ -563,7 +552,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>

@@ -62,6 +62,10 @@ export function scanIconUsage() {
       }
     }
   }
+  // El corazón se pasa de regular a lleno por JS (classList.replace/toggle), así que
+  // ninguna línea del código lo escribe como `fa-solid fa-heart`: sin esto el recorte
+  // deja el glifo lleno afuera y el corazón desaparece al marcar un favorito.
+  icons.get('heart')?.add('solid');
   return { icons, files };
 }
 

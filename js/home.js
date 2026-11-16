@@ -4,6 +4,7 @@ import { setProductImage } from './product-image.js';
 import { supabase, getPanelAccess, SELLER_PANEL_PAGES, HOME_INTENT_KEY } from './auth-utils.js';
 import { getCart, saveCart, parsePrice, formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, renderEmptyState } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
 import { getPref } from './settings-utils.js';
 import { loadAutoRedirectPreference } from './panel-redirect-utils.js';
 import { groupLivePromosBySlot, promoHref, promoAriaLabel, stepIndex, promoBannerUrl } from './home-promos-utils.js';
@@ -80,17 +81,21 @@ function whenPanelLinkReady(fn) {
   else fn();
 }
 
-/** Cliente sin panel: vuelve a "Vender" (por si el script del HTML lo había
- *  cambiado con una respuesta vieja) y lo muestra. */
+/** Deja un acceso con su texto y destino de siempre (sin menú ni flecha). */
+function resetActionLink(link, label, href) {
+  if (!link) return;
+  link.textContent = label;
+  link.setAttribute('href', href);
+  link.classList.remove('home-action--menu');
+  link.setAttribute('data-ready', '1');
+}
+
+/** Cliente sin panel: vuelve "Vender" y "Contratar" a su estado normal (por si
+ *  el script del HTML los había cambiado con una respuesta vieja) y los muestra. */
 function showVenderLink() {
   whenPanelLinkReady(() => {
-    const link = document.getElementById('home-panel-action');
-    if (!link) return;
-    link.textContent = 'Vender';
-    link.setAttribute('href', './vender.html');
-    link.classList.remove('home-action--menu');
-    link.querySelector('i')?.remove();
-    link.setAttribute('data-ready', '1');
+    resetActionLink(document.getElementById('home-panel-action'), 'Vender', './vender.html');
+    resetActionLink(document.getElementById('home-contratar-action'), 'Contratar', './contratar.html');
   });
 }
 
@@ -142,8 +147,16 @@ initPanelAction();
  * abre un menú chico para elegir.
  */
 function renderPanelAction({ isAdmin, seller, role }) {
-  const link = document.getElementById('home-panel-action');
+  // El panel del profesional va en el lugar de "Contratar" (su panel es el del
+  // directorio); "Vender" queda como está para ofrecerle vender con otra cuenta.
+  // Todo lo demás (vendedor, repartidor, admin solo) reemplaza a "Vender".
+  const inContratar = seller === 'profesional';
+  const venderLink = document.getElementById('home-panel-action');
+  const contratarLink = document.getElementById('home-contratar-action');
+  const link = inContratar ? contratarLink : venderLink;
   if (!link) return;
+  if (inContratar) resetActionLink(venderLink, 'Vender', './vender.html');
+  else resetActionLink(contratarLink, 'Contratar', './contratar.html');
   link.setAttribute('data-ready', '1');
 
   const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
@@ -198,9 +211,11 @@ function renderPanelAction({ isAdmin, seller, role }) {
     menu.hidden = true;
     btn.setAttribute('aria-expanded', 'false');
   };
+  closeOnOtherNavMenuOpen(wrap, () => { if (!menu.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     menu.hidden = !menu.hidden;
+    if (!menu.hidden) announceNavMenuOpen(wrap);
     btn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
     if (!menu.hidden) menu.querySelector('.home-panel-menu__item')?.focus();
   });
@@ -470,6 +485,11 @@ async function loadProducts() {
  *  recomendados", que muestra todo lo que carga de una. Acá se guarda el
  *  array completo ya traído de Supabase y las flechas del header solo
  *  cambian qué 8 se ven — no vuelven a pedirle nada al servidor.
+ *  En teléfono (<= 768px) las flechas de PC se esconden por CSS (ver
+ *  .section-header__nav en home.css) y la grilla pasa a deslizarse con el
+ *  dedo (dos filas, como "fila" de a dos tarjetas) -- ahí no paginamos: se
+ *  pintan todas las que ya se bajaron de Supabase de una sola vez, así el
+ *  scroll nativo llega a las 32.
  *  @param {{gridId: string, prevId: string, nextId: string, pageSize?: number}} opts
  *  @returns {{ setItems: (items: object[]) => void }} */
 function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
@@ -480,18 +500,21 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   let items = [];
   let page = 0;
 
+  const effectivePageSize = () => (isSmallScreen() ? items.length : pageSize);
+
   function render() {
     if (!grid) return;
+    const size = effectivePageSize();
     grid.innerHTML = '';
     items
-      .slice(page * pageSize, page * pageSize + pageSize)
+      .slice(page * size, page * size + size)
       .forEach((item) => grid.appendChild(buildProductCard(item)));
 
     initCartButtons();
     initWishlist();
 
     if (prevBtn) prevBtn.disabled = page === 0;
-    if (nextBtn) nextBtn.disabled = (page + 1) * pageSize >= items.length;
+    if (nextBtn) nextBtn.disabled = (page + 1) * size >= items.length;
   }
 
   prevBtn?.addEventListener('click', () => {
@@ -501,7 +524,7 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   });
 
   nextBtn?.addEventListener('click', () => {
-    if ((page + 1) * pageSize >= items.length) return;
+    if ((page + 1) * effectivePageSize() >= items.length) return;
     page += 1;
     render();
   });
@@ -1158,16 +1181,11 @@ function promoItem(promo) {
     url: promo.image_url,
     href: promoHref(promo),
     alt: promoAriaLabel(promo),
-    store: promo.stores.name,
-    title: promo.title || '',
   };
 }
 
-/** Pone en el banner el rótulo, el destino y los textos accesibles de una publicidad. */
-function applyPromoItem(banner, eyebrow, title, item) {
-  eyebrow.textContent = item.store;
-  title.textContent = item.title;
-  title.hidden = !item.title;
+/** Pone en el banner el destino y los textos accesibles de una publicidad (sin rótulo visible: solo la imagen). */
+function applyPromoItem(banner, item) {
   banner.dataset.promoHref = item.href;
   // El click abre la imagen ampliada primero, igual que un banner fijo (ver
   // initPromoBanners): la página del comercio recién se abre en la 2da interacción.
@@ -1184,7 +1202,7 @@ function applyPromoItem(banner, eyebrow, title, item) {
  * del usuario: es publicidad de comercios y tiene que verse la de todos).
  * `startDelay` desfasa un banner de otro para que no cambien todos a la vez.
  */
-function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
+function mountPromoSlides(banner, items, startDelay) {
   const wrap = document.createElement('span');
   wrap.className = 'promo-banner__slides';
   wrap.setAttribute('aria-hidden', 'true');
@@ -1227,7 +1245,7 @@ function mountPromoSlides(banner, items, eyebrow, title, startDelay) {
     slider.index = i;
     slides.forEach((slide, n) => slide.classList.toggle('is-active', n === i));
     dotEls.forEach((dot, n) => dot.classList.toggle('is-active', n === i));
-    applyPromoItem(banner, eyebrow, title, items[i]);
+    applyPromoItem(banner, items[i]);
     if (slider.visible) { loadSlide(i); preloadNext(); }
   };
   slider.pause = () => { slider.paused = true; };
@@ -1299,25 +1317,19 @@ async function paintHomePromos(banners) {
     if (!promos?.length) return;
     const items = promos.map(promoItem);
 
-    // La imagen del comercio ya trae su propio texto: el rótulo fijo del
-    // banner ("Combos", "Espacio para un banner"...) se reemplaza por el
-    // nombre del comercio + el título de la promo, si cargó uno.
+    // La imagen del comercio ya trae su propio texto: se vacía el banner y
+    // queda solo la imagen (sin nombre del comercio ni título encima).
     banner.textContent = '';
-    const eyebrow = document.createElement('span');
-    eyebrow.className = 'promo-banner__eyebrow';
-    const title = document.createElement('span');
-    title.className = 'promo-banner__title';
-    banner.append(eyebrow, title);
 
     if (items.length > 1) {
-      // Varias publicidades: capas que pasan solas (el texto va sobre todas).
-      mountPromoSlides(banner, items, eyebrow, title, (n % 3) * 1500);
+      // Varias publicidades: capas que pasan solas.
+      mountPromoSlides(banner, items, (n % 3) * 1500);
     } else {
       // La URL queda en data-promo-img (el modo ampliado la lee de ahí) y la imagen
       // se pone cuando el espacio se acerca a la pantalla.
       banner.dataset.promoImg = items[0].url;
       whenNearViewport(banner, () => banner.style.setProperty('--promo-img', `url("${encodeURI(promoBannerUrl(items[0].url, isSmallScreen()))}")`));
-      applyPromoItem(banner, eyebrow, title, items[0]);
+      applyPromoItem(banner, items[0]);
     }
     banner.classList.add('is-store-promo');
     banner.setAttribute('role', 'button');

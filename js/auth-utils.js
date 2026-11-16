@@ -194,12 +194,15 @@ const PANEL_HINT_KEY = "bl_panel_hint";
  * Guarda la última respuesta de getPanelAccess para esta cuenta.
  * `href` es el panel al que lleva el botón (null = sin panel) y `menu` es true
  * si la cuenta tiene DOS paneles (vendedor/profesional + admin), caso en el
- * que el botón del home abre un menú en vez de ser un link.
+ * que el botón del home abre un menú en vez de ser un link. `slot` es
+ * "contratar" cuando el botón va en el lugar de "Contratar" (profesional).
  */
 function rememberPanelHint(uid, { isAdmin, seller }) {
   const href = seller ? `./${SELLER_PANEL_PAGES[seller]}` : isAdmin ? "./admin.html" : null;
   const hint = { uid, href };
   if (isAdmin && seller) hint.menu = true;
+  // El profesional tiene su "Panel" en el lugar de "Contratar" (no de "Vender").
+  if (seller === "profesional") hint.slot = "contratar";
   try { localStorage.setItem(PANEL_HINT_KEY, JSON.stringify(hint)); } catch { /* sin storage */ }
 }
 
@@ -484,23 +487,9 @@ export async function guardPage({
         return null;
       }
 
-      // P-01: admin/moderador entran a su panel solo con la verificación en
-      // dos pasos. Con factor y sesión de solo contraseña se pide el código;
-      // sin factor, a Mi perfil a activarla. El control real está en la base
-      // (migración 151): sin aal2 la RLS los trata como clientes.
-      if (role === 'admin' || role === 'moderador') {
-        const { ensureStaffMfa } = await import('./mfa.js');
-        if (loadingScreen) loadingScreen.style.display = 'none';
-        const next = await ensureStaffMfa(supabase, role);
-        if (next === 'home') {
-          window.location.replace('../pages/home.html');
-          return null;
-        }
-        if (next === 'enroll') {
-          window.location.replace('../pages/perfil.html?tab=mis-datos&mfa=requerido');
-          return null;
-        }
-      }
+      // Verificación en dos pasos del personal (P-01) DESACTIVADA el 2026-11-16 a pedido
+      // del usuario (migración 166: jwt_role() ya no exige aal2). Para reactivarla:
+      // volver a poner acá el bloque `ensureStaffMfa` (ver git log) y el cuerpo de la 151.
     }
 
     // 5. Auth confirmada → mostrar contenido

@@ -18,7 +18,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <link rel="stylesheet" href="../Assets/styles/carrito.css" />
@@ -93,25 +93,6 @@
             </div>
             
             <div class="filter-group">
-              <label for="sidebar-search-input" class="filter-group__title">Buscar productos</label>
-              <div class="filter-search-wrapper">
-                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <input type="search" id="sidebar-search-input" class="filter-input" placeholder="¿Qué buscás?" autocomplete="off" />
-              </div>
-            </div>
-
-            <div class="filter-group">
-              <h4 class="filter-group__title" id="category-group-label">Categoría</h4>
-              <div class="cat-filter-dropdown" id="filter-categories">
-                <button type="button" class="cat-filter-dropdown__trigger" id="cat-filter-trigger" aria-haspopup="true" aria-expanded="false" aria-labelledby="category-group-label">
-                  <span id="cat-filter-label">Todas</span>
-                  <i class="fa-solid fa-chevron-down"></i>
-                </button>
-                <div class="cat-filter-dropdown__menu" id="cat-filter-menu" role="listbox" hidden></div>
-              </div>
-            </div>
-
-            <div class="filter-group">
               <h4 class="filter-group__title">Precio (pesos)</h4>
               <div class="price-range">
                 <input type="number" id="filter-price-min" inputmode="numeric" min="0" placeholder="Mín." aria-label="Precio mínimo" />
@@ -140,7 +121,6 @@
               <h1 class="results-title" id="catalog-title">Todos los productos</h1>
               <span class="catalog-count" id="catalog-count" role="status" aria-live="polite"></span>
             </div>
-            <div class="active-filters" id="active-filters"></div>
 
             <!-- Comparador: cuando el mismo producto está en dos o más
                  comercios, una tarjeta con dos filas (más barato / más cerca).
@@ -256,7 +236,7 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://instagram.com/baraderolocal" target="_blank" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
           <a href="https://facebook.com/baraderolocal" target="_blank" class="footer__social" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
           <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         </div>

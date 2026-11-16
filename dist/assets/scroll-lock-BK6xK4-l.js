@@ -1,0 +1,1 @@
+var e=0,t=``;function n(){let n=document.documentElement;e++===0&&(t=n.style.overflow,n.style.overflow=`hidden`);let r=!1;return()=>{r||(r=!0,--e===0&&(n.style.overflow=t))}}export{n as t};

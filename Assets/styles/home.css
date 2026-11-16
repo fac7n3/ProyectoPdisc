@@ -7,6 +7,9 @@
 
 :root {
   /* Paleta de marca — ancla oficial #284175, ver docs/brand-guidelines.md */
+  /* Fondo de los cuadros centrales: oscuro también en modo oscuro (un token no
+     se espeja solo en dark-auto.css, que lo aclaraba y lo hacía ver blanquecino). */
+  --bl-overlay: rgba(15, 23, 42, 0.55);
   --bl-primary: #284175;
   --bl-primary-dark: #1f3460;
   --bl-primary-deeper: #1e3a5f;
@@ -359,6 +362,29 @@ ul, ol {
   display: none;
 }
 
+/* Rebote del carrito al agregar un producto (flashAddedToCart en cart-utils.js) */
+.navbar__action-circle.is-bumping {
+  animation: bl-cart-bump 0.6s ease-out;
+}
+.navbar__action-circle.is-bumping .cart-badge {
+  animation: bl-badge-pop 0.6s ease-out;
+}
+@keyframes bl-cart-bump {
+  0%   { transform: scale(1) rotate(0); }
+  25%  { transform: scale(1.25) rotate(-12deg); }
+  50%  { transform: scale(1.15) rotate(10deg); }
+  75%  { transform: scale(1.1) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes bl-badge-pop {
+  0%, 100% { transform: scale(1); }
+  35%      { transform: scale(1.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar__action-circle.is-bumping,
+  .navbar__action-circle.is-bumping .cart-badge { animation: none; }
+}
+
 
 /* ── Campanita de notificaciones ── */
 #nav-notifications-wrap {
@@ -442,7 +468,7 @@ ul, ol {
   align-items: center;
   justify-content: center;
   gap: 1.1rem;
-  background: var(--bl-primary);
+  background: #243c7b; /* el azul del logo */
   opacity: 1;
   transition: opacity 0.4s ease;
 }
@@ -1038,6 +1064,20 @@ ul, ol {
   display: none;
 }
 
+/* Degradé en el borde donde quedan categorías por ver (clases de nav-utils.js). */
+.category-bar__quick.has-more-right {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+}
+.category-bar__quick.has-more-left {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 2.5rem), transparent);
+}
+.category-bar__quick.has-more-left.has-more-right {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+
 /* ── Mega-menú "Categorías" ── */
 .cat-mega {
   position: relative;
@@ -1144,21 +1184,64 @@ ul, ol {
   border-top: 1px solid var(--bl-border);
 }
 
+/* Acceso destacado a Ofertas: tarjeta ancha con ícono en círculo ámbar,
+   título + bajada y flecha. Los tintes salen de tokens, así sirve en oscuro. */
 .cat-mega__footer-link {
-  display: inline-flex;
+  flex: 1 1 100%;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--bl-radius-pill);
-  background: var(--bl-surface-alt);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--bl-radius-lg, 0.875rem);
+  border: 1px solid color-mix(in srgb, var(--bl-accent) 45%, var(--bl-surface));
+  background: linear-gradient(110deg,
+    color-mix(in srgb, var(--bl-accent) 22%, var(--bl-surface)),
+    color-mix(in srgb, var(--bl-accent) 6%, var(--bl-surface)));
   color: var(--bl-primary);
-  transition: background 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .cat-mega__footer-link:hover {
-  background: var(--bl-border-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--bl-accent) 35%, transparent);
+}
+
+.cat-mega__footer-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--bl-accent);
+  color: #422006;
+  font-size: 0.9375rem;
+}
+
+.cat-mega__footer-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--bl-text);
+}
+
+.cat-mega__footer-text small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--bl-text-muted);
+}
+
+.cat-mega__footer-arrow {
+  flex: none;
+  font-size: 0.75rem;
+  transition: transform 0.15s;
+}
+
+.cat-mega__footer-link:hover .cat-mega__footer-arrow {
+  transform: translateX(3px);
 }
 
 @media (max-width: 640px) {
@@ -1274,6 +1357,16 @@ ul, ol {
   }
 
   .cat-mega__grid { grid-template-columns: 1fr; }
+
+  /* En las páginas con barra de categorías propia (productos, comercios, producto) el
+     botón vive dentro de `.category-bar`, que es `sticky` con z-index 40 y por eso un
+     contexto de apilamiento más bajo que el fondo oscuro (99) y que el navbar (100):
+     el panel quedaba oscurecido, con la parte de arriba tapada por el navbar, y los
+     toques caían en el fondo (que cierra el menú) en vez de llegar a las categorías.
+     Con el panel abierto, la barra sube por encima de los dos. */
+  .category-bar:has(.cat-mega__panel:not([hidden])) {
+    z-index: 210;
+  }
 
   /* Con un panel abierto el fondo no scrollea. Hay que trabar html Y body:
      en iOS Safari, `overflow: hidden` solo en el body no frena el scroll. */
@@ -1893,25 +1986,6 @@ button.coupon-chip:hover {
   background-image: linear-gradient(180deg, rgba(6, 167, 125, 0) 0%, rgba(6, 167, 125, 0) 40%, rgba(6, 167, 125, 0.15) 55%, rgba(6, 167, 125, 0.35) 75%, rgba(6, 167, 125, 0.6) 100%), url('../images/banners/promo-gaseosas.webp');
 }
 
-/* Sombra extra encima del degradé, para que "Promoción"/"Combos"/"Oferta
-   del día" y el título se lean bien caiga donde caiga el texto de la
-   tarjeta sobre la foto. */
-.promo-banner__eyebrow,
-.promo-banner__title {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.45);
-}
-
-.promo-banner__eyebrow {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.promo-banner__title {
-  font-size: 1.0625rem;
-  font-weight: 700;
-}
-
 @media (max-width: 640px) {
   /* El grande queda solo en su fila y los dos chicos van debajo, uno al lado
      del otro (ver .promo-mosaic__side en el @media del segundo mosaico, que
@@ -2041,26 +2115,6 @@ button.coupon-chip:hover {
     gap: 0.75rem;
   }
 
-  /* (antes de a dos columnas; ahora uno por fila, a todo el ancho, para que
-     se vean más grandes en el celular) */
-  .promo-mosaic__side .promo-banner,
-  .promo-mosaic-2__side .promo-banner-2 {
-    padding: 0.6rem;
-  }
-
-  .promo-mosaic__side .promo-banner__eyebrow,
-  .promo-mosaic-2__side .promo-banner__eyebrow {
-    font-size: 0.6875rem;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
-
-  .promo-mosaic__side .promo-banner__title,
-  .promo-mosaic-2__side .promo-banner__title {
-    font-size: 0.8125rem;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-  }
 }
 
 /* ===========================================================
@@ -2129,26 +2183,23 @@ button.coupon-chip:hover {
   min-height: 0;
 }
 
-/* Con promo de comercio la imagen ya trae su texto: no se le pone encima el
-   nombre del comercio ni el título, ni el degradé oscuro de abajo. */
-.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__eyebrow,
-.promo-banner-2--g.promo-banner-2--hero.is-store-promo .promo-banner__title {
-  display: none;
-}
-
+/* Con promo de comercio la imagen ya trae su texto: solo se ve la imagen. */
 .promo-banner-2--g.promo-banner-2--hero.is-store-promo {
   background-image: var(--promo-img);
   background-size: contain;
   background-position: center;
 }
 
-.promo-banner-2--g.promo-banner-2--hero .promo-banner__slides::after {
-  display: none;
-}
-
-/* En escritorio y tablet tiene el mismo alto que el banner principal de
-   arriba (.hero__carousel: 280px, 200px desde 768px). En teléfono (<= 640px)
-   sigue la proporción de arriba, que es la que usan las promos de comercio. */
+/* Mismo alto que el banner principal de arriba (.hero__carousel) en TODOS los
+   anchos, no solo escritorio/tablet: 280px de 1320 a 769px, 200px de 768 a
+   481px, 160px de 480px para abajo (mismos cortes que .hero__carousel más
+   abajo en este archivo). Antes, por debajo de 640px, en vez de altura fija
+   usaba la proporción real de la imagen (--promo-ratio, técnica que evita
+   letterbox en el resto de los espacios) y terminaba mucho más bajo que el
+   banner principal -- para este espacio puntual (el único pensado para
+   verse como una continuación del hero) importa más igualar el alto que
+   evitar el letterbox, igual que ya pasaba en escritorio/tablet (contain,
+   más abajo). */
 @media (min-width: 641px) {
   .promo-banner-2--g.promo-banner-2--hero,
   .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
@@ -2165,6 +2216,30 @@ button.coupon-chip:hover {
 }
 
 @media (max-width: 640px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    aspect-ratio: auto;
+    height: 200px;
+  }
+
+  .promo-banner-2--g.promo-banner-2--hero.is-store-promo {
+    /* Pisa la técnica general de abajo (padding-top en % + background-size:
+       100% auto, pensada para los demás espacios): acá va altura fija +
+       contain, igual que en escritorio/tablet. */
+    padding: 1.25rem 1.75rem;
+    background-size: contain;
+    background-position: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    height: 160px;
+  }
+}
+
+@media (max-width: 640px) {
   .promo-strip__grid--pair {
     grid-template-columns: 1fr;
   }
@@ -2173,8 +2248,6 @@ button.coupon-chip:hover {
   .promo-strip {
     padding: 0 0.5rem;
   }
-
-  .promo-banner-2--g.promo-banner-2--hero.is-store-promo { --promo-ratio: 21.9%; } /* 1600x350 */
 
   .promo-banner-2--g.is-store-promo,
   .promo-banner-2--j.is-store-promo { --promo-ratio: 20%; }
@@ -2224,16 +2297,15 @@ button.coupon-chip:hover {
    .is-store-promo. Dos clases de especificidad para pisar el
    background-image/size fijo de cada variante (--a, --d, --e...). La
    imagen va entera (contain, sin recortarle el texto propio) sobre el azul
-   de marca, con una franja oscura abajo para que se lea el nombre del
-   comercio.
+   de marca. No lleva nombre del comercio ni título encima: solo la imagen.
    =========================================================== */
 .promo-banner.is-store-promo,
 .promo-banner-2.is-store-promo {
   background-color: var(--bl-primary);
-  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%), var(--promo-img);
-  background-size: 100% 100%, contain;
-  background-position: 0 0, center;
-  background-repeat: no-repeat, no-repeat;
+  background-image: var(--promo-img);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
@@ -2285,13 +2357,6 @@ button.coupon-chip:hover {
   overflow: hidden;
 }
 
-.promo-banner__slides::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.45) 100%);
-}
-
 .promo-banner__slide {
   position: absolute;
   inset: 0;
@@ -2304,12 +2369,6 @@ button.coupon-chip:hover {
 
 .promo-banner__slide.is-active {
   opacity: 1;
-}
-
-.has-slides .promo-banner__eyebrow,
-.has-slides .promo-banner__title {
-  position: relative;
-  z-index: 1;
 }
 
 /* Puntitos arriba a la derecha: avisan que hay más de una imagen. */
@@ -2337,18 +2396,16 @@ button.coupon-chip:hover {
   transform: scale(1.25);
 }
 
-/* En el celular cada espacio ocupa todo el ancho y la imagen del comercio
-   (que ya trae su propio texto y precio) lo llena entera: el rótulo de abajo
-   (comercio + título) le caía encima y tapaba el precio. Acá la imagen va
-   arriba, con su propia proporción (la de cada espacio: 1600x900 en a/b/c,
-   1600x320 en d, 1200x300 en e/f), y el rótulo en una franja azul debajo.
+/* En el celular cada espacio ocupa todo el ancho y mide lo que la imagen del
+   comercio, con su propia proporción (la de cada espacio: 1600x900 en a/b/c,
+   1600x320 en d, 1200x300 en e/f). Sin rótulo ni franja debajo.
    El padding-top en % se mide sobre el ancho: es el alto de la imagen. */
 @media (max-width: 640px) {
   .promo-banner.is-store-promo,
   .promo-banner-2.is-store-promo {
     --promo-ratio: 56.25%;
     aspect-ratio: auto;
-    padding: calc(var(--promo-ratio) + 0.6rem) 0.9rem 0.75rem;
+    padding: var(--promo-ratio) 0 0;
     background-image: var(--promo-img);
     background-size: 100% auto;
     background-position: center top;
@@ -2357,17 +2414,6 @@ button.coupon-chip:hover {
   .promo-banner-2--d.is-store-promo { --promo-ratio: 20%; }
   .promo-banner-2--e.is-store-promo,
   .promo-banner-2--f.is-store-promo { --promo-ratio: 25%; }
-
-  /* Los chicos van de a dos (ver .promo-mosaic__side arriba): menos aire
-     alrededor del rótulo, y el rótulo pegado a la imagen. Las dos tarjetas de
-     la fila miden lo mismo de alto (la del rótulo más largo manda), así que a
-     la otra le sobra azul abajo en vez de quedarle un hueco entre la foto y
-     el texto. */
-  .promo-mosaic__side .promo-banner.is-store-promo,
-  .promo-mosaic-2__side .promo-banner-2.is-store-promo {
-    justify-content: flex-start;
-    padding: calc(var(--promo-ratio) + 0.45rem) 0.6rem 0.6rem;
-  }
 
   .promo-mosaic__side .promo-banner__dots,
   .promo-mosaic-2__side .promo-banner__dots {
@@ -2391,10 +2437,6 @@ button.coupon-chip:hover {
     border-bottom-right-radius: 0;
   }
 
-  /* El degradé oscuro solo servía para leer el rótulo encima de la foto. */
-  .is-store-promo .promo-banner__slides::after {
-    display: none;
-  }
 }
 
 /* ===========================================================
@@ -2563,6 +2605,13 @@ button.coupon-chip:hover {
   transform: scale(1.08);
 }
 
+/* En celular la X sube por encima de la imagen (en el relleno de arriba del
+   overlay) en vez de montarse en la esquina: con un banner bajo quedaba pegada
+   a la flecha de "siguiente". Va después de la regla base para ganarle. */
+@media (max-width: 640px) {
+  .promo-lightbox__close { top: -3rem; right: 0; }
+}
+
 /* ===========================================================
    COMERCIOS CERCA TUYO (mapa embebido de Google, sin API key)
    =========================================================== */
@@ -2722,38 +2771,9 @@ button.coupon-chip:hover {
   color: var(--bl-text-secondary);
 }
 
-.filter-search-wrapper {
-  position: relative;
-}
-
-.filter-search-wrapper i {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--bl-text-muted);
-  font-size: 0.875rem;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 0.625rem 0.625rem 0.625rem 2.25rem;
-  border: 1px solid var(--bl-border);
-  border-radius: var(--bl-radius-md);
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: var(--bl-primary);
-  box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
-}
-
-/* Las clases .filter-select / .filter-select-wrapper se borraron al pasar el
-   "Ordenar por" del sidebar a .cat-filter-dropdown: envolvían al último
-   <select> nativo que quedaba en la búsqueda y ninguna otra página las usaba. */
+/* .filter-select*, .filter-search-wrapper y .filter-input se borraron: eran del
+   <select> nativo de "Ordenar por" y del buscador del sidebar de la búsqueda,
+   que ya no existen (la búsqueda va por el navbar). */
 
 /* ── .bl-date: selector de fecha propio en lugar de <input type="date"> ──
    Lo arma js/datepicker.js. Campo de texto con máscara dd/mm/aaaa (escribir es
@@ -3180,6 +3200,57 @@ button.coupon-chip:hover {
 .catpick__opt:has(.catpick__input:checked) .catpick__check { opacity: 1; }
 .catpick__opt:has(.catpick__input:checked) .catpick__name { font-weight: 600; }
 
+/* Variante desplegable (.catpick--dropdown, la arma js/vender.js para la categoría del
+   perfil del comercio): en celular, una barra que al tocarla abre la lista. En compu
+   la barra no existe y se ve la grilla de siempre. */
+.catpick__toggle { display: none; }
+
+@media (max-width: 768px) {
+  .catpick--dropdown .catpick__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 48px;
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--bl-border);
+    border-radius: var(--bl-radius-md);
+    background: var(--bl-surface);
+    color: var(--bl-text);
+    font: inherit;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .catpick--dropdown .catpick__toggle:focus-visible {
+    outline: 2px solid var(--catpick-accent);
+    outline-offset: 2px;
+  }
+  .catpick--open .catpick__toggle { border-color: var(--catpick-accent); }
+  .catpick__toggle-icon { width: 1.1rem; text-align: center; color: var(--catpick-accent); flex-shrink: 0; }
+  .catpick__toggle-text { flex: 1; min-width: 0; font-weight: 600; }
+  .catpick__toggle--empty .catpick__toggle-text { font-weight: 400; color: var(--bl-text-muted); }
+  .catpick__toggle--empty .catpick__toggle-icon { color: var(--bl-text-muted); }
+  .catpick__toggle-chevron { color: var(--bl-text-muted); font-size: 0.8rem; transition: transform 0.15s; }
+  .catpick--open .catpick__toggle-chevron { transform: rotate(180deg); }
+
+  /* Plegada por defecto; abierta es una lista de una columna con su propio scroll. */
+  .catpick--dropdown:not(.catpick--open) .catpick__grid { display: none; }
+  .catpick--dropdown .catpick__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+    max-height: 17rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 0.4rem;
+    padding: 0.4rem;
+    border: 1px solid var(--bl-border);
+    border-radius: var(--bl-radius-md);
+    background: var(--bl-surface);
+  }
+}
+
 /* ── Filtro de categoría: dropdown en vez de todas las pills inline ── */
 .cat-filter-dropdown {
   position: relative;
@@ -3520,60 +3591,6 @@ button.coupon-chip:hover {
   .pc-row__locate { grid-column: 1; }
 }
 
-.active-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.active-filters:empty {
-  display: none;
-}
-
-.filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.4rem 0.3rem 0.75rem;
-  background: var(--bl-surface);
-  border: 1px solid var(--bl-primary);
-  color: var(--bl-primary);
-  border-radius: var(--bl-radius-pill);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.filter-chip__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.125rem;
-  height: 1.125rem;
-  border-radius: 50%;
-  background: var(--bl-primary);
-  color: #fff;
-  font-size: 0.625rem;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.filter-chip__remove:hover {
-  background: var(--bl-primary-dark);
-}
-
-.active-filters__clear {
-  background: none;
-  border: none;
-  color: var(--bl-text-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-  align-self: center;
-}
-
 /* ── Filtro de rango de precio ── */
 .price-range {
   display: flex;
@@ -3698,10 +3715,13 @@ button.coupon-chip:hover {
 
 /* "Productos recomendados" en teléfono: una fila que se desliza hacia el
    costado en vez de una grilla que crece hacia abajo. Solo #products-grid
-   (Esenciales, Ofertas y Seguí descubriendo tienen otros ids y no cambian). El
-   id le gana a los .products__grid de los @media de más abajo. */
+   (Esenciales y Ofertas tienen su propio bloque, dos filas, justo abajo;
+   Seguí descubriendo tiene otro id y no cambia). El id le gana a los
+   .products__grid de los @media de más abajo.
+   Solo hijo directo de #productos: en search.html el mismo id está dentro de
+   .catalog-content y ahí la lista va en grilla vertical (pedido 2026-11-14). */
 @media (max-width: 768px) {
-  #products-grid {
+  #productos > #products-grid {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x proximity;
@@ -3710,11 +3730,53 @@ button.coupon-chip:hover {
     padding-bottom: 0.25rem;
   }
 
-  #products-grid::-webkit-scrollbar { display: none; }
+  #productos > #products-grid::-webkit-scrollbar { display: none; }
 
-  #products-grid > .product-card {
+  #productos > #products-grid > .product-card {
     flex: 0 0 min(44%, 190px);
     scroll-snap-align: start;
+  }
+}
+
+/* Esenciales para tu casa / Ofertas en teléfono: dos filas que se deslizan
+   juntas hacia el costado (como "Productos recomendados" de arriba, pero de
+   a dos en vez de una sola fila) en vez de la grilla de dos columnas que
+   crecía hacia abajo y las flechas de escritorio de initGridPager()
+   (pensadas para el mouse, no para el dedo). grid-auto-flow: column +
+   grid-template-rows de dos mantiene el orden de lectura (1 arriba, 2 abajo,
+   3 arriba de la siguiente columna...) -- initGridPager() en home.js deja de
+   paginar de a 8 en este ancho y pinta de una las hasta 32 que ya bajaron de
+   Supabase, así el scroll nativo llega a todas. Los ids le ganan en
+   especificidad a .products__grid.products__grid--paged de más arriba. */
+@media (max-width: 768px) {
+  #essentials-grid,
+  #offers-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, 1fr);
+    grid-auto-columns: min(44%, 190px);
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  #essentials-grid::-webkit-scrollbar,
+  #offers-grid::-webkit-scrollbar { display: none; }
+
+  #essentials-grid > .product-card,
+  #offers-grid > .product-card {
+    scroll-snap-align: start;
+  }
+
+  /* Las flechas de arriba (anteriores/siguientes) son para mouse: en
+     teléfono la grilla ya se desliza con el dedo (ver arriba). */
+  #essentials-prev,
+  #essentials-next,
+  #offers-prev,
+  #offers-next {
+    display: none !important;
   }
 }
 
@@ -3724,7 +3786,13 @@ button.coupon-chip:hover {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
+  /* En columna, align-items: flex-start deja el contenido al ancho de lo que
+     tiene adentro (la fila deslizable del comparador lo estiraba a 1200 px). */
+  .catalog-content {
+    width: 100%;
+  }
+
   .mobile-filters-btn {
     display: flex;
   }
@@ -3945,8 +4013,9 @@ button.coupon-chip:hover {
 
 .product-card__price-row {
   display: flex;
+  flex-wrap: wrap; /* en la grilla de 2 columnas del celular, precio + tachado + % no entran en una línea */
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0.125rem 0.5rem;
   margin-bottom: 0.375rem;
 }
 
@@ -4016,6 +4085,24 @@ button.coupon-chip:hover {
 
 .product-card__add:active {
   transform: scale(0.97);
+}
+
+/* "Agregado": el botón se pone verde con un pop y vuelve solo (flashAddedToCart) */
+.product-card__add.is-added,
+.product-card__add.is-added:hover {
+  background: var(--bl-success);
+}
+.product-card__add.is-added-pop {
+  animation: bl-add-pop 0.45s ease-out;
+}
+@keyframes bl-add-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.93); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card__add.is-added-pop { animation: none; }
 }
 
 /* Producto propio (vista del vendedor): "Tu producto" no agrega nada, solo
@@ -4507,9 +4594,19 @@ button.coupon-chip:hover {
 .stores-carousel__arrow--prev { left: 0.5rem; }
 .stores-carousel__arrow--next { right: 0.5rem; }
 
-/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos. */
+/* En teléfono se desliza con el dedo: las flechas sobran y tapan los logos.
+   Sin flechas no hace falta el padding lateral de 3.25rem que les dejaba
+   lugar -- se achica a 1.5rem, igual que el resto de las secciones (hero,
+   mosaico de promos, grillas de productos), así el primer logo arranca al
+   ras del borde en vez de quedar corrido hacia adentro. */
 @media (max-width: 768px) {
   .stores-carousel__arrow { display: none !important; }
+
+  .stores-carousel {
+    padding: 0.5rem 1.5rem 1rem 1.5rem;
+    scroll-padding-left: 1.5rem;
+    scroll-padding-right: 1.5rem;
+  }
 }
 
 /* Sin hover a propósito: el de antes (translateY + scale + z-index:2 al
@@ -5288,7 +5385,8 @@ button.coupon-chip:hover {
 .bl-confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--bl-overlay);
+  overscroll-behavior: contain;
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -5926,7 +6024,8 @@ button.coupon-chip:hover {
    =========================================================== */
 .hp-intro {
   color: var(--bl-text-secondary);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
   margin: 0 0 1rem;
   max-width: 70ch;
 }
@@ -6133,6 +6232,9 @@ button.coupon-chip:hover {
 .hp-empty p {
   margin: 0;
   max-width: 50ch;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* Pros/contras de no tener un espacio asignado + botón para pedirlo (estado
@@ -6144,7 +6246,7 @@ button.coupon-chip:hover {
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
   width: 100%;
-  max-width: 60ch;
+  max-width: 46rem;
   margin: 0.5rem 0;
   text-align: left;
 }
@@ -6163,8 +6265,8 @@ button.coupon-chip:hover {
 }
 
 .hp-empty__perk-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--bl-text);
 }
@@ -6175,14 +6277,14 @@ button.coupon-chip:hover {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.6rem;
 }
 
 .hp-empty__perk-list li {
   position: relative;
-  padding-left: 1.35rem;
-  font-size: 0.82rem;
-  line-height: 1.4;
+  padding-left: 1.6rem;
+  font-size: 1.05rem;
+  line-height: 1.35;
   color: var(--bl-text-secondary);
 }
 

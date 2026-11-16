@@ -2210,9 +2210,41 @@ const SECTION_LOADERS = {
 
 const loadedSections = new Set();
 
-function showSection(key) {
+// Historial propio del panel: las secciones por las que ya pasaste (la última, al final).
+// La flecha de la barra de arriba vuelve a la anterior. No usa el historial del navegador:
+// el panel es una sola página y cambiar de sección no cambia la URL.
+const sectionHistory = [];
+let currentSectionKey = null;
+const SECTION_HISTORY_MAX = 30;
+
+function updateBackButton() {
+  const btn = document.getElementById('admin-back-btn');
+  if (btn) btn.hidden = sectionHistory.length === 0;
+}
+
+function goBackSection() {
+  while (sectionHistory.length) {
+    const prev = sectionHistory.pop();
+    const target = document.querySelector(`.admin-section[data-section="${prev}"]`);
+    if (target && target.dataset.disabled !== 'true' && prev !== currentSectionKey) {
+      showSection(prev, { fromBack: true });
+      return;
+    }
+  }
+  updateBackButton();
+}
+
+function showSection(key, { fromBack = false } = {}) {
   const section = document.querySelector(`.admin-section[data-section="${key}"]`);
   if (!section || section.dataset.disabled === 'true') return;
+
+  if (!fromBack && currentSectionKey && currentSectionKey !== key) {
+    // No se repite la misma sección dos veces seguidas en el historial.
+    if (sectionHistory[sectionHistory.length - 1] !== currentSectionKey) sectionHistory.push(currentSectionKey);
+    if (sectionHistory.length > SECTION_HISTORY_MAX) sectionHistory.shift();
+  }
+  currentSectionKey = key;
+  updateBackButton();
 
   document.querySelectorAll('.admin-section').forEach((s) => {
     s.classList.toggle('is-active', s === section);
@@ -2265,6 +2297,7 @@ function setupSectionNav() {
     if (isOpen) closeSidebar(); else openSidebar();
   });
   document.getElementById('admin-scrim')?.addEventListener('click', closeSidebar);
+  document.getElementById('admin-back-btn')?.addEventListener('click', goBackSection);
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
 }
 

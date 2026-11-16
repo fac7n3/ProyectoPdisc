@@ -3,6 +3,7 @@
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
 import { promptLogin } from './login-prompt.js';
+import { lockScroll } from './scroll-lock.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 import { describeSelectedOptions, checkSelection, sortOptionGroups } from './product-options-utils.js';
@@ -294,15 +295,6 @@ function buildCartRow(item, index) {
     warn.className = 'cart-item__options-warn';
     warn.textContent = item.optionsProblem;
     infoDiv.appendChild(warn);
-  }
-
-  // El comercio ya está en la cabecera del grupo; acá se reemplaza por el
-  // estado del ítem, que es lo que ahora puede sorprender al usuario.
-  if (!selected) {
-    const pendingSpan = document.createElement('span');
-    pendingSpan.className = 'cart-item__pending-tag';
-    pendingSpan.textContent = 'Pendiente — no entra en esta compra';
-    infoDiv.appendChild(pendingSpan);
   }
 
   const detailLink = document.createElement('a');
@@ -1231,7 +1223,6 @@ function initCartEvents() {
       cart[index].selected = checked;
       saveCart(cart);
       renderCart();
-      showHint(checked ? CART_HINTS.itemSelected : CART_HINTS.itemDeselected, checked ? 'success' : 'default');
       return;
     }
 
@@ -1264,6 +1255,18 @@ function initCartEvents() {
   // Botón vaciar carrito: confirmación propia (ver initClearCartModal)
   const clearBtn = document.getElementById('cart-clear-btn');
   clearBtn?.addEventListener('click', () => openClearCartModal());
+
+  // "Ver resumen" (solo celular): con la página al final el resumen ya está casi a la
+  // vista y el salto del ancla apenas se nota; scroll suave + destello para que se vea.
+  document.querySelector('.cart-summary__see')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const summary = document.getElementById('resumen-pedido');
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    summary.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+    summary.classList.remove('cart-summary--flash');
+    void summary.offsetWidth; // reinicia la animación si se toca dos veces seguidas
+    summary.classList.add('cart-summary--flash');
+  });
 
   // Botón iniciar pago: crea la(s) orden(es) de verdad vía el RPC create_order.
   // El método de entrega queda fijo en "pickup" sin dirección por ahora —
@@ -1426,10 +1429,13 @@ function initCartEvents() {
  * cierra, y al cerrar el foco vuelve al botón que lo abrió.
  */
 let clearModalLastFocus = null;
+let unlockClearModal = null;
 
 function openClearCartModal() {
   const modal = document.getElementById('clear-cart-modal');
   if (!modal) return;
+  unlockClearModal?.();
+  unlockClearModal = lockScroll();
   // Fallback al botón que abre el modal: si se llegó acá con el foco en el
   // <body> (pasa al activar por teclado desde otro lado), devolverlo al body
   // dejaría el foco en un elemento ya oculto.
@@ -1446,6 +1452,8 @@ function closeClearCartModal() {
   const modal = document.getElementById('clear-cart-modal');
   if (!modal) return;
   modal.style.display = 'none';
+  unlockClearModal?.();
+  unlockClearModal = null;
   if (clearModalLastFocus instanceof HTMLElement) clearModalLastFocus.focus();
 }
 

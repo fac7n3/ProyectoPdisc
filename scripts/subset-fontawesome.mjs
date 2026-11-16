@@ -107,7 +107,7 @@ function main() {
     const file = (src?.value.match(/webfonts\/([a-z0-9-]+)\.woff2/) || [])[1];
     const keep = /Font Awesome 6 (Free|Brands)/.test(family) && Object.values(FONTS).includes(file);
     if (!keep) { at.remove(); return; }
-    src.value = `url(../webfonts/${file}.woff2) format("woff2")`;
+    src.value = `url(../webfonts/${file}.woff2?v=2) format("woff2")`; // ?v: subir el número al cambiar glifos (la caché de /vendor dura 7 días)
     const display = at.nodes.find((n) => n.prop === 'font-display');
     if (display) display.value = 'swap'; // "block" deja los íconos invisibles mientras baja la fuente
   });

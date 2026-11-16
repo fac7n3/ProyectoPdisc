@@ -13,7 +13,7 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <style>
       .ct-page { max-width: 800px; margin: 0 auto 3rem; padding: 0 1rem; }
@@ -65,8 +65,21 @@
       .ct-card {
         background: var(--bl-surface); border: 1px solid var(--bl-border);
         border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-card);
-        overflow: hidden;
+        overflow: hidden; position: relative;
       }
+      /* Corazón de favoritos: arriba a la derecha, en la misma columna que la flecha. */
+      .ct-card__fav {
+        position: absolute; top: 0.4rem; right: 0.45rem; z-index: 1;
+        width: 2.25rem; height: 2.25rem; padding: 0; border: none; border-radius: 50%;
+        background: transparent; color: var(--bl-text-muted); font-size: 1.05rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .ct-card__fav:hover { background: var(--bl-surface-alt); color: var(--bl-danger-text); }
+      .ct-card__fav:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 1px; }
+      .ct-card__fav.is-favorite { color: var(--bl-danger-text); }
+      .ct-card__fav i.is-pop { animation: ct-fav-pop .3s ease; }
+      @keyframes ct-fav-pop { 50% { transform: scale(1.35); } }
+      @media (prefers-reduced-motion: reduce) { .ct-card__fav i.is-pop { animation: none; } }
       .ct-card__head {
         display: flex; align-items: center; gap: 0.85rem; width: 100%;
         padding: 1.1rem 1.25rem; background: none; border: none; text-align: left; cursor: pointer;
@@ -324,7 +337,7 @@
       </div>
 
       <!-- Arriba de todo (pedido del usuario 2026-10-30): quien quiere sumarse no tiene que bajar. -->
-      <p class="ct-cta">¿Sos profesional o técnico? <a href="./vender.html?tipo=servicio">Sumate al directorio</a>.</p>
+      <p class="ct-cta" hidden>¿Sos profesional o técnico? <a href="./vender.html?tipo=servicio">Sumate al directorio</a>.</p>
 
       <!-- Profesionales destacados: los mejor calificados del directorio,
            antes de la lista completa. Se oculta entera si todavía nadie

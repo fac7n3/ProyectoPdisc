@@ -148,13 +148,18 @@
             <button type="button" class="admin-topbar__menu" id="admin-menu-toggle" aria-label="Abrir menú" aria-controls="admin-sidebar" aria-expanded="false">
               <i class="admin-emoji" aria-hidden="true">☰</i>
             </button>
+            <!-- Vuelve a la sección en la que estabas antes (historial propio del panel); se
+                 esconde mientras no haya ninguna anterior. -->
+            <button type="button" class="admin-topbar__back" id="admin-back-btn" aria-label="Volver a la sección anterior" hidden>
+              <i class="admin-emoji" aria-hidden="true">←</i>
+            </button>
             <div class="admin-topbar__title">
               <span class="admin-topbar__eyebrow">Panel de administración</span>
               <h1 class="admin-topbar__heading" id="admin-current-title">Resumen</h1>
             </div>
             <span class="admin-topbar__spacer"></span>
             <a href="./home.html" class="admin-btn admin-btn--ghost admin-topbar__home">
-              <i class="admin-emoji" aria-hidden="true">🔗</i><span>Ver sitio</span>
+              <i class="admin-emoji" aria-hidden="true">←</i><span>Ver sitio</span>
             </a>
           </header>
 

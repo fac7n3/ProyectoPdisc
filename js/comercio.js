@@ -603,7 +603,6 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
     const favBtn = document.createElement('button');
     favBtn.type = 'button';
     favBtn.className = 'store-header__icon-btn';
-    favBtn.dataset.tooltip = 'Agregar comercio a favoritos';
     favBtn.setAttribute('aria-label', 'Agregar comercio a favoritos');
     const favIcon = document.createElement('i');
     favIcon.className = 'fa-regular fa-heart';
@@ -629,7 +628,10 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
       favIcon.classList.toggle('fa-solid', isStoreFavorite);
       favIcon.classList.toggle('fa-regular', !isStoreFavorite);
       favBtn.classList.toggle('is-favorite', isStoreFavorite);
-      showToast(isStoreFavorite ? 'Comercio agregado a favoritos' : 'Comercio eliminado de favoritos', isStoreFavorite ? 'success' : 'default');
+      // Reinicia la animación aunque se apriete seguido (quitar clase, reflow, ponerla).
+      favIcon.classList.remove('is-pop');
+      void favIcon.offsetWidth;
+      favIcon.classList.add('is-pop');
       try {
         await toggleFavoriteStore(storeId, wasFavorite);
       } catch (err) {

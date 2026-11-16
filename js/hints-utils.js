@@ -29,11 +29,8 @@ const HINTS_DEFAULT = true;
 /**
  * Textos. Centralizados acá (y no sueltos en cada `addEventListener`) para que
  * el tono se mantenga parejo y se puedan revisar todos de una pasada.
- * Los dos primeros son literales pedidos por el usuario — no reescribirlos.
  */
 export const CART_HINTS = {
-  itemDeselected: 'Producto en pendiente, este no se agregará a su compra',
-  itemSelected: 'Producto agregado, este se tendrá en cuenta en su compra',
   storeSelected: (store) => `Marcaste todo ${store}: entra en tu compra`,
   storeDeselected: (store) => `Todo ${store} queda pendiente, no se va a cobrar`,
   filterStore: (store) => `Viendo solo ${store}. Esto no cambia lo que elegiste`,

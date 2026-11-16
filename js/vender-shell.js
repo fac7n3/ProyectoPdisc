@@ -3,6 +3,8 @@
 // `nav-utils.js` (initCategoryBar / initNotificationsBell). No reescribe ninguna
 // sección: solo muestra una por vez y marca la activa. Fase 0 del rediseño "Mi cuenta".
 
+import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
+
 let DEFAULT_SECTION = 'resumen';
 
 /**
@@ -40,6 +42,8 @@ export function initVenderShell({ defaultSection } = {}) {
   });
 
   // Drawer mobile
+  // Abrir la campanita cierra el menú lateral (y al revés ya lo hace su "clic afuera").
+  closeOnOtherNavMenuOpen(sidebar, closeDrawer);
   document.getElementById('mc-hamburger')?.addEventListener('click', openDrawer);
   document.getElementById('mc-close')?.addEventListener('click', closeDrawer);
   document.getElementById('mc-backdrop')?.addEventListener('click', closeDrawer);
@@ -79,7 +83,9 @@ function showActiveSection() {
 }
 
 function openDrawer() {
-  document.getElementById('mc-sidebar')?.classList.add('is-open');
+  const sidebar = document.getElementById('mc-sidebar');
+  if (sidebar) announceNavMenuOpen(sidebar);
+  sidebar?.classList.add('is-open');
   const backdrop = document.getElementById('mc-backdrop');
   if (backdrop) backdrop.hidden = false;
 }

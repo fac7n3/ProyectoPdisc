@@ -14,7 +14,7 @@
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <style>
       /* F5-09: acento propio del "modo vendedor" — un tono más saturado y
          claro que el ancla de marca (#284175), que distingue visualmente el
@@ -182,6 +182,13 @@
       .store-logo-picker__field { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
       .store-logo-picker__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       .store-logo-picker__error { color: var(--bl-danger, #ef4444); }
+      /* Celular: el logo arriba y, debajo, los botones (uno al lado del otro) y el texto de ayuda. */
+      @media (max-width: 640px) {
+        .store-logo-picker { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+        .store-logo-picker__field { width: 100%; flex: none; }
+        .store-logo-picker__actions { flex-wrap: nowrap; }
+        .store-logo-picker__actions .btn-outline { flex: 1 1 0; min-width: 0; padding-inline: 0.75rem; }
+      }
 
       /* Recortador del logo (openLogoCropper en vender.js): se abre SIEMPRE
          al elegir una imagen (sea cuadrada o no), overlay fijo con el mismo
@@ -379,7 +386,10 @@
       .mc-backdrop[hidden] { display: none; }
 
       @media (max-width: 900px) {
-        .mc-shell { flex-direction: column; padding: 0 0.75rem; }
+        /* En columna, `flex-start` dejaba al contenido del ancho de lo que tuviera adentro: una fila que no
+           corta línea lo estiraba más allá de la pantalla (tarjetas cortadas a la derecha). Estirado al ancho disponible. */
+        .mc-shell { flex-direction: column; align-items: stretch; padding: 0 0.75rem; }
+        .mc-content { width: 100%; max-width: 100%; }
         .mc-sidebar {
           position: fixed;
           top: 0; left: 0; bottom: 0;
@@ -504,6 +514,11 @@
       .pub-publish__item--soon { color: var(--bl-text-secondary); }
       .pub-soon { margin-left: auto; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; background: var(--bl-surface-alt); color: var(--bl-text-muted); padding: 0.12rem 0.45rem; border-radius: var(--bl-radius-pill); }
 
+      /* Con el formulario de producto abierto no se muestran las publicaciones
+         (buscador, filtros, selección y lista): solo aparecen en "Publicaciones". */
+      .pub-wrap.is-form-open #pub-toolbar,
+      .pub-wrap.is-form-open #pub-bulk,
+      .pub-wrap.is-form-open #pub-list { display: none; }
       .pub-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
       .pub-search { position: relative; flex: 1 1 240px; min-width: 200px; }
       .pub-search i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bl-text-muted); font-size: 0.85rem; }
@@ -591,6 +606,13 @@
       .rv-summary__stars { color: var(--bl-star); font-size: 1.05rem; letter-spacing: 0.08em; }
       .rv-summary__count { color: var(--bl-text-secondary); font-size: 0.9rem; }
       .rv-filters { margin-bottom: 1rem; }
+      /* Celular: los tres filtros en una sola fila (antes "De mis productos" caía abajo).
+         Chips más compactos y, si en una pantalla muy angosta no entran, la fila se desliza. */
+      @media (max-width: 480px) {
+        .rv-filters { display: flex; flex-wrap: nowrap; gap: 0.3rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .rv-filters::-webkit-scrollbar { display: none; }
+        .rv-filters .pub-chip { flex: 0 0 auto; padding: 0.5rem 0.6rem; font-size: 0.8rem; white-space: nowrap; }
+      }
       .rv-list { display: flex; flex-direction: column; gap: 0.75rem; }
       .rv-card { padding: 1rem 1.15rem; background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); box-shadow: var(--bl-shadow-sm); }
       .rv-card--new { animation: rv-new 6s ease-out; }
@@ -651,8 +673,6 @@
       .bp-card__perks li { display: flex; gap: 0.5rem; }
       .bp-card__perks li::before { content: "\2713"; color: var(--bl-success-text, #047857); font-weight: 700; }
       .bp-card__perks strong { color: var(--bl-text); font-weight: 600; }
-      .bp-free { margin-top: 1.1rem; padding: 0.9rem 1.1rem; border: 1px dashed var(--bl-border); border-radius: var(--bl-radius-lg); background: var(--bl-surface); font-size: 0.86rem; line-height: 1.5; color: var(--bl-text-secondary); }
-      .bp-free strong { color: var(--bl-text); }
       .bp-subtitle { margin: 2rem 0 0.2rem; font-size: 1.1rem; font-weight: 700; color: var(--bl-text); }
       .bp-subtitle__sub { margin: 0 0 1rem; font-size: 0.88rem; color: var(--bl-text-secondary); }
 
@@ -705,17 +725,17 @@
         .bl-detail__body { padding: 1rem 1.1rem; }
         .bl-detail__foot { padding: 0.8rem 1.1rem 1rem; }
       }
-      .bs-card__foot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px solid var(--bl-border-light); display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+      .bs-card__foot { margin-top: 0.4rem; padding-top: 0.7rem; border-top: 1px solid var(--bl-border-light); display: flex; flex-direction: column; align-items: stretch; gap: 0.6rem; }
       .bs-card__price { font-size: 1.35rem; font-weight: 700; color: var(--bl-text); }
       .bs-card__price small { font-size: 0.72rem; font-weight: 600; color: var(--bl-text-muted); }
-      .bs-card__buy { display: inline-flex; align-items: center; gap: 0.5rem; }
-      .bs-card__btn { background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.55rem 1rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+      .bs-card__buy { display: flex; align-items: stretch; gap: 0.5rem; }
+      .bs-card__btn { background: var(--bl-vendor-accent); color: #fff; border: none; border-radius: var(--bl-radius-md); padding: 0.55rem 0.6rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; flex: 1 1 auto; white-space: nowrap; }
       .bs-card__btn:hover { background: var(--bl-vendor-accent-dark); }
       .bs-card__btn:disabled { background: var(--bl-border); color: var(--bl-text-muted); cursor: not-allowed; }
-      .bs-qty { display: inline-flex; align-items: center; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; }
-      .bs-qty__btn { background: none; border: none; padding: 0.35rem 0.65rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--bl-text); }
+      .bs-qty { display: inline-flex; flex: 0 0 auto; align-items: center; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); overflow: hidden; }
+      .bs-qty__btn { background: none; border: none; padding: 0.35rem 0.5rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--bl-text); }
       .bs-qty__btn:disabled { color: var(--bl-text-muted); cursor: not-allowed; }
-      .bs-qty__value { min-width: 2rem; text-align: center; font-weight: 700; font-size: 0.9rem; border-inline: 1px solid var(--bl-border); padding: 0.35rem 0; }
+      .bs-qty__value { min-width: 1.6rem; text-align: center; font-weight: 700; font-size: 0.9rem; border-inline: 1px solid var(--bl-border); padding: 0.35rem 0; }
 
 
       .pd-wrap { margin-top: 0.5rem; }
@@ -808,6 +828,7 @@
       .pd-detail__head { display: flex; align-items: flex-start; gap: 0.75rem; padding-right: 2.5rem; }
       .pd-detail__head > div { flex: 1; }
       .pd-detail__title { margin: 0; font-size: 1.2rem; }
+      .pd-detail__ref { white-space: nowrap; }
       .pd-detail__sub { margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--bl-text-muted); }
       .pd-detail__section { border-top: 1px solid var(--bl-border-light); padding-top: 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
       .pd-detail__h { margin: 0 0 0.3rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--bl-text-muted); }
@@ -901,6 +922,9 @@
       .pubform__opt { font-weight: 400; color: var(--bl-text-muted); }
       .pubform__row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
       .pubform__card .form-group:last-child { margin-bottom: 0; }
+      .pubform__row > .form-group { min-width: 0; }
+      .pubform__row + .pubform__row { margin-top: 1rem; }
+      .pubform .form-input { max-width: 100%; box-sizing: border-box; }
 
       /* Precio: el "$" va adentro del input (el sistema es de pesos enteros) */
       .pubform__money { position: relative; }
@@ -918,6 +942,7 @@
       .pubform__optional { font-weight: 400; color: var(--bl-text-muted); }
       .pubform__video-pick { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-text); font: inherit; font-weight: 600; cursor: pointer; }
       .pubform__video-pick:hover, .pubform__video-pick:focus-visible { border-color: var(--bl-vendor-accent); outline: none; }
+      .pubform__video[hidden] { display: none; }
       .pubform__video { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; margin-top: 0.75rem; }
       .pubform__video video { width: 100%; max-width: 420px; max-height: 280px; border-radius: var(--bl-radius-md); background: #000; }
       .pubform__video-remove { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-danger-text); font: inherit; font-size: 0.875rem; cursor: pointer; }
@@ -1028,6 +1053,45 @@
       .pf-field .form-label { margin-bottom: 0.4rem; }
       .pf-check { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 600; color: var(--bl-text); }
       .pf-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--bl-vendor-accent); cursor: pointer; }
+      /* Teléfono / WhatsApp: código de país + número. En celular van uno sobre otro (el número se cortaba). */
+      .pf-phone { display: flex; gap: 0.5rem; }
+      .pf-phone__dial { flex: 0 0 auto; }
+      .pf-phone__num { flex: 1; min-width: 0; }
+      @media (max-width: 480px) {
+        .pf-phone { flex-direction: column; }
+        .pf-phone__dial, .pf-phone__dial .bl-dropdown, .pf-phone__dial .bl-dropdown__trigger { width: 100%; box-sizing: border-box; }
+      }
+      /* Mis cupones: formulario de alta (4 columnas en compu; en celular se apila). */
+      .cp-form { background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 1rem; align-items: end; }
+      .cp-form > div { min-width: 0; }
+      .cp-form .form-input { width: 100%; min-width: 0; box-sizing: border-box; }
+      .cp-form__btn { width: auto; padding: 0.75rem 1.5rem; }
+      @media (max-width: 900px) {
+        .cp-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .cp-form__btn { grid-column: 1 / -1; width: 100%; }
+      }
+      @media (max-width: 560px) {
+        .cp-form { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+      }
+      /* Empleados: formulario para agregar y fila de cada empleado. */
+      #store-staff-section { min-width: 0; max-width: 100%; }
+      #store-staff-section > p { overflow-wrap: anywhere; }
+      .staff-form { background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: end; }
+      .staff-form__field { min-width: 0; }
+      .staff-form__field .form-input { width: 100%; min-width: 0; box-sizing: border-box; }
+      .staff-form__btn { width: auto; padding: 0.75rem 1.5rem; }
+      .staff-row__top { display: flex; align-items: center; gap: 1rem; width: 100%; min-width: 0; }
+      .staff-row__top .pub-row__main { min-width: 0; }
+      .staff-row__remove { border-color: #ef4444; color: #ef4444; padding: 0.5rem 1rem; white-space: nowrap; flex-shrink: 0; }
+      @media (max-width: 640px) {
+        .staff-form { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+        .staff-form__btn { width: 100%; }
+        /* La foto y el email arriba; "Quitar acceso" abajo, a todo el ancho. */
+        .staff-row__top { flex-wrap: wrap; row-gap: 0.75rem; }
+        .staff-row__top .pub-row__main { flex: 1 1 0; }
+        .staff-row__top .pub-row__title { white-space: normal; overflow-wrap: anywhere; }
+        .staff-row__remove { flex: 1 1 100%; }
+      }
       .staff-perms { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; width: 100%; padding-top: 0.75rem; margin-top: 0.25rem; border-top: 1px dashed var(--bl-border); }
       .staff-perms .pf-check { font-weight: 500; font-size: 0.85rem; gap: 0.4rem; }
       .staff-perms .pf-check input { width: 0.95rem; height: 0.95rem; }
@@ -1095,7 +1159,8 @@
         .pf-actions { justify-content: stretch; }
         .pf-actions .form-btn { width: 100%; }
         .pubform__card { padding: 1.1rem; }
-        .pubform__row { grid-template-columns: 1fr; }
+        .pubform__row { grid-template-columns: minmax(0, 1fr); }
+        .pubform__row > .form-group { margin-bottom: 0; }
         .pubform__variant-add { grid-template-columns: 1fr 1fr; }
         .pubform__variant-add .btn-outline { grid-column: 1 / -1; }
         .pubform__gallery { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
@@ -1174,11 +1239,12 @@
           <p class="bl-loading-block__subtitle">Esto puede tomar unos segundos…</p>
         </div>
 
-        <!-- "Sumate al directorio" (contratar.html) con un comercio activo: una
-             cuenta es comercio O profesional, no las dos (checkSellerState). -->
+        <!-- Una cuenta es comercio O profesional, no las dos (checkSellerState):
+             "Sumate al directorio" con un comercio activo, o "Vender" con un
+             profesional ya publicado. El texto lo cambia js/vender.js. -->
         <div id="prof-blocked-view" class="vender-container prof-blocked" style="display: none; text-align: center;">
-          <h2>Necesitás otra cuenta para ser profesional</h2>
-          <p>Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.</p>
+          <h2 id="prof-blocked-title">Necesitás otra cuenta para ser profesional</h2>
+          <p id="prof-blocked-text">Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.</p>
           <button type="button" class="datos-btn datos-btn--primary prof-blocked__btn" id="prof-switch-toggle" aria-expanded="false" aria-controls="prof-switch-panel">
             <i class="fa-solid fa-right-left" aria-hidden="true"></i><span>Cambiar de cuenta</span>
           </button>
@@ -1499,9 +1565,9 @@
                     </div>
                     <div class="pf-field pf-field--full" id="store-whatsapp-field">
                       <label class="form-label" for="store-whatsapp">Teléfono / WhatsApp</label>
-                      <div style="display: flex; gap: 0.5rem;">
-                        <div id="store-whatsapp-dial-slot" style="flex: 0 0 auto;"></div>
-                        <input type="text" id="store-whatsapp" class="form-input" placeholder="Ej: 3329123456" style="flex: 1; min-width: 0;" />
+                      <div class="pf-phone">
+                        <div id="store-whatsapp-dial-slot" class="pf-phone__dial"></div>
+                        <input type="text" id="store-whatsapp" class="form-input pf-phone__num" placeholder="Ej: 3329123456" />
                       </div>
                       <p class="pf-card__hint">Los clientes te van a escribir a este número por WhatsApp.</p>
                     </div>
@@ -1635,7 +1701,7 @@
             <!-- Oculto para empleados (F12-16) -- decisión financiera/de marketing, solo el dueño -->
             <div class="pub-wrap" id="my-coupons-section">
               <div class="pub-header"><h2 class="pub-title">Mis cupones</h2></div>
-              <form id="my-coupon-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+              <form id="my-coupon-form" class="cp-form">
                 <div>
                   <label class="form-label" for="my-coupon-code">Código</label>
                   <input type="text" id="my-coupon-code" class="form-input" placeholder="Ej: MITIENDA10" required />
@@ -1648,7 +1714,7 @@
                   <label class="form-label" for="my-coupon-expires">Vencimiento (opcional)</label>
                   <input type="date" id="my-coupon-expires" class="form-input" />
                 </div>
-                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Crear cupón</button>
+                <button type="submit" class="form-btn cp-form__btn">Crear cupón</button>
               </form>
               <div id="my-coupons-container" class="pub-list"></div>
             </div>
@@ -1661,7 +1727,7 @@
             <section class="mc-section" data-section="promo-inicio" hidden>
             <div class="pub-wrap" id="home-promo-section">
               <div class="pub-header"><h2 class="pub-title">Banner del inicio</h2></div>
-              <p class="hp-intro">Los banners de la página de inicio los asigna el equipo de Baradero Local. Cada espacio muestra hasta 3 publicidades que van pasando solas, de distintos comercios. Si tu comercio tiene una, subí acá la imagen de tu promoción: cuando un vecino toque la imagen ampliada del banner, va a la página de tu comercio.</p>
+              <p class="hp-intro">Los banners los asigna el equipo de Baradero Local. Si tu comercio tiene uno, subí acá la imagen de tu promoción: al tocarla, el vecino va a tu comercio.</p>
               <div class="hp-grid" id="home-promo-container"></div>
             </div>
             </section>
@@ -1675,12 +1741,12 @@
               <p style="color: var(--bl-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
                 Dale acceso a este panel a otra cuenta ya registrada en Baradero Local (nunca puede editar el perfil del comercio, los cupones ni la lista de empleados). Elegí qué secciones ve con los checks debajo de su nombre -- podés cambiarlas cuando quieras.
               </p>
-              <form id="store-staff-form" style="background: var(--bl-surface-alt); padding: 1.5rem; border-radius: var(--bl-radius-md); border: 1px solid var(--bl-border); margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
-                <div>
+              <form id="store-staff-form" class="staff-form">
+                <div class="staff-form__field">
                   <label class="form-label" for="store-staff-email">Email de la cuenta a agregar</label>
                   <input type="email" id="store-staff-email" class="form-input" placeholder="empleado@email.com" required />
                 </div>
-                <button type="submit" class="form-btn" style="width: auto; padding: 0.75rem 1.5rem;">Agregar</button>
+                <button type="submit" class="form-btn staff-form__btn">Agregar</button>
               </form>
               <div id="store-staff-container" class="pub-list"></div>
             </div>
@@ -1906,10 +1972,9 @@
                 </div>
               </div>
 
-              <!-- Formulario de alta/edición. Oculto por defecto. Va ANTES del
-                   listado a propósito (A113): al publicar/editar, los productos ya
-                   publicados se corren para abajo en vez de desaparecer -- el
-                   vendedor los sigue viendo mientras carga uno nuevo. -->
+              <!-- Formulario de alta/edición. Oculto por defecto. Al abrirlo, vender.js
+                   le pone `is-form-open` a .pub-wrap y se esconden las publicaciones
+                   (buscador, filtros, selección y lista): solo se ven en "Publicaciones". -->
               <div id="add-product-form-container" class="pubform" hidden>
                 <div class="pubform__head">
                   <button type="button" class="pubform__back" id="btn-back-publicaciones">

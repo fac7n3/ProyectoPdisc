@@ -7,12 +7,13 @@
 import { compressImage } from './image-compress.js';
 import { supabase } from './auth-utils.js';
 import { promptLogin } from './login-prompt.js';
+import { notify } from './notice.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import { getVisibleSocialLinks } from './store-contact-utils.js';
 import { formatTarifa } from './professional-service-utils.js';
 import { fileToDataUrl, safeVideoUrl } from './storage-utils.js';
-import { localIsoDate } from './cart-utils.js';
+import { localIsoDate, getFavoriteProfessionalIds, toggleFavoriteProfessional } from './cart-utils.js';
 import {
   agruparPorDia,
   agruparDiasIguales,
@@ -24,6 +25,8 @@ import './speed-insights.js'; // Initialize Vercel Speed Insights
 let allProfessionals = [];
 let activeCategory = 'todos';
 let currentUserId = null;
+/** Ids de profesionales que la persona tiene en favoritos (vacío sin sesión). */
+let favoriteProfessionalIds = new Set();
 // Evita volver a pedir las reseñas si se cierra y reabre la misma tarjeta.
 // Se vacía en cada render(): las tarjetas se rehacen de cero al filtrar, así
 // que un id que quedó acá apunta a un nodo que ya no existe -- y su tarjeta
@@ -117,6 +120,57 @@ function registrarMetrica(professionalId, evento) {
     });
 }
 
+/**
+ * Corazón de "guardar en favoritos" (migración 167). Es hermano del botón de la
+ * cabecera, no hijo: un <button> dentro de otro <button> no es HTML válido y
+ * el clic del corazón abriría/cerraría la tarjeta.
+ */
+function buildFavoriteButton(pro) {
+  const btn = el('button', 'ct-card__fav');
+  btn.type = 'button';
+  const icon = el('i', 'fa-regular fa-heart');
+  icon.setAttribute('aria-hidden', 'true');
+  btn.appendChild(icon);
+
+  const paint = (isFav) => {
+    icon.classList.toggle('fa-solid', isFav);
+    icon.classList.toggle('fa-regular', !isFav);
+    btn.classList.toggle('is-favorite', isFav);
+    btn.setAttribute('aria-pressed', String(isFav));
+    btn.setAttribute('aria-label', isFav
+      ? `Quitar a ${pro.full_name} de favoritos`
+      : `Guardar a ${pro.full_name} en favoritos`);
+  };
+  paint(favoriteProfessionalIds.has(pro.id));
+
+  btn.addEventListener('click', async () => {
+    if (!currentUserId) {
+      if (promptLogin('Iniciá sesión para guardar tus servicios favoritos.')) return;
+      notify('Iniciá sesión para guardar servicios en favoritos', 'warning');
+      return;
+    }
+    const wasFavorite = favoriteProfessionalIds.has(pro.id);
+    // Se pinta ya y se deshace si la base lo rechaza.
+    if (wasFavorite) favoriteProfessionalIds.delete(pro.id);
+    else favoriteProfessionalIds.add(pro.id);
+    paint(!wasFavorite);
+    icon.classList.remove('is-pop');
+    void icon.offsetWidth;
+    icon.classList.add('is-pop');
+    try {
+      await toggleFavoriteProfessional(pro.id, wasFavorite);
+    } catch (err) {
+      console.error('Error al actualizar servicio favorito:', err);
+      if (wasFavorite) favoriteProfessionalIds.add(pro.id);
+      else favoriteProfessionalIds.delete(pro.id);
+      paint(wasFavorite);
+      notify('No pudimos actualizar tus favoritos. Probá de nuevo.', 'error');
+    }
+  });
+
+  return btn;
+}
+
 function buildCard(pro) {
   const card = el('div', 'ct-card');
   card.id = `ct-pro-${pro.id}`;
@@ -172,6 +226,7 @@ function buildCard(pro) {
 
   head.addEventListener('click', () => toggleCard(card, pro));
   card.appendChild(head);
+  card.appendChild(buildFavoriteButton(pro));
 
   const detail = el('div', 'ct-card__detail');
   detail.hidden = true;
@@ -536,14 +591,22 @@ async function loadProfessionals() {
     supabase.rpc('get_professionals_directory'),
   ]);
   currentUserId = session?.user?.id || null;
+  // Los favoritos van aparte (una consulta liviana solo si hay sesión); si
+  // fallan, el directorio igual se muestra con los corazones vacíos.
+  favoriteProfessionalIds = new Set(currentUserId ? await getFavoriteProfessionalIds() : []);
+
+  const professionals = data || [];
+
+  // El "Sumate" nace oculto (hidden en el HTML) y se muestra recién acá, para que
+  // quien ya está en el directorio no lo vea parpadear mientras carga.
+  const cta = document.querySelector('.ct-cta');
+  if (cta) cta.hidden = !!currentUserId && professionals.some((p) => p.owner_id === currentUserId);
 
   if (error) {
     console.error('Error al cargar los profesionales:', error);
     container.appendChild(buildEmpty('No pudimos cargar el directorio. Probá de nuevo en un rato.'));
     return;
   }
-
-  const professionals = data || [];
 
   if (professionals.length === 0) {
     allProfessionals = [];

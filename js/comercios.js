@@ -14,6 +14,7 @@ import './speed-insights.js';
 
 const grid = document.getElementById('stores-grid');
 const countEl = document.getElementById('stores-count');
+const filterEl = document.getElementById('store-filter');
 
 // buildStoreCard vive en cart-utils.js: la usan este listado y los resultados
 // de búsqueda.
@@ -53,9 +54,35 @@ async function loadStores() {
       store._categoryName = chosen || null;
     });
 
-    grid.textContent = '';
-    stores.forEach((store) => grid.appendChild(buildStoreCard(store)));
-    countEl.textContent = `${stores.length} comercio${stores.length === 1 ? '' : 's'}`;
+    const render = (slug) => {
+      const shown = slug ? stores.filter((s) => s.category_slug === slug) : stores;
+      grid.textContent = '';
+      shown.forEach((store) => grid.appendChild(buildStoreCard(store)));
+      countEl.textContent = `${shown.length} comercio${shown.length === 1 ? '' : 's'}`;
+      filterEl.querySelectorAll('button').forEach((b) =>
+        b.setAttribute('aria-pressed', String((b.dataset.slug || '') === (slug || ''))));
+    };
+
+    // Chips de rubro: solo los rubros que tienen al menos un comercio aprobado.
+    const counts = new Map();
+    stores.forEach((s) => { if (s._categoryName) counts.set(s.category_slug, (counts.get(s.category_slug) || 0) + 1); });
+    const chips = [{ slug: '', label: 'Todos' }, ...categories
+      .filter((c) => counts.has(c.slug))
+      .map((c) => ({ slug: c.slug, label: `${c.name} (${counts.get(c.slug)})` }))];
+    filterEl.textContent = '';
+    if (chips.length > 2) {
+      chips.forEach(({ slug, label }) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'store-filter__chip';
+        b.dataset.slug = slug;
+        b.textContent = label;
+        b.addEventListener('click', () => render(slug));
+        filterEl.appendChild(b);
+      });
+      filterEl.hidden = false;
+    }
+    render('');
   } catch (err) {
     console.error('Error al cargar comercios:', err);
     renderErrorState(grid, 'No pudimos cargar los comercios.', loadStores);
