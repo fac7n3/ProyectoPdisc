@@ -31,7 +31,7 @@
     <link rel="stylesheet" crossorigin href="/assets/theme-kTxQ-Bdf.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
     <link rel="stylesheet" crossorigin href="/assets/home-CxxYxDBe.css">
-    <link rel="stylesheet" crossorigin href="/assets/carrito-DDa98mbC.css">
+    <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
   </head>
   <body>
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -67,7 +67,13 @@
 
     <!-- ====== CONTENIDO DEL CARRITO ====== -->
     <main id="contenido-principal" tabindex="-1" class="cart-page">
-      <h1 class="cart-page__title">Mi carrito</h1>
+      <div class="cart-page__head">
+        <h1 class="cart-page__title">Mi carrito</h1>
+        <!-- Solo celular: ahí "Volver al inicio" va arriba, junto al título (en compu queda abajo, en la barra de acciones) -->
+        <a href="./home.html" class="cart-page__back">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio
+        </a>
+      </div>
 
       <div class="cart-layout">
 

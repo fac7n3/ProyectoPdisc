@@ -19,6 +19,9 @@
   margin-bottom: 1.5rem;
 }
 
+/* El enlace "Volver al inicio" de arriba solo se ve en celular (ver @media abajo). */
+.cart-page__back { display: none; }
+
 .cart-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -984,10 +987,31 @@
     padding: 1rem 0 calc(8.75rem + env(safe-area-inset-bottom));
   }
 
-  .cart-page__title {
-    font-size: 1.25rem;
+  /* Título a la izquierda y "Volver al inicio" arriba a la derecha; abajo se saca. */
+  .cart-page__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin: 0 1rem 0.75rem;
   }
+
+  .cart-page__title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .cart-page__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--bl-text-secondary);
+  }
+
+  .cart-actions__back { display: none; }
 
   /* minmax(0, …): sin esto la fila de chips (que no corta) estira la columna
      más allá de la pantalla y se esconden el subtotal y el tacho. */
@@ -1175,7 +1199,7 @@
   /* "Volver" y "Vaciar" como enlaces chicos, sin cuadro */
   .cart-actions {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 0.75rem;
     padding: 0 1rem;
