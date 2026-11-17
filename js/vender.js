@@ -66,7 +66,6 @@ async function checkSellerState(user) {
   const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
   const hamburgerBtn = document.getElementById('mc-hamburger');
-  const vendorBadge = document.getElementById('vendor-mode-badge');
   const oficiosBadge = document.getElementById('oficios-mode-badge');
 
   // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
@@ -109,10 +108,8 @@ async function checkSellerState(user) {
     // (no una clase) para pisar el `display: inline-flex` que le pone la
     // media query de <900px cuando corresponde ocultarlo.
     if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
-    // "Modo Vendedor" solo tiene sentido en dashboard-view (comercio real).
     // El de Oficios ya no se prende nunca acá: desde que el panel del
     // profesional vive en profesional.html, esta página es solo el alta.
-    if (vendorBadge) vendorBadge.hidden = view !== 'dashboard';
     if (oficiosBadge) oficiosBadge.hidden = true;
   };
 
@@ -995,9 +992,8 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   // funciones solo cablean listeners/nav sobre DOM estático; cada sección
   // rellena su propio placeholder por detrás a medida que llega su data.
   setupDashboardEvents();
-  // El dueño entra directo a "Perfil de mi comercio" (a pedido del usuario,
-  // 2026-09-16); un empleado no tiene esa sección y sigue cayendo en "Resumen".
-  initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
+  // Todos entran en "Resumen" (a pedido del usuario, 2026-11-16; antes el dueño caía en el perfil).
+  initVenderShell({ defaultSection: 'resumen' });
   maybeShowVendorOnboarding();
 
   if (isStoreOwner) { fillStoreProfileForm(store); focusLocationFromUrl(); }

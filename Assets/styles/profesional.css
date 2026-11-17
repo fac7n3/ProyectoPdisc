@@ -232,7 +232,8 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
   background: none;
   border: none;
   font-size: 1.25rem;
-  color: var(--bl-oficios-accent);
+  /* Mismo azul que el botón del menú del panel del vendedor (antes: naranja de Oficios). */
+  color: #2f5aa8;
   cursor: pointer;
 }
 .mc-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 999; }

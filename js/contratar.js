@@ -20,6 +20,7 @@ import {
   estaAbiertoAhora,
   resumenDisponibilidad,
 } from './professional-hours-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let allProfessionals = [];
@@ -38,6 +39,31 @@ function el(tag, className, text) {
   if (className) node.className = className;
   if (text != null) node.textContent = text;
   return node;
+}
+
+/**
+ * Botón "Panel" de arriba a la derecha: solo para cuentas que tienen perfil de
+ * profesional/técnico. Sale al instante con la pista que deja getPanelAccess
+ * (bl_panel_hint, slot "contratar") y se confirma/corrige con la tabla `professionals`.
+ */
+function setupPanelButton(userId) {
+  const btn = document.getElementById('ct-panel-btn');
+  if (!btn) return;
+  btn.hidden = true;
+  if (!userId) return;
+  try {
+    const hint = JSON.parse(localStorage.getItem('bl_panel_hint') || 'null');
+    if (hint && hint.uid === userId && hint.slot === 'contratar') btn.hidden = false;
+  } catch { /* sin storage */ }
+  supabase
+    .from('professionals')
+    .select('id')
+    .eq('owner_id', userId)
+    .limit(1)
+    .then(({ data, error }) => {
+      if (error) return; // se queda como estaba
+      btn.hidden = !data?.length;
+    });
 }
 
 function buildCategoryChips() {
@@ -596,6 +622,7 @@ async function loadProfessionals() {
     supabase.rpc('get_professionals_directory'),
   ]);
   currentUserId = session?.user?.id || null;
+  setupPanelButton(currentUserId);
   // Los favoritos van aparte (una consulta liviana solo si hay sesión); si
   // fallan, el directorio igual se muestra con los corazones vacíos.
   favoriteProfessionalIds = new Set(currentUserId ? await getFavoriteProfessionalIds() : []);
@@ -1050,4 +1077,5 @@ function cerrarFormularioConsulta() {
 buildCategoryChips();
 document.getElementById('ct-search-input')?.addEventListener('input', () => applyFilter());
 
+initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 loadProfessionals();

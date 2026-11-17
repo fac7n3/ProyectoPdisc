@@ -7,6 +7,7 @@
 import { supabase } from './auth-utils.js';
 import { copyToClipboard } from './transfer-details.js';
 import { notify } from './notice.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const CATEGORIES = [
@@ -142,4 +143,5 @@ async function loadServicios() {
   });
 }
 
+initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 loadServicios();
