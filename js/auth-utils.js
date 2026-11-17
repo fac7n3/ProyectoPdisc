@@ -289,6 +289,8 @@ function markHomeIntent(e) {
 // `history.state.blSection` lo deja Mi perfil al abrir una sección (Soporte,
 // Compras, etc.): es una vuelta interna del mismo documento, así que no hay
 // referrer que mirar y siempre se puede retroceder.
+// Excepción: una flecha con `data-nav-home` (el panel de vendedor) lleva SIEMPRE
+// al inicio, haya o no historial: es un "llevame al inicio", no un "volver".
 function hasSiteHistory() {
   if (window.history.state?.blSection) return true;
   if (window.history.length <= 1 || !document.referrer) return false;
@@ -303,11 +305,13 @@ function handleNavBack(e) {
   const circle = e.target.closest?.(".navbar__action-circle");
   if (!circle || !circle.querySelector(".fa-arrow-left")) return;
   e.preventDefault();
-  if (hasSiteHistory()) {
+  if (!circle.hasAttribute("data-nav-home") && hasSiteHistory()) {
     window.history.back();
     return;
   }
-  // Sin a dónde volver: es un "llevame al inicio" explícito, igual que el logo.
+  // Sin a dónde volver (o flecha de "ir al inicio"): es un "llevame al inicio"
+  // explícito, igual que el logo. La marca evita que el home rebote de vuelta
+  // al panel a quien tiene un solo panel (ver cameToHomeOnPurpose en home.js).
   try { sessionStorage.setItem(HOME_INTENT_KEY, "1"); } catch { /* sessionStorage bloqueado */ }
   window.location.href = circle.getAttribute("href") || "./home.html";
 }

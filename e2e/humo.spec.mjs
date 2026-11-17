@@ -149,6 +149,41 @@ test.describe('ficha de producto y comercio', () => {
   });
 });
 
+test.describe('flecha de volver del navbar', () => {
+  // La flecha vuelve a la página anterior del historial (handleNavBack, js/auth-utils.js); con
+  // `data-nav-home` va siempre al inicio, que es lo que usa el panel de vendedor. Ese panel está
+  // detrás del login, así que se prueba el mecanismo en una ficha de comercio pública
+  // (home -> comercios -> comercio, con historial del sitio de por medio).
+  const flecha = (page) => page.locator('.navbar__action-circle:has(.fa-arrow-left)');
+
+  async function llegarAUnComercio(page) {
+    await page.goto('/pages/home.html');
+    await page.goto('/pages/comercios.html');
+    const link = page.locator('a[href*="comercio.html?id="]').first();
+    await expect(link).toBeVisible();
+    await link.click();
+    await expect(page).toHaveURL(/comercio\.html\?id=/);
+    await expect(flecha(page)).toBeVisible();
+  }
+
+  test('sin marca: vuelve a la página anterior', async ({ page, problemas }) => {
+    await llegarAUnComercio(page);
+    await flecha(page).click();
+    await expect(page).toHaveURL(/comercios\.html$/);
+    sinProblemas(problemas);
+  });
+
+  test('con data-nav-home: va directo al inicio y marca que lo pidieron', async ({ page, problemas }) => {
+    await llegarAUnComercio(page);
+    await flecha(page).evaluate((el) => el.setAttribute('data-nav-home', ''));
+    await flecha(page).click();
+    await expect(page).toHaveURL(/\/pages\/home\.html$/);
+    // Sin esta marca el home rebotaría a su panel a quien tiene uno solo (cameToHomeOnPurpose).
+    expect(await page.evaluate(() => sessionStorage.getItem('bl_home_intent'))).toBe('1');
+    sinProblemas(problemas);
+  });
+});
+
 test.describe('agregar al carrito', () => {
   // "Agregado al carrito" no lleva aviso (en celular tapaba la pantalla): lo dice el propio
   // botón y el carrito del navbar, con flashAddedToCart de js/cart-utils.js.
