@@ -6553,3 +6553,36 @@ button.bl-compare__row:focus-visible {
 .bl-compare__price.is-best {
   color: var(--bl-success-text);
 }
+
+/* ===========================================================
+   BANNERS MÁS GRANDES EN CELULAR (<= 640px)
+   Casi de borde a borde (0.25rem de margen, igual que las franjas) y con el
+   alto en proporción al ancho de la pantalla en vez de 160-200px fijos. El
+   espacio mosaic_g (continuación del hero) tiene que medir lo mismo que el
+   hero: comparten --bl-hero-h. Va al final del archivo para pisar los
+   @media anteriores.
+   =========================================================== */
+@media (max-width: 640px) {
+  :root { --bl-hero-h: clamp(200px, 62vw, 300px); }
+
+  .hero,
+  .promo-mosaic,
+  .promo-mosaic-2,
+  .promo-strip {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  .hero__carousel,
+  .promo-banner-2--g.promo-banner-2--hero,
+  .promo-banner-2--g.promo-banner-2--hero:not(.is-store-promo) {
+    height: var(--bl-hero-h);
+  }
+
+  .promo-mosaic__grid,
+  .promo-mosaic-2__grid,
+  .promo-mosaic__side,
+  .promo-mosaic-2__side {
+    gap: 0.5rem;
+  }
+}
