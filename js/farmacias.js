@@ -10,7 +10,8 @@
 
 import { supabase } from './auth-utils.js';
 import { safeExternalUrl } from './store-contact-utils.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
+import { updateCartBadge } from './cart-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Un turno cargado hace más de esto se considera desactualizado y la página
@@ -395,4 +396,6 @@ async function loadFarmacias() {
 }
 
 initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
+initAccountMenu(); // menú de cuenta del navbar
+updateCartBadge(); // número del carrito
 loadFarmacias();

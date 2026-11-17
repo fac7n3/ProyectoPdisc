@@ -13,14 +13,14 @@ import { renderReviewsSection, buildStarsText } from './reviews-utils.js';
 import { getVisibleSocialLinks } from './store-contact-utils.js';
 import { formatTarifa } from './professional-service-utils.js';
 import { fileToDataUrl, safeVideoUrl } from './storage-utils.js';
-import { localIsoDate, getFavoriteProfessionalIds, toggleFavoriteProfessional } from './cart-utils.js';
+import { localIsoDate, getFavoriteProfessionalIds, toggleFavoriteProfessional, updateCartBadge } from './cart-utils.js';
 import {
   agruparPorDia,
   agruparDiasIguales,
   estaAbiertoAhora,
   resumenDisponibilidad,
 } from './professional-hours-utils.js';
-import { initNotificationsBell } from './nav-utils.js';
+import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let allProfessionals = [];
@@ -1078,4 +1078,6 @@ buildCategoryChips();
 document.getElementById('ct-search-input')?.addEventListener('input', () => applyFilter());
 
 initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
+initAccountMenu(); // menú de cuenta del navbar
+updateCartBadge(); // número del carrito
 loadProfessionals();

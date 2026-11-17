@@ -16,6 +16,7 @@ import { initVenderShell } from './vender-shell.js';
 import { skeletonStats, skeletonResumenCards } from './panel-skeleton.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
+import { updateCartBadge } from './cart-utils.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import { buildDropdown } from './dropdown.js';
@@ -184,6 +185,7 @@ function montarPanel() {
   initVenderShell();
   maybeShowProfOnboarding();
   initNotificationsBell();
+  updateCartBadge();
 
   initPerfil();
 

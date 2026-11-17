@@ -22,11 +22,16 @@
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
 
   <style>.terms-container{background:#fff;border-radius:1rem;max-width:800px;margin:4rem auto;padding:3rem;box-shadow:0 4px 20px #0000000d}.terms-container h1{color:var(--bl-primary);margin-bottom:.5rem;font-size:2.25rem;font-weight:800}.terms-container .last-updated{color:var(--bl-text-muted);border-bottom:1px solid var(--bl-border);margin-bottom:2rem;padding-bottom:1rem;font-size:.875rem}.terms-container h2{color:var(--bl-text);margin-top:2rem;margin-bottom:.75rem;font-size:1.25rem;font-weight:700}.terms-container p{color:var(--bl-text-secondary);margin-bottom:1.25rem;font-size:.95rem;line-height:1.7}.terms-container ul{color:var(--bl-text-secondary);margin-bottom:1.25rem;margin-left:1.5rem;line-height:1.7}.terms-container li{margin-bottom:.5rem}.btn-outline{border:1.5px solid var(--bl-primary);color:var(--bl-primary);border-radius:var(--bl-radius-md);cursor:pointer;background:0 0;justify-content:center;align-items:center;padding:.5rem 1rem;font-size:.875rem;font-weight:600;text-decoration:none;transition:all .2s;display:inline-flex}.btn-outline:hover{background:var(--bl-primary);color:#fff}@media (width<=600px){.terms-container{margin:1rem .75rem 2rem;padding:1.5rem 1.125rem}.terms-container h1{font-size:1.75rem}}</style>
-    <script type="module" crossorigin src="/assets/theme-pUV4s4cA.js"></script>
-    <script type="module" crossorigin src="/assets/scroll-top-btn-BldkVbfz.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/theme-ByFvjJTD.css">
+    <script type="module" crossorigin src="/assets/auth-utils-D5rHSv7z.js"></script>
+    <script type="module" crossorigin src="/assets/scroll-lock-BTPhN1Yo.js"></script>
+    <script type="module" crossorigin src="/assets/panel-skeleton-930o5RMd.js"></script>
+    <script type="module" crossorigin src="/assets/rolldown-runtime-XKyaHtl9.js"></script>
+    <script type="module" crossorigin src="/assets/toast-utils-B45jVOmk.js"></script>
+    <script type="module" crossorigin src="/assets/nav-utils-Diy-185B.js"></script>
+    <script type="module" crossorigin src="/assets/legal-nav-D3yhosH9.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/auth-utils-ByFvjJTD.css">
+    <link rel="stylesheet" crossorigin href="/assets/scroll-lock-BS0QmLMD.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BS0QmLMD.css">
   </head>
 <body class="bl-bg">
     <!-- Primer elemento enfocable: deja saltar navbar + buscador + barra de
@@ -45,7 +50,15 @@
         </div>
       </a>
       <div class="navbar__actions">
-        <a href="./home.html" class="btn-outline">Volver al Inicio</a>
+        <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left"></i></a>
+        <div id="nav-notifications-wrap"></div>
+        <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
+        <div id="nav-account-wrap"></div>
+        <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
+        <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
+          <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+          <span class="cart-badge" id="cart-badge"></span>
+        </a>
       </div>
     </div>
   </nav>

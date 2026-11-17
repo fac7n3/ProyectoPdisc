@@ -14,7 +14,7 @@
 import { supabase, showToast, guardPage } from './auth-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { confirmDialog, formDialog } from './confirm-dialog.js';
-import { formatPrice } from './cart-utils.js';
+import { formatPrice, updateCartBadge } from './cart-utils.js';
 import { describeSelectedOptions } from './product-options-utils.js';
 import { orderLabel } from './order-utils.js';
 import { subscribeToChanges, createRefresher } from './realtime-utils.js';
@@ -532,6 +532,7 @@ guardPage({
   onReady: async (user) => {
     estado.user = user;
     initNotificationsBell();
+    updateCartBadge();
 
     const { data: profile } = await supabase
       .from('profiles')
