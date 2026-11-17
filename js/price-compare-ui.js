@@ -63,9 +63,9 @@ export async function renderSameProductOffers(slot, { productId, storeId = null 
   const distances = await distancesTo([...new Set(offers.map((o) => o.store_id))], savedLocation());
   if (!slot.isConnected) return;
 
-  const section = el('section', 'bl-compare');
-  section.setAttribute('aria-label', 'Este producto en otros comercios');
-  section.appendChild(el('h3', 'bl-compare__title', 'Este producto en otros comercios'));
+  const section = el('details', 'bl-compare');
+  // Cerrado de entrada: se abre con un toque en el título.
+  section.appendChild(el('summary', 'bl-compare__title', 'Este producto en otros comercios'));
 
   const list = el('ul', 'bl-compare__list');
   offers.forEach((o) => {

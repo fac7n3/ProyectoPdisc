@@ -7,6 +7,7 @@ import { renderReviewsSection } from './reviews-utils.js';
 import { initCategoryBar, initSearchBox, initNotificationsBell, initAccountMenu, getCategories } from './nav-utils.js';
 import { removeStoredObjects, getImageDimensions } from './storage-utils.js';
 import { buildContactAction, getVisibleSocialLinks } from './store-contact-utils.js';
+import { trackStoreView, trackStoreContact, trackStoreSocial } from './store-metrics.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { offersFirst } from './store-products-order.js';
 import { setJsonLd, applyCanonical } from './seo.js';
@@ -547,6 +548,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
       contactLink.target = contactAction.href.startsWith('https://wa.me/') ? '_blank' : '_self';
       contactLink.rel = 'noopener';
       contactLink.title = contactAction.label;
+      contactLink.addEventListener('click', () => trackStoreContact(storeId)); // estadísticas del comercio (migración 168)
       const icon = document.createElement('i');
       icon.className = contactAction.icon;
       contactLink.appendChild(icon);
@@ -567,6 +569,7 @@ function buildStoreHeader(store, { isOwner, categoryName, storeId, productCount 
       link.rel = 'noopener noreferrer';
       link.setAttribute('aria-label', s.label);
       link.title = s.label;
+      link.addEventListener('click', () => trackStoreSocial(storeId, s.key)); // estadísticas del comercio (migración 168)
       const icon = document.createElement('i');
       icon.className = s.icon;
       link.appendChild(icon);
@@ -989,6 +992,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     mainContent.appendChild(storeHeader);
     renderHeaderColors(storeHeader); // recién ahora hay estilos computados
+    // Estadísticas del comercio (migración 168): una visita por sesión. La base descarta sola las del
+    // dueño, empleados y admins; el dueño ni siquiera dispara la llamada.
+    if (!isOwner) trackStoreView(storeId);
 
     const section = document.createElement('section');
     section.className = 'store-products';

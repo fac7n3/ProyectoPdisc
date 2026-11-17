@@ -925,6 +925,46 @@ export async function toggleFavoriteStore(storeId, isCurrentlyFavorite) {
 }
 
 /**
+ * Favoritos de SERVICIO (profesionales/técnicos, migración 167, tabla
+ * favorite_professionals) — mismo criterio que los de comercio: requiere
+ * sesión, sin fallback a localStorage para invitados.
+ */
+export async function getFavoriteProfessionalIds() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase
+    .from('favorite_professionals')
+    .select('professional_id')
+    .eq('client_id', session.user.id);
+
+  if (error) {
+    console.error('Error al traer servicios favoritos:', error);
+    return [];
+  }
+
+  return (data || []).map((f) => f.professional_id);
+}
+
+/**
+ * Agrega o quita un profesional de favoritos. Requiere sesión.
+ * Lanza si la base rechaza el cambio, para que quien llama pueda deshacer el
+ * corazón que ya pintó.
+ * @param {string} professionalId
+ * @param {boolean} isCurrentlyFavorite - estado ANTES del toggle
+ */
+export async function toggleFavoriteProfessional(professionalId, isCurrentlyFavorite) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  const query = supabase.from('favorite_professionals');
+  const { error } = isCurrentlyFavorite
+    ? await query.delete().eq('client_id', session.user.id).eq('professional_id', professionalId)
+    : await query.insert({ client_id: session.user.id, professional_id: professionalId });
+  if (error && error.code !== '23505') throw error; // 23505: ya estaba guardado
+}
+
+/**
  * Al loguearse, sube los favoritos que se hayan marcado como invitado
  * (localStorage) a la tabla `favorites` y limpia el localStorage — la DB
  * pasa a ser la única fuente de verdad para ese usuario de acá en más.

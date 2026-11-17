@@ -59,8 +59,6 @@ async function loadStores() {
       grid.textContent = '';
       shown.forEach((store) => grid.appendChild(buildStoreCard(store)));
       countEl.textContent = `${shown.length} comercio${shown.length === 1 ? '' : 's'}`;
-      filterEl.querySelectorAll('button').forEach((b) =>
-        b.setAttribute('aria-pressed', String((b.dataset.slug || '') === (slug || ''))));
     };
 
     // Chips de rubro: solo los rubros que tienen al menos un comercio aprobado.
@@ -71,15 +69,77 @@ async function loadStores() {
       .map((c) => ({ slug: c.slug, label: `${c.name} (${counts.get(c.slug)})` }))];
     filterEl.textContent = '';
     if (chips.length > 2) {
-      chips.forEach(({ slug, label }) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'store-filter__chip';
-        b.dataset.slug = slug;
-        b.textContent = label;
-        b.addEventListener('click', () => render(slug));
-        filterEl.appendChild(b);
+      // Desplegable propio (botón + lista) en vez del <select> nativo, para que
+      // respete la estética de la página. Teclado: flechas, Enter, Esc.
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'store-filter__btn';
+      btn.setAttribute('aria-haspopup', 'listbox');
+      btn.setAttribute('aria-expanded', 'false');
+      const btnLabel = document.createElement('span');
+      const caret = document.createElement('i');
+      caret.className = 'fa-solid fa-chevron-down';
+      caret.setAttribute('aria-hidden', 'true');
+      btn.append(btnLabel, caret);
+
+      const list = document.createElement('ul');
+      list.className = 'store-filter__list';
+      list.setAttribute('role', 'listbox');
+      list.setAttribute('aria-label', 'Filtrar comercios por rubro');
+      list.tabIndex = -1;
+      list.hidden = true;
+
+      const items = chips.map(({ slug, label }) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.dataset.slug = slug;
+        li.textContent = slug ? label : 'Todos los rubros';
+        list.appendChild(li);
+        return li;
       });
+
+      let current = 0;
+      const setOpen = (open, focusBtn = false) => {
+        list.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          items[current].scrollIntoView({ block: 'nearest' });
+          list.focus();
+        } else if (focusBtn) btn.focus();
+      };
+      const choose = (i) => {
+        current = i;
+        items.forEach((li, j) => li.setAttribute('aria-selected', String(j === i)));
+        btnLabel.textContent = items[i].textContent;
+        render(items[i].dataset.slug);
+        setOpen(false, true);
+      };
+      const mark = (i) => {
+        current = Math.max(0, Math.min(items.length - 1, i));
+        items.forEach((li, j) => li.classList.toggle('is-active', j === current));
+        items[current].scrollIntoView({ block: 'nearest' });
+      };
+
+      btn.addEventListener('click', () => { mark(current); setOpen(list.hidden); });
+      list.addEventListener('click', (e) => {
+        const i = items.indexOf(e.target.closest('li'));
+        if (i >= 0) choose(i);
+      });
+      list.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); mark(current + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); mark(current - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); mark(0); }
+        else if (e.key === 'End') { e.preventDefault(); mark(items.length - 1); }
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(current); }
+        else if (e.key === 'Escape' || e.key === 'Tab') { setOpen(false, e.key === 'Escape'); }
+      });
+      document.addEventListener('click', (e) => {
+        if (!filterEl.contains(e.target)) setOpen(false);
+      });
+
+      items.forEach((li, j) => li.setAttribute('aria-selected', String(j === 0)));
+      btnLabel.textContent = items[0].textContent;
+      filterEl.append(btn, list);
       filterEl.hidden = false;
     }
     render('');

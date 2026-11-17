@@ -36,6 +36,7 @@ import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { pickupCode, normalizeMapsUrl } from './courier-utils.js';
 import { createStoreLocationPicker } from './store-location-map.js';
+import { loadStatsSummary, loadStatsSection } from './vender-estadisticas.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 /** Un número (o string) de pesos a texto con separador de miles ("1500" -> "1.500"). */
@@ -76,14 +77,27 @@ async function checkSellerState(user) {
   const reveal = (view) => {
     if (stateLoader) stateLoader.style.display = 'none';
     const blockedView = document.getElementById('prof-blocked-view');
-    if (blockedView) blockedView.style.display = view === 'blocked' ? 'block' : 'none';
-    if (view === 'blocked') {
+    if (blockedView) blockedView.style.display = view === 'blocked' || view === 'blocked-seller' ? 'block' : 'none';
+    if (view === 'blocked' || view === 'blocked-seller') {
+      // Con un comercio se bloquea el alta de profesional; con un profesional ya
+      // publicado, el alta de comercio. Misma pantalla, texto según el caso.
+      const forSeller = view === 'blocked-seller';
+      const title = document.getElementById('prof-blocked-title');
+      const text = document.getElementById('prof-blocked-text');
+      if (title) title.textContent = forSeller
+        ? 'Necesitás otra cuenta para vender'
+        : 'Necesitás otra cuenta para ser profesional';
+      if (text) text.textContent = forSeller
+        ? 'Esta cuenta ya está publicada como profesional. Para vender productos con un comercio, creá una cuenta nueva o ingresá con otra.'
+        : 'Esta cuenta ya tiene un comercio. Para estar en el directorio como profesional, creá una cuenta nueva o ingresá con otra.';
       // Carga perezosa: solo esta pantalla necesita el selector de cuentas. Al
       // cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta de profesional.
       import('./account-switcher.js').then(({ initAccountSwitcher }) => initAccountSwitcher({
         toggle: document.getElementById('prof-switch-toggle'),
         panel: document.getElementById('prof-switch-panel'),
-        redirectTo: './vender.html?tipo=servicio',
+        // Al cambiar de cuenta vuelve acá, así la otra cuenta cae en el alta
+        // que corresponde (profesional o comercio).
+        redirectTo: forSeller ? './vender.html' : './vender.html?tipo=servicio',
       })).catch((err) => console.error('No se pudo cargar el selector de cuentas:', err));
     }
     registerView.style.display = view === 'register' ? 'block' : 'none';
@@ -190,8 +204,8 @@ async function checkSellerState(user) {
   }
 
   // Sin comercio ni solicitud de comercio: ¿ya está publicado como profesional?
-  // Si lo está, su panel es una página aparte (pages/profesional.html): acá
-  // solo queda el alta.
+  // Si lo está, su panel es una página aparte (pages/profesional.html) y acá no
+  // puede vender: una cuenta es comercio O profesional.
   const { data: prof } = await supabase
     .from('professionals')
     .select('id')
@@ -199,7 +213,9 @@ async function checkSellerState(user) {
     .limit(1);
 
   if (prof?.length) {
-    window.location.replace('./profesional.html');
+    // Ya está publicado como profesional: su panel vive en profesional.html (se
+    // llega desde "Panel" del home), y acá no puede abrir un comercio.
+    reveal('blocked-seller');
     return;
   }
 
@@ -384,8 +400,10 @@ function renderCategoryPicker(gridId, { name, type, required = false }) {
 /** Alta de producto: una sola categoría. */
 function renderProductCategoryOptions() {
   renderCategoryPicker('prod-category-options', {
-    name: 'prod-category', type: 'radio', required: true,
+    name: 'prod-category', type: 'radio',
   });
+  // Sin `required` nativo (la lista plegada oculta los radios): lo valida el submit.
+  setupCategoryDropdown('prod-category');
   // Borrador recuperado antes de que llegaran las categorías: recién ahora
   // existen los radios para marcar.
   if (pendingDraftCategory && document.querySelector('input[name="prod-category"]')) {
@@ -433,6 +451,7 @@ function setProductCategorySlug(slug) {
   document.querySelectorAll('input[name="prod-category"]').forEach((r) => {
     r.checked = r.value === slug;
   });
+  updateCategoryToggle('prod-category');
 }
 
 /** Rubros marcados en el alta de comercio. */
@@ -475,10 +494,12 @@ function setStoreCategorySlug(slug) {
  * despliega la lista (en compu sigue la grilla de siempre; el CSS decide con
  * `.catpick--dropdown` en home.css). Los radios son los mismos: solo cambia cómo se muestran.
  */
-function updateStoreCategoryToggle() {
-  const toggle = document.getElementById('store-category-toggle');
+function updateStoreCategoryToggle() { updateCategoryToggle('store-category'); }
+
+function updateCategoryToggle(name) {
+  const toggle = document.getElementById(`${name}-toggle`);
   if (!toggle) return;
-  const checked = document.querySelector('input[name="store-category"]:checked');
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
   const text = toggle.querySelector('.catpick__toggle-text');
   const icon = toggle.querySelector('.catpick__toggle-icon');
   const cat = checked && categoriesCache.find((c) => c.slug === checked.value);
@@ -489,19 +510,23 @@ function updateStoreCategoryToggle() {
     : 'fa-solid fa-tag catpick__toggle-icon';
 }
 
-function setupStoreCategoryDropdown() {
-  const grid = document.getElementById('store-category-options');
+function setupStoreCategoryDropdown() { setupCategoryDropdown('store-category'); }
+
+/** Convierte la grilla de radios `<name>-options` en una barra que despliega la lista. */
+function setupCategoryDropdown(name) {
+  const grid = document.getElementById(`${name}-options`);
   const fieldset = grid?.closest('.catpick');
   if (!grid || !fieldset) return;
-  if (!document.getElementById('store-category-toggle')) {
+  const toggleId = `${name}-toggle`;
+  if (!document.getElementById(toggleId)) {
     fieldset.classList.add('catpick--dropdown');
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.id = 'store-category-toggle';
+    toggle.id = toggleId;
     toggle.className = 'catpick__toggle';
     toggle.setAttribute('aria-haspopup', 'listbox');
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'store-category-options');
+    toggle.setAttribute('aria-controls', grid.id);
     const icon = document.createElement('i');
     icon.className = 'fa-solid fa-tag catpick__toggle-icon';
     icon.setAttribute('aria-hidden', 'true');
@@ -519,7 +544,9 @@ function setupStoreCategoryDropdown() {
     };
     toggle.addEventListener('click', () => setOpen(!fieldset.classList.contains('catpick--open')));
     // Al elegir una categoría la lista se pliega y la barra muestra la elegida.
-    grid.addEventListener('change', () => { updateStoreCategoryToggle(); setOpen(false); });
+    grid.addEventListener('change', () => { updateCategoryToggle(name); setOpen(false); });
+    // Reset del formulario: los radios vuelven solos, la barra hay que refrescarla.
+    fieldset.closest('form')?.addEventListener('reset', () => setTimeout(() => updateCategoryToggle(name), 0));
     document.addEventListener('click', (e) => {
       if (!fieldset.contains(e.target)) setOpen(false);
     });
@@ -530,7 +557,7 @@ function setupStoreCategoryDropdown() {
       }
     });
   }
-  updateStoreCategoryToggle();
+  updateCategoryToggle(name);
 }
 
 /** Slug del rubro elegido en el perfil del comercio ('' si ninguno). */
@@ -850,6 +877,7 @@ const VENDOR_SECTION_COPY = {
   resenas: { icon: 'fa-regular fa-star', title: 'Reseñas', desc: 'Lo que opinan tus clientes de tu comercio y de cada producto, apenas lo escriben.' },
   recomendaciones: { icon: 'fa-regular fa-lightbulb', title: 'Recomendaciones', desc: 'Consejos simples para vender más y destacarte entre los comercios de Baradero.' },
   cupones: { icon: 'fa-solid fa-ticket', title: 'Mis cupones', desc: 'Códigos de descuento para atraer más ventas a tu comercio.' },
+  estadisticas: { icon: 'fa-solid fa-chart-line', title: 'Estadísticas', desc: 'Cuántos vecinos visitan tu comercio, miran tus publicaciones y tocan tus botones de contacto y redes. El detalle día por día es de Estadísticas Pro.' },
   impulsar: { icon: 'fa-solid fa-rocket', title: 'Impulsar', desc: 'Combos y servicios para que más vecinos conozcan tu comercio: banners, productos destacados, posicionamiento y más.' },
   'promo-inicio': { icon: 'fa-solid fa-bullhorn', title: 'Banner del inicio', desc: 'Si te asignamos un banner en la página de inicio, acá cargás la imagen; al tocarla, el vecino va a la página de tu comercio.' },
   empleados: { icon: 'fa-solid fa-users', title: 'Empleados', desc: 'Sumá a quien te ayuda en el mostrador y elegí a qué secciones puede entrar.' },
@@ -936,7 +964,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (greetingName) greetingName.textContent = currentUserFirstName;
 
   // Secciones exclusivas del dueño -- un empleado no las ve.
-  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section', 'boost-section'].forEach((id) => {
+  ['store-profile-section', 'my-coupons-section', 'store-staff-section', 'home-promo-section', 'boost-section', 'stats-section'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = isStoreOwner ? '' : 'none';
   });
@@ -967,9 +995,8 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   // funciones solo cablean listeners/nav sobre DOM estático; cada sección
   // rellena su propio placeholder por detrás a medida que llega su data.
   setupDashboardEvents();
-  // El dueño entra directo a "Perfil de mi comercio" (a pedido del usuario,
-  // 2026-09-16); un empleado no tiene esa sección y sigue cayendo en "Resumen".
-  initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
+  // Todos entran en "Resumen" (a pedido del usuario, 2026-11-16; antes el dueño caía en el perfil).
+  initVenderShell({ defaultSection: 'resumen' });
   maybeShowVendorOnboarding();
 
   if (isStoreOwner) { fillStoreProfileForm(store); focusLocationFromUrl(); }
@@ -1225,7 +1252,7 @@ function initOrdersLive() {
   // uno cancelado (el stock vuelve). No se redibuja con un menú de "⋯" abierto.
   const refreshProducts = createRefresher(fetchProducts, {
     delay: 1500,
-    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden])')),
+    isBusy: () => Boolean(document.querySelector('.pub-actions__menu:not([hidden]), .pub-stock__input')),
   });
 
   const onOrderChange = (change) => {
@@ -3547,12 +3574,21 @@ function buildCouponRow(coupon) {
 
   const statusCell = document.createElement('div');
   statusCell.className = 'pub-row__cell';
+  // Rótulo fantasma: reserva la misma línea que "Stock"/"Ventas" para que la
+  // insignia quede a la altura de los números y no más abajo.
+  const ghost = pubCellLabel('Estado');
+  ghost.classList.add('pub-row__cell-label--ghost');
+  ghost.setAttribute('aria-hidden', 'true');
+  statusCell.appendChild(ghost);
   const badge = document.createElement('span');
   const statusVariant = isExpired ? 'cancelled' : (coupon.is_active ? 'active' : 'paused');
   const statusLabel = isExpired ? 'Vencido' : (coupon.is_active ? 'Activo' : 'Inactivo');
   badge.className = `pub-status pub-status--${statusVariant}`;
   badge.textContent = statusLabel;
-  statusCell.appendChild(badge);
+  const badgeBox = document.createElement('div');
+  badgeBox.className = 'pub-row__cell-box';
+  badgeBox.appendChild(badge);
+  statusCell.appendChild(badgeBox);
   row.appendChild(statusCell);
 
   const wrap = document.createElement('div');
@@ -4279,6 +4315,13 @@ async function renderResumen() {
 
   // Métricas de negocio
   metricsContainer.textContent = '';
+  if (isStoreOwner) {
+    // "Tu comercio en números": resumen gratis de visitas y toques (migración 168, js/vender-estadisticas.js).
+    // Se dibuja solo cuando llegan los datos: no demora el resto del Resumen.
+    const statsHost = rsEl('div', 'rs-card st-summary');
+    metricsContainer.appendChild(statsHost);
+    loadStatsSummary(statsHost, currentStoreId, { goTo: (section) => { location.hash = section; } });
+  }
   metricsContainer.appendChild(rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d));
   metricsContainer.appendChild(rsSales30Card(dailyCounts, orders30dCount, pctChange30d));
 }
@@ -4528,6 +4571,76 @@ function buildPubActions(p) {
   return wrap;
 }
 
+/**
+ * Stock editable desde la lista: el número es un botón; al tocarlo se vuelve un
+ * campo numérico. Enter o salir del campo guarda, Esc cancela. Solo se escribe
+ * si el valor cambió y es un entero >= 0 (misma regla que el formulario).
+ */
+function buildStockEditor(p) {
+  const box = document.createElement('div');
+  box.className = 'pub-stock';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  const paint = () => {
+    const stock = p.stock ?? 0;
+    btn.className = 'pub-stock__btn' + (stock <= 0 ? ' pub-row__cell-val--zero' : '');
+    btn.textContent = stock;
+    btn.title = 'Tocá para cambiar el stock';
+    btn.setAttribute('aria-label', `Stock de "${p.title}": ${stock}. Tocá para cambiarlo`);
+  };
+  paint();
+
+  const edit = () => {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'pub-stock__input';
+    input.min = '0';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.value = p.stock ?? 0;
+    input.setAttribute('aria-label', `Nuevo stock de "${p.title}"`);
+    box.replaceChildren(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const close = () => { box.replaceChildren(btn); paint(); };
+    const save = async () => {
+      if (done) return;
+      done = true;
+      const raw = input.value.trim();
+      if (raw === String(p.stock ?? 0)) { close(); return; }
+      if (raw === '' || !isValidStock(raw)) {
+        showToast('El stock debe ser un número entero mayor o igual a 0.', 'error');
+        close();
+        return;
+      }
+      const next = parseInt(raw, 10);
+      input.disabled = true;
+      const { error } = await supabase.from('products').update({ stock: next }).eq('id', p.id);
+      if (error) {
+        showToast('No se pudo actualizar el stock.', 'error');
+        console.error(error);
+        close();
+        return;
+      }
+      p.stock = next;
+      close();
+      showToast('Stock actualizado', 'success');
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') { e.preventDefault(); done = true; close(); }
+    });
+    input.addEventListener('blur', save);
+  };
+  btn.addEventListener('click', edit);
+
+  box.appendChild(btn);
+  return box;
+}
+
 /** Fila de publicación estilo ML: miniatura + título/precio + stock + ventas + estado + acciones. */
 function buildPubRow(p) {
   const row = document.createElement('div');
@@ -4570,10 +4683,7 @@ function buildPubRow(p) {
   const stockCell = document.createElement('div');
   stockCell.className = 'pub-row__cell';
   stockCell.appendChild(pubCellLabel('Stock'));
-  const stockVal = document.createElement('span');
-  stockVal.className = 'pub-row__cell-val' + ((p.stock ?? 0) <= 0 ? ' pub-row__cell-val--zero' : '');
-  stockVal.textContent = p.stock ?? 0;
-  stockCell.appendChild(stockVal);
+  stockCell.appendChild(buildStockEditor(p));
   row.appendChild(stockCell);
 
   const salesCell = document.createElement('div');
@@ -4587,10 +4697,19 @@ function buildPubRow(p) {
 
   const statusCell = document.createElement('div');
   statusCell.className = 'pub-row__cell';
+  // Rótulo fantasma: reserva la misma línea que "Stock"/"Ventas" para que la
+  // insignia quede a la altura de los números y no más abajo.
+  const ghost = pubCellLabel('Estado');
+  ghost.classList.add('pub-row__cell-label--ghost');
+  ghost.setAttribute('aria-hidden', 'true');
+  statusCell.appendChild(ghost);
   const badge = document.createElement('span');
   badge.className = 'pub-status ' + (p.is_active ? 'pub-status--active' : 'pub-status--paused');
   badge.textContent = p.is_active ? 'Activa' : 'Pausada';
-  statusCell.appendChild(badge);
+  const badgeBox = document.createElement('div');
+  badgeBox.className = 'pub-row__cell-box';
+  badgeBox.appendChild(badge);
+  statusCell.appendChild(badgeBox);
   row.appendChild(statusCell);
 
   row.appendChild(buildPubActions(p));
@@ -5972,6 +6091,18 @@ function initBoostSection() {
   });
 }
 
+/** Sección "Estadísticas" (migración 168): se pide al entrar (#estadisticas), siempre fresca. Solo el dueño. */
+function initStatsSection() {
+  if (!isStoreOwner) return;
+  const open = () => loadStatsSection(document.getElementById('stats-section'), currentStoreId, {
+    goTo: (section) => { location.hash = section; },
+  });
+  if (location.hash === '#estadisticas') open();
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#estadisticas') open();
+  });
+}
+
 function setupDashboardEvents() {
   setupStoreProfileForm();
   setupStoreLogoPicker();
@@ -5980,6 +6111,7 @@ function setupDashboardEvents() {
   initPublicacionesControls();
   initPedidosControls();
   initBoostSection();
+  initStatsSection();
 
   attachMoneyFormatting(document.getElementById('prod-price'));
   attachMoneyFormatting(document.getElementById('prod-compare-price'));
@@ -6136,7 +6268,7 @@ function setupDashboardEvents() {
     }
 
     const catRadios = document.querySelectorAll('input[name="prod-category"]');
-    if (Array.from(catRadios).some((r) => r.required) && !getProductCategorySlug()) {
+    if (catRadios.length && !getProductCategorySlug()) {
       showToast("Elegí una categoría para el producto.", "error");
       flagInvalidField('prod-category-options');
       return;

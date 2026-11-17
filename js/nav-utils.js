@@ -23,6 +23,7 @@ import { createRefresher } from './realtime-utils.js';
 import { getInstallState, triggerInstall } from './install-app.js';
 import { locationParams } from './store-location-utils.js';
 import { promptLogin } from './login-prompt.js';
+import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -326,8 +327,12 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
   if (megaMount) mega.classList.add('cat-mega--in-navbar');
 
   // Toggle del mega-menú (click, no solo hover -> mejor en mobile y accesible)
-  const openMega = () => { panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); mega.classList.add('is-open'); };
+  const openMega = () => {
+    announceNavMenuOpen(mega); // cierra la campanita / la cuenta si estaban abiertas
+    panel.hidden = false; trigger.setAttribute('aria-expanded', 'true'); mega.classList.add('is-open');
+  };
   const closeMega = () => { panel.hidden = true; trigger.setAttribute('aria-expanded', 'false'); mega.classList.remove('is-open'); };
+  closeOnOtherNavMenuOpen(mega, closeMega);
   trigger.addEventListener('click', (e) => {
     e.stopPropagation();
     if (panel.hidden) openMega(); else closeMega();
@@ -714,6 +719,7 @@ export async function initNotificationsBell() {
     await sessionReady;
     if (!session && promptLogin('Para ver tus notificaciones necesitás iniciar sesión.')) return;
 
+    announceNavMenuOpen(wrap);
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
@@ -743,6 +749,7 @@ export async function initNotificationsBell() {
     await renderNotificationsSection(content, session.user.id);
   }
 
+  closeOnOtherNavMenuOpen(wrap, () => { if (!panel.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (panel.hidden) open(); else close();
@@ -881,6 +888,7 @@ export async function initAccountMenu() {
     await sessionReady;
     if (!session && promptLogin('Para ver tu cuenta necesitás iniciar sesión.')) return;
 
+    announceNavMenuOpen(wrap);
     panel.hidden = false;
     keepInsideViewport(panel);
     btn.setAttribute('aria-expanded', 'true');
@@ -1023,6 +1031,7 @@ export async function initAccountMenu() {
   // navbar para pasar a layout mobile, home.css línea ~210).
   const isMobileNav = () => window.matchMedia('(max-width: 768px)').matches;
 
+  closeOnOtherNavMenuOpen(wrap, () => { if (!panel.hidden) close(); });
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!isMobileNav()) {

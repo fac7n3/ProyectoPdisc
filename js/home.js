@@ -19,24 +19,6 @@ setJsonLd('site', buildSiteJsonLd(window.location.origin));
 // que llegan en la URL cuando Google redirige de vuelta a esta página.
 
 /**
- * El botón "Vender" de la fila de accesos pasa a ser "Panel" para quien ya
- * tiene uno propio: no tiene sentido ofrecerle "vender" a quien ya vende.
- * El texto de cada destino es el mismo que usa "Mi perfil"
- * (setRolePanelLink en js/perfil.js).
- */
-const PANEL_LABELS = {
-  vendedor: 'Panel de vendedor',
-  profesional: 'Panel de profesional/técnico',
-  repartidor: 'Panel de repartidor',
-};
-
-const PANEL_ICONS = {
-  vendedor: 'fa-solid fa-shop',
-  profesional: 'fa-solid fa-screwdriver-wrench',
-  repartidor: 'fa-solid fa-motorcycle',
-};
-
-/**
  * ¿Llegaron al home a propósito? Dos señales: el click en el logo del navbar
  * (lo marca markHomeIntent en auth-utils.js) o cualquier navegación interna
  * del sitio (el referrer es de este mismo origen). Si no hay ninguna -- URL
@@ -64,7 +46,7 @@ function cameToHomeOnPurpose() {
  * cuenta única el 2026-09-18). La puerta de vuelta al home es el logo del
  * navbar (ver cameToHomeOnPurpose). Se puede apagar desde Perfil → Ajustes
  * (ver panel-redirect-utils.js); aunque esté apagado, el panel se sigue
- * pudiendo abrir a mano desde el botón que arma renderPanelAction() acá abajo.
+ * pudiendo abrir a mano desde Mi perfil.
  *
  * Quien tiene DOS paneles posibles (ej. vendedor que además es admin) NUNCA
  * se redirige sola: elegir por su cuenta sería adivinar (ver sellerPanelPage
@@ -80,17 +62,21 @@ function whenPanelLinkReady(fn) {
   else fn();
 }
 
-/** Cliente sin panel: vuelve a "Vender" (por si el script del HTML lo había
- *  cambiado con una respuesta vieja) y lo muestra. */
+/** Deja un acceso con su texto y destino de siempre (sin menú ni flecha). */
+function resetActionLink(link, label, href) {
+  if (!link) return;
+  link.textContent = label;
+  link.setAttribute('href', href);
+  link.classList.remove('home-action--menu');
+  link.setAttribute('data-ready', '1');
+}
+
+/** Cliente sin panel: vuelve "Vender" y "Contratar" a su estado normal (por si
+ *  el script del HTML los había cambiado con una respuesta vieja) y los muestra. */
 function showVenderLink() {
   whenPanelLinkReady(() => {
-    const link = document.getElementById('home-panel-action');
-    if (!link) return;
-    link.textContent = 'Vender';
-    link.setAttribute('href', './vender.html');
-    link.classList.remove('home-action--menu');
-    link.querySelector('i')?.remove();
-    link.setAttribute('data-ready', '1');
+    resetActionLink(document.getElementById('home-panel-action'), 'Vender', './vender.html');
+    resetActionLink(document.getElementById('home-contratar-action'), 'Contratar', './contratar.html');
   });
 }
 
@@ -131,86 +117,10 @@ async function initPanelAction() {
   }
 
   // El <a> puede no estar en el DOM todavía si la sesión resolvió rapidísimo.
-  whenPanelLinkReady(() => renderPanelAction({ isAdmin, seller, role: user.app_metadata?.role }));
+  // Los paneles viven solo en Mi perfil: la fila queda en Vender / Contratar / Emergencias.
+  showVenderLink();
 }
 initPanelAction();
-
-/**
- * Reemplaza el "Vender" de la fila de accesos por "Panel". Con un solo panel
- * sigue siendo el mismo link de siempre, apuntando adonde corresponda; con
- * los dos (vendedor/profesional que además es admin) pasa a ser un botón que
- * abre un menú chico para elegir.
- */
-function renderPanelAction({ isAdmin, seller, role }) {
-  const link = document.getElementById('home-panel-action');
-  if (!link) return;
-  link.setAttribute('data-ready', '1');
-
-  const adminLabel = role === 'moderador' ? 'Panel de moderación' : 'Panel de administrador';
-
-  if (!isAdmin || !seller) {
-    link.textContent = 'Panel';
-    link.href = isAdmin ? './admin.html' : `./${SELLER_PANEL_PAGES[seller]}`;
-    link.classList.remove('home-action--menu');
-    link.querySelector('i')?.remove();
-    return;
-  }
-
-  const wrap = document.createElement('div');
-  wrap.className = 'home-action-menu';
-
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'home-action home-action--menu';
-  btn.setAttribute('aria-haspopup', 'true');
-  btn.setAttribute('aria-expanded', 'false');
-  btn.append('Panel');
-  const caret = document.createElement('i');
-  caret.className = 'fa-solid fa-chevron-down';
-  btn.appendChild(caret);
-  wrap.appendChild(btn);
-
-  const menu = document.createElement('div');
-  menu.className = 'home-panel-menu';
-  menu.hidden = true;
-  menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'Elegí un panel');
-
-  [
-    { href: `./${SELLER_PANEL_PAGES[seller]}`, icon: PANEL_ICONS[seller], label: PANEL_LABELS[seller] },
-    { href: './admin.html', icon: 'fa-solid fa-user-shield', label: adminLabel },
-  ].forEach(({ href, icon, label }) => {
-    const item = document.createElement('a');
-    item.className = 'home-panel-menu__item';
-    item.href = href;
-    item.setAttribute('role', 'menuitem');
-    const i = document.createElement('i');
-    i.className = icon;
-    item.appendChild(i);
-    item.append(label);
-    menu.appendChild(item);
-  });
-  wrap.appendChild(menu);
-
-  link.replaceWith(wrap);
-
-  const close = () => {
-    menu.hidden = true;
-    btn.setAttribute('aria-expanded', 'false');
-  };
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.hidden = !menu.hidden;
-    btn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
-    if (!menu.hidden) menu.querySelector('.home-panel-menu__item')?.focus();
-  });
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target) && !menu.hidden) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !menu.hidden) { close(); btn.focus(); }
-  });
-}
 
 // Comercios sin logo_url: se les asigna uno de estos diseños genéricos ya
 // existentes en el proyecto (ficticios, sin marca real - ver
@@ -470,6 +380,11 @@ async function loadProducts() {
  *  recomendados", que muestra todo lo que carga de una. Acá se guarda el
  *  array completo ya traído de Supabase y las flechas del header solo
  *  cambian qué 8 se ven — no vuelven a pedirle nada al servidor.
+ *  En teléfono (<= 768px) las flechas de PC se esconden por CSS (ver
+ *  .section-header__nav en home.css) y la grilla pasa a deslizarse con el
+ *  dedo (dos filas, como "fila" de a dos tarjetas) -- ahí no paginamos: se
+ *  pintan todas las que ya se bajaron de Supabase de una sola vez, así el
+ *  scroll nativo llega a las 32.
  *  @param {{gridId: string, prevId: string, nextId: string, pageSize?: number}} opts
  *  @returns {{ setItems: (items: object[]) => void }} */
 function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
@@ -480,18 +395,21 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   let items = [];
   let page = 0;
 
+  const effectivePageSize = () => (isSmallScreen() ? items.length : pageSize);
+
   function render() {
     if (!grid) return;
+    const size = effectivePageSize();
     grid.innerHTML = '';
     items
-      .slice(page * pageSize, page * pageSize + pageSize)
+      .slice(page * size, page * size + size)
       .forEach((item) => grid.appendChild(buildProductCard(item)));
 
     initCartButtons();
     initWishlist();
 
     if (prevBtn) prevBtn.disabled = page === 0;
-    if (nextBtn) nextBtn.disabled = (page + 1) * pageSize >= items.length;
+    if (nextBtn) nextBtn.disabled = (page + 1) * size >= items.length;
   }
 
   prevBtn?.addEventListener('click', () => {
@@ -501,7 +419,7 @@ function initGridPager({ gridId, prevId, nextId, pageSize = 8 }) {
   });
 
   nextBtn?.addEventListener('click', () => {
-    if ((page + 1) * pageSize >= items.length) return;
+    if ((page + 1) * effectivePageSize() >= items.length) return;
     page += 1;
     render();
   });
