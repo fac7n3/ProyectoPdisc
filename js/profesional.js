@@ -170,7 +170,6 @@ function mostrarEstadoSolicitud(solicitud, mensajeError) {
 function montarPanel() {
   document.getElementById('prof-state-loading')?.setAttribute('hidden', '');
   document.getElementById('prof-panel-view').hidden = false;
-  document.getElementById('oficios-mode-badge')?.removeAttribute('hidden');
 
   const nombre = estado.prof.full_name || 'Tu publicación';
   document.getElementById('of-sidebar-name').textContent = nombre;
