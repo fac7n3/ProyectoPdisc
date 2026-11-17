@@ -312,6 +312,13 @@ ul, ol {
   gap: 0.5rem;
 }
 
+/* Barras sin cuenta ni carrito (paneles de vendedor/profesional/repartidor,
+   servicios, farmacias, contratar): de derecha a izquierda van menú,
+   notificaciones, volver y tema. El HTML no cambia, solo el orden visual. */
+.navbar__actions:not(:has(#nav-cart)) > .theme-toggle { order: -3; }
+.navbar__actions:not(:has(#nav-cart)) > a[aria-label^="Volver"] { order: -2; }
+.navbar__actions:not(:has(#nav-cart)) > #nav-notifications-wrap { order: -1; }
+
 .navbar__action-circle {
   width: 2.25rem;
   height: 2.25rem;
