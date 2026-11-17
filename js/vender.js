@@ -7,6 +7,7 @@ import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime
 import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
+import { skeletonRows, skeletonReviews, skeletonResumen, clearStaleSkeletons } from './panel-skeleton.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { removeStoredObjects, getImageDimensions, fileToDataUrl, videoFileProblem, videoExtension } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
@@ -1003,6 +1004,13 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   const notificacionesContainer = document.getElementById('notificaciones-container');
   const supportContainer = document.getElementById('support-container');
   renderPedidosSkeleton();
+  skeletonResumen(document.getElementById('resumen-dash'), document.getElementById('resumen-grid2'), document.getElementById('resumen-metrics'));
+  skeletonReviews(document.getElementById('resenas-summary'), document.getElementById('resenas-list'));
+  skeletonRows(document.getElementById('pub-list'), { label: 'Cargando tus publicaciones…' });
+  if (isStoreOwner) {
+    skeletonRows(document.getElementById('my-coupons-container'), { count: 2, thumb: false, label: 'Cargando tus cupones…' });
+    skeletonRows(document.getElementById('store-staff-container'), { count: 2, thumb: false, label: 'Cargando tus empleados…' });
+  }
   const results = await Promise.allSettled([
     renderAllOrders(),
     fetchProducts().then(() => Promise.all([renderResumen(), renderResenas()])),
@@ -1015,6 +1023,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   results.forEach((r) => {
     if (r.status === 'rejected') console.error('Error al cargar una sección del panel:', r.reason);
   });
+  clearStaleSkeletons();
 
   applyOrderDeepLink();
   applyDeliverDeepLink();

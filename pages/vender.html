@@ -988,6 +988,26 @@
       .pd-skel--w60 { width: 60%; }
       .pd-skel--w40 { width: 40%; }
 
+      /* Esqueletos del resto de las secciones del panel (js/panel-skeleton.js).
+         Color y brillo: .store-skeleton__bar (home.css); acá solo las medidas. */
+      .sk { pointer-events: none; }
+      .sk-bar { display: block; height: 0.8rem; }
+      .sk-row { display: flex; align-items: center; gap: 0.75rem; }
+      .sk-lines { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 0; }
+      .sk-gap { height: 0.4rem; }
+      .sk-w100 { width: 100%; } .sk-w80 { width: 80%; } .sk-w60 { width: 60%; } .sk-w40 { width: 40%; }
+      .sk-thumb { width: 64px; height: 64px; flex-shrink: 0; border-radius: var(--bl-radius-md); }
+      .sk-pill { width: 96px; height: 1.9rem; flex-shrink: 0; border-radius: var(--bl-radius-pill); }
+      .sk-icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--bl-radius-md); }
+      .sk-value { width: 45%; height: 1.2rem; margin-top: 0.35rem; }
+      .sk-promo { display: flex; flex-direction: column; gap: 0.8rem; }
+      .sk-chart { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1rem; }
+      .sk-graph { width: 100%; height: 150px; border-radius: var(--bl-radius-md); }
+      .sk-card { display: flex; flex-direction: column; }
+      .sk-reviews-summary { display: flex; align-items: center; gap: 1rem; width: 100%; }
+      .sk-score { width: 48px; height: 2rem; }
+      .sk-stars { width: 96px; height: 1rem; }
+
       /* "Recordá" va abajo de la tabla, a lo ancho -- ver comentario en
          .pd-body. En fila mientras entren los tres consejos, apilado en
          mobile por el wrap normal de flex. */
