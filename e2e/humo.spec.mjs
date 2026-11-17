@@ -77,25 +77,29 @@ test.describe('home', () => {
 test.describe('home en teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('los banners chicos de cada mosaico van de a dos, debajo del grande', async ({ page, problemas }) => {
+  // Desde el 2026-11-16 los chicos ya no van de a dos: uno por fila, del ancho del grande,
+  // para que en el teléfono se vean más grandes.
+  test('los banners chicos de cada mosaico van de a uno por fila, debajo del grande y a todo el ancho', async ({ page, problemas }) => {
     await page.goto('/pages/home.html');
     await expect(page.locator('#products-grid .product-card[id]').first()).toBeVisible();
     // Con las publicidades ya pintadas (o los banners fijos, si un espacio no tiene).
     await page.waitForLoadState('networkidle');
 
+    const vista = page.viewportSize();
     for (const slots of [['mosaic_a', 'mosaic_b', 'mosaic_c'], ['mosaic_d', 'mosaic_e', 'mosaic_f']]) {
-      const [grande, izq, der] = await page.evaluate((lista) => lista.map((slot) => {
+      const [grande, primero, segundo] = await page.evaluate((lista) => lista.map((slot) => {
         const r = document.querySelector(`[data-promo-slot="${slot}"]`).getBoundingClientRect();
         return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width, height: r.height };
       }), slots);
       const nombre = slots.join('/');
-      expect(Math.abs(izq.top - der.top), `${nombre}: los dos chicos arrancan a la misma altura`).toBeLessThan(1);
-      expect(Math.abs(izq.height - der.height), `${nombre}: los dos chicos miden lo mismo de alto`).toBeLessThan(1);
-      expect(izq.right, `${nombre}: uno al lado del otro, sin pisarse`).toBeLessThanOrEqual(der.left);
-      expect(izq.top, `${nombre}: debajo del grande`).toBeGreaterThanOrEqual(grande.bottom);
-      expect(izq.width, `${nombre}: cada chico ocupa menos de la mitad del grande`).toBeLessThan(grande.width / 2);
-      expect(Math.abs(izq.width - der.width), `${nombre}: columnas parejas`).toBeLessThan(1);
-      expect(der.right, `${nombre}: no se sale del ancho del grande`).toBeLessThanOrEqual(grande.right + 1);
+      expect(grande.width, `${nombre}: el grande ocupa casi todo el ancho de la pantalla`).toBeGreaterThan(vista.width * 0.75);
+      for (const chico of [primero, segundo]) {
+        expect(Math.abs(chico.left - grande.left), `${nombre}: cada chico arranca donde arranca el grande`).toBeLessThan(1);
+        expect(Math.abs(chico.width - grande.width), `${nombre}: cada chico mide de ancho lo mismo que el grande`).toBeLessThan(1);
+      }
+      expect(primero.top, `${nombre}: el primer chico va debajo del grande`).toBeGreaterThanOrEqual(grande.bottom);
+      expect(segundo.top, `${nombre}: el segundo chico va debajo del primero, no al lado`).toBeGreaterThanOrEqual(primero.bottom);
+      expect(Math.abs(primero.height - segundo.height), `${nombre}: los dos chicos miden lo mismo de alto`).toBeLessThan(1);
     }
 
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -145,16 +149,59 @@ test.describe('ficha de producto y comercio', () => {
   });
 });
 
-test.describe('avisos', () => {
-  test('agregar al carrito avisa en la pila única, arriba a la derecha', async ({ page }) => {
+test.describe('agregar al carrito', () => {
+  // "Agregado al carrito" no lleva aviso (en celular tapaba la pantalla): lo dice el propio
+  // botón y el carrito del navbar, con flashAddedToCart de js/cart-utils.js.
+  test('el botón pasa a "Agregado", el carrito del navbar rebota y suma, sin aviso', async ({ page, problemas, escrituras }, info) => {
     await page.goto('/pages/home.html');
-    await page.locator('#products-grid .product-card[id] .product-card__add').first().click();
-    const aviso = page.locator('#bl-toast-container .bl-toast').first();
-    await expect(aviso).toBeVisible();
-    const caja = await aviso.boundingBox();
-    const vista = page.viewportSize();
-    expect(caja.y, 'el aviso tiene que estar arriba').toBeLessThan(vista.height / 3);
-    expect(caja.x + caja.width / 2, 'y del lado derecho').toBeGreaterThan(vista.width / 2);
+    const contador = page.locator('#cart-badge');
+    const botones = page.locator('#products-grid .product-card[id] .product-card__add');
+    await expect(botones.first()).toBeVisible();
+    await expect(contador, 'El carrito arranca vacío').toBeHidden();
+
+    // El rebote dura 0,6 s: se anota apenas aparece, para no depender de llegar a verlo.
+    await page.evaluate(() => {
+      const carrito = document.getElementById('nav-cart');
+      new MutationObserver(() => {
+        if (carrito.classList.contains('is-bumping')) window.__carritoReboto = true;
+      }).observe(carrito, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    // Un producto con opciones (color, sabor, talle) no se agrega desde la tarjeta: abre el
+    // modal para elegirlas. Se busca el primero que se agrega de un toque.
+    const modal = page.locator('#pm-overlay');
+    let boton = null;
+    let etiqueta = '';
+    for (const candidato of await botones.all()) {
+      etiqueta = (await candidato.textContent()).trim();
+      await candidato.click();
+      await expect(candidato.and(page.locator('.is-added')).or(modal).first()).toBeVisible();
+      if (await modal.count()) {
+        await page.locator('#pm-close-btn').click();
+        await expect(modal).toHaveCount(0);
+        continue;
+      }
+      boton = candidato;
+      break;
+    }
+    // Depende de los datos: si hoy todos los recomendados tienen opciones, no es un fallo.
+    info.skip(!boton, 'Hoy todos los productos recomendados tienen opciones');
+
+    await expect(boton).toHaveText(/Agregado/);
+    await expect(contador, 'El contador del carrito del navbar sube').toHaveText('1');
+    expect(await page.evaluate(() => window.__carritoReboto === true), 'El carrito del navbar rebota').toBe(true);
+    await expect(page.locator('#bl-toast-container .bl-toast'), 'Agregar al carrito no muestra aviso').toHaveCount(0);
+
+    // El botón vuelve solo a como estaba, y el producto sigue contado.
+    await expect(boton).not.toHaveClass(/is-added/);
+    await expect(boton).toHaveText(etiqueta);
+    await expect(contador).toHaveText('1');
+
+    // Sin sesión el carrito queda en el navegador: no sale nada hacia la base (la telemetría
+    // log_* se corta igual, pero es esperable).
+    const datos = escrituras.filter((e) => !e.includes('/rpc/log_'));
+    expect(datos, 'Agregar al carrito sin sesión no escribe en Supabase').toEqual([]);
+    sinProblemas(problemas);
   });
 });
 
