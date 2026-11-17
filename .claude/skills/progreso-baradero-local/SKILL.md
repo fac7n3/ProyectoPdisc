@@ -6716,3 +6716,10 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 - "arina" se corrige a "arena" porque no hay harina cargada: la corrección solo conoce las palabras del catálogo. El aviso lo deja a la vista.
 
 **Pendientes que deja:** un comienzo de 2 letras ("jabon li") no cuenta ni como apoyo, así que mientras se escribe cae a "parecidos" hasta la tercera letra. Dos pruebas e2e que ya fallaban antes de esta tarea (no son del buscador): "home en teléfono: los banners chicos de cada mosaico van de a dos" y "avisos: agregar al carrito avisa en la pila única" (esta última quedó vieja: agregar al carrito ya no muestra aviso, usa `flashAddedToCart`).
+
+## 2026-11-17 — Menú lateral de "Mi cuenta" acompaña el scroll (vendedor y profesional, sin migración)
+El menú de la izquierda (`.mc-sidebar`, `pages/vender.html` y `Assets/styles/profesional.css`) ya era `position: sticky`, pero con `top: 1rem` el borde de arriba quedaba **debajo del navbar** (también sticky, z-index 100, ~61 px): al bajar, "Mi cuenta" y "Vista previa" se tapaban, y si el menú era más alto que la pantalla "Volver al inicio" no se alcanzaba hasta el final de la página.
+- `top: calc(var(--bl-navbar-height, 4.5rem) + 1rem)`, `max-height` de la pantalla menos navbar y márgenes (`100vh` y `100dvh`), `overflow-y: auto` (scroll interno solo si es más largo que la pantalla), `overscroll-behavior: contain`. En el cajón de celular (<= 900 px, `position: fixed`) se resetea `max-height: none`.
+- `js/navbar-height.js` (`watchNavbarHeight`) publica `--bl-navbar-height` con un ResizeObserver; lo llama `initVenderShell` (vender y profesional no cargan la tira de categorías, que era quien publicaba esa variable). Test: `js/navbar-height.test.mjs`.
+- Admin (`.admin-sidebar`: sticky, `top: 0`, 100vh, `.admin-nav` con scroll propio) ya andaba bien: no se tocó. Perfil, repartidor y carrito no tienen menú lateral de este tipo.
+- Medido con Playwright (shell real, JS cortado y variable inyectada): viewport 900 y 560 px, el menú queda en `top: 77` (navbar 61 + 16) en todos los scrolls y entra entero en pantalla.

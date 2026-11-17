@@ -136,7 +136,15 @@
   box-shadow: var(--bl-shadow-sm);
   padding: 0.75rem;
   position: sticky;
-  top: 1rem;
+  /* Acompaña el scroll pegado justo debajo del navbar (sticky, z-index 100):
+     con `top: 1rem` el borde de arriba quedaba tapado por él. Si el menú es más
+     alto que la pantalla no se corta: tiene tope de alto y scrollea por dentro. */
+  top: calc(var(--bl-navbar-height, 4.5rem) + 1rem);
+  max-height: calc(100vh - var(--bl-navbar-height, 4.5rem) - 2rem);
+  max-height: calc(100dvh - var(--bl-navbar-height, 4.5rem) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .mc-sidebar__header {
   display: flex;
@@ -243,7 +251,7 @@ button.mc-navlink { width: 100%; box-sizing: border-box; text-align: left; }
      estiraba más allá de la pantalla y las tarjetas quedaban cortadas): estirado al ancho disponible. */
   .mc-shell { flex-direction: column; align-items: stretch; padding: 0 0.75rem; }
   .mc-content { width: 100%; max-width: 100%; }
-  .mc-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 82%; max-width: 320px; z-index: 1000; transform: translateX(-100%); transition: transform 0.25s ease; border-radius: 0; border-top: none; overflow-y: auto; }
+  .mc-sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 82%; max-width: 320px; z-index: 1000; transform: translateX(-100%); transition: transform 0.25s ease; border-radius: 0; border-top: none; overflow-y: auto; max-height: none; }
   .mc-sidebar.is-open { transform: translateX(0); }
   .mc-close { display: inline-flex; }
   .mc-hamburger { display: inline-flex; }
