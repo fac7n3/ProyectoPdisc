@@ -11,7 +11,10 @@
 -- combos que habían quedado esperando un pago y el registro de auditoría de las
 -- vinculaciones de cuentas. Nada de eso era de clientes reales.
 --
--- Se aplicó en Supabase en partes (el conector pide confirmación para borrar).
+-- Estado en Supabase (2026-11-17): APLICADA SOLO LA SECCIÓN 2 (como 170a_sin_pasarela_funciones).
+-- Las secciones 1, 3, 4 y 5 (borrar datos, tablas y columnas; ajustar checks) quedaron
+-- sin aplicar: el permiso del entorno bloqueó el borrado. Aplicarlas en ese orden.
+-- El sitio nuevo no usa nada de lo que borran, así que se pueden aplicar en cualquier momento.
 
 -- 1) Datos -------------------------------------------------------------------
 do $$
