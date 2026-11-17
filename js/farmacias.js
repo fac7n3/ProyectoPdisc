@@ -10,6 +10,7 @@
 
 import { supabase } from './auth-utils.js';
 import { safeExternalUrl } from './store-contact-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Un turno cargado hace más de esto se considera desactualizado y la página
@@ -393,4 +394,5 @@ async function loadFarmacias() {
   if (weekTitle) weekTitle.hidden = proximos.length === 0;
 }
 
+initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 loadFarmacias();
