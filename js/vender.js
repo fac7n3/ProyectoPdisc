@@ -1,6 +1,6 @@
 import { supabase, showToast, setLoading, guardPage } from './auth-utils.js';
 import { compressImage } from './image-compress.js';
-import { formatPrice, parsePrice, buildPriceRow } from './cart-utils.js';
+import { formatPrice, parsePrice, buildPriceRow, updateCartBadge } from './cart-utils.js';
 import { isValidCuit, isValidShopName, isValidPhone, isValidProductTitle, isValidPrice, isValidStock } from './validation-utils.js';
 import { renderNotificationsSection } from './notifications-utils.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
@@ -567,6 +567,7 @@ function initVenderPage(user) {
   loadCategories();
   checkSellerState(user);
   initNotificationsBell();
+  updateCartBadge();
 
   // Manejar registro de comercio
   form?.addEventListener('submit', async (e) => {
