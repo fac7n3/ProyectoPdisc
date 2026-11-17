@@ -4,6 +4,7 @@
 // sección: solo muestra una por vez y marca la activa. Fase 0 del rediseño "Mi cuenta".
 
 import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
+import { watchNavbarHeight } from './navbar-height.js';
 
 let DEFAULT_SECTION = 'resumen';
 
@@ -18,6 +19,8 @@ export function initVenderShell({ defaultSection } = {}) {
   const sidebar = document.getElementById('mc-sidebar');
   if (!sidebar || sidebar.dataset.shellInit) return; // idempotente
   sidebar.dataset.shellInit = '1';
+  // El menú lateral acompaña el scroll pegado debajo del navbar (ver .mc-sidebar).
+  watchNavbarHeight();
   if (defaultSection) DEFAULT_SECTION = defaultSection;
 
   // Grupos colapsables (Ventas, etc.)

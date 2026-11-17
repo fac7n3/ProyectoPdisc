@@ -294,7 +294,15 @@
         box-shadow: var(--bl-shadow-sm);
         padding: 0.75rem;
         position: sticky;
-        top: 1rem;
+        /* Acompaña el scroll pegado justo debajo del navbar (sticky, z-index 100):
+           con `top: 1rem` el borde de arriba quedaba tapado por él. Si el menú es más
+           alto que la pantalla no se corta: tiene tope de alto y scrollea por dentro. */
+        top: calc(var(--bl-navbar-height, 4.5rem) + 1rem);
+        max-height: calc(100vh - var(--bl-navbar-height, 4.5rem) - 2rem);
+        max-height: calc(100dvh - var(--bl-navbar-height, 4.5rem) - 2rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
       }
       .mc-sidebar__header {
         display: flex;
@@ -401,6 +409,7 @@
           border-radius: 0;
           border-top: none;
           overflow-y: auto;
+          max-height: none;
         }
         .mc-sidebar.is-open { transform: translateX(0); }
         .mc-close { display: inline-flex; }
