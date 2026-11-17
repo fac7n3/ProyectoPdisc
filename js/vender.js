@@ -66,7 +66,6 @@ async function checkSellerState(user) {
   const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
   const hamburgerBtn = document.getElementById('mc-hamburger');
-  const oficiosBadge = document.getElementById('oficios-mode-badge');
 
   // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
   // esto, register-view/dashboard-view quedaban visibles por defecto (guardPage
@@ -108,9 +107,6 @@ async function checkSellerState(user) {
     // (no una clase) para pisar el `display: inline-flex` que le pone la
     // media query de <900px cuando corresponde ocultarlo.
     if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
-    // El de Oficios ya no se prende nunca acá: desde que el panel del
-    // profesional vive en profesional.html, esta página es solo el alta.
-    if (oficiosBadge) oficiosBadge.hidden = true;
   };
 
   if (!user) return; // guardPage ya se encarga de redirigir
