@@ -4051,6 +4051,11 @@ button.coupon-chip:hover {
   opacity: 1;
 }
 
+/* En pantallas táctiles no hay hover: el corazón se ve siempre. */
+@media (hover: none) {
+  .product-card__wishlist { opacity: 1; }
+}
+
 .product-card__wishlist:hover {
   color: var(--bl-danger);
   background: #fff;

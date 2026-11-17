@@ -103,8 +103,11 @@ summary:focus-visible {
  * visual, con un pseudo-elemento.
  */
 /* ------------------------------------------------------------------ */
-.navbar__action-circle,
-.product-card__wishlist {
+/* El corazón NO va acá: ya es `position: absolute` en home.css (sirve igual
+   de ancla para el ::after). Con `relative`, cuando el build cargaba este
+   archivo después de home.css, el corazón salía de la esquina y corría la
+   foto hacia un costado. */
+.navbar__action-circle {
   position: relative;
 }
 
