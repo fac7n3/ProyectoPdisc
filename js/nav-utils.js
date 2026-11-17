@@ -954,7 +954,6 @@ export async function initAccountMenu() {
     // card del hub de Mi perfil, que explica los pasos.
     const installState = getInstallState();
     const accountItems = [
-      { href: './perfil.html?tab=mis-datos', icon: 'fa-regular fa-id-card', label: 'Mi perfil' },
       { href: './perfil.html?tab=direcciones', icon: 'fa-solid fa-location-dot', label: 'Direcciones' },
       { href: './perfil.html?tab=ajustes', icon: 'fa-solid fa-gear', label: 'Ajustes' },
     ];
