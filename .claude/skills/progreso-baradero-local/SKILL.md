@@ -6654,3 +6654,7 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 - **No probado:** con la sesión real de un comercio (el navegador del sandbox no llega a Supabase), ni con compras reales de Estadísticas Pro. Se empieza a contar el 2026-11-16: antes figura en cero (el panel lo avisa).
 
 - **Alineación de la fila de Publicaciones (2026-11-16, `pages/vender.html` + `buildPubRow`):** la insignia "Activa" quedaba más abajo que los números de Stock y Ventas porque su celda no tenía rótulo. Ahora lleva un rótulo fantasma (`.pub-row__cell-label--ghost`, invisible) y los tres valores comparten la altura `--pub-val-h` (2 rem; 2,75 rem en celular) centrados en ella. Medido con Chromium en 1000 y 390 px: los centros coinciden.
+
+### 2026-11-17 — Botón "Panel" en Contratar (solo profesionales/técnicos)
+- `pages/contratar.html`: botón `#ct-panel-btn` (`.ct-hero__panel`, ícono `fa-sliders`) arriba a la derecha del encabezado, oculto por defecto, lleva a `profesional.html`. Responsive: <= 480 px se achica; <= 360 px baja a su propia fila a la derecha (sin desborde horizontal).
+- `js/contratar.js` (`setupPanelButton`): aparece al instante con la pista `bl_panel_hint` (`slot: 'contratar'`, misma cuenta) y se confirma con la tabla `professionals` (`owner_id`); sin sesión o con cuenta que no es profesional queda oculto. Probado con Playwright (mock de Supabase) a 1280, 390 y 320 px; sin probar con una cuenta real.
