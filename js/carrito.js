@@ -17,7 +17,6 @@ import {
   DEFAULT_DELIVERY_FEE,
 } from './cart-totals.js';
 import { getPaymentProvider } from './payment-providers.js';
-import { allStoresAcceptMp } from './mp-chain-utils.js';
 import { fetchStoreTransferData, buildTransferCard } from './transfer-details.js';
 import { orderLabel, formatDueDate } from './order-utils.js';
 import { hasTransferData } from './transfer-details-utils.js';
@@ -50,7 +49,7 @@ let savedAddresses = [];
  * libre en vez de sus direcciones guardadas.
  */
 let refreshDeliveryUI = () => {};
-let paymentMethod = 'mercadopago'; // 'mercadopago' | 'transferencia' | 'efectivo' — ver initPaymentMethodEvents()
+let paymentMethod = 'transferencia'; // 'transferencia' | 'efectivo' — ver initPaymentMethodEvents()
 // true mientras "Iniciar pago" está creando el pedido: un cambio del carrito
 // que llega en vivo desde otro dispositivo no redibuja en ese momento.
 let checkoutInProgress = false;
@@ -83,10 +82,6 @@ function storeKeyOf(item) {
 // se aprovecha esa misma consulta para no duplicar un fetch).
 const productStoreId = new Map();
 const storeShippingById = new Map();
-
-// P0-6: storeId -> si esa tienda tiene Mercado Pago vinculado (piloto de
-// split payments). Poblado por validateCartFreshness junto al resto.
-const storeMpEligibleById = new Map();
 
 // A113-299: datos para transferir de cada tienda del carrito (alias, CBU,
 // titular, banco, texto libre, más teléfono/WhatsApp), para avisar apenas se
@@ -702,7 +697,7 @@ function buildAddressOption({ value, label, texto, predeterminada = false, elegi
 }
 
 /**
- * Inicializar selector de método de pago (mercadopago / transferencia).
+ * Inicializar selector de método de pago (transferencia / efectivo).
  *
  * Bug encontrado arreglando P0-6: el guard de acá abajo exigía también un
  * #payment-simulado que ya no existe en el HTML (se sacó en P1-1) -- daba
@@ -713,10 +708,9 @@ function buildAddressOption({ value, label, texto, predeterminada = false, elegi
 function initPaymentMethodEvents() {
   const header = document.getElementById('payment-header');
   const content = document.getElementById('payment-content');
-  const mercadopagoRadio = document.getElementById('payment-mercadopago');
   const transferenciaRadio = document.getElementById('payment-transferencia');
 
-  if (!header || !content || !mercadopagoRadio || !transferenciaRadio) return;
+  if (!header || !content || !transferenciaRadio) return;
 
   header.addEventListener('click', () => {
     const isHidden = content.style.display === 'none';
@@ -733,7 +727,7 @@ function initPaymentMethodEvents() {
 /**
  * El efectivo es solo para retirar en el local: con envío a domicilio no se
  * acepta pago al recibir. Esconde la opción (y avisa por qué) y, si estaba
- * elegida, pasa a Mercado Pago o a transferencia. La base lo rechaza igual
+ * elegida, pasa a transferencia. La base lo rechaza igual
  * (migración 133, create_order).
  */
 function applyCashRule() {
@@ -745,35 +739,15 @@ function applyCashRule() {
   if (radio) radio.disabled = delivery;
   if (note) note.hidden = !delivery;
   if (delivery && radio?.checked) {
-    const mp = document.getElementById('payment-mercadopago');
-    const fallback = mp && !mp.disabled ? mp : document.getElementById('payment-transferencia');
+    const fallback = document.getElementById('payment-transferencia');
     if (fallback) fallback.checked = true;
     syncPaymentMethod();
   }
 }
 
 function syncPaymentMethod() {
-  paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'mercadopago';
+  paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value || 'transferencia';
   renderTransferInfo();
-  renderMpChainHint(mpChainStoreCount);
-}
-
-let mpChainStoreCount = 0;
-
-/**
- * Aviso previo de que con varios comercios Mercado Pago se paga de a uno: sin
- * esto el cliente, después del primer pago, se encuentra con un segundo sin
- * haber sabido que venía.
- */
-function renderMpChainHint(storeCount) {
-  mpChainStoreCount = storeCount;
-  const box = document.getElementById('mp-chain-hint');
-  if (!box) return;
-  const show = paymentMethod === 'mercadopago' && storeCount > 1;
-  box.hidden = !show;
-  box.textContent = show
-    ? `Tu compra es en ${storeCount} comercios y Mercado Pago cobra de a uno: vas a pagar en ${storeCount} pasos, uno por comercio. Al terminar cada pago te llevamos al siguiente.`
-    : '';
 }
 
 /**
@@ -835,7 +809,7 @@ function renderTransferInfo() {
       dataEl.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Alias y datos listos: vas a poder copiarlos al tocar "Iniciar pago".';
     } else {
       dataEl.className = 'transfer-info-box__missing';
-      dataEl.textContent = 'Este comercio todavía no cargó sus datos para transferencia. Contactalo antes de pagar así, o elegí Mercado Pago.';
+      dataEl.textContent = 'Este comercio todavía no cargó sus datos para transferencia. Contactalo antes de pagar así, o elegí efectivo al retirar.';
     }
     row.appendChild(dataEl);
 
@@ -974,38 +948,6 @@ function showCashStep(orders) {
   step.hidden = false;
   window.scrollTo({ top: 0, behavior: 'smooth' });
   step.focus({ preventScroll: true });
-}
-
-/**
- * Mercado Pago se ofrece solo si TODOS los comercios del carrito vincularon su
- * cuenta desde su panel (cobran directo, con la comisión descontada): los que
- * no, cobran por transferencia o efectivo. Con varios comercios se paga en
- * cadena, uno por vez (Mercado Pago usa un solo access_token por pago), y se
- * avisa antes de empezar. Se llama después de validateCartFreshness, que ya
- * trae el dato real de cada tienda.
- */
-function updateMpAvailability() {
-  const mercadopagoRadio = document.getElementById('payment-mercadopago');
-  const mercadopagoLabel = document.getElementById('payment-mercadopago-label');
-  if (!mercadopagoRadio) return;
-
-  const storeIdsInCart = [...new Set(productStoreId.values())];
-  const eligible = allStoresAcceptMp(storeIdsInCart, storeMpEligibleById);
-
-  mercadopagoRadio.disabled = !eligible;
-  if (mercadopagoLabel) {
-    mercadopagoLabel.title = eligible
-      ? ''
-      : 'Mercado Pago no está disponible: alguno de los comercios del carrito no cobra con Mercado Pago. Elegí transferencia o efectivo.';
-    mercadopagoLabel.style.opacity = eligible ? '' : '0.5';
-  }
-  renderMpChainHint(eligible ? storeIdsInCart.length : 0);
-
-  if (!eligible && mercadopagoRadio.checked) {
-    const transferenciaRadio = document.getElementById('payment-transferencia');
-    if (transferenciaRadio) transferenciaRadio.checked = true;
-    syncPaymentMethod();
-  }
 }
 
 /**
@@ -1305,7 +1247,7 @@ function initCartEvents() {
     // Efectivo solo con retiro (migración 133): applyCashRule ya lo esconde, esto
     // cubre cualquier camino que lo deje elegido igual.
     if (deliveryMethod === 'delivery' && paymentMethod === 'efectivo') {
-      showCartToast('Con envío a domicilio no se paga en efectivo: elegí Mercado Pago o transferencia.', 'error');
+      showCartToast('Con envío a domicilio no se paga en efectivo: elegí transferencia.', 'error');
       applyCashRule();
       return;
     }
@@ -1345,24 +1287,8 @@ function initCartEvents() {
 
       // La orden ya existe (pending); "pagarla" es un paso aparte a través
       // del provider correspondiente al método elegido.
-      // Mercado Pago cobra de a un comercio: se paga el primer pedido y, al
-      // volver, "Mis compras" ofrece el siguiente (mp-chain-utils.js).
       const provider = getPaymentProvider(paymentMethod);
-      const paymentResult = await provider.pay(paymentMethod === 'mercadopago' ? orderIds.slice(0, 1) : orderIds);
-
-      // mercadopago ya disparó la redirección al checkout hospedado dentro de
-      // pay() — el navegador está por salir de la página. A propósito NO se
-      // vacía el carrito acá: la redirección es asincrónica y `window.location.href`
-      // no bloquea la ejecución, así que un `clearCart()` acá corría ANTES de
-      // que el usuario llegara a pagar de verdad. Si después clickea "Volver"
-      // en Mercado Pago (vuelve a carrito.html con `?mp=failure`, ver el bloque
-      // al final del archivo) o cierra la pestaña, el carrito tiene que seguir
-      // intacto -- antes se perdía y había que rearmarlo todo de cero. El
-      // vaciado real ocurre recién si el pago se aprueba (perfil.html?mp=success/
-      // pending, ver perfil.js) o si el pago falla en el mismo tab (más abajo).
-      if (paymentResult.redirecting) {
-        return;
-      }
+      const paymentResult = await provider.pay(orderIds);
 
       if (!paymentResult.success) {
         // La orden quedó creada (pending) aunque el pago haya fallado; el
@@ -1551,7 +1477,6 @@ async function validateCartFreshness() {
   // constante global igual para todo el carrito).
   productStoreId.clear();
   storeShippingById.clear();
-  storeMpEligibleById.clear();
   storeTransferDataById.clear();
   storeNameById.clear();
   (products || []).forEach((p) => {
@@ -1559,12 +1484,9 @@ async function validateCartFreshness() {
     productStoreId.set(p.id, p.store_id);
     if (p.stores) {
       storeShippingById.set(p.store_id, { deliveryFee: p.stores.delivery_fee });
-      // Comercio que cobra con Mercado Pago: vinculó su cuenta desde su panel (collector_id real).
-      storeMpEligibleById.set(p.store_id, Boolean(p.stores.mp_collector_id));
       storeNameById.set(p.store_id, p.stores.name || 'el comercio');
     }
   });
-  updateMpAvailability();
   loadTransferInfo();
 
   const removedNames = [];
@@ -1636,12 +1558,8 @@ async function validateCartFreshness() {
   updateCartBadge();
   renderCart();
 
-  // Bug encontrado arreglando el vaciado prematuro del carrito (ver
-  // handleMercadoPagoReturn más abajo): este toast se mostraba SIEMPRE que no
-  // se quitó nada, aunque `adjustedNames` estuviera vacío -- es decir, en
-  // cada apertura del carrito con productos sin cambios reales. Además de ser
-  // un aviso falso, tapaba cualquier otro toast que se mostrara justo después
-  // (como el de "no se completó el pago con Mercado Pago").
+  // Solo se avisa si algo cambió de verdad: un aviso en cada apertura del
+  // carrito sería falso y taparía cualquier otro que llegue justo después.
   if (removedNames.length > 0) {
     showCartToast(`Ya no están disponibles: ${removedNames.join(', ')}`, 'error');
   } else if (adjustedNames.length > 0) {
@@ -1650,23 +1568,6 @@ async function validateCartFreshness() {
 }
 
 // --- Inicialización ---
-/**
- * back_urls.failure de mp-create-preference (Edge Function) trae de vuelta
- * acá con `?mp=failure` cuando el usuario cancela/vuelve desde el checkout
- * de Mercado Pago sin pagar. El carrito ya no se vacía de antemano (ver
- * arriba), así que no hace falta reconstruir nada -- solo avisar qué pasó y
- * limpiar el parámetro de la URL para que un refresh no repita el toast.
- */
-function handleMercadoPagoReturn() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('mp') !== 'failure') return;
-
-  showCartToast('No se completó el pago con Mercado Pago. Tu carrito sigue igual.', 'error');
-  const url = new URL(window.location);
-  url.searchParams.delete('mp');
-  window.history.replaceState({}, '', url);
-}
-
 /**
  * El carrito cambió en otro dispositivo o en otra pestaña (ver initCartLive en
  * cart-utils.js): se redibuja sin recargar. No durante un pago en curso ni con
@@ -1702,5 +1603,4 @@ document.addEventListener('DOMContentLoaded', () => {
   initPaymentMethodEvents();
   validateCartFreshness();
   loadAddressSelector();
-  handleMercadoPagoReturn();
 });

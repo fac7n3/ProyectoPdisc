@@ -56,11 +56,11 @@ Reglas:
 5. **Contraseñas:** mínimo 8 caracteres con letras y números; Google OAuth como
    alternativa. Sesión: JWT de 1 hora con refresh token rotativo.
 
-**Accesos de infraestructura** (Supabase, Vercel, GitHub, Mercado Pago, Google Cloud, Jira)
+**Accesos de infraestructura** (Supabase, Vercel, GitHub, Google Cloud, Jira)
 
-1. Cada persona entra con su propia cuenta; **MFA activado** en GitHub, Supabase, Vercel,
-   Google y Mercado Pago (verificarlo en la revisión trimestral).
-2. Secretos (service role key, `MP_ACCESS_TOKEN`, `MP_CLIENT_SECRET`, tokens de Jira):
+1. Cada persona entra con su propia cuenta; **MFA activado** en GitHub, Supabase, Vercel
+   y Google (verificarlo en la revisión trimestral).
+2. Secretos (service role key, tokens de Jira):
    solo en los gestores de secretos de Supabase (Edge Functions), Vercel y GitHub, o en
    archivos gitignoreados (`.env`, `.jira.env`). **Nunca** en el repositorio, en un
    chat ni en un ticket. La anon key es pública por diseño y la protege la RLS.
@@ -128,7 +128,7 @@ funcionar) 8 horas.
 | **Interna** | Métricas, reportes de búsqueda, configuración | Solo admin |
 | **Personal** | Email, nombre, teléfono, dirección, fecha de nacimiento, documento, historial de compras, reclamos | RLS por dueño + participantes necesarios; nunca en logs; se borra con la cuenta |
 | **Personal sensible / financiera** | CUIT, CBU/alias, comprobantes de pago, fotos de entregas, adjuntos de reclamos | Además: buckets **privados** con URLs firmadas; redactada en el log de auditoría |
-| **Secreta** | Service role key, tokens de Mercado Pago, `MP_CLIENT_SECRET` | Solo gestores de secretos; tabla `store_mp_credentials` sin policies (solo service role) |
+| **Secreta** | Service role key, tokens de Jira | Solo gestores de secretos |
 
 Reglas transversales:
 

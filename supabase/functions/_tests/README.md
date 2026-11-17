@@ -1,14 +1,12 @@
 # Tests de las Edge Functions
 
-Las cuatro funciones de `supabase/functions/` mueven plata (Mercado Pago) y
-borran cuentas: hasta el 2026-09-16 no tenían ni un test. Estos corren con el
+La función de `supabase/functions/` borra cuentas: hasta el 2026-09-16 no
+tenía ni un test. Estos corren con el
 `node` que ya usa el proyecto, sin Deno, sin Supabase levantado y sin red.
 
 ```bash
-node supabase/functions/_tests/mp-webhook.test.mjs
-node supabase/functions/_tests/mp-create-preference.test.mjs
 node supabase/functions/_tests/delete-account.test.mjs
-# o los tres juntos, junto con el resto de los tests del proyecto:
+# o junto con el resto de los tests del proyecto:
 npm test
 ```
 
@@ -32,7 +30,5 @@ El CLI de Supabase ignora las carpetas que empiezan con `_` al desplegar
 
 ## Nota
 
-Los tests ejercitan el handler con stubs, no contra Mercado Pago de verdad.
-Sirven para lo que ya se rompió una vez (un pago que no cubre el total, una
-devolución, un `external_reference` inválido, una baja que deja archivos
-atrás); no reemplazan probar un pago real en sandbox antes de lanzar.
+Los tests ejercitan el handler con stubs: no reemplazan probar una baja real
+antes de lanzar.

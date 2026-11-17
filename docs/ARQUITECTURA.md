@@ -10,16 +10,15 @@
 - **Backend**: todo vive en Supabase — no hay servidor propio.
   - **Postgres** con **RLS activa en las 22 tablas de `public`**: cada tabla decide quién puede leer/escribir qué fila directamente en la base, no en el frontend.
   - **RPCs `SECURITY DEFINER`** para toda operación que necesita revalidar algo server-side que el cliente no puede validar solo (precio real de un carrito, aprobar un vendedor, etc.) — cada una hace su propio chequeo de permisos adentro, y tiene `EXECUTE` revocado de los roles que no deberían llamarla directo.
-  - **Edge Functions** (Deno) para lo único que ni RLS ni una función SQL pueden hacer: llamar a una API externa (Mercado Pago) sin exponer un secreto al navegador.
-- **Pagos**: Mercado Pago (Checkout Pro) + transferencia bancaria con comprobante + pago simulado (testing).
+  - **Edge Functions** (Deno) para lo único que ni RLS ni una función SQL pueden hacer: usar la service role key (por ejemplo, borrar una cuenta con sus archivos) sin exponerla al navegador.
+- **Pagos**: transferencia bancaria con comprobante + efectivo al retirar + pago simulado (testing, solo admin).
 
 ## Por qué RLS + RPCs en vez de un backend propio
 
 Todo el frontend habla directo con la API REST autogenerada de Supabase (PostgREST). Eso significa que **la única barrera de seguridad real es RLS** — si una policy está mal escrita, no hay una capa de backend que lo tape. Por eso el patrón repetido en todo el proyecto es: *nunca confiar en un dato que mande el cliente si se puede revalidar en el servidor*. Ejemplos:
 
 - `create_order` no recibe el precio del carrito — vuelve a leer `products.price` en el momento de la compra.
-- `mp-create-preference` (Edge Function) arma el cliente de Supabase con el JWT de quien llama, no con la service role key, para que las RLS de `orders` decidan qué puede pagar.
-- `mp-webhook` nunca confía en el payload que manda Mercado Pago — siempre re-consulta el pago real con el Access Token antes de marcar algo pagado.
+- Un pedido por transferencia solo pasa a pagado cuando el comercio (o el admin) confirma el comprobante, con un RPC que revisa que sea su pedido.
 
 ## Modelo de datos (resumen)
 
@@ -51,7 +50,7 @@ Subir de rol (cliente → vendedor/repartidor/admin) es **siempre** a través de
 
 - **`simulado`**: confirma al instante (solo testing).
 - **`transferencia`**: no confirma nada — la orden queda `pending` hasta que el cliente sube el comprobante y el vendedor lo aprueba.
-- **`mercadopago`**: redirige al checkout hospedado de Mercado Pago; la confirmación llega después, de forma asíncrona, vía webhook.
+- **`efectivo`**: solo con retiro en el local; el comercio lo marca cobrado al entregar.
 
 Agregar un nuevo método de pago en el futuro (ej. otro proveedor) es agregar un provider más acá, sin tocar `create_order` ni el resto del checkout.
 
@@ -62,5 +61,5 @@ Service worker (`public/sw.js`) con estrategia mixta: red-primero para navegaci�
 ## Decisiones deliberadas que pueden sorprender
 
 - **`dist/` se versiona en git**: no es un descuido, permite ver el resultado del build sin correrlo. Vercel igual reconstruye desde cero en cada deploy (no sirve este `dist/` directamente).
-- **`.env` se versiona en git**: las claves que tiene (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`) son públicas por diseño de Supabase — terminan igual embebidas en el JS que se sirve al navegador. Lo que nunca se versiona es una service role key o el Access Token de Mercado Pago.
+- **`.env` se versiona en git**: las claves que tiene (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`) son públicas por diseño de Supabase — terminan igual embebidas en el JS que se sirve al navegador. Lo que nunca se versiona es una service role key.
 - **Sin Supabase Realtime**: todos los paneles (admin, pagos por confirmar, envíos en curso) se actualizan al recargar la página, no con suscripciones en vivo — decisión consciente para no meter un patrón de suscripción/limpieza sin poder probarlo a fondo.

@@ -2,7 +2,7 @@ import { supabase, guardPage, showToast, getPanelAccess } from "./auth-utils.js"
 import { compressImage } from './image-compress.js';
 import { describeSelectedOptions } from './product-options-utils.js';
 import { isAutoRedirectEnabled, setAutoRedirectEnabled } from "./panel-redirect-utils.js";
-import { formatPrice, clearPurchasedFromCart, updateCartBadge } from "./cart-utils.js";
+import { formatPrice } from "./cart-utils.js";
 import { areHintsEnabled, setHintsEnabled } from "./hints-utils.js";
 import { getPref, setPref } from "./settings-utils.js";
 import { initInstallCard, focusInstallCard } from "./install-app.js";
@@ -28,11 +28,9 @@ import { clearLinkedAccounts } from "./linked-accounts.js";
 import { skeletonRows, skeletonGrid } from "./panel-skeleton.js";
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS,
-  orderLabel, canPrepare, awaitingTransfer, awaitingMercadoPago, showsPickupCode,
+  orderLabel, canPrepare, awaitingTransfer, showsPickupCode,
   timelineSteps, eventLabel, formatDueDate, deliveryQrUrl,
 } from "./order-utils.js";
-import { getPaymentProvider } from "./payment-providers.js";
-import { pendingChainOrders } from "./mp-chain-utils.js";
 import qrcode from "qrcode-generator";
 import { friendlyError } from './friendly-error.js';
 import { pickPhoto, readAsDataUrl, uploadEvidence } from './delivery-evidence.js';
@@ -1319,27 +1317,6 @@ function buildCompraNextStep(order, ctx) {
       wrap.appendChild(el('p', 'ord-alert ord-alert--warn',
         `Tenés hasta ${formatDueDate(order.payment_due_at)} para transferir. Si no, el pedido se cancela solo.`));
     }
-    return wrap;
-  }
-
-  if (awaitingMercadoPago(order)) {
-    if (order.payment_due_at) {
-      wrap.appendChild(el('p', 'ord-alert ord-alert--warn', `Todavía no se completó el pago. Tenés hasta ${formatDueDate(order.payment_due_at)}.`));
-    }
-    const pay = el('button', 'bl-btn bl-btn-primary compra-next__btn', 'Pagar con Mercado Pago');
-    pay.type = 'button';
-    pay.addEventListener('click', async () => {
-      pay.disabled = true;
-      // Al volver de Mercado Pago no hay que vaciar el carrito: lo que esté
-      // tildado ahí ahora no es este pedido (ver handleMercadoPagoReturn).
-      try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
-      const result = await getPaymentProvider('mercadopago').pay([order.id]);
-      if (!result.success) {
-        showToast(friendlyError(result, 'No se pudo iniciar el pago.'), 'error');
-        pay.disabled = false;
-      }
-    });
-    wrap.appendChild(pay);
     return wrap;
   }
 
@@ -3034,7 +3011,6 @@ async function renderFullProfile(user) {
   // ?tab=compras&order=<id> (o ?tab=soporte) -- abre la sección y resalta la fila.
   await comprasPromise;
   handleNotificationDeepLink();
-  showMercadoPagoReturnBanner();
 }
 
 function flashHighlight(el) {
@@ -3083,92 +3059,6 @@ if (logoutBtn) {
   });
 }
 
-// Pedidos que se acaban de pagar con Mercado Pago (external_reference, que MP
-// agrega a la URL de vuelta): se resaltan y se anuncian arriba de "Mis compras".
-let mpReturn = null;
-
-/** (1) "¡Listo! Pedido #BL-1066": el cartel de compra confirmada al volver de Mercado Pago. */
-function showMercadoPagoReturnBanner() {
-  if (!mpReturn || !comprasContainer) return;
-  const orders = comprasCache.filter((o) => mpReturn.orderIds.includes(o.id));
-  const labels = orders.map((o) => orderLabel(o)).join(', ');
-  const banner = document.createElement('p');
-  banner.className = `ord-alert ${mpReturn.status === 'success' ? 'ord-alert--ok' : 'ord-alert--warn'} compra-mp-banner`;
-  banner.textContent = mpReturn.status === 'success'
-    ? `¡Listo! Tu pago fue aprobado${labels ? ` (pedido ${labels})` : ''}. El comercio ya lo está preparando: te avisamos cuando esté listo.`
-    : `Tu pago${labels ? ` del pedido ${labels}` : ''} está en revisión en Mercado Pago. Te avisamos apenas se acredite.`;
-  comprasContainer.before(banner);
-  // Compra en varios comercios: Mercado Pago cobra de a uno, así que acá se ofrece el siguiente.
-  const pending = pendingChainOrders(comprasCache, mpReturn.orderIds);
-  if (pending.length > 0) comprasContainer.before(buildMpChainStep(pending));
-  orders.forEach((o) => flashHighlight(document.getElementById(`order-${o.id}`)));
-  mpReturn = null;
-}
-
-/** "Falta pagar a ...": el siguiente pago de una compra en varios comercios (ver mp-chain-utils.js). */
-function buildMpChainStep(pending) {
-  const first = pending[0];
-  const names = pending.map((o) => `${o.stores?.name || 'otro comercio'} (${formatPrice(o.total_price)})`).join(', ');
-  const box = el('div', 'ord-alert ord-alert--warn compra-mp-chain');
-  box.appendChild(el('p', '', `Tu compra era en más de un comercio y Mercado Pago cobra de a uno. Falta pagar: ${names}.`));
-  const btn = el('button', 'bl-btn bl-btn-primary compra-next__btn', `Pagar a ${first.stores?.name || 'el siguiente comercio'}`);
-  btn.type = 'button';
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    // El carrito ya se vació con el primer pago: al volver no hay que tocarlo de nuevo.
-    try { sessionStorage.setItem('bl_mp_retry', '1'); } catch { /* sin storage: se vacía como siempre */ }
-    const result = await getPaymentProvider('mercadopago').pay([first.id]);
-    if (!result.success) {
-      showToast(friendlyError(result, 'No se pudo iniciar el pago.'), 'error');
-      btn.disabled = false;
-    }
-  });
-  box.appendChild(btn);
-  return box;
-}
-
-/**
- * back_urls.success/pending de mp-create-preference (Edge Function) traen de
- * vuelta acá con `?mp=success`/`?mp=pending` una vez que Mercado Pago aprobó
- * el pago (o lo dejó pendiente de acreditación, ej. Rapipago). Recién en este
- * punto se sabe que la compra de verdad se concretó -- por eso el carrito se
- * vacía ACÁ y no de antemano en carrito.js (ver el bug documentado ahí: antes
- * se vaciaba apenas se redirigía a Mercado Pago, y si el usuario volvía sin
- * pagar perdía el carrito para nada).
- */
-function handleMercadoPagoReturn() {
-  const params = new URLSearchParams(window.location.search);
-  const status = params.get('mp');
-  if (status !== 'success' && status !== 'pending') return;
-  const orderIds = (params.get('external_reference') || '').split(',').map((s) => s.trim()).filter(Boolean);
-  mpReturn = { status, orderIds };
-
-  // Solo lo comprado: si el usuario había dejado productos en pendiente en el
-  // carrito, no los pagó y tienen que seguir ahí (ver cart-utils.js). Si el
-  // pago era un reintento desde "Mis compras", lo tildado en el carrito no
-  // tiene nada que ver con este pedido: no se toca.
-  let isRetry = false;
-  try {
-    isRetry = sessionStorage.getItem('bl_mp_retry') === '1';
-    sessionStorage.removeItem('bl_mp_retry');
-  } catch { /* sin storage: se vacía como siempre */ }
-  if (!isRetry) clearPurchasedFromCart();
-  updateCartBadge();
-  showToast(
-    status === 'success'
-      ? '¡Pago aprobado! Tu pedido ya está en preparación.'
-      : 'Pago en revisión. Te vamos a avisar cuando se confirme.',
-    'success'
-  );
-
-  // Al volver de Mercado Pago lo que el usuario quiere ver es el pedido, no el hub.
-  openSection('tab-compras');
-
-  const url = new URL(window.location);
-  url.searchParams.delete('mp');
-  window.history.replaceState(window.history.state, '', url);
-}
-
 // "Instalar app" del menú de la foto de perfil, cuando no hay cartel del navegador
 // para abrir directo: llega acá con ?install=1 y se muestra la card del hub.
 function openInstallFromMenu() {
@@ -3206,6 +3096,5 @@ guardPage({
     initSettings();
     openInstallFromMenu();
     renderFullProfile(user);
-    handleMercadoPagoReturn();
   },
 });

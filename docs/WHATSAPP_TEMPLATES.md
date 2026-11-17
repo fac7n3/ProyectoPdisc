@@ -32,7 +32,7 @@ de "pedido creado" separada — la confirmación de compra al cliente llega en e
 no como notificación async.
 
 ### `order_paid_cliente`
-Cuando se confirma el pago de su pedido (transferencia aprobada por el vendedor, o Mercado Pago).
+Cuando se confirma el pago de su pedido (transferencia aprobada por el vendedor).
 
 ```
 Categoría: UTILITY

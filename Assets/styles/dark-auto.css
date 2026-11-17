@@ -1077,13 +1077,6 @@ html[data-theme="dark"] .admin-inline-form input:focus {
 html[data-theme="dark"] .admin-scrim {
   background: rgba(112, 139, 204, 0.35);
 }
-html[data-theme="dark"] .bf-alert {
-  border: 1px solid #f0934c;
-  background: rgba(226, 149, 90, 0.128);
-}
-html[data-theme="dark"] .bf-link {
-  color: var(--dk-accent-text);
-}
 html[data-theme="dark"] .bf-when {
   color: #f5b687;
 }
@@ -2039,9 +2032,6 @@ html[data-theme="dark"] .social-toggle__track::before {
 }
 html[data-theme="dark"] .social-toggle input:checked + .social-toggle__track {
   background: var(--bl-vendor-accent);
-}
-html[data-theme="dark"] .mp-status--ok {
-  color: var(--dk-accent-text);
 }
 html[data-theme="dark"] .social-row__icon {
   color: var(--dk-accent-text);

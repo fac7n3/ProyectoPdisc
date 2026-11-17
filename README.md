@@ -28,7 +28,7 @@ Producción: <https://baraderolocal.vercel.app> (también responde en <https://p
 - Catálogo con filtros por categoría, búsqueda tolerante a errores de tipeo y a sinónimos, y sección de ofertas.
 - Comparador en la búsqueda: cuando el mismo producto está en varios comercios, muestra cuál es más barato y cuál queda más cerca.
 - Carrito agrupado por comercio, sincronizado entre dispositivos y disponible también sin sesión iniciada. Los envíos y los cupones se calculan por comercio.
-- Medios de pago: Mercado Pago (Checkout Pro), transferencia bancaria con comprobante y efectivo con retiro en el local.
+- Medios de pago: transferencia bancaria con comprobante y efectivo con retiro en el local.
 - Retiro en el local o envío a domicilio dentro de Baradero.
 - Seguimiento del pedido con línea de tiempo, código de retiro, historial de compras y reseñas de productos y comercios.
 - Notificaciones en tiempo real y centro de notificaciones.
@@ -42,7 +42,6 @@ Producción: <https://baraderolocal.vercel.app> (también responde en <https://p
 
 - Alta y edición de productos con fotos múltiples, opciones (color, sabor, talle), ofertas con precio anterior y fecha de vencimiento, y cupones.
 - Gestión de pedidos con actualización en tiempo real y confirmación de pagos por transferencia.
-- Vinculación de la cuenta de Mercado Pago del comercio para cobrar directamente.
 - Perfil del comercio personalizable (con la ubicación del local marcada en un mapa), métricas de ventas, reseñas y gestión de empleados con permisos por sección.
 - Herramientas de promoción: banners en el inicio y combos de visibilidad.
 
@@ -74,8 +73,7 @@ El sitio está pensado para ser utilizable con lectores de pantalla como TalkBac
 |---|---|
 | Frontend | Vite 8 (aplicación multipágina), JavaScript ES6 sin framework, CSS con variables nativas |
 | Base de datos y autenticación | [Supabase](https://supabase.com/): PostgreSQL con Row Level Security, Auth (correo y Google OAuth), Storage y Realtime |
-| Lógica de servidor | Edge Functions de Supabase (Deno) para la integración con Mercado Pago y la baja de cuentas |
-| Pagos | Mercado Pago (Checkout Pro y OAuth por comercio) |
+| Lógica de servidor | Edge Functions de Supabase (Deno) para la baja de cuentas |
 | Mapas | [Leaflet](https://leafletjs.com/) con mapas de [OpenStreetMap](https://www.openstreetmap.org/) y búsqueda de direcciones con Nominatim |
 | Hosting | [Vercel](https://vercel.com/), con despliegue automático en cada push a `main` |
 
@@ -85,8 +83,8 @@ El sitio está pensado para ser utilizable con lectores de pantalla como TalkBac
 
 - **Autorización en la base de datos.** Todas las tablas tienen Row Level Security. El rol del usuario (`cliente`, `vendedor`, `admin`, entre otros) se toma del JWT y las operaciones sensibles, como crear un pedido o confirmar un pago, se realizan exclusivamente a través de funciones SQL con validaciones del lado del servidor.
 - **Precios en pesos enteros.** Todo el sistema trabaja con pesos argentinos sin centavos.
-- **Secretos fuera del cliente.** El frontend solo conoce la URL y la clave pública de Supabase. Las credenciales de Mercado Pago viven únicamente en las Edge Functions.
-- **Verificación de pagos.** El webhook de Mercado Pago consulta el pago, valida el monto cobrado y trata devoluciones y contracargos antes de modificar un pedido.
+- **Secretos fuera del cliente.** El frontend solo conoce la URL y la clave pública de Supabase. Las claves de servidor viven únicamente en las Edge Functions.
+- **Verificación de pagos.** Un pago por transferencia lo confirma el comercio (o el admin) después de ver el comprobante; el cliente no puede marcar un pedido como pagado.
 - **Tiempo real.** Notificaciones, pedidos y carrito se actualizan mediante Supabase Realtime, con consulta periódica de respaldo.
 
 El detalle de las decisiones de diseño se encuentra en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
@@ -105,7 +103,7 @@ ProyectoPdisc/
 ├── public/              Recursos estáticos: íconos, manifest e imágenes optimizadas
 ├── scripts/             Herramientas de apoyo (optimización de imágenes, tareas de tooling)
 ├── supabase/
-│   ├── functions/       Edge Functions (pagos, OAuth de Mercado Pago, baja de cuenta)
+│   ├── functions/       Edge Functions (baja de cuenta)
 │   └── templates/       Plantillas de correo de autenticación
 ├── .env.example         Plantilla de variables de entorno
 └── vite.config.js       Entradas del build multipágina
@@ -139,7 +137,7 @@ Ejecuta las pruebas unitarias de la lógica de frontend (`js/*.test.mjs`) y de l
 
 ## Despliegue
 
-La aplicación se publica en Vercel desde la rama `main`. La base de datos y las Edge Functions se gestionan en Supabase. La guía completa de configuración de producción, que incluye Vercel, Supabase y Mercado Pago, está en [docs/DEPLOY.md](docs/DEPLOY.md).
+La aplicación se publica en Vercel desde la rama `main`. La base de datos y las Edge Functions se gestionan en Supabase. La guía completa de configuración de producción, que incluye Vercel y Supabase, está en [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ---
 
@@ -148,7 +146,7 @@ La aplicación se publica en Vercel desde la rama `main`. La base de datos y las
 | Documento | Contenido |
 |---|---|
 | [docs/RUN_LOCAL.md](docs/RUN_LOCAL.md) | Entorno de desarrollo local, migraciones en orden e historial técnico por funcionalidad |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Despliegue a producción: Vercel, Supabase y Mercado Pago |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Despliegue a producción: Vercel y Supabase |
 | [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Modelo de datos, seguridad y decisiones de diseño |
 | [docs/GUIA_USUARIO.md](docs/GUIA_USUARIO.md) | Guía de uso por rol |
 | [docs/TESTING_CHECKLIST.md](docs/TESTING_CHECKLIST.md) | Lista de verificación manual por rol y flujo |

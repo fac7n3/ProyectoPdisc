@@ -80,9 +80,9 @@ console.log("friendlyFunctionError");
 await check("lee el motivo del cuerpo de un 4xx (data null + error.context)", async () => {
   const error = {
     message: "Edge Function returned a non-2xx status code",
-    context: { json: async () => ({ error: "Este comercio todavía no tiene Mercado Pago vinculado." }) },
+    context: { json: async () => ({ error: "Este comercio todavía no cargó sus datos para transferencia." }) },
   };
-  assert.equal(await friendlyFunctionError(error, null, FALLBACK), "Este comercio todavía no tiene Mercado Pago vinculado.");
+  assert.equal(await friendlyFunctionError(error, null, FALLBACK), "Este comercio todavía no cargó sus datos para transferencia.");
 });
 
 await check("prefiere `message` sobre un `error` que es un código", async () => {

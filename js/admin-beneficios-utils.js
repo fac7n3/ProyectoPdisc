@@ -3,7 +3,7 @@
 //
 // Las filas son las que devuelve la RPC admin_list_benefits (migración 160):
 //   { id, store_id, store_name, owner_email, plan_id, service_id, item_name, quantity,
-//     source ('purchase'|'admin'), status ('active'|'pending'|'needs_review'|'cancelled'),
+//     source ('admin'), status ('active'|'cancelled'),
 //     starts_at, ends_at, ... }
 // "Vencido" no es un estado guardado: es `active` con ends_at en el pasado.
 
@@ -22,9 +22,7 @@ export const STATE_LABEL = {
   vigente: 'Vigente',
   vence_pronto: 'Vence pronto',
   vencido: 'Vencido',
-  en_revision: 'En revisión',
   quitado: 'Quitado',
-  esperando_pago: 'Esperando pago',
   programado: 'Programado',
 };
 
@@ -33,9 +31,7 @@ export const STATE_CLASS = {
   vigente: 'status-approved',
   vence_pronto: 'status-suspended',
   vencido: 'status-rejected',
-  en_revision: 'status-rejected',
   quitado: 'status-rejected',
-  esperando_pago: 'status-suspended',
   programado: 'status-approved',
 };
 
@@ -44,10 +40,8 @@ export const STATE_FILTERS = [
   ['', 'Todos'],
   ['vigente', 'Vigentes'],
   ['vence_pronto', `Vencen en ${EXPIRING_DAYS} días o menos`],
-  ['en_revision', 'En revisión'],
   ['vencido', 'Vencidos'],
   ['quitado', 'Quitados'],
-  ['esperando_pago', 'Esperando pago'],
 ];
 
 /** Sin acentos ni mayúsculas, para buscar "panaderia" y encontrar "Panadería". */
@@ -58,12 +52,10 @@ export function normalizeText(text) {
 /**
  * @param {{ status: string, starts_at?: string|null, ends_at?: string|null }} row
  * @param {number} [nowMs]
- * @returns {'vigente'|'vence_pronto'|'vencido'|'en_revision'|'quitado'|'esperando_pago'|'programado'}
+ * @returns {'vigente'|'vence_pronto'|'vencido'|'quitado'|'programado'}
  */
 export function benefitState(row, nowMs = Date.now()) {
   if (row.status === 'cancelled') return 'quitado';
-  if (row.status === 'needs_review') return 'en_revision';
-  if (row.status === 'pending') return 'esperando_pago';
   const end = row.ends_at ? new Date(row.ends_at).getTime() : NaN;
   const start = row.starts_at ? new Date(row.starts_at).getTime() : NaN;
   if (Number.isNaN(end) || end <= nowMs) return 'vencido';
@@ -139,20 +131,18 @@ export function renewalsDue(rows, nowMs = Date.now()) {
 
 /**
  * Contadores para los atajos y la insignia del menú.
- * `badge` = lo que pide acción: compras en revisión + renovaciones por hacer.
+ * `badge` = lo que pide acción: las renovaciones por hacer.
  */
 export function summarizeBenefits(rows, nowMs = Date.now()) {
-  let review = 0;
   let expiring = 0;
   let active = 0;
   for (const row of rows || []) {
     const s = benefitState(row, nowMs);
-    if (s === 'en_revision') review += 1;
-    else if (s === 'vence_pronto') { expiring += 1; active += 1; }
+    if (s === 'vence_pronto') { expiring += 1; active += 1; }
     else if (s === 'vigente' || s === 'programado') active += 1;
   }
   const renewals = renewalsDue(rows, nowMs).length;
-  return { review, expiring, active, renewals, badge: review + renewals };
+  return { expiring, active, renewals, badge: renewals };
 }
 
 /**
@@ -169,7 +159,7 @@ export function storesWithService(rows, serviceId, planItems = [], nowMs = Date.
     if (!(start <= nowMs && nowMs < end)) continue;
 
     let origin = null;
-    if (row.service_id === serviceId) origin = row.source === 'admin' ? 'Regalo' : 'Compra';
+    if (row.service_id === serviceId) origin = 'Regalo';
     else if (row.plan_id && planItems.some((it) => it.plan_id === row.plan_id && it.service_id === serviceId)) origin = row.item_name;
     if (!origin) continue;
 

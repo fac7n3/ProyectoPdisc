@@ -1,7 +1,7 @@
 // node js/boost-utils.test.mjs
 import assert from 'node:assert/strict';
 import {
-  describeBoostState, planAction, boostReturnMessage, formatBoostDate, PENDING_WINDOW_MS,
+  describeBoostState, planAction, formatBoostDate,
   planBreakdown, planSavings, holdingsMap, serviceAvailability, holdingLabel, serviceLimitLines,
   pricePerDay, plansIncluding, activeServicePurchases, boostWhatsAppMessage, boostWhatsAppUrl,
 } from './boost-utils.js';
@@ -19,7 +19,7 @@ const DAY = 86400000;
 console.log('--- estado del combo ---');
 check('sin compras -> nada activo', () => {
   const s = describeBoostState([], NOW);
-  assert.equal(s.active, null); assert.equal(s.pending, false); assert.equal(s.needsReview, false);
+  assert.equal(s.active, null);
 });
 check('combo vigente -> activo, con días que faltan', () => {
   const s = describeBoostState([{ plan_id: 'barrio', status: 'active', starts_at: iso(NOW - 5 * DAY), ends_at: iso(NOW + 25 * DAY), created_at: iso(NOW - 5 * DAY) }], NOW);
@@ -40,14 +40,8 @@ check('quedan menos de 24 h -> se muestra 1 día, no 0', () => {
   const s = describeBoostState([{ plan_id: 'local', status: 'active', starts_at: iso(NOW - 29 * DAY), ends_at: iso(NOW + 3600000), created_at: iso(NOW - 29 * DAY) }], NOW);
   assert.equal(s.active.daysLeft, 1);
 });
-check('pendiente reciente -> esperando pago; vieja -> abandonada', () => {
-  assert.equal(describeBoostState([{ plan_id: 'local', status: 'pending', created_at: iso(NOW - 60000) }], NOW).pending, true);
-  assert.equal(describeBoostState([{ plan_id: 'local', status: 'pending', created_at: iso(NOW - PENDING_WINDOW_MS - 1) }], NOW).pending, false);
-});
-check('needs_review y cancelled', () => {
-  assert.equal(describeBoostState([{ plan_id: 'local', status: 'needs_review', created_at: iso(NOW) }], NOW).needsReview, true);
-  const c = describeBoostState([{ plan_id: 'local', status: 'cancelled', created_at: iso(NOW) }], NOW);
-  assert.equal(c.pending || c.needsReview || c.active !== null, false);
+check('cancelled no cuenta', () => {
+  assert.equal(describeBoostState([{ plan_id: 'local', status: 'cancelled', created_at: iso(NOW) }], NOW).active, null);
 });
 
 console.log('--- botón de cada combo ---');
@@ -66,16 +60,6 @@ check('con Intermedio vigente: Intermedio dice "Renovar" y NINGÚN botón queda 
     assert.equal(planAction(id, s).hint, null);
   }
   assert.equal(planAction('pro', s).label, 'Elegir este combo');
-});
-
-console.log('--- vuelta de Mercado Pago ---');
-check('mensajes', () => {
-  assert.equal(boostReturnMessage('success').poll, true);
-  assert.equal(boostReturnMessage('pending').poll, true);
-  assert.equal(boostReturnMessage('failure').tone, 'error');
-  assert.equal(boostReturnMessage('failure').poll, false);
-  assert.equal(boostReturnMessage('otra-cosa'), null);
-  assert.equal(boostReturnMessage(null), null);
 });
 
 console.log('--- fecha ---');
@@ -106,12 +90,6 @@ check('las compras de servicios sueltos no cuentan como plan', () => {
 check('planBreakdown ordena por catálogo y trae cantidades', () => {
   const b = planBreakdown('pro', ITEMS, SERVICES);
   assert.deepEqual(b.map((x) => [x.id, x.quantity]), [['banner_mediano', 1], ['productos_recomendados', 2]]);
-});
-check('un servicio con pago pendiente o en revisión también avisa', () => {
-  const pend = describeBoostState([{ plan_id: null, service_id: 'banner_chico', status: 'pending', created_at: iso(NOW - 60000) }], NOW);
-  assert.equal(pend.pending, true);
-  const rev = describeBoostState([{ plan_id: null, service_id: 'banner_chico', status: 'needs_review', created_at: iso(NOW) }], NOW);
-  assert.equal(rev.needsReview, true);
 });
 check('planSavings: precio por separado y ahorro (nunca negativo)', () => {
   assert.deepEqual(planSavings(PLANS[0], ITEMS, SERVICES), { listPrice: 20000, savings: 0, percent: 0 });
@@ -153,7 +131,7 @@ check('activeServicePurchases: vigentes, con cantidad; vencidas y futuras no', (
     { service_id: 'banner_chico', quantity: 2, status: 'active', starts_at: iso(NOW - DAY), ends_at: iso(NOW + DAY) },
     { service_id: 'banner_mediano', quantity: 1, status: 'active', starts_at: iso(NOW - 9 * DAY), ends_at: iso(NOW - DAY) },
     { service_id: 'redes_sociales', quantity: 1, status: 'active', starts_at: iso(NOW + DAY), ends_at: iso(NOW + 9 * DAY) },
-    { service_id: 'redes_sociales', quantity: 1, status: 'pending', starts_at: null, ends_at: null },
+    { service_id: 'redes_sociales', quantity: 1, status: 'cancelled', starts_at: iso(NOW - DAY), ends_at: iso(NOW + DAY) },
     { plan_id: 'base', status: 'active', starts_at: iso(NOW - DAY), ends_at: iso(NOW + DAY) },
   ];
   const a = activeServicePurchases(rows, NOW);

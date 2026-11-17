@@ -24,7 +24,7 @@ import {
   renewalWhatsAppUrl, renewedEnd, STATE_LABEL, STATE_CLASS, STATE_FILTERS, RENEWAL_DAYS,
 } from './admin-beneficios-utils.js';
 
-const SOURCE_LABEL = { purchase: 'Compra', admin: 'Regalo del admin' };
+const SOURCE_LABEL = { admin: 'Regalo del admin' };
 /** Días que se suman con "Renovar". */
 const RENEW_DAYS = 30;
 /** Máximo de filas que devuelve la RPC (admin_list_benefits). */
@@ -259,7 +259,6 @@ function renderAll() {
   const now = Date.now();
   const summary = summarizeBenefits(state.rows, now);
   updateBadge(summary);
-  renderAlert(summary);
   renderChips(summary);
   renderRenewals(now);
   renderRedes(now);
@@ -282,21 +281,8 @@ function setStateFilter(value) {
   renderTable(Date.now());
 }
 
-function renderAlert(summary) {
-  const box = $('benefits-alert');
-  if (!box) return;
-  box.replaceChildren();
-  box.hidden = summary.review === 0;
-  if (summary.review === 0) return;
-  box.appendChild(el('span', null, `Hay ${summary.review} ${summary.review === 1 ? 'compra en revisión' : 'compras en revisión'}: el pago no cubre el valor, fue devuelto o el comercio ya tenía el máximo. Revisá cada caso y escribile al comercio. `));
-  const btn = el('button', 'bf-link', 'Ver las que están en revisión');
-  btn.type = 'button';
-  btn.addEventListener('click', () => setStateFilter('en_revision'));
-  box.appendChild(btn);
-}
-
 function renderChips(summary) {
-  const chips = [['bf-chip-review', 'en_revision', `En revisión (${summary.review})`], ['bf-chip-expiring', 'vence_pronto', `Vencen pronto (${summary.expiring})`]];
+  const chips = [['bf-chip-expiring', 'vence_pronto', `Vencen pronto (${summary.expiring})`]];
   chips.forEach(([id, value, text]) => {
     const chip = $(id);
     if (!chip) return;
@@ -428,12 +414,12 @@ function renderTable(now) {
 
     const actions = document.createElement('td');
     if (['vigente', 'vence_pronto', 'vencido'].includes(st)) actions.appendChild(renewButton(b));
-    if (['active', 'needs_review'].includes(b.status) && st !== 'vencido') {
+    if (b.status === 'active' && st !== 'vencido') {
       const btn = el('button', 'action-btn btn-reject', 'Quitar');
       btn.type = 'button';
       btn.addEventListener('click', async () => {
         const ok = await confirmDialog(
-          `¿Quitarle "${b.item_name}" a ${b.store_name}?${b.source === 'purchase' ? ' Es una compra pagada: si corresponde, el reembolso se hace aparte en Mercado Pago.' : ''}`,
+          `¿Quitarle "${b.item_name}" a ${b.store_name}?`,
           { title: 'Quitar beneficio', confirmText: 'Quitar', danger: true },
         );
         if (!ok) return;
@@ -503,6 +489,5 @@ export function setupBenefitsSection() {
   $('bf-q').addEventListener('input', (e) => { state.filters.q = e.target.value; renderTable(Date.now()); });
   $('bf-state').addEventListener('change', (e) => setStateFilter(e.target.value));
   $('bf-item').addEventListener('change', (e) => { state.filters.itemId = e.target.value; renderTable(Date.now()); });
-  $('bf-chip-review').addEventListener('click', () => setStateFilter(state.filters.state === 'en_revision' ? '' : 'en_revision'));
   $('bf-chip-expiring').addEventListener('click', () => setStateFilter(state.filters.state === 'vence_pronto' ? '' : 'vence_pronto'));
 }

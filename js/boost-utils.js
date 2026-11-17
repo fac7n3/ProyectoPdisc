@@ -5,8 +5,6 @@
 // con `ends_at` en el pasado es un combo VENCIDO (no hay un estado guardado
 // para eso, así que acá siempre se compara contra la hora).
 
-/** Una compra `pending` más vieja que esto se considera abandonada. */
-export const PENDING_WINDOW_MS = 2 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Servicios que son un banner del inicio (hay que asignarles el espacio a mano). */
@@ -15,30 +13,23 @@ export const BANNER_SERVICE_IDS = ['banner_chico', 'banner_mediano', 'banner_gra
 /**
  * @param {Array<{plan_id:string,status:string,starts_at?:string|null,ends_at?:string|null,created_at:string}>} purchases
  * @param {number} [nowMs]
- * @returns {{ active: null | { planId:string, endsAt:Date, daysLeft:number },
- *             pending: boolean, needsReview: boolean }}
+ * @returns {{ active: null | { planId:string, endsAt:Date, daysLeft:number } }}
  */
 export function describeBoostState(purchases, nowMs = Date.now()) {
   let active = null;
-  let pending = false;
-  let needsReview = false;
 
   for (const p of purchases || []) {
     // Un servicio suelto (sin plan_id) nunca es "el combo activo" (eso lo cuenta
-    // activeServicePurchases), pero su pago pendiente o en revisión sí se avisa.
+    // activeServicePurchases).
     if (p.status === 'active' && p.plan_id && p.starts_at && p.ends_at) {
       const start = new Date(p.starts_at).getTime();
       const end = new Date(p.ends_at).getTime();
       if (nowMs >= start && nowMs < end && (!active || end > active.endsAt.getTime())) {
         active = { planId: p.plan_id, endsAt: new Date(end), daysLeft: Math.max(1, Math.ceil((end - nowMs) / DAY_MS)) };
       }
-    } else if (p.status === 'pending') {
-      if (nowMs - new Date(p.created_at).getTime() < PENDING_WINDOW_MS) pending = true;
-    } else if (p.status === 'needs_review') {
-      needsReview = true;
     }
   }
-  return { active, pending, needsReview };
+  return { active };
 }
 
 /**
@@ -83,23 +74,6 @@ export function formatBoostDate(date) {
   return new Intl.DateTimeFormat('es-AR', {
     timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric',
   }).format(date);
-}
-
-/**
- * Mensaje para volver de Mercado Pago (`?boost=success|pending|failure`).
- * @returns {{ message: string, tone: 'success'|'error', poll: boolean } | null}
- */
-export function boostReturnMessage(param) {
-  switch (param) {
-    case 'success':
-      return { message: 'Recibimos tu pago. En un momento activamos tu combo.', tone: 'success', poll: true };
-    case 'pending':
-      return { message: 'Tu pago está pendiente de acreditación. Cuando se acredite activamos tu combo.', tone: 'success', poll: true };
-    case 'failure':
-      return { message: 'No se completó el pago del combo. No se te cobró nada.', tone: 'error', poll: false };
-    default:
-      return null;
-  }
 }
 
 

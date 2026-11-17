@@ -24,5 +24,4 @@
 
 *(Sin pendientes en esta rama.)*
 
-- ✅ **131** (`131_boost_combos.sql`): aplicada a producción el 2026-10-14, junto con el despliegue de
-  `mp-create-boost-preference` v1 y `mp-webhook` v7.
+- ✅ **131** (`131_boost_combos.sql`): aplicada a producción el 2026-10-14 (la compra online de combos se sacó en la 170).

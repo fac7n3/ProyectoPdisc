@@ -37,11 +37,7 @@ const TYPE_LABELS = {
   support_ticket_status_change: 'Tu reclamo cambió de estado',
   support_ticket_message: 'Soporte respondió a tu reclamo',
   favorite_price_drop: 'Bajó de precio un producto de tus favoritos',
-  mp_split_needs_review: 'Tu vinculación con Mercado Pago necesita revisión',
-  mp_payment_amount_mismatch: 'Un pago no cubre el total del pedido',
-  mp_payment_refunded: 'Un pago fue devuelto o desconocido',
   boost_activated: '¡Tu combo de Impulsá tus ventas está activo!',
-  boost_needs_review: 'Un pago de tu combo necesita revisión',
   boost_renewal_reminder: 'Hay combos o servicios por vencer: recordales que abonen',
   transfer_method_missing: 'Cargá un medio de transferencia en tu comercio: es obligatorio',
   store_location_missing: '¿Tenés local a la calle? Marcalo en el mapa',
@@ -53,13 +49,6 @@ const TYPE_LABELS = {
   delivery_delayed: 'El repartidor se demora en buscar un pedido',
   delivery_problem: 'Hubo un problema con una entrega',
   delivery_claim: 'Un comprador reclamó por una entrega',
-};
-
-/** Estados de Mercado Pago en los que la plata ya no está (ver mp-webhook). */
-const MP_DISPUTE_LABELS = {
-  refunded: 'El pago fue devuelto al cliente',
-  charged_back: 'El cliente hizo un contracargo',
-  in_mediation: 'Mercado Pago abrió una disputa por este pago',
 };
 
 const SUPPORT_TICKET_STATUS_LABELS = {
@@ -103,11 +92,7 @@ const TYPE_TONE = {
   professional_inquiry_new: 'accent',
   stock_alert: 'accent',
   favorite_price_drop: 'accent',
-  mp_split_needs_review: 'accent',
-  mp_payment_amount_mismatch: 'accent',
-  mp_payment_refunded: 'danger',
   boost_activated: 'success',
-  boost_needs_review: 'accent',
   boost_renewal_reminder: 'accent',
   transfer_method_missing: 'danger',
   store_location_missing: 'info',
@@ -177,14 +162,6 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
     case 'order_expired_seller':
     case 'revocation_accepted':
       return p.total_price ? `Pedido por ${formatPrice(p.total_price)}` : null;
-    // Los manda mp-webhook cuando el pago no cierra: sin los dos montos, el
-    // aviso no dice nada accionable.
-    case 'mp_payment_amount_mismatch':
-      return p.paid_amount != null && p.expected_amount != null
-        ? `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`
-        : null;
-    case 'mp_payment_refunded':
-      return MP_DISPUTE_LABELS[p.mp_status] || null;
     // Lo manda la base todos los días SOLO a los admins (migración 161): hay combos o servicios que vencen en 3 días o menos.
     case 'boost_renewal_reminder':
       return renewalReminderPreview(p);
@@ -213,10 +190,6 @@ function buildPreviewText(n, { reviewMap, orderAmountMap }) {
       const reasons = Array.isArray(p.reasons) ? p.reasons.map((r) => labels[r] || r).join(', ') : '';
       return reasons ? `Qué pasó: ${reasons}` : null;
     }
-    case 'boost_needs_review':
-      if (p.paid_amount != null && p.expected_amount != null) return `Se cobró ${formatPrice(p.paid_amount)} de ${formatPrice(p.expected_amount)}`;
-      if (p.over_limit) return 'Tu comercio ya llegó al máximo de ese servicio. Lo revisamos y te avisamos';
-      return p.refunded ? 'El pago fue devuelto o desconocido' : null;
     case 'order_paid':
     case 'order_shipped':
     case 'order_delivered':
@@ -253,8 +226,6 @@ function buildNotificationLink(n) {
     case 'order_cancelled_by_buyer':
     case 'order_expired_seller':
     case 'revocation_requested':
-    case 'mp_payment_amount_mismatch':
-    case 'mp_payment_refunded':
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     // Avisos del reparto. Los del repartidor van a su panel; los del comprador, a
     // "Mis compras"; los del comercio, a "Pedidos". delivery_problem le llega a los
@@ -276,7 +247,6 @@ function buildNotificationLink(n) {
       return p.order_id ? { href: `./vender.html?order=${encodeURIComponent(p.order_id)}#pedidos`, label: 'Ver pedido' } : null;
     // Combos de "Impulsá tus ventas": van a esa pantalla del panel.
     case 'boost_activated':
-    case 'boost_needs_review':
       return { href: './vender.html#impulsar', label: 'Ver mi combo' };
     // Recordatorio a los admins: va a la tarjeta de renovaciones de Admin.
     case 'boost_renewal_reminder':
@@ -287,10 +257,6 @@ function buildNotificationLink(n) {
     // Ubicación del local: abre el perfil y baja hasta el mapa (vender.js, foco=ubicacion).
     case 'store_location_missing':
       return { href: './vender.html?foco=ubicacion#perfil-comercio', label: 'Marcar mi local' };
-    case 'mp_split_needs_review': {
-      const firstOrderId = Array.isArray(p.order_ids) ? p.order_ids[0] : null;
-      return firstOrderId ? { href: `./vender.html?order=${encodeURIComponent(firstOrderId)}#pedidos`, label: 'Ver pedido' } : { href: './vender.html#pedidos', label: 'Revisar' };
-    }
 
     // Recibidas por el cliente -- van a "Mis compras" en su perfil.
     case 'order_paid':

@@ -23,7 +23,7 @@ test('CBU: 22 dígitos, tolera espacios y guiones al tipear', () => {
 
 test('alias: 6 a 20, letras/números/punto/guion', () => {
   assert.equal(isValidAlias('MIVENTA.BARADERO'), true);
-  assert.equal(isValidAlias('  gogo.mp  '), true);
+  assert.equal(isValidAlias('  gogo.pesos  '), true);
   assert.equal(isValidAlias('corto'), false);
   assert.equal(isValidAlias('con espacio.aca'), false);
   assert.equal(isValidAlias('a'.repeat(21)), false);
@@ -37,7 +37,7 @@ test('CBU se muestra en bloques de 4 pero se copia limpio', () => {
 });
 
 test('solo los datos cargados, en orden alias/CBU/titular/banco; banco sin copiar', () => {
-  const fields = buildBankFields({ transfer_bank: 'Banco Nación', transfer_holder: 'Juan Pérez', transfer_alias: 'JUAN.PEREZ.MP' });
+  const fields = buildBankFields({ transfer_bank: 'Banco Nación', transfer_holder: 'Juan Pérez', transfer_alias: 'JUAN.PEREZ.BNA' });
   assert.deepEqual(fields.map((f) => f.key), ['alias', 'holder', 'bank']);
   assert.equal(fields[2].copy, null);
   assert.deepEqual(buildBankFields({}), []);
@@ -45,8 +45,8 @@ test('solo los datos cargados, en orden alias/CBU/titular/banco; banco sin copia
 });
 
 test('comercio viejo con solo transfer_info sigue teniendo datos', () => {
-  const legacy = { transfer_info: 'gogo.mp' };
-  assert.equal(extraTransferNotes(legacy), 'gogo.mp');
+  const legacy = { transfer_info: 'gogo.pesos' };
+  assert.equal(extraTransferNotes(legacy), 'gogo.pesos');
   assert.equal(hasTransferData(legacy), true);
   assert.equal(hasTransferData({ transfer_info: '   ' }), false);
 });

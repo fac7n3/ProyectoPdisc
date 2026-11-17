@@ -148,12 +148,8 @@
               <i class="fa-solid fa-chevron-down"></i>
             </div>
             <div class="cart-summary__section-content" id="payment-content">
-              <label class="delivery-option" id="payment-mercadopago-label">
-                <input type="radio" name="payment-method" id="payment-mercadopago" value="mercadopago" checked />
-                Mercado Pago
-              </label>
               <label class="delivery-option">
-                <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
+                <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" checked />
                 Transferencia bancaria
               </label>
               <!-- Efectivo solo con retiro en el local: con envío a domicilio se esconde
@@ -162,13 +158,11 @@
                 <input type="radio" name="payment-method" id="payment-efectivo" value="efectivo" />
                 <span id="payment-efectivo-text">Efectivo al retirar</span>
               </label>
-              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí Mercado Pago o transferencia. El efectivo es solo para retirar en el local.</p>
+              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí transferencia. El efectivo es solo para retirar en el local.</p>
               <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
                    carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
                    datos completos y copiables aparecen después de "Iniciar pago". -->
               <div id="transfer-info-box" class="transfer-info-box" hidden></div>
-              <!-- Varios comercios + Mercado Pago: se paga de a uno (carrito.js, renderMpChainHint). -->
-              <p id="mp-chain-hint" class="transfer-info-box" role="note" hidden></p>
             </div>
           </div>
 

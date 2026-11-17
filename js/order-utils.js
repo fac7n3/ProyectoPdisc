@@ -18,7 +18,6 @@ export const ORDER_STATUS_LABELS = {
 };
 
 export const PAYMENT_METHOD_LABELS = {
-  mercadopago: 'Mercado Pago',
   transferencia: 'Transferencia',
   efectivo: 'Efectivo',
   simulado: 'Pago simulado',
@@ -64,11 +63,6 @@ export function canPrepare(order) {
 /** Pedido por transferencia que todavía espera la plata. */
 export function awaitingTransfer(order) {
   return order.payment_method === 'transferencia' && order.payment_status === 'pending' && order.status === 'pending';
-}
-
-/** Pedido por Mercado Pago que el comprador todavía puede pagar. */
-export function awaitingMercadoPago(order) {
-  return order.payment_method === 'mercadopago' && order.payment_status === 'pending' && order.status === 'pending';
 }
 
 /** El comprador avisó que pagó (botón "Ya transferí" o comprobante sin revisar). */

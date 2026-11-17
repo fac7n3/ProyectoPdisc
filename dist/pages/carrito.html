@@ -13,19 +13,19 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
-    <script type="module" crossorigin src="/assets/carrito-DMR2YcJH.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/auth-utils-D5rHSv7z.js">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
+    <script type="module" crossorigin src="/assets/carrito-8NP9nLIT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/auth-utils-BC5nfFNT.js">
     <link rel="modulepreload" crossorigin href="/assets/scroll-lock-C0gl5VtV.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-skeleton-930o5RMd.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-skeleton-iSGpIVGZ.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-B45jVOmk.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-CXDgtPX1.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-qLiLY0xs.js">
-    <link rel="modulepreload" crossorigin href="/assets/mp-chain-utils-BaCgoizJ.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-6OZJY6Zw.js">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BpNH9Je4.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights--9fOCXGw.js">
     <link rel="modulepreload" crossorigin href="/assets/transfer-details-utils-SYwmVVYG.js">
-    <link rel="modulepreload" crossorigin href="/assets/transfer-details-rzPfvM2F.js">
-    <link rel="stylesheet" crossorigin href="/assets/auth-utils-ByFvjJTD.css">
+    <link rel="modulepreload" crossorigin href="/assets/transfer-details-DOl42vBE.js">
+    <link rel="modulepreload" crossorigin href="/assets/hints-utils-BDMOa0wc.js">
+    <link rel="stylesheet" crossorigin href="/assets/auth-utils-CrgrWSUP.css">
     <link rel="stylesheet" crossorigin href="/assets/scroll-lock-phDvGP7M.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
@@ -158,12 +158,8 @@
               <i class="fa-solid fa-chevron-down"></i>
             </div>
             <div class="cart-summary__section-content" id="payment-content">
-              <label class="delivery-option" id="payment-mercadopago-label">
-                <input type="radio" name="payment-method" id="payment-mercadopago" value="mercadopago" checked />
-                Mercado Pago
-              </label>
               <label class="delivery-option">
-                <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" />
+                <input type="radio" name="payment-method" id="payment-transferencia" value="transferencia" checked />
                 Transferencia bancaria
               </label>
               <!-- Efectivo solo con retiro en el local: con envío a domicilio se esconde
@@ -172,13 +168,11 @@
                 <input type="radio" name="payment-method" id="payment-efectivo" value="efectivo" />
                 <span id="payment-efectivo-text">Efectivo al retirar</span>
               </label>
-              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí Mercado Pago o transferencia. El efectivo es solo para retirar en el local.</p>
+              <p id="payment-cash-note" class="transfer-info-box" role="note" hidden>Con envío a domicilio el pago en efectivo no está disponible: elegí transferencia. El efectivo es solo para retirar en el local.</p>
               <!-- A113-299: aviso previo por comercio (datos cargados o no), poblado por
                    carrito.js (renderTransferInfo) solo cuando este método está elegido. Los
                    datos completos y copiables aparecen después de "Iniciar pago". -->
               <div id="transfer-info-box" class="transfer-info-box" hidden></div>
-              <!-- Varios comercios + Mercado Pago: se paga de a uno (carrito.js, renderMpChainHint). -->
-              <p id="mp-chain-hint" class="transfer-info-box" role="note" hidden></p>
             </div>
           </div>
 
@@ -309,6 +303,6 @@
       </div>
     </div>
 
-
+
   </body>
 </html>

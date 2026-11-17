@@ -22,5 +22,5 @@ Qué te prometemos:
 
 - Política, controles y pendientes: [`docs/seguridad/HARDENING-SOC2-ISO27701.md`](docs/seguridad/HARDENING-SOC2-ISO27701.md)
 - Qué hacer ante un incidente: [`docs/seguridad/RESPUESTA-INCIDENTES.md`](docs/seguridad/RESPUESTA-INCIDENTES.md)
-- Nunca commitear secretos (service role key, tokens de Mercado Pago o de Jira). Si pasó,
+- Nunca commitear secretos (service role key o tokens de Jira). Si pasó,
   rotarlo primero y limpiar después.

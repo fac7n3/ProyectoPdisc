@@ -20,15 +20,13 @@ const iso = (ms) => new Date(ms).toISOString();
 let seq = 0;
 const row = (over = {}) => ({
   id: `r${(seq += 1)}`, store_id: 's1', store_name: 'Panadería López', owner_email: 'lopez@x.com',
-  plan_id: null, service_id: 'banner_chico', item_name: 'Banner chico', quantity: 1, source: 'purchase', status: 'active',
+  plan_id: null, service_id: 'banner_chico', item_name: 'Banner chico', quantity: 1, source: 'admin', status: 'active',
   starts_at: iso(NOW - 10 * DAY), ends_at: iso(NOW + 20 * DAY), ...over,
 });
 
 console.log('--- estado de una compra ---');
-check('quitada, en revisión y esperando pago salen del estado guardado', () => {
+check('quitada sale del estado guardado', () => {
   assert.equal(benefitState(row({ status: 'cancelled' }), NOW), 'quitado');
-  assert.equal(benefitState(row({ status: 'needs_review' }), NOW), 'en_revision');
-  assert.equal(benefitState(row({ status: 'pending', starts_at: null, ends_at: null }), NOW), 'esperando_pago');
 });
 check('vigente, vence pronto (7 días o menos), vencida y programada', () => {
   assert.equal(benefitState(row(), NOW), 'vigente');
@@ -61,7 +59,6 @@ check('3 días o menos y vencidas de los últimos 7; ordenadas de la más urgent
     row({ id: 'hace8', ends_at: iso(Date.parse('2026-11-04T15:00:00Z')) }),
     row({ id: 'manana', ends_at: iso(Date.parse('2026-11-13T15:00:00Z')) }),
     row({ id: 'quitada', status: 'cancelled', ends_at: iso(Date.parse('2026-11-14T15:00:00Z')) }),
-    row({ id: 'revision', status: 'needs_review', ends_at: iso(Date.parse('2026-11-14T15:00:00Z')) }),
     row({ id: 'lejos' }),
   ];
   const due = renewalsDue(rows, NOW);
@@ -71,9 +68,8 @@ check('3 días o menos y vencidas de los últimos 7; ordenadas de la más urgent
   assert.equal(due[1].when, 'vence mañana');
   assert.equal(due[2].daysLeft, RENEWAL_DAYS);
 });
-check('contadores: revisión, vencen pronto, vigentes, renovaciones y la insignia del menú', () => {
+check('contadores: vencen pronto, vigentes, renovaciones y la insignia del menú', () => {
   const rows = [
-    row({ status: 'needs_review' }),
     row({ ends_at: iso(NOW + 2 * DAY) }),
     row({ ends_at: iso(NOW + 6 * DAY) }),
     row(),
@@ -82,7 +78,7 @@ check('contadores: revisión, vencen pronto, vigentes, renovaciones y la insigni
     row({ ends_at: iso(NOW - 2 * DAY) }),
   ];
   const s = summarizeBenefits(rows, NOW);
-  assert.deepEqual(s, { review: 1, expiring: 2, active: 4, renewals: 2, badge: 3 });
+  assert.deepEqual(s, { expiring: 2, active: 4, renewals: 2, badge: 2 });
 });
 
 console.log('--- filtros de la tabla ---');
@@ -94,7 +90,7 @@ const DATA = [
   row({ id: 'a', store_name: 'Panadería López', owner_email: 'lopez@x.com', service_id: 'banner_chico', item_name: 'Banner chico' }),
   row({ id: 'b', store_name: 'Kiosco Sol', owner_email: 'sol@x.com', plan_id: 'pro', service_id: null, item_name: 'Plan Pro', ends_at: iso(NOW + 3 * DAY) }),
   row({ id: 'c', store_name: 'Ferretería El Clavo', owner_email: 'clavo@x.com', service_id: 'redes_sociales', item_name: 'Redes sociales', ends_at: iso(NOW - DAY) }),
-  row({ id: 'd', store_name: 'Librería Ñandú', owner_email: 'nandu@x.com', status: 'needs_review', service_id: 'estadisticas_pro', item_name: 'Estadísticas Pro' }),
+  row({ id: 'd', store_name: 'Librería Ñandú', owner_email: 'nandu@x.com', status: 'cancelled', service_id: 'estadisticas_pro', item_name: 'Estadísticas Pro' }),
 ];
 const ids = (rs) => rs.map((r) => r.id).join();
 check('buscar sin acentos ni mayúsculas: por comercio, email y elemento', () => {
@@ -115,7 +111,7 @@ check('por estado: "vigentes" suma los que vencen pronto; el resto exacto', () =
   assert.equal(ids(filterBenefits(DATA, { state: 'vigente' }, NOW, PLAN_ITEMS)), 'a,b');
   assert.equal(ids(filterBenefits(DATA, { state: 'vence_pronto' }, NOW, PLAN_ITEMS)), 'b');
   assert.equal(ids(filterBenefits(DATA, { state: 'vencido' }, NOW, PLAN_ITEMS)), 'c');
-  assert.equal(ids(filterBenefits(DATA, { state: 'en_revision' }, NOW, PLAN_ITEMS)), 'd');
+  assert.equal(ids(filterBenefits(DATA, { state: 'quitado' }, NOW, PLAN_ITEMS)), 'd');
 });
 check('los filtros se combinan', () => {
   assert.equal(ids(filterBenefits(DATA, { q: 'kiosco', itemId: 'redes_sociales', state: 'vigente' }, NOW, PLAN_ITEMS)), 'b');
@@ -129,7 +125,7 @@ check('normalizeText', () => {
 console.log('--- Redes sociales: historias para resubir ---');
 check('suma compra directa, regalo y combos que lo incluyen, sin duplicar comercios', () => {
   const rows = [
-    row({ id: '1', store_id: 's1', store_name: 'Panadería López', service_id: 'redes_sociales', item_name: 'Redes sociales', source: 'purchase', ends_at: iso(NOW + 5 * DAY) }),
+    row({ id: '1', store_id: 's1', store_name: 'Panadería López', service_id: 'redes_sociales', item_name: 'Redes sociales', ends_at: iso(NOW + 5 * DAY) }),
     row({ id: '2', store_id: 's1', store_name: 'Panadería López', service_id: 'redes_sociales', item_name: 'Redes sociales', source: 'admin', ends_at: iso(NOW + 9 * DAY) }),
     row({ id: '3', store_id: 's2', store_name: 'Kiosco Sol', plan_id: 'pro', service_id: null, item_name: 'Plan Pro', ends_at: iso(NOW + 12 * DAY) }),
     row({ id: '4', store_id: 's3', store_name: 'Almacén Ana', service_id: 'redes_sociales', item_name: 'Redes sociales', source: 'admin' }),
@@ -141,7 +137,7 @@ check('suma compra directa, regalo y combos que lo incluyen, sin duplicar comerc
   const out = storesWithService(rows, 'redes_sociales', PLAN_ITEMS, NOW);
   assert.deepEqual(out.map((s) => s.store_name), ['Almacén Ana', 'Kiosco Sol', 'Panadería López']);
   const lopez = out.find((s) => s.store_id === 's1');
-  assert.deepEqual(lopez.origins, ['Compra', 'Regalo']);
+  assert.deepEqual(lopez.origins, ['Regalo']);
   assert.equal(lopez.endsAt, iso(NOW + 9 * DAY)); // el fin más lejano
   assert.deepEqual(out.find((s) => s.store_id === 's2').origins, ['Plan Pro']);
   assert.deepEqual(out.find((s) => s.store_id === 's3').origins, ['Regalo']);

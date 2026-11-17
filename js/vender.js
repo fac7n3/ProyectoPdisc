@@ -20,7 +20,7 @@ import { buildPromoEditorCard } from './home-promos-editor.js';
 import { promoPosition } from './home-promos-utils.js';
 import { renderBoostPlans, renderBoostServices } from './boost-plans.js';
 import {
-  describeBoostState, formatBoostDate, boostReturnMessage, BANNER_SERVICE_IDS,
+  describeBoostState, formatBoostDate, BANNER_SERVICE_IDS,
   holdingsMap, activeServicePurchases, boostWhatsAppUrl,
 } from './boost-utils.js';
 import { SUPPORT_WHATSAPP } from './support-contact.js';
@@ -854,7 +854,7 @@ let pedidosTab = 'all'; // 'all' | 'to_confirm' | 'pending_payment' | 'to_prepar
 let pedidosSort = 'recent'; // 'recent' | 'oldest' | 'amount_desc' | 'amount_asc'
 let pedidosDeliveryFilter = 'all'; // 'all' | 'pickup' | 'delivery'
 
-const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, delivery_fee, mp_collector_id, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
+const STORE_SELECT_COLUMNS = 'id, name, category_slug, logo_url, address, description, zone, hours, delivery_fee, contact_method, whatsapp, social_instagram, social_instagram_show, social_facebook, social_facebook_show, social_tiktok, social_tiktok_show, social_x, social_x_show, social_youtube, social_youtube_show, social_website, social_website_show';
 
 // Copy de las tarjetas de bienvenida al panel (js/panel-onboarding-utils.js).
 // Clave = mismo valor que data-section en el sidebar (pages/vender.html).
@@ -991,7 +991,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (isStoreOwner) { fillStoreProfileForm(store); focusLocationFromUrl(); }
 
   // Todas las secciones arrancan juntas: cada una pinta su propio contenedor.
-  // Antes Mercado Pago, Notificaciones y Soporte iban una detrás de otra antes
+  // Antes Notificaciones y Soporte iban una detrás de otra antes
   // de pedir Publicaciones y Pedidos (~7 viajes en serie, unos 3 s desde
   // Baradero). Solo Resumen y Reseñas esperan a fetchProducts (leen
   // currentActiveProductCount y pubProducts). Un error en una sección no
@@ -1013,7 +1013,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
     notificacionesContainer && renderNotificationsSection(notificacionesContainer, user.id, { scope: 'comercio' }),
     supportContainer && renderSupportSection(supportContainer),
     ...(isStoreOwner
-      ? [setupMpSection(store), renderMyCoupons(), renderStoreStaff(), renderHomePromo(store.name)]
+      ? [renderMyCoupons(), renderStoreStaff(), renderHomePromo(store.name)]
       : []),
   ]);
   results.forEach((r) => {
@@ -2068,7 +2068,7 @@ function renderOrderDetail(order, events) {
   });
   body.appendChild(detailSection('Pago',
     detailRow('Medio', PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || '-'),
-    detailRow('Estado', { pending: 'Pendiente', paid: 'Pagado', rejected: 'Rechazado', needs_review: 'Para revisar' }[order.payment_status] || order.payment_status),
+    detailRow('Estado', { pending: 'Pendiente', paid: 'Pagado', rejected: 'Rechazado' }[order.payment_status] || order.payment_status),
     awaitingTransfer(order) && order.payment_due_at ? detailRow('Vence', formatDueDate(order.payment_due_at)) : null,
     proofList,
   ));
@@ -3384,118 +3384,6 @@ async function renderHomePromo(storeName) {
       onSaved: () => renderHomePromo(storeName),
     }));
   });
-}
-
-// --- Cobrar con Mercado Pago (A113-274): el comercio decide y vincula su cuenta ---
-
-let mpLinked = false;
-let mpConnecting = false;
-
-/** Muestra u oculta el panel según el interruptor, y el botón según esté o no vinculado. */
-function renderMpSection() {
-  const toggle = document.getElementById('store-mp-toggle');
-  const panel = document.getElementById('store-mp-panel');
-  if (!toggle || !panel) return;
-  panel.hidden = !toggle.checked;
-
-  const status = document.getElementById('store-mp-status');
-  status.classList.toggle('mp-status--ok', mpLinked);
-  status.textContent = mpLinked
-    ? 'Tu cuenta de Mercado Pago está vinculada. Los pagos con Mercado Pago de tu comercio van directo a tu cuenta.'
-    : 'Todavía no vinculaste tu cuenta. Te llevamos a Mercado Pago para que autorices la conexión y después volvés acá.';
-  document.getElementById('store-mp-connect').hidden = mpLinked;
-  document.getElementById('store-mp-disconnect').hidden = !mpLinked;
-}
-
-async function startMpConnect() {
-  if (mpConnecting || !currentStoreId) return;
-  mpConnecting = true;
-  const btn = document.getElementById('store-mp-connect');
-  setLoading(btn, true, 'Conectar mi cuenta de Mercado Pago');
-  try {
-    const { data, error } = await supabase.functions.invoke('mp-oauth-start', { body: { store_id: currentStoreId } });
-    if (error || !data?.url) {
-      showToast(await friendlyFunctionError(error, data, 'No se pudo abrir Mercado Pago. Probá de nuevo en un rato.'), 'error');
-      return;
-    }
-    window.location.href = data.url;
-  } finally {
-    mpConnecting = false;
-    setLoading(btn, false, 'Conectar mi cuenta de Mercado Pago');
-  }
-}
-
-/** Apagar el interruptor estando vinculado = desvincular (con confirmación). */
-async function disconnectMp() {
-  const toggle = document.getElementById('store-mp-toggle');
-  const ok = await confirmDialog(
-    'Tus clientes van a dejar de poder pagarte con Mercado Pago y vas a cobrar solo por transferencia. Los pedidos que ya estén pagos no cambian. ¿Desvinculamos tu cuenta?',
-    { title: 'Desvincular Mercado Pago', confirmText: 'Desvincular', danger: true },
-  );
-  if (!ok) { toggle.checked = true; renderMpSection(); return; }
-
-  const { error } = await supabase.rpc('disconnect_store_mp', { p_store_id: currentStoreId });
-  if (error) {
-    console.error('Error al desvincular Mercado Pago:', error);
-    showToast('No se pudo desvincular Mercado Pago.', 'error');
-    toggle.checked = true;
-  } else {
-    mpLinked = false;
-    toggle.checked = false;
-    showToast('Mercado Pago desvinculado.', 'success');
-  }
-  renderMpSection();
-}
-
-/** Si volvimos de la pantalla de autorización de Mercado Pago (?code=&state= o ?error=), cierra la vinculación. */
-async function handleMpOauthReturn() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const state = params.get('state');
-  const mpError = params.get('error');
-  if (!state || (!code && !mpError)) return;
-
-  // Se limpia ya, antes de nada: un F5 no debe reintentar con un code que se usa una sola vez.
-  window.history.replaceState(window.history.state, '', window.location.pathname + window.location.hash);
-
-  if (!code) {
-    showToast('No autorizaste la conexión con Mercado Pago, así que no se vinculó nada.', 'error');
-    return;
-  }
-
-  const { data, error } = await supabase.functions.invoke('mp-oauth-callback', { body: { code, state } });
-  if (error || !data?.ok) {
-    console.error('No se pudo vincular Mercado Pago:', error, data);
-    showToast(await friendlyFunctionError(error, data, 'No se pudo vincular Mercado Pago. Probá de nuevo.'), 'error');
-    return;
-  }
-  mpLinked = true;
-  const toggle = document.getElementById('store-mp-toggle');
-  if (toggle) toggle.checked = true;
-  renderMpSection();
-  showToast('¡Mercado Pago vinculado! Ya podés cobrar directo a tu cuenta.', 'success');
-}
-
-async function setupMpSection(store) {
-  const toggle = document.getElementById('store-mp-toggle');
-  if (!toggle) return;
-  mpLinked = Boolean(store.mp_collector_id);
-  toggle.checked = mpLinked;
-
-  if (!toggle.dataset.bound) {
-    toggle.dataset.bound = '1';
-    toggle.addEventListener('change', () => {
-      if (!toggle.checked && mpLinked) { disconnectMp(); return; }
-      renderMpSection();
-    });
-    document.getElementById('store-mp-connect').addEventListener('click', startMpConnect);
-    document.getElementById('store-mp-disconnect').addEventListener('click', () => {
-      toggle.checked = false;
-      disconnectMp();
-    });
-  }
-  renderMpSection();
-  await handleMpOauthReturn();
 }
 
 // --- F12-03: cupones propios del vendedor (solo los de su propia tienda) ---
@@ -5902,9 +5790,8 @@ function buildOptionValueChip(value, group, productId) {
 
 /**
  * "Impulsá tus ventas": combos de promoción (js/boost-plans.js, migración 131).
- * El precio sale de boost_plans y el cobro es con Mercado Pago a la cuenta de
- * la plataforma (Edge Function mp-create-boost-preference); quien activa el
- * combo es mp-webhook cuando el pago se acredita, nunca esta pantalla.
+ * El precio sale de boost_plans; el pago se coordina por WhatsApp y el combo lo
+ * activa el equipo desde Admin -> Beneficios de comercios, nunca esta pantalla.
  */
 let boostPlans = [];
 let boostItems = [];
@@ -5983,10 +5870,6 @@ function renderBoostStatus(state) {
       const strong = rsEl('strong', null, `Tenés el ${plan?.name || 'combo'} activo`);
       t.append(strong, ` hasta el ${formatBoostDate(state.active.endsAt)} (${state.active.daysLeft === 1 ? 'queda 1 día' : `quedan ${state.active.daysLeft} días`}). `);
     });
-  } else if (state.pending) {
-    add('', 'fa-solid fa-hourglass-half', (t) => {
-      t.append('Estamos esperando que se acredite tu pago en Mercado Pago. Apenas llegue, activamos tu combo.');
-    });
   }
   const loose = activeServicePurchases(boostPurchases);
   if (loose.length) {
@@ -6006,22 +5889,14 @@ function renderBoostStatus(state) {
       t.append(': el equipo te asigna el lugar.');
     });
   }
-  if (state.needsReview) {
-    add('bp-status--warn', 'fa-solid fa-triangle-exclamation', (t) => {
-      t.append('Hay un pago de combo en revisión (no cubre el valor, fue devuelto o el comercio ya llegó al máximo de ese servicio). ');
-      t.append(linkTo('Escribinos por Soporte', 'soporte'));
-      t.append(' y lo resolvemos.');
-    });
-  }
 }
 
 /**
  * "Elegir este combo" / "Comprar" / "Consultar": abre WhatsApp con atención al cliente,
  * con el mensaje ya escrito ("Hola, soy de <local> y estamos viendo de obtener <combo o
  * servicio>"). El pago y la activación se coordinan por ahí; el equipo activa el beneficio
- * desde Admin -> Beneficios de comercios. (La compra con Mercado Pago -- la Edge Function
- * mp-create-boost-preference y las RPC create_*_purchase -- sigue en la base pero esta
- * pantalla ya no la usa.) Es un clic directo, sin await: el navegador no bloquea la pestaña.
+ * desde Admin -> Beneficios de comercios. Es un clic directo, sin await: el navegador no
+ * bloquea la pestaña.
  */
 function contactAboutBoost(itemName, quantity = 1) {
   const url = boostWhatsAppUrl({ phone: SUPPORT_WHATSAPP, storeName: currentStoreName, itemName, quantity });
@@ -6046,46 +5921,10 @@ function chooseBoostService(service, quantity) {
   contactAboutBoost(service.name, quantity);
 }
 
-/** Parámetros que Mercado Pago agrega al volver; no hace falta dejarlos en la barra. */
-const MP_RETURN_PARAMS = ['boost', 'collection_id', 'collection_status', 'payment_id', 'status',
-  'external_reference', 'payment_type', 'merchant_order_id', 'preference_id', 'site_id', 'processing_mode', 'merchant_account_id'];
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Vuelta de Mercado Pago (`?boost=...`): avisa y, si falta, espera a que el webhook active la compra. */
-async function handleBoostReturn() {
-  const params = new URLSearchParams(window.location.search);
-  const ret = boostReturnMessage(params.get('boost'));
-  if (!ret) return;
-  // external_reference = "boost:<id de la compra>": sirve solo para saber QUÉ esperar
-  // (no da ningún permiso; si no viene o no es un uuid, se usa el criterio general).
-  const refId = String(params.get('external_reference') || '').replace(/^boost:/, '');
-  const waitFor = UUID_RE.test(refId) ? refId : null;
-  MP_RETURN_PARAMS.forEach((k) => params.delete(k));
-  const qs = params.toString();
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`);
-  showToast(ret.message, ret.tone);
-  if (!ret.poll) return;
-
-  const activated = () => (waitFor
-    ? boostPurchases.some((p) => p.id === waitFor && p.status === 'active')
-    : describeBoostState(boostPurchases).active || activeServicePurchases(boostPurchases).length > 0);
-
-  // El webhook puede tardar unos segundos: se mira cada 5 s, hasta 1 minuto.
-  for (let i = 0; i < 12; i += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    await refreshBoost();
-    if (activated()) {
-      showToast('¡Listo! Ya está activo.', 'success');
-      return;
-    }
-  }
-}
-
 function initBoostSection() {
   document.getElementById('boost-back')?.addEventListener('click', () => { location.hash = 'resumen'; });
   if (!isStoreOwner) return;
   refreshBoost();
-  handleBoostReturn();
   window.addEventListener('hashchange', () => {
     if (location.hash === '#impulsar') refreshBoost();
   });

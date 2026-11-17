@@ -1,4 +1,4 @@
-/** Supabase en memoria: lo justo para correr la lógica de mp-webhook. */
+/** Supabase en memoria: lo justo para correr la lógica de las Edge Functions. */
 /**
  * `rpcHandlers` (opcional): { nombreDelRpc: (args) => ({ data, error }) } para los
  * tests que necesitan que un rpc devuelva algo; sin handler devuelve { data: null }.

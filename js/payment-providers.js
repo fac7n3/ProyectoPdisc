@@ -2,12 +2,10 @@
 // Cada provider expone la misma forma: { name, pay(orderIds) }, donde pay()
 // devuelve { success, message? }. Así carrito.js no necesita saber nada
 // del método de pago elegido — solo pide el provider correcto y lo llama.
-// Providers futuros (F2-04 transferencia, F2-07 MercadoPago) se agregan acá
-// sin tocar el resto del checkout.
+// Un provider nuevo se agrega acá sin tocar el resto del checkout.
 
 import { supabase } from './auth-utils.js';
 
-import { friendlyError, friendlyFunctionError } from './friendly-error.js';
 const simuladoProvider = {
   name: 'simulado',
   /**
@@ -25,38 +23,6 @@ const simuladoProvider = {
       return { success: false, message: failed.error.message };
     }
     return { success: true };
-  },
-};
-
-const mercadopagoProvider = {
-  name: 'mercadopago',
-  /**
-   * A diferencia de simulado/transferencia, acá no hay nada que confirmar en
-   * el cliente: mp-create-preference (Edge Function) arma el checkout
-   * hospedado de Mercado Pago y esta función redirige el navegador ahí. La
-   * confirmación real llega después por webhook (mp-webhook, server-side)
-   * cuando Mercado Pago efectivamente acredita el pago — carrito.js no debe
-   * mostrar "¡pagado!", la orden queda pending hasta que llegue el webhook.
-   * Los pedidos de UN solo comercio por llamada (un access_token por pago): con
-   * varios comercios se llama una vez por pedido, en cadena (mp-chain-utils.js).
-   * @returns {Promise<{success: boolean, message?: string, redirecting?: boolean}>}
-   */
-  async pay(orderIds) {
-    const { data, error } = await supabase.functions.invoke('mp-create-preference', {
-      body: { order_ids: orderIds },
-    });
-    if (error || !data || data.error) {
-      return { success: false, message: await friendlyFunctionError(error, data, 'No se pudo iniciar el pago con Mercado Pago.') };
-    }
-    // Con el modelo actual de MP (credenciales de prueba + usuario comprador
-    // de prueba, no el viejo sandbox separado) el link correcto es init_point;
-    // sandbox_init_point queda de respaldo por si la cuenta todavía lo usa.
-    const redirectUrl = data.init_point || data.sandbox_init_point;
-    if (!redirectUrl) {
-      return { success: false, message: 'Mercado Pago no devolvió un link de pago.' };
-    }
-    window.location.href = redirectUrl;
-    return { success: true, redirecting: true };
   },
 };
 
@@ -90,8 +56,8 @@ const efectivoProvider = {
 };
 
 /**
- * @param {string} method - 'simulado' | 'transferencia' | 'mercadopago' | 'efectivo'
- * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, redirecting?: boolean, message?: string}>}}
+ * @param {string} method - 'simulado' | 'transferencia' | 'efectivo'
+ * @returns {{name: string, pay: (orderIds: string[]) => Promise<{success: boolean, pending?: boolean, message?: string}>}}
  */
 export function getPaymentProvider(method) {
   switch (method) {
@@ -99,8 +65,6 @@ export function getPaymentProvider(method) {
       return simuladoProvider;
     case 'transferencia':
       return transferenciaProvider;
-    case 'mercadopago':
-      return mercadopagoProvider;
     case 'efectivo':
       return efectivoProvider;
     default:

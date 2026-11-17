@@ -14,8 +14,7 @@
    - **Redirect URLs**: agregar `https://<tu-dominio>/**`. Si además querés seguir probando en local, sumá `http://localhost:<puerto>/**` sin borrar la de producción.
    - Síntoma si esto queda mal: el login con Google redirige a `localhost` y da `ERR_CONNECTION_REFUSED` aunque el código esté bien (el código arma la URL de vuelta con `window.location.origin`, dinámico — el problema es que Supabase no la deja pasar si no está en esta lista).
 5. **Auth → Policies → Password**: activar "Leaked Password Protection" (checkbox simple, sin costo).
-6. **Project Settings → Edge Functions → Secrets**: cargar `MP_ACCESS_TOKEN` (ver sección Mercado Pago abajo).
-7. **Storage**: los buckets `products`/`stores` (públicos) y `payment-proofs` (privado) ya vienen con sus policies en las migraciones — no necesitan config manual.
+6. **Storage**: los buckets `products`/`stores` (públicos) y `payment-proofs` (privado) ya vienen con sus policies en las migraciones — no necesitan config manual.
 
 ## 2) Vercel (hosting)
 
@@ -24,19 +23,11 @@
 3. Cada push a `main` dispara un deploy automático a producción. **Si el repo pasa a privado, Vercel deja de poder deployar** (queda `BLOCKED` sin build logs) — causa real (investigado 2026-07-14): el plan **Hobby** de Vercel no permite deployar un repo privado cuando el proyecto pertenece a un **Team** (acá, `baradero-local`); es un chequeo de plan/billing, no un permiso del GitHub App que haya que reotorgar. Para tener el repo privado y seguir deployando: upgradear el team a Pro, o mover el proyecto a una cuenta personal, o reemplazar la integración Git nativa por GitHub Actions + `vercel deploy --prebuilt`.
 4. **Dominio propio** (cuando se compre uno): Project Settings → Domains → agregar el dominio, seguir las instrucciones de DNS. Después de esto, hay que **repetir el paso 4 de Supabase** (Site URL/Redirect URLs) con el nuevo dominio, o el login con Google se rompe de nuevo.
 
-## 3) Mercado Pago (pagos)
-
-1. Cuenta de [Mercado Pago Developers](https://www.mercadopago.com.ar/developers/panel).
-2. Dentro de la aplicación, pestaña **"Credenciales de producción"** (no "de prueba") → copiar el **Access Token**.
-3. Cargarlo como secret `MP_ACCESS_TOKEN` en Supabase (Project Settings → Edge Functions → Secrets) — mismo nombre que en desarrollo, no requiere tocar código ni volver a desplegar las funciones (`mp-create-preference`, `mp-webhook`).
-4. Nada más que configurar del lado de Mercado Pago: el webhook (`notification_url`) se manda automático en cada preferencia creada, apuntando a `https://<proyecto>.supabase.co/functions/v1/mp-webhook`.
-5. **Importante**: mientras el secret tenga el Access Token de **prueba**, todo pago es simulado (sandbox) aunque el sitio esté en producción. El cambio a plata real es únicamente reemplazar ese secret.
-
-## 4) Checklist antes de anunciar el lanzamiento
+## 3) Checklist antes de anunciar el lanzamiento
 
 - [ ] Migraciones aplicadas y verificadas (`get_advisors` sin hallazgos críticos nuevos).
 - [ ] Google OAuth probado en el dominio real (no localhost).
-- [ ] Un pago de prueba completo end-to-end con las credenciales de **producción** de Mercado Pago (arrancar con un monto bajo).
+- [ ] Una compra de prueba completa por transferencia (comprobante subido y confirmado por el comercio).
 - [ ] Al menos un comercio real aprobado y con productos cargados (ver [GUIA_USUARIO.md](GUIA_USUARIO.md) para el flujo de alta de vendedor).
 - [ ] Política de privacidad + botón de arrepentimiento (requisito legal en Argentina para e-commerce, Res. 424/2020) — pendiente, no es un tema de código.
 - [ ] Decidir el plan de Supabase (Free no tiene backups automáticos — ver [RUN_LOCAL.md](RUN_LOCAL.md) sección Fase 11 para el detalle de esta decisión).

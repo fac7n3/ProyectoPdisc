@@ -29,14 +29,14 @@ Documentos del paquete:
 
 **Sistema en alcance:** el sitio `proyectopdisc.vercel.app` (Vite multipágina, JS vanilla),
 la base y servicios de Supabase (proyecto `otzhdwuaffcplrveuadc`, Postgres 17, región
-`us-west-2`), las 6 Edge Functions (`supabase/functions/`), el repositorio
-`fac7n3/ProyectoPdisc` y su CI, y las integraciones con Mercado Pago y Google OAuth.
+`us-west-2`), la Edge Function de baja de cuentas (`supabase/functions/`), el repositorio
+`fac7n3/ProyectoPdisc` y su CI, y la integración con Google OAuth.
 
 **Rol de privacidad (ISO 27701):** Baradero Local es **responsable del tratamiento**
 (controller) de los datos de clientes, vendedores, profesionales y repartidores. Los
 comercios reciben datos de sus compradores para cumplir el pedido (son responsables de lo
-que hagan con ellos fuera de la plataforma; los Términos lo dicen). Supabase, Vercel,
-Mercado Pago y Google son **encargados/subencargados** (ver el registro de tratamientos).
+que hagan con ellos fuera de la plataforma; los Términos lo dicen). Supabase, Vercel
+y Google son **encargados/subencargados** (ver el registro de tratamientos).
 
 **Fuera de alcance:** facturación/AFIP (F12-18), dominio propio (F11-04), proveedores de
 email/WhatsApp (F8-02/03), apps nativas.
@@ -57,7 +57,7 @@ email/WhatsApp (F8-02/03), apps nativas.
 |---|---|---|---|---|---|
 | H-01 | **Log de auditoría sin datos personales.** `log_admin_action` copiaba la fila entera: el log tenía **72 registros** con email, teléfono, DNI, CUIT, CBU, direcciones y mensajes de soporte, que sobrevivían a la baja de la cuenta. Ahora guarda solo las columnas que cambiaron (antes/después) y lo personal sale `[redactado]`; se redactaron las filas viejas. | migración 146 | CC7.2, P4.2, P4.3 | 7.4.1, 7.4.5, 7.4.7 | 0 valores personales en el log después de aplicar |
 | H-02 | **Log de auditoría append-only.** Ni un admin desde la API ni `postgres` puede editarlo, borrarlo o truncarlo. Se permite solo que la FK anonimice `admin_id` al borrar la cuenta de un admin y la limpieza a los 2 años. | migración 146 | CC7.2, CC4.1 | 6.9.4 (27002 8.15) | UPDATE y TRUNCATE rechazados; SET NULL permitido |
-| H-03 | **Eventos de seguridad de cualquier actor**: alta/baja/cambio de permisos de empleados de un comercio y vinculación/desvinculación/renovación de Mercado Pago (sin tokens). Antes solo se auditaba a admins. | migración 146 | CC6.2, CC6.3, CC7.2 | 6.6.2, 6.9.4 | alta de empleado de prueba quedó en el log |
+| H-03 | **Eventos de seguridad de cualquier actor**: alta/baja/cambio de permisos de empleados de un comercio. Antes solo se auditaba a admins. | migración 146 | CC6.2, CC6.3, CC7.2 | 6.6.2, 6.9.4 | alta de empleado de prueba quedó en el log |
 | H-04 | **Retención automática** (pg_cron diario 03:17 ART): errores 90 días; búsquedas y vistas seudonimizadas a 30 días y borradas a 180; estados OAuth vencidos al día; notificaciones leídas al año; log de auditoría a 2 años. | migración 146, `purge_expired_personal_data()` | C1.2, P4.2 | 7.4.4, 7.4.7, 7.4.8 | función corrida en transacción; job programado |
 | H-05 | **Mínimo privilegio en tablas**: se sacaron `TRUNCATE`, `TRIGGER` y `REFERENCES` a `anon`/`authenticated` en las 51 tablas y en las futuras (TRUNCATE salta la RLS; la API nunca lo usa). | migración 146 | CC6.1, CC6.3 | 6.6.1 | 0 grants restantes |
 | H-06 | **`error_logs` sin suplantación**: un visitante no puede registrar errores a nombre de otra cuenta y cada campo tiene tope de largo (el insert es público). | migración 146 | CC7.2, PI1.2 | 6.9.4 | insert con `user_id` ajeno rechazado por RLS |
@@ -90,7 +90,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | CC6.4 Acceso físico | Delegado en Supabase (AWS) y Vercel, ambos con SOC 2 Tipo II | ✅ | reportes SOC 2 de los proveedores (pedirlos, P-07) |
 | CC6.5 Baja de activos | Baja de cuenta con borrado real (`delete-account`), incluida foto y adjuntos | ✅ | `supabase/functions/delete-account` |
 | CC6.6 Protección perimetral | HTTPS + HSTS, CSP, anti-framing, CORS de Supabase, `verify_jwt` en funciones | ✅ | H-08 |
-| CC6.7 Datos en tránsito/salida | TLS en todo; tokens de MP solo en tabla sin policies (service role) | ✅ | `store_mp_credentials` |
+| CC6.7 Datos en tránsito/salida | TLS en todo; la service role key solo en las Edge Functions | ✅ | `supabase/functions/` |
 | CC6.8 Software malicioso / no autorizado | CSP sin orígenes de script externos; dependencias auditadas en CI; Dependabot | ✅ | H-09, H-10 |
 | CC7.1 Gestión de vulnerabilidades | `npm audit` en CI, Dependabot, advisor de Supabase | 🟡 | falta revisar el advisor de forma periódica (P-09) |
 | CC7.2 Monitoreo de eventos | Log de auditoría append-only de admins + eventos de seguridad; logs de Auth/API de Supabase; `error_logs` | 🟡 | sin alertas automáticas (P-10) |
@@ -108,7 +108,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | A1.3 Prueba de recuperación | Procedimiento escrito | ❌ | P-03 |
 | C1.1 Identificación de información confidencial | Clasificación de datos | ✅ | `POLITICAS-SEGURIDAD.md` §6 |
 | C1.2 Eliminación | Retención automática + baja de cuenta | ✅ | H-04 |
-| PI1.x Integridad del procesamiento | Precios y totales calculados en el servidor (`create_order`); insert directo a `orders` bloqueado; webhook de MP re-consulta el pago y verifica monto; estados solo por RPC | ✅ | migraciones 96, 101, 116; `mp-webhook` |
+| PI1.x Integridad del procesamiento | Precios y totales calculados en el servidor (`create_order`); insert directo a `orders` bloqueado; los pagos por transferencia los confirma el comercio; estados solo por RPC | ✅ | migraciones 96, 101, 116 |
 
 ### 4.3 SOC 2 — Privacidad (P1–P8)
 
@@ -186,7 +186,7 @@ Estado: ✅ implementado · 🟡 parcial · ❌ falta · 👤 depende de una acc
 | P-04 | Alta | En el dashboard de Supabase (Authentication): contraseña mínima 8 + letras y números; **Leaked Password Protection** (requiere Pro); activar TOTP; OTP de email a 1 hora o menos (ya está). | `config.toml` no se aplica solo. | Usuario |
 | P-05 | Media | **Correo de contacto real**: la política y los Términos dicen `soporte@baraderolocal.com.ar`, pero el dominio no está comprado (F11-04): ese correo probablemente rebota. Mientras tanto la política ya ofrece Mi perfil → Soporte. | Un titular tiene que poder ejercer sus derechos. Ley 25.326 art. 14 · ISO 27701 7.3.9. | Usuario (decidir correo) |
 | P-06 | Media | Inscribir la base de datos en el **Registro Nacional de Bases de Datos** de la AAIP. | Obligación de la Ley 25.326 (art. 21) para bases con fines de comercialización. | Usuario |
-| P-07 | Media | Archivar DPAs y reportes SOC 2 de Supabase (se pide desde el dashboard; el DPA está en supabase.com/legal/dpa), Vercel (vercel.com/legal/dpa) y Mercado Pago. | ISO 27701 7.2.6, 7.5.1 · SOC 2 CC9.2. | Usuario |
+| P-07 | Media | Archivar DPAs y reportes SOC 2 de Supabase (se pide desde el dashboard; el DPA está en supabase.com/legal/dpa), y Vercel (vercel.com/legal/dpa). | ISO 27701 7.2.6, 7.5.1 · SOC 2 CC9.2. | Usuario |
 | P-08 | Media | Nombrar un **responsable de seguridad y privacidad** (puede ser una persona del grupo) y anotarlo en las políticas. | ISO 27701 6.3.1.1 · SOC 2 CC1.3. | Equipo |
 | P-09 | Media | Revisión mensual: advisor de seguridad de Supabase, log de auditoría, `error_logs`, PRs de Dependabot. Anotar la fecha en este archivo (§6). | SOC 2 CC4.1/CC7.1 requiere evidencia de que el monitoreo ocurre. | Equipo |
 | P-10 | Baja | Alertas: Supabase Log Drains o un cron que avise a los admins (notificación) ante picos de errores o cambios de rol. | CC7.2. | Código |

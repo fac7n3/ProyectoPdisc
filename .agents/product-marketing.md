@@ -5,10 +5,10 @@
 
 ## Resumen del producto
 **Frase:** Comprá local, recibí en casa.
-**Qué hace (2-3 frases):** Baradero Local es el marketplace de comercio de proximidad de la ciudad de Baradero (Argentina). Conecta a vecinos que quieren comprar online con los comercios reales de su propia ciudad — almacén, panadería, verdulería, carnicería, farmacia, ferretería y otros 14 rubros — con pago por Mercado Pago, transferencia o efectivo al retirar/recibir, y entrega dentro de Baradero (envío o retiro en el local). Cada vendedor se valida con CUIT y aprobación manual de un admin antes de poder vender.
+**Qué hace (2-3 frases):** Baradero Local es el marketplace de comercio de proximidad de la ciudad de Baradero (Argentina). Conecta a vecinos que quieren comprar online con los comercios reales de su propia ciudad — almacén, panadería, verdulería, carnicería, farmacia, ferretería y otros 14 rubros — con pago por transferencia o efectivo al retirar/recibir, y entrega dentro de Baradero (envío o retiro en el local). Cada vendedor se valida con CUIT y aprobación manual de un admin antes de poder vender.
 **Categoría de producto (la "góndola" en la que competimos):** Comercio de proximidad / "el almacén de tu barrio, online" — explícitamente NO "tienda online genérica" ni "marketplace nacional". Esta distinción de categoría es la decisión de posicionamiento central del proyecto (ver Diferenciación): si el producto se deja leer como "e-commerce" a secas, compite en catálogo/precio/velocidad de envío contra jugadores que siempre van a ganar esa comparación.
 **Tipo de producto:** Marketplace de dos lados (cliente vecino ↔ vendedor comerciante), con rol admin para aprobación de vendedores. (Hubo un rol repartidor con panel propio para gestionar entregas dentro de Baradero; se sacó del producto el 2026-09-16 -- la logística de entregas queda para más adelante.)
-**Modelo de negocio y precios:** Precios en pesos argentinos enteros (sin centavos) en todo el sistema. Pago vía Mercado Pago (Checkout Pro), transferencia (el comprador avisa "Ya transferí" y el vendedor confirma o rechaza) o efectivo al retirar/recibir (desde 2026-09-30). Envío dentro de Baradero o retiro en el comercio. Cada pedido tiene número corto (#BL-1066), línea de tiempo, avisos en cada paso y un código de retiro de 4 dígitos + QR que el comercio pide al entregar. (Modelo de comisión/monetización de la plataforma en sí: a definir — no hay decisión tomada todavía sobre cobro a vendedores, se documenta cuando exista.)
+**Modelo de negocio y precios:** Precios en pesos argentinos enteros (sin centavos) en todo el sistema. Pago por transferencia (el comprador avisa "Ya transferí" y el vendedor confirma o rechaza) o efectivo al retirar/recibir (desde 2026-09-30). Envío dentro de Baradero o retiro en el comercio. Cada pedido tiene número corto (#BL-1066), línea de tiempo, avisos en cada paso y un código de retiro de 4 dígitos + QR que el comercio pide al entregar. (Modelo de comisión/monetización de la plataforma en sí: a definir — no hay decisión tomada todavía sobre cobro a vendedores, se documenta cuando exista.)
 
 ## Público objetivo
 **Tipo de "empresa" (rubros del catálogo):** Comercios reales y físicos de Baradero, de los 14 rubros ya definidos: Almacén, Panadería, Verdulería, Carnicería, Lácteos, Bebidas, Kiosco, Limpieza, Farmacia, Ferretería, Tecnología, Ropa, Deportes, Mascotas.
@@ -21,7 +21,7 @@
 **Casos de uso / escenarios específicos:**
 - Se acabó el pan o la verdura y no querés salir de casa → pedís y te llega el mismo día dentro de Baradero.
 - Un comercio nuevo del pueblo quiere vender online pero no tiene tiempo ni conocimiento técnico para armar su propia tienda → se registra, carga catálogo, y depende de la aprobación del admin (CUIT + validación manual) para empezar a vender.
-- Preferís pagar por Mercado Pago o transferencia antes que manejar efectivo en la puerta.
+- Preferís pagar por transferencia antes que manejar efectivo en la puerta.
 - Preferís retirar vos mismo en el local en vez de esperar el envío.
 
 ## Personas
@@ -29,7 +29,7 @@ Marketplace de dos lados — no aplica el formato B2B de comprador/champion/deci
 
 | Persona | Rol en el sistema | Le importa | Su problema/fricción hoy | Valor que le prometemos |
 |---------|-------------------|------------|---------------------------|--------------------------|
-| **Vecino comprador** (`cliente`) | Navega el catálogo, arma el carrito, paga (Mercado Pago o transferencia), elige envío o retiro | Comodidad de comprar sin salir de casa, pero sin perder la cercanía de comprarle a gente conocida del pueblo; precio justo; que el pedido llegue bien y a tiempo | Hoy resuelve esto yendo físicamente al comercio, por WhatsApp informal, o recurriendo a MercadoLibre/apps nacionales de delivery a falta de una alternativa digital local — ninguna de esas opciones combina "online" con "es de acá" | Comprarle a los comercios reales de Baradero, con la comodidad de una compra online y la confianza de que hay un vecino (no un depósito lejano) preparando el pedido |
+| **Vecino comprador** (`cliente`) | Navega el catálogo, arma el carrito, paga (transferencia o efectivo), elige envío o retiro | Comodidad de comprar sin salir de casa, pero sin perder la cercanía de comprarle a gente conocida del pueblo; precio justo; que el pedido llegue bien y a tiempo | Hoy resuelve esto yendo físicamente al comercio, por WhatsApp informal, o recurriendo a MercadoLibre/apps nacionales de delivery a falta de una alternativa digital local — ninguna de esas opciones combina "online" con "es de acá" | Comprarle a los comercios reales de Baradero, con la comodidad de una compra online y la confianza de que hay un vecino (no un depósito lejano) preparando el pedido |
 | **Comerciante vendedor** (`vendedor`) | Se registra, carga CUIT, espera aprobación manual del admin, publica catálogo, gestiona pedidos y estados de envío | Vender online sin depender de una plataforma grande que le cobra caro, no conoce su rubro ni a sus clientes, y lo compite contra el país entero; que la plataforma le traiga clientes de su propia ciudad | Hoy no tiene canal online propio, o si lo tiene es una plataforma nacional genérica donde compite con catálogo infinito y no tiene forma de destacar que es "el de la esquina" | Un canal de venta online hecho para comercios de Baradero, donde ser un negocio real y verificado (CUIT + aprobación manual) es una ventaja visible, no un trámite invisible de back-office |
 | **Admin** (rol de soporte, no de audiencia de marketing) | Aprueba manualmente a los vendedores nuevos, valida CUIT, modera la plataforma | Que solo entren comercios reales y verificados, no cuentas falsas | — | — (rol operativo, no target de mensajes de marketing) |
 
@@ -135,7 +135,7 @@ Marketplace de dos lados — no aplica el formato B2B de comprador/champion/deci
 | Cada vendedor es un comercio real, no anónimo | Flujo de registro exige CUIT + aprobación manual de un admin antes de poder publicar |
 | El envío no sale de Baradero | Opciones de entrega limitadas a envío dentro de la ciudad o retiro en el local |
 | Cobertura real de rubros del pueblo | 14 rubros ya definidos y cargados en el catálogo (Almacén, Panadería, Verdulería, Carnicería, Lácteos, Bebidas, Kiosco, Limpieza, Farmacia, Ferretería, Tecnología, Ropa, Deportes, Mascotas) |
-| Pago simple y conocido | Integración real con Mercado Pago (Checkout Pro) + transferencia + efectivo al retirar o recibir |
+| Pago simple y conocido | Transferencia con comprobante + efectivo al retirar |
 | Sabés en qué va tu pedido | Número de pedido, línea de tiempo y aviso en cada paso (pagado, listo, en camino, entregado); código de retiro + QR para que nadie retire lo tuyo |
 
 **Recomendación del panel (Rory Sutherland) para convertir esto en prueba real cuando haya vendedores reales:** exponer la verificación (CUIT + aprobación manual) como insignia visible ("verificado por Baradero Local") en cada perfil de vendedor, en vez de dejarla como trámite invisible de back-office — es la señal de compromiso más fuerte que el negocio tiene y hoy nadie la ve. Cuando entren los primeros comercios reales, considerar lanzarlos como grupo "fundador" (curado, no exhaustivo) en vez de disimular que el catálogo es chico.
@@ -143,7 +143,7 @@ Marketplace de dos lados — no aplica el formato B2B de comprador/champion/deci
 ## Objetivos
 **Objetivo de negocio:** lanzamiento real del marketplace en Baradero — no es un proyecto académico ni una demo. El roadmap del producto (M1-M11 completos, Fase 12 casi completa salvo facturación/AFIP, fuera de alcance) ya está en etapa de pulido pre-lanzamiento, no de construcción inicial.
 **Acción de conversión clave:**
-- Lado cliente: completar una primera compra (agregar al carrito → pagar con Mercado Pago, transferencia o efectivo → recibir o retirar con el código).
+- Lado cliente: completar una primera compra (agregar al carrito → pagar por transferencia o efectivo → recibir o retirar con el código).
 - Lado vendedor: completar el registro y pasar la aprobación manual del admin para empezar a publicar productos.
 **Métricas actuales:** ninguna de uso real todavía. Estado real del catálogo: 14 comercios / ~56 productos son datos de seed, no hay comercios reales cargados (pendiente F11-06). Nadie tiene el rol `admin` asignado todavía en producción — bloqueante operativo antes de poder aprobar vendedores reales con una cuenta real. Dominio propio pendiente de compra (hoy corre en `proyectopdisc.vercel.app`, F11-04). Notificaciones por Email/WhatsApp bloqueadas por falta de credenciales de proveedor externo (F8-02/F8-03).
 

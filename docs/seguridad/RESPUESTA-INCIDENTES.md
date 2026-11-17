@@ -11,10 +11,9 @@ disponibilidad de la plataforma o de datos personales. Ejemplos:
 
 - Una policy RLS que deja ver datos de otra cuenta, un bucket privado accesible, un
   `SECURITY DEFINER` sin chequeo de rol.
-- Un secreto expuesto (service role key, `MP_ACCESS_TOKEN`, `MP_CLIENT_SECRET`, token de
-  Jira) en el repo, un log, un chat o una captura.
-- Una cuenta de admin, de comercio o de infraestructura (GitHub, Supabase, Vercel, Google,
-  Mercado Pago) usada por alguien que no es su dueño.
+- Un secreto expuesto (service role key, token de Jira) en el repo, un log, un chat o una captura.
+- Una cuenta de admin, de comercio o de infraestructura (GitHub, Supabase, Vercel, Google)
+  usada por alguien que no es su dueño.
 - Pagos marcados como cobrados sin serlo, o pedidos manipulados.
 - El sitio o la base caídos o pausados por más de 1 hora; pérdida de datos.
 - Un reporte externo de vulnerabilidad (`SECURITY.md`).
@@ -43,7 +42,7 @@ disponibilidad de la plataforma o de datos personales. Ejemplos:
    secretos en la tarea.
 2. **Contener** (lo primero que sirva):
    - Secreto expuesto → **rotarlo ya** (Supabase: Settings → API / Edge Function secrets;
-     Mercado Pago: credenciales de la app; Vercel: env vars + redeploy) y después
+     Vercel: env vars + redeploy) y después
      limpiar donde quedó.
    - Cuenta comprometida → cerrar sus sesiones (Supabase Auth → usuario → sign out /
      ban), quitar el rol, cambiar contraseña y activar MFA.
@@ -72,7 +71,6 @@ internacionales (GDPR: 72 h) marcan el estándar. **Regla del proyecto:**
 | **Personas afectadas** | Sin demora, **dentro de las 72 horas** desde que se confirma que hubo acceso o pérdida de sus datos | Notificación en la plataforma + email de la cuenta |
 | **AAIP** | Dentro de las 72 horas, si hay riesgo para los derechos de las personas | Formulario/canal vigente de la AAIP |
 | **Comercios afectados** | Ídem, si se expusieron datos de su comercio o de sus clientes | Notificación + email |
-| **Mercado Pago** | Si hay compromiso de credenciales o fraude de pagos | Canal de soporte de integradores |
 
 El aviso a las personas dice, en lenguaje simple: qué pasó, qué datos, cuándo, qué
 hicimos, qué les recomendamos hacer (por ejemplo, cambiar la contraseña) y cómo
@@ -82,6 +80,5 @@ contactarnos. Se registra fecha y contenido de cada aviso en la tarea del incide
 
 - Supabase: soporte desde el dashboard (Support → New ticket).
 - Vercel: dashboard → Help; Firewall en Project → Security.
-- Mercado Pago: developers → Soporte.
 - AAIP: argentina.gob.ar/aaip — Dirección Nacional de Protección de Datos Personales.
 - CERT.ar (incidentes de seguridad en Argentina): cert.ar.

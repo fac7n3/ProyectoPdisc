@@ -19,7 +19,6 @@
 | T2 | Perfil personal | Clientes | Teléfono, fecha de nacimiento, tipo y número de documento | Contacto por pedidos; verificación de mayoría de edad/identidad | Contractual; consentimiento (campos opcionales) | `profiles` | La persona; admin; comercio y repartidor solo el teléfono, de sus pedidos |
 | T3 | Direcciones de envío | Clientes | Calle, número, barrio, teléfono | Entregar pedidos | Contractual | `user_addresses`, `orders.shipping_address` | La persona; comercio del pedido; repartidor de la entrega |
 | T4 | Compras y pagos | Clientes, comercios | Pedido, productos, montos, método de pago, comprobante de transferencia, código de retiro | Cumplir la compraventa; respaldo contable | Contractual; obligación legal (contable) | `orders`, `order_items`, `order_events`, `payment_proofs` + bucket privado `payment-proofs` | Comprador; comercio; admin |
-| T5 | Pagos con Mercado Pago | Clientes, comercios | Id de pago, monto, estado; tokens OAuth del comercio | Cobrar y conciliar | Contractual | Mercado Pago; `store_mp_credentials` (solo service role) | Edge Functions; nadie desde la API |
 | T6 | Alta y gestión de comercios | Vendedores | Nombre del comercio, CUIT, dirección y ubicación del local en el mapa (migración 147), teléfono/WhatsApp, redes, alias/CBU/titular/banco | Verificar comercios y que puedan cobrar | Contractual | `seller_requests`, `stores` | Dueño y empleados; admin; el comprador ve alias/CBU al pagar por transferencia |
 | T7 | Empleados de comercio | Empleados | Email, permisos por sección | Dar acceso al panel | Contractual / interés legítimo del comercio | `store_staff` | Dueño; admin; auditado |
 | T8 | Directorio de profesionales | Profesionales | Nombre, oficio, foto, teléfono/WhatsApp, redes, horarios, zonas, fotos de trabajos | Publicarlos en "Contratar" | Consentimiento (alta voluntaria) | `professional_requests`, `professionals` y tablas `professional_*` | Público (lo publicado); admin |
@@ -31,7 +30,7 @@
 | T14 | Recomendaciones y búsqueda | Visitantes, clientes | Búsquedas, productos vistos (en la base: seudonimizados a los 30 días); productos vistos en el navegador (`localStorage`) | Mejorar el buscador; recomendar productos | Interés legítimo (minimizado) | `search_events`, `product_views`, `localStorage` | Admin (agregado) |
 | T15 | Registro técnico y seguridad | Visitantes, usuarios | Mensaje de error, URL sin tokens, navegador, id de cuenta; acciones de admins y eventos de seguridad (sin datos personales); **contador de llamadas por cliente: hash con sal de la IP (nunca la IP en claro) o id de cuenta, para frenar abusos de cupones y métricas (migración 153)** | Detectar errores y abusos; rendición de cuentas | Interés legítimo; obligación de seguridad (art. 9) | `error_logs`, `admin_audit_log`; logs de Supabase y Vercel | Admin |
 | T16 | Ubicación para "Comercios cerca tuyo" | Visitantes | Latitud/longitud | Mostrar comercios cercanos y el mapa | Consentimiento (permiso del navegador, a pedido) | Solo `sessionStorage` del navegador; se envía a Google Maps para dibujar el mapa | Nadie en la plataforma |
-| T17 | Combos "Impulsá tus ventas" | Comercios | Plan comprado, pago | Cobrar y activar el combo | Contractual | `boost_purchases`, Mercado Pago | Dueño; admin |
+| T17 | Combos "Impulsá tus ventas" | Comercios | Combo o servicio otorgado | Activar el combo (el pago se coordina por WhatsApp) | Contractual | `boost_purchases` | Dueño; admin |
 
 No se tratan datos sensibles en el sentido del art. 2 de la Ley 25.326 (salud, religión,
 origen étnico, etc.). Las farmacias de turno y contactos de emergencia son datos públicos
@@ -53,7 +52,6 @@ de establecimientos, no de personas.
 |---|---|---|---|---|---|
 | Supabase Inc. | Base de datos, Auth, Storage, Edge Functions, Realtime | Todos los de §1 | EE.UU. (`us-west-2`, AWS) | SOC 2 Tipo II, HIPAA | Disponible (supabase.com/legal/dpa) — **archivar firmado (P-07)** |
 | Vercel Inc. | Hosting del sitio, CDN, Speed Insights (anónimo) | IP y navegador de los visitantes (logs de acceso) | EE.UU. / global | SOC 2 Tipo II, ISO 27001 | Incluido en sus términos (vercel.com/legal/dpa) — archivar (P-07) |
-| Mercado Pago (MercadoLibre S.R.L.) | Pagos | Monto, id de pago; los datos de tarjeta los recibe MP directo | Argentina | PCI DSS | Términos de MP para integradores — archivar (P-07) |
 | Google LLC | Login con Google; mapa del inicio | Email, nombre y foto (login); coordenadas (mapa) | EE.UU. | SOC 2, ISO 27001/27701 | Términos de Google Cloud / Maps |
 | OpenStreetMap Foundation (Nominatim) | Sugerencias de calles | Texto de la dirección que se tipea | Reino Unido / UE | — | Política de uso de Nominatim |
 | GitHub (Microsoft) | Repositorio, CI y backups cifrados (si se activa P-02) | Código; backups **cifrados** | EE.UU. | SOC 2, ISO 27001 | GitHub DPA |
@@ -77,7 +75,6 @@ contractuales y evaluar la región de Supabase si algún día se migra el proyec
 | Búsquedas y productos vistos | Seudonimizados a 30 días; borrados a 180 | Ídem |
 | Errores técnicos | 90 días | Ídem |
 | Contador de llamadas anónimas (hash de IP) | 1 día | Ídem |
-| Estados OAuth de Mercado Pago | 10 minutos de validez; borrados al día | Ídem |
 | Log de auditoría (sin datos personales) | 2 años | Ídem |
 | Backups cifrados (si se activa P-02) | 30 días | Retención del artefacto |
 | Logs de Supabase/Vercel | Según el plan del proveedor (1 día en Free) | Proveedor |

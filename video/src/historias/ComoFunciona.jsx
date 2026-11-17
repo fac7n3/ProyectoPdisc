@@ -6,7 +6,7 @@ import { Fondo, Palabras, useCortina, useEscala } from "../lib/anim";
 // Cada paso entra en una sola línea a 40px: no alargar sin volver a mirar el render.
 const PASOS = [
   "Elegís de los comercios de Baradero",
-  "Pagás con Mercado Pago o transferencia",
+  "Pagás por transferencia o en efectivo",
   "Retirás en el local o te lo enviamos",
 ];
 

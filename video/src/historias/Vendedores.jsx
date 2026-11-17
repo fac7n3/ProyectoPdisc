@@ -7,7 +7,7 @@ import { Cta, Fondo, Palabras, useCortina, useEscala } from "../lib/anim";
 const BENEFICIOS = [
   "Publicá tus productos con foto y stock",
   "Seguí tus ventas desde el panel",
-  "Cobrá con Mercado Pago o transferencia",
+  "Cobrá por transferencia o en efectivo",
   "Organizá los envíos y los retiros en el local",
 ];
 

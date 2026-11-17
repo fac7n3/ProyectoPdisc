@@ -9,7 +9,6 @@ Es el rol por defecto al registrarse (con email o con Google).
 1. **Explorar y comprar**: desde el inicio o el buscador, filtrá por categoría o por texto. Agregá productos al carrito (funciona incluso sin estar logueado — se sincroniza solo con tu cuenta si después iniciás sesión).
 2. **Favoritos**: marcá productos con el corazón; se guardan en tu cuenta.
 3. **Comprar**: en el carrito, elegí **retiro en el local** o **envío a domicilio** (el costo de envío se calcula según el subtotal de cada tienda), y el método de pago:
-   - **Mercado Pago**: te redirige al checkout real, pagás con tarjeta, efectivo (Pago Fácil/Rapipago) o tu cuenta de Mercado Pago.
    - **Transferencia bancaria**: hacés la transferencia por tu cuenta y subís el comprobante desde "Mis compras" — el vendedor lo confirma.
 4. **Mis compras** (dentro de "Mi perfil"): historial de pedidos con su estado, y ahí mismo subís comprobantes de transferencia.
 5. **Notificaciones**: te avisa cuando tu pedido se paga, se envía o se entrega.
