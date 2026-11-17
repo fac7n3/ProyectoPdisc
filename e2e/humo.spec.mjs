@@ -157,3 +157,63 @@ test.describe('avisos', () => {
     expect(caja.x + caja.width / 2, 'y del lado derecho').toBeGreaterThan(vista.width / 2);
   });
 });
+
+test.describe('buscador', () => {
+  // Minúscula y sin acentos, para comparar los nombres con lo buscado.
+  const plano = (t) => t.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const resultado = '#products-grid .product-card[id], #products-grid .no-results';
+
+  test('"agua" trae solo productos que se llaman así, no los de variante "verde agua"', async ({ page, problemas }, info) => {
+    await page.goto('/pages/search.html?q=agua');
+    await expect(page.locator(resultado).first()).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    const nombres = await page.locator('#products-grid .product-card__name').allTextContents();
+    // Sin aguas en el catálogo la búsqueda cae a "parecidos" y lo avisa: ahí no hay nada que comparar.
+    info.skip(!nombres.length || await page.locator('#search-note').isVisible(), 'Hoy no hay productos con "agua" en el nombre');
+    expect(nombres.filter((n) => !/\bagua/.test(plano(n))), 'Resultados sin "agua" en el nombre').toEqual([]);
+    sinProblemas(problemas);
+  });
+
+  test('una palabra mal escrita se corrige y la página lo avisa', async ({ page, problemas }, info) => {
+    await page.goto('/pages/search.html?q=sapatiyas');
+    await expect(page.locator(resultado).first()).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    const nombres = await page.locator('#products-grid .product-card__name').allTextContents();
+    info.skip(!nombres.length, 'Hoy no hay zapatillas en el catálogo');
+    await expect(page.locator('#search-note')).toContainText('zapatillas');
+    expect(nombres.filter((n) => !/zapatilla/.test(plano(n))), 'Resultados que no son zapatillas').toEqual([]);
+    sinProblemas(problemas);
+  });
+
+  test('al escribir sugiere frases para completar, y elegir una busca eso', async ({ page, problemas }, info) => {
+    await page.goto('/pages/home.html');
+    const input = page.locator('#search-input');
+    await input.click();
+    await input.pressSequentially('agu', { delay: 40 });
+    // "Buscar ..." aparece cuando llegó la respuesta del RPC.
+    await expect(page.locator('.search-suggest__row--search')).toBeVisible();
+    const frases = page.locator('.search-suggest__row--term');
+    info.skip(await frases.count() === 0, 'Hoy ningún producto empieza con "agu"');
+    const frase = (await frases.first().textContent()).trim();
+    expect(plano(frase)).toContain('agu');
+    await frases.first().click();
+    await expect(page).toHaveURL(/search\.html\?q=/);
+    await expect(page.locator('#catalog-title')).toContainText(frase);
+    await expect(page.locator('#products-grid .product-card[id]').first()).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    sinProblemas(problemas);
+  });
+
+  test('con una palabra mal escrita el desplegable ofrece la corregida', async ({ page, problemas }, info) => {
+    await page.goto('/pages/home.html');
+    const input = page.locator('#search-input');
+    await input.click();
+    await input.pressSequentially('sapatiyas', { delay: 40 });
+    await expect(page.locator('.search-suggest__row--search')).toContainText('sapatiyas');
+    const arreglo = page.locator('.search-suggest__row--fix');
+    info.skip(await arreglo.count() === 0, 'Hoy no hay zapatillas en el catálogo');
+    await expect(arreglo).toContainText('Quizás quisiste decir');
+    await expect(arreglo.locator('.search-suggest__main')).toHaveText('zapatillas');
+    sinProblemas(problemas);
+  });
+});

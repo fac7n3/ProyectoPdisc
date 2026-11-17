@@ -846,6 +846,20 @@ ul, ol {
   font-weight: 600;
 }
 
+/* "Quizás quisiste decir": la etiqueta va arriba y la palabra corregida abajo. */
+.search-suggest__row--fix .search-suggest__text {
+  flex-direction: column-reverse;
+}
+
+.search-suggest__row--fix .search-suggest__main {
+  font-weight: 600;
+  color: var(--bl-primary);
+}
+
+.search-suggest__row--fix .search-suggest__icon {
+  color: var(--bl-accent-hover);
+}
+
 .search-suggest__thumb {
   width: 2.25rem;
   height: 2.25rem;
@@ -3424,6 +3438,24 @@ button.coupon-chip:hover {
 }
 .results-title strong {
   color: var(--bl-primary);
+}
+
+/* Aviso de que los resultados no son tal cual lo escrito: palabra corregida,
+   faltan palabras, o solo lo nombran las variantes/descripción. */
+.search-note {
+  margin: 0 0 1rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--bl-surface-alt);
+  border-left: 3px solid var(--bl-accent);
+  border-radius: var(--bl-radius-md);
+  font-size: 0.875rem;
+  color: var(--bl-text-secondary);
+}
+
+.search-note[hidden] { display: none; }
+
+.search-note strong {
+  color: var(--bl-text);
 }
 
 /* Comercios que coinciden con la búsqueda, arriba de los productos. Se separa

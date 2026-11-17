@@ -24,6 +24,7 @@ import { getInstallState, triggerInstall } from './install-app.js';
 import { locationParams } from './store-location-utils.js';
 import { promptLogin } from './login-prompt.js';
 import { announceNavMenuOpen, closeOnOtherNavMenuOpen } from './nav-menus.js';
+import { buildTermSuggestions, normalizeSearchText } from './search-suggest.js';
 
 // ── Iconos por categoría (Font Awesome, ya cargado) ─────────
 const CATEGORY_ICONS = {
@@ -536,17 +537,25 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
     activeIndex = -1;
   }
 
-  // Sugerencias en vivo (productos + categorías)
+  // Sugerencias en vivo (frases para completar + categorías + productos)
   async function renderSuggestions(query) {
     const q = query.trim();
     if (q.length < 2) { renderRecent(); return; }
 
     const token = ++lastToken;
-    const { data: products, error } = await supabase.rpc('search_products', {
-      p_query: q, p_limit: 6, p_offset: 0, p_sort: 'relevancia', ...locationParams(),
+    // Se piden más productos de los que se muestran: con más títulos salen
+    // mejores frases para completar ("agua" -> "agua mineral", "agua saborizada").
+    const { data: found, error } = await supabase.rpc('search_products', {
+      p_query: q, p_limit: 12, p_offset: 0, p_sort: 'relevancia', ...locationParams(),
     });
     if (token !== lastToken) return; // llegó una respuesta más nueva
     if (error) { console.error('Error en sugerencias:', error); close(); return; }
+
+    // match_mode / corrected_query (migración 169) vienen repetidos en cada fila.
+    const mode = found?.[0]?.match_mode || null;
+    const corrected = found?.[0]?.corrected_query || null;
+    const fixed = corrected && normalizeSearchText(corrected) !== normalizeSearchText(q) ? corrected : null;
+    const products = (found || []).slice(0, 6);
 
     dropdown.textContent = '';
     items = [];
@@ -559,8 +568,35 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
     dropdown.appendChild(searchRow);
     items.push(searchRow);
 
-    // Categorías que matchean el texto
-    const matchingCats = categories.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+    // Palabra mal escrita: la consulta corregida, lista para buscar.
+    if (fixed) {
+      const fixRow = makeRow({
+        icon: 'fa-pen', main: fixed, meta: 'Quizás quisiste decir', className: 'search-suggest__row--fix',
+        onActivate: () => submitTerm(fixed),
+      });
+      dropdown.appendChild(fixRow);
+      items.push(fixRow);
+    }
+
+    // Frases para completar lo que se está escribiendo. Con resultados
+    // "parecidos" (faltan palabras o solo lo nombra la descripción) no se
+    // sugieren: completarían algo que la persona no buscó.
+    const terms = mode === 'todas'
+      ? buildTermSuggestions(q, found, { corrected: fixed, limit: 4 })
+          .filter((term) => !fixed || normalizeSearchText(term) !== normalizeSearchText(fixed))
+      : [];
+    terms.forEach((term) => {
+      const row = makeRow({
+        icon: 'fa-magnifying-glass', main: term, className: 'search-suggest__row--term',
+        onActivate: () => submitTerm(term),
+      });
+      dropdown.appendChild(row);
+      items.push(row);
+    });
+
+    // Categorías que matchean el texto (sin acentos: "panaderia" encuentra "Panadería")
+    const needle = normalizeSearchText(fixed || q);
+    const matchingCats = needle ? categories.filter((c) => normalizeSearchText(c.name).includes(needle)) : [];
     if (matchingCats.length) {
       dropdown.appendChild(sectionHeader('Categorías'));
       matchingCats.slice(0, 3).forEach((cat) => {
@@ -574,8 +610,8 @@ export async function initSearchBox({ initialQuery = '', onSubmit } = {}) {
     }
 
     // Productos sugeridos
-    if (products && products.length) {
-      dropdown.appendChild(sectionHeader('Productos'));
+    if (products.length) {
+      dropdown.appendChild(sectionHeader(mode === 'todas' ? 'Productos' : 'Productos parecidos'));
       products.forEach((p) => {
         const row = makeRow({
           thumb: p.image_url || '/img/no-image.svg',

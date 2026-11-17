@@ -11,6 +11,7 @@ import { logSearch, logSearchClick } from './search-analytics.js';
 import { formatPrice, updateCartBadge, showToast, initCartButtons, initWishlist, buildPriceRow, renderErrorState, buildStoreCard } from './cart-utils.js';
 import { initCategoryBar, initSearchBox, initScrollTop, initNavbarScroll, getCategories, addRecentSearch, initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { locationParams } from './store-location-utils.js';
+import { searchNotice } from './search-suggest.js';
 
 const PAGE_SIZE = 60; // múltiplo de 2, 3, 4, 5 y 6: la grilla queda completa con cualquier cantidad de columnas
 
@@ -210,6 +211,28 @@ const countEl = document.getElementById('catalog-count');
 const titleEl = document.getElementById('catalog-title');
 const loadMoreWrap = document.getElementById('load-more-wrap');
 const loadMoreBtn = document.getElementById('load-more-btn');
+const noteEl = document.getElementById('search-note');
+
+// ── Aviso de resultados corregidos o parecidos ──────────────
+// search_products (migración 169) dice en cada fila cómo coincidió la búsqueda
+// (match_mode) y, si corrigió una palabra mal escrita, cómo quedó la consulta
+// (corrected_query). Sin filas no hay nada que avisar.
+function renderSearchNote(row) {
+  if (!noteEl) return;
+  const notice = row && filterState.query
+    ? searchNotice({ query: filterState.query, mode: row.match_mode, corrected: row.corrected_query })
+    : null;
+  noteEl.textContent = '';
+  noteEl.hidden = !notice;
+  if (!notice) return;
+  noteEl.append(notice.before);
+  if (notice.strong) {
+    const strong = document.createElement('strong');
+    strong.textContent = notice.strong;
+    noteEl.appendChild(strong);
+  }
+  noteEl.append(notice.after);
+}
 
 // Se registra la búsqueda recién cuando la persona dejó de tipear (el campo de
 // la barra lateral busca con cada pausa: "zap", "zapa", "zapatillas" serían
@@ -295,6 +318,7 @@ async function runSearch({ append = false, quiet = false } = {}) {
     totalCount = products && products.length ? Number(products[0].total_count) : (append ? totalCount : 0);
 
     renderHeader();
+    if (!append) renderSearchNote(products?.[0]);
 
     // La búsqueda muestra solo productos (sin comercios ni profesionales).
     const storeMatches = 0;
@@ -382,10 +406,12 @@ function renderNoResults(storeMatches = 0, proMatches = 0) {
   wrap.appendChild(h3);
 
   const tips = document.createElement('ul');
-  const consejo = extraLabels.length > 0
-    ? 'Entrá para ver todo lo que ofrece'
-    : 'Probá con términos más generales';
-  [consejo].forEach((t) => {
+  const consejos = extraLabels.length > 0
+    ? ['Entrá para ver todo lo que ofrece']
+    : filterState.query
+      ? ['Fijate si está bien escrito', 'Probá con una palabra más general']
+      : ['Probá con términos más generales'];
+  consejos.forEach((t) => {
     const li = document.createElement('li');
     li.textContent = t;
     tips.appendChild(li);
