@@ -3815,6 +3815,10 @@ button.coupon-chip:hover {
     display: grid;
     grid-auto-flow: column;
     grid-template-rows: repeat(2, 1fr);
+    /* Sin columnas explícitas: si no, heredan el repeat(2, 1fr) de
+       --paged y las dos primeras columnas se aplastan a 2px (barras vacías
+       a la izquierda de las tarjetas). */
+    grid-template-columns: none;
     grid-auto-columns: min(44%, 190px);
     overflow-x: auto;
     scroll-snap-type: x proximity;
