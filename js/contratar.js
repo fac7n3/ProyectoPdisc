@@ -226,7 +226,11 @@ function buildCard(pro) {
 
   head.addEventListener('click', () => toggleCard(card, pro));
   card.appendChild(head);
-  card.appendChild(buildFavoriteButton(pro));
+  // Un profesional no puede guardarse a sí mismo en favoritos: en su propia
+  // tarjeta no se dibuja el corazón (mismo criterio que el formulario de reseñas).
+  if (!currentUserId || currentUserId !== pro.owner_id) {
+    card.appendChild(buildFavoriteButton(pro));
+  }
 
   const detail = el('div', 'ct-card__detail');
   detail.hidden = true;
