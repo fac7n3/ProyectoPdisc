@@ -20,6 +20,7 @@ import {
   estaAbiertoAhora,
   resumenDisponibilidad,
 } from './professional-hours-utils.js';
+import { initNotificationsBell } from './nav-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 let allProfessionals = [];
@@ -1046,4 +1047,5 @@ function cerrarFormularioConsulta() {
 buildCategoryChips();
 document.getElementById('ct-search-input')?.addEventListener('input', () => applyFilter());
 
+initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 loadProfessionals();
