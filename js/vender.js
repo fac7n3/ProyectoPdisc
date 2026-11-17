@@ -562,7 +562,6 @@ function getStoreCategorySlug() {
 function initVenderPage(user) {
   const form = document.getElementById('seller-form');
   const submitBtn = form?.querySelector('button[type="submit"]');
-  const logoutBtn = document.getElementById('btn-logout-seller');
 
   // Cargar categorías y estado del vendedor
   loadCategories();
@@ -636,11 +635,6 @@ function initVenderPage(user) {
     }
     
     if (submitBtn) setLoading(submitBtn, false, "Registrarme");
-  });
-
-  // Manejar botón de volver al inicio
-  logoutBtn?.addEventListener('click', () => {
-    window.location.replace('./home.html');
   });
 
   // Toggle "Vender productos" / "Ofrecer un servicio"
