@@ -492,10 +492,18 @@
 }
 
 /* Botones de acción principales */
+/* Pegados al pie de la columna que scrollea: el comprador ve siempre
+   "Agregar al carrito" / "Comprar" sin tener que bajar. */
 .pm-actions {
   display: flex;
   gap: 0.6rem;
-  margin-bottom: 1rem;
+  position: sticky;
+  /* Negativo = el padding de abajo de .pm-info: así no asoma contenido debajo. */
+  bottom: -1.2rem;
+  z-index: 2;
+  margin-bottom: 0;
+  padding: 0.75rem 0 1.2rem;
+  background: var(--bl-surface);
 }
 
 /* A113-273: aviso al vendedor viendo su propio producto, en vez de los
