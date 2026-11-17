@@ -25,6 +25,18 @@
         display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
         box-shadow: var(--bl-shadow-md);
       }
+      .ct-hero__text { flex: 1; min-width: 0; }
+      /* Botón "Panel": arriba a la derecha, solo para cuentas con perfil de profesional/técnico. */
+      .ct-hero__panel {
+        flex-shrink: 0; align-self: flex-start; display: inline-flex; align-items: center; gap: 0.45rem;
+        padding: 0.55rem 1.05rem; border-radius: var(--bl-radius-pill);
+        background: var(--bl-primary); color: #fff; text-decoration: none;
+        font-size: 0.875rem; font-weight: 700; white-space: nowrap; box-shadow: var(--bl-shadow-sm);
+        transition: transform .15s, opacity .15s;
+      }
+      .ct-hero__panel:hover { transform: translateY(-1px); opacity: 0.92; }
+      .ct-hero__panel:focus-visible { outline: 2px solid var(--bl-primary); outline-offset: 2px; }
+      .ct-hero__panel[hidden] { display: none; }
       .ct-hero__title { font-size: 1.6rem; color: var(--bl-primary-deeper); line-height: 1.2; }
       .ct-hero__subtitle { color: var(--bl-text-secondary); font-size: 0.9rem; margin-top: 0.15rem; }
 
@@ -306,6 +318,17 @@
 
       @media (max-width: 480px) {
         .ct-service { flex-direction: column; gap: 0.2rem; }
+        .ct-hero { gap: 0.75rem; margin: 1.25rem 0 1.25rem; }
+        .ct-hero__icon { width: 2.6rem; height: 2.6rem; font-size: 1.1rem; }
+        .ct-hero__title { font-size: 1.35rem; }
+        .ct-hero__subtitle { font-size: 0.82rem; }
+        .ct-hero__panel { padding: 0.45rem 0.8rem; font-size: 0.8125rem; }
+      }
+      /* Pantallas muy angostas: el botón baja a su propia fila, a la derecha, en vez de apretar el texto. */
+      @media (max-width: 360px) {
+        .ct-hero { flex-wrap: wrap; }
+        .ct-hero__text { flex-basis: calc(100% - 3.35rem); }
+        .ct-hero__panel { margin-left: auto; }
       }
     </style>
     <link rel="stylesheet" href="../Assets/styles/dark.css" />
@@ -332,10 +355,14 @@
     <main class="ct-page">
       <div class="ct-hero">
         <span class="ct-hero__icon" aria-hidden="true"><i class="fa-solid fa-screwdriver-wrench"></i></span>
-        <div>
+        <div class="ct-hero__text">
           <h1 class="ct-hero__title">Contratar</h1>
           <p class="ct-hero__subtitle">Profesionales y técnicos de Baradero, para contratar por WhatsApp o teléfono.</p>
         </div>
+        <!-- Solo para profesionales/técnicos (lo muestra js/contratar.js). -->
+        <a href="./profesional.html" class="ct-hero__panel" id="ct-panel-btn" hidden aria-label="Ir a mi panel de profesional">
+          <i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Panel</span>
+        </a>
       </div>
 
       <!-- Arriba de todo (pedido del usuario 2026-10-30): quien quiere sumarse no tiene que bajar. -->

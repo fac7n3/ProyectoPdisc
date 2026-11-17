@@ -6628,6 +6628,9 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 ### 2026-11-16 — Favoritos del perfil en celular: fila deslizable
 - **`Assets/styles/perfil-custom.css` (`.favoritos-grid`):** en <= 768 px productos y comercios favoritos pasan de grilla vertical a una fila `display:flex` con `overflow-x:auto` y `scroll-snap` (tarjetas de `min(44%, 190px)`, igual que "Productos recomendados" del home); los mensajes de vacío/carga ocupan todo el ancho. En escritorio no cambia. Medido con Playwright a 335 px: contenido 634 px en contenedor de 335 px.
 
+### 2026-11-17 — Navbar del panel del profesional igual al del vendedor
+- El navbar tenía el mismo HTML en `profesional.html` y `vender.html`; lo único distinto era el color del botón del menú (`.mc-hamburger` en `Assets/styles/profesional.css`): naranja de Oficios en claro, azul en el vendedor. Ahora los dos usan `#2f5aa8` (oscuro igual en ambos por `dark-auto.css`). Medido en 412 y 1200 px, claro y oscuro: mismo tamaño, color y alto.
+
 ### 2026-11-16 — Favoritos de servicios (Mis favoritos → Servicios) + sub-pestañas en celular
 - **Pedido del usuario:** el botón "Servicios" de Mis favoritos (perfil) estaba deshabilitado ("Próximamente") y en el celular se cortaba a la derecha. Ahora funciona y entra en pantalla.
 - **Migración 167 `favorite_professionals`** (aplicada en Supabase, archivo `db/schema/167_favorite_professionals.sql`): mismo patrón que `favorite_stores` (59): `client_id` + `professional_id`, unique, RLS solo del dueño (select/insert/delete con `(select auth.uid())`), sin acceso `anon`, índice en `professional_id`.
@@ -6655,5 +6658,8 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 
 - **Alineación de la fila de Publicaciones (2026-11-16, `pages/vender.html` + `buildPubRow`):** la insignia "Activa" quedaba más abajo que los números de Stock y Ventas porque su celda no tenía rótulo. Ahora lleva un rótulo fantasma (`.pub-row__cell-label--ghost`, invisible) y los tres valores comparten la altura `--pub-val-h` (2 rem; 2,75 rem en celular) centrados en ella. Medido con Chromium en 1000 y 390 px: los centros coinciden.
 
+### 2026-11-17 — Botón "Panel" en Contratar (solo profesionales/técnicos)
+- `pages/contratar.html`: botón `#ct-panel-btn` (`.ct-hero__panel`, ícono `fa-sliders`) arriba a la derecha del encabezado, oculto por defecto, lleva a `profesional.html`. Responsive: <= 480 px se achica; <= 360 px baja a su propia fila a la derecha (sin desborde horizontal).
+- `js/contratar.js` (`setupPanelButton`): aparece al instante con la pista `bl_panel_hint` (`slot: 'contratar'`, misma cuenta) y se confirma con la tabla `professionals` (`owner_id`); sin sesión o con cuenta que no es profesional queda oculto. Probado con Playwright (mock de Supabase) a 1280, 390 y 320 px; sin probar con una cuenta real.
 ### 2026-11-17 — Campanita de notificaciones en Contratar, Servicios/emergencias y Farmacias de turno
 - Pedido del usuario: las tres páginas tenían solo la flecha de volver y el modo oscuro en el navbar. Se agregó el mismo bloque que usan las demás (`#nav-notifications-wrap` + botón sincrónico en `pages/contratar.html`, `servicios.html`, `farmacias.html`) y `initNotificationsBell()` de `js/nav-utils.js` en `js/contratar.js`, `js/servicios.js` y `js/farmacias.js` (módulos: corren con el DOM ya armado, no hace falta `DOMContentLoaded`). Sin migración. `npm run build` + `npm test` (50 archivos) pasan; sin probar con sesión real ni en navegador (el chequeo de seguridad cortó la prueba visual).
