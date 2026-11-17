@@ -66,7 +66,6 @@ async function checkSellerState(user) {
   const stateLoader = document.getElementById('vender-state-loading');
   const shopNameLabel = document.getElementById('dash-shop-name');
   const hamburgerBtn = document.getElementById('mc-hamburger');
-  const vendorBadge = document.getElementById('vendor-mode-badge');
   const oficiosBadge = document.getElementById('oficios-mode-badge');
 
   // Apaga el "Cargando tu comercio…" y revela la vista que corresponda. Sin
@@ -109,10 +108,8 @@ async function checkSellerState(user) {
     // (no una clase) para pisar el `display: inline-flex` que le pone la
     // media query de <900px cuando corresponde ocultarlo.
     if (hamburgerBtn) hamburgerBtn.style.display = view === 'dashboard' ? '' : 'none';
-    // "Modo Vendedor" solo tiene sentido en dashboard-view (comercio real).
     // El de Oficios ya no se prende nunca acá: desde que el panel del
     // profesional vive en profesional.html, esta página es solo el alta.
-    if (vendorBadge) vendorBadge.hidden = view !== 'dashboard';
     if (oficiosBadge) oficiosBadge.hidden = true;
   };
 
