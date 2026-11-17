@@ -992,9 +992,8 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   // funciones solo cablean listeners/nav sobre DOM estático; cada sección
   // rellena su propio placeholder por detrás a medida que llega su data.
   setupDashboardEvents();
-  // El dueño entra directo a "Perfil de mi comercio" (a pedido del usuario,
-  // 2026-09-16); un empleado no tiene esa sección y sigue cayendo en "Resumen".
-  initVenderShell({ defaultSection: isStoreOwner ? 'perfil-comercio' : 'resumen' });
+  // Todos entran en "Resumen" (a pedido del usuario, 2026-11-16; antes el dueño caía en el perfil).
+  initVenderShell({ defaultSection: 'resumen' });
   maybeShowVendorOnboarding();
 
   if (isStoreOwner) { fillStoreProfileForm(store); focusLocationFromUrl(); }
