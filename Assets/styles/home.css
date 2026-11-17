@@ -312,6 +312,13 @@ ul, ol {
   gap: 0.5rem;
 }
 
+/* Barras sin cuenta ni carrito (paneles de vendedor/profesional/repartidor,
+   servicios, farmacias, contratar): de derecha a izquierda van menú,
+   notificaciones, volver y tema. El HTML no cambia, solo el orden visual. */
+.navbar__actions:not(:has(#nav-cart)) > .theme-toggle { order: -3; }
+.navbar__actions:not(:has(#nav-cart)) > a[aria-label^="Volver"] { order: -2; }
+.navbar__actions:not(:has(#nav-cart)) > #nav-notifications-wrap { order: -1; }
+
 .navbar__action-circle {
   width: 2.25rem;
   height: 2.25rem;
@@ -2735,9 +2742,19 @@ button.coupon-chip:hover {
      sticky (ver .category-bar) -- sin sumar --bl-catbar-height quedaría
      tapada por ella al scrollear. */
   top: calc(var(--bl-navbar-height, 5rem) + var(--bl-catbar-height, 0px));
+  /* Ocupa TODO el alto visible (no solo lo que mide su contenido): así queda
+     fijo y "durito", y el desplegable de "Ordenar por" tiene lugar para abrirse
+     entero sin tapar ni forzar un scroll adentro del panel. */
+  height: calc(100vh - var(--bl-navbar-height, 5rem) - var(--bl-catbar-height, 0px) - 1rem);
   max-height: calc(100vh - var(--bl-navbar-height, 5rem) - var(--bl-catbar-height, 0px) - 1rem);
   overflow-y: auto;
   scrollbar-width: thin;
+}
+
+/* Dentro del panel, las opciones de orden se muestran enteras (sin scroll propio). */
+.filters-sidebar .cat-filter-dropdown__menu {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .filters-sidebar__header {
