@@ -248,11 +248,15 @@
 
 /* --- Columna Derecha: Info del Producto --- */
 .pm-info {
-  padding: 1.6rem 1.6rem 1.2rem;
+  /* Abajo sin padding: los botones sticky terminan justo en la línea de la foto. */
+  --pm-pad-b: 0px;
+  padding: 1.6rem 1.6rem var(--pm-pad-b);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  max-height: 400px;
+  /* contain: size = esta columna no estira la fila; la altura la manda la foto
+     y la info scrollea por dentro (así los botones alinean con la foto). */
+  contain: size;
 }
 
 /* Tienda */
@@ -499,10 +503,11 @@
   gap: 0.6rem;
   position: sticky;
   /* Negativo = el padding de abajo de .pm-info: así no asoma contenido debajo. */
-  bottom: -1.2rem;
+  bottom: calc(-1 * var(--pm-pad-b));
   z-index: 2;
+  margin-top: auto; /* con poca info, igual quedan abajo, a la altura de la foto */
   margin-bottom: 0;
-  padding: 0.75rem 0 1.2rem;
+  padding: 0.75rem 0 var(--pm-pad-b);
   background: var(--bl-surface);
 }
 
@@ -804,8 +809,9 @@
   }
 
   .pm-info {
+    --pm-pad-b: 1.5rem;
     padding: 1.5rem;
-    max-height: none;
+    contain: none;
     overflow-y: visible;
   }
 
@@ -852,6 +858,7 @@
   }
 
   .pm-info {
+    --pm-pad-b: 1.25rem;
     padding: 1.25rem;
   }
 
