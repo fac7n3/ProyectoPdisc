@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNotificationsBell();
   initAccountMenu();
 
-  initCategoryBar({ activeSlug: 'inicio' });
+  initCategoryBar({ activeSlug: 'comercios' });
   initSearchBox({
     onSubmit: (term) => { window.location.href = `./search.html?q=${encodeURIComponent(term)}`; },
   });

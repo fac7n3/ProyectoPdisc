@@ -73,47 +73,6 @@ export function getCategories() {
   return _categoriesPromise;
 }
 
-// ── Categorías destacadas (las más populares, para la tira de acceso rápido) ──
-// Patrón de e-commerce grande (Mercado Libre/Amazon): el mega-menú tiene TODAS
-// las categorías; la tira inline muestra solo un puñado destacado, no las 14.
-// "Destacadas" = las que más productos activos tienen (excluye las vacías).
-let _featuredPromise = null;
-export function getFeaturedCategories(limit = 6) {
-  if (!_featuredPromise) {
-    _featuredPromise = (async () => {
-      const categories = await getCategories();
-      // El conteo lo hace la base (migración 154): antes se bajaba la columna
-      // category_id de TODOS los productos activos solo para contarla (30 KB con 527
-      // productos, creciendo con el catálogo, en cada página con barra de categorías).
-      const counts = new Map();
-      const { data: counted, error: rpcError } = await supabase.rpc('featured_category_counts');
-      if (!rpcError && Array.isArray(counted)) {
-        counted.forEach((r) => counts.set(r.category_id, Number(r.n)));
-      } else {
-        // Respaldo si la función todavía no existe: la consulta de siempre.
-        const { data, error } = await supabase
-          .from('products')
-          .select('category_id')
-          .eq('is_active', true);
-        if (error || !data) return categories.slice(0, limit); // fallback: primeras N
-        data.forEach((r) => {
-          if (r.category_id) counts.set(r.category_id, (counts.get(r.category_id) || 0) + 1);
-        });
-      }
-      return categories
-        .map((c) => ({ ...c, _count: counts.get(c.id) || 0 }))
-        .filter((c) => c._count > 0)
-        .sort((a, b) => b._count - a._count)
-        .slice(0, limit);
-    })().catch((err) => {
-      console.error('Error al cargar categorías destacadas:', err);
-      _featuredPromise = null;
-      return [];
-    });
-  }
-  return _featuredPromise;
-}
-
 // ── Búsquedas recientes (localStorage) ──────────────────────
 const RECENT_KEY = 'bl_recent_searches';
 const RECENT_MAX = 6;
@@ -150,18 +109,16 @@ function readCatBarCache() {
     const raw = localStorage.getItem(CATBAR_CACHE_KEY);
     if (!raw) return null;
     const c = JSON.parse(raw);
-    if (!c || !Array.isArray(c.categories) || !Array.isArray(c.featured)) return null;
+    // Un cache viejo (con `featured`) sigue sirviendo: solo se usan las categorías.
+    if (!c || !Array.isArray(c.categories)) return null;
     return c;
   } catch { return null; }
 }
 
-function writeCatBarCache(categories, featured) {
+function writeCatBarCache(categories) {
   try {
     // Solo name+slug: es lo único que usa renderCategoryBar.
-    const slim = {
-      categories: categories.map((c) => ({ name: c.name, slug: c.slug })),
-      featured: featured.map((c) => ({ name: c.name, slug: c.slug })),
-    };
+    const slim = { categories: categories.map((c) => ({ name: c.name, slug: c.slug })) };
     localStorage.setItem(CATBAR_CACHE_KEY, JSON.stringify(slim));
   } catch { /* localStorage bloqueado: ignorar */ }
 }
@@ -198,14 +155,15 @@ function initStickyHeightVars() {
 
 /**
  * Rellena #category-bar-inner con el botón "Categorías" (mega-menú) + la tira
- * de acceso rápido. `activeSlug` resalta la categoría activa (o 'ofertas'; 'inicio' no resalta nada).
+ * de acceso rápido (Ofertas y Comercios). `activeSlug` resalta 'ofertas' o
+ * 'comercios'; cualquier otro valor ('inicio', una categoría) no resalta nada.
  *
  * Render en dos tiempos: si hay cache en localStorage, dibuja la barra al
  * instante (evita que el texto "desaparezca" en cada navegación mientras el
  * fetch resuelve) y refresca el cache en background para la próxima. Sin cache
  * (primera visita), espera el fetch y dibuja una vez.
  */
-export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6, megaMountId = null } = {}) {
+export async function initCategoryBar({ activeSlug = 'inicio', megaMountId = null } = {}) {
   const inner = document.getElementById('category-bar-inner');
   // Sin #category-bar-inner no hay tira de categorías que dibujar, pero puede
   // seguir habiendo mega-menú si la página lo montó en otro lado (home).
@@ -216,22 +174,19 @@ export async function initCategoryBar({ activeSlug = 'inicio', featuredLimit = 6
 
   const cached = readCatBarCache();
   if (cached) {
-    renderCategoryBar(inner, cached.categories, cached.featured, activeSlug, megaMountId);
+    renderCategoryBar(inner, cached.categories, activeSlug, megaMountId);
     // Refresco silencioso para la próxima navegación (sin re-render: las
     // categorías casi nunca cambian; si cambian, se ve al siguiente load).
-    Promise.all([getCategories(), getFeaturedCategories(featuredLimit)])
-      .then(([categories, featured]) => writeCatBarCache(categories, featured))
-      .catch(() => {});
+    getCategories().then(writeCatBarCache).catch(() => {});
     return;
   }
 
   const categories = await getCategories();
-  const featured = await getFeaturedCategories(featuredLimit);
-  renderCategoryBar(inner, categories, featured, activeSlug, megaMountId);
-  writeCatBarCache(categories, featured);
+  renderCategoryBar(inner, categories, activeSlug, megaMountId);
+  writeCatBarCache(categories);
 }
 
-function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId = null) {
+function renderCategoryBar(inner, categories, activeSlug, megaMountId = null) {
   if (inner) inner.textContent = '';
 
   // Por defecto el botón "Categorías" va en la barra de categorías. Si la
@@ -345,8 +300,8 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
     if (e.key === 'Escape') closeMega();
   });
 
-  // --- Tira de acceso rápido: Ofertas + solo las categorías
-  //     destacadas (no las 14). El resto vive en el mega-menú de arriba.
+  // --- Tira de acceso rápido: solo Ofertas y Comercios (pedido del usuario,
+  //     2026-11-17). Las categorías viven únicamente en el mega-menú de arriba.
   //     El home no la usa: esa fila la ocupa con sus propios botones. ---
   if (!inner) return;
 
@@ -355,48 +310,26 @@ function renderCategoryBar(inner, categories, featured, activeSlug, megaMountId 
 
   // Sin "Inicio": al home se vuelve con el logo (pedido del usuario).
   const quickItems = [
-    { slug: 'ofertas', name: 'Ofertas', href: './search.html?cat=ofertas' },
-    ...featured.map((c) => ({ slug: c.slug, name: c.name, href: `./search.html?cat=${encodeURIComponent(c.slug)}` })),
+    { slug: 'ofertas', name: 'Ofertas', icon: 'fa-tags', href: './search.html?cat=ofertas' },
+    { slug: 'comercios', name: 'Comercios', icon: 'fa-store', href: './comercios.html' },
   ];
-
-  // Si la categoría activa no está entre las destacadas, la agrego para que
-  // se vea resaltada (ej: entré por el mega-menú a una categoría no destacada).
-  if (activeSlug !== 'inicio' && activeSlug !== 'ofertas' && !quickItems.some((q) => q.slug === activeSlug)) {
-    const activeCat = categories.find((c) => c.slug === activeSlug);
-    if (activeCat) {
-      quickItems.push({ slug: activeCat.slug, name: activeCat.name, href: `./search.html?cat=${encodeURIComponent(activeCat.slug)}` });
-    }
-  }
 
   quickItems.forEach((item) => {
     const link = document.createElement('a');
     link.href = item.href;
     link.className = 'category-bar__item';
-    if (item.slug === activeSlug) link.classList.add('category-bar__item--active');
-    if (item.slug === 'ofertas') {
-      const i = document.createElement('i');
-      i.className = 'fa-solid fa-tags';
-      link.appendChild(i);
+    if (item.slug === activeSlug) {
+      link.classList.add('category-bar__item--active');
+      link.setAttribute('aria-current', 'page');
     }
-    link.append(item.slug === 'ofertas' ? ' ' + item.name : item.name);
+    const i = document.createElement('i');
+    i.className = `fa-solid ${item.icon}`;
+    i.setAttribute('aria-hidden', 'true');
+    link.append(i, ` ${item.name}`);
     quick.appendChild(link);
   });
 
   inner.appendChild(quick);
-
-  // La tira no tiene barra visible: la rueda vertical del mouse la mueve en
-  // horizontal, y un degradé avisa de qué lado hay más categorías.
-  const syncEdges = () => {
-    quick.classList.toggle('has-more-left', quick.scrollLeft > 2);
-    quick.classList.toggle('has-more-right', quick.scrollLeft + quick.clientWidth < quick.scrollWidth - 2);
-  };
-  quick.addEventListener('wheel', (e) => {
-    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || quick.scrollWidth <= quick.clientWidth) return;
-    e.preventDefault();
-    quick.scrollLeft += e.deltaY;
-  }, { passive: false });
-  quick.addEventListener('scroll', syncEdges, { passive: true });
-  new ResizeObserver(syncEdges).observe(quick); // también corre al inicio
 }
 
 // ── Buscador con autocompletado ─────────────────────────────
