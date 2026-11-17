@@ -6,6 +6,7 @@ import { buildDropdown } from './dropdown.js';
 import { formatDueDate } from './order-utils.js';
 import { rememberNotificationIds, onNotificationsChanged, startNotificationsLive } from './notifications-live.js';
 import { createRefresher } from './realtime-utils.js';
+import { skeletonRows } from './panel-skeleton.js';
 
 // Texto genérico de cada tipo. Los avisos de pedidos traen el número en el
 // payload (migración 115) y usan ORDER_TITLES; este queda para los viejos.
@@ -670,6 +671,7 @@ export async function renderNotificationsSection(container, userId, { scope } = 
   }
   entry.userId = userId;
   entry.scope = scope;
+  skeletonRows(container, { count: 3, thumb: false, label: 'Cargando tus notificaciones…', onlyIfEmpty: true });
   ensureLiveListener();
   startNotificationsLive(userId);
   await drawNotificationsSection(container, entry);

@@ -15,6 +15,7 @@
  */
 
 import { supabase } from './auth-utils.js';
+import { skeletonBlock } from './panel-skeleton.js';
 import { SOCIAL_NETWORKS } from './store-contact-utils.js';
 import {
   METRIC_CARDS, PRO_FEATURES, normalizeStoreMetrics, hasAnyActivity, changeVsPrevious,
@@ -129,7 +130,7 @@ export async function loadStatsSummary(host, storeId, { goTo }) {
   if (!host || !storeId) return;
   const cached = summaryCache.storeId === storeId && Date.now() - summaryCache.at < SUMMARY_TTL_MS ? summaryCache.metrics : null;
   if (cached) { renderSummary(host, cached, { goTo }); return; }
-  if (!host.firstChild) host.appendChild(el('p', 'st-note', 'Cargando tus estadísticas…'));
+  skeletonBlock(host, { label: 'Cargando tus estadísticas…', onlyIfEmpty: true, plain: true });
   try {
     const metrics = await fetchStoreMetrics(storeId);
     summaryCache = { storeId, at: Date.now(), metrics };
@@ -328,7 +329,7 @@ function renderSection(host, metrics, { goTo }) {
  */
 export async function loadStatsSection(host, storeId, { goTo }) {
   if (!host || !storeId) return;
-  if (!host.firstChild) host.appendChild(el('p', 'st-note', 'Cargando tus estadísticas…'));
+  skeletonBlock(host, { label: 'Cargando tus estadísticas…', onlyIfEmpty: true });
   try {
     const metrics = await fetchStoreMetrics(storeId);
     summaryCache = { storeId, at: Date.now(), metrics };

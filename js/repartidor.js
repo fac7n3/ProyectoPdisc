@@ -19,6 +19,7 @@ import { describeSelectedOptions } from './product-options-utils.js';
 import { orderLabel } from './order-utils.js';
 import { subscribeToChanges, createRefresher } from './realtime-utils.js';
 import { friendlyError } from './friendly-error.js';
+import { skeletonGrid, clearStaleSkeletons } from './panel-skeleton.js';
 import { pickPhoto, uploadEvidence } from './delivery-evidence.js';
 import {
   MAX_ACTIVE, DELAY_OPTIONS, queueLevel, timeAgoLabel, deliveryStage, pickupLevel,
@@ -445,9 +446,15 @@ function tick() {
 async function loadPanel() {
   if (loading) { reloadAgain = true; return; }
   loading = true;
+  const mineList = document.getElementById('rp-mine-list');
+  const queueList = document.getElementById('rp-queue-list');
   try {
+    // Solo la primera vez: las recargas en vivo no tienen que parpadear.
+    skeletonGrid(mineList, { count: 1, photo: false, label: 'Cargando tus entregas…', onlyIfEmpty: true });
+    skeletonGrid(queueList, { count: 3, photo: false, label: 'Cargando los pedidos disponibles…', onlyIfEmpty: true });
     const { data, error } = await supabase.rpc('get_courier_panel');
     if (error) {
+      clearStaleSkeletons(mineList, queueList);
       console.error('Error cargando el panel de repartidor:', error);
       showToast(friendlyError(error, 'No se pudo cargar el panel.'), 'error');
       return;

@@ -913,6 +913,10 @@ a.compra-item-text:hover {
   .favoritos-grid > :not(.fav-card) {
     flex: 1 0 100%;
   }
+
+  .favoritos-grid > .sk-card {
+    flex: 0 0 min(44%, 190px);
+  }
 }
 
 .fav-card {

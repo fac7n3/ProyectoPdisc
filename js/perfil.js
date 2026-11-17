@@ -25,6 +25,7 @@ import { confirmDialog } from "./confirm-dialog.js";
 import { initMfaSettings } from "./mfa.js";
 import { initAccountSwitcher } from "./account-switcher.js";
 import { clearLinkedAccounts } from "./linked-accounts.js";
+import { skeletonRows, skeletonGrid } from "./panel-skeleton.js";
 import {
   ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_LABELS,
   orderLabel, canPrepare, awaitingTransfer, awaitingMercadoPago, showsPickupCode,
@@ -412,6 +413,7 @@ function initSettings() {
 // --- Multi-address book (P0-2) ---
 async function loadAddresses(userId) {
   if (!addressesList) return;
+  skeletonRows(addressesList, { count: 2, thumb: false, label: 'Cargando tus direcciones…', onlyIfEmpty: true });
 
   const { data: addresses, error } = await supabase
     .from('user_addresses')
@@ -1112,6 +1114,7 @@ function setupFavSubtabs() {
 
 async function loadFavoritos(userId) {
   if (!favoritosContainer) return;
+  skeletonGrid(favoritosContainer, { count: 4, label: 'Cargando tus favoritos…', onlyIfEmpty: true });
 
   try {
     const { data: favRows, error: favError } = await supabase
@@ -2175,6 +2178,7 @@ let comprasStatusFilter = 'todas';
 
 async function loadCompras(userId) {
   if (!comprasContainer) return;
+  skeletonRows(comprasContainer, { count: 2, label: 'Cargando tus compras…', onlyIfEmpty: true });
   try {
     const { data: orders, error } = await supabase
       .from('orders')

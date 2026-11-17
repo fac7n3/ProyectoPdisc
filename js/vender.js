@@ -7,7 +7,7 @@ import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime
 import { renderSupportSection, submitSupportTicket } from './support-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { initVenderShell } from './vender-shell.js';
-import { skeletonRows, skeletonReviews, skeletonResumen, clearStaleSkeletons } from './panel-skeleton.js';
+import { skeletonRows, skeletonReviews, skeletonResumen, skeletonBlock, clearStaleSkeletons } from './panel-skeleton.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { removeStoredObjects, getImageDimensions, fileToDataUrl, videoFileProblem, videoExtension } from './storage-utils.js';
 import { upgradeDateInputs } from './datepicker.js';
@@ -1010,6 +1010,7 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   if (isStoreOwner) {
     skeletonRows(document.getElementById('my-coupons-container'), { count: 2, thumb: false, label: 'Cargando tus cupones…' });
     skeletonRows(document.getElementById('store-staff-container'), { count: 2, thumb: false, label: 'Cargando tus empleados…' });
+    skeletonBlock(document.getElementById('home-promo-container'), { label: 'Cargando tu espacio en el inicio…' });
   }
   const results = await Promise.allSettled([
     renderAllOrders(),
@@ -1023,7 +1024,8 @@ async function loadDashboard(user, staffStoreId, staffPermissions) {
   results.forEach((r) => {
     if (r.status === 'rejected') console.error('Error al cargar una sección del panel:', r.reason);
   });
-  clearStaleSkeletons();
+  clearStaleSkeletons(...['resumen-dash', 'resumen-grid2', 'resumen-metrics', 'resenas-summary', 'resenas-list', 'pub-list',
+    'my-coupons-container', 'store-staff-container', 'home-promo-container'].map((id) => document.getElementById(id)));
 
   applyOrderDeepLink();
   applyDeliverDeepLink();
@@ -5919,6 +5921,7 @@ async function refreshBoost() {
   const container = document.getElementById('boost-plans');
   const servicesBox = document.getElementById('boost-services');
   if (!container || !isStoreOwner || !currentStoreId) return;
+  skeletonBlock(container, { label: 'Cargando los combos…', onlyIfEmpty: true });
 
   const [plansRes, itemsRes, servicesRes, purchasesRes, benefitsRes] = await Promise.all([
     supabase.from('boost_plans').select('id, name, price, duration_days').eq('is_active', true).order('sort_order'),

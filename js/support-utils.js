@@ -12,6 +12,7 @@
  * se abren con signed URLs (ver db/schema/73_support_ticket_attachments.sql).
  */
 import { compressImage } from './image-compress.js';
+import { skeletonRows } from './panel-skeleton.js';
 import { supabase } from './auth-utils.js';
 import { notify } from './notice.js';
 import { formatFileSize, storedFileName } from './storage-utils.js';
@@ -407,35 +408,6 @@ async function cancelTicket(ticketId) {
   if (!data?.length) throw new Error('No se pudo cancelar el reclamo. Recargá la página y probá de nuevo.');
 }
 
-/**
- * Bloque "cargando" con el spinner de 6 puntos del proyecto. Mismo markup que
- * arma la grilla del buscador (js/search.js) para que la espera se vea igual
- * en todos lados.
- */
-function buildLoadingBlock(text) {
-  const block = document.createElement('div');
-  block.className = 'bl-loading-block';
-  block.setAttribute('role', 'status');
-  block.setAttribute('aria-live', 'polite');
-
-  const spinner = document.createElement('div');
-  spinner.className = 'bl-spinner';
-  spinner.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < 6; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'bl-spinner__dot';
-    spinner.appendChild(dot);
-  }
-  block.appendChild(spinner);
-
-  const title = document.createElement('p');
-  title.className = 'bl-loading-block__title';
-  title.textContent = text;
-  block.appendChild(title);
-
-  return block;
-}
-
 /** Campo con etiqueta arriba: <label> real, así el clic enfoca el control. */
 function buildField(labelText, control) {
   const field = document.createElement('label');
@@ -603,9 +575,8 @@ export async function renderSupportSection(container) {
   container.appendChild(listArea);
 
   // fetchMyTickets tarda: sin esto queda el formulario solo, con un hueco
-  // mudo donde después aparece la lista. Mismo bloque de carga que usa la
-  // grilla del buscador.
-  listArea.appendChild(buildLoadingBlock('Cargando tus reclamos'));
+  // mudo donde después aparece la lista.
+  skeletonRows(listArea, { count: 2, thumb: false, label: 'Cargando tus reclamos…' });
   await renderTicketList(listArea, container);
   initSupportLive(container, listArea);
 }

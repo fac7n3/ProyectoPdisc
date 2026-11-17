@@ -3934,6 +3934,37 @@ button.coupon-chip:hover {
   padding: 1rem 1.5rem 2rem;
 }
 
+/* ── Esqueletos de los paneles (js/panel-skeleton.js): comercio, profesional,
+   repartidor, Mi perfil y admin. El color y el brillo son los de
+   .store-skeleton__bar; acá van las medidas y el borde de las tarjetas. ── */
+.sk { pointer-events: none; }
+.sk-bar { display: block; height: 0.8rem; }
+.sk-row { display: flex; align-items: center; gap: 0.75rem; }
+.sk-lines { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 0; }
+.sk-gap { height: 0.4rem; }
+.sk-w100 { width: 100%; } .sk-w80 { width: 80%; } .sk-w60 { width: 60%; } .sk-w40 { width: 40%; }
+.sk-card,
+.sk-rowcard {
+  background: var(--bl-surface);
+  border: 1px solid var(--bl-border);
+  border-radius: var(--bl-radius-lg);
+  box-shadow: var(--bl-shadow-card);
+}
+.sk-card { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.25rem; }
+.sk-rowcard { display: flex; align-items: center; gap: 1rem; padding: 1rem; }
+.sk-col { display: flex; flex-direction: column; gap: 0.7rem; }
+.sk-error { grid-column: 1 / -1; margin: 0; color: var(--bl-text-muted); font-size: 0.9rem; }
+.sk-thumb { width: 64px; height: 64px; flex-shrink: 0; border-radius: var(--bl-radius-md); }
+.sk-pill { width: 96px; height: 1.9rem; flex-shrink: 0; border-radius: var(--bl-radius-pill); }
+.sk-icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--bl-radius-md); }
+.sk-value { width: 45%; height: 1.2rem; margin-top: 0.35rem; }
+.sk-photo { width: 100%; aspect-ratio: 4 / 3; border-radius: var(--bl-radius-md); }
+.sk-graph { width: 100%; height: 150px; border-radius: var(--bl-radius-md); }
+.sk-reviews-summary { display: flex; align-items: center; gap: 1rem; width: 100%; }
+.sk-score { width: 48px; height: 2rem; }
+.sk-stars { width: 96px; height: 1rem; }
+.sk td { padding-block: 0.9rem; }
+
 /* Botón de favoritos */
 .product-card__wishlist {
   position: absolute;

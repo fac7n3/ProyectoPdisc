@@ -13,6 +13,7 @@ import { orderLabel } from './order-utils.js';
 import { openEvidenceViewer } from './delivery-evidence.js';
 import { subscribeToChanges, createRefresher, isEditingWithin } from './realtime-utils.js';
 import { friendlyError } from './friendly-error.js';
+import { skeletonTableHtml } from './panel-skeleton.js';
 import { setupBenefitsSection, loadBenefitsSection, refreshBenefitsBadge } from './admin-beneficios.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
@@ -35,7 +36,7 @@ function loadQuietly(loader) {
 
 async function fetchRequests() {
   const tbody = document.getElementById('requests-tbody');
-  setLoadingRow(tbody, '<tr><td colspan="6" style="text-align:center;">Cargando solicitudes...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(6, 'Cargando solicitudes...'));
 
   const { data, error } = await supabase
     .from('seller_requests')
@@ -207,7 +208,7 @@ function buildPhotoThumb(photoUrl, alt) {
 
 async function fetchProfessionalRequests() {
   const tbody = document.getElementById('professional-requests-tbody');
-  setLoadingRow(tbody, '<tr><td colspan="8" style="text-align:center;">Cargando solicitudes...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(8, 'Cargando solicitudes...'));
 
   const { data, error } = await supabase
     .from('professional_requests')
@@ -350,7 +351,7 @@ async function rejectProfessionalRequest(id) {
 
 async function fetchProfessionals() {
   const tbody = document.getElementById('professionals-tbody');
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando profesionales...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(8, 'Cargando profesionales...');
 
   const { data, error } = await supabase
     .from('professionals')
@@ -624,7 +625,7 @@ function renderMetricsAttention(items) {
 
 async function fetchCategories() {
   const tbody = document.getElementById('categories-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando categorías...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(4, 'Cargando categorías...');
 
   const { data, error } = await supabase.from('categories').select('*').order('name');
 
@@ -724,7 +725,7 @@ function setupCategoryForm() {
 
 async function fetchCoupons() {
   const tbody = document.getElementById('coupons-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando cupones...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(5, 'Cargando cupones...');
 
   const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
 
@@ -854,7 +855,7 @@ function setupCouponForm() {
 
 async function fetchStoresForModeration() {
   const tbody = document.getElementById('stores-mod-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando comercios...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(4, 'Cargando comercios...');
 
   const { data, error } = await supabase.from('stores').select('id, name, cuit, status').order('name');
 
@@ -924,7 +925,7 @@ async function fetchStoresForModeration() {
 
 async function fetchRepartidores() {
   const tbody = document.getElementById('repartidores-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando repartidores...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(4, 'Cargando repartidores...');
 
   const { data, error } = await supabase
     .from('profiles')
@@ -1103,7 +1104,7 @@ function setupProductSearch() {
 
 async function fetchPendingProofsAdmin() {
   const tbody = document.getElementById('proofs-mod-tbody');
-  setLoadingRow(tbody, '<tr><td colspan="4" style="text-align:center;">Cargando comprobantes...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(4, 'Cargando comprobantes...'));
 
   const { data, error } = await supabase
     .from('payment_proofs')
@@ -1218,7 +1219,7 @@ let pharmaciesCache = [];
 async function fetchPharmacies() {
   const tbody = document.getElementById('pharmacies-tbody');
   const select = document.getElementById('shift-pharmacy');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando farmacias...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(5, 'Cargando farmacias...');
 
   const { data, error } = await supabase
     .from('pharmacies')
@@ -1305,7 +1306,7 @@ async function fetchPharmacies() {
 
 async function fetchShifts() {
   const tbody = document.getElementById('shifts-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando turnos...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(4, 'Cargando turnos...');
 
   // Desde ayer: a la madrugada el turno vigente sigue siendo el del día
   // anterior, así que esconderlo confundiría a quien está cargando.
@@ -1461,7 +1462,7 @@ const EMERGENCY_CATEGORY_LABELS = {
 
 async function fetchEmergencyContacts() {
   const tbody = document.getElementById('emergency-contacts-tbody');
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando servicios...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(7, 'Cargando servicios...');
 
   const { data, error } = await supabase
     .from('emergency_contacts')
@@ -1626,7 +1627,7 @@ function setupEmergencyContactForm() {
 
 async function fetchReportedReviews() {
   const tbody = document.getElementById('reviews-mod-tbody');
-  setLoadingRow(tbody, '<tr><td colspan="4" style="text-align:center;">Cargando reseñas reportadas...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(4, 'Cargando reseñas reportadas...'));
 
   const { data, error } = await supabase
     .from('reviews')
@@ -1704,7 +1705,7 @@ async function fetchReportedReviews() {
 async function fetchRevocationRequests() {
   const tbody = document.getElementById('revocations-tbody');
   if (!tbody) return;
-  setLoadingRow(tbody, '<tr><td colspan="5" style="text-align:center;">Cargando solicitudes...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(5, 'Cargando solicitudes...'));
 
   const { data, error } = await supabase
     .from('orders')
@@ -1763,7 +1764,7 @@ async function fetchRevocationRequests() {
 async function fetchErrorLogs() {
   const tbody = document.getElementById('error-logs-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando errores...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(5, 'Cargando errores...');
 
   const { data, error } = await supabase
     .from('error_logs')
@@ -1843,7 +1844,7 @@ const SUPPORT_STATUSES = ['open', 'in_progress', 'resolved', 'cancelled'];
 async function fetchSupportTickets() {
   const tbody = document.getElementById('support-tbody');
   if (!tbody) return;
-  setLoadingRow(tbody, '<tr><td colspan="6" style="text-align:center;">Cargando reclamos...</td></tr>');
+  setLoadingRow(tbody, skeletonTableHtml(6, 'Cargando reclamos...'));
 
   // select('*') y no la lista de columnas: trae los adjuntos (migración 73)
   // sin que el panel se rompa donde esa migración todavía no corrió.
@@ -2117,7 +2118,7 @@ const AUDIT_ACTION_LABELS = { insert: 'Creó', update: 'Modificó', delete: 'Bor
 async function fetchAuditLog() {
   const tbody = document.getElementById('audit-log-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando log...</td></tr>';
+  tbody.innerHTML = skeletonTableHtml(5, 'Cargando log...');
 
   const { data, error } = await supabase
     .from('admin_audit_log')

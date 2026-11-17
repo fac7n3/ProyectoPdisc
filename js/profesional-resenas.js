@@ -12,6 +12,7 @@
  */
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
+import { skeletonRows, clearStaleSkeletons } from './panel-skeleton.js';
 import { buildStarsText } from './reviews-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
@@ -40,6 +41,7 @@ export function respondiendoResena() {
 
 async function cargar() {
   cargada = true;
+  skeletonRows(document.getElementById('of-reviews-list'), { count: 3, thumb: false, label: 'Cargando tus reseñas…', onlyIfEmpty: true });
   const { data, error } = await supabase
     .from('reviews')
     .select('id, rating, comment, created_at, owner_reply, owner_replied_at')
@@ -51,6 +53,7 @@ async function cargar() {
   if (error) {
     console.error('Error cargando reseñas:', error);
     showToast('No pudimos cargar tus reseñas.');
+    clearStaleSkeletons(document.getElementById('of-reviews-list'));
     return;
   }
 

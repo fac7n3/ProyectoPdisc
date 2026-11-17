@@ -7,6 +7,7 @@
  */
 
 import { supabase, showToast, setLoading } from './auth-utils.js';
+import { skeletonRows, clearStaleSkeletons } from './panel-skeleton.js';
 import { buildDropdown } from './dropdown.js';
 import { confirmDialog } from './confirm-dialog.js';
 import {
@@ -30,6 +31,7 @@ export function initServicios(contexto) {
 }
 
 async function cargar() {
+  skeletonRows(document.getElementById('of-services-list'), { count: 3, thumb: false, label: 'Cargando tus servicios…', onlyIfEmpty: true });
   const { data, error } = await supabase
     .from('professional_services')
     .select('id, title, description, price_type, price_pesos, is_active, sort_order')
@@ -40,6 +42,7 @@ async function cargar() {
   if (error) {
     console.error('Error cargando servicios:', error);
     showToast('No pudimos cargar tus servicios.');
+    clearStaleSkeletons(document.getElementById('of-services-list'));
     return;
   }
 

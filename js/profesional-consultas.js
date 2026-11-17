@@ -8,6 +8,7 @@
  */
 
 import { supabase, showToast } from './auth-utils.js';
+import { skeletonRows, clearStaleSkeletons } from './panel-skeleton.js';
 
 /** Los mismos tres valores que el CHECK de la migración 90. */
 const ESTADOS = [
@@ -49,6 +50,7 @@ export function recargarConsultas() {
 
 async function cargar() {
   cargada = true;
+  skeletonRows(document.getElementById('of-inquiries-list'), { count: 3, thumb: false, label: 'Cargando tus consultas…', onlyIfEmpty: true });
   const { data, error } = await supabase
     .from('professional_inquiries')
     .select('id, request_details, needed_when, needed_date, contact_phone, status, created_at, attachments')
@@ -58,6 +60,7 @@ async function cargar() {
   if (error) {
     console.error('Error cargando consultas:', error);
     showToast('No pudimos cargar tus consultas.');
+    clearStaleSkeletons(document.getElementById('of-inquiries-list'));
     return;
   }
 

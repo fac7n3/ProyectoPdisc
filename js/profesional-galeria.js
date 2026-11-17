@@ -8,6 +8,7 @@
 
 import { compressImage } from './image-compress.js';
 import { supabase, showToast } from './auth-utils.js';
+import { skeletonGrid, clearStaleSkeletons } from './panel-skeleton.js';
 import { removeStoredObjects, videoFileProblem, videoExtension, safeVideoUrl } from './storage-utils.js';
 import { confirmDialog } from './confirm-dialog.js';
 
@@ -27,6 +28,7 @@ export function initGaleria(contexto) {
 }
 
 async function cargar() {
+  skeletonGrid(document.getElementById('of-gallery'), { count: 3, label: 'Cargando tus fotos…', onlyIfEmpty: true });
   const { data, error } = await supabase
     .from('professional_promos')
     .select('id, image_url, description, sort_order, media_type')
@@ -37,6 +39,7 @@ async function cargar() {
   if (error) {
     console.error('Error cargando las fotos:', error);
     showToast('No pudimos cargar tus fotos.');
+    clearStaleSkeletons(document.getElementById('of-gallery'));
     return;
   }
 

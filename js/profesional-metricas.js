@@ -12,6 +12,7 @@
  */
 
 import { supabase, showToast } from './auth-utils.js';
+import { skeletonBlock, clearStaleSkeletons } from './panel-skeleton.js';
 
 const DIAS_VENTANA = 30;
 
@@ -30,6 +31,7 @@ export function initMetricas(contexto) {
 }
 
 async function cargar() {
+  skeletonBlock(document.getElementById('of-metrics'), { label: 'Cargando tus estadísticas…', onlyIfEmpty: true });
   const desde = new Date();
   desde.setDate(desde.getDate() - DIAS_VENTANA);
 
@@ -49,6 +51,7 @@ async function cargar() {
   if (metricas.error) {
     console.error('Error cargando métricas:', metricas.error);
     showToast('No pudimos cargar tus estadísticas.');
+    clearStaleSkeletons(document.getElementById('of-metrics'));
     return;
   }
 

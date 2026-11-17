@@ -13,6 +13,7 @@
 import { compressImage } from './image-compress.js';
 import { supabase, guardPage, showToast, setLoading } from './auth-utils.js';
 import { initVenderShell } from './vender-shell.js';
+import { skeletonStats, skeletonResumenCards } from './panel-skeleton.js';
 import { loadPanelOnboardingSeen, showPanelOnboarding } from './panel-onboarding-utils.js';
 import { initNotificationsBell } from './nav-utils.js';
 import { PROFESSIONAL_CATEGORIES, categoryLabel, categoryIcon } from './professional-categories.js';
@@ -209,6 +210,8 @@ function montarPanel() {
   renderNotificationsSection(document.getElementById('of-notifications'), estado.user.id, { scope: 'profesional' });
   renderSupportSection(document.getElementById('of-support'));
 
+  skeletonStats(document.getElementById('of-resumen-stats'), { label: 'Cargando tu resumen…' });
+  skeletonResumenCards(document.getElementById('of-resumen-cards'));
   renderResumen();
   initPanelLive();
 }

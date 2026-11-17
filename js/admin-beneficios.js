@@ -14,6 +14,7 @@
 // La lógica de estados, filtros y mensajes es pura y vive en admin-beneficios-utils.js.
 
 import { supabase, showToast } from './auth-utils.js';
+import { skeletonTableHtml } from './panel-skeleton.js';
 import { confirmDialog } from './confirm-dialog.js';
 import { formatPrice } from './cart-utils.js';
 import { friendlyError } from './friendly-error.js';
@@ -237,7 +238,7 @@ async function loadPhones(rows) {
  */
 async function fetchRows({ quiet = false } = {}) {
   const tbody = $('benefits-tbody');
-  if (tbody && !quiet) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando...</td></tr>';
+  if (tbody && !quiet) tbody.innerHTML = skeletonTableHtml(8, 'Cargando...');
   const { data, error } = await supabase.rpc('admin_list_benefits', { p_limit: ROWS_LIMIT });
   if (error) {
     console.error('Error al listar los beneficios:', error);
