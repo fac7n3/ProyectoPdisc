@@ -1124,12 +1124,6 @@ html[data-theme="dark"] .mc-navitem.is-active {
   color: var(--dk-oficios-text);
   background: rgba(var(--bl-oficios-accent-rgb), 0.08);
 }
-html[data-theme="dark"] .btn-outline {
-  color: var(--dk-oficios-text);
-}
-html[data-theme="dark"] .btn-outline:hover {
-  color: #fff;
-}
 html[data-theme="dark"] .mc-hamburger {
   color: #8face0;
 }

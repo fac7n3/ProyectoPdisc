@@ -1,5 +1,5 @@
 // node js/nav-back.test.mjs
-// La flecha del navbar del panel de vendedor tiene que llevar SIEMPRE al inicio, no a la página
+// La flecha del navbar de los paneles de vendedor y de profesional tiene que llevar SIEMPRE al inicio, no a la página
 // anterior del historial: lo marca `data-nav-home` y lo respeta `handleNavBack` (js/auth-utils.js).
 // El panel está detrás del login, así que el comportamiento real se prueba en e2e/humo.spec.mjs con
 // una página pública; acá solo se vigila que la marca no se pierda del HTML ni del manejador.
@@ -12,20 +12,29 @@ function check(name, fn) {
   catch (e) { console.log(`  FAIL ${name}\n       ${e.message}`); process.exitCode = 1; }
 }
 
-const venderHtml = readFileSync(new URL('../pages/vender.html', import.meta.url), 'utf8');
 const authUtils = readFileSync(new URL('./auth-utils.js', import.meta.url), 'utf8');
 
-// Las flechas del navbar: <a ... class="navbar__action-circle" ...><i class="fa-solid fa-arrow-left">
-const flechas = [...venderHtml.matchAll(/<a\b[^>]*class="[^"]*navbar__action-circle[^"]*"[^>]*>\s*<i class="fa-solid fa-arrow-left"/g)].map((m) => m[0]);
+for (const pagina of ['vender', 'profesional']) {
+  const html = readFileSync(new URL(`../pages/${pagina}.html`, import.meta.url), 'utf8');
+  // Las flechas del navbar: <a ... class="navbar__action-circle" ...><i class="fa-solid fa-arrow-left">
+  const flechas = [...html.matchAll(/<a\b[^>]*class="[^"]*navbar__action-circle[^"]*"[^>]*>\s*<i class="fa-solid fa-arrow-left"/g)].map((m) => m[0]);
 
-check('vender.html tiene una sola flecha en el navbar', () => {
-  assert.equal(flechas.length, 1, `se esperaba 1 flecha y hay ${flechas.length}`);
-});
+  check(`${pagina}.html tiene una sola flecha en el navbar`, () => {
+    assert.equal(flechas.length, 1, `se esperaba 1 flecha y hay ${flechas.length}`);
+  });
 
-check('la flecha de vender.html lleva a home.html y está marcada con data-nav-home', () => {
-  assert.match(flechas[0], /href="\.\/home\.html"/);
-  assert.match(flechas[0], /\sdata-nav-home(\s|>|=)/);
-});
+  check(`la flecha de ${pagina}.html lleva a home.html y está marcada con data-nav-home`, () => {
+    assert.match(flechas[0], /href="\.\/home\.html"/);
+    assert.match(flechas[0], /\sdata-nav-home(\s|>|=)/);
+  });
+
+  check(`el menú lateral de ${pagina}.html ya no tiene el botón "Volver al inicio"`, () => {
+    assert.doesNotMatch(html, /id="(btn-logout-seller|of-logout)"/);
+    const menu = html.slice(html.indexOf('id="mc-sidebar"'), html.indexOf('<div class="mc-content">'));
+    assert.ok(menu.length > 200, 'no se encontró el menú lateral');
+    assert.doesNotMatch(menu, /Volver al inicio/);
+  });
+}
 
 check('handleNavBack no usa history.back() cuando la flecha trae data-nav-home', () => {
   const cuerpo = authUtils.slice(authUtils.indexOf('function handleNavBack'));

@@ -179,10 +179,6 @@ function montarPanel() {
   const preview = document.getElementById('of-preview-link');
   if (preview) preview.href = `./contratar.html?pro=${estado.prof.id}`;
 
-  document.getElementById('of-logout')?.addEventListener('click', () => {
-    window.location.href = './home.html';
-  });
-
   // El shell necesita las secciones ya en el DOM: se cablea antes de pedir
   // datos, igual que loadDashboard() en vender.js.
   initVenderShell();

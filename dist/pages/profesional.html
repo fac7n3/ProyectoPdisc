@@ -14,7 +14,7 @@
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <style>.oficios-mode-badge{background:var(--bl-accent);color:#fff;border-radius:var(--bl-radius-pill);letter-spacing:.02em;white-space:nowrap;align-items:center;gap:.4rem;padding:.35rem .9rem;font-size:.8rem;font-weight:700;display:inline-flex}.oficios-mode-badge[hidden]{display:none}@media (width<=768px){.oficios-mode-badge{display:none}}.prof-status-card{background:var(--bl-surface-alt);border:1px solid var(--bl-border);border-radius:var(--bl-radius-lg);text-align:center;max-width:640px;margin:2.5rem auto;padding:2rem}</style>
-    <script type="module" crossorigin src="/assets/profesional-DRbgY4kq.js"></script>
+    <script type="module" crossorigin src="/assets/profesional-Cx5QG4SU.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/theme-pUV4s4cA.js">
     <link rel="modulepreload" crossorigin href="/assets/image-compress-D0FfQ9U_.js">
     <link rel="modulepreload" crossorigin href="/assets/speed-insights-Bson1xLf.js">
@@ -34,7 +34,7 @@
     <link rel="modulepreload" crossorigin href="/assets/professional-hours-utils-B4_QJTeI.js">
     <link rel="modulepreload" crossorigin href="/assets/reviews-utils-4m34vq2h.js">
     <link rel="stylesheet" crossorigin href="/assets/theme-ByFvjJTD.css">
-    <link rel="stylesheet" crossorigin href="/assets/profesional-BznfXXc9.css">
+    <link rel="stylesheet" crossorigin href="/assets/profesional-o-L0YX5X.css">
     <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
     <link rel="stylesheet" crossorigin href="/assets/home-BS0QmLMD.css">
     <link rel="stylesheet" crossorigin href="/assets/auth-JM4w52S9.css">
@@ -69,7 +69,9 @@
             <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
             <div id="nav-notifications-wrap"></div>
             <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+            <!-- data-nav-home: en el panel la flecha lleva siempre al inicio, no a la página anterior
+                 del historial (ver handleNavBack en js/auth-utils.js). -->
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio" data-nav-home><i class="fa-solid fa-arrow-left"></i></a>
           </div>
         </div>
       </nav>
@@ -141,8 +143,6 @@
 
             <a class="mc-navlink" href="./perfil.html?tab=mis-datos"><i class="fa-solid fa-user mc-navicon"></i> Mi perfil</a>
             <a class="mc-navlink" href="./perfil.html?tab=ajustes"><i class="fa-solid fa-gear mc-navicon"></i> Configuración</a>
-
-            <button class="btn-outline" id="of-logout" style="width: 100%; margin-top: 1rem; border-color: #ef4444; color: #ef4444;">Volver al inicio</button>
           </aside>
 
           <div class="mc-content">
