@@ -1311,7 +1311,7 @@ function initCartEvents() {
     }
 
     checkoutBtn.disabled = true;
-    checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+    checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Procesando...';
     checkoutInProgress = true;
 
     try {

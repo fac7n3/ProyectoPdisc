@@ -1,4 +1,4 @@
-import { supabase, showToast, setLoading, isValidEmail, checkUrlErrors, guardPage, initPasswordToggle } from "./auth-utils.js";
+import { supabase, showToast, markInvalid, setLoading, isValidEmail, checkUrlErrors, guardPage, initPasswordToggle } from "./auth-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const registerEmailInput = document.getElementById("register-email");
@@ -129,43 +129,43 @@ async function registerWithEmail() {
   // Validaciones locales específicas
   if (!name) {
     showToast("Ingresá tu nombre y apellido.", "error");
-    registerNameInput?.focus();
+    markInvalid(registerNameInput);
     return;
   }
   if (name.length < 2) {
     showToast("El nombre debe tener al menos 2 caracteres.", "error");
-    registerNameInput?.focus();
+    markInvalid(registerNameInput);
     return;
   }
   if (!email) {
     showToast("Ingresá tu correo electrónico.", "error");
-    registerEmailInput?.focus();
+    markInvalid(registerEmailInput);
     return;
   }
   if (!isValidEmail(email)) {
     showToast("El formato del correo electrónico no es válido.", "error");
-    registerEmailInput?.focus();
+    markInvalid(registerEmailInput);
     return;
   }
   if (!password) {
     showToast("Ingresá una contraseña.", "error");
-    registerPasswordInput?.focus();
+    markInvalid(registerPasswordInput);
     return;
   }
   // Validación básica
   if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
     showToast("La contraseña debe tener al menos 8 caracteres, una mayúscula y un número", "error");
-    registerPasswordInput?.focus();
+    markInvalid(registerPasswordInput);
     return;
   }
   if (!passwordConfirm) {
     showToast("Repetí la contraseña para confirmarla.", "error");
-    registerPasswordConfirmInput?.focus();
+    markInvalid(registerPasswordConfirmInput);
     return;
   }
   if (password !== passwordConfirm) {
     showToast("Las contraseñas no coinciden.", "error");
-    registerPasswordConfirmInput?.focus();
+    markInvalid(registerPasswordConfirmInput);
     registerPasswordConfirmInput?.select();
     return;
   }

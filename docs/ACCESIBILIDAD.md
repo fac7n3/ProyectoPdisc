@@ -116,13 +116,35 @@ elemento que recibe foco, matchea `:focus`, y se dibuja arriba de todo (top 0, 4
 
 ---
 
+### Tercera pasada (2026-11-17) — páginas faltantes, íconos, foco y pruebas
+
+- **`contratar`, `farmacias` y `servicios` no tenían nada de lo anterior** (ni `a11y.css`, ni skip
+  link, ni `<main>` enfocable; con `.sr-only` sin definir). Ahora cargan `a11y.css`, tienen el skip
+  link y `<main id="contenido-principal" tabindex="-1">`. Las 21 páginas quedan iguales.
+- **161 íconos de Font Awesome decorativos** (HTML y plantillas de JS) llevan `aria-hidden="true"`,
+  para que ningún lector lea el glifo. Los que tienen `aria-label`, `title` o `role` se dejaron.
+- **Foco visible:** se sacó `outline: none` de la fila del comparador (`.bl-compare__row`) y de las
+  zonas de subida de `vender.html`, que solo cambiaban de color de fondo o borde. En `contratar`, el
+  input de fecha invisible ahora dibuja el anillo en su chip (`:focus-within`). Los campos de
+  texto que reemplazan el anillo por borde + sombra se dejaron.
+- **Errores de formulario:** los avisos de error ya se anuncian solos (`js/notice.js` usa
+  `role="alert"` para errores). Faltaba marcar el campo: `markInvalid()` (`js/auth-utils.js`) pone
+  `aria-invalid="true"`, mueve el foco y lo saca al escribir; lo usan `login.js` y `register.js`.
+- **Pruebas nuevas** (corren con `npm test` y `npm run test:e2e`):
+  - `js/a11y-paginas.test.mjs`: en cada página de `pages/`, `lang`, `a11y.css`, skip link con
+    destino existente y enfocable, `<h1>`, sin `<img>` sin `alt` y sin íconos sin `aria-hidden`.
+  - `e2e/humo.spec.mjs`: en 9 páginas públicas, con Tab real, el skip link es lo primero que se
+    enfoca y al activarlo el foco llega al destino.
+
+---
+
 ## Lo que queda pendiente
 
 1. **Probarlo con TalkBack en un teléfono Android.** Es el único test que vale de verdad, y no
    se puede hacer desde acá. Un lector de pantalla real siempre encuentra cosas que el código
    no muestra.
-2. **Anuncio de errores de validación.** Los formularios avisan visualmente, pero falta
-   `aria-describedby` + `role="alert"` para que el error se lea al ocurrir.
+2. **Errores de validación en el resto de los formularios.** Login y registro ya marcan el campo
+   (`markInvalid`); falta lo mismo en `perfil`, `vender`, `contratar` y `profesional`.
 3. **Contraste de color**: no se auditó. Requiere medir cada par texto/fondo.
 4. **El carrito y el panel de logística** viven en otras ramas sin mergear: cuando se integren,
    hay que darles la misma pasada (skip link, `h1`, labels en lo generado por JS). El modal de

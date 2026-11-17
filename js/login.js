@@ -1,4 +1,4 @@
-import { supabase, showToast, setLoading, isValidEmail, checkUrlErrors, guardPage, initPasswordToggle } from "./auth-utils.js";
+import { supabase, showToast, markInvalid, setLoading, isValidEmail, checkUrlErrors, guardPage, initPasswordToggle } from "./auth-utils.js";
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const emailInput = document.getElementById("correo");
@@ -41,22 +41,22 @@ async function loginLocal() {
   // Validaciones locales
   if (!email && !password) {
     showToast("Ingresá correo y contraseña para continuar.", "error");
-    emailInput?.focus();
+    markInvalid(emailInput);
     return;
   }
   if (!email) {
     showToast("Ingresá tu correo electrónico.", "error");
-    emailInput?.focus();
+    markInvalid(emailInput);
     return;
   }
   if (!isValidEmail(email)) {
     showToast("El formato del correo electrónico no es válido.", "error");
-    emailInput?.focus();
+    markInvalid(emailInput);
     return;
   }
   if (!password) {
     showToast("Ingresá tu contraseña.", "error");
-    passwordInput?.focus();
+    markInvalid(passwordInput);
     return;
   }
 

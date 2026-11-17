@@ -45,7 +45,7 @@
           <div id="nav-account-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
-            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;" aria-hidden="true"></i>
             <span class="cart-badge" id="cart-badge"></span>
           </a>
         </div>
@@ -70,12 +70,12 @@
           <!-- Estado vacío -->
           <div id="cart-empty" class="cart-empty" style="display: none;">
             <div class="cart-empty__icon">
-              <i class="fa-solid fa-cart-shopping"></i>
+              <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
             </div>
             <h2 class="cart-empty__title">Tu carrito está vacío</h2>
             <p class="cart-empty__text">Explorá los productos de Baradero y agregá lo que necesites.</p>
             <a href="./home.html" class="cart-empty__link">
-              <i class="fa-solid fa-arrow-left"></i> Ir a comprar
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Ir a comprar
             </a>
           </div>
 
@@ -90,7 +90,7 @@
             <!-- Barra de acciones -->
             <div class="cart-actions">
               <a href="./home.html" class="cart-actions__back">
-                <i class="fa-solid fa-arrow-left"></i> Volver al inicio
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio
               </a>
               <div class="cart-actions__buttons">
                 <button id="cart-clear-btn" class="cart-actions__btn cart-actions__btn--outline">Vaciar mi carrito</button>
@@ -108,7 +108,7 @@
           <div class="cart-summary__section" id="coupon-section">
             <div class="cart-summary__section-header" id="coupon-header">
               <span>¿Tenés un cupón de descuento?</span>
-              <i class="fa-solid fa-chevron-down"></i>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </div>
             <div class="cart-summary__section-content" id="coupon-content" style="display: none;">
               <div class="coupon-input-group">
@@ -123,7 +123,7 @@
           <div class="cart-summary__section" id="delivery-section">
             <div class="cart-summary__section-header" id="delivery-header">
               <span>Retiro o envío</span>
-              <i class="fa-solid fa-chevron-down"></i>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </div>
             <div class="cart-summary__section-content" id="delivery-content">
               <label class="delivery-option">
@@ -145,7 +145,7 @@
           <div class="cart-summary__section" id="payment-section">
             <div class="cart-summary__section-header" id="payment-header">
               <span>Método de pago</span>
-              <i class="fa-solid fa-chevron-down"></i>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
             </div>
             <div class="cart-summary__section-content" id="payment-content">
               <label class="delivery-option" id="payment-mercadopago-label">
@@ -215,7 +215,7 @@
 
           <!-- Botón de pago -->
           <button id="cart-checkout-btn" class="cart-summary__checkout">
-            Iniciar pago <i class="fa-solid fa-arrow-right"></i>
+            Iniciar pago <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           </button>
         </aside>
 
@@ -289,7 +289,7 @@
          puede estilar ni traducir, y en mobile aparece como alerta del navegador) -->
     <div class="bl-confirm-overlay" id="clear-cart-modal" style="display: none;">
       <div class="bl-confirm" role="alertdialog" aria-modal="true" aria-labelledby="clear-cart-title" aria-describedby="clear-cart-text">
-        <div class="bl-confirm__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="bl-confirm__icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
         <h2 class="bl-confirm__title" id="clear-cart-title">Vaciar mi carrito</h2>
         <p class="bl-confirm__text" id="clear-cart-text">¿Seguro que deseas vaciar tu carrito? Si lo haces deberás de cargar todos los productos nuevamente!</p>
         <div class="bl-confirm__actions">

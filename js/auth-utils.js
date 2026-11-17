@@ -549,7 +549,7 @@ export async function guardPage({
 
 // --- Actualizar Foto de Perfil en Navbar ---
 const AVATAR_CACHE_KEY = "bl_avatar_url";
-const DEFAULT_PROFILE_ICON = '<i class="fa-regular fa-user" style="font-size: 0.875rem;"></i>';
+const DEFAULT_PROFILE_ICON = '<i class="fa-regular fa-user" style="font-size: 0.875rem;" aria-hidden="true"></i>';
 
 function renderNavAvatar(navProfile, avatarUrl) {
   navProfile.innerHTML = "";
@@ -665,4 +665,16 @@ function startLiveNotifications(userId) {
   import("./toast-utils.js")
     .then((m) => m.initNotificationToasts(userId))
     .catch((err) => console.error("No se pudieron activar las notificaciones en vivo:", err));
+}
+
+/**
+ * Marca un campo como inválido para el lector de pantalla (TalkBack lo anuncia
+ * como "no válido") y le da el foco. El mensaje en sí ya lo lee el aviso de
+ * error (`role="alert"`). La marca se saca sola apenas la persona escribe.
+ */
+export function markInvalid(input) {
+  if (!input) return;
+  input.setAttribute("aria-invalid", "true");
+  input.addEventListener("input", () => input.removeAttribute("aria-invalid"), { once: true });
+  input.focus();
 }

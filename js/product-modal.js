@@ -106,10 +106,10 @@ async function fetchProductData(productId) {
 // ── Generar estrellas HTML ──────────────────────────────────
 function renderStars(full, half, empty) {
   let html = '';
-  for (let i = 0; i < full; i++) html += '<i class="fa-solid fa-star"></i>';
-  for (let i = 0; i < half; i++) html += '<i class="fa-solid fa-star-half-stroke"></i>';
+  for (let i = 0; i < full; i++) html += '<i class="fa-solid fa-star" aria-hidden="true"></i>';
+  for (let i = 0; i < half; i++) html += '<i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i>';
   const totalEmpty = 5 - full - half;
-  for (let i = 0; i < totalEmpty; i++) html += '<i class="fa-regular fa-star empty"></i>';
+  for (let i = 0; i < totalEmpty; i++) html += '<i class="fa-regular fa-star empty" aria-hidden="true"></i>';
   return html;
 }
 
@@ -251,9 +251,9 @@ function buildLoadingHTML() {
   return `
     <div class="product-modal" role="dialog" aria-modal="true" aria-label="Cargando producto">
       <div class="pm-topbar">
-        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Atrás</button>
         <div class="pm-topbar__actions">
-          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
       <div class="pm-loading" role="status" aria-live="polite">
@@ -316,9 +316,9 @@ function buildPreviewHTML(p) {
   return `
     <div class="product-modal" role="dialog" aria-modal="true" aria-label="Cargando ${name}" aria-busy="true">
       <div class="pm-topbar">
-        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Atrás</button>
         <div class="pm-topbar__actions">
-          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
       <div class="pm-main">
@@ -349,13 +349,13 @@ function buildModalErrorHTML() {
   return `
     <div class="product-modal" role="dialog" aria-modal="true" aria-label="Error al cargar el producto">
       <div class="pm-topbar">
-        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left"></i> Atrás</button>
+        <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Atrás</button>
         <div class="pm-topbar__actions">
-          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+          <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         </div>
       </div>
       <div class="pm-modal-error">
-        <i class="fa-solid fa-triangle-exclamation"></i>
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
         <p>No se pudo cargar el producto.</p>
         <button type="button" class="pm-modal-error__retry" id="pm-retry-btn">Reintentar</button>
       </div>
@@ -435,14 +435,14 @@ function buildModalHTML(data) {
 
       <div class="pm-topbar">
         <button class="pm-topbar__back" id="pm-close-back" aria-label="Volver">
-          <i class="fa-solid fa-chevron-left"></i> Atrás
+          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Atrás
         </button>
         <div class="pm-topbar__actions">
           <button class="pm-topbar__btn" id="pm-share-btn" aria-label="Compartir producto">
-            <i class="fa-solid fa-share-nodes"></i>
+            <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
           </button>
           <button class="pm-topbar__btn pm-topbar__btn--close" id="pm-close-btn" aria-label="Cerrar">
-            <i class="fa-solid fa-xmark"></i>
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -454,15 +454,15 @@ function buildModalHTML(data) {
             ${badgeHTML}
             ${!data.isOwner ? `
             <button class="pm-gallery__fav" id="pm-fav-btn" aria-label="Agregar a favoritos">
-              <i class="fa-regular fa-heart"></i>
+              <i class="fa-regular fa-heart" aria-hidden="true"></i>
             </button>
             ` : ''}
             ${data.images.length > 1 ? `
             <button class="pm-gallery__nav pm-gallery__nav--prev" id="pm-gallery-prev" aria-label="Imagen anterior">
-              <i class="fa-solid fa-chevron-left"></i>
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
             </button>
             <button class="pm-gallery__nav pm-gallery__nav--next" id="pm-gallery-next" aria-label="Imagen siguiente">
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
             ` : ''}
             <img class="pm-gallery__img" id="pm-gallery-img" src="${encodeURI(data.imgSrc)}" alt="${data.imgAlt}" />
@@ -500,7 +500,7 @@ function buildModalHTML(data) {
           <!-- Stock -->
           <div class="pm-stock">
             <div class="pm-stock__text pm-stock__text--${stockInfo.cssClass}">
-              <i class="fa-solid fa-circle-info"></i>
+              <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
               ${stockInfo.text}
             </div>
             <div class="pm-stock__bar">
@@ -517,13 +517,13 @@ function buildModalHTML(data) {
             <div class="pm-quantity__controls">
               ${!data.isOwner ? `
               <button class="pm-quantity__btn" id="pm-qty-minus" aria-label="Reducir cantidad" disabled>
-                <i class="fa-solid fa-minus"></i>
+                <i class="fa-solid fa-minus" aria-hidden="true"></i>
               </button>
               ` : ''}
               <input type="number" class="pm-quantity__value" id="pm-qty-value" value="1" min="1" max="${Math.max(data.stock, 1)}" aria-label="Cantidad" ${stockDisabled || data.isOwner ? 'disabled' : ''} />
               ${!data.isOwner ? `
               <button class="pm-quantity__btn" id="pm-qty-plus" aria-label="Aumentar cantidad" ${stockDisabled ? 'disabled' : ''}>
-                <i class="fa-solid fa-plus"></i>
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
               </button>
               ` : ''}
             </div>
@@ -898,7 +898,7 @@ function bindModalEvents(overlay, data) {
 
     addCartBtn.classList.add('pm-btn--added');
     const originalHTML = addCartBtn.innerHTML;
-    addCartBtn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Agregado!';
+    addCartBtn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> ¡Agregado!';
 
     setTimeout(() => {
       addCartBtn.classList.remove('pm-btn--added');

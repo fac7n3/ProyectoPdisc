@@ -30,6 +30,21 @@ for (const { ruta, listo } of PAGINAS) {
   });
 }
 
+// Accesibilidad (TalkBack / teclado): el skip link es lo primero que se enfoca
+// con Tab y, al activarlo, el foco viaja al contenido (no solo el scroll).
+for (const ruta of PAGINAS.map((p) => p.ruta).filter((r) => r.startsWith('/pages/') && !r.includes('login') && !r.includes('register') && !r.includes('recuperar'))) {
+  test(`skip link lleva el foco al contenido: ${ruta}`, async ({ page }) => {
+    await page.goto(ruta);
+    await page.waitForLoadState('networkidle');
+    await page.keyboard.press('Tab');
+    const skip = page.locator('.skip-link');
+    await expect(skip).toBeFocused();
+    const destino = (await skip.getAttribute('href')).slice(1);
+    await page.keyboard.press('Enter');
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(destino);
+  });
+}
+
 test.describe('home', () => {
   test('muestra 16 recomendados y los banners nuevos', async ({ page, problemas }) => {
     await page.goto('/pages/home.html');

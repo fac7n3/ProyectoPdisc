@@ -1049,17 +1049,17 @@
       .is-invalid { border-color: #dc2626 !important; background: #fef2f2 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); animation: bl-invalid-pulse 0.6s ease-out; }
       @keyframes bl-invalid-pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); } 100% { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25); } }
       @media (prefers-reduced-motion: reduce) { .is-invalid { animation: none; } }
-      .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); outline: none; }
+      .pubform__drop:hover, .pubform__drop:focus-visible, .pubform__drop.is-over { border-color: var(--bl-vendor-accent); background: rgba(var(--bl-vendor-accent-rgb), 0.05); }
       .pubform__drop i { font-size: 1.6rem; color: var(--bl-vendor-accent); }
       .pubform__drop-main { font-weight: 600; color: var(--bl-text); }
       .pubform__optional { font-weight: 400; color: var(--bl-text-muted); }
       .pubform__video-pick { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.1rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-text); font: inherit; font-weight: 600; cursor: pointer; }
-      .pubform__video-pick:hover, .pubform__video-pick:focus-visible { border-color: var(--bl-vendor-accent); outline: none; }
+      .pubform__video-pick:hover, .pubform__video-pick:focus-visible { border-color: var(--bl-vendor-accent); }
       .pubform__video[hidden] { display: none; }
       .pubform__video { display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem; margin-top: 0.75rem; }
       .pubform__video video { width: 100%; max-width: 420px; max-height: 280px; border-radius: var(--bl-radius-md); background: #000; }
       .pubform__video-remove { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: 1px solid var(--bl-border); border-radius: var(--bl-radius-md); background: var(--bl-surface); color: var(--bl-danger-text); font: inherit; font-size: 0.875rem; cursor: pointer; }
-      .pubform__video-remove:hover, .pubform__video-remove:focus-visible { border-color: var(--bl-danger); outline: none; }
+      .pubform__video-remove:hover, .pubform__video-remove:focus-visible { border-color: var(--bl-danger); }
 
       /* Los estilos de .catpick viven en home.css: los comparten el alta de
          producto y el alta de comercio. */
@@ -1325,12 +1325,12 @@
             </div>
           </a>
           <div class="navbar__actions">
-            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
             <div id="nav-notifications-wrap"></div>
             <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
             <!-- data-nav-home: en el panel la flecha lleva siempre al inicio, no a la página anterior
                  del historial (ver handleNavBack en js/auth-utils.js). -->
-            <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio" data-nav-home><i class="fa-solid fa-arrow-left"></i></a>
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio" data-nav-home><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
           </div>
         </div>
       </nav>
@@ -1483,23 +1483,23 @@
                 <span class="mc-sidebar__title">Mi cuenta</span>
                 <span class="mc-store-name" id="dash-shop-name">Tu Comercio</span>
               </div>
-              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
+              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
 
             <!-- Vista previa del comercio (comercio.js muestra la vista vendedor si sos
                  el dueño): href se completa en loadDashboard() cuando se conoce el id. -->
-            <a class="mc-navlink" href="#" id="preview-store-link"><i class="fa-solid fa-eye mc-navicon"></i> Vista previa de tu local</a>
+            <a class="mc-navlink" href="#" id="preview-store-link"><i class="fa-solid fa-eye mc-navicon" aria-hidden="true"></i> Vista previa de tu local</a>
 
             <!-- Perfil de mi comercio (F5-08): estándar top-level, no dentro de "Ventas"
                  -- oculto para empleados (F12-16, mc-navitem--owner) igual que antes. -->
-            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="perfil-comercio"><i class="fa-solid fa-pen mc-navicon"></i> Perfil de mi comercio</button>
+            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="perfil-comercio"><i class="fa-solid fa-pen mc-navicon" aria-hidden="true"></i> Perfil de mi comercio</button>
 
             <!-- Publicaciones: estándar top-level (antes dentro de "Ventas") -- es lo que
                  más usa el vendedor día a día, un click menos para llegar. -->
-            <button type="button" class="mc-navlink mc-navitem" data-section="publicaciones"><i class="fa-solid fa-image mc-navicon"></i> Publicaciones</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="publicaciones"><i class="fa-solid fa-image mc-navicon" aria-hidden="true"></i> Publicaciones</button>
 
             <div class="mc-group is-open">
-              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-tag mc-navicon"></i> Ventas <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-tag mc-navicon" aria-hidden="true"></i> Ventas <i class="fa-solid fa-chevron-down mc-group__chevron" aria-hidden="true"></i></button>
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem is-active" data-section="resumen">Resumen</button>
                 <!-- Una sola entrada para la sección Pedidos. Antes había dos
@@ -1520,14 +1520,14 @@
 
             <!-- Estadísticas: cómo te encuentran los vecinos (js/vender-estadisticas.js). Solo el
                  dueño. El resumen de 30 días es gratis; el detalle es de "Estadísticas Pro". -->
-            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="estadisticas"><i class="fa-solid fa-chart-line mc-navicon"></i> Estadísticas</button>
+            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="estadisticas"><i class="fa-solid fa-chart-line mc-navicon" aria-hidden="true"></i> Estadísticas</button>
 
             <!-- Impulsar: combos y servicios para ganar visibilidad. Top-level (como
                  Publicaciones) y solo para el dueño, igual que cupones y empleados. -->
-            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="impulsar"><i class="fa-solid fa-rocket mc-navicon"></i> Impulsar</button>
+            <button type="button" class="mc-navlink mc-navitem mc-navitem--owner" data-section="impulsar"><i class="fa-solid fa-rocket mc-navicon" aria-hidden="true"></i> Impulsar</button>
 
-            <a class="mc-navlink" href="./perfil.html?tab=mis-datos"><i class="fa-solid fa-user mc-navicon"></i> Mi perfil</a>
-            <a class="mc-navlink" href="./perfil.html?tab=ajustes"><i class="fa-solid fa-gear mc-navicon"></i> Configuración</a>
+            <a class="mc-navlink" href="./perfil.html?tab=mis-datos"><i class="fa-solid fa-user mc-navicon" aria-hidden="true"></i> Mi perfil</a>
+            <a class="mc-navlink" href="./perfil.html?tab=ajustes"><i class="fa-solid fa-gear mc-navicon" aria-hidden="true"></i> Configuración</a>
           </aside>
 
           <div class="mc-content">
@@ -1875,7 +1875,7 @@
             <section class="mc-section" data-section="pedidos" hidden>
             <div class="pd-wrap">
               <div class="pd-header">
-                <div class="pd-header__title"><i class="fa-solid fa-clipboard-list"></i> Pedidos
+                <div class="pd-header__title"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> Pedidos
                   <span class="pd-live" id="pedidos-live" data-state="off" role="status" aria-live="polite" title="Se perdió la conexión en vivo: la lista se actualiza igual cada 30 segundos y al volver."><span class="pd-live__dot" aria-hidden="true"></span><span class="pd-live__text">Reconectando…</span></span>
                 </div>
                 <p class="pd-header__sub">Gestioná tus ventas, envíos y pagos en un solo lugar.</p>
@@ -1887,11 +1887,11 @@
                 <div class="pd-main">
                   <div class="pd-toolbar">
                     <div class="pub-search">
-                      <i class="fa-solid fa-magnifying-glass"></i>
+                      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                       <input type="text" id="pedidos-search" aria-label="Buscar pedido, comprador o producto" placeholder="Buscar pedido, comprador o producto..." autocomplete="off" />
                     </div>
                     <button type="button" class="pd-filters-btn" id="pedidos-filters-btn" aria-haspopup="true" aria-expanded="false">
-                      <i class="fa-solid fa-sliders"></i> Filtros
+                      <i class="fa-solid fa-sliders" aria-hidden="true"></i> Filtros
                     </button>
                     <div class="pd-filters-menu" id="pedidos-filters-menu" hidden>
                       <div class="pd-filters-menu__group">
@@ -1954,7 +1954,7 @@
             <section class="mc-section" data-section="resenas" hidden>
               <div class="pd-wrap">
                 <div class="pd-header">
-                  <div class="pd-header__title"><i class="fa-regular fa-star"></i> Reseñas</div>
+                  <div class="pd-header__title"><i class="fa-regular fa-star" aria-hidden="true"></i> Reseñas</div>
                   <p class="pd-header__sub">Lo que opinan tus clientes, apenas lo escriben. No hace falta recargar.</p>
                 </div>
                 <div class="rv-summary" id="resenas-summary"></div>
@@ -1973,7 +1973,7 @@
             <section class="mc-section" data-section="recomendaciones" hidden>
               <div class="pd-wrap">
                 <div class="pd-header">
-                  <div class="pd-header__title"><i class="fa-regular fa-lightbulb"></i> Recomendaciones para impulsar tus ventas</div>
+                  <div class="pd-header__title"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i> Recomendaciones para impulsar tus ventas</div>
                   <p class="pd-header__sub">Ideas simples para que más vecinos te encuentren y te compren.</p>
                 </div>
                 <ol class="rc-list" id="recomendaciones-list">
@@ -2002,7 +2002,7 @@
               <div class="pd-wrap" id="boost-section">
                 <button type="button" class="bp-back" id="boost-back">&#8249; Volver al resumen</button>
                 <div class="pd-header">
-                  <div class="pd-header__title"><i class="fa-solid fa-rocket"></i> Impulsá tus ventas</div>
+                  <div class="pd-header__title"><i class="fa-solid fa-rocket" aria-hidden="true"></i> Impulsá tus ventas</div>
                   <p class="pd-header__sub">Elegí un combo o comprá solo los servicios que necesitás, y hacé que más vecinos conozcan tu comercio.</p>
                 </div>
                 <div id="boost-status" aria-live="polite"></div>
@@ -2044,11 +2044,11 @@
                 <h2 class="pub-title">Publicaciones</h2>
                 <div class="pub-publish">
                   <button type="button" class="pub-publish__btn" id="btn-publish-menu" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa-solid fa-plus"></i> Publicar <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;"></i>
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Publicar <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;" aria-hidden="true"></i>
                   </button>
                   <div class="pub-publish__menu" id="pub-publish-menu" hidden>
-                    <button type="button" class="pub-publish__item" id="btn-show-add-product"><i class="fa-solid fa-pen-to-square"></i> De forma individual</button>
-                    <button type="button" class="pub-publish__item pub-publish__item--soon" id="btn-bulk-publish"><i class="fa-solid fa-barcode"></i> Masivamente <span class="pub-soon">Próximamente</span></button>
+                    <button type="button" class="pub-publish__item" id="btn-show-add-product"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> De forma individual</button>
+                    <button type="button" class="pub-publish__item pub-publish__item--soon" id="btn-bulk-publish"><i class="fa-solid fa-barcode" aria-hidden="true"></i> Masivamente <span class="pub-soon">Próximamente</span></button>
                   </div>
                 </div>
               </div>
@@ -2067,7 +2067,7 @@
               <!-- Barra de filtros (búsqueda + estado + contador), todo client-side -->
               <div class="pub-toolbar" id="pub-toolbar">
                 <div class="pub-search">
-                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                   <input type="search" id="pub-search" aria-label="Buscar en mis publicaciones" placeholder="Buscar en mis publicaciones" autocomplete="off" />
                 </div>
                 <div class="pub-chips">
@@ -2101,7 +2101,7 @@
               <div id="add-product-form-container" class="pubform" hidden>
                 <div class="pubform__head">
                   <button type="button" class="pubform__back" id="btn-back-publicaciones">
-                    <i class="fa-solid fa-arrow-left"></i> Volver a publicaciones
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a publicaciones
                   </button>
                   <h2 class="pubform__title" id="add-product-form-title">Publicar nuevo producto</h2>
                 </div>
@@ -2137,7 +2137,7 @@
                       Podés reordenarlas arrastrándolas.
                     </p>
                     <div class="pubform__drop" id="prod-drop" role="button" tabindex="0">
-                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                      <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
                       <span class="pubform__drop-main">Elegí las fotos o arrastralas acá</span>
                       <span class="pubform__hint">JPG, PNG o WEBP · hasta 5 MB cada una</span>
                     </div>

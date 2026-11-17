@@ -68,10 +68,10 @@
             </div>
           </a>
           <div class="navbar__actions">
-            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+            <button type="button" id="mc-hamburger" class="mc-hamburger" aria-label="Abrir menú"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
             <div id="nav-notifications-wrap"></div>
             <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></a>
+            <a href="./home.html" class="navbar__action-circle" aria-label="Volver"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
           </div>
         </div>
       </nav>
@@ -110,16 +110,16 @@
                 <span class="mc-sidebar__title">Mi oficio</span>
                 <span class="mc-store-name" id="of-sidebar-name">Tu publicación</span>
               </div>
-              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
+              <button type="button" class="mc-close" id="mc-close" aria-label="Cerrar menú"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
 
             <!-- El href se completa en JS, cuando se conoce el id. -->
-            <a class="mc-navlink" href="./contratar.html" id="of-preview-link"><i class="fa-solid fa-eye mc-navicon"></i> Ver mi perfil público</a>
+            <a class="mc-navlink" href="./contratar.html" id="of-preview-link"><i class="fa-solid fa-eye mc-navicon" aria-hidden="true"></i> Ver mi perfil público</a>
 
-            <button type="button" class="mc-navlink mc-navitem" data-section="resumen"><i class="fa-solid fa-house mc-navicon"></i> Resumen</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="resumen"><i class="fa-solid fa-house mc-navicon" aria-hidden="true"></i> Resumen</button>
 
             <div class="mc-group is-open">
-              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-screwdriver-wrench mc-navicon"></i> Mi publicación <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-screwdriver-wrench mc-navicon" aria-hidden="true"></i> Mi publicación <i class="fa-solid fa-chevron-down mc-group__chevron" aria-hidden="true"></i></button>
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem" data-section="perfil">Mis datos</button>
                 <button type="button" class="mc-navitem" data-section="servicios">Servicios y precios</button>
@@ -129,7 +129,7 @@
             </div>
 
             <div class="mc-group is-open">
-              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-users mc-navicon"></i> Mis clientes <i class="fa-solid fa-chevron-down mc-group__chevron"></i></button>
+              <button type="button" class="mc-group__trigger" aria-expanded="true"><i class="fa-solid fa-users mc-navicon" aria-hidden="true"></i> Mis clientes <i class="fa-solid fa-chevron-down mc-group__chevron" aria-hidden="true"></i></button>
               <div class="mc-group__panel">
                 <button type="button" class="mc-navitem" data-section="consultas">Consultas</button>
                 <button type="button" class="mc-navitem" data-section="resenas">Reseñas</button>
@@ -137,12 +137,12 @@
               </div>
             </div>
 
-            <button type="button" class="mc-navlink mc-navitem" data-section="recomendaciones"><i class="fa-regular fa-lightbulb mc-navicon"></i> Recomendaciones</button>
-            <button type="button" class="mc-navlink mc-navitem" data-section="notificaciones"><i class="fa-regular fa-bell mc-navicon"></i> Notificaciones</button>
-            <button type="button" class="mc-navlink mc-navitem" data-section="soporte"><i class="fa-solid fa-headset mc-navicon"></i> Soporte</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="recomendaciones"><i class="fa-regular fa-lightbulb mc-navicon" aria-hidden="true"></i> Recomendaciones</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="notificaciones"><i class="fa-regular fa-bell mc-navicon" aria-hidden="true"></i> Notificaciones</button>
+            <button type="button" class="mc-navlink mc-navitem" data-section="soporte"><i class="fa-solid fa-headset mc-navicon" aria-hidden="true"></i> Soporte</button>
 
-            <a class="mc-navlink" href="./perfil.html?tab=mis-datos"><i class="fa-solid fa-user mc-navicon"></i> Mi perfil</a>
-            <a class="mc-navlink" href="./perfil.html?tab=ajustes"><i class="fa-solid fa-gear mc-navicon"></i> Configuración</a>
+            <a class="mc-navlink" href="./perfil.html?tab=mis-datos"><i class="fa-solid fa-user mc-navicon" aria-hidden="true"></i> Mi perfil</a>
+            <a class="mc-navlink" href="./perfil.html?tab=ajustes"><i class="fa-solid fa-gear mc-navicon" aria-hidden="true"></i> Configuración</a>
 
             <button class="btn-outline" id="of-logout" style="width: 100%; margin-top: 1rem; border-color: #ef4444; color: #ef4444;">Volver al inicio</button>
           </aside>

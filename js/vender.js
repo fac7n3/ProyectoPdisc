@@ -2378,7 +2378,7 @@ function pdStat(icon, variant, title, value, sub) {
   const card = rsEl('div', 'pd-stat');
   const top = rsEl('div', 'pd-stat__top');
   const iconEl = rsEl('div', `pd-stat__icon pd-stat__icon--${variant}`);
-  iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+  iconEl.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i>`;
   top.appendChild(iconEl);
   top.appendChild(rsEl('div', 'pd-stat__title', title));
   card.appendChild(top);
@@ -2441,7 +2441,7 @@ function renderPedidosTips() {
     'Confirmá las transferencias apenas veas la plata: el pedido no se puede preparar antes.',
   ].forEach((text) => {
     const li = document.createElement('li');
-    li.innerHTML = '<i class="fa-solid fa-circle-check"></i> ';
+    li.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ';
     li.appendChild(document.createTextNode(text));
     list.appendChild(li);
   });
@@ -3678,7 +3678,7 @@ function setupMyCouponForm() {
 function renderStaffEmpty(container) {
   const empty = document.createElement('div');
   empty.className = 'pub-empty';
-  empty.innerHTML = '<i class="fa-solid fa-users"></i><p>Todavía no agregaste ningún empleado.</p>';
+  empty.innerHTML = '<i class="fa-solid fa-users" aria-hidden="true"></i><p>Todavía no agregaste ningún empleado.</p>';
   container.appendChild(empty);
 }
 
@@ -3692,7 +3692,7 @@ function buildStaffRow(s, email) {
 
   const thumb = document.createElement('div');
   thumb.className = 'pub-row__thumb pub-row__thumb--icon';
-  thumb.innerHTML = '<i class="fa-solid fa-user"></i>';
+  thumb.innerHTML = '<i class="fa-solid fa-user" aria-hidden="true"></i>';
   top.appendChild(thumb);
 
   const main = document.createElement('div');
@@ -3855,7 +3855,7 @@ function rsStatCard({ area, icon, iconVariant, title, value, sub, delta, action 
 
   const top = rsEl('div', 'rs-stat__top');
   const iconEl = rsEl('div', `rs-stat__icon rs-stat__icon--${iconVariant}`);
-  iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+  iconEl.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i>`;
   top.appendChild(iconEl);
   top.appendChild(rsEl('div', 'rs-stat__title', title));
   card.appendChild(top);
@@ -3865,7 +3865,7 @@ function rsStatCard({ area, icon, iconVariant, title, value, sub, delta, action 
 
   if (delta) {
     const deltaEl = rsEl('div', 'rs-stat__delta' + (delta.positive === false ? ' rs-stat__delta--down' : ''));
-    deltaEl.innerHTML = `<i class="fa-solid fa-arrow-${delta.positive === false ? 'down' : 'up'}"></i> `;
+    deltaEl.innerHTML = `<i class="fa-solid fa-arrow-${delta.positive === false ? 'down' : 'up'}" aria-hidden="true"></i> `;
     deltaEl.appendChild(document.createTextNode(delta.text));
     card.appendChild(deltaEl);
   }
@@ -3893,7 +3893,7 @@ function rsPendingCard(title, icon, area, rows, footer) {
   const card = rsEl('div', 'rs-card rs-pend');
   card.style.gridArea = area;
   const titleEl = rsEl('div', 'rs-card__title');
-  titleEl.innerHTML = `<i class="fa-solid ${icon}"></i> `;
+  titleEl.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i> `;
   titleEl.appendChild(document.createTextNode(title));
   card.appendChild(titleEl);
 
@@ -3929,12 +3929,12 @@ function rsPromoCard() {
   const nextBtn = rsEl('button', 'rs-promo__next');
   nextBtn.type = 'button';
   nextBtn.setAttribute('aria-label', 'Ver más promociones');
-  nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+  nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
   nextBtn.addEventListener('click', () => showToast('Por ahora tenés una sola promoción disponible.', 'success'));
   card.appendChild(nextBtn);
 
   const icon = rsEl('div', 'rs-promo__icon');
-  icon.innerHTML = '<i class="fa-solid fa-store"></i>';
+  icon.innerHTML = '<i class="fa-solid fa-store" aria-hidden="true"></i>';
   card.appendChild(icon);
 
   card.appendChild(rsEl('div', 'rs-promo__title', 'Impulsá tus ventas'));
@@ -3956,7 +3956,7 @@ function rsPromoCard() {
 function rsNoveltyCard() {
   const card = rsEl('div', 'rs-card');
   const title = rsEl('div', 'rs-card__title');
-  title.innerHTML = '<i class="fa-solid fa-bell"></i> ';
+  title.innerHTML = '<i class="fa-solid fa-bell" aria-hidden="true"></i> ';
   title.appendChild(document.createTextNode('Novedades'));
   card.appendChild(title);
   card.appendChild(rsEl('div', 'rs-empty', 'Aún no tenés novedades. Acá vas a ver los comunicados del equipo cuando estén disponibles.'));
@@ -3970,7 +3970,7 @@ function rsNoveltyCard() {
 function rsRecommendationsCard() {
   const card = rsEl('div', 'rs-card');
   const title = rsEl('div', 'rs-card__title');
-  title.innerHTML = '<i class="fa-regular fa-lightbulb"></i> ';
+  title.innerHTML = '<i class="fa-regular fa-lightbulb" aria-hidden="true"></i> ';
   title.appendChild(document.createTextNode('Recomendaciones para impulsar tus ventas'));
   card.appendChild(title);
   card.appendChild(rsEl('div', 'rs-empty', 'Acá vas a encontrar ideas simples para vender más: cómo mostrar mejor tus productos, atender tus pedidos y destacarte entre los comercios de Baradero.'));
@@ -3984,7 +3984,7 @@ function rsRecommendationsCard() {
 function rsHelpCard() {
   const card = rsEl('div', 'rs-card');
   const title = rsEl('div', 'rs-card__title');
-  title.innerHTML = '<i class="fa-solid fa-headset"></i> ';
+  title.innerHTML = '<i class="fa-solid fa-headset" aria-hidden="true"></i> ';
   title.appendChild(document.createTextNode('¿Necesitás ayuda?'));
   card.appendChild(title);
   card.appendChild(rsEl('div', 'rs-empty', 'Nuestro equipo está para ayudarte.'));
@@ -4092,7 +4092,7 @@ function rsLineChart(dailyTotals, { formatValue = formatPrice, labelEvery = 1, m
 function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
   const card = rsEl('div', 'rs-card');
   const title = rsEl('div', 'rs-card__title');
-  title.innerHTML = '<i class="fa-solid fa-chart-line"></i> ';
+  title.innerHTML = '<i class="fa-solid fa-chart-line" aria-hidden="true"></i> ';
   title.appendChild(document.createTextNode('Métricas de negocio'));
   card.appendChild(title);
 
@@ -4106,7 +4106,7 @@ function rsMetricsCard(dailyTotals, sales7d, pctChange, catItems30d) {
   left.appendChild(rsEl('div', 'rs-metrics__figure', formatPrice(sales7d)));
   if (pctChange !== null) {
     const delta = rsEl('div', 'rs-stat__delta' + (pctChange < 0 ? ' rs-stat__delta--down' : ''));
-    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}"></i> `;
+    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}" aria-hidden="true"></i> `;
     delta.appendChild(document.createTextNode(`${Math.abs(pctChange)}% vs. semana anterior`));
     left.appendChild(delta);
   }
@@ -4174,7 +4174,7 @@ function rsSales30Card(dailyCounts, total30d, pctChange) {
   const card = rsEl('div', 'rs-card rs-sales30');
   card.id = 'resumen-sales30';
   const title = rsEl('div', 'rs-card__title');
-  title.innerHTML = '<i class="fa-solid fa-chart-line"></i> ';
+  title.innerHTML = '<i class="fa-solid fa-chart-line" aria-hidden="true"></i> ';
   title.appendChild(document.createTextNode('Ventas totales de los últimos 30 días'));
   card.appendChild(title);
 
@@ -4182,7 +4182,7 @@ function rsSales30Card(dailyCounts, total30d, pctChange) {
   card.appendChild(rsEl('div', 'rs-metrics__figure', String(total30d)));
   if (pctChange !== null) {
     const delta = rsEl('div', 'rs-stat__delta' + (pctChange < 0 ? ' rs-stat__delta--down' : ''));
-    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}"></i> `;
+    delta.innerHTML = `<i class="fa-solid fa-arrow-${pctChange < 0 ? 'down' : 'up'}" aria-hidden="true"></i> `;
     delta.appendChild(document.createTextNode(`${Math.abs(pctChange)}% vs. 30 días anteriores`));
     card.appendChild(delta);
   }

@@ -93,7 +93,7 @@
         <!-- Búsqueda: ahora en la misma fila -->
         <div class="navbar__search-wrapper">
           <div class="navbar__search">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
             <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
             <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
           </div>
@@ -106,7 +106,7 @@
           <div id="nav-account-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
-            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;" aria-hidden="true"></i>
             <span class="cart-badge" id="cart-badge"></span>
           </a>
         </div>
@@ -139,7 +139,7 @@
                 <h1 class="hero__banner-title">Comprá local,<br />recibí en casa</h1>
                 <p class="hero__banner-subtitle">Productos frescos de los comercios de Baradero directo a tu puerta.</p>
                 <a href="#productos" class="hero__banner-cta">
-                  Explorar productos <i class="fa-solid fa-arrow-right"></i>
+                  Explorar productos <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </a>
               </div>
             </article>
@@ -150,7 +150,7 @@
                 <h2 class="hero__banner-title">Pan recién hecho,<br />a la vuelta de tu casa</h2>
                 <p class="hero__banner-subtitle">Las panaderías del pueblo, ahora también a domicilio.</p>
                 <a href="./search.html?cat=panaderia" class="hero__banner-cta">
-                  Ver panaderías <i class="fa-solid fa-arrow-right"></i>
+                  Ver panaderías <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </a>
               </div>
             </article>
@@ -161,7 +161,7 @@
                 <h2 class="hero__banner-title">Todo para tu casa,<br />sin salir de ella</h2>
                 <p class="hero__banner-subtitle">Artículos de limpieza de los comercios de Baradero, a un par de clics.</p>
                 <a href="./search.html?cat=limpieza" class="hero__banner-cta">
-                  Ver limpieza <i class="fa-solid fa-arrow-right"></i>
+                  Ver limpieza <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </a>
               </div>
             </article>
@@ -170,10 +170,10 @@
 
           <!-- Flechas: solo en escritorio. En teléfono se desliza con el dedo. -->
           <button type="button" class="hero__arrow hero__arrow--prev" id="hero-prev" aria-label="Promoción anterior">
-            <i class="fa-solid fa-chevron-left"></i>
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
           </button>
           <button type="button" class="hero__arrow hero__arrow--next" id="hero-next" aria-label="Promoción siguiente">
-            <i class="fa-solid fa-chevron-right"></i>
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
 
           <!-- Puntitos: única señal de "hay más" en teléfono, donde no hay flechas -->
@@ -190,7 +190,7 @@
       <!-- Locales Destacados (Carrusel Horizontal) -->
       <section class="stores-carousel-section" aria-label="Locales destacados">
         <button type="button" class="stores-carousel__arrow stores-carousel__arrow--prev" id="stores-prev" aria-label="Comercios anteriores">
-          <i class="fa-solid fa-chevron-left"></i>
+          <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
         </button>
         <div class="stores-carousel" id="stores-carousel">
           <!-- Skeletons mientras carga JS -->
@@ -204,7 +204,7 @@
           <div class="store-logo-skeleton skeleton"></div>
         </div>
         <button type="button" class="stores-carousel__arrow stores-carousel__arrow--next" id="stores-next" aria-label="Comercios siguientes">
-          <i class="fa-solid fa-chevron-right"></i>
+          <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
         </button>
       </section>
 
@@ -280,7 +280,7 @@
 
         <div class="nearby-map__panel" id="nearby-map-panel">
           <div class="nearby-map__prompt" id="nearby-map-prompt">
-            <i class="fa-solid fa-location-dot"></i>
+            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
             <p>Activá tu ubicación para ver el mapa centrado donde estás.</p>
             <button type="button" class="nearby-map__btn" id="nearby-map-locate">
               Usar mi ubicación
@@ -299,10 +299,10 @@
           <h2 class="section-header__title">Esenciales para tu casa</h2>
           <div class="section-header__nav">
             <button type="button" class="section-header__arrow" id="essentials-prev" aria-label="Anteriores">
-              <i class="fa-solid fa-chevron-left"></i>
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
             </button>
             <button type="button" class="section-header__arrow" id="essentials-next" aria-label="Siguientes">
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -369,10 +369,10 @@
           <h2 class="section-header__title">Ofertas</h2>
           <div class="section-header__nav">
             <button type="button" class="section-header__arrow" id="offers-prev" aria-label="Anteriores">
-              <i class="fa-solid fa-chevron-left"></i>
+              <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
             </button>
             <button type="button" class="section-header__arrow" id="offers-next" aria-label="Siguientes">
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -442,12 +442,12 @@
          hacer click/Enter (initPromoBannerLightbox en home.js). -->
     <div class="promo-lightbox-overlay" id="promo-lightbox" role="dialog" aria-modal="true" aria-label="Imagen ampliada">
       <div class="promo-lightbox">
-        <button type="button" class="promo-lightbox__close" id="promo-lightbox-close" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+        <button type="button" class="promo-lightbox__close" id="promo-lightbox-close" aria-label="Cerrar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
         <div class="promo-lightbox__stage" id="promo-lightbox-stage">
           <img class="promo-lightbox__img" id="promo-lightbox-img" src="" alt="" />
           <!-- Flechas y contador: solo con un banner de más de una imagen. -->
-          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--prev" id="promo-lightbox-prev" aria-label="Imagen anterior" hidden><i class="fa-solid fa-chevron-left"></i></button>
-          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--next" id="promo-lightbox-next" aria-label="Imagen siguiente" hidden><i class="fa-solid fa-chevron-right"></i></button>
+          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--prev" id="promo-lightbox-prev" aria-label="Imagen anterior" hidden><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+          <button type="button" class="promo-lightbox__nav promo-lightbox__nav--next" id="promo-lightbox-next" aria-label="Imagen siguiente" hidden><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
           <p class="promo-lightbox__count" id="promo-lightbox-count" aria-live="polite" hidden></p>
         </div>
         <p class="promo-lightbox__hint" id="promo-lightbox-hint" hidden>Tocá la imagen para ir al comercio</p>
@@ -498,16 +498,16 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
         </div>
       </div>
     </footer>
 
     <!-- Volver arriba -->
     <button class="scroll-top" id="scroll-top-btn" aria-label="Volver arriba">
-      <i class="fa-solid fa-chevron-up"></i>
+      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
     </button>
 
 

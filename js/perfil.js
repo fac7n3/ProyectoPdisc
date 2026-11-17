@@ -219,7 +219,7 @@ function renderQuickProfile(user) {
       img.src = quickAvatar;
       img.alt = quickName || "Avatar";
       img.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: 50%;";
-      img.onerror = () => { sidebarAvatar.innerHTML = '<i class="fa-regular fa-user"></i>'; };
+      img.onerror = () => { sidebarAvatar.innerHTML = '<i class="fa-regular fa-user" aria-hidden="true"></i>'; };
       sidebarAvatar.appendChild(img);
     }
   }

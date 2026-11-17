@@ -169,14 +169,14 @@
           <div id="nav-account-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
-            <i class="fa-solid fa-cart-shopping"></i>
+            <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
             <span class="cart-badge" id="cart-badge"></span>
           </a>
         </div>
       </div>
       <div class="navbar__search-wrapper">
         <div class="navbar__search">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
           <input type="search" id="search-input" class="navbar__search-input" aria-label="Buscar productos" placeholder="¿Qué estás buscando?" autocomplete="off" />
         </div>
       </div>

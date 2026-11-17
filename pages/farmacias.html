@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="../Assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
+    <link rel="stylesheet" href="../Assets/styles/a11y.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css" />
     <style>
       .fx-page { max-width: 720px; margin: 2rem auto 3rem; padding: 0 1rem; }
@@ -120,6 +121,9 @@
     <script type="module" src="../js/theme.js"></script>
   </head>
   <body>
+    <!-- Primer elemento enfocable: deja saltar el navbar (TalkBack) -->
+    <a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
     <nav class="navbar" role="navigation" aria-label="Navegación principal">
       <div class="navbar__top">
         <a href="./home.html" class="navbar__logo">
@@ -132,12 +136,12 @@
         <div class="navbar__actions">
           <div id="nav-notifications-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-notifications-wrap');if(w){var b=document.createElement('button');b.type='button';b.className='navbar__action-circle';b.id='nav-notifications';b.setAttribute('aria-label','Notificaciones');var i=document.createElement('i');i.className='fa-regular fa-bell';i.style.fontSize='0.875rem';b.appendChild(i);var s=document.createElement('span');s.className='cart-badge';s.id='notif-badge';b.appendChild(s);w.appendChild(b);}}catch(e){}})();</script>
-          <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left"></i></a>
+          <a href="./home.html" class="navbar__action-circle" aria-label="Volver al inicio"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>
         </div>
       </div>
     </nav>
 
-    <main class="fx-page">
+    <main id="contenido-principal" tabindex="-1" class="fx-page">
       <h1 class="fx-title">Farmacias de turno</h1>
 
       <!-- Farmacia de turno en este momento. Poblado por js/farmacias.js -->

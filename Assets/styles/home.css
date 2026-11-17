@@ -6521,7 +6521,6 @@ button.bl-compare__row {
 button.bl-compare__row:hover,
 button.bl-compare__row:focus-visible {
   background: var(--bl-surface-hover);
-  outline: none;
 }
 
 .bl-compare__row.is-current {

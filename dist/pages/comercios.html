@@ -20,17 +20,16 @@
     <link rel="preload" href="/assets/inter-latin-wght-normal-C2S99t-D.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css?v=2" />
     <style>.store-filter{flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;display:flex}.store-filter[hidden]{display:none}.store-filter{max-width:20rem;display:block;position:relative}.store-filter__btn{font:inherit;border-radius:var(--bl-radius-pill);border:1px solid var(--bl-border);background:var(--bl-surface);width:100%;color:var(--bl-text);cursor:pointer;justify-content:space-between;align-items:center;gap:.5rem;padding:.625rem 1rem;font-size:.9375rem;font-weight:600;transition:border-color .15s;display:flex}.store-filter__btn:hover,.store-filter__btn[aria-expanded=true]{border-color:var(--bl-primary)}.store-filter__btn i{color:var(--bl-primary);font-size:.75rem;transition:transform .15s}.store-filter__btn[aria-expanded=true] i{transform:rotate(180deg)}.store-filter__btn:focus-visible,.store-filter__list:focus-visible{outline:2px solid var(--bl-primary);outline-offset:2px}.store-filter__list{z-index:20;background:var(--bl-surface);border:1px solid var(--bl-border);border-radius:1rem;max-height:18rem;margin:0;padding:.375rem;list-style:none;position:absolute;top:calc(100% + .375rem);left:0;right:0;overflow-y:auto;box-shadow:0 8px 24px #0000001f}.store-filter__list[hidden]{display:none}.store-filter__list li{color:var(--bl-text-secondary);cursor:pointer;border-radius:.625rem;padding:.5rem .75rem;font-size:.9375rem;font-weight:500}.store-filter__list li.is-active,.store-filter__list li:hover{background:var(--bl-surface-alt,#28417514);color:var(--bl-primary)}.store-filter__list li[aria-selected=true]{background:var(--bl-primary);color:var(--bl-text-inverse);font-weight:600}</style>
-    <script type="module" crossorigin src="/assets/comercios-CxJUbe1J.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/theme-pUV4s4cA.js">
-    <link rel="modulepreload" crossorigin href="/assets/speed-insights-Bson1xLf.js">
-    <link rel="modulepreload" crossorigin href="/assets/panel-skeleton-BGbOeeeP.js">
+    <script type="module" crossorigin src="/assets/comercios-BNBptriZ.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/theme-CfZEcj0W.js">
+    <link rel="modulepreload" crossorigin href="/assets/speed-insights-BmTtNyks.js">
+    <link rel="modulepreload" crossorigin href="/assets/panel-skeleton-8SsmfQwm.js">
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-XKyaHtl9.js">
-    <link rel="modulepreload" crossorigin href="/assets/toast-utils-DZdndNAb.js">
+    <link rel="modulepreload" crossorigin href="/assets/toast-utils-BDkXmKgJ.js">
     <link rel="modulepreload" crossorigin href="/assets/scroll-lock-BK6xK4-l.js">
-    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BF5-sTDO.js">
-    <link rel="stylesheet" crossorigin href="/assets/theme-ByFvjJTD.css">
-    <link rel="stylesheet" crossorigin href="/assets/a11y-C2x6oFYI.css">
-    <link rel="stylesheet" crossorigin href="/assets/home-BS0QmLMD.css">
+    <link rel="modulepreload" crossorigin href="/assets/nav-utils-BQ7IcVla.js">
+    <link rel="stylesheet" crossorigin href="/assets/theme-CHbcawW4.css">
+    <link rel="stylesheet" crossorigin href="/assets/home-DIQenFIR.css">
     <link rel="stylesheet" crossorigin href="/assets/carrito-CiWboDbI.css">
   </head>
   <body>
@@ -58,7 +57,7 @@
           <div id="nav-account-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
-            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;" aria-hidden="true"></i>
             <span class="cart-badge" id="cart-badge"></span>
           </a>
         </div>
@@ -67,7 +66,7 @@
       <!-- Búsqueda -->
       <div class="navbar__search-wrapper">
         <div class="navbar__search">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
           <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
           <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
         </div>
@@ -162,16 +161,16 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
         </div>
       </div>
     </footer>
 
     <!-- Volver arriba -->
     <button class="scroll-top" id="scroll-top-btn" aria-label="Volver arriba">
-      <i class="fa-solid fa-chevron-up"></i>
+      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
     </button>
 
 

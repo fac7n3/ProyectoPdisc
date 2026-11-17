@@ -65,7 +65,7 @@
           <div id="nav-account-wrap"></div>
           <script>(function(){try{var w=document.getElementById('nav-account-wrap');if(w){var a=document.createElement('a');a.href='./perfil.html';a.className='navbar__action-circle';a.id='nav-profile';a.setAttribute('aria-label','Mi cuenta');var u=localStorage.getItem('bl_avatar_url');if(u){var img=document.createElement('img');img.src=u;img.alt='Mi perfil';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';a.appendChild(img);}else{var i=document.createElement('i');i.className='fa-regular fa-user';i.style.fontSize='0.875rem';a.appendChild(i);}w.appendChild(a);}}catch(e){}})();</script>
           <a href="./carrito.html" class="navbar__action-circle" id="nav-cart" aria-label="Carrito de compras">
-            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;"></i>
+            <i class="fa-solid fa-cart-shopping" style="font-size: 0.875rem;" aria-hidden="true"></i>
             <span class="cart-badge" id="cart-badge"></span>
           </a>
         </div>
@@ -74,7 +74,7 @@
       <!-- Búsqueda -->
       <div class="navbar__search-wrapper">
         <div class="navbar__search">
-          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
           <label for="search-input" class="sr-only">¿Qué estás buscando?</label>
           <input type="search" id="search-input" class="navbar__search-input" placeholder="¿Qué estás buscando?" autocomplete="off" />
         </div>
@@ -169,16 +169,16 @@
           <a href="./privacidad.html" class="footer__terms-link">Política de privacidad</a>
         </div>
         <div class="footer__socials">
-          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://www.youtube.com/@BaraderoLocal" target="_blank" rel="noopener" class="footer__social" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+          <a href="https://www.instagram.com/baradero_local" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+          <a href="https://wa.me/5493329123456" target="_blank" class="footer__social" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
         </div>
       </div>
     </footer>
 
     <!-- Volver arriba -->
     <button class="scroll-top" id="scroll-top-btn" aria-label="Volver arriba">
-      <i class="fa-solid fa-chevron-up"></i>
+      <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
     </button>
 
 
