@@ -1016,7 +1016,11 @@
 
       .pubform__card { background: var(--bl-surface); border: 1px solid var(--bl-border); border-radius: var(--bl-radius-lg); padding: 1.5rem; box-shadow: var(--bl-shadow-card); margin-bottom: 1.25rem; }
       .pubform__card[hidden] { display: none; }
-      .pubform__legend { font-size: 0.95rem; font-weight: 700; color: var(--bl-text); padding: 0 0.4rem; margin-left: -0.4rem; }
+      /* El <legend> de un <fieldset> el navegador lo dibuja montado sobre el borde de la
+         tarjeta. Con float + width 100% pasa a ser un título más, adentro del cuadro; lo que
+         sigue necesita clear para no subirse a su costado. */
+      .pubform__legend { float: left; width: 100%; box-sizing: border-box; font-size: 0.95rem; font-weight: 700; color: var(--bl-text); padding: 0; margin: 0 0 0.75rem; }
+      .pubform__legend + * { clear: both; }
       .pubform__hint { font-size: 0.85rem; color: var(--bl-text-secondary); margin: 0.35rem 0 0; }
       .pubform__legend + .pubform__hint { margin-bottom: 1rem; }
       .pubform__opt { font-weight: 400; color: var(--bl-text-muted); }
