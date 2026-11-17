@@ -6628,6 +6628,9 @@ Pedido del usuario (con una imagen de referencia): que en el teléfono los banne
 ### 2026-11-16 — Favoritos del perfil en celular: fila deslizable
 - **`Assets/styles/perfil-custom.css` (`.favoritos-grid`):** en <= 768 px productos y comercios favoritos pasan de grilla vertical a una fila `display:flex` con `overflow-x:auto` y `scroll-snap` (tarjetas de `min(44%, 190px)`, igual que "Productos recomendados" del home); los mensajes de vacío/carga ocupan todo el ancho. En escritorio no cambia. Medido con Playwright a 335 px: contenido 634 px en contenedor de 335 px.
 
+### 2026-11-17 — Navbar del panel del profesional igual al del vendedor
+- El navbar tenía el mismo HTML en `profesional.html` y `vender.html`; lo único distinto era el color del botón del menú (`.mc-hamburger` en `Assets/styles/profesional.css`): naranja de Oficios en claro, azul en el vendedor. Ahora los dos usan `#2f5aa8` (oscuro igual en ambos por `dark-auto.css`). Medido en 412 y 1200 px, claro y oscuro: mismo tamaño, color y alto.
+
 ### 2026-11-16 — Favoritos de servicios (Mis favoritos → Servicios) + sub-pestañas en celular
 - **Pedido del usuario:** el botón "Servicios" de Mis favoritos (perfil) estaba deshabilitado ("Próximamente") y en el celular se cortaba a la derecha. Ahora funciona y entra en pantalla.
 - **Migración 167 `favorite_professionals`** (aplicada en Supabase, archivo `db/schema/167_favorite_professionals.sql`): mismo patrón que `favorite_stores` (59): `client_id` + `professional_id`, unique, RLS solo del dueño (select/insert/delete con `(select auth.uid())`), sin acceso `anon`, índice en `professional_id`.

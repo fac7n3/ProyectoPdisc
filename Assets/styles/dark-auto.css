@@ -1125,7 +1125,7 @@ html[data-theme="dark"] .btn-outline:hover {
   color: #fff;
 }
 html[data-theme="dark"] .mc-hamburger {
-  color: var(--dk-oficios-text);
+  color: #8face0;
 }
 html[data-theme="dark"] .rs-card__title {
   color: var(--bl-text);
