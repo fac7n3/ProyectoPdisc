@@ -83,6 +83,13 @@ export function friendlyError(error, fallback = DEFAULT_MESSAGE) {
   if (code === '429' || /too many requests|rate limit/i.test(text)) {
     return 'Demasiados intentos. Esperá unos minutos antes de intentar de nuevo.';
   }
+  // Storage rechaza la subida por tipo o peso (migración 171).
+  if (code === '415' || /mime type|unsupported media/i.test(text)) {
+    return 'Ese tipo de archivo no está permitido. Usá una foto JPG, PNG o WebP (o un video MP4, WebM o MOV donde se pueda).';
+  }
+  if (code === '413' || /exceeded the maximum allowed size|payload too large/i.test(text)) {
+    return 'El archivo pesa demasiado. Probá con uno más liviano.';
+  }
   if (CODE_MESSAGES[code]) return CODE_MESSAGES[code];
   return fallback;
 }

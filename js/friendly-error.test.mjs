@@ -59,6 +59,11 @@ await check("demasiados intentos (429)", () => {
   assert.match(friendlyError({ status: 429, message: "email rate limit exceeded" }, FALLBACK), /Demasiados intentos/);
 });
 
+await check("Storage rechaza una subida por tipo o peso (migración 171)", () => {
+  assert.match(friendlyError({ message: "mime type image/svg+xml is not supported", statusCode: "415" }, FALLBACK), /tipo de archivo/);
+  assert.match(friendlyError({ message: "The object exceeded the maximum allowed size", status: 413 }, FALLBACK), /pesa demasiado/);
+});
+
 await check("sin nada utilizable -> el respaldo", () => {
   assert.equal(friendlyError(null, FALLBACK), FALLBACK);
   assert.equal(friendlyError({}, FALLBACK), FALLBACK);
