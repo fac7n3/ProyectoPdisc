@@ -90,6 +90,15 @@
       }
       .sv-empty i { font-size: 1.75rem; color: var(--bl-text-muted); }
 
+      /* --- Aviso de copia guardada (sin conexión / señal lenta); mismos colores que .fx-note de farmacias --- */
+      .sv-note {
+        display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 1.25rem;
+        padding: 0.85rem 1rem; border-radius: var(--bl-radius-md);
+        background: #fef9c3; color: #854d0e; font-size: 0.875rem; line-height: 1.5;
+      }
+      .sv-note--stale { background: #fee2e2; color: #991b1b; font-weight: 600; }
+      .sv-note i { margin-top: 0.15rem; flex-shrink: 0; }
+
       @media (max-width: 480px) {
         .sv-hero { margin: 1.25rem 0 1.5rem; }
         .sv-contact { flex-wrap: wrap; row-gap: 0.6rem; }
