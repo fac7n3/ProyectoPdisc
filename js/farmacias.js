@@ -8,11 +8,10 @@
 // Anti-XSS: todo lo que viene de la base se pinta con DOM API, nunca con
 // innerHTML — misma convención que el resto del proyecto.
 
+import { supabase } from './auth-utils.js';
 import { safeExternalUrl } from './store-contact-utils.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { updateCartBadge } from './cart-utils.js';
-import { loadWithSnapshot, snapshotNotice } from './offline-data.js';
-import { SNAPSHOT_KEYS, fetchPharmacyShifts, warmOfflineEssentials } from './offline-essentials.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 // Un turno cargado hace más de esto se considera desactualizado y la página
@@ -164,7 +163,7 @@ function contactActions(pharmacy, { grande = false } = {}) {
 /* Bloque de arriba: la farmacia de turno ahora                        */
 /* ------------------------------------------------------------------ */
 
-function renderHero(container, shift, { copiaGuardada = false } = {}) {
+function renderHero(container, shift) {
   container.textContent = '';
 
   if (!shift) {
@@ -175,9 +174,8 @@ function renderHero(container, shift, { copiaGuardada = false } = {}) {
     icon.setAttribute('aria-hidden', 'true');
     card.appendChild(icon);
     card.appendChild(el('h2', 'fx-hero__name', 'No tenemos el turno de hoy'));
-    card.appendChild(el('p', 'fx-muted', copiaGuardada
-      ? 'Sin conexión no podemos actualizar la farmacia de turno, y en lo que tenemos guardado no figura una para este momento. Llamá directamente a una farmacia antes de salir.'
-      : 'Todavía no cargamos la farmacia de turno para este momento. Consultá por los canales oficiales del municipio o llamá directamente a una farmacia antes de salir.'));
+    card.appendChild(el('p', 'fx-muted',
+      'Todavía no cargamos la farmacia de turno para este momento. Consultá por los canales oficiales del municipio o llamá directamente a una farmacia antes de salir.'));
     container.appendChild(card);
     return;
   }
@@ -304,24 +302,6 @@ function renderWeek(container, shifts) {
 /* Aviso de última actualización                                       */
 /* ------------------------------------------------------------------ */
 
-/**
- * Cartel de "copia guardada" (sin conexión o señal muy lenta): de cuándo son los
- * turnos. Va ARRIBA de la tarjeta de turno (no al final de la página) para leerlo
- * antes de tomar el dato. "Turnos actualizados el ..." (renderFreshness) hablaría
- * de la base y acá no se llegó a ella.
- */
-function buildSnapshotNote(copia) {
-  const lenta = copia.reason === 'slow';
-  const box = el('div', lenta ? 'fx-note fx-note--top' : 'fx-note fx-note--stale fx-note--top');
-  box.setAttribute('role', 'status');
-  const icon = el('i', lenta ? 'fa-regular fa-clock' : 'fa-solid fa-triangle-exclamation');
-  icon.setAttribute('aria-hidden', 'true');
-  box.appendChild(icon);
-  box.appendChild(el('span', null,
-    `${snapshotNotice(copia, 'los turnos')} Ante una urgencia, confirmá por teléfono antes de salir.`));
-  return box;
-}
-
 function renderFreshness(container, shifts) {
   container.textContent = '';
   if (shifts.length === 0) return;
@@ -375,50 +355,47 @@ async function loadFarmacias() {
   // ver un hueco en blanco y pensar que no hay ninguna cargada.
   heroBox.appendChild(buildLoadingBlock('Buscando la farmacia de turno'));
 
-  // Red primero; si no contesta (sin conexión, error o señal muy lenta) se usa
-  // la última copia guardada en este aparato y se avisa de cuándo es (ver
-  // js/offline-data.js). `pintar` se puede llamar dos veces: con la copia y,
-  // si la red contesta tarde, de nuevo con lo fresco.
-  const pintar = (data, info) => {
-    // Puede haber turnos sin farmacia si alguien borró la fila: se descartan
-    // en vez de romper el render.
-    const shifts = (Array.isArray(data) ? data : []).filter((s) => s.pharmacies);
+  const hoy = new Date();
+  // Desde AYER: a la madrugada, el turno vigente es el del día anterior.
+  const desde = isoDate(addDays(hoy, -1));
+  const hasta = isoDate(addDays(hoy, 8));
 
-    const ahora = new Date();
-    const vigente = shifts.find((s) => isActiveNow(s, ahora)) || null;
+  const { data, error } = await supabase
+    .from('pharmacy_shifts')
+    .select('id, shift_date, opens_at, closes_at, updated_at, created_at, pharmacies ( id, name, address, phone, whatsapp, pharmacist, insurances, maps_url )')
+    .gte('shift_date', desde)
+    .lte('shift_date', hasta)
+    .order('shift_date', { ascending: true });
 
-    // El resto: los que todavía no arrancaron. Los ya terminados no se muestran.
-    const proximos = shifts.filter((s) => s !== vigente && shiftWindow(s).start > ahora);
+  if (error) {
+    console.error('Error al cargar las farmacias de turno:', error);
+    heroBox.textContent = '';
+    const card = el('div', 'fx-hero fx-hero--empty');
+    card.appendChild(el('h2', 'fx-hero__name', 'No pudimos cargar los turnos'));
+    card.appendChild(el('p', 'fx-muted', 'Probá de nuevo en un rato. Si es una urgencia, llamá directamente a una farmacia.'));
+    heroBox.appendChild(card);
+    weekBox.textContent = '';
+    if (weekTitle) weekTitle.hidden = true;
+    return;
+  }
 
-    const copia = info.fromSnapshot ? info : null;
-    renderHero(heroBox, vigente, { copiaGuardada: Boolean(copia) });
-    if (copia) heroBox.prepend(buildSnapshotNote(copia));
-    renderWeek(weekBox, proximos);
-    renderFreshness(noteBox, copia ? [] : shifts);
-    if (weekTitle) weekTitle.hidden = proximos.length === 0;
-  };
+  // Puede haber turnos sin farmacia si alguien borró la fila: se descartan
+  // en vez de romper el render.
+  const shifts = (data || []).filter((s) => s.pharmacies);
 
-  await loadWithSnapshot({
-    key: SNAPSHOT_KEYS.farmacias,
-    fetcher: fetchPharmacyShifts,
-    onData: pintar,
-    onFail: (error) => {
-      console.error('Error al cargar las farmacias de turno:', error);
-      heroBox.textContent = '';
-      const card = el('div', 'fx-hero fx-hero--empty');
-      card.appendChild(el('h2', 'fx-hero__name', 'No pudimos cargar los turnos'));
-      card.appendChild(el('p', 'fx-muted', navigator.onLine === false
-        ? 'No hay conexión y todavía no guardamos los turnos en este dispositivo. Si es una urgencia, llamá directamente a una farmacia.'
-        : 'Probá de nuevo en un rato. Si es una urgencia, llamá directamente a una farmacia.'));
-      heroBox.appendChild(card);
-      weekBox.textContent = '';
-      if (weekTitle) weekTitle.hidden = true;
-    },
-  });
+  const ahora = new Date();
+  const vigente = shifts.find((s) => isActiveNow(s, ahora)) || null;
+
+  // El resto: los que todavía no arrancaron. Los ya terminados no se muestran.
+  const proximos = shifts.filter((s) => s !== vigente && shiftWindow(s).start > ahora);
+
+  renderHero(heroBox, vigente);
+  renderWeek(weekBox, proximos);
+  renderFreshness(noteBox, shifts);
+  if (weekTitle) weekTitle.hidden = proximos.length === 0;
 }
 
 initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 initAccountMenu(); // menú de cuenta del navbar
 updateCartBadge(); // número del carrito
 loadFarmacias();
-warmOfflineEssentials(); // deja guardado el resto (emergencias, páginas) para cuando no haya señal

@@ -2,7 +2,7 @@
 
 > Contexto del proyecto para Claude Code. Se auto-carga cada sesión y **viaja con el repo**
 > (sirve para trabajar desde cualquier computadora). **Mantener actualizado al completar cada tarea.**
-> Última actualización: 2026-11-19. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
+> Última actualización: 2026-11-03. Estado: M1-M11 completos; Fase 12 completa salvo F12-18
 > (facturación/AFIP, fuera de alcance). Las 18 mejoras de A113-266 (rama `feature/mejorasGrupo`)
 > ya mergeadas a `main`. Detalle línea por línea de cada fase/tarea (F0-F12, bugs
 > corregidos, decisiones de diseño, gotchas de RLS/triggers): skill `progreso-baradero-local`
@@ -141,7 +141,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Restos sin uso:** función SQL `featured_category_counts` (migración 156; la tira de categorías ya no la llama desde 2026-11-17); columna `stores.free_shipping_threshold` (un frontend viejo en caché aún la pide) y el bucket vacío `store-banners` (hay que borrarlo desde el dashboard/API de Storage: por SQL no deja). `confirm_simulated_payment` y `release_delivery` **siguen en uso** (proveedor simulado de pago y panel del repartidor), no borrarlos. `Assets/styles/styles.css` no lo carga ninguna página pero es la fuente de verdad que citan los documentos de marca: no borrarlo sin actualizar `docs/brand-guidelines.md`, `Assets/design-tokens.*` y `video/`. `product_variants` ya se borró (migración 157).
 - **Mejoras identificadas, sin hacer:** en celular (<= 768 px), abrir el mega menú de categorías, la campanita o el menú de cuenta con la página scrolleada hace saltar el navbar fuera de la pantalla (`home.css` ~1275 traba `html` **y** `body`, la misma trampa del `sticky`; hay que probarlo en iOS Safari antes de sacar el `body`), CSS por página (`home.css` + `dark-auto.css` cargan en todas), sacar `'unsafe-inline'` del CSP, partir `vender.js`/`perfil.js`/`admin.js`, prueba de punta a punta de una compra (F10-02), notificaciones web push, mover la base a
   `sa-east-1` (cada pedido desde Argentina suma ~245 ms), apps nativas, F12-18 (facturación/AFIP, fuera de alcance).
-- **Sin probar con cuentas reales / en teléfono:** casi todo lo de paneles logueados (vendedor, profesional, repartidor, admin), farmacias/emergencias sin señal en un celular real (modo avión en Android e iOS; probado solo en Chromium de escritorio), el GPS del mapa del local,
+- **Sin probar con cuentas reales / en teléfono:** casi todo lo de paneles logueados (vendedor, profesional, repartidor, admin), el GPS del mapa del local,
   MFA con una app de autenticación real, el tope de cupones de punta a punta (el sandbox sale por IPs que rotan), instalar la app en un celular.
 
 ### Reglas y gotchas vigentes (resumen; el porqué y el caso en `docs/HISTORIAL-PENDIENTES.md`)
@@ -176,7 +176,6 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
 - **Páginas nuevas:** `vite.config.js` (input), `scripts/sitemap.mjs` (`STATIC_PAGES`, si es pública), `public/robots.txt` (si es privada), CSP, script de tema en el `<head>` + `dark.css` + `theme.js` (lo exige `npm test`).
 - **`dist/` se versiona:** al mergear, conflictos de `dist/` se resuelven con la versión de `HEAD` y se reconstruye una vez al final (`npm run build`, necesita `.env` local con `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`).
 - **Vercel:** `middleware.js` (vista previa para robots, solo en producto/comercio) y `vercel.json` (headers, caché, redirect de `/`). `/assets/*` es `immutable`; `/img` 1 día y `/vendor` 7 días con revalidación.
-- **Sin conexión (2026-11-19):** farmacias de turno y emergencias (y el inicio, que es el `start_url` de la app) se ven sin señal. El service worker (`public/sw.js`) guarda esas tres páginas enteras en una caché aparte sin tope (`OFFLINE_PAGES`), y los datos los guarda la página en `localStorage` (`js/offline-data.js`, consultas en `js/offline-essentials.js`). Una página que muestre datos que tienen que verse sin señal usa `loadWithSnapshot` y **avisa de cuándo es la copia** (`snapshotNotice`): nunca mostrarla como fresca. Una página esencial nueva se suma a `OFFLINE_PAGES` de `sw.js` (`js/sw.test.mjs` y `e2e/sin-conexion.spec.mjs` la cubren). Todo `caches.match` del worker lleva `ignoreVary: true` (con `Vary: Origin` no encuentra nada).
 - **Trampas conocidas:** `window.open` después de un `await` lo bloquea el navegador (abrir antes, navegar después); fechas con `localIsoDate()` (no `toISOString()`, que es UTC); `buildStarRating` es solo
   del formulario, para mostrar usar `buildStarsText`; `history.replaceState` en `perfil.js` pasa `window.history.state`; un `data-tooltip` en un botón pegado al borde derecho necesita anclaje; Realtime: los DELETE no se pueden filtrar y
   `user_carts.items` se compara con `canonicalJson`; los tests con `page.routeWebSocket` **no pasan por el CSP**; en `vite preview` Speed Insights no existe (el logger ya ignora localhost).
@@ -195,7 +194,7 @@ fotos de producto en dos tamaños (`srcset`). Detalle: skill, entradas "2026-11-
   `vite preview` del `dist/` versionado y falla ante excepciones, `console.error`, violaciones de CSP, respuestas >= 400 o hosts de terceros; **corta toda escritura a Supabase**
   (solo deja pasar GET y las RPC `get_*`/`search_*`/`same_product_offers`/`nearby_*`/`list_*`/`featured_category_counts`; `log_*` se corta sin fallar). Local usa el Chrome instalado (`PW_CHANNEL`); en CI, un job `e2e` aparte.
   Si se prueba algo nuevo del sitio público, sumarlo a `e2e/humo.spec.mjs`. Prueba el `dist/` tal cual está: si se tocó código, reconstruirlo antes.
-- `npm test` (`scripts/run-tests.mjs`, anda también en Windows) corre 49 archivos (necesita `npm ci`; no hace falta Python). `pkill -f "vite preview"` mata también la propia shell: cortar por puerto (`lsof -t -i:4173`).
+- `npm test` (`scripts/run-tests.mjs`, anda también en Windows) corre 50 archivos (necesita `npm ci`; no hace falta Python). `pkill -f "vite preview"` mata también la propia shell: cortar por puerto (`lsof -t -i:4173`).
 
 ## Scripts de tooling
 

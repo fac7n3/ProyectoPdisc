@@ -1608,14 +1608,6 @@ html[data-theme="dark"] .product-stock-badge--out {
 html[data-theme="dark"] .sv-hero__title {
   color: var(--dk-accent-text);
 }
-html[data-theme="dark"] .sv-note {
-  background: #464217;
-  color: #f5cb9c;
-}
-html[data-theme="dark"] .sv-note--stale {
-  background: #3c1414;
-  color: #ec9494;
-}
 
 /* ===== pages/terminos.html (<style>) ===== */
 html[data-theme="dark"] .terms-container {

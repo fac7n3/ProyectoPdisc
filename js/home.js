@@ -12,7 +12,6 @@ import { weightCategories, interleaveByInterest } from './interests-utils.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 import { setJsonLd } from './seo.js';
 import { buildSiteJsonLd } from './seo-utils.js';
-import { warmOfflineEssentials } from './offline-essentials.js';
 
 // Datos estructurados del sitio (nombre, logo y buscador) para los buscadores.
 setJsonLd('site', buildSiteJsonLd(window.location.origin));
@@ -1280,8 +1279,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal de detalle de producto
   if (typeof initProductModal === 'function') initProductModal();
-
-  // Farmacias de turno y emergencias tienen que verse sin señal: se dejan guardadas
-  // (páginas y datos) cuando la persona pasa por el inicio, sin que tenga que abrirlas antes.
-  warmOfflineEssentials();
 });

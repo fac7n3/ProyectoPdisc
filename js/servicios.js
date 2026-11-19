@@ -4,12 +4,11 @@
 // Anti-XSS: todo lo que viene de la base se pinta con DOM API (textContent),
 // nunca con innerHTML — misma convención que js/farmacias.js.
 
+import { supabase } from './auth-utils.js';
 import { copyToClipboard } from './transfer-details.js';
 import { notify } from './notice.js';
 import { initNotificationsBell, initAccountMenu } from './nav-utils.js';
 import { updateCartBadge } from './cart-utils.js';
-import { loadWithSnapshot, snapshotNotice } from './offline-data.js';
-import { SNAPSHOT_KEYS, fetchEmergencyContacts, warmOfflineEssentials } from './offline-essentials.js';
 import './speed-insights.js'; // Initialize Vercel Speed Insights
 
 const CATEGORIES = [
@@ -107,17 +106,6 @@ function buildEmpty(message) {
   return empty;
 }
 
-/** Cartel de "copia guardada" (sin conexión o señal lenta): de cuándo son los números. */
-function buildSnapshotNote(info) {
-  const note = el('div', info.reason === 'slow' ? 'sv-note' : 'sv-note sv-note--stale');
-  note.setAttribute('role', 'status');
-  const icon = el('i', info.reason === 'slow' ? 'fa-regular fa-clock' : 'fa-solid fa-triangle-exclamation');
-  icon.setAttribute('aria-hidden', 'true');
-  note.appendChild(icon);
-  note.appendChild(el('span', null, snapshotNotice(info, 'los números')));
-  return note;
-}
-
 async function loadServicios() {
   const container = document.getElementById('sv-content');
   container.textContent = '';
@@ -125,38 +113,34 @@ async function loadServicios() {
   // cargando, no dejar la página vacía como si no hubiera ninguno.
   container.appendChild(buildLoadingBlock('Cargando los números'));
 
-  // Red primero; si no contesta (sin conexión, error o señal muy lenta) se usa
-  // la última copia guardada en este aparato y se avisa de cuándo es (ver
-  // js/offline-data.js). `pintar` se puede llamar dos veces: con la copia y, si
-  // la red contesta tarde, de nuevo con lo fresco.
-  const pintar = (data, info) => {
-    container.textContent = '';
-    if (info.fromSnapshot) container.appendChild(buildSnapshotNote(info));
+  const { data, error } = await supabase
+    .from('emergency_contacts')
+    .select('id, category, name, phone, notes, display_order')
+    // La policy pública ya filtra por is_active, pero la del admin
+    // (`emergency_contacts_all_admin`, cmd ALL) no: sin esto una cuenta admin
+    // ve en la página pública los contactos dados de baja.
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('name', { ascending: true });
 
-    const contacts = Array.isArray(data) ? data : [];
+  container.textContent = '';
 
-    if (contacts.length === 0) {
-      container.appendChild(buildEmpty('Todavía no cargamos números de servicios. Vas a encontrarlos acá pronto.'));
-      return;
-    }
+  if (error) {
+    console.error('Error al cargar los servicios:', error);
+    container.appendChild(buildEmpty('No pudimos cargar los números. Probá de nuevo en un rato.'));
+    return;
+  }
 
-    CATEGORIES.forEach((category) => {
-      const inCategory = contacts.filter((c) => c.category === category.key);
-      if (inCategory.length > 0) container.appendChild(buildCard(category, inCategory));
-    });
-  };
+  const contacts = data || [];
 
-  await loadWithSnapshot({
-    key: SNAPSHOT_KEYS.servicios,
-    fetcher: fetchEmergencyContacts,
-    onData: pintar,
-    onFail: (error) => {
-      console.error('Error al cargar los servicios:', error);
-      container.textContent = '';
-      container.appendChild(buildEmpty(navigator.onLine === false
-        ? 'No hay conexión y todavía no guardamos los números en este dispositivo. Probá de nuevo cuando vuelva la señal.'
-        : 'No pudimos cargar los números. Probá de nuevo en un rato.'));
-    },
+  if (contacts.length === 0) {
+    container.appendChild(buildEmpty('Todavía no cargamos números de servicios. Vas a encontrarlos acá pronto.'));
+    return;
+  }
+
+  CATEGORIES.forEach((category) => {
+    const inCategory = contacts.filter((c) => c.category === category.key);
+    if (inCategory.length > 0) container.appendChild(buildCard(category, inCategory));
   });
 }
 
@@ -164,4 +148,3 @@ initNotificationsBell(); // campanita del navbar (como en comercios/búsqueda)
 initAccountMenu(); // menú de cuenta del navbar
 updateCartBadge(); // número del carrito
 loadServicios();
-warmOfflineEssentials(); // deja guardado el resto (farmacias, páginas) para cuando no haya señal
